@@ -19,9 +19,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG && verbose)
         {
-#if DEBUG
             fgDispBasicBlocks(verboseTrees);
-#endif
             jitprintf("\n");
         }
 

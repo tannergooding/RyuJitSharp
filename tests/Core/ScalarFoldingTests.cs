@@ -50,9 +50,10 @@ internal static unsafe class ScalarFoldingTests
             var result = compiler.gtFoldExprBinaryConst(tree.AsOp());
             Assert.That(result.Oper.IsConst, Is.True);
             Assert.That(result, Is.Not.SameAs(tree));
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(tree.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(tree.TreeId));
+            }
             Assert.That(tree.Next, Is.SameAs(next));
             Assert.That(compiler.optAssertionProp_Update(result, tree, statement), Is.SameAs(result));
             Assert.That(parent.AsOp().Op1, Is.SameAs(result));
@@ -174,9 +175,7 @@ internal static unsafe class ScalarFoldingTests
                 compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewLclvNode(TYP_INT, 0));
             tree.Prev = compiler.gtNewIconNode(TYP_INT, 42);
             tree.Next = compiler.gtNewIconNode(TYP_INT, 43);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var result = compiler.gtFoldExpr(tree);
             Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)expected));
             Assert.That(result.Prev, Is.SameAs(tree.Prev));
@@ -445,9 +444,7 @@ internal static unsafe class ScalarFoldingTests
                 : compiler.gtNewIconNode(TYP_INT, (int)right);
             var tree = compiler.gtNewBinaryNode(oper, oper.IsCompare ? TYP_INT : type, a, b);
             tree.Flags |= GTF_COLON_COND | GTF_DONT_CSE | (unsigned ? GTF_UNSIGNED : GTF_EMPTY);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var result = compiler.gtFoldExpr(tree);
             Assert.That(result, Is.Not.SameAs(tree));
             Assert.That(result.AsIntConCommon().IntegralValue, Is.EqualTo(expected));

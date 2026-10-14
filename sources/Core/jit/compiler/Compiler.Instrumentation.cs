@@ -163,10 +163,8 @@ public partial class Compiler
                 returnBlock = block;
                 temporaryReturn = gtNewStmt(returnExpression.SubstExpr);
                 fgInsertStmtAtEnd(block, temporaryReturn);
-#if DEBUG
                 JITDUMP($"Temporarily adding ret expr [{returnExpression.SubstExpr.TreeId:D6}] " +
                     $"to {FMT_BB(block.bbNum)}\n");
-#endif
             }
         }
 

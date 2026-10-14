@@ -28,9 +28,7 @@ internal static unsafe class LoweringDispatchTests
             operation._vnPair.SetBoth(314);
             var owner = new GenTreeUnOp(GT_RETURN, TYP_VOID, operation);
             var block = NewBlock(source, amount, operation, owner);
-#if DEBUG
-            var id = operation.TreeId;
-#endif
+            var id = TestConfiguration.IsDebug ? operation.TreeId : 0;
 
             new Lowering(compiler, new LinearScan(compiler)).LowerRange(
                 block, new LIR.ReadOnlyRange(source, operation));
@@ -44,10 +42,11 @@ internal static unsafe class LoweringDispatchTests
             Assert.That(source.Prev is null && source.Next is null, Is.True);
             Assert.That(amount.Prev is null && amount.Next is null, Is.True);
             Assert.That(operation.Prev is null && operation.Next is null, Is.True);
-#if DEBUG
-            Assert.That(owner.Op1.TreeId, Is.EqualTo(id));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(owner.Op1.TreeId, Is.EqualTo(id));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts: false);
     }
 
@@ -76,9 +75,10 @@ internal static unsafe class LoweringDispatchTests
             {
                 Assert.That(successor.AsUnOp().Op1, Is.SameAs(value));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts: false);
     }
 
@@ -179,9 +179,10 @@ internal static unsafe class LoweringDispatchTests
                     Assert.That(successor.AsUnOp().Op1, Is.SameAs(source));
                 }
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts: false);
     }
 
@@ -205,9 +206,10 @@ internal static unsafe class LoweringDispatchTests
             {
                 Assert.That(owner.Op1.AsIntCon().IconValue, Is.EqualTo((nint)(-1)));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts);
     }
 

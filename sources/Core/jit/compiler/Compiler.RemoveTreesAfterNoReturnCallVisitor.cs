@@ -52,9 +52,7 @@ public partial class Compiler
                 return WALK_CONTINUE;
             }
 
-#if DEBUG
             JITDUMP($"Removing trees after no-return call [{use.TreeId:D6}]\n");
-#endif
 
             // Extract side effects of all siblings and ancestor's siblings.
             for (var i = 0; i < _useStack.Count - 1; i++)
@@ -71,9 +69,7 @@ public partial class Compiler
                 // Equal users identify a sibling, not an ancestor of the call.
                 if (_useStack[i + 1].User == useInfo.User)
                 {
-#if DEBUG
                     JITDUMP($"Extracting side effects of (ancestor) sibling [{currentUse.TreeId:D6}]:");
-#endif
 
                     GenTree? sideEffects = null;
                     _compiler.gtExtractSideEffList(currentUse, ref sideEffects);

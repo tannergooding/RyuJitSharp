@@ -41,10 +41,11 @@ internal static unsafe class HardwareScalarLoweringTests
             Assert.That(load.Next, Is.SameAs(user));
             Assert.That(vector.Next, Is.Null);
             Assert.That(scalar.Next, Is.Null);
-#if DEBUG
-            Assert.That(load.TreeId, Is.Not.EqualTo(scalar.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(load.TreeId, Is.Not.EqualTo(scalar.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -73,9 +74,10 @@ internal static unsafe class HardwareScalarLoweringTests
             Assert.That(load.Next, Is.SameAs(user));
             Assert.That(vector.Next, Is.Null);
             Assert.That(scalar.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

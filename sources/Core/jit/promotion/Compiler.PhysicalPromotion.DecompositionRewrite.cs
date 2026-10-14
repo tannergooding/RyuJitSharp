@@ -228,9 +228,7 @@ public partial class Compiler
                 return;
             }
 
-#if DEBUG
             JITDUMP($"Processing block operation [{store.TreeId:D6}] that involves replacements\n");
-#endif
             if ((source.Oper is GT_LCL_VAR or GT_LCL_FLD or GT_BLK) || source.IsCnsInitVal)
             {
                 var result = new PhysicalPromotionDecompositionStatementList();

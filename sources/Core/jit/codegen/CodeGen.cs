@@ -1054,13 +1054,13 @@ public sealed partial class CodeGen : ICodeGen
         {
             genCheckWasmFunclets();
         }
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genGenerateCode()\n");
             _compiler.fgDispBasicBlocks(_compiler.verboseTrees);
         }
 
+#if DEBUG
         _genWriteBarrierUsed = false;
 #endif
         void* generatedCode = null;

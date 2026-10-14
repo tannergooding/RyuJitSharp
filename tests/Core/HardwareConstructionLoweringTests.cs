@@ -62,9 +62,10 @@ internal static unsafe class HardwareConstructionLoweringTests
             Assert.That(block.FirstNode, Is.SameAs(result));
             Assert.That(create.Next, Is.Null);
             Assert.That(create.Prev, Is.Null);
-#if DEBUG
-            Assert.That(result.TreeId, Is.Not.EqualTo(create.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.Not.EqualTo(create.TreeId));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -392,16 +393,15 @@ internal static unsafe class HardwareConstructionLoweringTests
             var create = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_Create, type, 16, scalar);
             create.IsUnusedValue = true;
             var block = NewBlock(scalar, create);
-#if DEBUG
-            var treeId = create.TreeId;
-#endif
+            var treeId = TestConfiguration.IsDebug ? create.TreeId : 0;
 
             Assert.That(LowerCreate(NewLowering(compiler, block), create), Is.Null);
 
             Assert.That(create.HWIntrinsicId, Is.EqualTo(expected));
-#if DEBUG
-            Assert.That(create.TreeId, Is.EqualTo(treeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(create.TreeId, Is.EqualTo(treeId));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -640,9 +640,10 @@ internal static unsafe class HardwareConstructionLoweringTests
 
     private static void CheckLir(Compiler compiler, BasicBlock block)
     {
-#if DEBUG
-        Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+        }
     }
 
     private static Lowering NewLowering(Compiler compiler, BasicBlock block)

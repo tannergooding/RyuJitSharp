@@ -179,9 +179,7 @@ public sealed partial class Lowering
         }
 
         assert(current is not null);
-#if DEBUG
         JITDUMP($"Call [{call.TreeId:D6}] has {numMarked} PUTARG nodes that interfere with [{current.TreeId:D6}]; will move them after it\n");
-#endif
         var insertionPoint = current;
         var block = _block;
         assert(block is not null);
@@ -197,9 +195,7 @@ public sealed partial class Lowering
                 if (Configuration.FEATURE_FIXED_OUT_ARGS ||
                     (current.Oper is GT_FIELD_LIST or GT_PUTARG_REG))
                 {
-#if DEBUG
                     JITDUMP($"Relocating [{current.TreeId:D6}] after [{insertionPoint.TreeId:D6}]\n");
-#endif
                     // Walking backward and inserting after one fixed point preserves argument order.
                     block.Remove(current);
                     block.InsertAfter(insertionPoint, current);

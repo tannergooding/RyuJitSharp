@@ -100,8 +100,8 @@ internal static unsafe class SsaLivenessTests
             store.Flags |= GTF_DONT_CSE | GTF_REVERSE_OPS;
             store.AssertionInfo = new AssertionInfo(1);
             store._vnPair.SetBoth(73);
+            var treeId = TestConfiguration.IsDebug ? store.TreeId : 0;
 #if DEBUG
-            var treeId = store.TreeId;
             compiler.verbose = true;
 #endif
             SetDfs(compiler);
@@ -130,9 +130,10 @@ internal static unsafe class SsaLivenessTests
             Assert.That(replacement.Flags & GTF_DONT_CSE, Is.Not.Zero);
             Assert.That(replacement.AssertionInfo.AssertionIndex, Is.EqualTo((ushort)1));
             Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(treeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(treeId));
+            }
             Assert.That(statement.RootNode, Is.SameAs(root));
             Assert.That(root.Next, Is.Null);
             Assert.That(statement.TreeListBegin, Is.Not.Null);
@@ -166,9 +167,7 @@ internal static unsafe class SsaLivenessTests
             var root = compiler.gtNewCommaNode(TYP_VOID, firstOwner, secondOwner);
             var statement = AddStatement(compiler, block, root);
             SetDfs(compiler);
-#if DEBUG
-            var treeId = store.TreeId;
-#endif
+            var treeId = TestConfiguration.IsDebug ? store.TreeId : 0;
 
             compiler.fgSsaLiveness();
 
@@ -176,9 +175,10 @@ internal static unsafe class SsaLivenessTests
             Assert.That(firstOwner.Op1, Is.SameAs(secondOwner.Op1));
             Assert.That(firstOwner.Op1, Is.Not.SameAs(store));
             Assert.That(firstOwner.Op1.Oper, Is.EqualTo(GT_COMMA));
-#if DEBUG
-            Assert.That(firstOwner.Op1.TreeId, Is.EqualTo(treeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(firstOwner.Op1.TreeId, Is.EqualTo(treeId));
+            }
         });
     }
 

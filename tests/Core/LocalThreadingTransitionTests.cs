@@ -67,9 +67,10 @@ internal static class LocalThreadingTransitionTests
             var pointer = address.Oper is GT_ADD ? address.AsOp().Op1 : address;
             Assert.That(pointer.Type, Is.EqualTo(pointerType));
             Assert.That(pointer.Flags & GTF_VAR_DEATH, Is.Not.Zero);
-#if DEBUG
-            Assert.That(pointer.TreeId, Is.EqualTo(locals[position].TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(pointer.TreeId, Is.EqualTo(locals[position].TreeId));
+            }
         });
     }
 

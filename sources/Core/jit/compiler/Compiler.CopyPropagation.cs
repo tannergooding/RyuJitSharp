@@ -256,9 +256,7 @@ public partial class Compiler
                 var parent = gtFindLink(statement, tree).parent;
                 while ((parent is not null) && (parent.Oper is GT_COMMA))
                 {
-#if DEBUG
                     JITDUMP($" Updating COMMA parent VN [{parent.TreeId:D6}]\n");
-#endif
                     var op1Exceptions = vnStore.VNPExceptionSet(parent.AsOp().Op1._vnPair);
                     parent._vnPair = vnStore.VNPWithExc(parent.AsOp().Op2._vnPair, op1Exceptions);
                     parent = gtFindLink(statement, parent).parent;

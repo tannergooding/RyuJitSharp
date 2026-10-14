@@ -13,7 +13,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class FlowGraphUpdateTests
 {
-#if DEBUG
+    private static bool IsDebug => Configuration.DEBUG;
+
     [Test]
     public static void DumpsReuseTheirBlockOrderAfterGraphShrinks()
     {
@@ -23,14 +24,19 @@ internal static unsafe class FlowGraphUpdateTests
             Link(compiler, first, last);
             Jump(compiler, first, last);
             compiler.fgDispBasicBlocks();
-            Assert.That(compiler.fgBBOrder, Is.EqualTo<BasicBlock[]>([first, last]));
+            if (IsDebug)
+            {
+                Assert.That(compiler.fgBBOrder, Is.EqualTo<BasicBlock[]>([first, last]));
+            }
 
             Assert.That(compiler.fgUpdateFlowGraphPhase(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             compiler.fgDispBasicBlocks();
-            Assert.That(compiler.fgBBOrder, Is.EqualTo<BasicBlock[]>([first]));
+            if (IsDebug)
+            {
+                Assert.That(compiler.fgBBOrder, Is.EqualTo<BasicBlock[]>([first]));
+            }
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]

@@ -752,9 +752,10 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(use.User(), Is.SameAs(user));
             Assert.That(range.TryGetUse(user, out _), Is.False);
             Globals.CheckDoublyLinkedList(first);
-#if DEBUG
-            Assert.That(range.CheckLir(compiler), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(range.CheckLir(compiler), Is.True);
+            }
         });
     }
 

@@ -102,9 +102,7 @@ public partial class Compiler
         var vn = tree._vnPair.Liberal;
         if (context.GetHoistedInCurLoop().ContainsKey(vn))
         {
-#if DEBUG
             JITDUMP($"      [{tree.TreeId:D6}] ... already hoisted ${vn:x} in L{loop.Index:D2}\n ");
-#endif
             return;
         }
 

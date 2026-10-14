@@ -39,10 +39,8 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(call.Args.GetUserArgByIndex(1), Is.SameAs(second));
             Assert.That(call.Args.GetUserIndex(first), Is.Zero);
             Assert.That(call.Args.GetUserIndex(second), Is.EqualTo(1));
-#if DEBUG
             var name = kind == WellKnownArg.ShiftLow ? "shift low" : "shift high";
             Assert.That(compiler.gtGetWellKnownArgNameForArgMsg(kind), Is.EqualTo(name));
-#endif
         });
     }
 
@@ -100,9 +98,7 @@ internal static unsafe class CallArgumentMorphTests
             var original = compiler.gtNewBlkIndir(address, new ClassLayout(8));
             original.Flags |= GTF_IND_VOLATILE | GTF_IND_UNALIGNED;
             original._vnPair.SetBoth(42);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var replacement = new GenTreeIndir(GT_IND, TYP_LONG, address, null, original, NodeThreading.None) {
                 Flags = original.Flags,
             };

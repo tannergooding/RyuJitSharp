@@ -21,9 +21,7 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
         JITDUMP($"    [{defNode.TreeId:D6}]: ");
-#endif
         var number = defNode.AsLclVarCommon().LclNum;
         ref var descriptor = ref lvaGetDesc(number);
         if (descriptor.lvPinned)
@@ -114,9 +112,7 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
         JITDUMP($" [{useNode.TreeId:D6}] is last use of [{defNode.TreeId:D6}] (V{number:D2}) ");
-#endif
         var nextRoot = nextStmt.RootNode;
         if (fwdSubNode.Oper is GT_QMARK)
         {
@@ -306,9 +302,7 @@ public partial class Compiler
                 JITDUMP(" multi-use sub failed (count out of range or indirect-call context)\n");
                 return false;
             }
-#if DEBUG
             JITDUMP($" -- multi-use fwd subbing [{fwdSubNode.TreeId:D6}]; new next stmt is\n");
-#endif
             DISPSTMT(nextStmt);
             return true;
         }
@@ -332,9 +326,7 @@ public partial class Compiler
         {
             gtUpdateStmtSideEffects(nextStmt);
         }
-#if DEBUG
         JITDUMP($" -- fwd subbing [{fwdSubNode.TreeId:D6}]; new next stmt is\n");
-#endif
         DISPSTMT(nextStmt);
         return true;
     }

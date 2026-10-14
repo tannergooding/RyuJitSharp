@@ -248,9 +248,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
 
             if (condTree.Oper is GT_CNS_INT)
             {
-#if DEBUG
                 JITDUMP($" ... found foldable jtrue at [{tree.TreeId:D6}] in {FMT_BB(block.bbNum)}\n");
-#endif
                 _compiler.Metrics.InlinerBranchFold++;
 
                 // We have a constant operand, and should have the all clear to optimize.
@@ -407,9 +405,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
             //
             if ((parent is not null) && (parent.Oper is GT_COMMA) && (parent.AsOp().Op1 == use))
             {
-#if DEBUG
                 JITDUMP($"\nReturn expression placeholder [{tree.TreeId:D6}] value [{inlineCandidate.TreeId:D6}] unused\n");
-#endif
 
                 var sideEffects = null as GenTree;
                 _compiler.gtExtractSideEffList(inlineCandidate, ref sideEffects);
@@ -431,9 +427,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
             }
             else
             {
-#if DEBUG
                 JITDUMP($"\nReplacing the return expression placeholder [{tree.TreeId:D6}] with [{inlineCandidate.TreeId:D6}]\n");
-#endif
                 DISPTREE(tree);
 
                 var retType = tree.Type;

@@ -326,9 +326,7 @@ public sealed partial class Lowering
             unreached();
         }
 
-#if DEBUG
         JITDUMP($"Replacing STORE_BLK with STOREIND for [{block.TreeId:D6}]\n");
-#endif
         var store = new GenTreeStoreInd(registerType, block.Addr, block.Data, block, NodeThreading.LIR);
         BlockRange().ReplaceNode(block, store);
 

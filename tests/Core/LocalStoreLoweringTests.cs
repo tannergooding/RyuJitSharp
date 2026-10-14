@@ -116,14 +116,16 @@ internal static unsafe class LocalStoreLoweringTests
                     Assert.That(original.Prev, Is.Null);
                     Assert.That(original.Next, Is.Null);
                 }
-#if DEBUG
-                Assert.That(local.Op1.TreeId, Is.EqualTo(value.TreeId));
-                Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(local.Op1.TreeId, Is.EqualTo(value.TreeId));
+                    Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
+                }
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -200,9 +202,10 @@ internal static unsafe class LocalStoreLoweringTests
             Assert.That(use.User(), Is.SameAs(store));
             Assert.That(original.Prev, Is.Null);
             Assert.That(original.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 #endif

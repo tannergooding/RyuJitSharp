@@ -306,9 +306,7 @@ public partial class Compiler
             return WALK_CONTINUE;
         }
 
-#if DEBUG
         JITDUMP($"...GDV considering [{tree.TreeId:D6}]\n");
-#endif
         assert(stmt.RootNode == tree);
         var relop = tree.AsUnOp().Op1;
         if (relop.Oper is not GT_EQ and not GT_NE)
@@ -342,9 +340,7 @@ public partial class Compiler
                 JITDUMP("... but not invariant\n");
                 return WALK_CONTINUE;
             }
-#if DEBUG
             JITDUMP($"Loop L{loop.Index:D2} has invariant type test [{tree.TreeId:D6}] on V{lclNum:D2}\n");
-#endif
             if (optCheckLoopCloningGDVTestProfitable(relop.AsOp(), loop))
             {
                 assert(block.LastStmt == stmt);
@@ -388,9 +384,7 @@ public partial class Compiler
                 JITDUMP("... but not invariant\n");
                 return WALK_CONTINUE;
             }
-#if DEBUG
             JITDUMP($"Loop L{loop.Index:D2} has invariant method address test [{tree.TreeId:D6}] on V{lclNum:D2}\n");
-#endif
             if (optCheckLoopCloningGDVTestProfitable(relop.AsOp(), loop))
             {
                 var handle = right.IsIconHandle() ? right.AsIntCon() : right.AsIndir().Addr.AsIntCon();

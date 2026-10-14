@@ -209,9 +209,7 @@ public sealed partial class Lowering
             return;
         }
 
-#if DEBUG
         JITDUMP($"Argument node [{argNode.TreeId:D6}] needs to be passed in {registerSegment.Register.Name}; inserting bitcast\n");
-#endif
         var cutRegisterSegment = registerSegment;
         var argNodeSize = argNode.Type.ActualType.Size;
         // ABI padding is not part of the value being reinterpreted.

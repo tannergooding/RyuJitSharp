@@ -65,9 +65,10 @@ internal static unsafe class VNDeadStoreRemovalTests
             Assert.That((replacement.Flags & (GTF_CALL | GTF_EXCEPT)) == (GTF_CALL | GTF_EXCEPT), Is.True);
             Assert.That((statement.RootNode.Flags & GTF_CALL) != 0, Is.True);
             Assert.That((statement.RootNode.Flags & GTF_ASG) == 0, Is.True);
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(dead.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(dead.TreeId));
+            }
             Assert.That(compiler.lvaTable[0].GetPerSsaData(deadNumber).DefNode, Is.Null);
             Assert.That(compiler.lvaTable[0].GetPerSsaData(deadNumber)._vnPair.Conservative, Is.EqualTo(value));
             if (threaded)
@@ -149,9 +150,7 @@ internal static unsafe class VNDeadStoreRemovalTests
             }
 
             Assert.That(compiler.lvaTable[0].GetPerSsaData(number).DefNode, Is.SameAs(dead));
-#if DEBUG
-            var nextTreeId = compiler.compGenTreeID;
-#endif
+            var nextTreeId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             Assert.That(compiler.optVNBasedDeadStoreRemoval(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 #if DEBUG
             Assert.That(compiler.compGenTreeID, Is.EqualTo(nextTreeId + 1));

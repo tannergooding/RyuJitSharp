@@ -81,9 +81,10 @@ internal static unsafe class Arm64HardwareLoweringTests
                 Assert.That(create.GetOp(2).IsIntegralConst(0), Is.True);
                 Assert.That(create.GetOp(1).IsVectorZero, Is.True);
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -107,9 +108,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(conversion.GetOp(1).AsHWIntrinsic().HWIntrinsicId,
                 Is.EqualTo(NI_Sve_ConversionTrueMask));
             Assert.That(conversion.IsUnusedValue, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -129,9 +131,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(select.GetOp(2), Is.SameAs(operation));
             Assert.That(select.GetOp(1).IsTrueMask(TYP_INT), Is.True);
             Assert.That(select.GetOp(3).IsVectorZero, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -151,9 +154,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(user.Op1, Is.SameAs(value));
             Assert.That(zero.IsUnusedValue, Is.True);
             Assert.That(select.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -173,9 +177,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(user.Op1.Oper, Is.EqualTo(GT_SETCC));
             Assert.That(zero.Next, Is.Null);
             Assert.That(block.FirstNode, Is.InstanceOf<GenTreeLclVarCommon>());
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -195,9 +200,10 @@ internal static unsafe class Arm64HardwareLoweringTests
 
             Assert.That(dot.Next, Is.Null);
             Assert.That(user.GetOp(1).AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_AdvSimd_AddPairwise));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -221,9 +227,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(fma.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_FusedMultiplySubtractNegatedScalar));
             Assert.That(duplicate.GetOp(1), Is.SameAs(scalar));
             Assert.That(negation.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -248,9 +255,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(set.Next.Next.AsLclVarCommon().LclNum, Is.EqualTo(local));
             Assert.That(user.Op1.AsLclVar().LclNum, Is.EqualTo(local));
             Assert.That(get.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -267,9 +275,10 @@ internal static unsafe class Arm64HardwareLoweringTests
             Assert.That(atomic.Oper, Is.EqualTo(GT_XADD));
             Assert.That(atomic.IsUnusedValue, Is.True);
             Assert.That(value.IsContained, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

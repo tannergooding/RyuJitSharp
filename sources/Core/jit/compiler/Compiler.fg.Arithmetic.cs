@@ -85,9 +85,7 @@ public partial class Compiler
             return null;
         }
 
-#if DEBUG
         JITDUMP($"\nMorphing MOD/UMOD [{tree.TreeId:D6}] to Zero\n");
-#endif
         var zero = tree.Op2;
         zero.AsIntConCommon().IntegralValue = 0;
         fgUpdateConstTreeValueNumber(zero);
@@ -104,9 +102,7 @@ public partial class Compiler
     /// <summary>Transform a % b into a - (a / b) * b, preserving operand evaluation order.</summary>
     public GenTree fgMorphModToSubMulDiv(GenTreeOp tree)
     {
-#if DEBUG
         JITDUMP($"\nMorphing MOD/UMOD [{tree.TreeId:D6}] to Sub/Mul/Div\n");
-#endif
         if (tree.Oper is GT_MOD)
         {
             tree.SetOper(GT_DIV);
@@ -170,9 +166,7 @@ public partial class Compiler
 
     public GenTree fgMorphUModToAndSub(GenTreeOp tree)
     {
-#if DEBUG
         JITDUMP($"\nMorphing UMOD [{tree.TreeId:D6}] to And/Sub\n");
-#endif
         assert(tree.Oper is GT_UMOD);
         assert(tree.Op2.IsIntegralConstUnsignedPow2);
 

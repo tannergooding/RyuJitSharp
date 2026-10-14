@@ -174,9 +174,7 @@ internal static unsafe class ScalarEvolutionTests
             Assert.That(context.EvaluateRelop(compiler.vnStore.VNForIntCon(0)), Is.EqualTo(RelopEvaluationResult.False));
 
             var recurrence = context.NewAddRec(seven, context.NewConstant(TYP_INT, 1));
-#if DEBUG
-            var previousId = compiler.compGenTreeID;
-#endif
+            var previousId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             Assert.That(context.Materialize(context.NewBinop(ScevOper.Add, seven, recurrence)), Is.Null);
 #if DEBUG
             Assert.That(compiler.compGenTreeID, Is.EqualTo(previousId));

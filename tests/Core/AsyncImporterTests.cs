@@ -414,9 +414,7 @@ internal static unsafe class AsyncImporterTests
             var statement = compiler.gtNewStmt(store);
             compiler.impAppendStmt(statement);
             compiler.impPushOnStack(compiler.gtNewLclvNode(var_types.TYP_STRUCT, 0), new typeInfo(var_types.TYP_STRUCT));
-#if DEBUG
-            var treeId = store.TreeId;
-#endif
+            var treeId = TestConfiguration.IsDebug ? store.TreeId : 0;
 
             Assert.That(compiler.impFoldAwaitedTopOfStack(), Is.True);
             Assert.Multiple(() => {
@@ -427,9 +425,10 @@ internal static unsafe class AsyncImporterTests
                 Assert.That(store.Flags & GenTreeFlags.GTF_ALL_EFFECT, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
                 Assert.That((store.Flags & GenTreeFlags.GTF_DONT_CSE) != 0, Is.True);
                 Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(returnType == var_types.TYP_VOID ? 0 : 1));
-#if DEBUG
-                Assert.That(store.TreeId, Is.EqualTo(treeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(store.TreeId, Is.EqualTo(treeId));
+                }
             });
 
             if (returnType != var_types.TYP_VOID)

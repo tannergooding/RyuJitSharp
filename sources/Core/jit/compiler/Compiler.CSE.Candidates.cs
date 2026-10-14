@@ -180,10 +180,8 @@ public partial class Compiler
                     if ((previousExceptions != currentExceptions) &&
                         vnStore.VNExcIsSubset(currentExceptions, previousExceptions))
                     {
-#if DEBUG
                         JITDUMP($"Skipping CSE candidate for tree [{previous.TreeId:D6}]; " +
                             $"tree [{tree.TreeId:D6}] is a better candidate with more exceptions\n");
-#endif
                         previous._cseNum = NO_CSE;
                         first.tslStmt = stmt;
                         first.tslTree = tree;

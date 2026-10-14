@@ -46,9 +46,10 @@ internal static unsafe class SelectNodeLoweringTests
             Assert.That(second.Next, Is.SameAs(condition));
             Assert.That(condition.Next, Is.SameAs(replacement));
             Assert.That(select.Prev is null && select.Next is null, Is.True);
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(select.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(select.TreeId));
+            }
         });
     }
 

@@ -71,13 +71,11 @@ public partial class Compiler
         noway_assert(previous is not null);
 
         JITDUMP($"Relocating {(relocateType == FG_RELOCATE_TYPE.FG_RELOCATE_TRY ? "try" : "handler")} range {FMT_BB(start.bbNum)}..{FMT_BB(last.bbNum)} (EH#{regionIndex}) to end of BBlist\n");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
-#endif
         fgUnlinkRange(start, last);
         var insertAfter = fgLastBB;
         assert(insertAfter is not null);
@@ -134,13 +132,11 @@ public partial class Compiler
         {
             assert(fgFirstFuncletBB != insertAfter.Next);
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("Create funclets: moved region\n");
             fgDispHandlerTab();
         }
-#endif
         return last;
     }
 

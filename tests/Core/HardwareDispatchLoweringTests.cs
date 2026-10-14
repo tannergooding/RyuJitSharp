@@ -176,9 +176,10 @@ internal static unsafe class HardwareDispatchLoweringTests
             Assert.That(second.Next, Is.Null);
             Assert.That(firstOnes.Next, Is.Null);
             Assert.That(secondOnes.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

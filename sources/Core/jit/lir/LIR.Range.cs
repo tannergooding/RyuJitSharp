@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -152,6 +153,9 @@ public partial class LIR
             assert(checkLclVarSemanticsHelper.Check());
             return true;
         }
+#else
+        public bool CheckLir(Compiler compiler, bool checkUnusedValues = false)
+            => throw new InvalidOperationException("LIR validation is only available in Debug builds.");
 #endif
 
         /// <summary>Deletes a node from this range.</summary>

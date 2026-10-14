@@ -274,11 +274,9 @@ public partial class Compiler
         {
             if (replacement.NeedsReadBack)
             {
-#if DEBUG
                 JITDUMP($"Reading back replacement V{local:D2}.[{replacement.Offset:D3}.." +
                     $"{replacement.Offset + replacement.AccessType.Size:D3}) -> V{replacement.LclNum:D2} " +
                     $"before [{CurrentStatement.RootNode.TreeId:D6}]:\n");
-#endif
                 var tree = _compiler.PhysicalPromotionCreateReadBack(local, replacement);
                 var statement = _compiler.fgNewStmtFromTree(tree);
                 DISPSTMT(statement);

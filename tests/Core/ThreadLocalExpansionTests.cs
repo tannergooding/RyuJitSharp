@@ -72,19 +72,21 @@ internal static unsafe class ThreadLocalExpansionTests
             var tlsLoad = maxCheck.FirstStmt!.RootNode.AsLclVar().Data.AsIndir();
             Assert.That(tlsLoad.Addr.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)24));
             Assert.That(tlsLoad.Addr.AsOp().Op2.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL), Is.True);
-#if DEBUG
-            Assert.That(tlsLoad.Addr.AsOp().Op2.TreeId,
-                Is.LessThan(tlsLoad.Addr.AsOp().Op1.AsIndir().Addr.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(tlsLoad.Addr.AsOp().Op2.TreeId,
+                    Is.LessThan(tlsLoad.Addr.AsOp().Op1.AsIndir().Addr.TreeId));
+            }
             Assert.That(tlsLoad.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT),
                 Is.EqualTo(GTF_IND_NONFAULTING | GTF_IND_INVARIANT));
             Assert.That(maxCheck.LastStmt!.RootNode.AsUnOp().Op1.Oper, Is.EqualTo(GT_LE));
             Assert.That(blockCheck.LastStmt!.RootNode.AsUnOp().Op1.Oper, Is.EqualTo(GT_NE));
-#if DEBUG
-            var blocksAddress = blockCheck.FirstStmt!.RootNode.AsLclVar().Data.AsIndir()
-                .Addr.AsOp().Op1.AsIndir().Addr.AsOp();
-            Assert.That(blocksAddress.Op2.TreeId, Is.LessThan(blocksAddress.Op1.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var blocksAddress = blockCheck.FirstStmt!.RootNode.AsLclVar().Data.AsIndir()
+                    .Addr.AsOp().Op1.AsIndir().Addr.AsOp();
+                Assert.That(blocksAddress.Op2.TreeId, Is.LessThan(blocksAddress.Op1.TreeId));
+            }
             Assert.That(entry.Target, Is.SameAs(body));
             Assert.That(BasicBlock.sameEHRegion(body, remainder), Is.True);
         });

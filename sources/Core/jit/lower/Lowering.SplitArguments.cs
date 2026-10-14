@@ -24,9 +24,7 @@ public sealed partial class Lowering
         var compiler = CompilerInstance;
         var numRegisters = abiInfo.NumSegments - 1;
         var stackSegment = abiInfo.Segments[numRegisters];
-#if DEBUG
         JITDUMP($"Dividing split arg [{arg.TreeId:D6}] with {numRegisters} registers, {stackSegment.Size} stack space into two arguments\n");
-#endif
         var layout = callArg.SignatureLayout;
         assert(layout is not null);
         var registersLayout = layout.SliceLayout(compiler, 0, stackSegment.Offset);

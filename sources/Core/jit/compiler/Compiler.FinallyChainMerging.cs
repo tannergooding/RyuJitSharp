@@ -34,14 +34,12 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
             jitprintf("\n");
         }
-#endif
 
         var hasFinally = false;
         for (var index = 0; index < compHndBBtabCount; index++)
@@ -124,15 +122,13 @@ public partial class Compiler
         else if (didMerge)
         {
             JITDUMP("Method had mergeable try-finallys and some callfinally merges were performed.\n");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("\n*************** After fgMergeFinallyChains()\n");
                 fgDispBasicBlocks();
                 fgDispHandlerTab();
                 jitprintf("\n");
             }
-#endif
         }
         else
         {

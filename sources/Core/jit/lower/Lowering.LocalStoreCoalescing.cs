@@ -166,9 +166,7 @@ public sealed partial class Lowering
                 {
                     return;
                 }
-#if DEBUG
                 JITDUMP($"Store coalescing: removing previous store [{previousNode.TreeId:D6}] because store [{store.TreeId:D6}] rewrites the same location\n");
-#endif
                 BlockRange().Remove(previous.RangeStart, previous.RangeEnd);
                 continue;
             }
@@ -201,9 +199,7 @@ public sealed partial class Lowering
 
             if (currentContainsPrevious)
             {
-#if DEBUG
                 JITDUMP($"Store coalescing: removing previous store [{previousNode.TreeId:D6}] because store [{store.TreeId:D6}] fully overwrites it\n");
-#endif
                 BlockRange().Remove(previous.RangeStart, previous.RangeEnd);
                 continue;
             }

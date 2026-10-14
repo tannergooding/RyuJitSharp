@@ -4084,9 +4084,7 @@ public partial class Compiler
 
                                 call._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
 
-#if DEBUG
                                 JITDUMP($"\nGTF_CALL_M_IMPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
-#endif
                             }
                             else
                             {
@@ -4129,9 +4127,7 @@ public partial class Compiler
                         // canTailCall reported its reasons already
                         canTailCall = false;
 
-#if DEBUG
                         JITDUMP($"\ninfo.compCompHnd->canTailCall returned false for call [{call.TreeId:D6}]\n");
-#endif
                     }
                 }
                 else
@@ -4142,9 +4138,7 @@ public partial class Compiler
                     {
                         assert(!canTailCallFailReasonUtf8.IsEmpty);
                     }
-#if DEBUG
                     JITDUMP($"\nRejecting {(isExplicitTailCall ? "ex" : "im")}plicit tail call for [{call.TreeId:D6}], reason: '{Encoding.UTF8.GetString(canTailCallFailReasonUtf8)}'\n");
-#endif
 
                     fixed (byte* pCanTailCallFailReasonUtf8 = canTailCallFailReasonUtf8)
                     {
@@ -4188,9 +4182,7 @@ public partial class Compiler
                 //
                 if (call.IsDevirtualizationCandidate(compiler))
                 {
-#if DEBUG
                     JITDUMP($"\nSaving late devirtualization info for call [{call.TreeId:D6}]\n");
-#endif
                     if (Configuration.DEBUG)
                     {
                         assert(call._inlineContext == compiler.impCurStmtDI.InlineContext);
@@ -4239,9 +4231,7 @@ public partial class Compiler
                         loopHead = compiler.fgGetFirstILBlock();
                     }
 
-#if DEBUG
                     JITDUMP($"\nTail recursive call [{call.TreeId:D6}] in the method. Mark {FMT_BB(loopHead.bbNum)} to {FMT_BB(compiler.compCurBB.bbNum)} as having a backward branch.\n");
-#endif
 
                     compiler.fgMarkBackwardJump(loopHead, compiler.compCurBB);
 

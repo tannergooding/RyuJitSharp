@@ -23,14 +23,12 @@ public partial class Compiler
         noway_assert(opts.OptimizationEnabled);
         assert(fgFirstColdBlock is null);
 
-#if DEBUG
-        if (verbose && !isPhase)
+        if (Configuration.DEBUG && verbose && !isPhase)
         {
             jitprintf("\nBefore updating the flow graph:\n");
             fgDispBasicBlocks(verboseTrees);
             jitprintf("\n");
         }
-#endif
         // Conditional cycles can rotate forever under tail duplication. Block IDs are stable,
         // so admitting each source/target pair once bounds the work without changing traversal.
         var tailDupPairs = new HashSet<ulong>();
@@ -238,13 +236,11 @@ public partial class Compiler
 
                                 change = true;
                                 modified = true;
-#if DEBUG
-                                if (verbose)
+                                if (Configuration.DEBUG && verbose)
                                 {
                                     jitprintf("\nAfter reversing the jump:\n");
                                     fgDispBasicBlocks(verboseTrees);
                                 }
-#endif
                                 // The removed block's other predecessors have not been redirected yet.
                                 // Do not mistake their eventual self-loop target for unreachable code.
                                 if ((bNext.bbRefs > 0) && (bNext.Target == block) && (block.bbRefs == 1))
@@ -348,15 +344,16 @@ public partial class Compiler
             fgPgoConsistent = false;
         }
 
+        if (Configuration.DEBUG && !isPhase && verbose && modified)
+        {
+            jitprintf("\nAfter updating the flow graph:\n");
+            fgDispBasicBlocks(verboseTrees);
+            fgDispHandlerTab();
+        }
+
 #if DEBUG
         if (!isPhase)
         {
-            if (verbose && modified)
-            {
-                jitprintf("\nAfter updating the flow graph:\n");
-                fgDispBasicBlocks(verboseTrees);
-                fgDispHandlerTab();
-            }
             fgVerifyHandlerTab();
             fgDebugCheckBBlist();
             fgDebugCheckUpdate();

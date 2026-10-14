@@ -47,15 +47,13 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\n*************** Before fgRemoveEmptyTry()\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
             jitprintf("\n");
         }
-#endif
 
         var emptyCount = 0;
         ushort xtnum = 0;

@@ -124,10 +124,8 @@ public partial class Compiler
                         }
 
                         var head = candidates[headIndex];
-#if DEBUG
                         JITDUMP($"BC coalesce in {FMT_BB(block.bbNum)}: [{check.TreeId:D6}] " +
                             $"(offset {offset}) is redundant given [{head.Check.TreeId:D6}]\n");
-#endif
                         if (offset > head.Offset)
                         {
                             head.Offset = offset;
@@ -151,10 +149,8 @@ public partial class Compiler
                     continue;
                 }
 
-#if DEBUG
                 JITDUMP($"BC coalesce in {FMT_BB(block.bbNum)}: strengthen " +
                     $"[{head.Check.TreeId:D6}] offset {original} -> {head.Offset} (lenVN ${head.LengthVN:x})\n");
-#endif
                 index.IconValue = head.Offset;
                 index._vnPair.SetBoth(store.VNForIntCon(head.Offset));
                 modified = true;

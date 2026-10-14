@@ -348,9 +348,7 @@ public partial class Compiler
             var phiArg = use.Node.AsPhiArg();
             if ((vnState is not null) && !vnState.IsReachableThroughPred(block, phiArg.PredBB))
             {
-#if DEBUG
                 JITDUMP($"  Phi arg [{phiArg.TreeId:D6}] is unnecessary; path through pred BB{phiArg.PredBB.bbNum:D2} cannot be taken\n");
-#endif
                 if ((use.Next is not null) || (phiArgSsaNums.Count > 0))
                 {
                     continue;
@@ -381,9 +379,7 @@ public partial class Compiler
                 }
                 else
                 {
-#if DEBUG
                     JITDUMP($"Can't update phi arg [{phiArg.TreeId:D6}] with ${values.Conservative:x} -- varies in L{loop.Index:D2}\n");
-#endif
                     values = phiArg._vnPair;
                 }
             }

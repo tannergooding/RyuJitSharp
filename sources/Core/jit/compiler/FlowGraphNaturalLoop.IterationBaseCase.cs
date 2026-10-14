@@ -107,9 +107,7 @@ public sealed partial class FlowGraphNaturalLoop
                 if (compiler.gtTreeHasLocalStore(tree, info.IterVar) ||
                     (info.LimitVar != BAD_VAR_NUM && compiler.gtTreeHasLocalStore(tree, info.LimitVar)))
                 {
-#if DEBUG
                     JITDUMP($"  Iterator or limit modified by [{tree.TreeId:D6}] in {FMT_BB(block.bbNum)}\n");
-#endif
                     return false;
                 }
             }
@@ -139,10 +137,8 @@ public sealed partial class FlowGraphNaturalLoop
         {
             return false;
         }
-#if DEBUG
         JITDUMP($"  Guard block {FMT_BB(guardBlock.bbNum)} enters the loop when condition " +
             $"[{relop.TreeId:D6}] evaluates to {(entersWhenTrue ? "true" : "false")}\n");
-#endif
 
         GenTree limitCandidate;
         genTreeOps oper;
@@ -173,16 +169,12 @@ public sealed partial class FlowGraphNaturalLoop
         if (relop.AsOp().IsUnsigned != info.TestTree.AsOp().IsUnsigned || oper != info.TestOper() ||
             !GenTree.Compare(limitCandidate, info.Limit()))
         {
-#if DEBUG
             JITDUMP($"    Condition guarantees V{info.IterVar:D2} {(relop.AsOp().IsUnsigned ? "(uns) " : "")}" +
                 $"{oper.Name} [{limitCandidate.TreeId:D6}], but invariant requires V{info.IterVar:D2} " +
                 $"{(info.TestTree.AsOp().IsUnsigned ? "(uns) " : "")}{info.TestOper().Name} [{info.Limit().TreeId:D6}]\n");
-#endif
             return false;
         }
-#if DEBUG
         JITDUMP($"  Condition is established before entry at [{relop.TreeId:D6}]\n");
-#endif
         return true;
     }
 }

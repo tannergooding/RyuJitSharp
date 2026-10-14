@@ -476,9 +476,10 @@ internal static unsafe class AssertionTests
             Assert.That(result.Flags, Is.EqualTo(GTF_COLON_COND));
             Assert.That(result._vnPair, Is.EqualTo(global ? new ValueNumPair(constant, constant) : new ValueNumPair()));
             Assert.That(original.Oper, Is.EqualTo(GT_LCL_VAR));
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
+            }
             if (global)
             {
                 Assert.That(parent.AsUnOp().Op1, Is.SameAs(result));
@@ -702,9 +703,10 @@ internal static unsafe class AssertionTests
             {
                 Assert.That(tree.AsOp().Op1, Is.SameAs(error));
             }
-#if DEBUG
-            Assert.That(value.TreeId, Is.EqualTo(original.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(value.TreeId, Is.EqualTo(original.TreeId));
+            }
             Assert.That(AssertionPropagatedCurrentStmt(compiler), Is.True);
         });
     }

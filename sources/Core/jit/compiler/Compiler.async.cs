@@ -399,9 +399,7 @@ public partial class Compiler
             var resumedAddr = _compiler.gtNewLclAddrNode(TYP_I_IMPL, _compiler.lvaResumedIndicator, 0);
             var execCtx = _compiler.gtNewLclVarNode(TYP_REF, _compiler.lvaAsyncExecutionContextVar);
             var syncCtx = _compiler.gtNewLclVarNode(TYP_REF, _compiler.lvaAsyncSynchronizationContextVar);
-#if DEBUG
             JITDUMP($"Adding resumed use [{resumed.TreeId:D6}], resumed def [{resumedAddr.TreeId:D6}] exec context [{execCtx.TreeId:D6}], sync context [{syncCtx.TreeId:D6}] to async call [{call.TreeId:D6}]\n");
-#endif
 
             var resumedDefArg = NewCallArg.CreateForPrimitive(resumedAddr).WithWellKnownArg(WellKnownArg.AsyncResumedDef);
             var resumedUseArg = NewCallArg.CreateForPrimitive(resumed).WithWellKnownArg(WellKnownArg.AsyncResumedUse);
@@ -445,10 +443,8 @@ public partial class Compiler
 
             if (numCopied == 0)
             {
-#if DEBUG
                 JITDUMP($"Inlining call [{inlCall.TreeId:D6}] has no context args; inlinee has no enclosing async frame\n");
 
-#endif
                 return WALK_CONTINUE;
             }
 
@@ -465,10 +461,8 @@ public partial class Compiler
             call.GetAsyncInfo().InlineFrameContextHandling = handling;
             assert(handling.Count == (numCopied / 3));
 
-#if DEBUG
             JITDUMP($"Extended async call [{call.TreeId:D6}] to {(numCopied / 3) + 1} frames in chain\n");
 
-#endif
             return WALK_CONTINUE;
         }
 

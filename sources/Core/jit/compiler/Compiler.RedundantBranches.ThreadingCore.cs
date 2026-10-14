@@ -27,10 +27,8 @@ public partial class Compiler
             var use = phiUse.Use;
             var localNumber = use.LclNum;
             assert(use.SsaNum != phiUse.ReplacementSsaNum);
-#if DEBUG
             JITDUMP($"Updating [{use.TreeId:D6}] in {FMT_BB(phiUse.Block.bbNum)} " +
                 $"from u:{use.SsaNum} to u:{phiUse.ReplacementSsaNum}\n");
-#endif
             ref var replacement = ref lvaGetDesc(localNumber).GetPerSsaData(phiUse.ReplacementSsaNum);
             use.SsaNum = phiUse.ReplacementSsaNum;
             if (use._vnPair != replacement._vnPair)
@@ -63,9 +61,7 @@ public partial class Compiler
                 // The rewritten local's value also flows through COMMA right operands.
                 foreach (var comma in phiUse.CommaParents)
                 {
-#if DEBUG
                     JITDUMP($" Updating COMMA parent VN [{comma.TreeId:D6}]\n");
-#endif
                     comma._vnPair = vnStore.VNPWithExc(
                         comma.Op2._vnPair, vnStore.VNPExceptionSet(comma.Op1._vnPair));
                 }
@@ -160,9 +156,7 @@ public partial class Compiler
             // The sharpened VN only describes the surviving predecessor; old dominator
             // information cannot propagate it into the successors reached by threaded edges.
             info.Block.SetFlags(BBF_STALE_PREDICATE);
-#if DEBUG
             JITDUMP($"Updating [{compare.TreeId:D6}] liberal VN from ${oldVN:x} to ${compare._vnPair.Liberal:x}\n");
-#endif
         }
 
         Metrics.JumpThreadingsPerformed++;

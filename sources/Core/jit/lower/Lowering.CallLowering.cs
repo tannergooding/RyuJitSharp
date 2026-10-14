@@ -63,9 +63,7 @@ public sealed partial class Lowering
             {
                 if (current.Oper.ConsumesFlags || _scratchSideEffects.InterferesWith(compiler, current, true))
                 {
-#if DEBUG
                     JITDUMP($"  Stopping at [{current.TreeId:D6}]; it interferes with the current range we are moving\n");
-#endif
                     movingRange = new LIR.ReadOnlyRange(null, null);
                 }
                 else

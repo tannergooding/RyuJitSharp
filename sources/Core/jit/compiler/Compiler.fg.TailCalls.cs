@@ -210,16 +210,12 @@ public partial class Compiler
         ref var variable = ref lvaGetDesc(localNumber);
         if (variable.lvPromoted)
         {
-#if DEBUG
             JITDUMP($"Arg [{argument.Node.TreeId:D6}] is promoted implicit byref V{localNumber:D2}, so no tail call\n");
-#endif
             return true;
         }
 
         assert(!variable.lvIsStructField);
-#if DEBUG
         JITDUMP($"Arg [{argument.Node.TreeId:D6}] is unpromoted implicit byref V{localNumber:D2}, seeing if we can still tail call\n");
-#endif
         // Undone promotion keeps last-use bits for the original fields.
         var deathFlags = variable.lvFieldLclStart != 0
             ? lvaGetDesc(variable.lvFieldLclStart).AllFieldDeathFlags

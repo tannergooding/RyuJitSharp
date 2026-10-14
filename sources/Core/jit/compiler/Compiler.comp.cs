@@ -169,6 +169,8 @@ public partial class Compiler
 
 #if DEBUG
     internal int compGenTreeID;
+#else
+    internal int compGenTreeID => throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
 #endif
 
     public int compStatementID;
@@ -1435,12 +1437,12 @@ public partial class Compiler
             jitprintf($"Basic block list for '{info.compFullName}'\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
         }
 
+#if DEBUG
         /* Give the function a unique number */
 
         if (opts.disAsm || verbose)
@@ -3719,13 +3721,11 @@ public partial class Compiler
                 ResetOptAnnotations();
                 RecomputeFlowGraphAnnotations();
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf("Trees before next JitOptRepeat iteration:\n");
                     fgDispBasicBlocks(true);
                 }
-#endif
                 opts.optRepeatIteration++;
             }
 

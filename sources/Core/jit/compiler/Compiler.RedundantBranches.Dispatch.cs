@@ -75,12 +75,10 @@ public partial class Compiler
 
     public PhaseStatus optRedundantBranches()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks(verboseTrees);
         }
-#endif
         optReachableBitVecTraits = null;
         var visitor = new OptRedundantBranchesDomTreeVisitor(this);
         assert(_domTree is not null);
@@ -94,12 +92,10 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose && visitor.MadeChanges)
+        if (Configuration.DEBUG && verbose && visitor.MadeChanges)
         {
             fgDispBasicBlocks(verboseTrees);
         }
-#endif
         fgInvalidateDfsTree();
         return visitor.MadeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
@@ -137,10 +133,8 @@ public partial class Compiler
         if (vnStore.IsVNConstant(treeNormVN))
         {
             relopValue = treeNormVN == vnStore.VNZeroForType(TYP_INT) ? 0 : 1;
-#if DEBUG
             JITDUMP($"Relop [{tree.TreeId:D6}] {FMT_BB(block.bbNum)} has known value " +
                 $"{(relopValue == 0 ? "false" : "true")}\n ");
-#endif
         }
         else if (domBlock is null)
         {
@@ -228,19 +222,15 @@ public partial class Compiler
                         else if (trueReaches && !falseReaches && info.CanInferFromTrue)
                         {
                             relopValue = info.ReverseSense ? 0 : 1;
-#if DEBUG
                             JITDUMP($"True successor {FMT_BB(trueSuccessor.bbNum)} of {FMT_BB(domBlock.bbNum)} " +
                                 $"reaches, relop [{tree.TreeId:D6}] must be {(relopValue == 1 ? "true" : "false")}\n");
-#endif
                             break;
                         }
                         else if (falseReaches && !trueReaches && info.CanInferFromFalse)
                         {
                             relopValue = info.ReverseSense ? 1 : 0;
-#if DEBUG
                             JITDUMP($"False successor {FMT_BB(falseSuccessor.bbNum)} of {FMT_BB(domBlock.bbNum)} " +
                                 $"reaches, relop [{tree.TreeId:D6}] must be {(relopValue == 0 ? "false" : "true")}\n");
-#endif
                             break;
                         }
                         else if (!falseReaches && !trueReaches)

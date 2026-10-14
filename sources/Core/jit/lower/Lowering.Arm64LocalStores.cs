@@ -55,10 +55,8 @@ public sealed partial class Lowering
                 continue;
             }
 
-#if DEBUG
             JITDUMP($"[{store.TreeId:D6}] is an an RMW ADD/SUB on local V{localNumber:D2} " +
                 $"which is used as the address to [{prevIndir.TreeId:D6}]. Trying to make them adjacent.\n");
-#endif
             if (TryMakeIndirAndStoreAdjacent(prevIndir, store))
             {
                 previous.Indir = null;
@@ -127,9 +125,7 @@ public sealed partial class Lowering
                 {
                     if (_scratchSideEffects.InterferesWith(CompilerInstance, node, true))
                     {
-#if DEBUG
                         JITDUMP($"Giving up due to interference with [{node.TreeId:D6}]\n");
-#endif
                         return false;
                     }
                 }
@@ -145,9 +141,7 @@ public sealed partial class Lowering
                 return false;
             }
 
-#if DEBUG
             JITDUMP($"Interference checks passed. Moving nodes that are not part of data flow of [{store.TreeId:D6}]\n\n");
-#endif
             GenTree previous = prevIndir;
             for (var node = prevIndir.Next; ;)
             {

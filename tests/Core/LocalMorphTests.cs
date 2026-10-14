@@ -467,9 +467,10 @@ internal static unsafe class LocalMorphTests
                 Assert.That(tree.AsLclVar().Data, Is.SameAs(data));
                 Assert.That(tree.Flags & (GTF_ASG | GTF_VAR_DEF), Is.EqualTo(GTF_ASG | GTF_VAR_DEF));
             }
-#if DEBUG
-            Assert.That(tree.TreeId, Is.EqualTo(original.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(tree.TreeId, Is.EqualTo(original.TreeId));
+            }
         });
     }
 
@@ -512,10 +513,11 @@ internal static unsafe class LocalMorphTests
             {
                 Assert.That(tree.AsLclVar().Data, Is.SameAs(data));
             }
-#if DEBUG
-            Assert.That(tree.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(original.Addr.TreeId, Is.EqualTo(address.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(tree.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(original.Addr.TreeId, Is.EqualTo(address.TreeId));
+            }
         });
     }
 
@@ -578,18 +580,19 @@ internal static unsafe class LocalMorphTests
             Assert.That(local.AsLclVarCommon().LclNum, Is.Zero);
             Assert.That(local.Flags, Is.EqualTo(GTF_EMPTY));
             Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.EqualTo(expectedOper is GT_LCL_FLD));
-#if DEBUG
-            Assert.That(local.TreeId, Is.EqualTo(result.Oper.IsAnyLocal ? indir.TreeId : address.TreeId));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(local.TreeId, Is.EqualTo(result.Oper.IsAnyLocal ? indir.TreeId : address.TreeId));
 
-            if (expectedOper is GT_CAST)
-            {
-                Assert.That(result.TreeId, Is.GreaterThan(user.TreeId));
+                if (expectedOper is GT_CAST)
+                {
+                    Assert.That(result.TreeId, Is.GreaterThan(user.TreeId));
+                }
+                else
+                {
+                    Assert.That(result.TreeId, Is.EqualTo(indir.TreeId));
+                }
             }
-            else
-            {
-                Assert.That(result.TreeId, Is.EqualTo(indir.TreeId));
-            }
-#endif
         }, minOpts);
     }
 
@@ -754,10 +757,11 @@ internal static unsafe class LocalMorphTests
             {
                 Assert.That(result.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo(unchecked((nint)(nuint)offset)));
             }
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(value.IsConsumed, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(value.IsConsumed, Is.True);
+            }
         });
     }
 
@@ -812,9 +816,7 @@ internal static unsafe class LocalMorphTests
             sequencer.Start(stmt);
             sequencer.SequenceLocal(first);
             sequencer.SequenceLocal(source);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var replacement = new GenTreeLclVar(GT_LCL_VAR, TYP_INT, 1, data: null, source, NodeThreading.AllLocals);
             left.Op2Ref = replacement;
             sequencer.ReplaceNode(source, replacement);
@@ -893,9 +895,10 @@ internal static unsafe class LocalMorphTests
                 Assert.That(store.Data.Next, Is.SameAs(store));
                 Assert.That(store.Prev, Is.SameAs(store.Data));
             }
-#if DEBUG
-            Assert.That(store.Data.TreeId, Is.EqualTo(indir.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(store.Data.TreeId, Is.EqualTo(indir.TreeId));
+            }
         }, minOpts: true);
     }
 
@@ -920,9 +923,10 @@ internal static unsafe class LocalMorphTests
             Assert.That(stmt.TreeListBegin, Is.Null);
             Assert.That(stmt.TreeListEnd, Is.Null);
             Assert.That(compiler.lvaTable[0].IsAddressExposed, Is.False);
-#if DEBUG
-            Assert.That(stmt.RootNode.TreeId, Is.EqualTo(difference.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(stmt.RootNode.TreeId, Is.EqualTo(difference.TreeId));
+            }
         });
     }
 
@@ -1129,9 +1133,10 @@ internal static unsafe class LocalMorphTests
             Assert.That(pointer.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
             Assert.That(pointer.Flags & GTF_VAR_DEATH, Is.EqualTo(GTF_VAR_DEATH));
             Assert.That(pointer._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
-#if DEBUG
-            Assert.That(pointer.TreeId, Is.EqualTo(local.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(pointer.TreeId, Is.EqualTo(local.TreeId));
+            }
             if (address.Oper is GT_ADD)
             {
                 Assert.That(address.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)4));

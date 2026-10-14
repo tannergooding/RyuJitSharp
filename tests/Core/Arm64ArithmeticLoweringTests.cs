@@ -57,11 +57,12 @@ internal static unsafe class Arm64ArithmeticLoweringTests
                 Assert.That(tree.Next, Is.Null);
                 Assert.That(second.Next, Is.Null);
                 Assert.That(setcc.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_DONT_CSE));
-#if DEBUG
-                Assert.That(setcc.TreeId, Is.EqualTo(tree.TreeId));
-                Assert.That(ccmp.TreeId, Is.EqualTo(second.TreeId));
-                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(setcc.TreeId, Is.EqualTo(tree.TreeId));
+                    Assert.That(ccmp.TreeId, Is.EqualTo(second.TreeId));
+                    Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+                }
             });
         }
     }
@@ -154,9 +155,10 @@ internal static unsafe class Arm64ArithmeticLoweringTests
             Assert.That(firstCcmp.Prev, Is.SameAs(first));
             Assert.That(oldSetcc.Next, Is.Null);
             Assert.That(oldSetcc.Prev, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -769,9 +771,10 @@ internal static unsafe class Arm64ArithmeticLoweringTests
             Assert.That(result._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(branch.Next, Is.Null);
             Assert.That(compare.Next, Is.Null);
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(branch.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(branch.TreeId));
+            }
         });
     }
 

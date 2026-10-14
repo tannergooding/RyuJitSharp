@@ -28,9 +28,7 @@ internal static unsafe class ArithmeticMorphTests
             var left = tree.AsOp().Op1;
             var right = tree.AsOp().Op2;
             left._vnPair.SetBoth(123);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var result = compiler.fgMorphReduceAddOps(tree);
             Assert.That(result.Oper, Is.EqualTo(GT_MUL));
             Assert.That(result.Type, Is.EqualTo(type));
@@ -164,9 +162,10 @@ internal static unsafe class ArithmeticMorphTests
                 Assert.That(result, Is.TypeOf<GenTreeUnOp>());
                 Assert.That(result.AsUnOp().Op1, Is.SameAs(local));
                 Assert.That(result._vnPair.Liberal, Is.EqualTo(42));
-#if DEBUG
-                Assert.That(result.TreeId, Is.EqualTo(multiply.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(result.TreeId, Is.EqualTo(multiply.TreeId));
+                }
             }
             else if (operation is GT_ADD)
             {
@@ -311,9 +310,10 @@ internal static unsafe class ArithmeticMorphTests
             {
                 Assert.That(ret.Op1.Type, Is.EqualTo(TYP_LONG));
                 Assert.That(ret.Op1._vnPair, Is.EqualTo(new ValueNumPair()));
-#if DEBUG
-                Assert.That(ret.Op1.TreeId, Is.EqualTo(field.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(ret.Op1.TreeId, Is.EqualTo(field.TreeId));
+                }
             }
         });
     }

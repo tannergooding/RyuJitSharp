@@ -105,9 +105,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             {
                 Assert.That(store.Data, Is.SameAs(data));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -194,10 +195,11 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(probe.AsIndir().Addr.IsContained, Is.True);
             Assert.That(load.Next, Is.Null);
             Assert.That(probe.IsUnusedValue, Is.False);
-#if DEBUG
-            Assert.That(probe.TreeId, Is.EqualTo(load.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(probe.TreeId, Is.EqualTo(load.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -290,9 +292,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(first.Data.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That(second.Data.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That(first.Data.AsLclVar().LclNum, Is.EqualTo(second.Data.AsLclVar().LclNum));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -317,9 +320,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(second.Next, Is.SameAs(noise));
             Assert.That(second.Addr.Oper, Is.EqualTo(GT_LEA));
             Assert.That(second.Addr.IsContained, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -355,9 +359,10 @@ internal static unsafe class Arm64MemoryLoweringTests
                 Assert.That(mode._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
                 Assert.That(address.Next, Is.Null);
                 Assert.That(constant.Next, Is.Null);
-#if DEBUG
-                Assert.That(mode.TreeId, Is.EqualTo(address.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(mode.TreeId, Is.EqualTo(address.TreeId));
+                }
             }
             else
             {
@@ -507,9 +512,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(first.Next is null, Is.EqualTo(optimized));
             Assert.That(second.Type, Is.EqualTo(optimized ? TYP_USHORT : TYP_BYTE));
             Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo(optimized ? (nint)0x2211 : (nint)0x22));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -534,9 +540,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(first.Next is null, Is.EqualTo(merged));
             Assert.That(second.Type, Is.EqualTo(merged ? TYP_USHORT : TYP_BYTE));
             Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo(merged ? (nint)0x3412 : (nint)0x34));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -560,9 +567,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(second.Type, Is.EqualTo(TYP_SIMD16));
             Assert.That(second.Data.AsVecCon().SimdVal.u64[0], Is.EqualTo(0x11223344UL));
             Assert.That(second.Data.AsVecCon().SimdVal.u64[1], Is.EqualTo(0x55667788UL));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -588,9 +596,10 @@ internal static unsafe class Arm64MemoryLoweringTests
             Assert.That(second.Data.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That(first.Data.AsLclVar().LclNum, Is.EqualTo(second.Data.AsLclVar().LclNum));
             Assert.That(secondValue.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

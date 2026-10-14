@@ -69,9 +69,10 @@ internal static unsafe class AsyncContextTests
             Assert.That(args.Count, Is.EqualTo(5));
             Assert.That(args[4], Is.SameAs(userArg));
             Assert.That(call.GetAsyncInfo().InlineFrameContextHandling, Is.Null);
-#if DEBUG
-            Assert.That(args[0].Node.TreeId, Is.EqualTo(args[1].Node.TreeId + 1));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(args[0].Node.TreeId, Is.EqualTo(args[1].Node.TreeId + 1));
+            }
         });
     }
 

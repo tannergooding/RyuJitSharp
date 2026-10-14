@@ -49,10 +49,11 @@ internal static unsafe class ImporterEffectsTests
             Assert.That(outer.ThenNode.IsIntegralConst(0), Is.True);
             Assert.That(inner.ThenNode.IsIntegralConst(0), Is.True);
             Assert.That(inner.ElseNode.Oper, Is.EqualTo(booleanCheck ? genTreeOps.GT_CNS_INT : genTreeOps.GT_LCL_VAR));
-#if DEBUG
-            Assert.That(nullCheck.Op2.TreeId + 1, Is.EqualTo(nullCheck.Op1.TreeId));
-            Assert.That(inner.ElseNode.TreeId + 1, Is.EqualTo(inner.ThenNode.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(nullCheck.Op2.TreeId + 1, Is.EqualTo(nullCheck.Op1.TreeId));
+                Assert.That(inner.ElseNode.TreeId + 1, Is.EqualTo(inner.ThenNode.TreeId));
+            }
         });
     }
 
@@ -177,9 +178,10 @@ internal static unsafe class ImporterEffectsTests
             Assert.That(comparison.Oper, Is.EqualTo(genTreeOps.GT_EQ));
             Assert.That(comparison.Op1.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
             Assert.That(comparison.Op2.Oper, Is.EqualTo(genTreeOps.GT_CNS_STR));
-#if DEBUG
-            Assert.That(comparison.Op2.TreeId + 1, Is.EqualTo(comparison.Op1.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(comparison.Op2.TreeId + 1, Is.EqualTo(comparison.Op1.TreeId));
+            }
         });
     }
 

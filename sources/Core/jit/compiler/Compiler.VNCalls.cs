@@ -249,9 +249,7 @@ public partial class Compiler
         {
             if (call.GetAsyncInfo().AlwaysSuspends)
             {
-#if DEBUG
                 JITDUMP($"Call [{call.TreeId:D6}] always suspends; establishing always resumed state for V{resumedDef.LclNum:D2}\n");
-#endif
                 resumedPair.SetBoth(vnStore.VNForIntPtrCon(1));
             }
             else
@@ -265,9 +263,7 @@ public partial class Compiler
                         var normal = vnStore.VNNormalValue(resumedUse.Node._vnPair[kind]);
                         if (vnStore.IsVNConstant(normal) && (vnStore.CoercedConstantValue<int>(normal) == 1))
                         {
-#if DEBUG
                             JITDUMP($"Call [{call.TreeId:D6}] propagates always resumed state for V{resumedDef.LclNum:D2} ({kind} VN)\n");
-#endif
                             resumedPair[kind] = vnStore.VNForIntPtrCon(1);
                         }
                     }

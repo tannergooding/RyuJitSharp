@@ -179,9 +179,7 @@ public partial class Compiler
                     {
                         if (eeIsByrefLike(info.compCompHnd->getFieldClass(address.AsFieldAddr().FldHnd)))
                         {
-#if DEBUG
                             JITDUMP($"Marking [{tree.TreeId:D6}] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n");
-#endif
                             tree.Flags |= GTF_IND_TGT_NOT_HEAP;
                             break;
                         }
@@ -879,9 +877,7 @@ public partial class Compiler
                 assert(op1 is not null);
                 if (opts.OptimizationEnabled && !tree.MayThrow(this))
                 {
-#if DEBUG
                     JITDUMP($"\nNULLCHECK on [{op1.TreeId:D6}] will always succeed\n");
-#endif
                     if ((op1.Oper is GT_CALL) && !op1.AsCall().HasSideEffects(this))
                     {
                         // Helper properties can prove the root call effect-free
@@ -955,19 +951,13 @@ public partial class Compiler
                 {
                     if (fgIsCommaThrow(op1, forFolding: true))
                     {
-#if DEBUG
                         JITDUMP($"Removing [{tree.TreeId:D6}] GT_JTRUE as the block now unconditionally throws an exception.\n");
-#endif
                         return op1.AsOp().Op1;
                     }
                     noway_assert(op1.Oper.IsCompare && ((op1.Flags & GTF_EXCEPT) != 0));
-#if DEBUG
                     JITDUMP($"Keeping side-effects by bashing [{tree.TreeId:D6}] GT_JTRUE into a GT_COMMA.\n");
-#endif
                     tree = new GenTreeOp(GT_COMMA, tree.Type, op1, gtNewNothingNode(), tree, NodeThreading.None);
-#if DEBUG
                     JITDUMP($"Also bashing [{op1.TreeId:D6}] (a relop) into a GT_COMMA.\n");
-#endif
                     op1.SetOper(GT_COMMA);
                     op1.Flags &= GTF_COMMON_MASK & ~GTF_UNSIGNED;
                     op1.Type = op1.AsOp().Op1.Type;

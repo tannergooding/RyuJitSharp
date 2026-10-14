@@ -131,9 +131,7 @@ public sealed partial class RangeCheck
         if ((range.LowerLimit.IsDependent || range.LowerLimit.IsUnknown) &&
             IsMonotonicallyIncreasing(tree, false))
         {
-#if DEBUG
             JITDUMP($"[{tree.TreeId:D6}] is monotonically increasing.\n");
-#endif
             _rangeMap.Clear();
             range = GetRangeWorker(block, tree, true);
         }

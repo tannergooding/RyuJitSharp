@@ -20,9 +20,7 @@ public sealed partial class Lowering
             insertionPoint ??= FindEarliestPutArg(call) ?? call;
         }
 
-#if DEBUG
         JITDUMP($"Inserting profiler tail call before [{insertionPoint.TreeId:D6}]\n");
-#endif
         BlockRange().InsertBefore(insertionPoint, new GenTree(GT_PROF_HOOK, TYP_VOID));
     }
 

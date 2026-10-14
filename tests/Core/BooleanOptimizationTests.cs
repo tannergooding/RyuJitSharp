@@ -144,9 +144,10 @@ internal static unsafe class BooleanOptimizationTests
             Assert.That(first.Op1.AsOp().Op2.IsIntegralConst(10), Is.True);
             Assert.That(first.Op2.IsIntegralConst(10), Is.True);
             Assert.That(first.Op2.Type, Is.EqualTo(TYP_INT));
-#if DEBUG
-            Assert.That(first.Op2.TreeId, Is.EqualTo(oldRight.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(first.Op2.TreeId, Is.EqualTo(oldRight.TreeId));
+            }
         }
         finally
         {

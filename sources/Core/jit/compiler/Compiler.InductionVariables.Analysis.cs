@@ -95,9 +95,7 @@ public partial class Compiler
         {
             if (dump)
             {
-#if DEBUG
                 JITDUMP($"  No; operand of condition [{cond.TreeId:D6}] is already 0\n");
-#endif
             }
             return false;
         }

@@ -140,9 +140,7 @@ public sealed partial class RangeCheck
 
     private bool ComputeDoesOverflow(BasicBlock block, GenTree tree, Range range)
     {
-#if DEBUG
         JITDUMP($"Does overflow [{tree.TreeId:D6}]?\n");
-#endif
         if (IsOverBudget)
         {
             return true;
@@ -199,9 +197,7 @@ public sealed partial class RangeCheck
         }
 
         _ = _searchPath.Remove(tree);
-#if DEBUG
         JITDUMP($"[{tree.TreeId:D6}] {(overflows ? "overflows" : "does not overflow")}\n");
-#endif
         return overflows;
     }
 }

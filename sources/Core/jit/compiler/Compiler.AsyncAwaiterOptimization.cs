@@ -33,9 +33,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         JITDUMP($"Optimizing awaiter call [{call.TreeId:D6}] to read its struct awaiter from the continuation\n");
-#endif
         CORINFO_LOOKUP newInstantiationLookup;
         CORINFO_CONTEXT_HANDLE newExactContext;
         CORINFO_METHOD_HANDLE newMethod;
@@ -60,9 +58,7 @@ public partial class Compiler
             newInstantiationArgument = impLookupToTree(newInstantiationLookup, GTF_ICON_METHOD_HDL, newMethod);
             if (newInstantiationArgument is null)
             {
-#if DEBUG
                 JITDUMP($"Failed to optimize awaiter call [{call.TreeId:D6}] because its replacement lookup could not be created\n");
-#endif
                 return;
             }
         }

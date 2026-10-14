@@ -67,10 +67,8 @@ public partial class Compiler
                 var newUse = _compiler.gtNewLclVarNode(iv.Type, newLocal);
                 var replacement = RephraseIV(cursor.IV
                     ?? throw new FatalJitException("A replacement cursor needs its recurrence."), iv, newUse);
-#if DEBUG
                 JITDUMP($"    Replacing use [{cursor.Tree.TreeId:D6}] with " +
                     $"[{replacement.TreeId:D6}]. Before:\n");
-#endif
                 DISPSTMT(cursor.Stmt);
 
                 var link = _compiler.gtFindLink(cursor.Stmt, cursor.Tree);
@@ -98,9 +96,7 @@ public partial class Compiler
                 foreach (var cursor in _intermediateIVStores)
                 {
                     var store = cursor.Tree.AsLclVarCommon();
-#if DEBUG
                     JITDUMP($"      Replacing [{store.Data.TreeId:D6}] with a zero constant\n");
-#endif
                     store.DataRef = _compiler.gtNewZeroConNode(store.Data.Type.ActualType);
                     _compiler.gtSetStmtInfo(cursor.Stmt);
                     _compiler.fgSetStmtSeq(cursor.Stmt);

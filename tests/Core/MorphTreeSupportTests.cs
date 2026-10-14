@@ -159,9 +159,7 @@ internal static unsafe class MorphTreeSupportTests
                 Flags = GTF_FLD_TLS | GTF_DONT_CSE | GTF_COLON_COND | GTF_ORDER_SIDEEFF,
                 _vnPair = new ValueNumPair(123, 456),
             };
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var result = compiler.fgMorphExpandTlsFieldAddr(field);
             Assert.That(query.Queries, Is.EqualTo(1));
             Assert.That(result.Oper, Is.EqualTo(GT_ADD));
@@ -270,9 +268,7 @@ internal static unsafe class MorphTreeSupportTests
         InfoAccessType accessType, int indirections, GenTreeFlags handleKind)
     {
         WithCompiler(compiler => {
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var node = compiler.gtNewStringLiteralNode(accessType, (void*)0x123400);
             Assert.That(node.Type, Is.EqualTo(TYP_REF));
             for (var i = 0; i < indirections; i++)

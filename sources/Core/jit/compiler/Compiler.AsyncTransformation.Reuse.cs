@@ -91,9 +91,7 @@ public partial class Compiler
             bool resumeReachable, VARSET_TP mutatedSinceResumption)
         {
             var previous = state.Call;
-#if DEBUG
             JITDUMP($"  Sibling to the join is resumption for async call [{previous.TreeId:D6}]; checking for possible tail merging of suspension points\n");
-#endif
 
             if (!BasicBlock.sameEHRegion(block, state.CallBlock))
             {
@@ -209,10 +207,8 @@ public partial class Compiler
 
                     if (!GenTree.Compare(node, previousNodes[i]))
                     {
-#if DEBUG
                         JITDUMP($"    No; disagreement on value of {kind} " +
                             $"argument ([{node.TreeId:D6}] vs [{previousNodes[i].TreeId:D6}])\n");
-#endif
                         return false;
                     }
                 }

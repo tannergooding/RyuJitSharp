@@ -143,9 +143,10 @@ internal static unsafe class StackArgumentLoweringTests
                 Assert.That(argument.Data.Next, Is.SameAs(argument));
                 Assert.That(source.Prev, Is.Null);
                 Assert.That(source.Next, Is.Null);
-#if DEBUG
-                Assert.That(argument.Data.TreeId, Is.EqualTo(source.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(argument.Data.TreeId, Is.EqualTo(source.TreeId));
+                }
             }
         });
     }

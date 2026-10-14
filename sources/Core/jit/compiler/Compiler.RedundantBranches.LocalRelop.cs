@@ -153,9 +153,7 @@ public partial class Compiler
 
             if (gtMayHaveStoreInterference(previousValue, tree))
             {
-#if DEBUG
                 JITDUMP($" -- prev tree has an embedded store that interferes with [{tree.TreeId:D6}]\n");
-#endif
                 break;
             }
 

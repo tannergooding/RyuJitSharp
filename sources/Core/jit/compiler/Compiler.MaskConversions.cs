@@ -190,9 +190,7 @@ public partial class Compiler
                 _weights.Add(local.LclNum, weight);
             }
 
-#if DEBUG
             JITDUMP($"{local.Oper.Name} V{local.LclNum:D2} at [{local.TreeId:D6}] ");
-#endif
             GenTreeHWIntrinsic? convertOp = null;
             var isLocalStore = false;
             var isLocalUse = false;
@@ -353,16 +351,12 @@ public partial class Compiler
 
             if ((weight.CurrentCost <= weight.SwitchCost) || weight.Invalid)
             {
-#if DEBUG
                 JITDUMP($"Local {(isLocalStore ? "store" : "use")} V{local.LclNum:D2} at [{local.TreeId:D6}] will not be converted. ");
-#endif
                 weight.DumpTotalWeight();
                 return WALK_CONTINUE;
             }
 
-#if DEBUG
             JITDUMP($"Local {(isLocalStore ? "store" : "use")} V{local.LclNum:D2} at [{local.TreeId:D6}] will be converted. ");
-#endif
             weight.DumpTotalWeight();
             assert(local.Type is not TYP_MASK);
             var originalType = local.Type;
@@ -390,9 +384,7 @@ public partial class Compiler
                 use = _compiler.gtNewSimdCvtMaskToVectorNode(originalType, local, weight.SimdBaseType, weight.SimdSize);
             }
 
-#if DEBUG
             JITDUMP($"Updated {(isLocalStore ? "store" : "use")} V{local.LclNum:D2} at [{local.TreeId:D6}] to mask ({(addConversion ? "added" : "removed")} conversion)\n");
-#endif
             DISPTREE(use);
             UpdatedConversions = true;
             return WALK_CONTINUE;

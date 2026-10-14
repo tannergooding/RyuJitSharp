@@ -165,13 +165,11 @@ public partial class Compiler
             }
 
             block.SetFlags(BBF_GC_SAFE_POINT);
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"*** creating GC Poll in block {FMT_BB(block.bbNum)}\n");
                 gtDispBlockStmts(block);
             }
-#endif
             return block;
         }
 
@@ -290,8 +288,7 @@ public partial class Compiler
             compCurBB = bottom;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"*** creating inlined GC Poll in top block {FMT_BB(top.bbNum)}\n");
             gtDispBlockStmts(top);
@@ -302,7 +299,6 @@ public partial class Compiler
             jitprintf("\nAfter this change in fgCreateGCPoll the BB graph is:");
             fgDispBasicBlocks(false);
         }
-#endif
         return bottom;
     }
 }

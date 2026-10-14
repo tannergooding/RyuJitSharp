@@ -75,9 +75,7 @@ internal static unsafe class BlockMorphTests
             var original = compiler.gtNewStoreBlkNode(address, blockValue, layout);
             original.Flags |= GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_TGT_NOT_HEAP;
             original._vnPair.SetBoth(42);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var replacement = new GenTreeStoreInd(TYP_LONG, address, value, original, NodeThreading.None) {
                 Flags = original.Flags,
             };
@@ -173,9 +171,7 @@ internal static unsafe class BlockMorphTests
             };
             original._vnPair.SetBoth(43);
             var statement = compiler.gtNewStmt(original);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             statement.RootNode = compiler.fgMorphInitBlock(original);
             var store = statement.RootNode.AsLclVar();
             Assert.That(store.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
@@ -201,9 +197,10 @@ internal static unsafe class BlockMorphTests
                 {
                     Assert.That(store.Data.AsIntConCommon().IntegralValue, Is.Zero);
                 }
-#if DEBUG
-                Assert.That(store.Data.TreeId, Is.EqualTo(zero.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(store.Data.TreeId, Is.EqualTo(zero.TreeId));
+                }
             }
 #if DEBUG
             Assert.That(store.TreeId, Is.EqualTo(original.TreeId));

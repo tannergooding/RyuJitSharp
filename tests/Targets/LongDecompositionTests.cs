@@ -52,9 +52,10 @@ internal static unsafe class LongDecompositionTests
             Assert.That(result.IsUnusedValue, Is.True);
             Assert.That(result.Op1.IsUnusedValue, Is.False);
             Assert.That(result.Op2.IsUnusedValue, Is.False);
-#if DEBUG
-            Assert.That(result.Op1.TreeId, Is.EqualTo(originalId));
-#endif
+if (TestConfiguration.IsDebug)
+{
+                Assert.That(result.Op1.TreeId, Is.EqualTo(originalId));
+}
             Assert.That(block.ToArray(), Is.EqualTo([result.Op1, result.Op2, result]));
             CheckLir(compiler, block);
         });
@@ -419,9 +420,10 @@ internal static unsafe class LongDecompositionTests
             Assert.That(multiRegMultiply.Op2.Type, Is.EqualTo(TYP_INT));
             Assert.That(multiRegMultiply.Is64RsltMul, Is.True);
             Assert.That(store.Op1, Is.SameAs(multiRegMultiply));
-#if DEBUG
-            Assert.That(multiRegMultiply.TreeId, Is.EqualTo(multiplyTreeId));
-#endif
+if (TestConfiguration.IsDebug)
+{
+                Assert.That(multiRegMultiply.TreeId, Is.EqualTo(multiplyTreeId));
+}
             Assert.That(compiler.lvaGetDesc(destination).IsMultiRegDest, Is.True);
             Assert.That(block.Any(node => node == firstCast), Is.False);
             CheckLir(compiler, block);
@@ -717,9 +719,10 @@ internal static unsafe class LongDecompositionTests
 
     private static void CheckLir(Compiler compiler, LIR.Range range)
     {
-#if DEBUG
-        Assert.That(range.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+if (TestConfiguration.IsDebug)
+{
+            Assert.That(range.CheckLir(compiler, checkUnusedValues: true), Is.True);
+}
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]

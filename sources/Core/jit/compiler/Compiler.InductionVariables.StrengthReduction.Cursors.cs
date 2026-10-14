@@ -208,11 +208,9 @@ public partial class Compiler
                                 });
                             if (expanded)
                             {
-#if DEBUG
                                 JITDUMP($"  [{current.TreeId:D6}] was the data of store " +
                                     $"[{parent.TreeId:D6}]; expanded to {numCreated} new cursors, " +
                                     "and will replace with a store of 0\n");
-#endif
                                 _intermediateIVStores.Add(new CursorInfo(cursor.Block, cursor.Stmt, parent, null));
                                 var last = cursors.Count - 1;
                                 (cursors[i], cursors[last]) = (cursors[last], cursors[i]);

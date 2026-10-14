@@ -35,9 +35,7 @@ public sealed partial class Lowering
                 var next = node.Next;
                 BlockRange().Remove(op2);
                 BlockRange().Remove(node);
-#if DEBUG
                 JITDUMP($"Remove [{op2.TreeId:D6}], [{node.TreeId:D6}]\n");
-#endif
                 return next;
             }
 

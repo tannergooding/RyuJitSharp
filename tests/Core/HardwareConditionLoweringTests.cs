@@ -43,9 +43,10 @@ internal static unsafe class HardwareConditionLoweringTests
             Assert.That(node.GetOp(2), Is.SameAs(swap ? left : right));
             Assert.That(node.Next, Is.SameAs(cc));
             Assert.That(cc.Next, Is.SameAs(user));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

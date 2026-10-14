@@ -24,9 +24,7 @@ internal static unsafe class NarrowingTests
         WithCompiler(compiler => {
             GenTree tree = compiler.gtNewLconNode(value);
             var original = tree;
-#if DEBUG
-            var originalTreeId = tree.TreeId;
-#endif
+            var originalTreeId = TestConfiguration.IsDebug ? tree.TreeId : 0;
             var numbers = new ValueNumPair(23, 24);
             Assert.That(compiler.optNarrowTree(ref tree, TYP_LONG, target, numbers, false), Is.EqualTo(accepted));
             Assert.That(tree, Is.SameAs(original));
@@ -40,9 +38,10 @@ internal static unsafe class NarrowingTests
 #if !TARGET_64BIT
                 Assert.That(tree, Is.Not.SameAs(original));
 #endif
-#if DEBUG
-                Assert.That(tree.TreeId, Is.EqualTo(originalTreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(tree.TreeId, Is.EqualTo(originalTreeId));
+                }
             }
         });
     }
@@ -69,9 +68,7 @@ internal static unsafe class NarrowingTests
             var input = compiler.gtNewLclvNode(TYP_INT, 0);
             var cast = compiler.gtNewCastNode(TYP_LONG, input, false, TYP_LONG);
             var constant = compiler.gtNewLconNode(value);
-#if DEBUG
-            var originalTreeId = constant.TreeId;
-#endif
+            var originalTreeId = TestConfiguration.IsDebug ? constant.TreeId : 0;
             var comparison = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, cast, constant);
             Assert.That(compiler.fgOptimizeEqualityComparisonWithConst(comparison), Is.SameAs(comparison));
             Assert.That(comparison.Op1, Is.SameAs(narrowed ? input : cast));
@@ -80,9 +77,10 @@ internal static unsafe class NarrowingTests
                 Assert.That(comparison.Op2, Is.Not.SameAs(constant));
                 Assert.That(comparison.Op2.Type, Is.EqualTo(TYP_INT));
                 Assert.That(comparison.Op2.AsIntCon().IconValue, Is.EqualTo((nint)value));
-#if DEBUG
-                Assert.That(comparison.Op2.TreeId, Is.EqualTo(originalTreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(comparison.Op2.TreeId, Is.EqualTo(originalTreeId));
+                }
             }
             else
             {
@@ -137,9 +135,10 @@ internal static unsafe class NarrowingTests
 #if !TARGET_64BIT
             Assert.That(narrowedConstant, Is.Not.SameAs(constant));
 #endif
-#if DEBUG
-            Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
+            }
         });
     }
 
@@ -173,9 +172,10 @@ internal static unsafe class NarrowingTests
 #if !TARGET_64BIT
                 Assert.That(narrowedConstant, Is.Not.SameAs(constant));
 #endif
-#if DEBUG
-                Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
+                }
             }
         });
     }

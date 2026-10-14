@@ -103,10 +103,11 @@ internal static unsafe class FlowGraphCleanupTests
                 Assert.That(falseBlock.TryIndex, Is.EqualTo(0));
                 Assert.That(compiler.compHndBBtab[0].ebdTryLast, Is.SameAs(trueBlock));
             }
-#if DEBUG
-            Assert.That(jump.TreeId, Is.EqualTo(ret.TreeId));
-            Assert.That(trueBlock.LastStmt?.RootNode.TreeId, Is.Not.EqualTo(jump.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(jump.TreeId, Is.EqualTo(ret.TreeId));
+                Assert.That(trueBlock.LastStmt?.RootNode.TreeId, Is.Not.EqualTo(jump.TreeId));
+            }
         });
     }
 
@@ -221,9 +222,10 @@ internal static unsafe class FlowGraphCleanupTests
                 Assert.That(cloneStatement.RootNode, Is.Not.SameAs(original.RootNode));
                 Assert.That(cloneStatement.RootNode.Oper, Is.EqualTo(original.RootNode.Oper));
                 Assert.That(cloneStatement.TreeListBegin, Is.Null);
-#if DEBUG
-                Assert.That(cloneStatement.RootNode.TreeId, Is.Not.EqualTo(original.RootNode.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(cloneStatement.RootNode.TreeId, Is.Not.EqualTo(original.RootNode.TreeId));
+                }
                 clone = cloneStatement.NextStmt;
             }
 
@@ -624,9 +626,10 @@ internal static unsafe class FlowGraphCleanupTests
             Assert.That(local.Prev is null && local.Next is null, Is.True);
             var folded = jump.Op1;
             Assert.That(folded.IsIntegralConst(expected ? 1 : 0), Is.True);
-#if DEBUG
-            Assert.That(folded.TreeId, Is.EqualTo(condition.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(folded.TreeId, Is.EqualTo(condition.TreeId));
+            }
         });
     }
 

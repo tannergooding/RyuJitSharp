@@ -67,9 +67,10 @@ internal static unsafe class BlockStoreLoweringTargetTests
             Assert.That(addressStoreFound, Is.True);
             Assert.That(nonFaultingReferenceLoadFound, Is.True);
             Assert.That(referenceLoadUsesAddressTemp, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

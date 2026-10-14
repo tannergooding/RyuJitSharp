@@ -297,9 +297,10 @@ internal static unsafe class EmptyBlockOptimizationTests
 
             Assert.That(nop.Oper, Is.EqualTo(GT_NO_OP));
             Assert.That(nop.Type, Is.EqualTo(TYP_VOID));
-#if DEBUG
-            Assert.That(nop.TreeId, Is.Not.EqualTo(previous.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(nop.TreeId, Is.Not.EqualTo(previous.TreeId));
+            }
         });
     }
 

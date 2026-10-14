@@ -92,9 +92,7 @@ internal static unsafe class DivisionOwnershipTests
             division.Flags |= GTF_IND_UNALIGNED | GTF_EXCEPT;
             division._vnPair.SetBoth(123);
             var originalFlags = division.Flags;
-#if DEBUG
-            var originalId = division.TreeId;
-#endif
+            var originalId = TestConfiguration.IsDebug ? division.TreeId : 0;
             var user = new GenTreeUnOp(GT_RETURN, TYP_VOID, division);
             var block = NewBlock(dividend, divisor, division, user);
 
@@ -105,9 +103,10 @@ internal static unsafe class DivisionOwnershipTests
             Assert.That(cast.IsUnsigned, Is.EqualTo((originalFlags & GTF_UNSIGNED) != 0));
             Assert.That(cast.Flags, Is.EqualTo(originalFlags & GTF_COMMON_MASK));
             Assert.That(cast._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
-#if DEBUG
-            Assert.That(cast.TreeId, Is.EqualTo(originalId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(cast.TreeId, Is.EqualTo(originalId));
+            }
             Assert.That(next, Is.SameAs(user));
         }, minOpts: false);
     }

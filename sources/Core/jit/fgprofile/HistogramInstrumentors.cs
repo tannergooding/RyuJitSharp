@@ -301,10 +301,8 @@ internal unsafe struct HistogramProbeVisitor : IGenTreeVisitor<HistogramProbeVis
     private void InsertHandleProbe(GenTreeCall call)
     {
         var candidate = call._handleHistogramProfileCandidateInfo!;
-#if DEBUG
         JITDUMP($"Found call [{call.TreeId:D6}] with probe index {candidate.probeIndex} " +
             $"and ilOffset 0x{candidate.ilOffset:X}\n");
-#endif
 
         var typeHistogram = ReadHandleHistogram(candidate.ilOffset, types: true, out var type32);
         var methodHistogram = ReadHandleHistogram(candidate.ilOffset, types: false, out var method32);

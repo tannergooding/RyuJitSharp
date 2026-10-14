@@ -265,9 +265,7 @@ public partial class Compiler
                         phiLocals[index] = phiVN.LclNum;
                         phiDefs[index] = def;
                         foundPhiDef = true;
-#if DEBUG
                         JITDUMP($"Found local PHI [{def.TreeId:D6}] for V{phiVN.LclNum:D2}\n");
-#endif
                     }
                     else
                     {

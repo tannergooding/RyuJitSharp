@@ -74,9 +74,10 @@ internal static unsafe class ReturnLoweringTests
             Assert.That(ret.Op1._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(block.FirstNode, Is.SameAs(ret.Op1));
             Assert.That(value.Prev is null && value.Next is null, Is.True);
-#if DEBUG
-            Assert.That(ret.Op1.TreeId, Is.EqualTo(value.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(ret.Op1.TreeId, Is.EqualTo(value.TreeId));
+            }
         });
     }
 
@@ -106,9 +107,10 @@ internal static unsafe class ReturnLoweringTests
             Assert.That(ret.Op1._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(descriptor.lvDoNotEnregister, Is.True);
             Assert.That(value.Prev is null && value.Next is null, Is.True);
-#if DEBUG
-            Assert.That(ret.Op1.TreeId, Is.EqualTo(value.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(ret.Op1.TreeId, Is.EqualTo(value.TreeId));
+            }
         });
     }
 

@@ -67,9 +67,10 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
             Assert.That(mode.Next, Is.SameAs(intrinsic));
             Assert.That(address.Next, Is.Null);
             Assert.That(address.Prev, Is.Null);
-#if DEBUG
-            Assert.That(mode.TreeId, Is.EqualTo(address.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(mode.TreeId, Is.EqualTo(address.TreeId));
+            }
         });
     }
 

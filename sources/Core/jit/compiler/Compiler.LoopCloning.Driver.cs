@@ -320,15 +320,13 @@ public partial class Compiler
                 fgPgoConsistent = false;
             }
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Loops cloned: {Metrics.LoopsCloned}\n");
             jitprintf($"Loops statically optimized: {staticallyOptimized}\n");
             jitprintf("After loop cloning:\n");
             fgDispBasicBlocks(dumpTrees: true);
         }
-#endif
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 }

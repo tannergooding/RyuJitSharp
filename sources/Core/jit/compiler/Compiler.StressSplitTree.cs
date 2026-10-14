@@ -124,9 +124,7 @@ public partial class Compiler
                     // A reversed comma would need to move into the next node in execution order.
                     assert(!tree.IsReverseOp);
 
-#if DEBUG
                     JITDUMP($"Removing COMMA [{tree.TreeId:D6}]\n");
-#endif
                     ref var use = ref gtSplitTree(block, stmt, tree, out var newStmt, out _);
                     GenTree? op1SideEffects = null;
                     gtExtractSideEffList(tree.AsOp().Op1, ref op1SideEffects);

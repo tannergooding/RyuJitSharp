@@ -356,9 +356,10 @@ internal static unsafe class CallFoldingTests
             Assert.That(result.AsIndir().Addr, Is.SameAs(address));
             Assert.That(result.Flags, Is.EqualTo(source.Flags));
             Assert.That(result._vnPair.BothDefined, Is.EqualTo(!narrow));
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(source.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(source.TreeId));
+            }
         });
     }
 

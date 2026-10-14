@@ -3570,6 +3570,10 @@ public partial class Compiler
             vnpPrint(tree._vnPair, 0);
         }
     }
+#else
+    public void gtDispBlockStmts(BasicBlock block)
+    {
+    }
 #endif
 
     /// <summary>Extracts side effects from the given expression.</summary>
@@ -3764,6 +3768,8 @@ public partial class Compiler
         return stringBuilder;
     }
 
+#endif
+
     public string gtGetWellKnownArgNameForArgMsg(WellKnownArg arg) => arg switch {
         WellKnownArg.ThisPointer => "this",
         WellKnownArg.VarArgsCookie => "va cookie",
@@ -3792,7 +3798,6 @@ public partial class Compiler
         WellKnownArg.SecretStubParam => "secret arg",
         _ => "",
     };
-#endif
 
     public FindLinkData gtFindLink(Statement stmt, GenTree node)
     {
@@ -17764,9 +17769,7 @@ public partial class Compiler
             lvaTable[boxTempLcl].Type = TYP_UNDEF;
             lvaSetStruct(boxTempLcl, boxClass, unsafeValueClsCheck: false);
 
-#if DEBUG
             JITDUMP($"Bashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
-#endif
             boxLclDef.BashToNOP();
 
             copy.AsIndir().Addr = gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
@@ -17817,17 +17820,13 @@ public partial class Compiler
         // Otherwise, proceed with the optimization.
         //
         // Change the store expression to a NOP.
-#if DEBUG
         JITDUMP($"\nBashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
-#endif
 
         boxLclDef.BashToNOP();
 
         // Change the copy expression so it preserves key source side effects.
 
-#if DEBUG
         JITDUMP($"\nBashing COPY [{copy.TreeId:D6}]");
-#endif
 
         if (!hasSrcSideEffect)
         {
@@ -17843,9 +17842,7 @@ public partial class Compiler
             // minimal side effect parts.
             copyStmt.RootNode = copySrc;
 
-#if DEBUG
             JITDUMP($" to scalar read via [{copySrc.TreeId:D6}]\n");
-#endif
         }
         else
         {
@@ -17856,9 +17853,7 @@ public partial class Compiler
 
             if (options is BR_REMOVE_AND_NARROW or BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
             {
-#if DEBUG
                 JITDUMP($" to read first byte of struct via modified [{copySrc.TreeId:D6}]\n");
-#endif
 
                 if (copySrc.Oper is GT_IND)
                 {
@@ -17875,9 +17870,7 @@ public partial class Compiler
             }
             else
             {
-#if DEBUG
                 JITDUMP($" to read entire struct via modified [{copySrc.TreeId:D6}]\n");
-#endif
             }
         }
 

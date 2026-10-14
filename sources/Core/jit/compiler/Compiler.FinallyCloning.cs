@@ -47,14 +47,12 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
             jitprintf("\n");
         }
-#endif
 
         if (Configuration.DEBUG)
         {
@@ -461,14 +459,12 @@ public partial class Compiler
         if (cloneCount > 0)
         {
             JITDUMP($"fgCloneFinally() cloned {cloneCount} finally handlers\n");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDispBasicBlocks();
                 fgDispHandlerTab();
                 jitprintf("\n");
             }
-#endif
 
             if (Configuration.DEBUG)
             {

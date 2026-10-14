@@ -71,9 +71,10 @@ internal static unsafe class HardwareElementLoweringTests
                 Assert.That(part.GetOp(2).AsIntCon().IconValue, Is.EqualTo((nint)(vectorType is TYP_SIMD32 ? 1 : 2)));
             }
             Assert.That(index.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -103,9 +104,10 @@ internal static unsafe class HardwareElementLoweringTests
             Assert.That(vector.Next, Is.Null);
             Assert.That(index.Next, Is.Null);
             Assert.That(node.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -140,9 +142,10 @@ internal static unsafe class HardwareElementLoweringTests
             {
                 Assert.That(mode.Index, Is.SameAs(index));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -169,9 +172,10 @@ internal static unsafe class HardwareElementLoweringTests
             Assert.That(block.FirstNode, Is.SameAs(load));
             Assert.That(vector.Next, Is.Null);
             Assert.That(index.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -226,9 +230,10 @@ internal static unsafe class HardwareElementLoweringTests
             Assert.That((load.Flags & GTF_IND_NONFAULTING) != 0, Is.True);
             Assert.That((load.Flags & GTF_EXCEPT) != 0, Is.False);
             Assert.That(division.Next, Is.SameAs(load.Addr));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

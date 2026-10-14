@@ -191,9 +191,7 @@ public sealed partial class RangeCheck
                 Range argRange;
                 if (_searchPath.ContainsKey(arg))
                 {
-#if DEBUG
                     JITDUMP($"PhiArg [{arg.TreeId:D6}] is already being computed\n");
-#endif
                     argRange = new Range(new Limit(LimitType.Dependent));
                 }
                 else

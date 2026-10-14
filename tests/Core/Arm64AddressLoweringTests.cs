@@ -41,10 +41,11 @@ internal static unsafe class Arm64AddressLoweringTests
             Assert.That(indir.Addr, Is.SameAs(mode));
             Assert.That(original.Next, Is.Null);
             Assert.That(shift.Next, folded ? Is.Null : Is.SameAs(mode));
-#if DEBUG
-            Assert.That(mode.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(mode.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

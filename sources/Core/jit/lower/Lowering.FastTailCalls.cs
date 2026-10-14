@@ -73,9 +73,7 @@ public sealed partial class Lowering
                         continue;
                     }
 
-#if DEBUG
                     JITDUMP($"PUTARG_STK [{put.TreeId:D6}] overwrites [{overwrittenStart:D6}..{overwrittenEnd:D6}); parameter V{callerArgLclNum:D3} lives in [{argStart:D6}..{argEnd:D6}); may need defensive copies\n");
-#endif
                     var lookForUsesFrom = put.Next ??
                         throw new InvalidOperationException("Stack argument must precede the tail call.");
                     if ((overwrittenStart != argStart) || (put.Op1.Oper is GT_FIELD_LIST))

@@ -82,9 +82,10 @@ internal static unsafe class Arm64CallArgumentLoweringTests
             {
                 Assert.That(argument.LateNext, Is.SameAs(registerArgument));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }
         finally
         {

@@ -340,17 +340,13 @@ public sealed partial class Lowering
 #endif
             if ((hiSrc.Flags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
             {
-#if DEBUG
                 JITDUMP($"Removing the HI part of [{src.TreeId:D6}] and marking its operands unused:\n");
-#endif
                 DISPNODE(hiSrc);
                 Range().Remove(hiSrc, true);
             }
             else
             {
-#if DEBUG
                 JITDUMP($"The HI part of [{src.TreeId:D6}] has side effects, marking it unused\n");
-#endif
                 hiSrc.IsUnusedValue = true;
             }
 
@@ -359,9 +355,7 @@ public sealed partial class Lowering
             Range().Remove(src);
             if (varTypeIsSmall(dstType))
             {
-#if DEBUG
                 JITDUMP($"Cast is to a small type, keeping it, the new source is [{loSrc.TreeId:D6}]\n");
-#endif
                 cast.Op1 = loSrc;
             }
             else

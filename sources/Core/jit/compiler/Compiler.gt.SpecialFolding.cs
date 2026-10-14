@@ -248,9 +248,7 @@ public partial class Compiler
             return tree;
         }
 
-#if DEBUG
         JITDUMP($"\nReplacing BOX_NULLABLE(&x) {oper.Name} null [{tree.TreeId:D6}] with x.hasValue\n");
-#endif
         // Nullable<T>.hasValue is at offset zero.
         var source = call.Args.GetArgByIndex(1);
         assert(source is not null);
@@ -378,9 +376,7 @@ public partial class Compiler
 
                 if ((value == 0) && !fgAddrCouldBeNull(op))
                 {
-#if DEBUG
                     JITDUMP($"\nAttempting to optimize BOX(valueType)/non-null {oper.Name} null [{tree.TreeId:D6}]\n");
-#endif
                     if ((oper == GT_GT) && !unsigned)
                     {
                         JITDUMP(" bailing; unexpected signed compare via GT_GT\n");

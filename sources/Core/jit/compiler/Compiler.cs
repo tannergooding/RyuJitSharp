@@ -57,6 +57,8 @@ public partial class Compiler
 
     /// <summary>If true, dump trees using only ASCII characters</summary>
     public bool asciiTrees;
+#else
+    public bool verboseTrees => false;
 #endif
     /// <summary>If true, produce especially verbose dump output in SSA construction.</summary>
 #if DEBUG

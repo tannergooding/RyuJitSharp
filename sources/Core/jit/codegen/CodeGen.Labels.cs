@@ -167,12 +167,10 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("*************** After genMarkLabelsForCodegen()\n");
             _compiler.fgDispBasicBlocks();
         }
-#endif
     }
 }

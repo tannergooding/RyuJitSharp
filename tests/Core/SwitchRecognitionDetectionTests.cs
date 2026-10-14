@@ -127,9 +127,7 @@ internal static unsafe class SwitchRecognitionDetectionTests
         WithCompiler(compiler =>
         {
             var first = CreateChain(compiler, 5, firstValue, GT_EQ);
-#if DEBUG
-            var before = compiler.compGenTreeID;
-#endif
+            var before = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var traits = new BitVecTraits(compiler, compiler.fgBBNumMax + 1);
             var visited = BitVecOps.MakeEmpty(traits);
             Assert.That(Detect(compiler, first, visited), Is.True);

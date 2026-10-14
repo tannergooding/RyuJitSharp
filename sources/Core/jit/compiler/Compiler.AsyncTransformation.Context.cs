@@ -159,15 +159,11 @@ public partial class Compiler
             assert((execArg is null) == (syncArg is null));
             if (resumedArg is null)
             {
-#if DEBUG
                 JITDUMP($"    Call [{call.TreeId:D6}] does not have async contexts; skipping restore on suspension\n");
-#endif
                 return null;
             }
 
-#if DEBUG
             JITDUMP($"    Call [{call.TreeId:D6}] has async contexts; will restore on suspension\n");
-#endif
             var resumed = TakeAsyncArgument(callBlock, call, resumedArg);
             var exec = TakeAsyncArgument(callBlock, call, execArg ??
                 throw new InvalidOperationException("Missing async execution context"));
@@ -227,9 +223,7 @@ public partial class Compiler
             var helper = GetSuspensionContextHelper(call);
             if (helper is not SuspensionContextHelper.None)
             {
-#if DEBUG
                 JITDUMP($"    Call [{call.TreeId:D6}] has async context and captured execution context; using finish-suspension helper\n");
-#endif
                 FinishContextHandlingAndSuspensionWithHelper(
                     callBlock, call, suspension, layout, subLayout, helper);
                 return;

@@ -151,9 +151,7 @@ public partial class Liveness<TLiveness>
             return current.Prev;
         }
 
-#if DEBUG
         JITDUMP($"Store [{statement.RootNode.TreeId:D6}] is dead");
-#endif
         assert(statement.TreeListEnd == current);
         GenTree? sideEffects = null;
         _compiler.gtExtractSideEffList(current.Data, ref sideEffects);

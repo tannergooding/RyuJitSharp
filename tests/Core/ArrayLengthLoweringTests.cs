@@ -33,9 +33,7 @@ internal static unsafe class ArrayLengthLoweringTests
             metadata.IsUnusedValue = unused;
             metadata._vnPair.SetBoth(123);
             var flags = metadata.Flags;
-#if DEBUG
-            var treeId = metadata.TreeId;
-#endif
+            var treeId = TestConfiguration.IsDebug ? metadata.TreeId : 0;
             var owner = unused ? null : compiler.gtNewStoreLclVarNode(1, metadata);
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
@@ -57,9 +55,10 @@ internal static unsafe class ArrayLengthLoweringTests
             Assert.That(indirection.Flags, Is.EqualTo(flags & (GTF_COMMON_MASK | GTF_IND_NONFAULTING)));
             Assert.That(indirection._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(indirection._vnPair.Conservative, Is.EqualTo(ValueNumStore.NoVN));
-#if DEBUG
-            Assert.That(indirection.TreeId, Is.EqualTo(treeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(indirection.TreeId, Is.EqualTo(treeId));
+            }
             Assert.That(metadata.Prev is null && metadata.Next is null, Is.True);
             Assert.That(indirection.Next, Is.SameAs(owner));
             Assert.That(next, Is.SameAs(array.Next));

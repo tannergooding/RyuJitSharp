@@ -26,9 +26,7 @@ internal static unsafe class CastRemovalTests
             var block = NewBlock(operand, cast, owner);
             var lowering = NewLowering(compiler, block);
             var successor = cast.Next ?? throw new InvalidOperationException();
-#if DEBUG
-            var id = cast.TreeId;
-#endif
+            var id = TestConfiguration.IsDebug ? cast.TreeId : 0;
 
             Assert.That(TryRemoveCast(lowering, cast), Is.True);
             Assert.That(owner.Op1, Is.SameAs(operand.Next));
@@ -44,10 +42,11 @@ internal static unsafe class CastRemovalTests
             Assert.That(cast.Next, Is.Null);
             Assert.That(cast.Prev, Is.Null);
             Assert.That(successor, Is.SameAs(owner));
-#if DEBUG
-            Assert.That(owner.Op1.TreeId, Is.EqualTo(id));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(owner.Op1.TreeId, Is.EqualTo(id));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -66,9 +65,10 @@ internal static unsafe class CastRemovalTests
             Assert.That(owner.Op1.Oper, Is.EqualTo(genTreeOps.GT_CNS_INT));
             Assert.That(owner.Op1.AsIntCon().IconValue, Is.EqualTo((nint)expected));
             Assert.That(operand.IsUnusedValue, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -85,9 +85,10 @@ internal static unsafe class CastRemovalTests
             Assert.That(owner.Op1.Oper, Is.EqualTo(genTreeOps.GT_CNS_DBL));
             Assert.That(owner.Op1.AsDblCon().IsNegativeZero, Is.True);
             Assert.That(operand.IsUnusedValue, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -114,9 +115,10 @@ internal static unsafe class CastRemovalTests
             Assert.That(owner.Op1, Is.SameAs(cast));
             Assert.That(operand.IsUnusedValue, Is.False);
             Assert.That(operand.Next, Is.SameAs(cast));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -132,9 +134,10 @@ internal static unsafe class CastRemovalTests
             Assert.That(TryRemoveCast(NewLowering(compiler, block), cast), Is.False);
             Assert.That(owner.Op1, Is.SameAs(cast));
             Assert.That(operand.IsUnusedValue, Is.False);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -151,9 +154,7 @@ internal static unsafe class CastRemovalTests
             var owner = new GenTreeUnOp(genTreeOps.GT_RETURN, var_types.TYP_VOID, binary);
             var block = NewBlock(first, second, binary, owner);
             var lowering = NewLowering(compiler, block);
-#if DEBUG
-            var id = binary.TreeId;
-#endif
+            var id = TestConfiguration.IsDebug ? binary.TreeId : 0;
 
             var folded = TryFoldLirConst(lowering, binary);
             Assert.That(folded, Is.SameAs(owner.Op1));
@@ -163,10 +164,11 @@ internal static unsafe class CastRemovalTests
             Assert.That(block.FirstNode, Is.SameAs(first));
             block.Remove(first);
             block.Remove(second);
-#if DEBUG
-            Assert.That(folded?.TreeId, Is.EqualTo(id));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(folded?.TreeId, Is.EqualTo(id));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -185,9 +187,10 @@ internal static unsafe class CastRemovalTests
             Assert.That(TryFoldLirConst(NewLowering(compiler, block), binary), Is.Null);
             Assert.That(owner.Op1, Is.SameAs(binary));
             Assert.That(second.Next, Is.SameAs(binary));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

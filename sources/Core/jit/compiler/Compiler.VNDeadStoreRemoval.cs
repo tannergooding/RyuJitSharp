@@ -59,9 +59,7 @@ public partial class Compiler
 
                 assert(store.Oper.IsLocalStore && defDsc._vnPair.BothDefined());
 
-#if DEBUG
                 JITDUMP($"Considering [{store.TreeId:D6}] for removal...\n");
-#endif
 
                 if (store.LclNum != lclNum)
                 {

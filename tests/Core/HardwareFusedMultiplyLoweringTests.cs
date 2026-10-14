@@ -63,9 +63,10 @@ internal static unsafe class HardwareFusedMultiplyLoweringTests
                 }
             }
             Assert.That(block.LastNode, Is.SameAs(node));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -132,9 +133,10 @@ internal static unsafe class HardwareFusedMultiplyLoweringTests
             Assert.That(xor, Is.Not.Null);
             Assert.That(xor?.Next is null && xor?.Prev is null, Is.EqualTo(folded));
             Assert.That(mask.Next is null && mask.Prev is null, Is.EqualTo(folded));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

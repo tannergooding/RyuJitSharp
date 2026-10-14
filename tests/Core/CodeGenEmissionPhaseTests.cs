@@ -23,6 +23,8 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenEmissionPhaseTests
 {
+    private static bool IsDebug => Configuration.DEBUG;
+
 #if DEBUG
     private static string? s_assertion;
 #endif
@@ -127,9 +129,10 @@ internal static unsafe class CodeGenEmissionPhaseTests
             var nativeSize = -1;
             CodePointerAddress(codeGen) = &hotCode;
             NativeSizeAddress(codeGen) = &nativeSize;
-#if DEBUG
-            Assert.That(compiler.opts.dspMetrics, Is.False);
-#endif
+            if (IsDebug)
+            {
+                Assert.That(compiler.opts.dspMetrics, Is.False);
+            }
 
             var output = Capture(codeGen.genEmitMachineCode);
 

@@ -26,9 +26,7 @@ internal static unsafe class AllocationLoweringTests
             var source = compiler.gtNewBinaryNode(GT_MUL, TYP_LONG, left, right);
             source.Flags = GTF_ASG | GTF_DONT_CSE | GTF_COLON_COND | GTF_EXCEPT | GTF_MUL_64RSLT;
             source._vnPair.SetBoth(42);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             var call = compiler.gtNewHelperCallNode(source, CORINFO_HELP_LMUL, left, right);
 
             Assert.That(call, Is.Not.SameAs(source));

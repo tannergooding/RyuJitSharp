@@ -183,10 +183,11 @@ internal static unsafe class StackArrayExpansionTests
                 {
                     Assert.That(morphed.Data.AsIntCon().IconValue, Is.EqualTo((nint)0));
                 }
-#if DEBUG
-                Assert.That(morphed.TreeId, Is.EqualTo(blockInit.TreeId));
-                Assert.That(morphed.Data.TreeId, Is.EqualTo(zero.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(morphed.TreeId, Is.EqualTo(blockInit.TreeId));
+                    Assert.That(morphed.Data.TreeId, Is.EqualTo(zero.TreeId));
+                }
             }
             else
             {

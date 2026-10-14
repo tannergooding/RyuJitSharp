@@ -165,9 +165,10 @@ internal static unsafe class ComparisonMorphTests
             {
                 Assert.That(comparison.Op2, Is.Not.SameAs(constant));
                 Assert.That(constant.Type, Is.EqualTo(TYP_LONG));
-#if DEBUG
-                Assert.That(comparison.Op2.TreeId, Is.EqualTo(constant.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(comparison.Op2.TreeId, Is.EqualTo(constant.TreeId));
+                }
             }
         });
     }
@@ -252,9 +253,10 @@ internal static unsafe class ComparisonMorphTests
             else
             {
                 Assert.That(result.IsIntegralConst(1), Is.True);
-#if DEBUG
-                Assert.That(result.TreeId, Is.Not.EqualTo(comparison.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(result.TreeId, Is.Not.EqualTo(comparison.TreeId));
+                }
             }
         });
     }

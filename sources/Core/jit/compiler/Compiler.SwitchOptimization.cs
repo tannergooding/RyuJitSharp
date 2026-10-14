@@ -90,12 +90,10 @@ public partial class Compiler
             // Use BBJ_ALWAYS when all cases, including the default, have the same target.
             JITDUMP($"\nRemoving a switch jump with a single target ({FMT_BB(block.bbNum)})\n");
             JITDUMP("BEFORE:\n");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDispBasicBlocks();
             }
-#endif
             if (block.IsLIR)
             {
                 var switchTreeRange = block.GetTreeRange(switchTree, out var isClosed, out var sideEffects);

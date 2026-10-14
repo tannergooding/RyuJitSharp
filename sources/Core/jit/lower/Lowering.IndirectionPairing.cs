@@ -56,10 +56,8 @@ public sealed partial class Lowering
                 continue;
             }
 
-#if DEBUG
             JITDUMP($"[{ind.TreeId:D6}] and [{prevIndir.TreeId:D6}] are indirs off the same base " +
                 $"with offsets +{unchecked((uint)offset):D3} and +{unchecked((uint)previous.Offset):D3}\n");
-#endif
             var distance = unchecked(offset - previous.Offset);
             if ((distance == ind.Type.Size) || (distance == -ind.Type.Size))
             {
@@ -97,9 +95,7 @@ public sealed partial class Lowering
             assert(current is not null);
             if (current.Oper is GT_CALL)
             {
-#if DEBUG
                 JITDUMP($"  ..but they are separated by node [{current.TreeId:D6}] that kills registers\n");
-#endif
                 return false;
             }
         }
@@ -154,9 +150,7 @@ public sealed partial class Lowering
                 {
                     if (_scratchSideEffects.InterferesWith(CompilerInstance, node, true))
                     {
-#if DEBUG
                         JITDUMP($"Giving up due to interference with [{node.TreeId:D6}]\n");
-#endif
                         return false;
                     }
 
@@ -217,22 +211,18 @@ public sealed partial class Lowering
 
                         if (checkLocal && GenTree.Compare(indirAddr, storeAddr) && distinct)
                         {
-#if DEBUG
                             JITDUMP($"Cannot interfere with [{node.TreeId:D6}] since they are off the same local " +
                                 $"V{indirAddr.AsLclVarCommon().LclNum:D2} and indir range " +
                                 $"[{unchecked((uint)offset):D3}..{unchecked((uint)offset + (uint)indir.Size):D3}) " +
                                 $"does not interfere with store range " +
                                 $"[{unchecked((uint)storeOffset):D3}..{unchecked((uint)storeOffset + (uint)store.Size):D3})\n");
-#endif
                         }
                         else if ((indirAddr.Type is TYP_REF) && (storeAddr.Type is TYP_REF) && distinct)
                         {
-#if DEBUG
                             JITDUMP($"Cannot interfere with [{node.TreeId:D6}] since they are both off TYP_REF bases " +
                                 $"and indir range [{unchecked((uint)offset):D3}..{unchecked((uint)offset + (uint)indir.Size):D3}) " +
                                 $"does not interfere with store range " +
                                 $"[{unchecked((uint)storeOffset):D3}..{unchecked((uint)storeOffset + (uint)store.Size):D3})\n");
-#endif
                         }
                         else
                         {
@@ -253,9 +243,7 @@ public sealed partial class Lowering
 
                     if (Interferes(node))
                     {
-#if DEBUG
                         JITDUMP($"Indir [{indir.TreeId:D6}] interferes with [{node.TreeId:D6}]\n");
-#endif
                         return false;
                     }
                 }
@@ -272,10 +260,8 @@ public sealed partial class Lowering
                     if (((node._lirFlags & LIR.Flags.Mark) != 0) &&
                         _scratchSideEffects.InterferesWith(CompilerInstance, node, true))
                     {
-#if DEBUG
                         JITDUMP($"Cannot move prev indir [{prevIndir.TreeId:D6}] up past [{node.TreeId:D6}] " +
                             $"to get it past the data computation\n");
-#endif
                         return false;
                     }
 
@@ -293,9 +279,7 @@ public sealed partial class Lowering
                 return false;
             }
 
-#if DEBUG
             JITDUMP($"Moving nodes that are not part of data flow of [{indir.TreeId:D6}]\n\n");
-#endif
             GenTree previous = prevIndir;
             for (var node = prevIndir.Next; ;)
             {
@@ -397,10 +381,8 @@ public sealed partial class Lowering
                         var storeLocal = storeAddr.AsLclVarCommon().LclNum;
                         if ((storeLocal == local1) || (storeLocal == local2))
                         {
-#if DEBUG
                             JITDUMP($"Store at [{node.TreeId:D6}] may allow store-to-load forwarding of indir " +
                                 $"[{(storeLocal == local1 ? prevIndir : indir).TreeId:D6}]\n");
-#endif
                             hasStore = true;
                             return true;
                         }

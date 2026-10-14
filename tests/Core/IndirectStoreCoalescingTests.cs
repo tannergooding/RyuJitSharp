@@ -40,9 +40,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             {
                 Assert.That(load.Next, Is.Null);
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -68,9 +69,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(store.Addr, Is.SameAs(address));
             Assert.That(store.Data, Is.SameAs(value));
             Assert.That(value.IsContained, Is.False);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -112,9 +114,10 @@ internal static unsafe class IndirectStoreCoalescingTests
                 Assert.That(first.Next, Is.SameAs(secondAddr));
                 Assert.That(second.Type, Is.EqualTo(var_types.TYP_BYTE));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -142,9 +145,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             {
                 Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo(unchecked((nint)0x5566778811223344L)));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -167,9 +171,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(first.Next, Is.Null);
             Assert.That(second.Type, Is.EqualTo(var_types.TYP_LONG));
             Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo(unchecked((nint)0x3F80000080000000L)));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -205,9 +210,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(first.Next is null, Is.EqualTo(merged));
             Assert.That(second.Type, Is.EqualTo(merged ? var_types.TYP_LONG : var_types.TYP_INT));
             Assert.That(secondAddr.Offset, Is.EqualTo(merged ? 0 : 4));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -234,9 +240,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(first.Next, Is.Null);
             Assert.That(second.Type, Is.EqualTo(var_types.TYP_LONG));
             Assert.That(secondAddr.Offset, Is.EqualTo(1));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -259,9 +266,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             _ = LowerNode(lowering, second);
             Assert.That(block.FirstNode, Is.SameAs(secondAddr));
             Assert.That(second.Type, Is.EqualTo(var_types.TYP_INT));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -289,9 +297,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(second.Type, Is.EqualTo(var_types.TYP_SIMD16));
             Assert.That(second.Data.AsVecCon().SimdVal.u64[0], Is.EqualTo(0x1122334455667788UL));
             Assert.That(second.Data.AsVecCon().SimdVal.u64[1], Is.EqualTo(0x0102030405060708UL));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -320,9 +329,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(first.Data.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
             Assert.That(second.Data.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
             Assert.That(second.Data.AsLclVar().LclNum, Is.EqualTo(first.Data.AsLclVar().LclNum));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -358,9 +368,10 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(second.Data.AsVecCon().SimdVal.u64[2], Is.EqualTo(0x0102030405060708UL));
             Assert.That(second.Data.AsVecCon().SimdVal.AsSpan<byte>()[32..].ToArray(),
                 Is.All.EqualTo((byte)0));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

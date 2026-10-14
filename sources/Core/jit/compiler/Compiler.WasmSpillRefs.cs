@@ -100,9 +100,7 @@ public partial class Compiler
 
                         if ((def._lirFlags & LIR.Flags.MultiplyUsed) != LIR.Flags.None)
                         {
-#if DEBUG
                             JITDUMP($"Transferring multiply-used flag from [{def.TreeId:D6}] to [{reload.TreeId:D6}] for spill\n");
-#endif
                             def._lirFlags &= ~LIR.Flags.MultiplyUsed;
                             reload._lirFlags |= LIR.Flags.MultiplyUsed;
                         }

@@ -368,10 +368,8 @@ public partial class Compiler
                         costIsTooHigh = estDupCostSz > newMaxDupCostSz;
                         if (!costIsTooHigh)
                         {
-#if DEBUG
                             JITDUMP($"Decided to duplicate loop condition block after counting helpers in tree " +
                                 $"[{tree.TreeId:D6}] in block {FMT_BB(block.bbNum)}");
-#endif
                             maxDupCostSz = newMaxDupCostSz;
                             break;
                         }

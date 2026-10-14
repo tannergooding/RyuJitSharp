@@ -58,9 +58,7 @@ internal static unsafe class StructCallLoweringTests
             var flags = call.Flags;
             block.InsertAtEnd(argumentNode);
             block.InsertAtEnd(call);
-#if DEBUG
-            var treeId = call.TreeId;
-#endif
+            var treeId = TestConfiguration.IsDebug ? call.TreeId : 0;
 
             LowerCallStruct(lowering, call);
 
@@ -79,9 +77,10 @@ internal static unsafe class StructCallLoweringTests
             Assert.That(call.Prev, Is.SameAs(argumentNode));
             Assert.That(((ClassInfo*)handle)->SizeQueries, Is.EqualTo(1));
             Assert.That(((ClassInfo*)handle)->GcQueries, Is.EqualTo(size == 8 ? 1 : 0));
-#if DEBUG
-            Assert.That(call.TreeId, Is.EqualTo(treeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(call.TreeId, Is.EqualTo(treeId));
+            }
         });
     }
 

@@ -36,9 +36,7 @@ public sealed partial class Lowering
     {
         var compiler = CompilerInstance;
         next = null;
-#if DEBUG
         JITDUMP($"Considering Memcmp [{call.TreeId:D6}] for unrolling.. ");
-#endif
         assert(compiler.lookupNamedIntrinsic(call._callMethHnd) is NI_System_SpanHelpers_SequenceEqual);
         assert(call.Args.CountUserArgs() == 3);
         assert(TYP_I_IMPL.Size == 8);

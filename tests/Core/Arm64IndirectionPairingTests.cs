@@ -47,12 +47,13 @@ internal static unsafe class Arm64IndirectionPairingTests
                 Assert.That(second.Prev, Is.SameAs(originalPredecessor));
             }
             AssertUnmarked(block);
-#if DEBUG
-            if (!call)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+                if (!call)
+                {
+                    Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+                }
             }
-#endif
         });
     }
 
@@ -128,9 +129,10 @@ internal static unsafe class Arm64IndirectionPairingTests
                 Assert.That(first.Prev, Is.SameAs(second.Data));
             }
             AssertUnmarked(block);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

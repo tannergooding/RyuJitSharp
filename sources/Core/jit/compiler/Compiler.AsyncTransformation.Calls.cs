@@ -38,9 +38,7 @@ public partial class Compiler
 
         private BasicBlock TransformTailAwait(BasicBlock block, GenTreeCall call)
         {
-#if DEBUG
             JITDUMP($"Transforming tail await [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}\n");
-#endif
 
             var definition = CanonicalizeCallDefinition(block, call, null);
             var suspension = CreateTailAwaitSuspension(block, call);
@@ -166,9 +164,7 @@ public partial class Compiler
 
                 if (_compiler.fgPgoConsistent)
                 {
-#if DEBUG
                     JITDUMP($"Marking profile inconsistent due to always-suspend helper [{call.TreeId:D6}]\n");
-#endif
                     _compiler.fgPgoConsistent = false;
                 }
             }

@@ -49,9 +49,7 @@ internal static unsafe class TreeCloneOrderTests
             original.Flags |= GTF_DONT_CSE;
             original._vnPair = new ValueNumPair(123, 456);
             original.SetCosts(7, 11);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
 
             var copy = compiler.gtCloneExpr(original).AsLclFld();
 
@@ -68,16 +66,18 @@ internal static unsafe class TreeCloneOrderTests
             Assert.That(copy.CostEx, Is.EqualTo(7));
             Assert.That(copy.CostSz, Is.EqualTo(11));
             Assert.That(s_assertionCount, Is.Zero);
-#if DEBUG
-            Assert.That(copy.TreeId, Is.EqualTo(nextId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(copy.TreeId, Is.EqualTo(nextId));
+            }
             if (store)
             {
                 Assert.That(copy.Data, Is.Not.SameAs(original.Data));
                 Assert.That(copy.Data.Type, Is.EqualTo(type));
-#if DEBUG
-                Assert.That(copy.Data.TreeId, Is.EqualTo(nextId + 1));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(copy.Data.TreeId, Is.EqualTo(nextId + 1));
+                }
             }
         });
     }
@@ -151,9 +151,7 @@ internal static unsafe class TreeCloneOrderTests
             original._vnPair = new ValueNumPair(123, 456);
             original.SetCosts(7, 11);
             var originals = PreOrder(compiler, original);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
 
             var copy = compiler.gtCloneExpr(original);
             var copies = PreOrder(compiler, copy);
@@ -169,9 +167,10 @@ internal static unsafe class TreeCloneOrderTests
                 Assert.That(copies[i], Is.Not.SameAs(originals[i]));
                 Assert.That(copies[i].Oper, Is.EqualTo(originals[i].Oper));
                 Assert.That(copies[i].Type, Is.EqualTo(originals[i].Type));
-#if DEBUG
-                Assert.That(copies[i].TreeId, Is.EqualTo(nextId + i));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(copies[i].TreeId, Is.EqualTo(nextId + i));
+                }
             }
 #if DEBUG
             Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + originals.Count));
@@ -207,9 +206,7 @@ internal static unsafe class TreeCloneOrderTests
                     compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2))
                 : new GenTreeConditional(GT_SELECT, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1),
                     compiler.gtNewIconNode(TYP_INT, 2), compiler.gtNewIconNode(TYP_INT, 3));
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
 
             var copy = compiler.gtCloneExpr(original);
             var originals = PreOrder(compiler, original);
@@ -219,9 +216,10 @@ internal static unsafe class TreeCloneOrderTests
             for (var i = 0; i < copies.Count; i++)
             {
                 Assert.That(copies[i], Is.Not.SameAs(originals[i]));
-#if DEBUG
-                Assert.That(copies[i].TreeId, Is.EqualTo(nextId + (i == 0 ? 3 : i - 1)));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(copies[i].TreeId, Is.EqualTo(nextId + (i == 0 ? 3 : i - 1)));
+                }
             }
         });
     }
@@ -234,9 +232,7 @@ internal static unsafe class TreeCloneOrderTests
             var first = compiler.gtNewIconNode(TYP_INT, 1);
             var second = compiler.gtNewIconNode(TYP_INT, 2);
             var original = new GenTreeArrElem(TYP_BYREF, array, 4, [first, second]);
-#if DEBUG
-            var nextId = compiler.compGenTreeID;
-#endif
+            var nextId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
 
             var copy = compiler.gtCloneExpr(original).AsArrElem();
 
@@ -245,12 +241,13 @@ internal static unsafe class TreeCloneOrderTests
             Assert.That(copy.ArrInds[1], Is.Not.SameAs(second));
             Assert.That(copy.ArrRank, Is.EqualTo(original.ArrRank));
             Assert.That(copy.ArrElemSize, Is.EqualTo(original.ArrElemSize));
-#if DEBUG
-            Assert.That(copy.ArrInds[0].TreeId, Is.EqualTo(nextId));
-            Assert.That(copy.ArrInds[1].TreeId, Is.EqualTo(nextId + 1));
-            Assert.That(copy.ArrObj.TreeId, Is.EqualTo(nextId + 2));
-            Assert.That(copy.TreeId, Is.EqualTo(nextId + 3));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(copy.ArrInds[0].TreeId, Is.EqualTo(nextId));
+                Assert.That(copy.ArrInds[1].TreeId, Is.EqualTo(nextId + 1));
+                Assert.That(copy.ArrObj.TreeId, Is.EqualTo(nextId + 2));
+                Assert.That(copy.TreeId, Is.EqualTo(nextId + 3));
+            }
         });
     }
 

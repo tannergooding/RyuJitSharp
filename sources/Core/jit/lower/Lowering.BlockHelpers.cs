@@ -204,9 +204,7 @@ public sealed partial class Lowering
                 return false;
             }
         }
-#if DEBUG
         JITDUMP($"Decomposing STORE_BLK [{block.TreeId:D6}] as individual indirections\n");
-#endif
         var destinationUse = new LIR.Use(BlockRange(), ref block.AddrRef, block);
         var destinationType = block.Addr.Type;
         var destinationLocal = destinationUse.ReplaceWithLclVar(compiler);

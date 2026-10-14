@@ -314,10 +314,11 @@ internal static unsafe class HWIntrinsicImportClosureTests
                 }
             }
 
-#if DEBUG
-            Assert.That(mask.TreeId, Is.EqualTo(operand.TreeId + 2));
-            Assert.That(intrinsic.TreeId, Is.EqualTo(operand.TreeId + 3));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(mask.TreeId, Is.EqualTo(operand.TreeId + 2));
+                Assert.That(intrinsic.TreeId, Is.EqualTo(operand.TreeId + 3));
+            }
         });
     }
 

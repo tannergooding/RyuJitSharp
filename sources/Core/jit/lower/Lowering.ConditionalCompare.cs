@@ -79,9 +79,7 @@ public sealed partial class Lowering
             ((op2.Oper is GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT) &&
                 varTypeIsIntegralOrI(op2.AsOp().Op1.Type)))
         {
-#if DEBUG
             JITDUMP($"[{tree.TreeId:D6}] is a potential candidate for CCMP:\n");
-#endif
             DISPTREERANGE(BlockRange(), tree);
             JITDUMP("\n");
         }
@@ -122,9 +120,7 @@ public sealed partial class Lowering
         }
         else
         {
-#if DEBUG
             JITDUMP($"  ..could not turn [{op1.TreeId:D6}] or [{op2.TreeId:D6}] into a def of flags, bailing\n");
-#endif
             return false;
         }
 

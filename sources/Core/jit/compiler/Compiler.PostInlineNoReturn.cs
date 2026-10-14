@@ -50,17 +50,13 @@ public partial class Compiler
             // Early splitting cannot walk qmarks, even when the no-return call is outside their conditional arms.
             if ((trimStatement.RootNode != noReturnCall) && gtTreeContainsOper(trimStatement.RootNode, GT_QMARK))
             {
-#if DEBUG
                 JITDUMP($"\nfgPostInlineNoReturnCleanup: {FMT_BB(block.bbNum)} statement with no-return call " +
                     $"[{noReturnCall.TreeId:D6}] contains a qmark; skipping\n");
-#endif
                 continue;
             }
 
-#if DEBUG
             JITDUMP($"\nfgPostInlineNoReturnCleanup: {FMT_BB(block.bbNum)} contains no-return call " +
                 $"[{noReturnCall.TreeId:D6}]; trimming\n");
-#endif
             if (trimStatement.RootNode != noReturnCall)
             {
                 _ = gtSplitTree(block, trimStatement, noReturnCall, out _, out _, early: true);

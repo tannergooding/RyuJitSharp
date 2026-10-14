@@ -255,9 +255,10 @@ internal static unsafe class CallLoweringTests
             Assert.That(putArg.Next, Is.SameAs(call));
             Assert.That(fields.Next, Is.Null);
             Assert.That(fields.Prev, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

@@ -135,9 +135,7 @@ public sealed partial class FlowGraphNaturalLoop
             if (!VisitDefs((number, node) => {
                 if ((number == iterVar) && (node != iterTree))
                 {
-#if DEBUG
                     JITDUMP($"    Loop has extraneous def [{node.TreeId:D6}]\n");
-#endif
                     return false;
                 }
                 return true;
@@ -167,9 +165,7 @@ public sealed partial class FlowGraphNaturalLoop
         }
         else
         {
-#if DEBUG
             JITDUMP($"  Init = <none>, test = [{test?.TreeId:D6}], incr = [{info.IterTree?.TreeId:D6}]\n");
-#endif
         }
 
         if (!CheckLoopConditionBaseCase(preheader, info))
@@ -310,9 +306,7 @@ public sealed partial class FlowGraphNaturalLoop
             var definition = FindDef(local.LclNum);
             if (definition is not null)
             {
-#if DEBUG
                 JITDUMP($"    Limit var V{local.LclNum:D2} modified by [{definition.TreeId:D6}]\n");
-#endif
                 return false;
             }
             info.HasInvariantLocalLimit = true;
@@ -323,9 +317,7 @@ public sealed partial class FlowGraphNaturalLoop
             var array = limitOp.AsArrLen().ArrRef;
             if (array.Oper is not GT_LCL_VAR)
             {
-#if DEBUG
                 JITDUMP($"    Array limit tree [{limitOp.TreeId:D6}] not analyzable\n");
-#endif
                 return false;
             }
             var local = array.AsLclVarCommon();
@@ -337,9 +329,7 @@ public sealed partial class FlowGraphNaturalLoop
             var definition = FindDef(local.LclNum);
             if (definition is not null)
             {
-#if DEBUG
                 JITDUMP($"    Array limit var V{local.LclNum:D2} modified by [{definition.TreeId:D6}]\n");
-#endif
                 return false;
             }
             info.HasArrayLengthLimit = true;
@@ -347,9 +337,7 @@ public sealed partial class FlowGraphNaturalLoop
         }
         else
         {
-#if DEBUG
             JITDUMP($"    Loop limit tree [{limitOp.TreeId:D6}] not analyzable\n");
-#endif
             return false;
         }
 

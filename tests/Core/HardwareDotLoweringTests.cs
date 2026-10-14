@@ -153,9 +153,10 @@ internal static unsafe class HardwareDotLoweringTests
             }
             Assert.That(dot.Next, Is.Null);
             Assert.That(dot.Prev, Is.Null);
-#if DEBUG
-            Assert.That(user.Op1.TreeId, Is.Not.EqualTo(dot.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(user.Op1.TreeId, Is.Not.EqualTo(dot.TreeId));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -181,9 +182,7 @@ internal static unsafe class HardwareDotLoweringTests
             {
                 block.InsertAtEnd(user);
             }
-#if DEBUG
-            var treeId = dot.TreeId;
-#endif
+            var treeId = TestConfiguration.IsDebug ? dot.TreeId : 0;
 
             Assert.That(LowerDot(NewLowering(compiler, block), dot), Is.SameAs(unused ? null : user));
 
@@ -193,9 +192,10 @@ internal static unsafe class HardwareDotLoweringTests
             Assert.That(dot.GetOp(3).AsIntCon().IconValue, Is.EqualTo((nint)mask));
             Assert.That(dot.Prev, Is.SameAs(dot.GetOp(3)));
             Assert.That(dot.IsUnusedValue, Is.EqualTo(unused));
-#if DEBUG
-            Assert.That(dot.TreeId, Is.EqualTo(treeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(dot.TreeId, Is.EqualTo(treeId));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -307,9 +307,10 @@ internal static unsafe class HardwareDotLoweringTests
 
     private static void CheckLir(Compiler compiler, BasicBlock block)
     {
-#if DEBUG
-        Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+        }
     }
 
     private static Lowering NewLowering(Compiler compiler, BasicBlock block)

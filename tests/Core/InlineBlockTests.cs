@@ -177,9 +177,10 @@ internal static unsafe class InlineBlockTests
                 Assert.That(compiler.fgPgoInlineeNoPgoSingleBlock, Is.EqualTo(1));
                 Assert.That(compiler.fgPgoConsistent, Is.False);
                 Assert.That(compiler.Metrics.ProfileInconsistentInlinee, Is.EqualTo(1));
-#if DEBUG
-                Assert.That(compiler.Metrics.ImporterBranchFold, Is.EqualTo(7));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(compiler.Metrics.ImporterBranchFold, Is.EqualTo(7));
+                }
             });
         });
     }

@@ -36,9 +36,7 @@ public partial class Compiler
                 throw new InvalidOperationException("Inlined async frame context chain is inconsistent");
             }
 
-#if DEBUG
             JITDUMP($"    Call [{call.TreeId:D6}] is inside an inlined async frame; {enclosing + 1} frames in chain\n");
-#endif
             var values = new List<GenTree>(enclosing * 3);
             for (var i = 0; i < enclosing; i++)
             {

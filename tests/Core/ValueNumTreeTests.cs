@@ -157,9 +157,10 @@ internal static unsafe class ValueNumTreeTests
                 Assert.That((result.Flags & GTF_EXCEPT) != 0, Is.EqualTo(!knownNonNull));
                 Assert.That(result._vnPair.BothDefined(), Is.False);
                 Assert.That(expression.Op1, Is.SameAs(result));
-#if DEBUG
-                Assert.That(result.TreeId, Is.EqualTo(block.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(result.TreeId, Is.EqualTo(block.TreeId));
+                }
             });
         });
     }

@@ -55,9 +55,10 @@ internal static unsafe class ShiftRotateLoweringTests
             Assert.That(amount.Next, Is.SameAs(remove ? shift : mask));
             Assert.That(mask.Next, remove ? Is.Null : Is.SameAs(and));
             Assert.That(and.Next, remove ? Is.Null : Is.SameAs(shift));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }
         finally
         {

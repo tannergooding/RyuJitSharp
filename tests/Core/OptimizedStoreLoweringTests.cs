@@ -67,14 +67,16 @@ internal static unsafe class OptimizedStoreLoweringTests
             Assert.That(lowered!.Oper, Is.EqualTo(GT_STOREIND));
             Assert.That(lowered.AsStoreInd().Data, Is.SameAs(source));
             Assert.That(lowered.AsStoreInd().Addr.Oper, Is.EqualTo(GT_LCL_ADDR));
-#if DEBUG
-            Assert.That(lowered.TreeId, Is.EqualTo(original.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(lowered.TreeId, Is.EqualTo(original.TreeId));
+            }
             Assert.That(original.Prev, Is.Null);
             Assert.That(original.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }
         finally
         {

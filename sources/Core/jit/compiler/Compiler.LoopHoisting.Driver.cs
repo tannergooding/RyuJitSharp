@@ -25,13 +25,13 @@ public partial class Compiler
             JITDUMP("\nJitNoHoist set; no hoisting\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
+#endif
 
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\n*************** In optHoistLoopCode()\n");
             fgDispHandlerTab();
         }
-#endif
         optComputeInterestingVarSets();
 
         var modified = false;

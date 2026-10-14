@@ -11,9 +11,7 @@ public partial class Compiler
     {
         if (node.Oper.IsBlk && !node.Oper.IsStoreBlk)
         {
-#if DEBUG
             JITDUMP($"Replace an unused BLK node [{node.TreeId:D6}] with a NULLCHECK\n");
-#endif
             return gtChangeOperToNullCheck(node);
         }
 
@@ -25,9 +23,7 @@ public partial class Compiler
                 return null;
             }
 
-#if DEBUG
             JITDUMP($"Replace an unused GetType node [{node.TreeId:D6}] with a NULLCHECK\n");
-#endif
             var vnPair = node._vnPair;
             node = gtNewNullCheck(obj);
             if ((vnStore is not null) && vnPair.BothDefined())

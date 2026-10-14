@@ -100,9 +100,7 @@ public partial class Compiler
                     return null;
                 }
 
-#if DEBUG
                 JITDUMP($"Clearing overflow flag for cast {cast.TreeId:D6} based on assertions.\n");
-#endif
                 cast.Flags &= ~GTF_OVERFLOW;
                 return optAssertionProp_Update(cast, cast, null);
             }
@@ -118,9 +116,7 @@ public partial class Compiler
                 operand.ChangeType(descriptor.Type);
             }
 
-#if DEBUG
             JITDUMP($"Removing cast {cast.TreeId:D6} as redundant based on assertions.\n");
-#endif
             return optAssertionProp_Update(operand, cast, null);
         }
 

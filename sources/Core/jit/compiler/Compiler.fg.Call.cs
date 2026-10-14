@@ -365,9 +365,7 @@ public partial class Compiler
             var isRootReplaced = root != call;
             if (isRootReplaced)
             {
-#if DEBUG
                 JITDUMP($"Replace root node [{root.TreeId:D6}] with [{call.TreeId:D6}] tail call node.\n");
-#endif
                 fgMorphStmt.RootNode = call;
             }
 

@@ -1207,6 +1207,8 @@ public partial class GenTree
 
 #if DEBUG
     public int TreeId => _treeId;
+#else
+    public int TreeId => throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
 #endif
 
     public var_types Type

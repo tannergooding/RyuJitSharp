@@ -235,13 +235,14 @@ public partial class Compiler
         {
             // Dominators have not been computed yet.
             fgModified = false;
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 JITDUMP("\nAfter fgCreateFuncletPrologBlocks()");
                 fgDispBasicBlocks();
                 fgDispHandlerTab();
             }
+
+#if DEBUG
             fgVerifyHandlerTab();
             fgDebugCheckBBlist();
 #endif

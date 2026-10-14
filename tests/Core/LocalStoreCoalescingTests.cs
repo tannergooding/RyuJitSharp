@@ -48,9 +48,10 @@ internal static unsafe class LocalStoreCoalescingTests
                 Assert.That(second.LclOffs, Is.EqualTo(Math.Min(firstOffset, secondOffset)));
                 Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo((nint)expected));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -75,9 +76,10 @@ internal static unsafe class LocalStoreCoalescingTests
             Assert.That(current.Type, Is.EqualTo(var_types.TYP_INT));
             Assert.That(current.LclOffs, Is.Zero);
             Assert.That(current.Data.AsIntCon().IconValue, Is.EqualTo((nint)0x1122AA44));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -108,9 +110,10 @@ internal static unsafe class LocalStoreCoalescingTests
             Assert.That(stores[3].Type, Is.EqualTo(var_types.TYP_INT));
             Assert.That(stores[3].Data.AsIntCon().IconValue, Is.EqualTo((nint)0x44332211));
             Assert.That(stores[3].Next, Is.SameAs(next));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -134,9 +137,10 @@ internal static unsafe class LocalStoreCoalescingTests
             Assert.That(block.FirstNode, Is.SameAs(secondValue));
             Assert.That(second.Type, Is.EqualTo(type));
             Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo((nint)value));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -162,9 +166,10 @@ internal static unsafe class LocalStoreCoalescingTests
             Assert.That(second.LclOffs, Is.Zero);
             Assert.That(second.Data.AsVecCon().SimdVal.u64[0], Is.EqualTo(0x1122334455667788UL));
             Assert.That(second.Data.AsVecCon().SimdVal.u64[1], Is.EqualTo(0x0102030405060708UL));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -192,9 +197,10 @@ internal static unsafe class LocalStoreCoalescingTests
             Assert.That(first.Data.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
             Assert.That(second.Data.AsLclVar().LclNum, Is.EqualTo(first.Data.AsLclVar().LclNum));
             Assert.That(secondValue.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -227,9 +233,10 @@ internal static unsafe class LocalStoreCoalescingTests
             Assert.That(second.Data.AsVecCon().SimdVal.u64[2], Is.EqualTo(0x0102030405060708UL));
             Assert.That(second.Data.AsVecCon().SimdVal.AsSpan<byte>()[32..].ToArray(),
                 Is.All.EqualTo((byte)0));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

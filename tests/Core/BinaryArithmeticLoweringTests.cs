@@ -72,10 +72,11 @@ internal static unsafe class BinaryArithmeticLoweringTests
             Assert.That(setcc._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(ccmp._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(tree.Next is null && right.Next is null, Is.True);
-#if DEBUG
-            Assert.That(setcc.TreeId, Is.EqualTo(tree.TreeId));
-            Assert.That(ccmp.TreeId, Is.EqualTo(right.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(setcc.TreeId, Is.EqualTo(tree.TreeId));
+                Assert.That(ccmp.TreeId, Is.EqualTo(right.TreeId));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -397,9 +398,10 @@ internal static unsafe class BinaryArithmeticLoweringTests
                 Assert.That(replacement.GetOp(2), Is.SameAs(value));
             }
             Assert.That(root.Next is null && inner.Next is null, Is.True);
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.Not.EqualTo(root.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.Not.EqualTo(root.TreeId));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -681,9 +683,10 @@ internal static unsafe class BinaryArithmeticLoweringTests
 
     private static void CheckLir(Compiler compiler, BasicBlock block)
     {
-#if DEBUG
-        Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+        }
     }
 
     private static void Enable(Compiler compiler, ManagedInstructionSet isa)

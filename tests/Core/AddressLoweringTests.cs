@@ -172,10 +172,11 @@ internal static unsafe class AddressLoweringTests
             Assert.That(shift.Next, Is.Null);
             Assert.That(shiftAmount.Next, Is.Null);
             Assert.That(displacement.Next, Is.Null);
-#if DEBUG
-            Assert.That(mode.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(mode.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -253,9 +254,10 @@ internal static unsafe class AddressLoweringTests
             }
             Assert.That(original.Prev, Is.Null);
             Assert.That(original.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -333,10 +335,11 @@ internal static unsafe class AddressLoweringTests
             Assert.That(successor.Prev, Is.SameAs(result));
             Assert.That(original.Prev, Is.Null);
             Assert.That(original.Next, Is.Null);
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

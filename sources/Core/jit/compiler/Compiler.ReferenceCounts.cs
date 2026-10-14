@@ -271,9 +271,7 @@ public partial class Compiler
             assert(tree.Oper is GT_LCL_VAR);
             if (!lvaGenericsContextInUse)
             {
-#if DEBUG
                 JITDUMP($"-- generic context in use at [{tree.TreeId:D6}]\n");
-#endif
                 lvaGenericsContextInUse = true;
             }
         }

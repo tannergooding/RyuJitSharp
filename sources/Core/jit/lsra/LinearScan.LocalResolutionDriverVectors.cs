@@ -134,9 +134,7 @@ public sealed partial class LinearScan
                     break;
                 }
             }
-#if DEBUG
             JITDUMP($"before {useNode.TreeId}.{useNode.Oper.Name}:\n");
-#endif
             block.InsertBefore(useNode, LIR.SeqTree(_compiler, restore));
         }
         else

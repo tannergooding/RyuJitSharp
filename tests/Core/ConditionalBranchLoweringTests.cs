@@ -41,9 +41,10 @@ internal static unsafe class ConditionalBranchLoweringTests
             Assert.That(replacement.Flags, Is.EqualTo(branch.Flags));
             Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(replacement._vnPair.Conservative, Is.EqualTo(ValueNumStore.NoVN));
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(branch.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(branch.TreeId));
+            }
             Assert.That(condition.Oper, Is.EqualTo(loweredOper));
             Assert.That(condition.Type, Is.EqualTo(TYP_VOID));
             Assert.That(condition.Flags & GTF_SET_FLAGS, Is.EqualTo(GTF_SET_FLAGS));
@@ -139,9 +140,10 @@ internal static unsafe class ConditionalBranchLoweringTests
                 Assert.That(block.LastNode, Is.SameAs(cc));
                 Assert.That(cc.Flags, Is.EqualTo(user.Flags & GTF_COMMON_MASK));
                 Assert.That(user.Prev is null && user.Next is null, Is.True);
-#if DEBUG
-                Assert.That(cc.TreeId, Is.EqualTo(user.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(cc.TreeId, Is.EqualTo(user.TreeId));
+                }
             }
             else
             {
@@ -149,9 +151,10 @@ internal static unsafe class ConditionalBranchLoweringTests
                 Assert.That(cc.Type, Is.EqualTo(TYP_INT));
                 Assert.That(cc.Next, Is.SameAs(user));
                 Assert.That(user.Op1, Is.SameAs(cc));
-#if DEBUG
-                Assert.That(cc.TreeId, Is.Not.EqualTo(producer.TreeId));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(cc.TreeId, Is.Not.EqualTo(producer.TreeId));
+                }
             }
         });
     }

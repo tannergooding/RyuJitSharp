@@ -25,9 +25,7 @@ public sealed partial class IndirectCallTransformer
         public override void Run()
         {
             _origCall = GetCall(_stmt);
-#if DEBUG
             JITDUMP($"\n----------------\n\n*** {Name} contemplating [{_origCall.TreeId:D6}] in {FMT_BB(_currBlock.bbNum)} \n");
-#endif
             _likelihood = _origCall.GetGdvCandidateInfo(0).likelihood;
             assert((_likelihood >= 0) && (_likelihood <= 100));
             JITDUMP($"Likelihood of correct guess is {_likelihood}\n");
@@ -196,25 +194,19 @@ public sealed partial class IndirectCallTransformer
                     if ((parent is not null) && (parent.Oper is GT_COMMA) && (parent.AsOp().Op1 == retExpr))
                     {
                         _returnValueUnused = true;
-#if DEBUG
                         JITDUMP($"GT_RET_EXPR [{retExpr.TreeId:D6}] value is unused\n");
-#endif
                     }
                 }
             }
 
             if (noReturnValue)
             {
-#if DEBUG
                 JITDUMP($"Linking GT_RET_EXPR [{retExpr.TreeId:D6}] for VOID return to NOP\n");
-#endif
                 retExpr.SubstExpr = _compiler.gtNewNothingNode();
             }
             else if (_returnValueUnused)
             {
-#if DEBUG
                 JITDUMP($"Linking GT_RET_EXPR [{retExpr.TreeId:D6}] for UNUSED return to NOP\n");
-#endif
                 retExpr.SubstExpr = _compiler.gtNewNothingNode();
             }
             else
@@ -260,9 +252,7 @@ public sealed partial class IndirectCallTransformer
                 }
 
                 var tempTree = _compiler.gtNewLclvNode(_origCall.Type, _returnTemp);
-#if DEBUG
                 JITDUMP($"Linking GT_RET_EXPR [{retExpr.TreeId:D6}] to refer to temp V{_returnTemp:D2}\n");
-#endif
                 retExpr.SubstExpr = tempTree;
             }
         }
@@ -369,9 +359,7 @@ public sealed partial class IndirectCallTransformer
                     var map = _compiler.ImpEnumeratorGdvLocalMap;
                     if (map.TryGetValue(_origCall, out var enumeratorLcl))
                     {
-#if DEBUG
                         JITDUMP($"Flagging [{call.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
-#endif
                         _ = map.Remove(_origCall);
                         map[call] = enumeratorLcl;
                     }
@@ -583,9 +571,7 @@ public sealed partial class IndirectCallTransformer
                     var call = root.AsCall();
                     if (call.IsGuardedDevirtualizationCandidate && (call.GetGdvCandidateInfo(0).likelihood >= gdvChainLikelihood))
                     {
-#if DEBUG
                         JITDUMP($"GDV call at [{call.TreeId:D6}] has likelihood {call.GetGdvCandidateInfo(0).likelihood} >= {gdvChainLikelihood}; chaining ({chainStatementDup} stmts, {chainNodeDup} nodes to dup).\n");
-#endif
                         call._callMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
                         break;
                     }
@@ -601,9 +587,7 @@ public sealed partial class IndirectCallTransformer
                 _ = visitor.WalkTree(ref nextStmt.RootNodeRef, null);
                 if (visitor.UnclonableNode is not null)
                 {
-#if DEBUG
                     JITDUMP($"  node [{visitor.UnclonableNode.TreeId:D6}] can't be cloned\n");
-#endif
                     break;
                 }
 

@@ -724,9 +724,7 @@ public partial class Compiler
     /// <remarks>Spill ret_expr in the call node, because they can't be cloned.</remarks>
     public void addFatPointerCandidate(GenTreeCall call)
     {
-#if DEBUG
         JITDUMP($"Marking call [{call.TreeId:D6}] as fat pointer candidate\n");
-#endif
 
         MethodHasFatPointer = true;
         call.IsFatPointerCandidate = true;
@@ -778,20 +776,16 @@ public partial class Compiler
 
         if (!isEnabled)
         {
-#if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- disabled by jit config\n");
 
-#endif
             return;
         }
 
         // Bail if not optimizing or the call site is very likely cold
         if (compCurBB.isRunRarely || opts.OptimizationDisabled)
         {
-#if DEBUG
             JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- rare / dbg / minopts\n");
 
-#endif
             return;
         }
 
@@ -810,9 +804,7 @@ public partial class Compiler
 
         // We're all set, proceed with candidate creation.
 
-#if DEBUG
         JITDUMP($"Marking call [{call.TreeId:D6}] as guarded devirtualization candidate; will guess for {(classHandle != NO_CLASS_HANDLE ? "class" : "method")} {(classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle))}\n");
-#endif
 
         MethodHasGuardedDevirtualization = true;
 
@@ -1447,9 +1439,7 @@ public partial class Compiler
             {
                 var call = expr.AsRetExpr().InlineCandidate;
 
-#if DEBUG
                 JITDUMP($"\nimpAppendStmt: after sinking a local struct store into inline candidate [{call.TreeId:D6}], we need to reorder subsequent spills.\n");
-#endif
 
                 // Move all newly appended statements to just before the call's statement.
                 // First, find the statement containing the call.
@@ -2883,9 +2873,7 @@ public partial class Compiler
 
         assert(compCurBB is not null);
 
-#if DEBUG
         JITDUMP($"\n ... marking [{call.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)} for method/class profile instrumentation\n");
-#endif
 
         // Record some info needed for the class profiling probe.
         call._handleHistogramProfileCandidateInfo = new HandleHistogramProfileCandidateInfo {
@@ -4321,9 +4309,7 @@ public partial class Compiler
             {
                 assert(varTypeIsSimd(simdReturnType));
             }
-#if DEBUG
             JITDUMP($"changing the type of a call [{call.TreeId:D6}] from {call.Type.Name} to {simdReturnType.Name}\n");
-#endif
 
             call.ChangeType(simdReturnType);
         }
@@ -5355,12 +5341,10 @@ public partial class Compiler
 
             JITDUMP("\nAfter impImport() added blocks for try,catch,finally");
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDispBasicBlocks();
             }
-#endif
         }
     }
 
@@ -5528,9 +5512,7 @@ public partial class Compiler
 
                     if (map.TryGetValue(iciCall, out var enumeratorLcl))
                     {
-#if DEBUG
                         JITDUMP($"Flagging [{op1.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
-#endif
 
                         _ = map.Remove(iciCall);
                         map[op1] = enumeratorLcl;
@@ -5539,9 +5521,7 @@ public partial class Compiler
 
                 if (call.ShouldHaveRetBufArg)
                 {
-#if DEBUG
                     JITDUMP($"Must insert newobj stmts for box before call [{call.TreeId:D6}]\n");
-#endif
 
                     // Walk back through the statements in this block, looking for the one
                     // that has this call as the root node.
@@ -8643,9 +8623,7 @@ public partial class Compiler
 
                                 if (map.TryGetValue(call, out var enumeratorLcl))
                                 {
-#if DEBUG
                                     JITDUMP($"Flagging [{op1.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
-#endif
 
                                     map.Remove(call);
                                     map[op1] = enumeratorLcl;
@@ -10149,9 +10127,7 @@ public partial class Compiler
                         }
                         else
                         {
-#if DEBUG
                             JITDUMP($"\nUnable to optimize {((opcode is CEE_UNBOX) ? "UNBOX" : "UNBOX.ANY")} -- class for [{op1.TreeId:D6}] not known\n");
-#endif
                         }
 
                         JITDUMP($"\n Importing {((opcode is CEE_UNBOX) ? "UNBOX" : "UNBOX.ANY")} as inline sequence\n");
@@ -11381,9 +11357,7 @@ public partial class Compiler
                             JITDUMP($"V{lclNum:D2} value is IEnumerator<T> via GDV\n");
                             compiler.lvaTable[lclNum].lvIsEnumerator = true;
 
-#if DEBUG
                             JITDUMP($"Flagging [{call.TreeId:D6}] for enumerator cloning via V{lclNum:D2}\n");
-#endif
 
                             compiler.ImpEnumeratorGdvLocalMap[call] = lclNum;
                             compiler.Metrics.EnumeratorGDV++;
@@ -12065,13 +12039,11 @@ public partial class Compiler
             jitprintf($"\nBefore import CEE_LEAVE in {FMT_BB(block.bbNum)} (targeting {FMT_BB(block.Target.bbNum)}):\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
-#endif
 
         var blkAddr = block.bbCodeOffs;
         var leaveTarget = block.Target;
@@ -12428,13 +12400,11 @@ public partial class Compiler
             jitprintf("\nAfter import CEE_LEAVE:\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
-#endif
     }
 
     /// <summary>Build and import `new` of multi-dimensional array</summary>
@@ -13029,9 +12999,7 @@ public partial class Compiler
         assert((resumedUseArg.Node.Oper is GT_LCL_VAR) && (resumedDefArg.Node.Oper is GT_LCL_ADDR)
             && (execArg.Node.Oper is GT_LCL_VAR) && (syncArg.Node.Oper is GT_LCL_VAR));
 
-#if DEBUG
         JITDUMP($"Inheriting resumed use [{resumedUseArg.Node.TreeId:D6}], resumed def [{resumedDefArg.Node.TreeId:D6}], and contexts [{execArg.Node.TreeId:D6}] and [{syncArg.Node.TreeId:D6}] from caller node\n");
-#endif
 
         var resumedUseNode = gtCloneExpr(resumedUseArg.Node);
         var resumedDefNode = gtCloneExpr(resumedDefArg.Node);
@@ -14686,16 +14654,12 @@ public partial class Compiler
                 {
                     if (!keepNonInlineable)
                     {
-#if DEBUG
                         JITDUMP($"Revoking guarded devirtualization candidate {candidateId} of call [{call.TreeId:D6}]: target method can't be inlined\n");
-#endif
                         call.RemoveGdvCandidateInfo(this, candidateId);
                         continue;
                     }
 
-#if DEBUG
                     JITDUMP($"Keeping GDV candidate {candidateId} of call [{call.TreeId:D6}] for devirtualization only: target can't be inlined\n");
-#endif
                     assert(!call.GetGdvCandidateInfo(candidateId).isInlineable);
                     assert(call.GetGdvCandidateInfo(candidateId).guardedClassHandle != NO_CLASS_HANDLE);
                 }
@@ -14975,9 +14939,7 @@ public partial class Compiler
             // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate is also a tail call candidate, it can use the same return spill temp.
             inlineCandidateInfo.preexistingSpillTemp = impInlineInfo.inlineCandidateInfo.preexistingSpillTemp;
 
-#if DEBUG
             JITDUMP($"Inline candidate [{call.TreeId:D6}] can share spill temp V{inlineCandidateInfo.preexistingSpillTemp:D2}\n");
-#endif
         }
 
         if (call.IsGuardedDevirtualizationCandidate)
@@ -17408,9 +17370,7 @@ public partial class Compiler
 
                             if (returnValue.Oper.IsCall)
                             {
-#if DEBUG
                                 JITDUMP($"Flagging [{returnValue.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
-#endif
 
                                 _ = map.Remove(origCall);
                                 map[returnValue] = enumeratorLcl;
@@ -17739,9 +17699,7 @@ public partial class Compiler
         else
         {
             assert(inliningCall is not null && inliningCall.IsAsync);
-#if DEBUG
             JITDUMP($"Inheriting continuation handling {(uint)inliningCall.GetAsyncInfo().ContinuationContextHandling} from caller [{inliningCall.TreeId:D6}]\n");
-#endif
             asyncInfo.ContinuationContextHandling = inliningCall.GetAsyncInfo().ContinuationContextHandling;
             // Frame depth is in async info, so mark the call before inheriting its contexts.
             awaitCall.SetIsAsync(asyncInfo);
@@ -18081,9 +18039,7 @@ public partial class Compiler
                     return;
                 }
 
-#if DEBUG
                 JITDUMP($"Call [{call.TreeId:D6}] is an await in an inlinee that may suspend\n");
-#endif
                 usesOwnContexts = true;
             }
             else
@@ -18091,9 +18047,7 @@ public partial class Compiler
                 assert(!compIsAsyncVersion || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
                 var inlCall = impInlineInfo.iciCall;
                 assert(inlCall is not null);
-#if DEBUG
                 JITDUMP($"Call [{inlCall.TreeId:D6}] is to function with a tail async call [{call.TreeId:D6}]\n");
-#endif
                 assert(inlCall.IsAsync);
                 asyncInfo.ContinuationContextHandling = inlCall.GetAsyncInfo().ContinuationContextHandling;
                 assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
@@ -20014,15 +19968,11 @@ public partial class Compiler
 
             block.SetFlags(BBF_RECURSIVE_TAILCALL);
 
-#if DEBUG
             JITDUMP($"[{call.TreeId:D6}] is a recursive call in tail position\n");
-#endif
         }
         else
         {
-#if DEBUG
             JITDUMP($"[{call.TreeId:D6}] is{(call.CanTailCall ? "" : " not")} in tail position and is{(gtIsRecursiveCall(derivedMethod) ? "" : " not")} recursive\n");
-#endif
         }
 
         if (Configuration.FEATURE_READYTORUN && IsAot)
@@ -21202,10 +21152,8 @@ public partial class Compiler
 
             if (numArgs > numParams)
             {
-#if DEBUG
                 JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has more arguments than signature (sig has {numParams} parameters)\n");
 
-#endif
                 return false;
             }
 
@@ -21215,9 +21163,7 @@ public partial class Compiler
 
             if (!impCheckImplicitArgumentCoercion(sigType, arg.Node.Type))
             {
-#if DEBUG
                 JITDUMP($"Incompatible method GDV: arg [{arg.Node.TreeId:D6}] is type-incompatible with signature of target\n");
-#endif
 
                 return false;
             }
@@ -21230,9 +21176,7 @@ public partial class Compiler
 
                 if (!ClassLayout.AreCompatible(callLayout, tarLayout))
                 {
-#if DEBUG
                     JITDUMP($"Incompatible method GDV: struct arg [{arg.Node.TreeId:D6}] is layout-incompatible with signature of target\n");
-#endif
 
                     return false;
                 }
@@ -21243,9 +21187,7 @@ public partial class Compiler
 
         if (numArgs < numParams)
         {
-#if DEBUG
             JITDUMP($"Incompatible method GDV: call [{call.TreeId:D6}] has fewer arguments ({numArgs}) than signature ({numParams})\n");
-#endif
 
             return false;
         }

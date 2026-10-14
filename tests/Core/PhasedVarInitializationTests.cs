@@ -12,6 +12,8 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class PhasedVarInitializationTests
 {
+    private static bool IsDebug => Configuration.DEBUG;
+
     [TestCase(0, 1)]
     [TestCase(-1, 0)]
     [TestCase(int.MinValue, int.MaxValue)]
@@ -54,13 +56,15 @@ internal static class PhasedVarInitializationTests
     {
         WithoutAssertions(() => {
             PhasedVar<int> value = default;
-#if DEBUG
-            Assert.That(value.HasFinalValue, Is.False);
-#endif
+            if (IsDebug)
+            {
+                Assert.That(value.HasFinalValue, Is.False);
+            }
             value.OverrideAssign(assigned);
-#if DEBUG
-            Assert.That(value.HasFinalValue, Is.False);
-#endif
+            if (IsDebug)
+            {
+                Assert.That(value.HasFinalValue, Is.False);
+            }
             Assert.That(value.Value, Is.EqualTo(assigned));
             Assert.That(value.HasFinalValue, Is.True);
         });
@@ -74,9 +78,10 @@ internal static class PhasedVarInitializationTests
             var copy = original;
             copy.OverrideAssign(9);
             Assert.That(copy.Value, Is.EqualTo(9));
-#if DEBUG
-            Assert.That(original.HasFinalValue, Is.False);
-#endif
+            if (IsDebug)
+            {
+                Assert.That(original.HasFinalValue, Is.False);
+            }
             Assert.That(original.Value, Is.EqualTo(7));
             original.OverrideAssign(11);
             Assert.That(copy.Value, Is.EqualTo(9));
@@ -87,17 +92,19 @@ internal static class PhasedVarInitializationTests
     private static void CheckInitialized<T>(T initial, T replacement)
     {
         var value = new PhasedVar<T>(initial);
-#if DEBUG
-        Assert.That(value.HasFinalValue, Is.False);
-#endif
+        if (IsDebug)
+        {
+            Assert.That(value.HasFinalValue, Is.False);
+        }
         Assert.That(value.Value, Is.EqualTo(initial));
         Assert.That(value.HasFinalValue, Is.True);
         value.ResetWritePhase();
 
         value.OverrideAssign(replacement);
-#if DEBUG
-        Assert.That(value.HasFinalValue, Is.False);
-#endif
+        if (IsDebug)
+        {
+            Assert.That(value.HasFinalValue, Is.False);
+        }
         Assert.That(value.Value, Is.EqualTo(replacement));
         Assert.That(value.HasFinalValue, Is.True);
 
@@ -106,13 +113,15 @@ internal static class PhasedVarInitializationTests
         Assert.That(value.Value, Is.EqualTo(initial));
 
         value.ResetWritePhase();
-#if DEBUG
-        Assert.That(value.HasFinalValue, Is.False);
-#endif
+        if (IsDebug)
+        {
+            Assert.That(value.HasFinalValue, Is.False);
+        }
         value.OverrideAssign(replacement);
-#if DEBUG
-        Assert.That(value.HasFinalValue, Is.False);
-#endif
+        if (IsDebug)
+        {
+            Assert.That(value.HasFinalValue, Is.False);
+        }
         Assert.That(value.Value, Is.EqualTo(replacement));
         Assert.That(value.HasFinalValue, Is.True);
     }

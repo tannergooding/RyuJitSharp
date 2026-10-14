@@ -27,9 +27,7 @@ internal static unsafe class SwitchRecognitionTests
         WithCompiler(compiler =>
         {
             var (first, matched, unmatched) = CreateChain(compiler, values);
-#if DEBUG
-            var originalId = first.LastStmt!.RootNode.TreeId;
-#endif
+            var originalId = TestConfiguration.IsDebug ? first.LastStmt!.RootNode.TreeId : 0;
             Assert.That(Detect(compiler, first), Is.EqualTo(expected));
             if (!expected)
             {
@@ -57,9 +55,10 @@ internal static unsafe class SwitchRecognitionTests
             Assert.That(first.LastStmt?.RootNode.Oper, Is.EqualTo(GT_SWITCH));
             Assert.That(first.LastStmt?.RootNode.AsUnOp().Op1.Oper,
                 Is.EqualTo(isNormalized ? GT_ADD : GT_LCL_VAR));
-#if DEBUG
-            Assert.That(first.LastStmt?.RootNode.TreeId, Is.EqualTo(originalId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(first.LastStmt?.RootNode.TreeId, Is.EqualTo(originalId));
+            }
             Assert.That(compiler.fgHasSwitch, Is.True);
             Assert.That(compiler.opts.compProcedureSplitting, Is.False);
             var falseLikelihood = Math.Pow(0.75, values.Length);

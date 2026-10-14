@@ -41,15 +41,13 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\n*************** Before fgRemoveEmptyFinally()\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
             jitprintf("\n");
         }
-#endif
 
         var finallyCount = 0;
         var emptyCount = 0;
@@ -182,15 +180,13 @@ public partial class Compiler
             JITDUMP($"fgRemoveEmptyFinally() removed {emptyCount} try-finally/fault clauses " +
                 $"from {finallyCount} finally/fault(s)\n");
             fgInvalidateDfsTree();
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("\n*************** After fgRemoveEmptyFinally()\n");
                 fgDispBasicBlocks();
                 fgDispHandlerTab();
                 jitprintf("\n");
             }
-#endif
         }
 
         return emptyCount > 0 ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;

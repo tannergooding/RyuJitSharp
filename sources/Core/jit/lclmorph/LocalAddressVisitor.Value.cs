@@ -200,6 +200,8 @@ internal partial struct LocalAddressVisitor
 
 #if DEBUG
         internal readonly bool IsConsumed => _consumed;
+#else
+        internal readonly bool IsConsumed => throw new System.InvalidOperationException("Consumption state is only available in Debug builds.");
 #endif
     }
 }

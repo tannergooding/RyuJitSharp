@@ -231,13 +231,11 @@ public partial class Compiler
             jitprintf("\nAfter this change in fgOptimizeBranch the BB graph is:");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks(verboseTrees);
             jitprintf("\n");
         }
-#endif
 
         var uniquePred = bDest.GetUniquePred(this);
         if ((uniquePred is not null) && fgCanCompactBlock(uniquePred))

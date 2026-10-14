@@ -286,9 +286,10 @@ internal static unsafe class SwitchLoweringTests
         Assert.That(comparison.Oper, Is.EqualTo(GT_GT));
         Assert.That(comparison.IsUnsigned, Is.True);
         Assert.That(comparison.Op2.AsIntCon().IconValue, Is.EqualTo((nint)lastCase));
-#if DEBUG
-        Assert.That(comparison.Op2.TreeId, Is.LessThan(comparison.Op1.TreeId));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(comparison.Op2.TreeId, Is.LessThan(comparison.Op1.TreeId));
+        }
         Assert.That(source.FalseTarget, Is.SameAs(source.Next));
 
         return source.FalseTarget;

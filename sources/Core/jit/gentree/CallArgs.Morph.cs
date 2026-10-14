@@ -149,10 +149,8 @@ public partial struct CallArgs
                         ((exceptionFlags & ExceptionSetFlags.UnknownException) == ExceptionSetFlags.None);
                     if (!exactlyOneKnown || (exceptionFlags != previousExceptionFlags))
                     {
-#if DEBUG
                         JITDUMP($"Exception set for arg [{node.TreeId:D6}] interferes with previous tree " +
                             $"[{previousExceptionTree.TreeId:D6}]; must evaluate previous trees with exceptions to temps\n");
-#endif
                         // Unspilled throwing predecessors can only share the previous
                         // tree's single exception; all interfere with this different set.
                         foreach (var previous in Args)
@@ -418,9 +416,7 @@ public partial struct CallArgs
             return;
         }
 
-#if DEBUG
         JITDUMP($"Adding final args and determining ABI info for [{call.TreeId:D6}]:\n");
-#endif
         _flags &= ~(Flags.HasRegArgs | Flags.HasStackArgs);
         assert(_lateHead is null);
         if (TargetOS.IsUnix && IsVarArgs)
@@ -581,9 +577,7 @@ public partial struct CallArgs
         {
             if (link.IsArgAddedLate)
             {
-#if DEBUG
                 JITDUMP($"Removing arg {link.WellKnownArg} [{link.Node.TreeId:D6}] to prepare for re-morphing call\n");
-#endif
                 link = link.NextRef;
             }
             else

@@ -23,9 +23,7 @@ public sealed partial class Lowering
 
     private int StoreFieldListToNewLocal(ClassLayout layout, GenTreeFieldList fieldList)
     {
-#if DEBUG
         JITDUMP($"Spilling field list [{fieldList.TreeId:D6}] to stack\n");
-#endif
         var compiler = CompilerInstance;
         var localNumber = compiler.lvaGrabTemp(shortLifetime: true, "Spilled local for field list");
         compiler.lvaSetStruct(localNumber, layout, unsafeValueClsCheck: false);
@@ -94,9 +92,7 @@ public sealed partial class Lowering
     private static bool IsFieldListCompatibleWithRegisters(
         GenTreeFieldList fieldList, int numRegs, Func<int, LowerFieldListRegisterInfo> getRegInfo)
     {
-#if DEBUG
         JITDUMP($"Checking if field list [{fieldList.TreeId:D6}] is compatible with registers: ");
-#endif
         var use = fieldList.Uses.Head;
         for (var index = 0; index < numRegs; index++)
         {
@@ -121,9 +117,7 @@ public sealed partial class Lowering
                 var fieldStart = use.Offset;
                 if (fieldStart < regStart)
                 {
-#if DEBUG
                     JITDUMP($"it is not; field [{use.Node.TreeId:D6}] starts before register {index}\n");
-#endif
                     return false;
                 }
                 if (fieldStart >= regEnd)
@@ -133,17 +127,13 @@ public sealed partial class Lowering
 
                 if (fieldStart + use.Type.Size > regEnd)
                 {
-#if DEBUG
                     JITDUMP($"it is not; field [{use.Node.TreeId:D6}] ends after register {index}\n");
-#endif
                     return false;
                 }
 
                 if (varTypeUsesFloatReg(use.Node.Type) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
                 {
-#if DEBUG
                     JITDUMP($"it is not; field [{use.Node.TreeId:D6}] requires an insertion into register {index}\n");
-#endif
                     return false;
                 }
 
@@ -151,9 +141,7 @@ public sealed partial class Lowering
                 if (varTypeUsesIntReg(use.Node.Type) && varTypeUsesFloatReg(regType) &&
                     (regType.Size > Configuration.TARGET_POINTER_SIZE))
                 {
-#if DEBUG
                     JITDUMP($"it is not; field [{use.Node.TreeId:D6}] requires an insertion into float register {index} of size {regType.Size}\n");
-#endif
                     return false;
                 }
                 use = use.Next;
@@ -163,9 +151,7 @@ public sealed partial class Lowering
 
         if (use is not null)
         {
-#if DEBUG
             JITDUMP($"it is not; field [{use.Node.TreeId:D6}] corresponds to no register\n");
-#endif
             return false;
         }
 

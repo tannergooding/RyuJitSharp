@@ -106,9 +106,7 @@ internal static unsafe class AsyncTransformationTests
             initial.InsertAtEnd(offset);
             initial.InsertAtEnd(addend);
             initial.InsertAtEnd(use);
-#if DEBUG
-            var originalId = offset.TreeId;
-#endif
+            var originalId = TestConfiguration.IsDebug ? offset.TreeId : 0;
             var remainder = compiler.fgSplitBlockAfterNode(initial, marker);
             var layout = new AsyncContinuationLayout();
             layout.ContinuationMemberOffsets.Add(16);
@@ -127,9 +125,10 @@ internal static unsafe class AsyncTransformationTests
             Assert.That(use.Op1, Is.SameAs(resolved));
             Assert.That(resolved.IconVal, Is.EqualTo((nint)(
                 OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object + 16)));
-#if DEBUG
-            Assert.That(resolved.TreeId, Is.EqualTo(originalId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(resolved.TreeId, Is.EqualTo(originalId));
+            }
         });
     }
 

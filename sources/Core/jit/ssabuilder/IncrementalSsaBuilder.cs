@@ -241,9 +241,7 @@ public sealed class IncrementalSsaBuilder
             var ssaNum = descriptor.lvPerSsaData.AllocSsaNum();
             descriptor.GetPerSsaData(ssaNum) = new LclSsaVarDsc(def.Block, tree);
             tree.SsaNum = ssaNum;
-#if DEBUG
             JITDUMP($"  [{tree.TreeId:D6}] d:{ssaNum}\n");
-#endif
             descriptor.lvInSsa = true;
             var vnStore = _compiler.vnStore ??
                 throw new InvalidOperationException("SSA insertion requires value numbering.");
@@ -295,9 +293,7 @@ public sealed class IncrementalSsaBuilder
             ssaDesc = new LclSsaVarDsc(def.Block, tree);
             tree.SsaNum = ssaNum;
             ssaDesc._vnPair = valueNumbers.VNPNormalPair(tree.Data._vnPair);
-#if DEBUG
             JITDUMP($"  [{tree.TreeId:D6}] d:{ssaNum}\n");
-#endif
         }
 
         descriptor.lvInSsa = true;
@@ -313,9 +309,7 @@ public sealed class IncrementalSsaBuilder
         assert(_finalizedDefs);
 #endif
         var useTree = use.Tree ?? throw new InvalidOperationException("SSA use has no tree.");
-#if DEBUG
         JITDUMP($"Inserting use [{useTree.TreeId:D6}] into SSA\n");
-#endif
 
         UseDefLocation reachingDef;
         if (_defs.Count == 1)
@@ -344,9 +338,7 @@ public sealed class IncrementalSsaBuilder
 
         var reachingTree = reachingDef.Tree ??
             throw new InvalidOperationException("SSA use has no reaching definition.");
-#if DEBUG
         JITDUMP($"  Reaching def is [{reachingTree.TreeId:D6}] d:{reachingTree.SsaNum}\n");
-#endif
         useTree.SsaNum = reachingTree.SsaNum;
         _liveInBuilder.MarkLiveInBackwards(_lclNum, use, reachingDef);
         _compiler.lvaGetDesc(_lclNum).GetPerSsaData(reachingTree.SsaNum).AddUse(use.Block);

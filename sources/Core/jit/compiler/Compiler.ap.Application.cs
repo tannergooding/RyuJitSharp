@@ -252,9 +252,7 @@ public partial class Compiler
             form = GetWriteBarrierForm(optConservativeNormalVN(address));
         }
 
-#if DEBUG
         JITDUMP($"Trying to determine the exact type of write barrier for STOREIND [{indir.TreeId}06]: ");
-#endif
         if (form is WBF_NoBarrier)
         {
             JITDUMP("is not needed at all.\n");
@@ -284,18 +282,14 @@ public partial class Compiler
         var form = GetWriteBarrierForm(optConservativeNormalVN(store.Addr));
         if (form is WBF_NoBarrier)
         {
-#if DEBUG
             JITDUMP($"Add GTF_IND_TGT_NOT_HEAP to STORE_BLK [{store.TreeId:D6}]: ");
-#endif
             store.Flags |= GTF_IND_TGT_NOT_HEAP;
             return true;
         }
 
         if (form is WBF_BarrierUnchecked)
         {
-#if DEBUG
             JITDUMP($"Add GTF_IND_TGT_HEAP to STORE_BLK [{store.TreeId:D6}]: ");
-#endif
             store.Flags |= GTF_IND_TGT_HEAP;
             return true;
         }

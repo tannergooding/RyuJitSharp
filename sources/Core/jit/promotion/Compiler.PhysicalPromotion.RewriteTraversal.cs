@@ -317,11 +317,9 @@ public partial class Compiler
                     return;
                 }
 
-#if DEBUG
                 JITDUMP($"Processing struct use [{local.TreeId:D6}] of V{local.LclNum:D2}." +
                     $"[{local.LclOffs:D3}..{local.LclOffs + (local.GetLayout(_compiler) ??
                         throw new InvalidOperationException("A struct use needs a layout.")).Size:D3})\n");
-#endif
                 if (!ReplaceStructLocal(ref use, effectiveUser, local))
                 {
                     var size = checked((int)(local.GetLayout(_compiler) ??
@@ -342,10 +340,8 @@ public partial class Compiler
             }
 
             var index = LowerBound(aggregate.Replacements, local.LclOffs, static rep => rep.Offset);
-#if DEBUG
             JITDUMP($"Processing primitive use [{local.TreeId:D6}] of V{local.LclNum:D2}." +
                 $"[{local.LclOffs:D3}..{local.LclOffs + local.Type.Size:D3})\n");
-#endif
             if ((index >= aggregate.Replacements.Count) ||
                 (aggregate.Replacements[index].Offset != local.LclOffs))
             {

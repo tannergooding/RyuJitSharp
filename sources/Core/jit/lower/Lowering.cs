@@ -70,9 +70,7 @@ public sealed partial class Lowering : Phase
                 return;
             }
 
-#if DEBUG
             JITDUMP($"Bumping outgoing arg space size from {_outgoingArgSpaceSize} to {unsignedSize} for [{node.TreeId:D6}]\n");
-#endif
             _outgoingArgSpaceSize = unsignedSize;
         }
     }

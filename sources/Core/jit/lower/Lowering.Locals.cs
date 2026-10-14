@@ -109,9 +109,7 @@ public sealed partial class Lowering
                 assert(descriptor.lvFieldCnt == 1);
                 var fieldNumber = descriptor.lvFieldLclStart;
                 ref var field = ref CompilerInstance.lvaGetDesc(fieldNumber);
-#if DEBUG
                 JITDUMP($"Replacing an independently promoted local var V{lclStore.LclNum:D2} with its only field V{fieldNumber:D2} for the store from a call [{lclStore.TreeId:D6}]\n");
-#endif
                 lclStore.LclNum = fieldNumber;
                 lclStore.Type = field.Type;
                 descriptor = ref field;

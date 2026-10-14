@@ -48,10 +48,11 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(original.Prev, Is.Null);
             Assert.That(fill.Next, Is.Null);
             Assert.That(fill.Prev, Is.Null);
-#if DEBUG
-            Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts: false);
     }
 
@@ -81,11 +82,12 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(load.Addr, Is.SameAs(sourceAddress));
             Assert.That(source.Next, Is.Null);
             Assert.That(original.Next, Is.Null);
-#if DEBUG
-            Assert.That(load.TreeId, Is.EqualTo(source.TreeId));
-            Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(load.TreeId, Is.EqualTo(source.TreeId));
+                Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts: false);
     }
 
@@ -111,10 +113,11 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(store.Flags, Is.EqualTo(originalFlags));
             Assert.That(store._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(original.Next, Is.Null);
-#if DEBUG
-            Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts);
     }
 
@@ -138,9 +141,10 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(block.LastNode, Is.SameAs(store));
             Assert.That(first.Next, Is.Null);
             Assert.That(store.Oper, Is.EqualTo(GT_STORE_BLK));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }, minOpts: false);
     }
 
@@ -389,9 +393,10 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(store.Prev, Is.SameAs(store.Data));
             Assert.That(source.Next, Is.Null);
             Assert.That(source.Prev, Is.Null);
-#if DEBUG
-            Assert.That(store.Data.TreeId, Is.EqualTo(source.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(store.Data.TreeId, Is.EqualTo(source.TreeId));
+            }
         });
     }
 
@@ -420,10 +425,11 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(store.Prev, Is.SameAs(store.Addr));
             Assert.That(original.Next, Is.Null);
             Assert.That(original.Prev, Is.Null);
-#if DEBUG
-            Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

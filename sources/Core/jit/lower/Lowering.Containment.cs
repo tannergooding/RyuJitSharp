@@ -22,9 +22,7 @@ public sealed partial class Lowering
             var isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
             if (!isSafeToContainMem)
             {
-#if DEBUG
                 JITDUMP($"** Unsafe mem containment of [{childNode.TreeId:D6}] in [{parentNode.TreeId:D6}]\n");
-#endif
                 assert(isSafeToContainMem);
             }
         }
@@ -42,9 +40,7 @@ public sealed partial class Lowering
             var isSafeToMarkRegOptional = IsSafeToMarkRegOptional(parentNode, childNode);
             if (!isSafeToMarkRegOptional)
             {
-#if DEBUG
                 JITDUMP($"** Unsafe regOptional of [{childNode.TreeId:D6}] in [{parentNode.TreeId:D6}]\n");
-#endif
                 assert(isSafeToMarkRegOptional);
             }
         }

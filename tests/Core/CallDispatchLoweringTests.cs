@@ -297,9 +297,10 @@ internal static unsafe class CallDispatchLoweringTests
                 Assert.That(call.Next.Flags & GenTreeFlags.GTF_MEMORYBARRIER_LOAD,
                     Is.EqualTo(GenTreeFlags.GTF_MEMORYBARRIER_LOAD));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -350,9 +351,10 @@ internal static unsafe class CallDispatchLoweringTests
             Assert.That(call!.IsHelperCall(helper), Is.True);
             Assert.That(store.Oper, Is.EqualTo(genTreeOps.GT_NOP));
             Assert.That(source.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -402,9 +404,10 @@ internal static unsafe class CallDispatchLoweringTests
             Assert.That(scalarRuns, Is.EqualTo(1));
             Assert.That(store.Oper, Is.EqualTo(genTreeOps.GT_NOP));
             Assert.That(source.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

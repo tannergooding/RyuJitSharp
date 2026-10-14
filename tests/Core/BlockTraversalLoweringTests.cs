@@ -59,9 +59,10 @@ internal static unsafe class BlockTraversalLoweringTests
             Assert.That(atomic.Oper, Is.EqualTo(GT_LOCKADD));
             Assert.That(atomic.Type, Is.EqualTo(TYP_VOID));
             Assert.That(increment.IsContained, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -93,10 +94,11 @@ internal static unsafe class BlockTraversalLoweringTests
             Assert.That(CurrentBlock(lowering), Is.SameAs(second));
             Assert.That(value.IsRegOptional, Is.True);
             Assert.That(second.LastNode, Is.SameAs(keepAlive));
-#if DEBUG
-            Assert.That(first.CheckLir(compiler, checkUnusedValues: true), Is.True);
-            Assert.That(second.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(first.CheckLir(compiler, checkUnusedValues: true), Is.True);
+                Assert.That(second.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -120,9 +122,10 @@ internal static unsafe class BlockTraversalLoweringTests
             Assert.That(address.Prev!.Oper, Is.EqualTo(minOpts ? GT_STORE_BLK : GT_STOREIND));
             Assert.That(atomic.Oper, Is.EqualTo(GT_LOCKADD));
             Assert.That(increment.IsContained, Is.True);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -169,10 +172,11 @@ internal static unsafe class BlockTraversalLoweringTests
             {
                 Assert.That(marker.Next, Is.SameAs(jump));
             }
-#if DEBUG
-            Assert.That(CheckBlock(null, compiler, block), Is.True);
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(CheckBlock(null, compiler, block), Is.True);
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -323,13 +327,13 @@ internal static unsafe class BlockTraversalLoweringTests
 
         return 0;
     }
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CheckBlock")]
     private static extern bool CheckBlock(Lowering? _, Compiler compiler, BasicBlock block);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CheckCallArg")]
     private static extern void CheckCallArg(Lowering? _, GenTree arg);
-#endif
 
     private static BasicBlock NewBlock(params GenTree[] nodes)
     {

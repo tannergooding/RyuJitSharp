@@ -40,10 +40,8 @@ public partial class Compiler
             {
                 if (stmt.RootNode.AsLclVarCommon().LclNum == lclNum)
                 {
-#if DEBUG
                     JITDUMP($"  V{lclNum:D2} has a phi [{stmt.RootNode.TreeId:D6}] in " +
                         $"L{otherLoop.Index:D2}'s header {FMT_BB(otherLoop.Header.bbNum)}\n");
-#endif
                     return false;
                 }
             }
@@ -223,9 +221,7 @@ public partial class Compiler
 #endif
         for (var stmt = firstStmt; stmt is not null; stmt = stmt.NextStmt)
         {
-#if DEBUG
             JITDUMP($"Replacing V{lclNum:D2} -> V{newLclNum:D2} in [{stmt.RootNode.TreeId:D6}]\n");
-#endif
             DISPSTMT(stmt);
             JITDUMP("\n");
             optReplaceWidenedIV(lclNum, ssaNum, newLclNum, stmt);
@@ -377,9 +373,7 @@ public partial class Compiler
             initBlock, initStmt.NextStmt);
         JITDUMP("    Replacing inside the loop\n");
         _ = loopInfo.VisitStatementsWithOccurrences(loop, lclNum, (_, stmt) => {
-#if DEBUG
             JITDUMP($"Replacing V{lclNum:D2} -> V{newLclNum:D2} in [{stmt.RootNode.TreeId:D6}]\n");
-#endif
             DISPSTMT(stmt);
             JITDUMP("\n");
             optReplaceWidenedIV(lclNum, SsaConfig.RESERVED_SSA_NUM, newLclNum, stmt);

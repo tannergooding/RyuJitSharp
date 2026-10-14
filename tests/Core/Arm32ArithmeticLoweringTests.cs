@@ -267,9 +267,10 @@ internal static unsafe class Arm32ArithmeticLoweringTests
                 Assert.That(store.Addr, Is.SameAs(address));
                 Assert.That(address.AsOp().Op2, Is.SameAs(offsetNode));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

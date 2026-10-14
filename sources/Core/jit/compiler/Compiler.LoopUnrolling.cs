@@ -87,12 +87,10 @@ public partial class Compiler
                 _loops = FlowGraphNaturalLoops.Find(_dfsTree);
             }
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDispBasicBlocks();
             }
-#endif
         }
 
 #if DEBUG

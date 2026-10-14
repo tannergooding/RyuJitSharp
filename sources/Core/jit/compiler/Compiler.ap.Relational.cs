@@ -180,9 +180,7 @@ public partial class Compiler
                     return true;
                 }
 
-#if DEBUG
                 JITDUMP($"Found matching assertion #{index:D2} for tree {tree.TreeId:D6}.");
-#endif
                 result = gtWrapWithSideEffects(result, tree, GTF_ALL_EFFECT);
                 JITDUMP(". Folded into:\n");
                 DISPTREE(result);
@@ -244,9 +242,7 @@ public partial class Compiler
 
         if (op2.IsIntegralConst(0) && varTypeIsI(op1.Type) && optAssertionVNIsNonNull(op1VN, assertions))
         {
-#if DEBUG
             JITDUMP($"Proved [{op1.TreeId:D6}] non-null\n");
-#endif
             result = gtWrapWithSideEffects(tree.Oper is GT_EQ ? gtNewFalse() : gtNewTrue(), tree, GTF_ALL_EFFECT);
             return optAssertionProp_Update(result, tree, statement);
         }
@@ -271,9 +267,7 @@ public partial class Compiler
             if ((assertion.Op1.KindIs(O1K_VN) && (assertion.Op1.VN == op1VN)) ||
                 (assertion.Op1.KindIs(O1K_EXACT_TYPE) && (assertion.Op1.VN == op1ObjectVN)))
             {
-#if DEBUG
                 JITDUMP($"Found matching assertion #{index:D2} for tree {tree.TreeId:D6}.");
-#endif
                 var value = assertion.KindIs(OAK_EQUAL) == (tree.Oper is GT_EQ);
                 result = gtWrapWithSideEffects(value ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
                 JITDUMP(". Folded into:\n");

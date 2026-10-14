@@ -82,9 +82,7 @@ public partial class Compiler
 
         private void StoreResumedDef(GenTreeLclVarCommon definition, BasicBlock block)
         {
-#if DEBUG
             JITDUMP($"  Have resume def [{definition.TreeId:D6}] to store to\n");
-#endif
             ref var descriptor = ref _compiler.lvaGetDesc(definition.LclNum);
             var one = _compiler.gtNewIconNode(TYP_I_IMPL, 1);
             GenTree store;
@@ -110,9 +108,7 @@ public partial class Compiler
                 block.InsertAtEnd(LIR.SeqTree(_compiler, store));
             }
 
-#if DEBUG
             JITDUMP($"  Created store [{store.TreeId:D6}] to set resumed def to 1\n");
-#endif
         }
 
         private BasicBlock RethrowExceptionOnResumption(

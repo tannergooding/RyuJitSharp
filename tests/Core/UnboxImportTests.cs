@@ -127,13 +127,14 @@ internal static unsafe class UnboxImportTests
             {
                 Assert.That(result.Flags & GenTreeFlags.GTF_EXCEPT, Is.EqualTo(GenTreeFlags.GTF_EXCEPT));
             }
-#if DEBUG
-            if (opcode == OPCODE.CEE_UNBOX && !effectful)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(address.Op2.TreeId, Is.EqualTo(address.Op1.TreeId + 1));
-                Assert.That(address.TreeId, Is.EqualTo(address.Op2.TreeId + 1));
+                if (opcode == OPCODE.CEE_UNBOX && !effectful)
+                {
+                    Assert.That(address.Op2.TreeId, Is.EqualTo(address.Op1.TreeId + 1));
+                    Assert.That(address.TreeId, Is.EqualTo(address.Op2.TreeId + 1));
+                }
             }
-#endif
         }
         finally
         {

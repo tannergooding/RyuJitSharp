@@ -10,13 +10,11 @@ public partial class Compiler
     public PhaseStatus fgComputeBlockWeights()
     {
         fgModified = false;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             jitprintf("\n");
         }
-#endif
         if (fgIsUsingProfileWeights)
         {
             return PhaseStatus.MODIFIED_NOTHING;
@@ -95,14 +93,12 @@ public partial class Compiler
         // Branch removal can leave an unreachable cycle whose weights oscillate (native test b539509).
         while (changed && (iterations < 10));
 
-#if DEBUG
-        if (verbose && modified)
+        if (Configuration.DEBUG && verbose && modified)
         {
             jitprintf("fgComputeMissingBlockWeights() adjusted the weight of some blocks\n");
             fgDispBasicBlocks();
             jitprintf("\n");
         }
-#endif
         return modified;
     }
 }

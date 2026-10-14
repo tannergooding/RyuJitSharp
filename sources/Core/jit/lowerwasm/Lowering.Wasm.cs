@@ -144,9 +144,7 @@ public sealed partial class Lowering
 
         private void MoveForward(GenTree node, GenTree previous, string reason)
         {
-#if DEBUG
             JITDUMP($"Stackifier moving [{node.TreeId:D6}] after [{previous.TreeId:D6}]: {reason}\n");
-#endif
             var endExclusive = previous.Next
                 ?? throw new InvalidOperationException("A Wasm stackifier move requires an exclusive range endpoint.");
             assert(_lowering.IsInvariantInRange(node, endExclusive));
@@ -176,9 +174,7 @@ public sealed partial class Lowering
                 lirUse.ReplaceWith(localNode);
             }
 
-#if DEBUG
             JITDUMP($"Replaced [{node.TreeId:D6}] with a temporary:\n");
-#endif
             DISPNODE(node);
             DISPNODE(localNode);
 

@@ -15,9 +15,7 @@ public partial class Compiler
         var flagsSummary = GTF_EMPTY;
         var remorphing = call.Args.AreArgsComplete;
         call.Args.AddFinalArgsAndDetermineAbiInfo(this, call);
-#if DEBUG
         JITDUMP($"{(remorphing ? "Re" : "")}Morphing args for {call.TreeId}.{call.Oper.Name}:\n");
-#endif
         if (remorphing)
         {
             foreach (var argument in call.Args.LateArgs)
@@ -142,9 +140,7 @@ public partial class Compiler
                 var primitiveType = node.AsBlk().Layout.RegisterType;
                 if (primitiveType is not TYP_UNDEF)
                 {
-#if DEBUG
                     JITDUMP($"Converting argument [{node.TreeId:D6}] to primitive indirection\n");
-#endif
                     use = new GenTreeIndir(GT_IND, primitiveType, node.AsBlk().Addr, null, node, NodeThreading.None) {
                         Flags = node.Flags,
                     };

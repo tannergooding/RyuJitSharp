@@ -31,9 +31,10 @@ internal static unsafe class Arm64ShiftRotateLoweringTests
             Assert.That(count.IconValue, Is.EqualTo((nint)rightCount));
             Assert.That(count.IsContained, Is.True);
             Assert.That(count.Next, Is.SameAs(rotate));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -56,9 +57,10 @@ internal static unsafe class Arm64ShiftRotateLoweringTests
             Assert.That(negate.Op1, Is.SameAs(count));
             Assert.That(count.Next, Is.SameAs(negate));
             Assert.That(negate.Next, Is.SameAs(rotate));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

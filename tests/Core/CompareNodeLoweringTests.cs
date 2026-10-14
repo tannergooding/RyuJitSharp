@@ -190,9 +190,7 @@ internal static unsafe class CompareNodeLoweringTests
             var and = new GenTreeOp(GT_AND, TYP_INT, local, mask);
             var value = compiler.gtNewIconNode(TYP_INT, 6);
             value._vnPair.SetBoth(123);
-#if DEBUG
-            var constantId = value.TreeId;
-#endif
+            var constantId = TestConfiguration.IsDebug ? value.TreeId : 0;
             var intervening = compiler.gtNewIconNode(TYP_INT, 19);
             var compare = new GenTreeOp(GT_EQ, TYP_INT, and, value);
             var block = NewBlock(local, mask, and, value, intervening, compare);
@@ -207,9 +205,10 @@ internal static unsafe class CompareNodeLoweringTests
             Assert.That(and.Next, Is.SameAs(compare.Op2));
             Assert.That(compare.Op2.Next, Is.SameAs(intervening));
             Assert.That(value.Prev is null && value.Next is null, Is.True);
-#if DEBUG
-            Assert.That(compare.Op2.TreeId, Is.EqualTo(constantId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compare.Op2.TreeId, Is.EqualTo(constantId));
+            }
         });
     }
 

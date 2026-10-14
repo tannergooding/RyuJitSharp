@@ -337,9 +337,7 @@ public partial class Compiler
                 var defSize = def.GetSize(this);
                 if (defSize.IsUnknown)
                 {
-#if DEBUG
                     JITDUMP($"Tree [{storeNode.TreeId:D6}] performs store to variable-sized local\n");
-#endif
                     newLclValue = vnStore.VNPairForExpr(compCurBB, defVarDsc.Type);
                 }
                 else
@@ -377,10 +375,8 @@ public partial class Compiler
         }
         else
         {
-#if DEBUG
             JITDUMP($"Tree [{storeNode.TreeId:D6}] assigns to non-address-taken local V{defLclNum:D2}; " +
                 "excluded from SSA, so value not tracked\n");
-#endif
         }
     }
 

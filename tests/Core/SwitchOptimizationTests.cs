@@ -110,9 +110,10 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(targets[0].bbRefs, Is.EqualTo(1));
             Assert.That(targets[1].bbRefs, Is.EqualTo(1));
             Assert.That(node.Prev is null && node.Next is null, Is.True);
-#if DEBUG
-            Assert.That(jump.TreeId, Is.EqualTo(node.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(jump.TreeId, Is.EqualTo(node.TreeId));
+            }
             if (threading is NodeThreading.AllTrees)
             {
                 Assert.That(statement.TreeListBegin, Is.SameAs(value));
@@ -143,9 +144,10 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(table is null || (table.Prev is null && table.Next is null), Is.True);
             Assert.That(node.Prev is null && node.Next is null, Is.True);
             Assert.That(branch.Prev?.Next, Is.SameAs(branch));
-#if DEBUG
-            Assert.That(branch.TreeId, Is.EqualTo(node.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(branch.TreeId, Is.EqualTo(node.TreeId));
+            }
         });
     }
 
@@ -174,9 +176,10 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(block.TrueEdge, Is.SameAs(first));
             Assert.That(block.FalseEdge, Is.SameAs(last));
             Assert.That(first.Likelihood, Is.EqualTo(0.75));
-#if DEBUG
-            Assert.That(statement.RootNode.TreeId, Is.EqualTo(node.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(statement.RootNode.TreeId, Is.EqualTo(node.TreeId));
+            }
         });
     }
 
@@ -313,9 +316,10 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(root.AsUnOp().Op1.Flags & GTF_RELOP_JMP_USED, Is.EqualTo((GenTreeFlags)0));
             Assert.That(targets[0].bbRefs, Is.Zero);
             Assert.That(targets[1].bbRefs, Is.Zero);
-#if DEBUG
-            Assert.That(root.TreeId, Is.EqualTo(node.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(root.TreeId, Is.EqualTo(node.TreeId));
+            }
         });
     }
 
@@ -356,10 +360,11 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(trueBlock.bbPreds, Is.Null);
             Assert.That(falseBlock.bbPreds, Is.Null);
             Assert.That(trueBlock.HasFlag(BBF_REMOVED), Is.False);
-#if DEBUG
-            Assert.That(root.TreeId, Is.EqualTo(node.TreeId));
-            Assert.That(root.TreeId, Is.Not.EqualTo(condition.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(root.TreeId, Is.EqualTo(node.TreeId));
+                Assert.That(root.TreeId, Is.Not.EqualTo(condition.TreeId));
+            }
         });
     }
 

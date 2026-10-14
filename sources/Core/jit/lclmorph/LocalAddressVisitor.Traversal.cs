@@ -426,9 +426,7 @@ internal partial struct LocalAddressVisitor
 
                 if ((lhs.IsAddress && rhs.Node.IsIntegralConst(0)) || (rhs.IsAddress && lhs.Node.IsIntegralConst(0)))
                 {
-#if DEBUG
                     JITDUMP($"Rewriting known address vs null comparison [{node.TreeId:D6}]\n");
-#endif
                     ReplaceNode(ref lhs.Use, _compiler.gtNewIconNode(TYP_INT, 0));
                     ReplaceNode(ref rhs.Use, _compiler.gtNewIconNode(TYP_INT, 1));
                     _stmtModified = true;
@@ -439,9 +437,7 @@ internal partial struct LocalAddressVisitor
                 }
                 else if (lhs.IsAddress && rhs.IsAddress)
                 {
-#if DEBUG
                     JITDUMP($"Rewriting known address vs address comparison [{node.TreeId:D6}]\n");
-#endif
                     var sameAddress = lhs.IsSameAddress(in rhs);
                     ReplaceNode(ref lhs.Use, _compiler.gtNewIconNode(TYP_INT, 0));
                     ReplaceNode(ref rhs.Use, _compiler.gtNewIconNode(TYP_INT, sameAddress ? 0 : 1));
@@ -468,9 +464,7 @@ internal partial struct LocalAddressVisitor
 
                 if (TopValue(0).IsAddress)
                 {
-#if DEBUG
                     JITDUMP($"Bashing nullcheck of local [{node.TreeId:D6}] to NOP\n");
-#endif
                     node.BashToNOP();
                     TopValue(0).Consume();
                     PopValue();

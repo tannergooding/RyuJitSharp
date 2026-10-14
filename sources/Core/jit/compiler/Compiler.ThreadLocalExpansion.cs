@@ -60,12 +60,12 @@ public partial class Compiler
 
         var threadStaticInfo = default(CORINFO_THREAD_STATIC_INFO_NATIVEAOT);
         info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo);
-#if DEBUG
         JITDUMP($"tlsRootObject= {dspPtr(threadStaticInfo.tlsRootObject.addr):X16}\n");
         JITDUMP($"tlsIndexObject= {dspPtr(threadStaticInfo.tlsIndexObject.addr):X16}\n");
+#if DEBUG
         JITDUMP($"offsetOfThreadLocalStoragePointer= {DspThreadLocalOffset(threadStaticInfo.offsetOfThreadLocalStoragePointer)}\n");
-        JITDUMP($"threadStaticBaseSlow= {dspPtr(threadStaticInfo.threadStaticBaseSlow.addr):X16}\n");
 #endif
+        JITDUMP($"threadStaticBaseSlow= {dspPtr(threadStaticInfo.threadStaticBaseSlow.addr):X16}\n");
 
         var previous = block;
         ref var callUse = ref fgSplitBlockBeforeTree(block, stmt, call, out var firstNewStmt, out block);
@@ -211,12 +211,12 @@ public partial class Compiler
 #endif
         var metadata = default(CORINFO_THREAD_STATIC_BLOCKS_INFO);
         info.compCompHnd->getThreadLocalStaticBlocksInfo(&metadata);
-#if DEBUG
         JITDUMP("getThreadLocalStaticBlocksInfo\n:");
         JITDUMP($"tlsIndex= {dspPtr(metadata.tlsIndex.addr):X16}\n");
         JITDUMP($"tlsGetAddrFtnPtr= {dspPtr(metadata.tlsGetAddrFtnPtr):X16}\n");
         JITDUMP($"tlsIndexObject= {dspPtr(metadata.tlsIndexObject):X16}\n");
         JITDUMP($"threadVarsSection= {dspPtr(metadata.threadVarsSection):X16}\n");
+#if DEBUG
         JITDUMP($"offsetOfThreadLocalStoragePointer= {DspThreadLocalOffset(metadata.offsetOfThreadLocalStoragePointer)}\n");
         JITDUMP($"offsetOfMaxThreadStaticBlocks= {DspThreadLocalOffset(metadata.offsetOfMaxThreadStaticBlocks)}\n");
         JITDUMP($"offsetOfThreadStaticBlocks= {DspThreadLocalOffset(metadata.offsetOfThreadStaticBlocks)}\n");

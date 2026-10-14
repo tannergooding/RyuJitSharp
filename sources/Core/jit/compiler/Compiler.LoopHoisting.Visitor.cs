@@ -111,9 +111,7 @@ public partial class Compiler
 
         private readonly bool IsHoistableOverExcepSibling(GenTree node, bool siblingHasExcep)
         {
-#if DEBUG
             JITDUMP($"      [{node.TreeId:D6}]");
-#endif
             if ((node.Flags & GTF_ALL_EFFECT) != 0 && siblingHasExcep)
             {
                 JITDUMP(" not hoistable: cannot move past node that throws exception.\n");
@@ -164,9 +162,7 @@ public partial class Compiler
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
-#if DEBUG
             JITDUMP($"----- PreOrderVisit for [{use.TreeId:D6}] {use.Oper.Name}\n");
-#endif
             _values.Add(new HoistValue(use));
             return WALK_CONTINUE;
         }
@@ -174,9 +170,7 @@ public partial class Compiler
         public fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
         {
             var tree = use;
-#if DEBUG
             JITDUMP($"----- PostOrderVisit for [{tree.TreeId:D6}] {tree.Oper.Name}\n");
-#endif
             if (tree.Oper.IsLocalRead)
             {
                 var local = tree.AsLclVarCommon();
@@ -365,9 +359,7 @@ public partial class Compiler
                     else
                     {
                         visitedCurrent = true;
-#if DEBUG
                         JITDUMP($"      [{value.Node.TreeId:D6}] not hoistable : current node\n");
-#endif
                     }
                 }
             }

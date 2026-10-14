@@ -47,9 +47,7 @@ internal static unsafe class BitwiseLoweringTests
             }
             block.InsertAtEnd(binary);
             block.InsertAtEnd(user);
-#if DEBUG
-            var id = binary.TreeId;
-#endif
+            var id = TestConfiguration.IsDebug ? binary.TreeId : 0;
             Assert.That(TryLowerBitwiseOpToBitOp(lowering, binary), Is.SameAs(binary));
             Assert.That(binary.Oper, Is.EqualTo(expected));
             Assert.That(binary.Op1, Is.SameAs(value));
@@ -65,10 +63,11 @@ internal static unsafe class BitwiseLoweringTests
             }
             Assert.That(value.Next, Is.SameAs(index).Or.SameAs(binary));
             Assert.That(index.Next, Is.SameAs(binary).Or.SameAs(value));
-#if DEBUG
-            Assert.That(binary.TreeId, Is.EqualTo(id));
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(binary.TreeId, Is.EqualTo(id));
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -155,9 +154,10 @@ internal static unsafe class BitwiseLoweringTests
             Assert.That(binary.Oper, Is.EqualTo(GT_OR));
             Assert.That(binary.Op2, Is.SameAs(shift));
             Assert.That(one.Next, Is.SameAs(index));
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 
@@ -189,9 +189,10 @@ internal static unsafe class BitwiseLoweringTests
             Assert.That(value.Next, Is.SameAs(root ? null : user));
             Assert.That(minusOne.Next, Is.Null);
             Assert.That(and.Next, Is.Null);
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         });
     }
 

@@ -49,9 +49,10 @@ internal static unsafe class ConditionNodeConstructionTests
             Assert.That(replacement.Prev, Is.Null);
             Assert.That(replacement.Next, Is.Null);
             Assert.That(source.Prev, threaded ? Is.SameAs(right) : Is.Null);
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(source.TreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(source.TreeId));
+            }
 
             // Native SetOper retains all flags and clears VNs, unlike the
             // source constructor's common-flag filtering and VN preservation.

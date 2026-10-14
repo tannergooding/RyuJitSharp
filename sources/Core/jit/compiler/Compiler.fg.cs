@@ -841,13 +841,10 @@ public partial class Compiler
             // Append statements to null out gc ref locals, if necessary.
             fgInlineAppendStatements(inlineInfo, bottomBlock, stmtAfter: null);
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDispBasicBlocks(InlineeCompiler.fgFirstBB, InlineeCompiler.fgLastBB, dumpTrees: true);
             }
-
-#endif
             fgInlineAppendAsyncFrameStatements(inlineInfo, bottomBlock);
         }
 
@@ -1096,9 +1093,7 @@ public partial class Compiler
         assert(numCallerSets >= 1);
         var inlineDepth = numCallerSets;
         var resumedInlinee = InlineeCompiler.lvaResumedIndicator;
-#if DEBUG
         JITDUMP($"Adding async frame transition IR for async frame depth {inlineDepth}: resumed V{resumedInlinee:D2} -> [{resumedCallerAddr.TreeId:D6}]\n");
-#endif
         var stmt = inlineInfo.iciStmt;
         assert(stmt is not null);
         ref readonly var di = ref stmt.DebugInfo;
@@ -1115,9 +1110,7 @@ public partial class Compiler
             var merged = gtNewBinaryNode(GT_OR, TYP_I_IMPL, callerResumed, inlineeDidResume);
             var store = gtNewStoreValueNode(TYP_I_IMPL, gtCloneExpr(resumedCallerAddr), merged);
             fgInsertStmtAtBeg(inlineeContextRestore.ebdHndBeg, gtNewStmt(store));
-#if DEBUG
             JITDUMP($"Marking [{resumedCallerAddr.TreeId:D6}] as resumed from the inlinee's context restore handler {FMT_BB(inlineeContextRestore.ebdHndBeg.bbNum)}\n");
-#endif
         }
 
         var restBlock = fgSplitBlockAtBeginning(joinBlock);
@@ -1158,12 +1151,10 @@ public partial class Compiler
         fgInsertStmtAtEnd(restoreBlock, gtNewStmt(markResumed));
         restoreBlock.SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, restoreBlock));
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks(joinBlock, restBlock, true);
         }
-#endif
     }
 
     /// <summary>Compute the candidate's depth and reject disallowed recursion.</summary>
@@ -1692,9 +1683,7 @@ public partial class Compiler
 
                         if (op1.Oper.IsCall && ((op1.AsCall()._callMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) is not 0) && (op2.Oper is GT_IND) && (op2.AsIndir().Op1.IsIconHandle() && ((op2.Flags & GTF_EXCEPT) is 0)))
                         {
-#if DEBUG
                             JITDUMP($"\nPerforming special dce on unused arg [{argNode.TreeId:D6}]: actual arg [{argNode.TreeId:D6}] helper call [{op1.TreeId:D6}]\n");
-#endif
                             // Drop the whole tree
                             append = false;
                         }
@@ -1714,9 +1703,7 @@ public partial class Compiler
                             if (op1.Oper.IsCall && ((op1.AsCall()._callMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) is not 0) && op2.Oper.IsCnsIntOrI)
                             {
                                 // Drop the whole tree
-#if DEBUG
                                 JITDUMP($"\nPerforming special dce on unused arg [{argNode.TreeId:D6}]: actual arg [{argNode.TreeId:D6}] helper call [{op1.TreeId:D6}]\n");
-#endif
                                 append = false;
                             }
                         }
@@ -4094,6 +4081,21 @@ public partial class Compiler
         jitprintf($"\n***** {block.dspToString()}\n");
         gtDispStmt(stmt);
     }
+#else
+    public List<BasicBlock>? fgBBOrder
+        => throw new InvalidOperationException("Basic block dump order is only available in Debug builds.");
+
+    public void fgDispBasicBlocks(bool dumpTrees = false)
+    {
+    }
+
+    public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
+    {
+    }
+
+    public void fgDispHandlerTab()
+    {
+    }
 #endif
 
     /// <summary>Return the first basic block after the main part of the function. With funclets, it is the block of the first funclet. Otherwise it is null if there are no funclets. This is equivalent to fgLastBBInMainFunction()->Next().</summary>
@@ -4790,13 +4792,13 @@ public partial class Compiler
             fgCheckBasicBlockControlFlow();
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP("*************** After fgFindBasicBlocks() has created the EH table\n");
             fgDispHandlerTab();
         }
 
+#if DEBUG
         // We can't verify the handler table until all the IL legality checks have been done (above), since bad IL
         // (such as illegal nesting of regions) will trigger asserts here.
         fgVerifyHandlerTab();
@@ -7048,9 +7050,7 @@ public partial class Compiler
     /// <summary>Expand a virtual call target using the same lookup shape as LowerVirtualVtableCall.</summary>
     public unsafe GenTree fgExpandVirtualVtableCallTarget(GenTreeCall call)
     {
-#if DEBUG
         JITDUMP($"Expanding virtual call target for {call.TreeId}.{call.Oper.Name}:\n");
-#endif
         noway_assert(call._callType is CT_USER_FUNC);
         assert(call.Args.HasThisPointer);
         var thisPtr = call.Args.ThisArg.Node;
@@ -7346,9 +7346,7 @@ public partial class Compiler
             if (ni is NI_System_Collections_Generic_EqualityComparer_get_Default
                    or NI_System_Collections_Generic_Comparer_get_Default)
             {
-#if DEBUG
                 JITDUMP($"\nmarking helper call [{result.TreeId:D6}] as special dce...\n");
-#endif
 
                 result._callMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
             }
@@ -8961,13 +8959,11 @@ public partial class Compiler
             jitprintf("*************** In fgNormalizeEH()\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
-#endif
 
         var modified = false;
 
@@ -9074,7 +9070,6 @@ public partial class Compiler
                 newHndStart.SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
                 modified = true;
 
-#if DEBUG
                 if (false && verbose)
                 {
                     // Normally this is way too verbose, but it is useful for debugging
@@ -9082,7 +9077,6 @@ public partial class Compiler
                     fgDispBasicBlocks();
                     fgDispHandlerTab();
                 }
-#endif
             }
         }
 
@@ -9309,7 +9303,6 @@ public partial class Compiler
 
                             modified = true;
 
-#if DEBUG
                             if (false && verbose)
                             {
                                 // Normally this is way too verbose, but it is useful for debugging
@@ -9317,7 +9310,6 @@ public partial class Compiler
                                 fgDispBasicBlocks();
                                 fgDispHandlerTab();
                             }
-#endif
                         }
                     }
                     else
@@ -12671,13 +12663,13 @@ public partial class Compiler
             JITDUMP($"Synchronized method - created additional EH descriptor EH#{XTnew} for try/fault wrapping monitor enter/exit\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
 
+#if DEBUG
         fgVerifyHandlerTab();
 #endif
         // EnC reserves a frame-header slot, above PSP on ARM64. Use a full
@@ -13002,14 +12994,12 @@ public partial class Compiler
             madeChanges = true;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\n*************** After fgAddInternal()\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
-#endif
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
@@ -13199,12 +13189,10 @@ public partial class Compiler
             jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (before)\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks(block, block, true);
         }
-#endif
 
         var condExpr = qmark.Cond;
         var trueExpr = qmark.ThenNode;
@@ -13389,12 +13377,10 @@ public partial class Compiler
             jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (after)\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDispBasicBlocks(block, remainderBlock, true);
         }
-#endif
 
         return introducedThrow;
     }

@@ -14,9 +14,7 @@ public partial class Compiler
         var updateLoop = store.LoopOfVN(memoryVN);
         if (updateLoop is null)
         {
-#if DEBUG
             JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}], memory ${memoryVN:x} not defined in a loop\n");
-#endif
             return;
         }
 
@@ -33,10 +31,8 @@ public partial class Compiler
                 assert(_blockToLoop is not null);
                 var blockLoop = _blockToLoop.GetLoop(block);
                 assert(blockLoop is not null);
-#if DEBUG
                 JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}]/L{blockLoop.Index:D2}, " +
                     $"memory definition {memoryVN}/L{definingLoop.Index:D2} is not dependent on an ancestor loop\n");
-#endif
             }
 
             return;
@@ -50,18 +46,14 @@ public partial class Compiler
                 assert(_blockToLoop is not null);
                 var mapLoop = _blockToLoop.GetLoop(mapBlock);
                 assert(mapLoop is not null);
-#if DEBUG
                 JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}]; " +
                     $"already constrained to L{mapLoop.Index:D2} nested in L{updateLoop.Index:D2}\n");
-#endif
             }
 
             return;
         }
 
-#if DEBUG
         JITDUMP($"      ==> Updating loop memory dependence of [{tree.TreeId:D6}] to L{updateLoop.Index:D2}\n");
-#endif
         map[tree] = updateLoop.Header;
     }
 }

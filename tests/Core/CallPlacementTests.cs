@@ -86,9 +86,10 @@ internal static unsafe class CallPlacementTests
             {
                 Assert.That(block.FirstNode, Is.SameAs(marker));
             }
-#if DEBUG
-            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
         }
         finally
         {

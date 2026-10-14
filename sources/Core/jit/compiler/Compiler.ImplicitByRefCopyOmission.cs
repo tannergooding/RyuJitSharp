@@ -126,9 +126,7 @@ public partial class Compiler
                     continue;
                 }
 
-#if DEBUG
                 JITDUMP($"Marking V{lclNum:D2} as a candidate for last-use copy omission [{argNode.TreeId:D6}]\n");
-#endif
                 varDsc.lvIsLastUseCopyOmissionCandidate = true;
             }
 

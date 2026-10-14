@@ -143,16 +143,12 @@ public partial class Compiler
                 {
                     if (canDropCast)
                     {
-#if DEBUG
                         JITDUMP($"Removing cast {cast.TreeId:D6} as redundant based on VN assertions.\n");
-#endif
                         return optAssertionProp_Update(operand, cast, statement);
                     }
 
                     assert(cast.HasOverflowCheck);
-#if DEBUG
                     JITDUMP($"Clearing overflow flag for cast {cast.TreeId:D6} based on VN assertions.\n");
-#endif
                     cast.Flags &= ~GTF_OVERFLOW;
                     return optAssertionProp_Update(cast, cast, statement);
                 }

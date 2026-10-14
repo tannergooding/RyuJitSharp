@@ -15,9 +15,7 @@ public sealed partial class Lowering
             call.IsHelperCall(CORINFO_HELP_MEMSET));
         next = null;
 
-#if DEBUG
         JITDUMP($"Considering Memset-like call [{call.TreeId:D6}] for unrolling.. ");
-#endif
         if (compiler.info.compHasNextCallRetAddr)
         {
             JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n");
@@ -127,9 +125,7 @@ public sealed partial class Lowering
     {
         var compiler = CompilerInstance;
         next = null;
-#if DEBUG
         JITDUMP($"Considering Memmove [{call.TreeId:D6}] for unrolling.. ");
-#endif
         assert(call.IsHelperCall(CORINFO_HELP_MEMCPY) ||
             (compiler.lookupNamedIntrinsic(call._callMethHnd) is NI_System_SpanHelpers_Memmove));
         assert(call.Args.CountUserArgs() == 3);
