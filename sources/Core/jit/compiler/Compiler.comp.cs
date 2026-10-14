@@ -3162,8 +3162,7 @@ public partial class Compiler
             // Get hold of the line# records, if there are any
             eeGetStmtOffsets();
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"info.compStmtOffsetsCount    = {info.compStmtOffsetsCount}\n");
                 jitprintf($"info.compStmtOffsetsImplicit = {(int)(info.compStmtOffsetsImplicit):X4}h");
@@ -3198,7 +3197,6 @@ public partial class Compiler
                     jitprintf($"{i:D2}) IL_{stmtOffsets[i]:X4}h\n");
                 }
             }
-#endif
         }
     }
 
