@@ -387,9 +387,7 @@ internal static unsafe class ThreadLocalExpansionTests
         vtable.Base.Base.getThreadLocalStaticBlocksInfo = &GetCoreInfo;
         vtable.Base.Base.getThreadLocalStaticInfo_NativeAOT = &GetAotInfo;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG

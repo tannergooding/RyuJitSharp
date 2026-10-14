@@ -403,9 +403,7 @@ internal static unsafe class HWIntrinsicImportClosureTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitFlags flags = default;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

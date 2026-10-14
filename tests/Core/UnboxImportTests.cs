@@ -34,9 +34,7 @@ internal static unsafe class UnboxImportTests
         vtable.Base.Base.runWithSPMIErrorTrap =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         TestEE ee = new() { Info = new() { lpVtbl = &vtable } };
-#if DEBUG
-        using var tls = new JitTls(&ee.Info);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&ee.Info);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

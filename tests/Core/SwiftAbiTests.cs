@@ -415,9 +415,7 @@ internal static unsafe class SwiftAbiTests
         compiler.lvaSwiftSelfArg = BAD_VAR_NUM;
         compiler.lvaSwiftIndirectResultArg = BAD_VAR_NUM;
         compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
-#if DEBUG
-        using var tls = new JitTls(&state.Interface);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&state.Interface);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 #if DEBUG

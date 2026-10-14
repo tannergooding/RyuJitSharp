@@ -19,9 +19,7 @@ internal static unsafe class ImporterCallTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&EmbedVirtualMethodHandle;
         var state = new VirtualMethodLookup { Interface = new ICorJitInfo { lpVtbl = &vtable } };
-#if DEBUG
-        using var tls = new JitTls(&state.Interface);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&state.Interface);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -81,9 +79,7 @@ internal static unsafe class ImporterCallTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getArgType = &GetPrimitiveArgumentType;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compMaxStack = 1 };
@@ -120,9 +116,7 @@ internal static unsafe class ImporterCallTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getArgType = &GetPrimitiveArgumentType;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -233,9 +227,7 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &RestoreInstantiationClass;
         vtable.Base.Base.methodMustBeLoadedBeforeCodeIsRun = &RestoreInstantiationMethod;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -315,9 +307,7 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.runWithSPMIErrorTrap =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -402,9 +392,7 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.runWithSPMIErrorTrap =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var previousConfig = Globals.JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -461,9 +449,7 @@ internal static unsafe class ImporterCallTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&EmbedClassHandle;
         vtable.Base.Base.getArrayRank = &GetArrayRank;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -764,9 +750,7 @@ internal static unsafe class ImporterCallTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getEEInfo = &GetEEInfo;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

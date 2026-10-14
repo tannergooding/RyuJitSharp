@@ -394,9 +394,7 @@ internal static unsafe class ImporterEffectsTests
         vtable.doAssert = &ContinueConstrainedPrefixAssertion;
         vtable.Base.Base.resolveToken = &ResolveConstrainedToken;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

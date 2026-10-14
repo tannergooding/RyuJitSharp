@@ -105,9 +105,7 @@ internal static unsafe class Arm64MemoryCompareCallLoweringTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.getMethodNameFromMetadata = &GetMethodName;
             ICorJitInfo ee = new() { lpVtbl = &vtable };
-#if DEBUG
-            using var tls = new JitTls(&ee);
-#endif
+            using var tls = TestConfiguration.CreateJitTls(&ee);
             var previous = JitTls.Compiler;
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             JitFlags flags = default;

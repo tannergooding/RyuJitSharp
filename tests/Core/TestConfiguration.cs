@@ -8,8 +8,13 @@ internal static class TestConfiguration
 
     public static unsafe IDisposable? CreateJitTls()
     {
+        return CreateJitTls(null);
+    }
+
+    public static unsafe IDisposable? CreateJitTls(ICorJitInfo* jitInfo)
+    {
 #if DEBUG
-        return new JitTls(null);
+        return new JitTls(jitInfo);
 #else
         return null;
 #endif

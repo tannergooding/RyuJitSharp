@@ -507,9 +507,7 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
 
     private static void WithStore(Action<Compiler, ValueNumStore> action, ICorJitInfo* jitInfo = null)
     {
-#if DEBUG
-        using var tls = new JitTls(jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

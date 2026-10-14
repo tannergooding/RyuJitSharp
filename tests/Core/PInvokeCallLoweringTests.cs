@@ -365,9 +365,7 @@ internal static unsafe class PInvokeCallLoweringTests
             Interface = new ICorJitInfo { lpVtbl = &vtable },
             Target = 0x5678,
         };
-#if DEBUG
-        using var tls = new JitTls(&ee.Interface);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&ee.Interface);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

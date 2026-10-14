@@ -276,9 +276,7 @@ internal static unsafe class LateCastExpansionTests
         vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableClassName;
         vtable.Base.embedClassHandle = &EmbedClass;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

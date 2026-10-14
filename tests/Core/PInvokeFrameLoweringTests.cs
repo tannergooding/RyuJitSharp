@@ -187,9 +187,7 @@ internal static unsafe class PInvokeFrameLoweringTests
         TargetEE ee = new() {
             Interface = new ICorJitInfo { lpVtbl = &vtable },
         };
-#if DEBUG
-        using var tls = new JitTls(&ee.Interface);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&ee.Interface);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

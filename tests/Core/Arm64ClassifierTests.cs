@@ -34,9 +34,7 @@ internal static unsafe class Arm64ClassifierTests
             Kind = kind,
             Size = elementSize * count,
         };
-#if DEBUG
-        using var tls = new JitTls(&state.Info);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&state.Info);
         var previous = JitTls.Compiler;
         var compiler = NewCompiler();
         compiler.info.compCompHnd = &state.Info;

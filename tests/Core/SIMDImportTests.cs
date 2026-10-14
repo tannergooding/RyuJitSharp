@@ -231,9 +231,7 @@ internal static unsafe class SIMDImportTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitFlags flags = default;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -285,9 +283,7 @@ internal static unsafe class SIMDImportTests
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
         }
 
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 

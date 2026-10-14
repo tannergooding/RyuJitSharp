@@ -123,9 +123,7 @@ internal static unsafe class SimdTypeTests
         compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compMatchedVM = matchedVM };
         compiler.opts.jitFlags = &flags;
 
-#if DEBUG
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 

@@ -155,9 +155,7 @@ internal static unsafe class StructReturnClassificationTests
         compiler.info.compCompHnd = &jitInfo;
         compiler.opts.jitFlags = &flags;
 
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
         try

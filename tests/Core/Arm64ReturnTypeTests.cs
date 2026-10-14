@@ -592,9 +592,7 @@ internal static unsafe class Arm64ReturnTypeTests
         };
         var metadataHandle = GCHandle.Alloc(metadata);
 
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 

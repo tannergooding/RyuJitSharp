@@ -73,9 +73,7 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new CallbackContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-#if DEBUG
-        using var tls = new JitTls(&context.JitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

@@ -338,9 +338,7 @@ internal static unsafe class StaticInitExpansionTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, bool, CORINFO_CONST_LOOKUP*, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_HANDLE, byte, CORINFO_CONST_LOOKUP*, byte>)&GetBase;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG

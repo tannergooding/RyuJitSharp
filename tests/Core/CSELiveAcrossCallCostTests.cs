@@ -102,9 +102,7 @@ internal static unsafe class CSELiveAcrossCallCostTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();

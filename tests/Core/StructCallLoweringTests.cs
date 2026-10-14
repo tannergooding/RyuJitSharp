@@ -324,9 +324,7 @@ internal static unsafe class StructCallLoweringTests
         compiler.lvaTable[0].Type = TYP_BYREF;
         compiler.lvaTable[1].Type = TYP_STRUCT;
         compiler.lvaTable[1].Layout = new ClassLayout(size);
-#if DEBUG
-        using var tls = new JitTls(&ee.Interface);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&ee.Interface);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);

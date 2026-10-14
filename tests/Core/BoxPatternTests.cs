@@ -126,9 +126,7 @@ internal static unsafe class BoxPatternTests
         vtable.Base.Base.isNullableType = &IsNullable;
         vtable.Base.Base.getBoxHelper = &GetBoxHelper;
         TestEE state = new() { Info = new() { lpVtbl = &vtable } };
-#if DEBUG
-        using var tls = new JitTls(&state.Info);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&state.Info);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info = new Compiler.Info { compCompHnd = &state.Info, compMaxStack = 1 };

@@ -889,9 +889,7 @@ internal static unsafe class Arm64HWIntrinsicImportTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyIsa;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitFlags flags = default;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

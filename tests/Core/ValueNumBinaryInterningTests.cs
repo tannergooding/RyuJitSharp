@@ -575,9 +575,7 @@ internal static unsafe class ValueNumBinaryInterningTests
 
     private static void WithStore(Action<ValueNumStore, Compiler> action, ICorJitInfo* jitInfo)
     {
-#if DEBUG
-        using var tls = new JitTls(jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

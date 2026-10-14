@@ -343,9 +343,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.recordRelocation = &RecordRelocation;
         var callbacks = new CallbackContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-#if DEBUG
-        using var tls = new JitTls(&callbacks.JitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&callbacks.JitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

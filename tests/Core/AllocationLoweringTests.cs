@@ -130,9 +130,7 @@ internal static unsafe class AllocationLoweringTests
         vtable.Base.Base.isValueClass = &False;
         vtable.Base.Base.canAllocateOnStack = &False;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compCompHnd = &jitInfo;

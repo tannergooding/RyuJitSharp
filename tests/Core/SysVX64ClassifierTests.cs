@@ -443,9 +443,7 @@ internal static unsafe class SysVX64ClassifierTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compCompHnd = &jitInfo;
 
-#if DEBUG
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
         var metadata = new Metadata { Descriptor = descriptor, Size = size };
