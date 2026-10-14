@@ -151,43 +151,44 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        var foundMismatch = false;
-        foreach (var block in _compiler.Blocks)
+        if (Configuration.DEBUG)
         {
-            if (block.isEmpty() && (uint)block.bbNum > _bbNumMaxBeforeResolution)
+            var foundMismatch = false;
+            foreach (var block in _compiler.Blocks)
             {
-                continue;
-            }
-            var incomingMap = getInVarToRegMap(checked((uint)block.bbNum))
-                ?? throw new FatalJitException("Resolution validation requires an incoming map.");
-            foreach (var predBlock in block.PredBlocks)
-            {
-                var outgoingMap = getOutVarToRegMap(checked((uint)predBlock.bbNum))
-                    ?? throw new FatalJitException("Resolution validation requires an outgoing map.");
-                _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, index =>
+                if (block.isEmpty() && (uint)block.bbNum > _bbNumMaxBeforeResolution)
                 {
-                    var from = getVarReg(outgoingMap, checked((uint)index));
-                    var to = getVarReg(incomingMap, checked((uint)index));
-                    if (from != to)
+                    continue;
+                }
+                var incomingMap = getInVarToRegMap(checked((uint)block.bbNum))
+                    ?? throw new FatalJitException("Resolution validation requires an incoming map.");
+                foreach (var predBlock in block.PredBlocks)
+                {
+                    var outgoingMap = getOutVarToRegMap(checked((uint)predBlock.bbNum))
+                        ?? throw new FatalJitException("Resolution validation requires an outgoing map.");
+                    _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, index =>
                     {
-                        var interval = getIntervalForLocalVar(checked((uint)index));
-                        if (!interval.isWriteThru || to != REG_STK)
+                        var from = getVarReg(outgoingMap, checked((uint)index));
+                        var to = getVarReg(incomingMap, checked((uint)index));
+                        if (from != to)
                         {
-                            if (!foundMismatch)
+                            var interval = getIntervalForLocalVar(checked((uint)index));
+                            if (!interval.isWriteThru || to != REG_STK)
                             {
-                                foundMismatch = true;
-                                JITDUMP("Found mismatched var locations after resolution!\n");
+                                if (!foundMismatch)
+                                {
+                                    foundMismatch = true;
+                                    JITDUMP("Found mismatched var locations after resolution!\n");
+                                }
+                                JITDUMP($" V{interval.varNum:D2}: {FMT_BB(predBlock.bbNum)} to {FMT_BB(block.bbNum)}: {from.Name} to {to.Name}\n");
                             }
-                            JITDUMP($" V{interval.varNum:D2}: {FMT_BB(predBlock.bbNum)} to {FMT_BB(block.bbNum)}: {from.Name} to {to.Name}\n");
                         }
-                    }
-                    return true;
-                });
+                        return true;
+                    });
+                }
             }
+            assert(!foundMismatch);
         }
-        assert(!foundMismatch);
-#endif
         JITDUMP("\n");
     }
 

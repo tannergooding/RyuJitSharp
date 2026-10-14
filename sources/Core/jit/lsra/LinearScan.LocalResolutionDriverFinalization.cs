@@ -73,18 +73,19 @@ public sealed partial class LinearScan
                 assert(firstReference is not null);
                 local.lvRegister = true;
                 local.lvOnFrame = false;
-#if DEBUG
-                var assignment = genSingleTypeRegMask(local.RegNum);
-                assert(!interval.isSpilled && !interval.isSplit);
-                for (var reference = interval.firstRefPosition; reference is not null; reference = reference.nextRefPosition)
+                if (Configuration.DEBUG)
                 {
-                    if (reference.registerAssignment != SRBM_NONE && !reference.copyReg && !reference.moveReg &&
-                        reference.refType is not RefType.RefTypeExpUse)
+                    var assignment = genSingleTypeRegMask(local.RegNum);
+                    assert(!interval.isSpilled && !interval.isSplit);
+                    for (var reference = interval.firstRefPosition; reference is not null; reference = reference.nextRefPosition)
                     {
-                        assert(reference.registerAssignment == assignment);
+                        if (reference.registerAssignment != SRBM_NONE && !reference.copyReg && !reference.moveReg &&
+                            reference.refType is not RefType.RefTypeExpUse)
+                        {
+                            assert(reference.registerAssignment == assignment);
+                        }
                     }
                 }
-#endif
             }
         }
     }
