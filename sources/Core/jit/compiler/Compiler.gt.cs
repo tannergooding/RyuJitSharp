@@ -13567,41 +13567,44 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        // Make sure the actual types match.
-        if (valType.ActualType != dstTyp.ActualType)
+        if (Configuration.DEBUG)
         {
-            // Plus some other exceptions that are apparently legal:
-            // - TYP_REF or BYREF = TYP_I_IMPL
-            var ok = false;
+            // Make sure the actual types match.
+            if (valType.ActualType != dstTyp.ActualType)
+            {
+                // Plus some other exceptions that are apparently legal:
+                // - TYP_REF or BYREF = TYP_I_IMPL
+                var ok = false;
 
-            if (varTypeIsGC(dstTyp) && ((valType == TYP_I_IMPL)))
-            {
-                ok = true;
-            }
-            else if (((dstTyp == TYP_I_IMPL)) && (valType is TYP_BYREF))
-            {
-                // - TYP_I_IMPL = TYP_BYREF
-                ok = true;
-            }
-            else if ((JitConfig.JitObjectStackAllocation != 0) && (dstTyp is TYP_BYREF) && (valType is TYP_REF))
-            {
-                // - TYP_BYREF = TYP_REF when object stack allocation is enabled
-                ok = true;
-            }
-            else if ((dstTyp is TYP_STRUCT) && (valType is TYP_INT))
-            {
-                assert(val.IsInitVal);
-                ok = true;
-            }
+                if (varTypeIsGC(dstTyp) && ((valType == TYP_I_IMPL)))
+                {
+                    ok = true;
+                }
+                else if (((dstTyp == TYP_I_IMPL)) && (valType is TYP_BYREF))
+                {
+                    // - TYP_I_IMPL = TYP_BYREF
+                    ok = true;
+                }
+                else if ((JitConfig.JitObjectStackAllocation != 0) && (dstTyp is TYP_BYREF) && (valType is TYP_REF))
+                {
+                    // - TYP_BYREF = TYP_REF when object stack allocation is enabled
+                    ok = true;
+                }
+                else if ((dstTyp is TYP_STRUCT) && (valType is TYP_INT))
+                {
+                    assert(val.IsInitVal);
+                    ok = true;
+                }
 
-            if (!ok)
-            {
-                gtDispTree(val);
-                NO_WAY("Incompatible types for gtNewTempStore");
+                if (!ok)
+                {
+#if DEBUG
+                    gtDispTree(val);
+#endif
+                    NO_WAY("Incompatible types for gtNewTempStore");
+                }
             }
         }
-#endif
 
         // Added this NO_WAY for runtime\issue 44895, to protect against silent bad codegen
         if ((dstTyp is TYP_STRUCT) && (valType is TYP_REF))
