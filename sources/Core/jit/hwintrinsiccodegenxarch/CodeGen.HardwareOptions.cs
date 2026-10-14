@@ -11,18 +11,19 @@ public sealed partial class CodeGen
 {
     private void assertIsContainableHWIntrinsicOp(GenTreeHWIntrinsic parent, GenTree operand)
     {
-#if DEBUG
-        // Detached temporary operands cannot be checked against evaluation order.
-        if (operand.Next is null)
+        if (Configuration.DEBUG)
         {
-            return;
-        }
+            // Detached temporary operands cannot be checked against evaluation order.
+            if (operand.Next is null)
+            {
+                return;
+            }
 
-        var lowering = _compiler.LoweringPhase;
-        assert(lowering is not null);
-        var containable = lowering.IsContainableHWIntrinsicOp(parent, operand, out var supportsRegOptional);
-        assert(containable || supportsRegOptional);
-#endif
+            var lowering = _compiler.LoweringPhase;
+            assert(lowering is not null);
+            var containable = lowering.IsContainableHWIntrinsicOp(parent, operand, out var supportsRegOptional);
+            assert(containable || supportsRegOptional);
+        }
     }
 
     internal static insOpts AddEmbRoundingMode(insOpts options, sbyte mode)
