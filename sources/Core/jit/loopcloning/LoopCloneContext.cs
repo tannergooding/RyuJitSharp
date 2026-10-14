@@ -161,13 +161,13 @@ public sealed class LoopCloneContext
         for (var i = 0; i < conditions.Count; i++)
         {
             var condition = conditions[i];
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"Considering condition {i}: (");
+#if DEBUG
                 condition.Print();
-            }
 #endif
+            }
             if (condition.Evaluates(out var result))
             {
                 JITDUMP($") evaluates to {dspBool(result)}\n");
@@ -228,23 +228,23 @@ public sealed class LoopCloneContext
 
     public void OptimizeConditions(int loopNum, bool verbose = false)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("Before optimizing cloning conditions\n\t");
+#if DEBUG
             PrintConditions(loopNum);
+#endif
             jitprintf("\n");
         }
-#endif
         OptimizeConditions(_conditions[loopNum]!);
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("After optimizing cloning conditions\n\t");
+#if DEBUG
             PrintConditions(loopNum);
+#endif
             jitprintf("\n");
         }
-#endif
     }
 
     public void OptimizeBlockConditions(int loopNum, bool verbose = false)
@@ -257,14 +257,14 @@ public sealed class LoopCloneContext
         {
             OptimizeConditions(level);
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("After optimizing block-level cloning conditions\n\t");
+#if DEBUG
             PrintConditions(loopNum);
+#endif
             jitprintf("\n");
         }
-#endif
     }
 
     public BasicBlock CondToStmtInBlock(Compiler compiler, List<LC_Condition> conditions,
