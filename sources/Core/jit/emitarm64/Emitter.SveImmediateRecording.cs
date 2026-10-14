@@ -452,39 +452,40 @@ public unsafe partial class Emitter
 
     private static nint emitEncodeSmallFloatImm(double immDbl, instruction ins)
     {
-#if DEBUG
-        switch (ins)
+        if (Configuration.DEBUG)
         {
-            case INS_sve_fadd:
-            case INS_sve_fsub:
-            case INS_sve_fsubr:
+            switch (ins)
             {
-                assert((immDbl == 0.5) || (immDbl == 1.0));
-                break;
-            }
+                case INS_sve_fadd:
+                case INS_sve_fsub:
+                case INS_sve_fsubr:
+                {
+                    assert((immDbl == 0.5) || (immDbl == 1.0));
+                    break;
+                }
 
-            case INS_sve_fmax:
-            case INS_sve_fmaxnm:
-            case INS_sve_fmin:
-            case INS_sve_fminnm:
-            {
-                assert((immDbl == 0.0) || (immDbl == 1.0));
-                break;
-            }
+                case INS_sve_fmax:
+                case INS_sve_fmaxnm:
+                case INS_sve_fmin:
+                case INS_sve_fminnm:
+                {
+                    assert((immDbl == 0.0) || (immDbl == 1.0));
+                    break;
+                }
 
-            case INS_sve_fmul:
-            {
-                assert((immDbl == 0.5) || (immDbl == 2.0));
-                break;
-            }
+                case INS_sve_fmul:
+                {
+                    assert((immDbl == 0.5) || (immDbl == 2.0));
+                    break;
+                }
 
-            default:
-            {
-                assert(false, "!\"Invalid instruction\"");
-                break;
+                default:
+                {
+                    assert(false, "!\"Invalid instruction\"");
+                    break;
+                }
             }
         }
-#endif
 
         // Each supported instruction uses one immediate bit to distinguish its two legal constants.
         if (immDbl < 1.0)

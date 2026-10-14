@@ -372,36 +372,41 @@ public partial class Emitter
                 if (isVectorRegister(reg2))
                 {
                     assert(insOptsScalableWords(opt));
-#if DEBUG
-                    switch (ins)
+                    if (Configuration.DEBUG)
                     {
-                        case INS_sve_prfb:
+                        switch (ins)
                         {
-                            assert(isValidUimm(imm, 5));
-                            break;
-                        }
-                        case INS_sve_prfh:
-                        {
-                            assert(isValidUimm_MultipleOf(imm, 5, 2));
-                            break;
-                        }
-                        case INS_sve_prfw:
-                        {
-                            assert(isValidUimm_MultipleOf(imm, 5, 4));
-                            break;
-                        }
-                        case INS_sve_prfd:
-                        {
-                            assert(isValidUimm_MultipleOf(imm, 5, 8));
-                            break;
-                        }
-                        default:
-                        {
-                            assert(false, "!\"Invalid instruction\"");
-                            break;
+                            case INS_sve_prfb:
+                            {
+                                assert(isValidUimm(imm, 5));
+                                break;
+                            }
+
+                            case INS_sve_prfh:
+                            {
+                                assert(isValidUimm_MultipleOf(imm, 5, 2));
+                                break;
+                            }
+
+                            case INS_sve_prfw:
+                            {
+                                assert(isValidUimm_MultipleOf(imm, 5, 4));
+                                break;
+                            }
+
+                            case INS_sve_prfd:
+                            {
+                                assert(isValidUimm_MultipleOf(imm, 5, 8));
+                                break;
+                            }
+
+                            default:
+                            {
+                                assert(false, "!\"Invalid instruction\"");
+                                break;
+                            }
                         }
                     }
-#endif
                     fmt = IF_ARM64_SVE_HZ_2A_B;
                 }
                 else
