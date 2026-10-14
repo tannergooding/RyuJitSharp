@@ -57,10 +57,15 @@ public partial class Compiler
 
     /// <summary>If true, dump trees using only ASCII characters</summary>
     public bool asciiTrees;
-
+#endif
     /// <summary>If true, produce especially verbose dump output in SSA construction.</summary>
+#if DEBUG
     public bool verboseSsa;
+#else
+    public bool verboseSsa => false;
+#endif
 
+#if DEBUG
     /// <summary>If true, print trees before/after morphing (paired by an intra-compilation id:</summary>
     public bool treesBeforeAfterMorph;
 

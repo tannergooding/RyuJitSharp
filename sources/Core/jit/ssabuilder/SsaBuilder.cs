@@ -130,12 +130,10 @@ public sealed partial class SsaBuilder
         _compiler._domFrontiers = FlowGraphDominanceFrontiers.Build(domTree);
         _compiler.EndPhase(PHASE_BUILD_SSA_DF);
 
-#if DEBUG
-        if (_compiler.verboseSsa)
+        if (Configuration.DEBUG && _compiler.verboseSsa)
         {
             domTree.Dump();
         }
-#endif
 
         List<BasicBlock> blockIDF = [];
         JITDUMP("Inserting phi functions:\n");
@@ -152,8 +150,7 @@ public sealed partial class SsaBuilder
             blockIDF.Clear();
             _compiler._domFrontiers.ComputeIteratedDominanceFrontier(block, blockIDF);
 
-#if DEBUG
-            if (_compiler.verboseSsa)
+            if (Configuration.DEBUG && _compiler.verboseSsa)
             {
                 jitprintf($"IDF({FMT_BB(block.bbNum)}) := {{");
                 for (var index = 0; index < blockIDF.Count; index++)
@@ -162,7 +159,6 @@ public sealed partial class SsaBuilder
                 }
                 jitprintf("}\n");
             }
-#endif
             if (blockIDF.Count == 0)
             {
                 continue;
