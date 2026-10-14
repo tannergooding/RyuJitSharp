@@ -79,18 +79,19 @@ public sealed partial class LinearScan
         // EH entries have no register predecessor; their initialized map starts on the stack.
         if (predecessorNumber == 0)
         {
-#if DEBUG
-            if (blockInfo[currentBlock.bbNum].hasEHBoundaryIn || !_allocationPassComplete)
+            if (Configuration.DEBUG)
             {
-                for (var index = 0; index < _compiler.lvaTrackedCount; index++)
+                if (blockInfo[currentBlock.bbNum].hasEHBoundaryIn || !_allocationPassComplete)
                 {
-                    if (!extendLifetimes() || VarSetOps.IsMember(_compiler, currentBlock.bbLiveIn, index))
+                    for (var index = 0; index < _compiler.lvaTrackedCount; index++)
                     {
-                        assert((regNumber)inMap[index] == REG_STK);
+                        if (!extendLifetimes() || VarSetOps.IsMember(_compiler, currentBlock.bbLiveIn, index))
+                        {
+                            assert((regNumber)inMap[index] == REG_STK);
+                        }
                     }
                 }
             }
-#endif
         }
 
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVars,
