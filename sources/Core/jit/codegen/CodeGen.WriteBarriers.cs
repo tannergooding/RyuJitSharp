@@ -13,6 +13,9 @@ public sealed partial class CodeGen
     private bool _genWriteBarrierUsed;
 
     internal bool genWriteBarrierUsed => _genWriteBarrierUsed;
+#else
+    internal bool genWriteBarrierUsed
+        => throw new System.InvalidOperationException("Write-barrier diagnostic state is only available in Debug builds.");
 #endif
 
     public bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm)

@@ -50,9 +50,10 @@ internal static class SharedWriteBarrierDispatchTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(instruction.INS_call));
             Assert.That(descriptors[0].idIsNoGC(), Is.True);
-#if DEBUG
-            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.genWriteBarrierUsed, Is.True);
+            }
         });
     }
 
@@ -75,9 +76,10 @@ internal static class SharedWriteBarrierDispatchTests
     {
         var codeGen = Create();
         Assert.That(codeGen.genWriteBarrierHelperForWriteBarrierForm(form), Is.EqualTo(expected));
-#if DEBUG
-        Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
+        }
     }
 
     [TestCase(WBF_NoBarrier)]
@@ -90,9 +92,10 @@ internal static class SharedWriteBarrierDispatchTests
 
         Assert.That(error!.Result, Is.EqualTo(CORJIT_INTERNALERROR));
         Assert.That(error.Message, Is.EqualTo($"No write-barrier helper exists for {form}."));
-#if DEBUG
-        Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
+        }
     }
 
 #if !TARGET_XARCH
@@ -105,9 +108,10 @@ internal static class SharedWriteBarrierDispatchTests
 
         Assert.That(error!.Result, Is.EqualTo(CORJIT_SKIPPED));
         Assert.That(error.Message, Is.EqualTo("Helper call generation is not implemented for this target."));
-#if DEBUG
-        Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
+        }
     }
 
     [TestCase(WBF_NoBarrier)]
@@ -120,9 +124,10 @@ internal static class SharedWriteBarrierDispatchTests
 
         Assert.That(error!.Result, Is.EqualTo(CORJIT_INTERNALERROR));
         Assert.That(error.Message, Is.EqualTo($"No write-barrier helper exists for {form}."));
-#if DEBUG
-        Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
+        }
     }
 #endif
 

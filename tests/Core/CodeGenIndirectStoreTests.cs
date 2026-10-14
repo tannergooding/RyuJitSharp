@@ -91,9 +91,10 @@ internal static unsafe class CodeGenIndirectStoreTests
                 Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_WRITE_BARRIER_SRC));
                 Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R8));
             }
-#if DEBUG
-            Assert.That(codeGen.genWriteBarrierUsed, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.genWriteBarrierUsed, Is.True);
+            }
         });
     }
 
@@ -114,9 +115,10 @@ internal static unsafe class CodeGenIndirectStoreTests
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(Descriptors(codeGen)[0].idIns(), Is.EqualTo(INS_mov));
-#if DEBUG
-            Assert.That(codeGen.genWriteBarrierUsed, Is.False);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.genWriteBarrierUsed, Is.False);
+            }
         });
     }
 
