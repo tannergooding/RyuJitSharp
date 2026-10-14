@@ -351,9 +351,7 @@ public partial class Compiler
                 shadow.IsNeverNegative = true;
             }
 
-#if DEBUG
             JITDUMP($"Var V{lclNum:D2} is shadow param candidate. Shadow copy is V{shadowLclNum:D2}.\n");
-#endif
             shadowInfo[lclNum].ShadowCopy = shadowLclNum;
             createdAny = true;
         }

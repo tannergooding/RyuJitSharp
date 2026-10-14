@@ -374,9 +374,7 @@ public partial class Compiler
         if (block.hasProfileWeight && entry.hasProfileWeight)
         {
             entry.increaseBBProfileWeight(block.bbWeight);
-#if DEBUG
             JITDUMP($"Flow into entry BB {FMT_BB(entry.bbNum)} increased. Data {(fgPgoConsistent ? "is now" : "was already")} inconsistent.\n");
-#endif
             fgPgoConsistent = false;
         }
 

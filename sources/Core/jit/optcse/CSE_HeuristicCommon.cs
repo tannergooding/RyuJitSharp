@@ -25,9 +25,7 @@ public abstract partial class CSE_HeuristicCommon
         cntCalleeTrashInt = compiler.CNT_CALLEE_TRASH_INT;
         cntCalleeTrashFlt = compiler.CNT_CALLEE_TRASH_FLOAT;
         cntCalleeTrashMsk = compiler.CNT_CALLEE_TRASH_MASK;
-#if DEBUG
         JITDUMP($"CONST CSE is {(enableConstCSE ? "enabled" : "disabled")}\n");
-#endif
     }
 
     public virtual void Initialize()
