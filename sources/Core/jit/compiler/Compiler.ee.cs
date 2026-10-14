@@ -515,12 +515,10 @@ public partial class Compiler
 
         info.compCompHnd->getVars(info.compMethodHnd, &varInfoCount, &varInfoTable, &extendOthers);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"getVars() returned cVars = {varInfoCount}, extendOthers = {dspBool(extendOthers)}\n");
         }
-#endif
 
         // Over allocate in case extendOthers is set.
         var varInfoCountExtra = varInfoCount;
@@ -541,12 +539,10 @@ public partial class Compiler
 
         for (var i = 0; i < varInfoCount; i++, v++)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"var:{v->varNumber} start:{v->startOffset} end:{v->endOffset}\n");
             }
-#endif
 
             if (v->startOffset >= v->endOffset)
             {
