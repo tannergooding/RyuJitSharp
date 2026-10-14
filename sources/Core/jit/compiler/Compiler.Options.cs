@@ -293,13 +293,23 @@ public partial class Compiler
 #if DEBUG
         /// <summary>Separate cold code from hot code for functions with EH</summary>
         public bool compProcedureSplittingEH;
+#endif
 
         /// <summary>Display native code generated</summary>
+#if DEBUG
         public bool dspCode;
+#else
+        public bool dspCode => false;
+#endif
 
         /// <summary>Display the EH table reported to the VM</summary>
+#if DEBUG
         public bool dspEHTable;
+#else
+        public bool dspEHTable => false;
+#endif
 
+#if DEBUG
         /// <summary>Display the Debug info reported to the VM</summary>
         public bool dspDebugInfo;
 

@@ -142,12 +142,10 @@ public sealed partial class CodeGen
 #endif
         var jmpEpilog = block.HasFlag(BBF_HAS_JMP);
 
-#if DEBUG
-        if (_compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.opts.dspCode)
         {
             jitprintf("\n__epilog:\n");
         }
-#endif
         if (Configuration.DEBUG && _verbose)
         {
             jitprintf($"gcVarPtrSetCur={VarSetOps.ToString(_compiler, GCInfo.gcVarPtrSetCur)} ");

@@ -59,12 +59,10 @@ public sealed partial class CodeGen
         Emitter.emitBegProlog();
         _compiler.unwindBegProlog();
         genIPmappingAddToFront(IPmappingDscKind.Prolog, default, true);
-#if DEBUG
-        if (_compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.opts.dspCode)
         {
             jitprintf("\n__prolog:\n");
         }
-#endif
         if (_compiler.opts.compScopeInfo && (_compiler.info.compVarScopesCount > 0))
         {
             psiBegProlog();
@@ -546,12 +544,10 @@ public sealed partial class CodeGen
             noway_assert(gcRefLo == int.MaxValue);
             noway_assert(gcRefHi == -int.MaxValue);
         }
-#if DEBUG
-        if (_compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.opts.dspCode)
         {
             jitprintf("\n");
         }
-#endif
         if (Configuration.TARGET_X86)
         {
             var argsStartVar = _compiler.lvaVarargsBaseOfStkArgs;

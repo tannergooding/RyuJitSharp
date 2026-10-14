@@ -23,12 +23,10 @@ public sealed partial class CodeGen
         GCInfo.gcRegGCrefSetCur = Emitter.InitGCrefRegs;
         GCInfo.gcRegByrefSetCur = Emitter.InitByrefRegs;
 
-#if DEBUG
-        if (_compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.opts.dspCode)
         {
             jitprintf("\n__epilog:\n");
         }
-#endif
 
         if (Configuration.DEBUG && _verbose)
         {

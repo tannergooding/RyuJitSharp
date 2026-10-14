@@ -40,13 +40,11 @@ public sealed partial class CodeGen
             return;
         }
 
-#if DEBUG
-        if (_compiler.opts.dspEHTable)
+        if (Configuration.DEBUG && _compiler.opts.dspEHTable)
         {
             jitprintf($"*************** EH table for {_compiler.info.compFullName}\n");
             jitprintf($"{count} EH table entries\n");
         }
-#endif
 
         _compiler.eeSetEHcount(count);
         _compiler.Metrics.EHClauseCount = count;
