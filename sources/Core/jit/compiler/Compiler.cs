@@ -2364,6 +2364,10 @@ public partial class Compiler
             jitprintf($"[{tree.TreeId:D6}]");
         }
     }
+#else
+    public static void printTreeId(GenTree? tree)
+    {
+    }
 #endif
 
     /// <summary>Use to determine if a struct *might* be a simd type. As this function only takes a size, many structs will fit the criteria.</summary>
