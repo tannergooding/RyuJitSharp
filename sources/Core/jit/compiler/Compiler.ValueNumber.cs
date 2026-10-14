@@ -500,12 +500,10 @@ public partial class Compiler
                 foreach (var (field, fieldKind) in sideEffects.EnumerateModifiedFieldsInNativeOrder())
                 {
                     var fieldVN = vnStore.VNForHandle((nint)field.Value, GTF_ICON_FIELD_HDL);
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"     VNForHandle({eeGetFieldName(field, includeType: false)}) is ${fieldVN:x}\n");
                     }
-#endif
                     // Instance fields and complex statics select a first-field map;
                     // simple statics select a value of the field's own type.
                     var mapType = fieldKind is FieldKindForVN.WithBaseAddr ? TYP_MEM : eeGetFieldType(field);
