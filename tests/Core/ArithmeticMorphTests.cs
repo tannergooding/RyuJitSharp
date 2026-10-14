@@ -40,10 +40,11 @@ internal static unsafe class ArithmeticMorphTests
             Assert.That(constant._vnPair.BothDefined, Is.False);
             Assert.That(tree.AsOp().Op1, Is.SameAs(left));
             Assert.That(left.Oper, Is.EqualTo(count == 2 ? GT_LCL_VAR : GT_ADD));
-#if DEBUG
-            Assert.That(constant.TreeId, Is.EqualTo(left.TreeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + 1));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(constant.TreeId, Is.EqualTo(left.TreeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + 1));
+            }
         });
     }
 

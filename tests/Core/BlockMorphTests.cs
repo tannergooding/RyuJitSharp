@@ -89,9 +89,12 @@ internal static unsafe class BlockMorphTests
             Assert.That(original._vnPair.Liberal, Is.EqualTo(42));
 #if DEBUG
             Assert.That(replacement.Oper.StructType, Is.EqualTo(replacement.GetType()));
-            Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
 #endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+            }
         });
     }
 
@@ -202,10 +205,11 @@ internal static unsafe class BlockMorphTests
                     Assert.That(store.Data.TreeId, Is.EqualTo(zero.TreeId));
                 }
             }
-#if DEBUG
-            Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + (type is TYP_SIMD16 ? 1 : 0)));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(store.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + (type is TYP_SIMD16 ? 1 : 0)));
+            }
         });
     }
 

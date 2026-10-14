@@ -171,10 +171,11 @@ internal static unsafe class MorphTreeSupportTests
             Assert.That(result.Op2.AsIntCon().IconValue, Is.EqualTo((nint)(-4)));
             Assert.That(result.Op2.AsIntCon().FieldSeq,
                 Is.SameAs(compiler.FieldSeqStore.Create(field.FldHnd, -4, FieldSeq.FieldKind.SimpleStatic)));
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(field.TreeId));
-            Assert.That(compiler.compGenTreeID - nextId, Is.EqualTo(indirect ? 9 : module != 0 ? 6 : 4));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(field.TreeId));
+                Assert.That(compiler.compGenTreeID - nextId, Is.EqualTo(indirect ? 9 : module != 0 ? 6 : 4));
+            }
             var tls = result.Op1.AsIndir().Addr;
             if (indirect || (module != 0))
             {

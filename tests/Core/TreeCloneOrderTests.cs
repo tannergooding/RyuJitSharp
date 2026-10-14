@@ -172,9 +172,10 @@ internal static unsafe class TreeCloneOrderTests
                     Assert.That(copies[i].TreeId, Is.EqualTo(nextId + i));
                 }
             }
-#if DEBUG
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + originals.Count));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + originals.Count));
+            }
             if (original is GenTreeHWIntrinsic hardware)
             {
                 var hardwareCopy = copy.AsHWIntrinsic();

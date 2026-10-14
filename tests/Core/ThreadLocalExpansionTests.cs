@@ -208,9 +208,10 @@ internal static unsafe class ThreadLocalExpansionTests
                 Is.EqualTo(GTF_ICON_SECREL_OFFSET));
             Assert.That(address.Op2.AsIntCon().IconValue, Is.EqualTo((nint)0x1100));
             Assert.That(check.Statements.Count(), Is.EqualTo(3));
-#if DEBUG
-            Assert.That(check.LastStmt!.Id, Is.LessThan(check.FirstStmt!.NextStmt!.Id));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(check.LastStmt!.Id, Is.LessThan(check.FirstStmt!.NextStmt!.Id));
+            }
             Assert.That(remainder.FirstStmt, Is.SameAs(original));
             Assert.That(entry.Target, Is.SameAs(body));
         });

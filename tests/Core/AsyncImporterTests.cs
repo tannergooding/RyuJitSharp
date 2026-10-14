@@ -289,10 +289,8 @@ internal static unsafe class AsyncImporterTests
             Assert.That(originalUses.MoveNext(), Is.False);
             var leafUses = child.Operands.GetEnumerator();
             Assert.That(leafUses.MoveNext(), Is.False);
-#if DEBUG
-            var nextTreeId = compiler.compGenTreeID;
-            var treeId = node.TreeId;
-#endif
+            var nextTreeId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
+            var treeId = TestConfiguration.IsDebug ? node.TreeId : 0;
 
             node.BashToNOP();
 
@@ -305,10 +303,11 @@ internal static unsafe class AsyncImporterTests
             Assert.That(child.Prev, Is.SameAs(node));
             var uses = node.Operands.GetEnumerator();
             Assert.That(uses.MoveNext(), Is.False);
-#if DEBUG
-            Assert.That(node.TreeId, Is.EqualTo(treeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextTreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(node.TreeId, Is.EqualTo(treeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextTreeId));
+            }
         });
     }
 

@@ -393,9 +393,10 @@ internal static unsafe class LocalMorphTests
                 Assert.That(result.LclNum, Is.EqualTo(2));
                 Assert.That(result.Offset, Is.EqualTo(offset + delta));
             }
-#if DEBUG
-            Assert.That(source.IsConsumed, Is.EqualTo(succeeds));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(source.IsConsumed, Is.EqualTo(succeeds));
+            }
         });
     }
 
@@ -833,10 +834,11 @@ internal static unsafe class LocalMorphTests
             Assert.That(source.Next, Is.Null);
             Assert.That(replacement.Flags, Is.EqualTo(GTF_DONT_CSE));
             Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(source.TreeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(source.TreeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+            }
         });
     }
 

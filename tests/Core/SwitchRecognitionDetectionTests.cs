@@ -131,9 +131,10 @@ internal static unsafe class SwitchRecognitionDetectionTests
             var traits = new BitVecTraits(compiler, compiler.fgBBNumMax + 1);
             var visited = BitVecOps.MakeEmpty(traits);
             Assert.That(Detect(compiler, first, visited), Is.True);
-#if DEBUG
-            Assert.That(compiler.compGenTreeID - before, Is.EqualTo(expectedTrees));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.compGenTreeID - before, Is.EqualTo(expectedTrees));
+            }
         });
     }
 

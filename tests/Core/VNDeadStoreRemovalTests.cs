@@ -152,9 +152,10 @@ internal static unsafe class VNDeadStoreRemovalTests
             Assert.That(compiler.lvaTable[0].GetPerSsaData(number).DefNode, Is.SameAs(dead));
             var nextTreeId = TestConfiguration.IsDebug ? compiler.compGenTreeID : 0;
             Assert.That(compiler.optVNBasedDeadStoreRemoval(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
-#if DEBUG
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextTreeId + 1));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextTreeId + 1));
+            }
             Assert.That(definingBlock.FirstStmt, Is.SameAs(firstStatement));
             Assert.That(firstStatement.NextStmt, Is.Null);
             Assert.That(compiler.lvaTable[0].GetPerSsaData(number).DefNode, Is.Null);

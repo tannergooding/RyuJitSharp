@@ -180,10 +180,11 @@ internal static unsafe class ScalarFoldingTests
             Assert.That(result.AsIntCon().IconValue, Is.EqualTo((nint)expected));
             Assert.That(result.Prev, Is.SameAs(tree.Prev));
             Assert.That(result.Next, Is.SameAs(tree.Next));
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(nextId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + 1));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(nextId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + 1));
+            }
         }, minOpts: true);
     }
 
@@ -453,10 +454,11 @@ internal static unsafe class ScalarFoldingTests
             Assert.That(result.Flags & GTF_DONT_CSE, Is.EqualTo(GTF_EMPTY));
             Assert.That(result.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
             Assert.That(tree.Oper, Is.EqualTo(oper));
-#if DEBUG
-            Assert.That(result.TreeId, Is.EqualTo(tree.TreeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.TreeId, Is.EqualTo(tree.TreeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+            }
         });
     }
 

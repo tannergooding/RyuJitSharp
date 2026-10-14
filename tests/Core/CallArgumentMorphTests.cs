@@ -108,10 +108,11 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(replacement._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(original.Oper, Is.EqualTo(GT_BLK));
             Assert.That(original._vnPair.Liberal, Is.EqualTo(42));
-#if DEBUG
-            Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
+            }
         });
     }
 
