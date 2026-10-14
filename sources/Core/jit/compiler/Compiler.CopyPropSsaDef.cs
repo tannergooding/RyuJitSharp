@@ -32,6 +32,9 @@ public partial class Compiler
 
 #if DEBUG
         public GenTreeLclVarCommon GetDefNode() => _defNode;
+#else
+        public GenTreeLclVarCommon GetDefNode()
+            => throw new System.InvalidOperationException("Copy-propagation definition nodes are only available in Debug builds.");
 #endif
     }
 }

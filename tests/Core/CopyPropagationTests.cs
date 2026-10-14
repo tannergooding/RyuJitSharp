@@ -32,9 +32,10 @@ internal static unsafe class CopyPropagationTests
             Assert.That(entry.GetSsaDef()._vnPair.Conservative, Is.EqualTo(updated));
             Assert.That(entry.SsaNum, Is.EqualTo(node.SsaNum));
             Assert.That(later, Is.GreaterThan(entry.SsaNum));
-#if DEBUG
-            Assert.That(entry.GetDefNode(), Is.SameAs(node));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(entry.GetDefNode(), Is.SameAs(node));
+            }
         });
     }
 

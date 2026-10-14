@@ -160,6 +160,10 @@ public partial class Compiler
         }
         JITDUMP("}\n\n");
     }
+#else
+    public void optDumpCopyPropStack(LclNumToLiveDefsMap curSsaName)
+    {
+    }
 #endif
 
     public bool optCopyProp(BasicBlock block, Statement statement, GenTreeLclVarCommon tree,
@@ -186,9 +190,7 @@ public partial class Compiler
             assert(newLclDefVN != ValueNumStore.NoVN);
             if (newLclDefVN != lclDefVN)
             {
-#if DEBUG
                 JITDUMP($"orig [{tree.TreeId:D6}] copy [{newLclDef.GetDefNode().TreeId:D6}] VNs proved equivalent\n");
-#endif
                 continue;
             }
 
@@ -236,14 +238,12 @@ public partial class Compiler
                 continue;
             }
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 JITDUMP($"VN based copy assertion for [{tree.TreeId:D6}] V{lclNum:D2} ${lclDefVN:x} by " +
                     $"[{newLclDef.GetDefNode().TreeId:D6}] V{newLclNum:D2} ${newLclDefVN:x}.\n");
                 DISPNODE(tree);
             }
-#endif
             var newSsaNum = newLclDef.SsaNum;
             assert(newSsaNum != SsaConfig.RESERVED_SSA_NUM);
             tree.LclNum = newLclNum;
@@ -313,13 +313,11 @@ public partial class Compiler
     public bool optBlockCopyProp(BasicBlock block, LclNumToLiveDefsMap curSsaName)
     {
         JITDUMP($"Copy Assertion for {FMT_BB(block.bbNum)}\n");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP("  curSsaName stack: ");
             optDumpCopyPropStack(curSsaName);
         }
-#endif
         var lifeUpdater = new TreeLifeUpdater(this, forCodeGen: false);
         var madeChanges = false;
 
