@@ -91,12 +91,10 @@ public sealed class TreeLifeUpdater
                 if (!VarSetOps.IsMember(_compiler, _compiler.codeGen.GCInfo.gcVarPtrSetCur, fldVarDsc._varIndex))
                 {
                     VarSetOps.AddElemD(_compiler, _compiler.codeGen.GCInfo.gcVarPtrSetCur, fldVarDsc._varIndex);
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler.verbose)
                     {
                         jitprintf($"\t\t\t\t\t\t\tVar V{fieldVarNum:D2} becoming live\n");
                     }
-#endif
                 }
             }
 
@@ -178,12 +176,10 @@ public sealed class TreeLifeUpdater
                     if (!VarSetOps.IsMember(_compiler, _compiler.codeGen.GCInfo.gcVarPtrSetCur, varDsc._varIndex))
                     {
                         VarSetOps.AddElemD(_compiler, _compiler.codeGen.GCInfo.gcVarPtrSetCur, varDsc._varIndex);
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf($"\t\t\t\t\t\t\tVar V{lclNum:D2} becoming live\n");
                         }
-#endif
                     }
                 }
             }
