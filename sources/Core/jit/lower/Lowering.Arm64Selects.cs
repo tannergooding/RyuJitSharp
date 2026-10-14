@@ -92,12 +92,12 @@ public sealed partial class Lowering
         }
 
         JITDUMP("Converted to ");
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
+#if DEBUG
             CompilerInstance.gtDispNodeName(select);
-        }
 #endif
+        }
         JITDUMP(":\n");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");

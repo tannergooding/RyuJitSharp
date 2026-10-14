@@ -55,8 +55,7 @@ public sealed partial class Lowering
             }
         }
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"{compiler._paramRegLocalMappings.Count} parameter register to local mappings\n");
             foreach (var mapping in compiler._paramRegLocalMappings)
@@ -64,6 +63,5 @@ public sealed partial class Lowering
                 jitprintf($"  {mapping.RegisterSegment.Register.Name} -> V{mapping.LclNum:D2}+{mapping.Offset}\n");
             }
         }
-#endif
     }
 }
