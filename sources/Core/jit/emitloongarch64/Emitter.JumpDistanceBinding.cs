@@ -13,14 +13,15 @@ public partial class Emitter
 {
     private void emitJumpDistBindLoongArch64()
     {
-#if DEBUG
-        var compiler = _compiler
-            ?? throw new FatalJitException("LoongArch64 jump binding requires an active compiler.");
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("*************** In emitJumpDistBind()\n");
+            var compiler = _compiler
+                ?? throw new FatalJitException("LoongArch64 jump binding requires an active compiler.");
+            if (compiler.verbose)
+            {
+                jitprintf("*************** In emitJumpDistBind()\n");
+            }
         }
-#endif
 
         var linkingEndState = unchecked((uint)emitTotalCodeSize) <= (0x7fffu << 2) ? 2u : 0u;
         const int smallJumpDelaySlot = 0;
