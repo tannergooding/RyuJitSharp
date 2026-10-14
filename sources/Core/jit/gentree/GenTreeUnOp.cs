@@ -26,11 +26,9 @@ public class GenTreeUnOp : GenTree
             // Propagate effects flags from child.
             Flags |= (op1.Flags & GTF_ALL_EFFECT);
         }
-        else
+        else if (Configuration.DEBUG)
         {
-#if DEBUG
             assert(IsNullOp1Legal);
-#endif
         }
     }
 
@@ -42,7 +40,6 @@ public class GenTreeUnOp : GenTree
         _vnPair.SetBoth(ValueNumStore.NoVN);
     }
 
-#if DEBUG
     public bool IsNullOp1Legal => !Oper.IsSimple || Oper switch {
         GT_LEA => true,
         GT_RETFILT => true,
@@ -50,7 +47,6 @@ public class GenTreeUnOp : GenTree
         GT_RETURN => Type is TYP_VOID,
         _ => false,
     };
-#endif
 
     public bool IsUnsigned
     {
@@ -85,9 +81,11 @@ public class GenTreeUnOp : GenTree
     {
         get
         {
-#if DEBUG
-            assert(Debugger.IsAttached || (_op1 is not null) || IsNullOp1Legal);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(Debugger.IsAttached || (_op1 is not null) || IsNullOp1Legal);
+            }
+
             return _op1!;
         }
 

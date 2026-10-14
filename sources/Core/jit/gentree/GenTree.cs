@@ -3048,9 +3048,10 @@ public partial class GenTree
             }
             else
             {
-#if DEBUG
-                assert(op.IsNullOp1Legal);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(op.IsNullOp1Legal);
+                }
             }
 
             // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
@@ -3061,9 +3062,10 @@ public partial class GenTree
             }
             else
             {
-#if DEBUG
-                assert(op.IsNullOp2Legal);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(op.IsNullOp2Legal);
+                }
             }
         }
         else if (oper.IsUnary)
@@ -3076,9 +3078,10 @@ public partial class GenTree
             }
             else
             {
-#if DEBUG
-                assert(unOp.IsNullOp1Legal);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(unOp.IsNullOp1Legal);
+                }
             }
         }
         else

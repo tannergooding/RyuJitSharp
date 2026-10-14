@@ -81,9 +81,10 @@ public interface IGenTreeVisitor<TSelf>
                 }
                 else
                 {
-#if DEBUG
-                    assert(op.IsNullOp1Legal);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(op.IsNullOp1Legal);
+                    }
                 }
 
                 // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
@@ -94,9 +95,10 @@ public interface IGenTreeVisitor<TSelf>
                 }
                 else if (result is not fgWalkResult.WALK_ABORT)
                 {
-#if DEBUG
-                    assert(op.IsNullOp2Legal);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(op.IsNullOp2Legal);
+                    }
                 }
             }
             else if (oper.IsUnary)
@@ -114,9 +116,10 @@ public interface IGenTreeVisitor<TSelf>
                 }
                 else if (result is not fgWalkResult.WALK_ABORT)
                 {
-#if DEBUG
-                    assert(unOp.IsNullOp1Legal);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(unOp.IsNullOp1Legal);
+                    }
                 }
             }
             else

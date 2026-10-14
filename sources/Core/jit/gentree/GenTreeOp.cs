@@ -28,12 +28,10 @@ public class GenTreeOp : GenTreeUnOp
             // Propagate effects flags from child.  (UnOp handled this for first child.)
             Flags |= (op2.Flags & GTF_ALL_EFFECT);
         }
-        else
+        else if (Configuration.DEBUG)
         {
-#if DEBUG
             // Binary operators, with a few exceptions, require a non-null second argument.
             assert(IsNullOp2Legal);
-#endif
         }
     }
 
@@ -87,7 +85,6 @@ public class GenTreeOp : GenTreeUnOp
         }
     }
 
-#if DEBUG
     public bool IsNullOp2Legal => !Oper.IsBinary || Oper switch {
         GT_INTRINSIC => true,
         GT_LEA => true,
@@ -99,15 +96,16 @@ public class GenTreeOp : GenTreeUnOp
 
         _ => false,
     };
-#endif
 
     public GenTree Op2
     {
         get
         {
-#if DEBUG
-            assert(Debugger.IsAttached || (_op2 is not null) || IsNullOp2Legal);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(Debugger.IsAttached || (_op2 is not null) || IsNullOp2Legal);
+            }
+
             return _op2!;
         }
 
