@@ -407,6 +407,9 @@ public static partial class genTreeOpsExtensions
                 return s_structTypes[(int)(oper)];
             }
         }
+#else
+        public Type StructType
+            => throw new System.InvalidOperationException("Operator struct type metadata is only available in Debug or node-size measurement builds.");
 #endif
 
         public genTreeOps SwapRelop

@@ -87,11 +87,9 @@ internal static unsafe class BlockMorphTests
             Assert.That(original.Oper, Is.EqualTo(GT_STORE_BLK));
             Assert.That(original.Data, Is.SameAs(blockValue));
             Assert.That(original._vnPair.Liberal, Is.EqualTo(42));
-#if DEBUG
-            Assert.That(replacement.Oper.StructType, Is.EqualTo(replacement.GetType()));
-#endif
             if (TestConfiguration.IsDebug)
             {
+                Assert.That(replacement.Oper.StructType, Is.EqualTo(replacement.GetType()));
                 Assert.That(replacement.TreeId, Is.EqualTo(original.TreeId));
                 Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
             }
