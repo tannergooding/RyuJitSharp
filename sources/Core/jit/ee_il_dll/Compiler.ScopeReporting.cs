@@ -14,12 +14,10 @@ public partial class Compiler
     public unsafe void eeAllocateLVs(uint count)
     {
         assert(opts.compScopeInfo);
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Allocating {unchecked((int)count)} VarLocInfo\n");
         }
-#endif
         eeVarsCount = 0;
         eeVarsCapacity = count;
         eeVars = count > 0

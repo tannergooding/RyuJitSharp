@@ -9,12 +9,10 @@ public partial class Compiler
 {
     public unsafe void eeSetEHcount(uint count)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"setEHcount(cEH={count})\n");
         }
-#endif
         if (info.compMatchedVM)
         {
             info.compCompHnd->setEHcount(unchecked((int)count));
