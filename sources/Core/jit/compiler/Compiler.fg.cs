@@ -14772,8 +14772,7 @@ public partial class Compiler
             _dfsTree = dfsTree;
         }
 
-#if DEBUG
-        if (verbose && (dfsTree.PostOrderCount != fgBBcount))
+        if (Configuration.DEBUG && verbose && (dfsTree.PostOrderCount != fgBBcount))
         {
             jitprintf($"{fgBBcount - dfsTree.PostOrderCount} unreachable blocks were not removed:\n");
 
@@ -14785,7 +14784,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         return true;
     }
