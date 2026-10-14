@@ -154,9 +154,10 @@ internal static unsafe class Arm64EmitterLabelTests
     {
         using var tls = TestConfiguration.CreateJitTls();
         var (compiler, emitter) = CreateEmitter(beginFunction: true);
-#if DEBUG
-        JitTls.Compiler = compiler;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            JitTls.Compiler = compiler;
+        }
         compiler.compCurBB = new BasicBlock(null, null);
         compiler.compCurBB.SetFlags(BBF_HAS_LABEL);
         var previous = new BasicBlock(null, null);

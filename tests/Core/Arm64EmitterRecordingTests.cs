@@ -2670,9 +2670,10 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
-#if DEBUG
-        JitTls.Compiler = compiler;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            JitTls.Compiler = compiler;
+        }
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
         compiler.compCurBB = new BasicBlock(null, null);
