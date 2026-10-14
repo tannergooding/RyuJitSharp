@@ -14896,12 +14896,10 @@ public partial class Compiler
 
             if (bbInCatchHandlerBBRange(compCurBB))
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf("\nWill not inline blocks that are in the catch handler region\n");
                 }
-#endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_CATCH);
                 return;
@@ -14909,12 +14907,10 @@ public partial class Compiler
 
             if (bbInFilterBBRange(compCurBB))
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf("\nWill not inline blocks that are in the filter region\n");
                 }
-#endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_IS_WITHIN_FILTER);
                 return;
@@ -17051,12 +17047,10 @@ public partial class Compiler
     // predecessors, so they insert an upcast if needed).
     public void impReimportSpillClique(BasicBlock block)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\n*************** In impReimportSpillClique({FMT_BB(block.bbNum)})\n");
         }
-#endif
 
         // If we get here, it is because this block is already part of a spill clique
         // and one predecessor had an outgoing live stack slot of type int, and this
@@ -17121,12 +17115,10 @@ public partial class Compiler
             // will be next to each other.
             fgInsertBBafter(block, dupBlock);
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"New Basic Block {FMT_BB(dupBlock.bbNum)} duplicate of {FMT_BB(block.bbNum)} created.\n");
             }
-#endif
         }
 
         fgInitBBLookup();
