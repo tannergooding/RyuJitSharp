@@ -17,11 +17,11 @@ public sealed partial class CodeGen
         var block = BasicBlock.New(_compiler);
 #if DEBUG
         _compiler.fgSafeBasicBlockCreation = false;
-        if (_compiler.verbose)
+#endif
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"Mark {FMT_BB(block.bbNum)} as label: codegen temp block\n");
         }
-#endif
         block.SetFlags(BBF_HAS_LABEL);
         assert(_compiler.compCurBB is not null);
         block.CopyFlags(_compiler.compCurBB, BBF_COLD);
