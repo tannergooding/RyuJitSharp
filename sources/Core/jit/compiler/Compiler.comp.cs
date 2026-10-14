@@ -1430,10 +1430,14 @@ public partial class Compiler
         }
 #endif
 
+        if (Configuration.DEBUG && verbose)
+        {
+            jitprintf($"Basic block list for '{info.compFullName}'\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"Basic block list for '{info.compFullName}'\n");
             fgDispBasicBlocks();
         }
 
@@ -3115,12 +3119,10 @@ public partial class Compiler
 
     protected void compInitDebuggingInfo()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"*************** In compInitDebuggingInfo() for {info.compFullName}\n");
         }
-#endif
 
         //
         // Get hold of the local variable records, if there are any
