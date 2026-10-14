@@ -370,10 +370,11 @@ public partial class LIR
             assert(!range.IsEmpty);
             FinishInsertAfter(insertionPoint, range._firstNode, range._lastNode);
 
-#if DEBUG
-            range._firstNode = null;
-            range._lastNode = null;
-#endif
+            if (Configuration.DEBUG)
+            {
+                range._firstNode = null;
+                range._lastNode = null;
+            }
         }
 
         /// <summary>Inserts a node at the beginning of this range.</summary>
@@ -486,10 +487,11 @@ public partial class LIR
             assert(!range.IsEmpty);
             FinishInsertBefore(insertionPoint, range._firstNode, range._lastNode);
 
-#if DEBUG
-            range._firstNode = null;
-            range._lastNode = null;
-#endif
+            if (Configuration.DEBUG)
+            {
+                range._firstNode = null;
+                range._lastNode = null;
+            }
         }
 
         /// <summary>Removes a node from this range.</summary>

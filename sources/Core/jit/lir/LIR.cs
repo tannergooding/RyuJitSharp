@@ -16,34 +16,35 @@ public static partial class LIR
             insertionPoint = block.LastNode;
             assert(insertionPoint is not null);
 
-#if DEBUG
-            switch (block.Kind)
+            if (Configuration.DEBUG)
             {
-                case BBJ_COND:
+                switch (block.Kind)
                 {
-                    assert(insertionPoint.Oper.IsConditionalJump);
-                    break;
-                }
+                    case BBJ_COND:
+                    {
+                        assert(insertionPoint.Oper.IsConditionalJump);
+                        break;
+                    }
 
-                case BBJ_SWITCH:
-                {
-                    assert(insertionPoint.Oper is GT_SWITCH or GT_SWITCH_TABLE);
-                    break;
-                }
+                    case BBJ_SWITCH:
+                    {
+                        assert(insertionPoint.Oper is GT_SWITCH or GT_SWITCH_TABLE);
+                        break;
+                    }
 
-                case BBJ_RETURN:
-                {
-                    assert(insertionPoint.Oper is GT_RETURN or GT_SWIFT_ERROR_RET or GT_JMP or GT_CALL);
-                    break;
-                }
+                    case BBJ_RETURN:
+                    {
+                        assert(insertionPoint.Oper is GT_RETURN or GT_SWIFT_ERROR_RET or GT_JMP or GT_CALL);
+                        break;
+                    }
 
-                default:
-                {
-                    unreached();
-                    break;
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
                 }
             }
-#endif
         }
 
         block.InsertBefore(insertionPoint, range);
