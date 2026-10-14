@@ -153,16 +153,18 @@ public sealed class InlineResult : IDisposable
 
             if (observation is not InlineObservation.CALLEE_IS_NOINLINE)
             {
-#if DEBUG
-                JITDUMP($"\nINLINER: Marking {callee} as NOINLINE (observation {observation.String})\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    JITDUMP($"\nINLINER: Marking {callee} as NOINLINE (observation {observation.String})\n");
+                }
                 _rootCompiler.info.compCompHnd->setMethodAttribs(_callee, CORINFO_FLG_BAD_INLINEE);
             }
             else
             {
-#if DEBUG
-                JITDUMP($"\nINLINER: Not marking {callee} NOINLINE because it's already marked as such\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    JITDUMP($"\nINLINER: Not marking {callee} NOINLINE because it's already marked as such\n");
+                }
             }
         }
 
