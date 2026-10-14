@@ -35,9 +35,7 @@ public sealed partial class LinearScan
         }
 
         register = getNextFPRegWraparound(firstRegister);
-#if DEBUG
         var assignedCount = 1;
-#endif
         while (next is not null)
         {
             assert(next.regCount == 0);
@@ -59,13 +57,16 @@ public sealed partial class LinearScan
             next.registerAssignment = genSingleTypeRegMask(register);
             next = getNextConsecutiveRefPosition(next);
             register = getNextFPRegWraparound(register);
-#if DEBUG
-            assignedCount++;
-#endif
+            if (Configuration.DEBUG)
+            {
+                assignedCount++;
+            }
         }
-#if DEBUG
-        assert(assignedCount == first.regCount);
-#endif
+
+        if (Configuration.DEBUG)
+        {
+            assert(assignedCount == first.regCount);
+        }
     }
 
     private bool canAssignNextConsecutiveRegisters(RefPosition first, regNumber firstRegister)
