@@ -1009,6 +1009,20 @@ public partial struct LclVarDsc
     }
 #endif
 
+#if !DEBUG
+    public bool lvUnusedStruct
+    {
+        readonly get => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        set => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+    }
+
+    public bool lvUndoneStructPromotion
+    {
+        readonly get => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        set => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+    }
+#endif
+
     /// <summary>The index of the local var representing the first field in the promoted struct local.</summary>
     /// <remarks>For implicit byref parameters, this gets hijacked between fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to point to the struct local created to model the parameter's struct promotion, if any.</remarks>
     public int lvFieldLclStart
@@ -1128,6 +1142,12 @@ public partial struct LclVarDsc
         {
             lvDefinedViaAddress = value;
         }
+    }
+#else
+    public bool IsDefinedViaAddress
+    {
+        readonly get => throw new System.InvalidOperationException("Address-definition diagnostic state is only available in Debug builds.");
+        set => throw new System.InvalidOperationException("Address-definition diagnostic state is only available in Debug builds.");
     }
 #endif
 

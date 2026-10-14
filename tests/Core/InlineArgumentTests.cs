@@ -338,11 +338,11 @@ internal static unsafe class InlineArgumentTests
             Assert.That(temp.IsAddressExposed, Is.EqualTo(promotionState != 2));
             Assert.That(temp.lvPromoted, Is.True);
 
-#if DEBUG
-            Assert.That(temp.lvUnusedStruct, Is.EqualTo(promotionState == 2));
-            Assert.That(temp.lvUndoneStructPromotion, Is.EqualTo(promotionState == 2));
-
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(temp.lvUnusedStruct, Is.EqualTo(promotionState == 2));
+                Assert.That(temp.lvUndoneStructPromotion, Is.EqualTo(promotionState == 2));
+            }
             for (var i = 3; i < 5; i++)
             {
                 Assert.That(compiler.lvaTable[i].lvParentLcl, Is.EqualTo(promotionState == 2 ? 2 : 0));

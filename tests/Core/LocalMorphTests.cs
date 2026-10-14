@@ -428,9 +428,10 @@ internal static unsafe class LocalMorphTests
             {
                 Assert.That(local.lvDoNotEnregister, Is.True);
                 Assert.That(local.IsAddressExposed, Is.False);
-#if DEBUG
-                Assert.That(local.IsDefinedViaAddress, Is.True);
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(local.IsDefinedViaAddress, Is.True);
+                }
             }
         });
     }
