@@ -70,7 +70,6 @@ public sealed partial class SegmentList : IEnumerable<SegmentList.Segment>
         return true;
     }
 
-#if DEBUG
     /// <summary>Dump a string representation of the segment tree</summary>
     public void Dump()
     {
@@ -91,7 +90,6 @@ public sealed partial class SegmentList : IEnumerable<SegmentList.Segment>
             }
         }
     }
-#endif
 
     public Enumerator GetEnumerator() => new Enumerator(_segments);
 

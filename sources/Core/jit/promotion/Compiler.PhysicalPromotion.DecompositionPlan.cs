@@ -65,14 +65,12 @@ public partial class Compiler
                 remainder.Subtract(new SegmentList.Segment(entry.Offset, entry.Offset + entry.Type.Size));
             }
 
-#if DEBUG
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 jitprintf("  Block op remainder: ");
                 remainder.Dump();
                 jitprintf("\n");
             }
-#endif
             return remainder;
         }
 
