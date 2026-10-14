@@ -334,8 +334,8 @@ public sealed partial class Lowering
 
             var loSrc = src.Op1;
             var hiSrc = src.Op2;
-#if DEBUG
             JITDUMP($"Optimizing a truncating cast [{cast.TreeId:D6}] from decomposed LONG [{src.TreeId:D6}]\n");
+#if DEBUG
             GenTree treeToDisplay = cast;
 #endif
             if ((hiSrc.Flags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)

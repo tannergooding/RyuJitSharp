@@ -4059,9 +4059,8 @@ public partial class Compiler
                             // for in-lining.
                             call._callMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
 
-#if DEBUG
                             JITDUMP($"\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
-
+#if DEBUG
                             if ((prefixFlags & PREFIX_TAILCALL_STRESS) is not 0)
                             {
                                 call._callDebugFlags |= GTF_CALL_MD_STRESS_TAILCALL;

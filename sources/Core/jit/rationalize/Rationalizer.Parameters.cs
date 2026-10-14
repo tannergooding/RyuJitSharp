@@ -198,14 +198,14 @@ public sealed partial class Rationalizer
             return;
         }
 
-#if DEBUG
         JITDUMP($"LCL_FLD use [{field.TreeId:D6}] in {FMT_BB(block.bbNum)} of parameter V{field.LclNum:D2} is contained in ");
+#if DEBUG
         if (CompilerInstance.verbose)
         {
             selected.Dump();
         }
-        JITDUMP("\n");
 #endif
+        JITDUMP("\n");
         if (!block.TryGetUse(field, out var use))
         {
             JITDUMP("  ..but no use was found\n");
