@@ -229,10 +229,11 @@ public partial class Compiler
                 worklist.Push(block);
             }
 
-#if DEBUG
-            JITDUMP("Preserved value analysis: blocks containing awaits\n");
-            DumpBlocks("  Await blocks:", _awaitBlocks);
-#endif
+            if (Configuration.DEBUG && compiler.verbose)
+            {
+                JITDUMP("Preserved value analysis: blocks containing awaits\n");
+                DumpBlocks("  Await blocks:", _awaitBlocks);
+            }
             while (worklist.Count != 0)
             {
                 var block = worklist.Pop();
@@ -246,10 +247,11 @@ public partial class Compiler
                 });
             }
 
-#if DEBUG
-            JITDUMP("Preserved value analysis: blocks reachable after resuming\n");
-            DumpBlocks("  Resume-reachable blocks:", _resumeReachableBlocks);
-#endif
+            if (Configuration.DEBUG && compiler.verbose)
+            {
+                JITDUMP("Preserved value analysis: blocks reachable after resuming\n");
+                DumpBlocks("  Resume-reachable blocks:", _resumeReachableBlocks);
+            }
             var mutatedVars = CreateSets(compiler);
             foreach (var block in compiler.Blocks)
             {
@@ -305,7 +307,6 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         private void DumpBlocks(string label, HashSet<int> numbers)
         {
             if (!compiler.verbose)
@@ -326,7 +327,7 @@ public partial class Compiler
 
             JITDUMP($"{result}\n");
         }
-#endif
+
         public VARSET_TP GetMutatedVarsIn(BasicBlock block)
         {
             assert(_mutatedVarsIn is not null);
