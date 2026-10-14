@@ -193,7 +193,6 @@ public sealed partial class FlowGraphNaturalLoop
         return bottom;
     }
 
-#if DEBUG
     public static void Dump(FlowGraphNaturalLoop? loop)
     {
         if (loop is null)
@@ -360,5 +359,4 @@ public sealed partial class FlowGraphNaturalLoop
 
         jitprintf("\n");
     }
-#endif
 }

@@ -100,7 +100,6 @@ public sealed partial class CodeGen
             node.Incoming = null;
         }
 
-#if DEBUG
         public void Dump()
         {
             jitprintf($"{_nodes.Count} registers in register parameter interference graph\n");
@@ -141,6 +140,5 @@ public sealed partial class CodeGen
                 }
             }
         }
-#endif
     }
 }

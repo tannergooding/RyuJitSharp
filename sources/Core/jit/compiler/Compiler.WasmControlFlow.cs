@@ -33,12 +33,10 @@ public partial class Compiler
         assert(loops.ImproperLoopHeaders == 0);
 
         var tryRegions = FlowGraphTryRegions.Build(this, dfsTree);
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             FlowGraphTryRegions.Dump(tryRegions);
         }
-#endif
 
         if (tryRegions.HasSideEntry())
         {

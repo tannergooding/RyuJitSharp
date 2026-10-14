@@ -109,7 +109,6 @@ public sealed class FlowGraphDominanceFrontiers
         }
     }
 
-#if DEBUG
     public void Dump()
     {
         jitprintf("DF:\n");
@@ -131,5 +130,4 @@ public sealed class FlowGraphDominanceFrontiers
             jitprintf("}\n");
         }
     }
-#endif
 }

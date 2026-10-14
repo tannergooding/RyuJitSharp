@@ -59,13 +59,11 @@ public sealed class BlockReachabilitySets
 
         var reachabilitySets = new BlockReachabilitySets(dfsTree, sets);
 
-#if DEBUG
-        if (dfsTree.GetCompiler().verbose)
+        if (Configuration.DEBUG && dfsTree.GetCompiler().verbose)
         {
             jitprintf("\nAfter computing reachability sets:\n");
             reachabilitySets.Dump();
         }
-#endif
 
         return reachabilitySets;
     }
@@ -83,7 +81,6 @@ public sealed class BlockReachabilitySets
         return BitVecOps.IsMember(postOrderTraits, _reachabilitySets[to.bbPostorderNum], from.bbPostorderNum);
     }
 
-#if DEBUG
     public void Dump()
     {
         jitprintf("------------------------------------------------\n");
@@ -112,5 +109,4 @@ public sealed class BlockReachabilitySets
             jitprintf("\n");
         }
     }
-#endif
 }

@@ -17,12 +17,10 @@ public partial class Compiler
         fgWasm.SetDfsAndTraits(dfsTree);
 
         var tryRegions = FlowGraphTryRegions.Build(this, dfsTree);
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             FlowGraphTryRegions.Dump(tryRegions);
         }
-#endif
 
         if (tryRegions.HasSideEntry())
         {

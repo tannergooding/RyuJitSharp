@@ -41,7 +41,6 @@ public sealed class FlowGraphDfsTree
 
     public bool IsForWasm { get; }
 
-#if DEBUG
     public void Dump()
     {
         jitprintf($"DFS tree. {(HasCycle ? "Has cycle" : "No cycle")}.\n");
@@ -54,7 +53,6 @@ public sealed class FlowGraphDfsTree
             jitprintf($"{i:D2} {rpoNum:D2} -> {FMT_BB(block.bbNum)}[{block.bbPreorderNum}, {block.bbPostorderNum}]\n");
         }
     }
-#endif
 
     public bool Contains(BasicBlock block) =>
         ((uint)block.bbPostorderNum < (uint)_postOrderCount) && (GetPostOrder(block.bbPostorderNum) == block);

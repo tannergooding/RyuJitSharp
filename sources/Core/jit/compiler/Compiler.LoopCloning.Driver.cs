@@ -144,13 +144,11 @@ public partial class Compiler
 
     private void optCloneLoop(FlowGraphNaturalLoop loop, LoopCloneContext context)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\nCloning ");
             FlowGraphNaturalLoop.Dump(loop);
         }
-#endif
         var withEH = true;
 #if DEBUG
         withEH = JitConfig.JitCloneLoopsWithEH > 0;

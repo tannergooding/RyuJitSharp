@@ -183,7 +183,6 @@ public sealed class FlowGraphTryRegions
         return regions;
     }
 
-#if DEBUG
     public static void Dump(FlowGraphTryRegions regions)
     {
         if (regions.NumTryRegions() == 0)
@@ -205,5 +204,4 @@ public sealed class FlowGraphTryRegions
             }
         }
     }
-#endif
 }

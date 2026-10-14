@@ -45,12 +45,10 @@ public partial class Compiler
         foreach (var loop in _loops.InReversePostOrder())
         {
             JITDUMP("Processing ");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 FlowGraphNaturalLoop.Dump(loop);
             }
-#endif
             scevContext.ResetForLoop(loop);
             if (loop.GetPreheader() is null)
             {

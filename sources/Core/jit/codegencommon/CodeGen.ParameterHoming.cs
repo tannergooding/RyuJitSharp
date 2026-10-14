@@ -91,13 +91,15 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             graph.Dump();
         }
-        graph.Validate();
-#endif
+
+        if (Configuration.DEBUG)
+        {
+            graph.Validate();
+        }
 
         var busyRegs = _calleeRegArgMaskLiveIn;
         while (true)

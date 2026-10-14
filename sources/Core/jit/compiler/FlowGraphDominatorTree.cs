@@ -55,7 +55,6 @@ public sealed class FlowGraphDominatorTree
                (_postorderNum[dominator.bbPostorderNum] >= _postorderNum[dominated.bbPostorderNum]);
     }
 
-#if DEBUG
     public void Dump()
     {
         foreach (var block in _dfsTree.GetCompiler().Blocks)
@@ -77,7 +76,6 @@ public sealed class FlowGraphDominatorTree
 
         jitprintf("\n");
     }
-#endif
 
     // Requires a unique root, with no incoming edges or enclosing try.
     // Immediate dominators live on BasicBlock, so trees cannot coexist across rebuilds.

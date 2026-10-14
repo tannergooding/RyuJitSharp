@@ -74,14 +74,12 @@ public partial class Compiler
         context.CurLoopVnInvariantCache.Clear();
         var sideEffects = _loopSideEffects?[loop.Index]
             ?? throw new FatalJitException("Loop hoisting requires loop side-effect analysis.");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("optHoistThisLoop processing ");
             FlowGraphNaturalLoop.Dump(loop);
             jitprintf($"  Loop body {(sideEffects.ContainsCall ? "contains" : "does not contain")} a call\n");
         }
-#endif
         var loopVars = VarSetOps.Intersection(this, sideEffects.VarInOut, sideEffects.VarUseDef);
         context.LoopVarInOutCount = (int)VarSetOps.Count(this, sideEffects.VarInOut);
         context.LoopVarCount = (int)VarSetOps.Count(this, loopVars);

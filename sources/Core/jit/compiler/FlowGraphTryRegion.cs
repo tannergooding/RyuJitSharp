@@ -84,7 +84,6 @@ public sealed class FlowGraphTryRegion
         return result ? BasicBlockVisit.Continue : BasicBlockVisit.Abort;
     }
 
-#if DEBUG
     public static void Dump(FlowGraphTryRegion region)
     {
         var regions = region._regions;
@@ -140,5 +139,4 @@ public sealed class FlowGraphTryRegion
             }
         }
     }
-#endif
 }

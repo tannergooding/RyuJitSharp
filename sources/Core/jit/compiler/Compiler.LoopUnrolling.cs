@@ -161,12 +161,10 @@ public partial class Compiler
         assert(!lvaGetDesc(lvar).IsAddressExposed && !lvaGetDesc(lvar).lvIsStructField);
 
         JITDUMP("Analyzing candidate for loop unrolling:\n");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             FlowGraphNaturalLoop.Dump(loop);
         }
-#endif
         if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType,
             testOper, unsTest, out var totalIter))
         {
@@ -251,12 +249,10 @@ public partial class Compiler
         }
 
         JITDUMP($"\nUnrolling loop L{loop.Index:D2} unrollCostSz = {duplicationCost}\n");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             FlowGraphNaturalLoop.Dump(loop);
         }
-#endif
 
         var blockMap = new BlockToBlockMap();
         var bottom = loop.GetLexicallyBottomMostBlock();
