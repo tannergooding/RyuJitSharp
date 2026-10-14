@@ -749,10 +749,13 @@ public sealed partial class CodeGen
             jitprintf($"                       SP delta 1: {genFuncletInfo.fiSpDelta1}\n");
             jitprintf($"                       SP delta 2: {genFuncletInfo.fiSpDelta2}\n");
         }
-
-        assert(spToFplrSaveDelta >= 0);
-        assert(spToCalleeSaveDelta >= 0);
 #endif
+
+        if (Configuration.DEBUG)
+        {
+            assert(spToFplrSaveDelta >= 0);
+            assert(spToCalleeSaveDelta >= 0);
+        }
         }
         else if (Configuration.TARGET_RISCV64)
         {
@@ -792,9 +795,12 @@ public sealed partial class CodeGen
             jitprintf($"\n  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
             jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
         }
-
-        assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
 #endif
+
+        if (Configuration.DEBUG)
+        {
+            assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
+        }
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
