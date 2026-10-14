@@ -109,37 +109,38 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        JITDUMP("Final LSRA Block Sequence:\n");
-        for (var block = startBlockSequence(); block is not null; block = moveToNextBlock())
+        if (Configuration.DEBUG)
         {
-            var info = blockInfo[block.bbNum];
-            JITDUMP($"{FMT_BB(block.bbNum)} ({refCntWtd2str(info.weight, padForDecimalPlaces: true),6})");
-            if (info.hasCriticalInEdge)
+            JITDUMP("Final LSRA Block Sequence:\n");
+            for (var block = startBlockSequence(); block is not null; block = moveToNextBlock())
             {
-                JITDUMP(" critical-in");
+                var info = blockInfo[block.bbNum];
+                JITDUMP($"{FMT_BB(block.bbNum)} ({refCntWtd2str(info.weight, padForDecimalPlaces: true),6})");
+                if (info.hasCriticalInEdge)
+                {
+                    JITDUMP(" critical-in");
+                }
+                if (info.hasCriticalOutEdge)
+                {
+                    JITDUMP(" critical-out");
+                }
+                if (info.hasEHBoundaryIn)
+                {
+                    JITDUMP(" EH-in");
+                }
+                if (info.hasEHBoundaryOut)
+                {
+                    JITDUMP(" EH-out");
+                }
+                if (info.hasEHPred)
+                {
+                    JITDUMP(" has EH pred");
+                }
+                JITDUMP("\n");
             }
-            if (info.hasCriticalOutEdge)
-            {
-                JITDUMP(" critical-out");
-            }
-            if (info.hasEHBoundaryIn)
-            {
-                JITDUMP(" EH-in");
-            }
-            if (info.hasEHBoundaryOut)
-            {
-                JITDUMP(" EH-out");
-            }
-            if (info.hasEHPred)
-            {
-                JITDUMP(" has EH pred");
-            }
+
             JITDUMP("\n");
         }
-
-        JITDUMP("\n");
-#endif
 
         void visitBlock(BasicBlock block)
         {

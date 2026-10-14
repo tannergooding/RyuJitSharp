@@ -111,17 +111,18 @@ public sealed partial class FlowGraphNaturalLoops
     {
         var comp = dfsTree.GetCompiler();
         comp._blockToEHPreds = null;
-#if DEBUG
-        JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");
-        JITDUMP("RPO -> BB [pre, post]\n");
-
-        for (var i = dfsTree.PostOrderCount; i != 0; i--)
+        if (Configuration.DEBUG)
         {
-            var block = dfsTree.GetPostOrder(i - 1);
-            JITDUMP($"{dfsTree.PostOrderCount - i:D2} -> {FMT_BB(block.bbNum)}[{block.bbPreorderNum}, {block.bbPostorderNum}]\n");
+            JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");
+            JITDUMP("RPO -> BB [pre, post]\n");
+
+            for (var i = dfsTree.PostOrderCount; i != 0; i--)
+            {
+                var block = dfsTree.GetPostOrder(i - 1);
+                JITDUMP($"{dfsTree.PostOrderCount - i:D2} -> {FMT_BB(block.bbNum)}[{block.bbPreorderNum}, {block.bbPostorderNum}]\n");
+            }
         }
 
-#endif
         var loops = new FlowGraphNaturalLoops(dfsTree);
 
         if (!dfsTree.HasCycle)
