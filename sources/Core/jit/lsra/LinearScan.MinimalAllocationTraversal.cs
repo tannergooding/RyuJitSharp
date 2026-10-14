@@ -154,9 +154,10 @@ public sealed partial class LinearScan
 
                     registersToFree = delayedRegistersToFree;
                     delayedRegistersToFree = RBM_NONE;
-#if DEBUG
-                    verifyFreeRegisters(registersToFree);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        verifyFreeRegisters(registersToFree);
+                    }
                 }
             }
 

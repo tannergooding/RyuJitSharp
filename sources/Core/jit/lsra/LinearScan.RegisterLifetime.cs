@@ -196,7 +196,11 @@ public sealed partial class LinearScan
 
     private void verifyFreeRegisters(regMaskTP registersToFree)
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         for (var index = 0; (int)_regIndices[index] < _availableRegCount; index++)
         {
             var register = _regIndices[index];
@@ -274,7 +278,6 @@ public sealed partial class LinearScan
                 index++;
             }
         }
-#endif
     }
 
     private bool isInitiallyAvailable(RegRecord regRecord)
