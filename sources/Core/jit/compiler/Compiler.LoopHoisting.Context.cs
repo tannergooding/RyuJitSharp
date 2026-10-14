@@ -96,8 +96,7 @@ public partial class Compiler
     {
         assert(loop.EntryEdges.Length == 1);
         var preheader = loop.EntryEdge(0).SourceBlock;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nHoisting a copy of ");
             printTreeId(origExpr);
@@ -106,7 +105,6 @@ public partial class Compiler
             gtDispTree(origExpr);
             jitprintf("\n");
         }
-#endif
         var hoistExpr = gtCloneExpr(origExpr)
             ?? throw new FatalJitException("Loop hoisting requires a clone of its invariant expression.");
         hoistExpr.ClearRegNum();
@@ -118,14 +116,12 @@ public partial class Compiler
         optRecordSsaUses(hoist, preheader);
         preheader.CopyFlags(exprBb, BBF_COPY_PROPAGATE);
         fgInsertStmtAtEnd(preheader, fgNewStmtFromTree(hoist));
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"This hoisted copy placed in PreHeader ({FMT_BB(preheader.bbNum)}):\n");
             gtDispTree(hoist);
             jitprintf("\n");
         }
-#endif
 
 #if DEBUG
         if (_nodeTestData is not null && _nodeTestData.TryGetValue(origExpr, out var annotation) &&
