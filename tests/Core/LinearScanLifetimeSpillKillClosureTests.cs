@@ -60,10 +60,7 @@ internal static class LinearScanLifetimeSpillKillClosureTests
     public static unsafe void IntegerConstantMatchingPreservesTargetWidthAndGcRules(
         int previousValue, int value, var_types previousType, var_types type, bool expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler((Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler)));
         var allocator = CreateAllocator();
         var mask = AvailableIntRegs(allocator);
         var previous = new Interval(TYP_INT, mask)

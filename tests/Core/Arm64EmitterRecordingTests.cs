@@ -618,10 +618,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         };
         compiler.info.compCompHnd = &state.Info;
         compiler.info.compMatchedVM = true;
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = compiler;
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
 
         EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_ARM64_R19, 0x1234);
         RecordPair(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R19, REG_ARM64_R19, 0,
@@ -651,10 +648,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void AdjacentLoadsCombineInAddressOrder(bool descending, regNumber firstExpected, regNumber secondExpected)
     {
         var emitter = CreateEmitter(optimized: true);
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = EmitterCompiler(emitter);
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
 
         RecordPair(emitter, INS_ldr, EA_4BYTE, REG_ARM64_R19, REG_ARM64_R20, descending ? 4 : 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
@@ -676,10 +670,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void RepeatedLoadFromSameAddressBecomesMove()
     {
         var emitter = CreateEmitter(optimized: true);
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = EmitterCompiler(emitter);
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
 
         RecordPair(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R19, REG_ARM64_R20, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
@@ -700,10 +691,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void StackPointerAdjustmentCombinesWithPreviousLoad(instruction ins, int immediate, int expectedOffset)
     {
         var emitter = CreateEmitter(optimized: true);
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = EmitterCompiler(emitter);
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
 
         RecordPair(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R19, REG_ARM64_R20, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
@@ -868,10 +856,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         bool optimized, bool canSkip, emitAttr size, regNumber reg, int expectedSize)
     {
         var emitter = CreateEmitter(optimized);
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = EmitterCompiler(emitter);
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
         RecordMove(emitter, INS_mov, size, reg, reg, canSkip, INS_OPTS_NONE);
         Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
     }
@@ -898,10 +883,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         emitAttr size, bool opposite, int expectedSize)
     {
         var emitter = CreateEmitter(optimized: true);
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = EmitterCompiler(emitter);
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
         RecordMove(emitter, INS_mov, size, REG_ARM64_R19, REG_ARM64_R20, false, INS_OPTS_NONE);
         RecordMove(emitter, INS_mov, size, opposite ? REG_ARM64_R20 : REG_ARM64_R19,
             opposite ? REG_ARM64_R19 : REG_ARM64_R20, false, INS_OPTS_NONE);
@@ -916,10 +898,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter(optimized: true);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing emitter compiler.");
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = compiler;
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
         compiler.opts.compMinOpts = true;
         compiler.opts.canUseAllOpts = false;
         RecordRegisters(emitter, ins, size, REG_ARM64_R19, REG_ARM64_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
@@ -933,10 +912,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MoveElisionRespectsGroupBoundariesAndMovprfx()
     {
         var emitter = CreateEmitter(optimized: true);
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = EmitterCompiler(emitter);
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(EmitterCompiler(emitter));
         RecordMove(emitter, INS_mov, EA_8BYTE, REG_ARM64_R19, REG_ARM64_R20, false, INS_OPTS_NONE);
         ForceNewGroup(emitter) = true;
         Assert.That(RedundantMove(emitter, INS_mov, EA_8BYTE, REG_ARM64_R19, REG_ARM64_R20, false), Is.False);

@@ -17,10 +17,7 @@ internal static class GSCookieTemporaryMaskTests
     [TestCase(true, true)]
     public static unsafe void CookieMaskRetainsNativeRegistersWithoutCompilerState(bool tailCall, bool hasCall)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-        JitTls.Compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler((Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler)));
         var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
         var call = hasCall ? new GenTreeCall(TYP_VOID) : null;
 #if TARGET_AMD64

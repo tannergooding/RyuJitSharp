@@ -20,6 +20,17 @@ internal static class TestConfiguration
 #endif
     }
 
+    public static unsafe IDisposable? CreateJitTlsWithCompiler(Compiler? compiler)
+    {
+#if DEBUG
+        var jitTls = new JitTls(null);
+        JitTls.Compiler = compiler;
+        return jitTls;
+#else
+        return null;
+#endif
+    }
+
     public static void EnableSafeBasicBlockCreation(Compiler compiler)
     {
 #if DEBUG
