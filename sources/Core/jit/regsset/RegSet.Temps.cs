@@ -50,12 +50,10 @@ public partial struct RegSet
                 tdNext = tmpFree[slot],
             };
 
-#if DEBUG
-            if (Compiler.verbose)
+            if (Configuration.DEBUG && Compiler.verbose)
             {
                 jitprintf($"pre-allocated temp #{-temp.tdTempNum}, slot {slot}, size = {temp.tdTempSize}\n");
             }
-#endif
 
             tmpFree[slot] = temp;
         }
@@ -90,11 +88,12 @@ public partial struct RegSet
 
         noway_assert(temp is not null);
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf($"reused temp #{-temp.tdTempNum}, slot {slot}, size = {temp.tdTempSize}\n");
         }
+
+#if DEBUG
         tmpGetCount++;
 #endif
 
@@ -109,11 +108,12 @@ public partial struct RegSet
         assert(temp is not null);
         var slot = tmpSlot(temp.tdTempType);
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf($"release temp #{-temp.tdTempNum}, slot {slot}, size = {temp.tdTempSize}\n");
         }
+
+#if DEBUG
         assert(tmpGetCount != 0);
         tmpGetCount--;
 #endif
