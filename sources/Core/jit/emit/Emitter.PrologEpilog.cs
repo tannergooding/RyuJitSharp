@@ -27,12 +27,10 @@ public partial class Emitter
 
     public void emitGeneratePrologEpilog()
     {
-#if DEBUG
         var prologCount = 0;
         var epilogCount = 0;
         var funcletPrologCount = 0;
         var funcletEpilogCount = 0;
-#endif
         for (var placeholder = emitPlaceholderList; placeholder is not null;)
         {
             assert((placeholder.igFlags & InsGroupFlags.Placeholder) != 0);
@@ -46,17 +44,19 @@ public partial class Emitter
             {
                 case IGPT_PROLOG:
                 {
-#if DEBUG
-                    prologCount++;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        prologCount++;
+                    }
                     break;
                 }
 
                 case IGPT_EPILOG:
                 {
-#if DEBUG
-                    epilogCount++;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        epilogCount++;
+                    }
                     emitBegFnEpilog(placeholder);
                     codeGen.genFnEpilog(block);
                     emitEndFnEpilog();
@@ -65,9 +65,10 @@ public partial class Emitter
 
                 case IGPT_FUNCLET_PROLOG:
                 {
-#if DEBUG
-                    funcletPrologCount++;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        funcletPrologCount++;
+                    }
                     emitBegFuncletProlog(placeholder);
                     codeGen.genFuncletProlog(block);
                     emitEndFuncletProlog();
@@ -76,9 +77,10 @@ public partial class Emitter
 
                 case IGPT_FUNCLET_EPILOG:
                 {
-#if DEBUG
-                    funcletEpilogCount++;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        funcletEpilogCount++;
+                    }
                     emitBegFuncletEpilog(placeholder);
                     codeGen.genFuncletEpilog(block);
                     emitEndFuncletEpilog();
@@ -97,14 +99,12 @@ public partial class Emitter
         {
             assert(_compiler is not null);
         }
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"{prologCount} prologs, {epilogCount} epilogs");
             jitprintf($", {funcletPrologCount} funclet prologs, {funcletEpilogCount} funclet epilogs\n");
             assert(funcletPrologCount == _compiler.ehFuncletCount());
         }
-#endif
     }
 
     public void emitStartPrologEpilogGeneration()
