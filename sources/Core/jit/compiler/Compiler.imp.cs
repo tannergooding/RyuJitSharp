@@ -5044,12 +5044,10 @@ public partial class Compiler
             return block.bbStkTempsOut;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\n*************** In impGetSpillTmpBase({FMT_BB(block.bbNum)})\n");
         }
-#endif
 
         // Otherwise, choose one, and propagate to all members of the spill clique.
         // Grab enough temps for the whole stack.
@@ -6172,12 +6170,10 @@ public partial class Compiler
 
     public unsafe void impImportBlockCode(BasicBlock block)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nImporting {FMT_BB(block.bbNum)} (PC={block.bbCodeOffs:D3}) of '{info.compFullName}'");
         }
-#endif
 
         var nxtStmtIndex = impInitBlockLineInfo();
         var nxtStmtOffs = BAD_IL_OFFSET;
