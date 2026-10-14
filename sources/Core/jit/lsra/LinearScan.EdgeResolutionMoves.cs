@@ -120,18 +120,22 @@ public sealed partial class LinearScan
     private void addResolution(BasicBlock block, GenTree? insertionPoint, Interval interval,
         regNumber toReg, regNumber fromReg, BasicBlock fromBlock, BasicBlock? toBlock, string reason)
     {
+        if (Configuration.DEBUG)
+        {
+            if (insertionPoint is null)
+            {
+                assert((uint)block.bbNum > _bbNumMaxBeforeResolution || fromReg == REG_STK ||
+                    interval.isWriteThru || !_blockInfo![block.bbNum].hasEHBoundaryOut);
+            }
+            else
+            {
+                assert((uint)block.bbNum > _bbNumMaxBeforeResolution || toReg == REG_STK ||
+                    interval.isWriteThru || !_blockInfo![block.bbNum].hasEHBoundaryIn);
+            }
+        }
+
 #if DEBUG
         var insertion = insertionPoint is null ? "bottom" : "top";
-        if (insertionPoint is null)
-        {
-            assert((uint)block.bbNum > _bbNumMaxBeforeResolution || fromReg == REG_STK ||
-                interval.isWriteThru || !_blockInfo![block.bbNum].hasEHBoundaryOut);
-        }
-        else
-        {
-            assert((uint)block.bbNum > _bbNumMaxBeforeResolution || toReg == REG_STK ||
-                interval.isWriteThru || !_blockInfo![block.bbNum].hasEHBoundaryIn);
-        }
         JITDUMP($"   {FMT_BB(block.bbNum)} {insertion}");
         if (toBlock is not null)
         {
