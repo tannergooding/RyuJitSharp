@@ -17002,12 +17002,10 @@ public partial class Compiler
     /// <remarks>Note that the caller is responsible for calling impImportBlockPending(), with the appropriate stack-state</remarks>
     public void impReimportMarkBlock(BasicBlock block)
     {
-#if DEBUG
-        if (verbose && block.HasFlag(BBF_IMPORTED))
+        if (Configuration.DEBUG && verbose && block.HasFlag(BBF_IMPORTED))
         {
             jitprintf($"\n{FMT_BB(block.bbNum)} will be reimported\n");
         }
-#endif
 
         // We shouldn't be re-importing one of these special blocks.
         assert(block.Kind is not BBJ_CALLFINALLYRET);
