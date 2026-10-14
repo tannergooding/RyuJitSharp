@@ -116,12 +116,10 @@ public sealed partial class ObjectAllocator
         if ((info.Local == lclNum) && (pseudoGuardInfo.Local == lclNum) && (info.Type == pseudoGuardInfo.Type))
         {
             JITDUMP("... under GDV; tracking via pseudo index");
-#if DEBUG
-            if (CompilerInstance.verbose)
+            if (Configuration.DEBUG && CompilerInstance.verbose)
             {
                 DumpIndex(pseudoIndex);
             }
-#endif
             JITDUMP("\n");
             AddConnGraphEdgeIndex(pseudoIndex, LocalToIndex(lclNum));
             return true;
@@ -198,12 +196,10 @@ public sealed partial class ObjectAllocator
 
                     JITDUMP($"Enumerator allocation [{TreeIdForDump(data):D6}]: will track accesses to " +
                         $"V{enumeratorLocal:D2} guarded by type {compiler.eeGetClassName(clsHnd)} via");
-#if DEBUG
-                    if (compiler.verbose)
+                    if (Configuration.DEBUG && compiler.verbose)
                     {
                         DumpIndex(pseudoIndex);
                     }
-#endif
                     JITDUMP("\n");
 
                     if (lclNum != enumeratorLocal)
@@ -261,12 +257,10 @@ public sealed partial class ObjectAllocator
         assert(added);
 
         JITDUMP($"Enumerator allocation: will also track accesses to V{dstLclNum:D2} via");
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             DumpIndex(pseudoIndex);
         }
-#endif
         JITDUMP("\n");
 
         info.AllocTemps ??= [];
