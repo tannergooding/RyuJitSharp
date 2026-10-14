@@ -205,23 +205,19 @@ public sealed partial class ObjectAllocator
                         assert(info.Index != BAD_VAR_NUM);
                         var destination = info.Index;
                         JITDUMP(" ... Unmodelled GC store to");
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             allocator.DumpIndex(destination);
                         }
-#endif
                         JITDUMP($" at [{TreeIdForDump(tree):D6}]\n");
 
                         if (!tree.AsIndir().Data.IsIntegralConst(0))
                         {
                             allocator.AddConnGraphEdgeIndex(destination, allocator._unknownSourceIndex);
-#if DEBUG
-                            if (compiler.verbose)
+                            if (Configuration.DEBUG && compiler.verbose)
                             {
                                 allocator.DumpIndex(destination);
                             }
-#endif
                             JITDUMP($" ... value unknown at [{TreeIdForDump(tree):D6}]\n");
                         }
                         else
