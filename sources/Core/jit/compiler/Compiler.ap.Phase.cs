@@ -215,8 +215,7 @@ public partial class Compiler
         var propagation = new AssertionPropFlowCallback(this, bbJtrueAssertionOut, jumpDestGen);
         flow.ForwardAnalysis(ref propagation);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             foreach (var block in Blocks)
             {
@@ -234,7 +233,6 @@ public partial class Compiler
 
             jitprintf("\n");
         }
-#endif
 
         var assertions = BitVecOps.MakeEmpty(apTraits);
         foreach (var block in Blocks)
