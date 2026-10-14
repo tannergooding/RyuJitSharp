@@ -28,16 +28,19 @@ public partial class Emitter
         {
             emitDispIns(id, true, false, false);
         }
-
-        if (Configuration.EMIT_TRACK_STACK_DEPTH)
-        {
-            assert(unchecked((int)emitCurStackLvl) >= 0);
-        }
-
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        assert(debugInfo.idSize == (nuint)emitSizeOfInsDsc(id));
 #endif
+
+        if (Configuration.DEBUG)
+        {
+            if (Configuration.EMIT_TRACK_STACK_DEPTH)
+            {
+                assert(unchecked((int)emitCurStackLvl) >= 0);
+            }
+
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            assert(debugInfo.idSize == (nuint)emitSizeOfInsDsc(id));
+        }
 #if EMITTER_STATS
         emitIFcounts[(int)id.idInsFmt()] = unchecked(emitIFcounts[(int)id.idInsFmt()] + 1);
 #endif

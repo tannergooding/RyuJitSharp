@@ -91,11 +91,12 @@ public partial class Emitter
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
         SetEvexNdIfNeeded(id, instOptions);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         var sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
         id.idCodeSize(sz);
 
@@ -167,11 +168,12 @@ public partial class Emitter
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         var sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
         id.idCodeSize(sz);
 

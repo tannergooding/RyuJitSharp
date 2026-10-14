@@ -126,11 +126,12 @@ public partial class Emitter
         id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_RRD_SRD_CNS));
         id.idReg1(reg1);
         id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         ulong code = hasCodeMI(ins) ? insCodeMI(ins) : insCodeRM(ins);
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);

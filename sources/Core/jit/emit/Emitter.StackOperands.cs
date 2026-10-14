@@ -49,11 +49,12 @@ public partial class Emitter
 
         var sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
         id.idCodeSize(sz);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
@@ -116,11 +117,12 @@ public partial class Emitter
 
         var sz = emitInsSizeSV(id, insCodeMI(ins), varx, offs, val);
         id.idCodeSize(sz);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
     }
