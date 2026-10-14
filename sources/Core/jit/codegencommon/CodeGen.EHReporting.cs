@@ -90,9 +90,7 @@ public sealed partial class CodeGen
 
     public unsafe void genReportEHClauses(EHClauseInfo[] clauses)
     {
-#if DEBUG
         var lastFuncletIndex = 0u;
-#endif
         var vmToEhOrder = _compiler.compVMClauseOrderToEHTabOrder
             ?? throw new FatalJitException(CORJIT_SKIPPED, "VM-to-EH clause order has not been initialized.");
 
@@ -102,17 +100,18 @@ public sealed partial class CodeGen
             var XTnum = vmToEhOrder[vmIndex];
             ref var HBtab = ref _compiler.compHndBBtab[XTnum];
 
-#if DEBUG
-            if (HBtab.HasFilter)
+            if (Configuration.DEBUG)
             {
-                assert(HBtab.ebdFuncIndex == lastFuncletIndex + 2);
+                if (HBtab.HasFilter)
+                {
+                    assert(HBtab.ebdFuncIndex == lastFuncletIndex + 2);
+                }
+                else
+                {
+                    assert(HBtab.ebdFuncIndex == lastFuncletIndex + 1);
+                }
+                lastFuncletIndex = HBtab.ebdFuncIndex;
             }
-            else
-            {
-                assert(HBtab.ebdFuncIndex == lastFuncletIndex + 1);
-            }
-            lastFuncletIndex = HBtab.ebdFuncIndex;
-#endif
 
             if (vmIndex > 0)
             {
