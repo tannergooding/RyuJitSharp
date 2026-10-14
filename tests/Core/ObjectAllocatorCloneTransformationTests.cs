@@ -95,7 +95,7 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
             var appearance = Activator.CreateInstance(appearanceType, def, statement, 0, true)
                 ?? throw new InvalidOperationException("Missing enumerator appearance.");
             var appearances = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(appearanceType))!;
-            appearances.Add(appearance);
+            _ = appearances.Add(appearance);
             Set(variable, "Appearances", appearances);
             var variables = (IDictionary)Activator.CreateInstance(
                 typeof(Dictionary<,>).MakeGenericType(typeof(int), variableType))!;

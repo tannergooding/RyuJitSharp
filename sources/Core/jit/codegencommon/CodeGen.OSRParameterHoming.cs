@@ -95,7 +95,7 @@ public sealed partial class CodeGen
                 JITDUMP($"---OSR--- V{varNum:D2} (reg) Tier0 virtual offset {tier0Offset} OSR frame size " +
                     $"{osrFrameSize} OSR sp-fp delta {osrSpToFpDelta} total offset {offset} (0x{offset:x})\n");
 
-                genInstrWithConstant(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset, initReg);
+                _ = genInstrWithConstant(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset, initReg);
                 initRegZeroed = false;
             }
         }

@@ -55,7 +55,7 @@ public partial class Compiler
 #if DEBUG
         public bool compMinOptsIsUsed;
 #else
-        public bool compMinOptsIsUsed => false;
+        public readonly bool compMinOptsIsUsed => false;
 #endif
 
 #if DEBUG
@@ -299,14 +299,14 @@ public partial class Compiler
 #if DEBUG
         public bool dspCode;
 #else
-        public bool dspCode => false;
+        public readonly bool dspCode => false;
 #endif
 
         /// <summary>Display the EH table reported to the VM</summary>
 #if DEBUG
         public bool dspEHTable;
 #else
-        public bool dspEHTable => false;
+        public readonly bool dspEHTable => false;
 #endif
 
 #if DEBUG
@@ -351,7 +351,7 @@ public partial class Compiler
 #if DEBUG
         public bool dspMetrics;
 #else
-        public bool dspMetrics => false;
+        public readonly bool dspMetrics => false;
 #endif
 
 #if DEBUG

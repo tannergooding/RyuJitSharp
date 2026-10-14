@@ -232,8 +232,8 @@ public partial class Emitter
             assert(top5bits >= 29);
         }
 
-        emitOutputWord(dst, word1);
-        emitOutputWord(unchecked(dst + sizeof(short)), word2);
+        _ = emitOutputWord(dst, word1);
+        _ = emitOutputWord(unchecked(dst + sizeof(short)), word2);
 
         return sizeof(short) * 2;
     }

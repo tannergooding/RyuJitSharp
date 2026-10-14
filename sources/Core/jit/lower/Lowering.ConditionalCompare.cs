@@ -106,7 +106,7 @@ public sealed partial class Lowering
         else if (canConvertOp1ToCCMP && CcmpSideOperandsAreClean(op1) &&
             TryLowerConditionToFlagsNode(tree, op2, out cond1, allowMultipleFlagsChecks: false))
         {
-            (op1, op2) = (op2, op1);
+            op2 = op1;
         }
         else if (canConvertOp2ToCCMP &&
             TryLowerConditionToFlagsNode(tree, op1, out cond1, allowMultipleFlagsChecks: false))
@@ -116,7 +116,7 @@ public sealed partial class Lowering
         else if (canConvertOp1ToCCMP &&
             TryLowerConditionToFlagsNode(tree, op2, out cond1, allowMultipleFlagsChecks: false))
         {
-            (op1, op2) = (op2, op1);
+            op2 = op1;
         }
         else
         {

@@ -271,7 +271,7 @@ internal static unsafe class AsyncImporterTests
             if (callNode)
             {
                 var call = compiler.gtNewCallNode(var_types.TYP_INT, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)1);
-                call.Args.PushBack(NewCallArg.CreateForPrimitive(child));
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(child));
                 node = call;
             }
             else

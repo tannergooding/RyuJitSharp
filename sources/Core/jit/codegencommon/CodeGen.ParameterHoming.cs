@@ -131,7 +131,7 @@ public sealed partial class CodeGen
                             && (highIncoming.From.Reg == (regNumber)((int)lowIncoming.From.Reg + 1)))
                         {
                             var ins = ins_Copy(lowIncoming.From.Reg, TYP_DOUBLE);
-                            Emitter.emitIns_Mov(ins, EA_8BYTE, lowNode.Reg, lowIncoming.From.Reg, canSkip: false);
+                            _ = Emitter.emitIns_Mov(ins, EA_8BYTE, lowNode.Reg, lowIncoming.From.Reg, canSkip: false);
                             graph.RemoveIncomingEdges(lowNode, ref busyRegs);
                             graph.RemoveIncomingEdges(highNode, ref busyRegs);
                             busyRegs |= RegisterMask(lowNode.Reg) | RegisterMask(highNode.Reg);
@@ -153,7 +153,7 @@ public sealed partial class CodeGen
                 node.CopiedReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)available.Lower));
                 busyRegs |= RegisterMask(node.CopiedReg);
                 var ins = ins_Copy(node.Reg, copyType);
-                Emitter.emitIns_Mov(ins, copyType.EmitActualSize,
+                _ = Emitter.emitIns_Mov(ins, copyType.EmitActualSize,
                     node.CopiedReg, node.Reg, canSkip: false);
                 if (node.CopiedReg == initReg)
                 {
@@ -170,7 +170,7 @@ public sealed partial class CodeGen
 
                 var sourceReg = edge.From.CopiedReg != REG_NA ? edge.From.CopiedReg : edge.From.Reg;
                 var ins = ins_Copy(sourceReg, edge.Type.ActualType);
-                Emitter.emitIns_Mov(ins, edge.Type.EmitActualSize, node.Reg, sourceReg, canSkip: true);
+                _ = Emitter.emitIns_Mov(ins, edge.Type.EmitActualSize, node.Reg, sourceReg, canSkip: true);
                 break;
             }
 

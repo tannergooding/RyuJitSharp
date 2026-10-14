@@ -254,7 +254,7 @@ public sealed class JitTimer
 
             // FileMode.Append seeks only when opening a managed FileStream. A native
             // JIT may have appended to this file since the preceding managed row.
-            streamWriter.BaseStream.Seek(0, SeekOrigin.End);
+            _ = streamWriter.BaseStream.Seek(0, SeekOrigin.End);
 
             streamWriter.Write($"\"{methName}\",");
 

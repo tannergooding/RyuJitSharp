@@ -212,28 +212,28 @@ public sealed partial class CodeGen
         if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
         {
             var tempReg1 = InternalRegisters.Extract(node, allIntRegisters);
-            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdjustment, tempReg1);
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdjustment, tempReg1);
             srcReg = tempReg1;
 
             var tempReg2 = InternalRegisters.Extract(node, allIntRegisters);
-            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdjustment, tempReg2);
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdjustment, tempReg2);
             dstReg = tempReg2;
         }
         else if (srcOffsetAdjustment != 0)
         {
             var tempReg = InternalRegisters.Extract(node, allIntRegisters);
-            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, srcReg, srcOffsetAdjustment, tempReg);
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, srcReg, srcOffsetAdjustment, tempReg);
             srcReg = tempReg;
         }
         else if (dstOffsetAdjustment != 0)
         {
             var tempReg = InternalRegisters.Extract(node, allIntRegisters);
-            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
             dstReg = tempReg;
         }
 
         var intRegCount = InternalRegisters.Count(node, allIntRegisters);
-        var intReg1 = regNumberExtensions.NotAvailable;
+        regNumber intReg1;
         var intReg2 = regNumberExtensions.NotAvailable;
 
         if (intRegCount >= 2)

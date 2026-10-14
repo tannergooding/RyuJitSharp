@@ -19,6 +19,7 @@ public partial class Compiler
         }
 
         var definingLoop = updateLoop;
+        _ = definingLoop;
         while ((updateLoop is not null) && !updateLoop.ContainsBlock(block))
         {
             updateLoop = updateLoop.Parent;

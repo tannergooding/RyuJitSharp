@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 #if TARGET_ARM64
@@ -214,6 +215,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
     }
 #endif
 
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by target-specific alignment tests.")]
     private sealed class View : Emitter
     {
         public View(Compiler compiler) : base(new CodeGen(compiler))

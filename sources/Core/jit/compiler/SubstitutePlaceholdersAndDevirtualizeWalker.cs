@@ -375,12 +375,12 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         {
             var tree = use;
 
+            var inlineCandidate = tree;
+
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
 
-            var inlineeBB = null as BasicBlock;
-            var inlineCandidate = tree;
-
+            BasicBlock? inlineeBB;
             do
             {
                 var retExpr = inlineCandidate.AsRetExpr();

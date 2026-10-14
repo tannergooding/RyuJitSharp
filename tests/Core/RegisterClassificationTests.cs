@@ -44,17 +44,17 @@ internal static class RegisterClassificationTests
     {
         if (Configuration.TARGET_XARCH)
         {
-            var byteRegisters = Configuration.TARGET_X86
-                ? new[] { REG_X86_EAX, REG_X86_ECX, REG_X86_EDX, REG_X86_EBX }
-                : new[] { REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, REG_X64_RBX };
+            regNumber[] byteRegisters = Configuration.TARGET_X86
+                ? [REG_X86_EAX, REG_X86_ECX, REG_X86_EDX, REG_X86_EBX]
+                : [REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, REG_X64_RBX];
             foreach (var reg in byteRegisters)
             {
                 yield return new TestCaseData(reg, true);
             }
 
-            var nonByteRegisters = Configuration.TARGET_X86
-                ? new[] { REG_X86_ESP, REG_X86_EBP, REG_X86_ESI, REG_X86_EDI }
-                : new[] { REG_X64_RSP, REG_X64_RBP, REG_X64_RSI, REG_X64_RDI };
+            regNumber[] nonByteRegisters = Configuration.TARGET_X86
+                ? [REG_X86_ESP, REG_X86_EBP, REG_X86_ESI, REG_X86_EDI]
+                : [REG_X64_RSP, REG_X64_RBP, REG_X64_RSI, REG_X64_RDI];
             foreach (var reg in nonByteRegisters)
             {
                 yield return new TestCaseData(reg, false);

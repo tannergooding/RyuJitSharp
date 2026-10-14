@@ -9755,7 +9755,7 @@ public partial class Compiler
                 bNext = leaveBlock.Next;
 
                 fgPrepareCallFinallyRetForRemoval(leaveBlock);
-                fgRemoveBlock(leaveBlock, unreachable: true);
+                _ = fgRemoveBlock(leaveBlock, unreachable: true);
             }
             else if (block.isBBCallFinallyPairTail)
             {
@@ -13227,7 +13227,7 @@ public partial class Compiler
         if (hasTrueExpr && hasFalseExpr)
         {
             // ~C branches over the then block to the else block.
-            qmark.Op1 = condExpr = gtReverseCond(condExpr);
+            qmark.Op1 = gtReverseCond(condExpr);
 
             thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
             thenBlock.SetFlags(propagateFlagsToAll);
@@ -13254,7 +13254,7 @@ public partial class Compiler
         else if (hasTrueExpr)
         {
             // ~C branches past the only arm into the remainder.
-            qmark.Op1 = condExpr = gtReverseCond(condExpr);
+            qmark.Op1 = gtReverseCond(condExpr);
             var thenLikelihood = qmark.ThenNodeLikelihood;
             var elseLikelihood = qmark.ElseNodeLikelihood;
 

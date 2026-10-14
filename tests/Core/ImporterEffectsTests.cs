@@ -427,7 +427,7 @@ internal static unsafe class ImporterEffectsTests
         try
         {
             Globals.s_jitstdout = writer;
-            Assert.Throws<FatalJitException>(() =>
+            _ = Assert.Throws<FatalJitException>(() =>
             {
                 fixed (byte* code = il)
                 {

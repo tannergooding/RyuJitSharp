@@ -194,7 +194,6 @@ public sealed partial class Lowering
             var currentContainsPrevious = (current.Offset <= previous.Offset) && (currentEnd >= previousEnd);
             var adjacent = (previousEnd == current.Offset) || (currentEnd == previous.Offset);
             var sameSize = previous.AccessSize == current.AccessSize;
-            var newType = TYP_UNDEF;
             var reusePreviousValue = false;
 
             if (currentContainsPrevious)
@@ -203,6 +202,7 @@ public sealed partial class Lowering
                 BlockRange().Remove(previous.RangeStart, previous.RangeEnd);
                 continue;
             }
+            RegisterType newType;
             if (previousContainsCurrent)
             {
                 if (!varTypeIsIntegral(oldType))

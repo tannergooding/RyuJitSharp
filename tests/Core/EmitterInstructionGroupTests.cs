@@ -10,17 +10,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionGroupTests
 {
-    private static bool CapturesPerformanceMetrics
-    {
-        get
-        {
+    private static bool CapturesPerformanceMetrics =>
 #if DEBUG
-            return true;
+        true;
 #else
-            return Configuration.LATE_DISASM;
+        Configuration.LATE_DISASM;
 #endif
-        }
-    }
 
     [Test]
     public static void GroupNumberPreservesUnsignedWidth()

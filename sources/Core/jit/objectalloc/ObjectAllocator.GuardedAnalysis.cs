@@ -204,7 +204,7 @@ public sealed partial class ObjectAllocator
 
                     if (lclNum != enumeratorLocal)
                     {
-                        CheckForEnumeratorUse(enumeratorLocal, lclNum);
+                        _ = CheckForEnumeratorUse(enumeratorLocal, lclNum);
                         RecordAppearance(lclNum, block, stmt, ref use, user);
                     }
                 }

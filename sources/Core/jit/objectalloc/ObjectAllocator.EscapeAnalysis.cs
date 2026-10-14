@@ -89,7 +89,7 @@ public sealed partial class ObjectAllocator
             while (doOneMoreIteration)
             {
                 doOneMoreIteration = false;
-                BitVecOps.VisitBits(bitVecTraits, escapingNodesToProcess, lclIndex => {
+                _ = BitVecOps.VisitBits(bitVecTraits, escapingNodesToProcess, lclIndex => {
                     if (adjacencyMatrix[lclIndex] is not null)
                     {
                         doOneMoreIteration = true;
@@ -102,7 +102,7 @@ public sealed partial class ObjectAllocator
                         if (Configuration.DEBUG && !BitVecOps.IsEmpty(bitVecTraits, newEscapingNodes) &&
                             CompilerInstance.verbose)
                         {
-                            BitVecOps.VisitBits(bitVecTraits, newEscapingNodes, newLclIndex => {
+                            _ = BitVecOps.VisitBits(bitVecTraits, newEscapingNodes, newLclIndex => {
                                 DumpIndex(lclIndex);
                                 JITDUMP(" causes ");
                                 DumpIndex(newLclIndex);
@@ -186,7 +186,7 @@ public sealed partial class ObjectAllocator
         }
 
         var independentlyEscaping = false;
-        BitVecOps.VisitBits(bitVecTraits, pseudoAdjacencies, lclNumIndex => {
+        _ = BitVecOps.VisitBits(bitVecTraits, pseudoAdjacencies, lclNumIndex => {
             if (BitVecOps.IsMember(bitVecTraits, escapingNodes, lclNumIndex))
             {
                 if (Configuration.DEBUG && CompilerInstance.verbose)

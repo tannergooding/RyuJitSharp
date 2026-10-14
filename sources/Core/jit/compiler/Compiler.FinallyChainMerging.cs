@@ -85,7 +85,7 @@ public partial class Compiler
                     var leave = block.Next
                         ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
                     var continuation = fgGetFinallyContinuation(leave);
-                    continuationMap.TryAdd(continuation, block);
+                    _ = continuationMap.TryAdd(continuation, block);
                 }
 
                 if (block == lastCallFinally)

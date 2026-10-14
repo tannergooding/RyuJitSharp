@@ -16,7 +16,6 @@ public unsafe partial class Emitter
 
         assert(_compiler is not null);
         var size = EA_SIZE(attr);
-        var elemsize = EA_UNKNOWN;
         var fmt = IF_NONE;
         var isLdSt = false;
         var isLdrStr = false;
@@ -26,6 +25,7 @@ public unsafe partial class Emitter
         uint scale = 0;
         var unscaledOp = false;
 
+        emitAttr elemsize;
         switch (ins)
         {
             case INS_mov:

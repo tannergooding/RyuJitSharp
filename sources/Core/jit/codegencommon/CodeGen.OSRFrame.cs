@@ -93,7 +93,7 @@ public sealed partial class CodeGen
                 if (topOfCalleeSaves > 504 && (restoreRegsInt.IsNonEmpty || restoreRegsFloat.IsNonEmpty))
                 {
                     // LDP cannot encode this offset from SP. Unwind padding below accounts for the extra instruction.
-                    genInstrWithConstant(INS_add, EA_PTRSIZE, REG_ARM64_IP0, TargetRuntimeMetadata.StackPointerBaseRegister, topOfCalleeSaves, REG_ARM64_IP0,
+                    _ = genInstrWithConstant(INS_add, EA_PTRSIZE, REG_ARM64_IP0, TargetRuntimeMetadata.StackPointerBaseRegister, topOfCalleeSaves, REG_ARM64_IP0,
                         inUnwindRegion: false);
                     baseReg = REG_ARM64_IP0;
                     topOfCalleeSaves = 0;
@@ -128,11 +128,11 @@ public sealed partial class CodeGen
                 // Recreate that SP to authenticate LR before the OSR prolog re-signs it.
                 // TODO-PAC: Avoid authenticating and re-signing so the signing SP points to
                 // the frame start; this may require a phantom pac_sign_lr unwind code.
-                genInstrWithConstant(INS_add, EA_PTRSIZE, REG_ARM64_IP0, TargetRuntimeMetadata.StackPointerBaseRegister,
+                _ = genInstrWithConstant(INS_add, EA_PTRSIZE, REG_ARM64_IP0, TargetRuntimeMetadata.StackPointerBaseRegister,
                     unchecked((nint)patchpoint->TotalFrameSize), REG_ARM64_IP0, inUnwindRegion: false);
-                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_ARM64_IP1, REG_ARM64_LR, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_ARM64_IP1, REG_ARM64_LR, canSkip: false);
                 Emitter.emitIns(TargetOS.IsWindows ? INS_autib1716 : INS_autia1716);
-                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_ARM64_LR, REG_ARM64_IP1, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_ARM64_LR, REG_ARM64_IP1, canSkip: false);
             }
 
             // Record the phantom Tier0 frame allocation and pad the prolog for ARM64 unwind codes.

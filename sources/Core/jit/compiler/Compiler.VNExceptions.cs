@@ -215,6 +215,7 @@ public partial class Compiler
             (GT_MUL, true) => VNF_MUL_UN_OVF,
             _ => throw new System.Diagnostics.UnreachableException(),
         };
+        _ = vnf;
 
         for (var kind = VNK_Liberal; kind <= VNK_Conservative; kind++)
         {

@@ -189,6 +189,7 @@ public sealed partial class Lowering
         var compiler = CompilerInstance;
         var layout = block.Layout;
         var source = block.Data;
+        var sourceToRemove = source;
         assert(layout.Size == layout.SlotCount * Configuration.TARGET_POINTER_SIZE);
         assert(source.Oper is GT_IND or GT_LCL_VAR or GT_LCL_FLD);
 
@@ -228,12 +229,12 @@ public sealed partial class Lowering
 
             if (!compiler.IsValidLclAddr(sourceLocal, checked(sourceOffset + (int)layout.Size - 1)))
             {
-                source = GetBlockCopySourceAddress(source);
+                _ = GetBlockCopySourceAddress(source);
                 var sourceUse = new LIR.Use(BlockRange(), ref block.DataRef, block);
                 sourceAddressType = TYP_I_IMPL;
                 sourceAddressLocal = sourceUse.ReplaceWithLclVar(compiler);
                 sourceFlags = GTF_IND_NONFAULTING;
-                source = block.Data;
+                sourceToRemove = block.Data;
             }
         }
 
@@ -289,11 +290,11 @@ public sealed partial class Lowering
         }
 
         BlockRange().Remove(block.Addr);
-        if (source.Oper is GT_IND)
+        if (sourceToRemove.Oper is GT_IND)
         {
-            BlockRange().Remove(source.AsIndir().Addr);
+            BlockRange().Remove(sourceToRemove.AsIndir().Addr);
         }
-        BlockRange().Remove(source);
+        BlockRange().Remove(sourceToRemove);
         block.BashToNOP();
 
         return true;

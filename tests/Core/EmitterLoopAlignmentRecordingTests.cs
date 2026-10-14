@@ -242,29 +242,19 @@ internal static class EmitterLoopAlignmentRecordingTests
     }
 #endif
 
-    private static int FullAlignSize
-    {
-        get
-        {
+    private static int FullAlignSize =>
 #if DEBUG
-            return 48 + IntPtr.Size;
+        48 + IntPtr.Size;
 #else
-            return ExpectedAlignDescriptorSize;
+        ExpectedAlignDescriptorSize;
 #endif
-        }
-    }
 
-    private static int ExpectedAlignDescriptorSize
-    {
-        get
-        {
+    private static int ExpectedAlignDescriptorSize =>
 #if DEBUG
-            return 48;
+        48;
 #else
-            return Configuration.TARGET_ARM64 && Configuration.LATE_DISASM ? 48 : 40;
+        Configuration.TARGET_ARM64 && Configuration.LATE_DISASM ? 48 : 40;
 #endif
-        }
-    }
 
     private static void Align(Emitter emitter, bool afterJump = false)
     {

@@ -95,6 +95,10 @@ public partial class Emitter
             }
             placeholder = next;
         }
+        _ = prologCount;
+        _ = epilogCount;
+        _ = funcletPrologCount;
+        _ = funcletEpilogCount;
         if (Configuration.DEBUG)
         {
             assert(_compiler is not null);

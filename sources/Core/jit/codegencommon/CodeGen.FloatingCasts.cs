@@ -70,7 +70,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            Emitter.emitIns_Mov(INS_mov, cast.Type.EmitActualSize, targetReg, op1.RegNum, canSkip: true);
+            _ = Emitter.emitIns_Mov(INS_mov, cast.Type.EmitActualSize, targetReg, op1.RegNum, canSkip: true);
         }
 
         genProduceReg(cast);

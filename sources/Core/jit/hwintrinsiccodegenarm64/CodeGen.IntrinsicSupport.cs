@@ -211,6 +211,7 @@ public sealed partial class CodeGen
             }
         }
 
+        _ = argReg;
         return count;
     }
 

@@ -55,8 +55,8 @@ public sealed partial class CodeGen
                 {
                     // Scalar upper lanes are irrelevant, so commutative operations
                     // may swap sources to permit the shorter VEX prefix.
-                    (op1, op2) = (op2, op1);
-                    (op1Reg, op2Reg) = (op2Reg, op1Reg);
+                    op2 = op1;
+                    op1Reg = op2Reg;
                 }
             }
 

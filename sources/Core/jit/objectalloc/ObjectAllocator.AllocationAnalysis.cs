@@ -159,6 +159,7 @@ public sealed partial class ObjectAllocator
             var tree = use;
             var allocator = _allocator;
             var compiler = allocator.CompilerInstance;
+            _ = compiler;
 
             if (tree.Oper.IsLocalStore)
             {

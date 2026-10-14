@@ -282,7 +282,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            var ins = INS_invalid;
+            instruction ins;
             switch (intrin.Id)
             {
                 case NI_AdvSimd_AddWideningLower:
@@ -376,7 +376,7 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        Emitter.emitIns_Mov(INS_mov, emitSize, targetReg, op1Reg, false);
+                        _ = Emitter.emitIns_Mov(INS_mov, emitSize, targetReg, op1Reg, false);
                         Emitter.emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
                     }
                     break;
@@ -601,7 +601,7 @@ public sealed partial class CodeGen
                 case NI_AdvSimd_Insert:
                 {
                     assert(isRMW);
-                    Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
+                    _ = Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
                     assert(!intrin.Op3.IsContainedFltOrDblImmed);
                     assert(targetReg != op3Reg || targetReg == op1Reg);
                     var helper = new HWIntrinsicImmOpHelper(this, intrin.Op2, node);
@@ -624,7 +624,7 @@ public sealed partial class CodeGen
                 case NI_AdvSimd_InsertScalar:
                 {
                     assert(isRMW);
-                    Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
+                    _ = Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
                     var helper = new HWIntrinsicImmOpHelper(this, intrin.Op2, node);
                     for (helper.EmitBegin(); !helper.Done; helper.EmitCaseEnd())
                     {
@@ -635,7 +635,7 @@ public sealed partial class CodeGen
                 case NI_AdvSimd_Arm64_InsertSelectedScalar:
                 {
                     assert(isRMW);
-                    Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
+                    _ = Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
                     var resultIndex = unchecked((int)intrin.Op2.AsIntCon().IconValue);
                     var valueIndex = unchecked((int)intrin.Op4.AsIntCon().IconValue);
                     Emitter.emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, resultIndex, valueIndex, opt);
@@ -644,7 +644,7 @@ public sealed partial class CodeGen
                 case NI_AdvSimd_LoadAndInsertScalar:
                 {
                     assert(isRMW);
-                    Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
+                    _ = Emitter.emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, true);
                     var helper = new HWIntrinsicImmOpHelper(this, intrin.Op2, node);
                     for (helper.EmitBegin(); !helper.Done; helper.EmitCaseEnd())
                     {
@@ -661,19 +661,16 @@ public sealed partial class CodeGen
                 {
                     assert(isRMW);
                     byte fieldIdx = 0;
-                    op2Reg = intrin.Op2.RegNum;
                     op3Reg = intrin.Op3.RegNum;
                     assert(intrin.Op1.Oper.IsFieldList);
                     var fieldList = intrin.Op1.AsFieldList();
-                    var firstField = fieldList.Uses.Head;
-                    assert(firstField is not null);
-                    op1Reg = firstField.Node.RegNum;
+                    assert(fieldList.Uses.Head is not null);
                     foreach (var use in fieldList.Uses)
                     {
                         var fieldNode = use.Node;
                         var targetFieldReg = node.GetRegByIndex(fieldIdx);
                         var op1FieldReg = fieldNode.RegNum;
-                        Emitter.emitIns_Mov(INS_mov, emitTypeSize(fieldNode), targetFieldReg, op1FieldReg, true);
+                        _ = Emitter.emitIns_Mov(INS_mov, emitTypeSize(fieldNode), targetFieldReg, op1FieldReg, true);
                         fieldIdx++;
                     }
                     var helper = new HWIntrinsicImmOpHelper(this, intrin.Op2, node);
@@ -803,7 +800,7 @@ public sealed partial class CodeGen
                     {
                         assert(Arm64Emitter.IsMovInstruction(ins));
                         assert(intrin.BaseType == intrin.Op1.Type);
-                        Emitter.emitIns_Mov(ins, emitTypeSize(intrin.BaseType), targetReg, op1Reg, true);
+                        _ = Emitter.emitIns_Mov(ins, emitTypeSize(intrin.BaseType), targetReg, op1Reg, true);
                     }
                     else if (intrin.Op1.IsContainedIntOrIImmed)
                     {
@@ -901,7 +898,7 @@ public sealed partial class CodeGen
                     op1Reg = firstField.Node.RegNum;
                     if (Configuration.DEBUG)
                     {
-                        var regCount = GetArm64IntrinsicRegisterList(intrin.Op1, out op1Reg);
+                        var regCount = GetArm64IntrinsicRegisterList(intrin.Op1, out _);
                         assert(regCount == 2);
                     }
                     Emitter.emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
@@ -918,7 +915,7 @@ public sealed partial class CodeGen
                     op3Reg = firstField.Node.RegNum;
                     if (Configuration.DEBUG)
                     {
-                        var regCount = GetArm64IntrinsicRegisterList(intrin.Op3, out op3Reg);
+                        var regCount = GetArm64IntrinsicRegisterList(intrin.Op3, out _);
                         switch (ins)
                         {
                             case INS_sve_st2b:
@@ -980,14 +977,14 @@ public sealed partial class CodeGen
                 }
                 case NI_Vector_ToVector128:
                 {
-                    Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, false);
+                    _ = Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, false);
                     break;
                 }
                 case NI_Vector_ToVector128Unsafe:
                 case NI_Vector_AsVector128Unsafe:
                 case NI_Vector_GetLower:
                 {
-                    Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, true);
+                    _ = Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, true);
                     break;
                 }
                 case NI_Vector_GetElement:
@@ -1023,7 +1020,7 @@ public sealed partial class CodeGen
                 }
                 case NI_Vector_AsVector3:
                 {
-                    Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, true);
+                    _ = Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, true);
                     break;
                 }
                 case NI_Vector_ToScalar:
@@ -1034,7 +1031,7 @@ public sealed partial class CodeGen
                     }
                     if (varTypeIsLong(intrin.BaseType))
                     {
-                        Emitter.emitIns_Mov(INS_fmov, EA_8BYTE, targetReg, op1Reg, false);
+                        _ = Emitter.emitIns_Mov(INS_fmov, EA_8BYTE, targetReg, op1Reg, false);
                     }
                     else
                     {
@@ -1267,7 +1264,7 @@ public sealed partial class CodeGen
                     {
                         assert(intrin.NumOperands == 4);
                         var baseSize = emitActualTypeSize(intrin.BaseType);
-                        var sopt = INS_SCALABLE_OPTS_NONE;
+                        insScalableOpts sopt;
                         if (baseSize == EA_8BYTE)
                         {
                             sopt = ins == INS_sve_prfb ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
@@ -1388,7 +1385,7 @@ public sealed partial class CodeGen
                             NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend or
                             NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting or
                             NI_Sve_GatherVectorWithByteOffsetFirstFaulting;
-                        var sopt = INS_SCALABLE_OPTS_NONE;
+                        insScalableOpts sopt;
                         if (baseSize == EA_4BYTE)
                         {
                             opt = varTypeIsUnsigned(node.AuxiliaryType)
@@ -1434,8 +1431,8 @@ public sealed partial class CodeGen
                     if (!varTypeIsSimd(intrin.Op2.Type))
                     {
                         assert(intrin.NumOperands == 3);
-                        nint shift = 0;
                         var tempReg = _internalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT_ARM64));
+                        nint shift;
                         if (intrin.Id is NI_Sve2_GatherVectorInt16SignExtendNonTemporal or
                             NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal)
                         {
@@ -1545,8 +1542,8 @@ public sealed partial class CodeGen
                     if (!varTypeIsSimd(intrin.Op2.Type))
                     {
                         assert(intrin.NumOperands == 4);
-                        nint shift = 0;
                         var tempReg = _internalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT_ARM64));
+                        nint shift;
                         if (intrin.Id == NI_Sve2_Scatter16BitNarrowingNonTemporal)
                         {
                             shift = 1;

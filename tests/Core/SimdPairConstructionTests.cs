@@ -81,9 +81,9 @@ internal static unsafe class SimdPairConstructionTests
 
             if (Configuration.TARGET_WASM)
             {
-                Assert.Throws<FatalJitException>(() =>
+                _ = Assert.Throws<FatalJitException>(() =>
                     compiler.gtNewSimdWithLowerNode(type, left, right, TYP_INT, size));
-                Assert.Throws<FatalJitException>(() =>
+                _ = Assert.Throws<FatalJitException>(() =>
                     compiler.gtNewSimdWithUpperNode(type, left, right, TYP_INT, size));
             }
             else

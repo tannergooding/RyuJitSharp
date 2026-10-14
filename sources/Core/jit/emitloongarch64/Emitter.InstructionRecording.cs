@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -183,7 +183,6 @@ public partial class Emitter
 
     private void emitInsSRLoongArch64(instruction ins, emitAttr attr, regNumber reg1, int varNum, int offset)
     {
-        var size = EA_SIZE(attr);
         if (Configuration.DEBUG)
         {
             assert(ins is INS_st_d or INS_stx_d or INS_st_w or INS_stx_w or

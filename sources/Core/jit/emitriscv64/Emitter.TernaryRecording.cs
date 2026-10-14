@@ -3,9 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -359,8 +359,7 @@ public partial class Emitter
                     */
                     if (needCheckOv)
                     {
-                        var resultReg = REG_RISCV64_NA;
-
+                        regNumber resultReg;
                         if (dst.OperIs(GT_ADD))
                         {
                             resultReg = dstReg;
@@ -374,10 +373,11 @@ public partial class Emitter
                             regOp2 = saveOperReg2;
                         }
 
-                        var branchIns = INS_none;
-                        var branchReg1 = REG_RISCV64_NA;
-                        var branchReg2 = REG_RISCV64_NA;
+                        instruction branchIns;
 
+                        regNumber branchReg1;
+
+                        regNumber branchReg2;
                         if (dst.AsOp().IsUnsigned)
                         {
                             // If A < B, there was overflow.

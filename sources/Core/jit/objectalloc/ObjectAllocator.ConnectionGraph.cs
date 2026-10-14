@@ -198,7 +198,7 @@ public sealed partial class ObjectAllocator
         {
             doOneMoreIteration = false;
 
-            BitVecOps.VisitBits(bitVecTraits, nodesToProcess, lclIndex => {
+            _ = BitVecOps.VisitBits(bitVecTraits, nodesToProcess, lclIndex => {
                 if (adjacencyMatrix[lclIndex] is not null)
                 {
                     doOneMoreIteration = true;
@@ -212,7 +212,7 @@ public sealed partial class ObjectAllocator
                     if (Configuration.DEBUG && !BitVecOps.IsEmpty(bitVecTraits, newNodes) &&
                         CompilerInstance.verbose)
                     {
-                        BitVecOps.VisitBits(bitVecTraits, newNodes, newLclIndex => {
+                        _ = BitVecOps.VisitBits(bitVecTraits, newNodes, newLclIndex => {
                             DumpIndex(lclIndex);
                             JITDUMP(" causes ");
                             DumpIndex(newLclIndex);
@@ -281,14 +281,14 @@ public sealed partial class ObjectAllocator
         if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             jitprintf("Definitely stack-pointing locals:");
-            BitVecOps.VisitBits(bitVecTraits, _definitelyStackPointingPointers, index => {
+            _ = BitVecOps.VisitBits(bitVecTraits, _definitelyStackPointingPointers, index => {
                 DumpIndex(index);
                 return true;
             });
             jitprintf("\n");
 
             jitprintf("Possibly stack-pointing locals:");
-            BitVecOps.VisitBits(bitVecTraits, _possiblyStackPointingPointers, index => {
+            _ = BitVecOps.VisitBits(bitVecTraits, _possiblyStackPointingPointers, index => {
                 if (!BitVecOps.IsMember(bitVecTraits, _definitelyStackPointingPointers, index))
                 {
                     DumpIndex(index);

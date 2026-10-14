@@ -55,8 +55,15 @@ public partial class GenTree
 #else
     internal int UseNum
     {
-        get => throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
-        set => throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
+        get
+        {
+            throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
+        }
     }
 #endif
 

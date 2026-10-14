@@ -22,9 +22,6 @@ public sealed partial class CodeGen
         var intCalleeSavedMask = Configuration.TARGET_ARM64
             ? SRBM_INT_CALLEE_SAVED_ARM64
             : SRBM_INT_CALLEE_SAVED_ARM;
-        var floatCalleeTrashMask = Configuration.TARGET_ARM64
-            ? SRBM_FLT_CALLEE_TRASH_ARM64
-            : SRBM_FLT_CALLEE_TRASH_ARM;
         var intReturnMask = Configuration.TARGET_ARM64 ? SRBM_INTRET_ARM64 : SRBM_INTRET_ARM;
         var linkRegisterMask = Configuration.TARGET_ARM64 ? SRBM_ARM64_LR : SRBM_ARM32_LR;
 
@@ -93,6 +90,9 @@ public sealed partial class CodeGen
 
         if (Configuration.DEBUG)
         {
+            var floatCalleeTrashMask = Configuration.TARGET_ARM64
+                ? SRBM_FLT_CALLEE_TRASH_ARM64
+                : SRBM_FLT_CALLEE_TRASH_ARM;
             var killMask = new regMaskTP(intCalleeTrashMask | floatCalleeTrashMask);
             if (call.IsHelperCall())
             {

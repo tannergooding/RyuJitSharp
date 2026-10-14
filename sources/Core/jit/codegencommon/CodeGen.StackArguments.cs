@@ -26,7 +26,7 @@ public sealed partial class CodeGen
 
         if (varTypeIsStruct(targetType))
         {
-            genAdjustStackForPutArgStk(putArgStk);
+            _ = genAdjustStackForPutArgStk(putArgStk);
             genPutStructArgStk(putArgStk);
             return;
         }
@@ -451,11 +451,9 @@ public sealed partial class CodeGen
                 var remainingSize = unchecked((int)srcSize);
                 uint structOffset = 0;
                 var lclOffset = srcLclNode is not null ? srcLclNode.LclOffs : 0u;
-                uint nextIndex = 0;
-
                 while (remainingSize > 0)
                 {
-                    nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+                    var nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
                     var_types type;
                     if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
                     {
@@ -1205,6 +1203,7 @@ public sealed partial class CodeGen
             }
         }
 
+        _ = numGCSlotsCopied;
         if (Configuration.DEBUG)
         {
             assert(numGCSlotsCopied == layout.GCPtrCount);

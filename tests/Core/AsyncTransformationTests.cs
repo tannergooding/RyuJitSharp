@@ -112,7 +112,7 @@ internal static unsafe class AsyncTransformationTests
             var resolve = type.GetMethod("ResolveContinuationMemberOffsets",
                 BindingFlags.Instance | BindingFlags.NonPublic) ??
                 throw new AssertionException("Missing symbolic-offset resolution");
-            resolve.Invoke(transformation, [layout, 1]);
+            _ = resolve.Invoke(transformation, [layout, 1]);
 
             Assert.That(initial.FirstLIRNode, Is.SameAs(marker));
             Assert.That(remainder.FirstLIRNode, Is.TypeOf<GenTreeIntCon>());

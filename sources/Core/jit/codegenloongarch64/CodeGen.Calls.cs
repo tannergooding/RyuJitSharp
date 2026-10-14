@@ -80,7 +80,7 @@ public sealed partial class CodeGen
             var target = getCallTarget(call, out _);
             if (target is not null)
             {
-                genConsumeReg(target);
+                _ = genConsumeReg(target);
             }
             else if (Configuration.FEATURE_READYTORUN && (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir))
             {

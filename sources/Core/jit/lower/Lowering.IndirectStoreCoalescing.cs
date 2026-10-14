@@ -243,7 +243,6 @@ public sealed partial class Lowering
                 return;
             }
 
-            var reusePreviousValue = false;
             var newType = oldType switch {
                 TYP_BYTE or TYP_UBYTE => TYP_USHORT,
                 TYP_SHORT or TYP_USHORT => TYP_INT,
@@ -256,7 +255,7 @@ public sealed partial class Lowering
                     compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
                 _ => TYP_UNDEF,
             };
-            reusePreviousValue = (newType is TYP_UNDEF) && Configuration.TARGET_64BIT &&
+            var reusePreviousValue = (newType is TYP_UNDEF) && Configuration.TARGET_64BIT &&
                 Configuration.FEATURE_HW_INTRINSICS &&
                 ((oldType is TYP_SIMD16) || (Configuration.TARGET_AMD64 && (oldType is TYP_SIMD32)));
             if (Configuration.TARGET_64BIT && Configuration.FEATURE_HW_INTRINSICS && (oldType is TYP_REF) &&

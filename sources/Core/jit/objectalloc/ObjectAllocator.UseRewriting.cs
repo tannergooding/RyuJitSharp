@@ -242,7 +242,7 @@ public sealed partial class ObjectAllocator
                         }
                         else if (retypeFields && parent.Oper is GT_STORE_BLK)
                         {
-                            UpdateBlockLayout(parent.AsBlk(), newLayout);
+                            _ = UpdateBlockLayout(parent.AsBlk(), newLayout);
                         }
                     }
                     break;

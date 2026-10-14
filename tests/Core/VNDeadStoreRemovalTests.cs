@@ -35,10 +35,10 @@ internal static unsafe class VNDeadStoreRemovalTests
             }
 
             var value = store.VNForIntCon(7);
-            AddDefinition(compiler, 0, block, null, value);
+            _ = AddDefinition(compiler, 0, block, null, value);
             var first = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 7));
             first.Data._vnPair.SetBoth(value);
-            AddDefinition(compiler, 0, block, first, value);
+            _ = AddDefinition(compiler, 0, block, first, value);
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(first));
 
             var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);

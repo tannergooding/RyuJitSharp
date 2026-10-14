@@ -300,7 +300,7 @@ public interface IGenTreeVisitor<TSelf>
 
             if (TSelf.ComputeStack)
             {
-                ancestors.Pop();
+                _ = ancestors.Pop();
             }
         }
         return result;

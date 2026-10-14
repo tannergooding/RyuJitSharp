@@ -239,7 +239,7 @@ public partial class Emitter
                 {
                     var tmp = reg;
                     id.idAddr().iiaAddrMode.amBaseReg = reg = rgx;
-                    id.idAddr().iiaAddrMode.amIndxReg = rgx = tmp;
+                    id.idAddr().iiaAddrMode.amIndxReg = tmp;
                 }
 
                 // [reg + rgx + disp]

@@ -16978,7 +16978,7 @@ public partial class Compiler
             assert(leaveBlock is not null);
 
             fgPrepareCallFinallyRetForRemoval(leaveBlock);
-            fgRemoveBlock(leaveBlock, unreachable: true);
+            _ = fgRemoveBlock(leaveBlock, unreachable: true);
 
             // The above code marked the BBJ_CALLFINALLY as retless. Remove that.
             block.RemoveFlags(BBF_RETLESS_CALL);

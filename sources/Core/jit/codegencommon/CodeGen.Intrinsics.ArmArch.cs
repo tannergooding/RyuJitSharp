@@ -3,12 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.ManagedInstructionSet;
-using static RyuJitSharp.Globals;
-using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.ManagedInstructionSet;
+using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -38,7 +38,7 @@ public sealed partial class CodeGen
             {
                 genConsumeOperands(tree.AsOp());
                 var instruction = Configuration.TARGET_ARM64 ? INS_fabs : INS_vabs;
-                Emitter.emitInsBinary(instruction, tree.Type.EmitActualSize, tree, srcNode);
+                _ = Emitter.emitInsBinary(instruction, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
@@ -50,7 +50,7 @@ public sealed partial class CodeGen
                 }
 
                 genConsumeOperands(tree.AsOp());
-                Emitter.emitInsBinary(INS_frintp, tree.Type.EmitActualSize, tree, srcNode);
+                _ = Emitter.emitInsBinary(INS_frintp, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
@@ -62,7 +62,7 @@ public sealed partial class CodeGen
                 }
 
                 genConsumeOperands(tree.AsOp());
-                Emitter.emitInsBinary(INS_frintm, tree.Type.EmitActualSize, tree, srcNode);
+                _ = Emitter.emitInsBinary(INS_frintm, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
@@ -74,7 +74,7 @@ public sealed partial class CodeGen
                 }
 
                 genConsumeOperands(tree.AsOp());
-                Emitter.emitInsBinary(INS_frintz, tree.Type.EmitActualSize, tree, srcNode);
+                _ = Emitter.emitInsBinary(INS_frintz, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
@@ -86,7 +86,7 @@ public sealed partial class CodeGen
                 }
 
                 genConsumeOperands(tree.AsOp());
-                Emitter.emitInsBinary(INS_frintn, tree.Type.EmitActualSize, tree, srcNode);
+                _ = Emitter.emitInsBinary(INS_frintn, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
@@ -160,7 +160,7 @@ public sealed partial class CodeGen
             {
                 genConsumeOperands(tree.AsOp());
                 var instruction = Configuration.TARGET_ARM64 ? INS_fsqrt : INS_vsqrt;
-                Emitter.emitInsBinary(instruction, tree.Type.EmitActualSize, tree, srcNode);
+                _ = Emitter.emitInsBinary(instruction, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 

@@ -464,6 +464,7 @@ internal static class DiscretionaryPolicyTests
         }
     }
 
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by the Debug-only diagnostic precision test.")]
     private sealed class FixedMultiplierPolicy(Compiler compiler, double multiplier) : DiscretionaryPolicy(compiler, true)
     {
         protected override double DetermineMultiplier() => multiplier;

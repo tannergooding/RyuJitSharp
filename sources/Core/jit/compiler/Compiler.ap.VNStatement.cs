@@ -133,7 +133,7 @@ public partial class Compiler
             return WALK_CONTINUE;
         }
 
-        optAssertionProp_Update(replacement, tree, statement);
+        _ = optAssertionProp_Update(replacement, tree, statement);
 
         if (Configuration.DEBUG)
         {

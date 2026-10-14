@@ -126,7 +126,7 @@ public sealed partial class CodeGen
             assert(tmpReg != REG_NA);
             assert(!EA_IS_RELOC(size));
 
-            Emitter.emitLoadImmediate(true, size, tmpReg, imm);
+            _ = Emitter.emitLoadImmediate(true, size, tmpReg, imm);
             _regSet.verifyRegUsed(tmpReg);
 
             if (inUnwindRegion)

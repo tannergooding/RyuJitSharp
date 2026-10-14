@@ -228,8 +228,15 @@ public sealed class GenTreeCall : GenTree
 #else
     internal InlineObservation _inlineObservation
     {
-        get => throw new System.InvalidOperationException("Inline observation state is only available in Debug builds.");
-        set => throw new System.InvalidOperationException("Inline observation state is only available in Debug builds.");
+        get
+        {
+            throw new System.InvalidOperationException("Inline observation state is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Inline observation state is only available in Debug builds.");
+        }
     }
 #endif
 
@@ -799,8 +806,15 @@ public sealed class GenTreeCall : GenTree
 #else
     public bool WasInlineCandidate
     {
-        get => throw new System.InvalidOperationException("Inline-candidate history is only available in Debug builds.");
-        set => throw new System.InvalidOperationException("Inline-candidate history is only available in Debug builds.");
+        get
+        {
+            throw new System.InvalidOperationException("Inline-candidate history is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Inline-candidate history is only available in Debug builds.");
+        }
     }
 #endif
 

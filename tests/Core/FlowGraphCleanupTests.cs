@@ -153,9 +153,8 @@ internal static unsafe class FlowGraphCleanupTests
     public static void LegacyEncoderDoesNotAddEpilogues()
     {
         Assume.That(Configuration.JIT32_GCENCODER);
-        WithCompiler(NodeThreading.None, compiler => {
-            Assert.That(compiler.fgDedupReturnComparison(NewBlock(compiler, BBJ_RETURN)), Is.False);
-        });
+        WithCompiler(NodeThreading.None, compiler =>
+            Assert.That(compiler.fgDedupReturnComparison(NewBlock(compiler, BBJ_RETURN)), Is.False));
     }
 
     [TestCase(false)]

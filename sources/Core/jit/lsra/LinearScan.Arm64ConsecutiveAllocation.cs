@@ -63,6 +63,7 @@ public sealed partial class LinearScan
             }
         }
 
+        _ = assignedCount;
         if (Configuration.DEBUG)
         {
             assert(assignedCount == first.regCount);

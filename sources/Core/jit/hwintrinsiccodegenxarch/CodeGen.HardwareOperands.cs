@@ -369,7 +369,6 @@ public sealed partial class CodeGen
                 // Permute the truth table with the inputs when the destination aliases a source.
                 if (targetReg == op2Reg)
                 {
-                    (op1, op2) = (op2, op1);
                     (op1Reg, op2Reg) = (op2Reg, op1Reg);
                     immediate = unchecked((sbyte)TernaryLogicInfo.GetTernaryControlByte(info, B, A, C));
                 }

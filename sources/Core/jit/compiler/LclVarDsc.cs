@@ -883,7 +883,7 @@ public partial struct LclVarDsc
         }
     }
 #else
-    public bool lvClassInfoUpdated => false;
+    public readonly bool lvClassInfoUpdated => false;
 #endif
 
 #if DEBUG
@@ -1012,14 +1012,28 @@ public partial struct LclVarDsc
 #if !DEBUG
     public bool lvUnusedStruct
     {
-        readonly get => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
-        set => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        readonly get
+        {
+            throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        }
     }
 
     public bool lvUndoneStructPromotion
     {
-        readonly get => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
-        set => throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        readonly get
+        {
+            throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Struct-promotion diagnostic state is only available in Debug builds.");
+        }
     }
 #endif
 
@@ -1146,8 +1160,15 @@ public partial struct LclVarDsc
 #else
     public bool IsDefinedViaAddress
     {
-        readonly get => throw new System.InvalidOperationException("Address-definition diagnostic state is only available in Debug builds.");
-        set => throw new System.InvalidOperationException("Address-definition diagnostic state is only available in Debug builds.");
+        readonly get
+        {
+            throw new System.InvalidOperationException("Address-definition diagnostic state is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Address-definition diagnostic state is only available in Debug builds.");
+        }
     }
 #endif
 
