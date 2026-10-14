@@ -193,8 +193,7 @@ public sealed partial class CSE_Heuristic
         aggressiveRefCnt = Math.Max(BB_UNITY_WEIGHT / 2, aggressiveRefCnt);
         moderateRefCnt = Math.Max(BB_UNITY_WEIGHT, moderateRefCnt);
 
-#if DEBUG
-        if (m_compiler.verbose)
+        if (Configuration.DEBUG && m_compiler.verbose)
         {
             JITDUMP($"\nAggressive CSE Promotion cutoff is {formatFloat(aggressiveRefCnt, "F6")}\n");
             JITDUMP($"Moderate CSE Promotion cutoff is {formatFloat(moderateRefCnt, "F6")}\n");
@@ -204,6 +203,5 @@ public sealed partial class CSE_Heuristic
             JITDUMP($"Framesize estimate is 0x{frameSize:X4}\n");
             JITDUMP($"We have a {(hugeFrame ? "huge" : largeFrame ? "large" : "small")} frame\n");
         }
-#endif
     }
 }

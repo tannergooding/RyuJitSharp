@@ -20,7 +20,5 @@ public partial class Compiler
         Metrics.CseCount++;
     }
 
-#if DEBUG
     internal static nuint DecodeSharedCseConstant(nuint key) => Decode_Shared_Const_CSE_Value(key);
-#endif
 }
