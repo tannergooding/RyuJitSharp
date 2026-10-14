@@ -28,14 +28,14 @@ public partial class Compiler
         {
             var block = dfsTree.GetPostOrder(index - 1);
             var first = replacer.StartBlock(block);
-#if DEBUG
             JITDUMP("\nReplacing in ");
+#if DEBUG
             if (verbose)
             {
                 block.dspBlockHeader();
             }
-            JITDUMP("\n");
 #endif
+            JITDUMP("\n");
             foreach (var statement in new StatementList(first))
             {
                 replacer.StartStatement(statement);

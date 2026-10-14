@@ -111,10 +111,8 @@ public partial class Compiler
                     throw new System.InvalidOperationException("Reusable state lacks its return definition");
                 if (!EqualLocalDefinitions(definition.DefinitionNode, priorDefinition))
                 {
-#if DEBUG
                     JITDUMP($"    No; disagreement on return value destination " +
                         $"([{definition.DefinitionNode.TreeId:D6}] does not equal [{priorDefinition.TreeId:D6}])\n");
-#endif
                     return false;
                 }
             }

@@ -9,9 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-#if DEBUG
-#endif
-
 namespace RyuJitSharp;
 
 public partial class Globals

@@ -63,14 +63,14 @@ public partial class Compiler
                 }
 
                 candidate = _scevContext.Simplify(candidate, _assumptions);
-#if DEBUG
                 JITDUMP("  => ");
+#if DEBUG
                 if (_compiler.verbose)
                 {
                     candidate.Dump(_compiler);
                 }
-                JITDUMP("\n");
 #endif
+                JITDUMP("\n");
                 if (candidate is not ScevAddRec primaryIV)
                 {
                     JITDUMP("  Not an addrec\n");
@@ -100,14 +100,14 @@ public partial class Compiler
                         break;
                     }
 
-#if DEBUG
                     JITDUMP("  Next IV is: ");
+#if DEBUG
                     if (_compiler.verbose)
                     {
                         nextIV.Dump(_compiler);
                     }
-                    JITDUMP("\n");
 #endif
+                    JITDUMP("\n");
                     if (varTypeIsGC(nextIV.Type))
                     {
                         if (_loopInfo.HasSuspensionPoint(_loop))
@@ -133,15 +133,15 @@ public partial class Compiler
                     continue;
                 }
 
-#if DEBUG
                 JITDUMP($"  All uses of primary IV V{primaryLocal.LclNum:D2} " +
                     $"are used to compute a {derivedLevel}-derived IV ");
+#if DEBUG
                 if (_compiler.verbose)
                 {
                     currentIV.Dump(_compiler);
                 }
-                JITDUMP("\n");
 #endif
+                JITDUMP("\n");
                 if (!StressProfitability())
                 {
                     if (Scev.Equals(currentIV.Step, primaryIV.Step))
