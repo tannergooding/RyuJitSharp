@@ -201,8 +201,7 @@ public sealed partial class CodeGen
             mappingIndex++;
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("Reported inline tree:\n");
             for (var index = 0u; index < numContexts; index++)
@@ -219,10 +218,8 @@ public sealed partial class CodeGen
                 jitprintf($"  [{index}] 0x{unchecked((uint)mapping.NativeOffset):x} <-> IL {mapping.ILOffset} " +
                     $"in #{mapping.Inlinee}\n");
             }
-
             jitprintf("\n");
         }
-#endif
 
         jitInfo->reportRichMappings(inlineTree, unchecked((int)numContexts), mappings, unchecked((int)numRichMappings));
     }
