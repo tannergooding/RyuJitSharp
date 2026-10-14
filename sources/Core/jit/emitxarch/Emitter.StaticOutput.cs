@@ -217,15 +217,16 @@ public partial class Emitter
         {
             addr = emitDataOffsetToPtr((uint)dataOffset);
 
-#if DEBUG
-            var byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, false));
-            if (emitChkAlign && ins != INS_lea)
+            if (Configuration.DEBUG)
             {
-                var compiler = _compiler ?? throw new FatalJitException("An initialized compiler is required for static output.");
-                var alignment = compiler.compCodeOpt == Compiler.SMALL_CODE ? 4 : byteSize;
-                assert(((nuint)addr % (uint)alignment) == 0);
+                var byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, false));
+                if (emitChkAlign && ins != INS_lea)
+                {
+                    var compiler = _compiler ?? throw new FatalJitException("An initialized compiler is required for static output.");
+                    var alignment = compiler.compCodeOpt == Compiler.SMALL_CODE ? 4 : byteSize;
+                    assert(((nuint)addr % (uint)alignment) == 0);
+                }
             }
-#endif
         }
         else
         {

@@ -132,6 +132,8 @@ public partial class Emitter
 #if DEBUG
     /// <summary>perform some alignment checks</summary>
     public bool emitChkAlign;
+#else
+    public bool emitChkAlign => false;
 #endif
 
     public insGroup? emitCurIG;
