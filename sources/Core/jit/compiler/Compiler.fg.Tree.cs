@@ -158,9 +158,7 @@ public partial class Compiler
 
                 default:
                 {
-#if DEBUG
                     gtDispTree(tree);
-#endif
                     NO_WAY("unexpected operator");
                     break;
                 }

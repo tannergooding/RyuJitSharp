@@ -13611,9 +13611,7 @@ public partial class Compiler
 
                 if (!ok)
                 {
-#if DEBUG
                     gtDispTree(val);
-#endif
                     NO_WAY("Incompatible types for gtNewTempStore");
                 }
             }

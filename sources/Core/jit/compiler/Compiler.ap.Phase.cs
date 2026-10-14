@@ -293,9 +293,7 @@ public partial class Compiler
                     if (Configuration.DEBUG && verbose)
                     {
                         jitprintf("Re-morphing this stmt:\n");
-#if DEBUG
                         gtDispStmt(statement);
-#endif
                         jitprintf("\n");
                     }
                     var wasConditional = block.Kind is BBJ_COND;
