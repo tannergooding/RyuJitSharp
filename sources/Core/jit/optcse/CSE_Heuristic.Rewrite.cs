@@ -61,9 +61,7 @@ public abstract partial class CSE_HeuristicCommon
         var bestVN = ValueNumStore.NoVN;
         var bestIsDef = false;
         nint bestConstValue = 0;
-#if DEBUG
         var allSame = true;
-#endif
 
         for (var occurrence = descriptor.csdTreeList; occurrence is not null; occurrence = occurrence.tslNext)
         {
@@ -92,9 +90,10 @@ public abstract partial class CSE_HeuristicCommon
             else if (currentVN != bestVN)
             {
                 assert(isSharedConst);
-#if DEBUG
-                allSame = false;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    allSame = false;
+                }
                 var difference = unchecked(currentConstValue - bestConstValue);
                 // ARM addressing permits a subtraction of up to 255; retain the native base choice.
                 if ((bestIsDef && (difference < -255)) || (!bestIsDef && (difference < 0)))
@@ -129,13 +128,11 @@ public abstract partial class CSE_HeuristicCommon
         descriptor.csdConstDefValue = bestConstValue;
         descriptor.csdConstDefVN = bestVN;
 
-#if DEBUG
-        if (!allSame && m_compiler.verbose)
+        if (Configuration.DEBUG && !allSame && m_compiler.verbose)
         {
             JITDUMP($"\nWe have shared Const CSE's and selected ${bestVN:x} " +
                 $"with a value of 0x{bestConstValue:x} as the base.\n");
         }
-#endif
 
         var ssaBuilder = new IncrementalSsaBuilder(m_compiler, cseLclVarNum);
         var defUses = new List<UseDefLocation>();
