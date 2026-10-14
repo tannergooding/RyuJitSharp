@@ -51,25 +51,28 @@ public partial struct RegSet
 
     public readonly regMaskTP rsGetModifiedRegsMask()
     {
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         return _rsModifiedRegsMask;
     }
 
     public readonly regMaskTP rsGetModifiedCalleeSavedRegsMask()
     {
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         return _rsModifiedRegsMask & AllCalleeSavedMask;
     }
 
     public readonly regMaskTP rsGetModifiedIntCalleeSavedRegsMask()
     {
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         return _rsModifiedRegsMask & IntCalleeSavedMask;
     }
 
@@ -80,25 +83,28 @@ public partial struct RegSet
             throw new FatalJitException(CORJIT_SKIPPED, "OSR integer callee-saved masks require AMD64.");
         }
 
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         return _rsModifiedRegsMask & (IntCalleeSavedMask | RBM_EBP);
     }
 
     public readonly regMaskTP rsGetModifiedFltCalleeSavedRegsMask()
     {
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         return _rsModifiedRegsMask & new regMaskTP(TargetRuntimeMetadata.FloatingCalleeSavedMask);
     }
 
     public readonly bool rsRegsModified(regMaskTP mask)
     {
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         return (_rsModifiedRegsMask & mask).IsNonEmpty;
     }
 
@@ -127,9 +133,10 @@ public partial struct RegSet
     public void rsSetRegsModified(regMaskTP mask, bool suppressDump = false)
     {
         assert(mask != RBM_NONE);
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
         if (Configuration.DEBUG)
         {
             assert((Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT) ||
@@ -157,9 +164,10 @@ public partial struct RegSet
     public void rsRemoveRegsModified(regMaskTP mask)
     {
         assert(mask != RBM_NONE);
-#if DEBUG
-        assert(_rsModifiedRegsMaskInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_rsModifiedRegsMaskInitialized);
+        }
 
         var remaining = AndNot(_rsModifiedRegsMask, mask);
         if (Configuration.DEBUG)

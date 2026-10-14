@@ -47,6 +47,8 @@ public partial struct RegSet
 
 #if DEBUG
     private bool _rsModifiedRegsMaskInitialized;
+#else
+    private readonly bool _rsModifiedRegsMaskInitialized => true;
 #endif
 
     public RegSet(CodeGen codeGen)
