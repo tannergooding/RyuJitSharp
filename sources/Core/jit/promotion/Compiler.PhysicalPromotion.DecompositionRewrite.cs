@@ -71,19 +71,16 @@ public partial class Compiler
                     continue;
                 }
 
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     JITDUMP($"  Init V{replacement.LclNum:D2} ({replacement.Description})" +
                         $"{LastUseString(destination, replacement)}\n");
                 }
-#endif
 
                 plan.InitReplacement(replacement, replacement.Offset - destination.LclOffs);
             }
         }
 
-#if DEBUG
         private string LastUseString(GenTreeLclVarCommon? local, PhysicalPromotionReplacement replacement)
         {
             if (local is null)
@@ -98,7 +95,6 @@ public partial class Compiler
             assert(index >= 0);
             return deaths.IsReplacementDying(index) ? " (last use)" : "";
         }
-#endif
 
         private void CopyBetweenFields(GenTree store, PhysicalPromotionAggregateInfo? dstAggregate,
             int dstIndex, int dstEnd, GenTree source, PhysicalPromotionAggregateInfo? srcAggregate,
@@ -129,13 +125,11 @@ public partial class Compiler
                     {
                         var offset = src.Offset - srcOffset;
                         plan.CopyFromReplacement(src, offset);
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             JITDUMP($"  dst+{offset:D3} <- V{src.LclNum:D2} ({src.Description})" +
                                 $"{LastUseString(srcLocal, src)}\n");
                         }
-#endif
                         srcIndex++;
                         continue;
                     }
@@ -144,13 +138,11 @@ public partial class Compiler
                     {
                         var offset = dst.Offset - dstOffset;
                         plan.CopyToReplacement(dst, offset);
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             JITDUMP($"  V{dst.LclNum:D2} ({dst.Description})" +
                                 $"{LastUseString(dstLocal, dst)} <- src+{offset:D3}\n");
                         }
-#endif
                         dstIndex++;
                         continue;
                     }
@@ -159,28 +151,24 @@ public partial class Compiler
                         (dst.AccessType == src.AccessType))
                     {
                         plan.CopyBetweenReplacements(dst, src, dst.Offset - dstOffset);
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             JITDUMP($"  V{dst.LclNum:D2} ({dst.Description})" +
                                 $"{LastUseString(dstLocal, dst)} <- V{src.LclNum:D2} ({src.Description})" +
                                 $"{LastUseString(srcLocal, src)}\n");
                         }
-#endif
                         dstIndex++;
                         srcIndex++;
                         continue;
                     }
 
                     statements.AddStatement(_compiler.PhysicalPromotionCreateWriteBack(srcLocal!.LclNum, src));
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler.verbose)
                     {
                         JITDUMP($"  Partial overlap of V{dst.LclNum:D2} ({dst.Description})" +
                             $"{LastUseString(dstLocal, dst)} <- V{src.LclNum:D2} ({src.Description})" +
                             $"{LastUseString(srcLocal, src)}. Will read source back before copy\n");
                     }
-#endif
                     srcIndex++;
                     continue;
                 }
@@ -189,26 +177,22 @@ public partial class Compiler
                 {
                     var offset = dst.Offset - dstOffset;
                     plan.CopyToReplacement(dst, offset);
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler.verbose)
                     {
                         JITDUMP($"  V{dst.LclNum:D2} ({dst.Description})" +
                             $"{LastUseString(dstLocal, dst)} <- src+{offset:D3}\n");
                     }
-#endif
                     dstIndex++;
                 }
                 else
                 {
                     var offset = src!.Offset - srcOffset;
                     plan.CopyFromReplacement(src, offset);
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler.verbose)
                     {
                         JITDUMP($"  dst+{offset:D3} <- V{src.LclNum:D2} ({src.Description})" +
                             $"{LastUseString(srcLocal, src)}\n");
                     }
-#endif
                     srcIndex++;
                 }
             }
