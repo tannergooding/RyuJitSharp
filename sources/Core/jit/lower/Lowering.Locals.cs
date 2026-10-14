@@ -420,7 +420,7 @@ public sealed partial class Lowering
 #if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
         assert(storeLoc.Oper.IsLocalStore);
         var source = storeLoc.Op1;
-        if (source.Oper is GT_BITCAST)
+        if ((source.Oper is GT_BITCAST) && !varTypeIsSmall(storeLoc.Type))
         {
             var bitcastSource = source.AsUnOp().Op1;
             if (!bitcastSource.IsContained && !bitcastSource.IsRegOptional)
@@ -509,7 +509,7 @@ public sealed partial class Lowering
 #elif TARGET_LOONGARCH64
         assert(storeLoc.Oper.IsLocalStore);
         var source = storeLoc.Op1;
-        if (source.Oper is GT_BITCAST)
+        if ((source.Oper is GT_BITCAST) && !varTypeIsSmall(storeLoc.Type))
         {
             var bitcastSource = source.AsUnOp().Op1;
             if (!bitcastSource.IsContained && !bitcastSource.IsRegOptional)

@@ -1690,7 +1690,7 @@ public partial class Compiler
         if (intrinsicName is NI_Array_Set)
         {
             // The array checks in the store's address must happen after the value is evaluated.
-            if ((impStackTop().val.Flags & GTF_SIDE_EFFECT) is not 0)
+            if ((impStackTop().val.Flags & GTF_OBS_EFFECT) is not 0)
             {
                 impSpillSideEffects(false, CHECK_SPILL_ALL, "Strict ordering of exceptions for MD Array store");
             }
@@ -4453,8 +4453,6 @@ public partial class Compiler
             op = gtNewLclvNode(info.compRetType, tmpNum);
             JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
             DISPTREE(op);
-
-            return op;
         }
 
         if (compMethodReturnsMultiRegRetType || op.IsMultiRegNode)
@@ -10811,7 +10809,7 @@ public partial class Compiler
             // The strict order of evaluation is 'array', 'index', 'value', range-check
             // and then store. However, the tree we create does the range-check before
             // evaluating 'value'. So to maintain strict ordering, we spill the stack.
-            if ((compiler.impStackTop().val.Flags & GTF_SIDE_EFFECT) is not 0)
+            if ((compiler.impStackTop().val.Flags & GTF_OBS_EFFECT) is not 0)
             {
                 compiler.impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "Strict ordering of exceptions for Array store");
             }

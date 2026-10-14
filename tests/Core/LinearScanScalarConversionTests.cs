@@ -311,6 +311,9 @@ internal static unsafe class LinearScanScalarConversionTests
 #endif
 
 #if TARGET_ARM || TARGET_ARM64
+#if TARGET_ARM64
+    [TestCase(GT_SELECT_INC, false)]
+#endif
     [TestCase(GT_SELECT, false)]
     [TestCase(GT_SELECT, true)]
     [TestCase(GT_SELECTCC, false)]
@@ -323,16 +326,22 @@ internal static unsafe class LinearScanScalarConversionTests
             var first = compiler.gtNewIconNode(contained ? TYP_I_IMPL : TYP_INT, 2);
             var second = compiler.gtNewIconNode(TYP_INT, 3);
             second.IsContained = contained;
+            var hasCondition = operation is not GT_SELECTCC;
+#if TARGET_ARM64
+            var hasSecond = operation is not GT_SELECT_INC;
+#else
+            var hasSecond = true;
+#endif
             ReferenceBuildLocation(allocator) = 2;
             RefPosition? conditionDefinition = null;
-            if (operation is GT_SELECT)
+            if (hasCondition)
             {
                 conditionDefinition = BuildDef(allocator, condition, SRBM_NONE, 0);
             }
 
             var firstDefinition = BuildDef(allocator, first, SRBM_NONE, 0);
             RefPosition? secondDefinition = null;
-            if (!contained)
+            if (!contained && hasSecond)
             {
                 secondDefinition = BuildDef(allocator, second, SRBM_NONE, 0);
             }
@@ -344,18 +353,37 @@ internal static unsafe class LinearScanScalarConversionTests
                 firstValue.IsContained = true;
             }
 
-            GenTreeOp select = operation is GT_SELECT
-                ? new GenTreeConditional(GT_SELECT, TYP_INT, condition, firstValue, second)
-                : new GenTreeOpCC(GT_SELECTCC, TYP_INT, new GenCondition(GenCondition.EQ), firstValue, second);
+            GenTreeOp select;
+            if (operation is GT_SELECTCC)
+            {
+                select = new GenTreeOpCC(GT_SELECTCC, TYP_INT, new GenCondition(GenCondition.EQ), firstValue, second);
+            }
+            else
+            {
+                var conditional = new GenTreeConditional(GT_SELECT, TYP_INT, condition, firstValue, second);
+#if TARGET_ARM64
+                if (operation is GT_SELECT_INC)
+                {
+                    conditional.SetOper(GT_SELECT_INC);
+                    conditional.Op2Ref = null;
+                }
+#endif
+                select = conditional;
+            }
+
             GenTree[] operands = contained ? [first] : [first, second];
-            if (operation is GT_SELECT)
+            if (!hasSecond)
+            {
+                operands = [first];
+            }
+            if (hasCondition)
             {
                 operands = [condition, .. operands];
             }
 
             var expectedIntervals = new Interval[operands.Length];
             var expectedIntervalIndex = 0;
-            if (operation is GT_SELECT)
+            if (hasCondition)
             {
                 expectedIntervals[expectedIntervalIndex++] =
                     (conditionDefinition ?? throw new AssertionException("The select condition has no definition."))
@@ -363,7 +391,7 @@ internal static unsafe class LinearScanScalarConversionTests
             }
 
             expectedIntervals[expectedIntervalIndex++] = firstDefinition.getInterval();
-            if (!contained)
+            if (!contained && hasSecond)
             {
                 expectedIntervals[expectedIntervalIndex] =
                     (secondDefinition ?? throw new AssertionException("The false value has no definition."))

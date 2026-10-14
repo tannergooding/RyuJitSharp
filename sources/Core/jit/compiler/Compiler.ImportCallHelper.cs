@@ -2781,9 +2781,11 @@ public partial class Compiler
                     {
 #if TARGET_XARCH || TARGET_ARM64
 #if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1,
+                            ni != NI_System_Half_Sqrt))
 #else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16,
+                            ni != NI_System_Half_Sqrt))
 #endif
                         {
                             var opId = compiler.lookupHalfIntrinsic(ni);

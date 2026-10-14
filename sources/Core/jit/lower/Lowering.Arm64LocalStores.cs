@@ -126,7 +126,8 @@ public sealed partial class Lowering
                 assert(node is not null);
                 if ((node._lirFlags & LIR.Flags.Mark) != 0)
                 {
-                    if (_scratchSideEffects.InterferesWith(CompilerInstance, node, true))
+                    if (node.Oper.ConsumesFlags || ((node.Flags & GTF_SET_FLAGS) != 0) ||
+                        _scratchSideEffects.InterferesWith(CompilerInstance, node, true))
                     {
 #if DEBUG
                         JITDUMP($"Giving up due to interference with [{node.TreeId:D6}]\n");

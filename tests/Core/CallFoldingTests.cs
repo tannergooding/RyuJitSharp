@@ -552,6 +552,63 @@ internal static unsafe class CallFoldingTests
         });
     }
 
+    [Test]
+    public static void CovariantArrayStoreEvaluatesObservableValueAfterArrayAndIndex()
+    {
+        WithCompiler("Type", "Other", (compiler, unusedCall) => {
+            var arrayClassHandle = (CORINFO_CLASS_STRUCT_*)0x1000;
+            var elementClassHandle = (CORINFO_CLASS_STRUCT_*)0x2000;
+            s_arrayClassHandle = (nint)arrayClassHandle;
+            s_arrayElementClassHandle = (nint)elementClassHandle;
+            s_exactTypeHandle = (nint)elementClassHandle;
+
+            try
+            {
+                compiler.lvaTable = [
+                    new LclVarDsc { Type = TYP_REF, lvClassHnd = arrayClassHandle, lvClassIsExact = true },
+                    new LclVarDsc { Type = TYP_REF, lvClassHnd = elementClassHandle, lvClassIsExact = true },
+                    new LclVarDsc { Type = TYP_INT },
+                ];
+                compiler.lvaCount = 3;
+                compiler.compCurBB = new BasicBlock(null, null);
+
+                var array = compiler.gtNewLclvNode(TYP_REF, 0);
+                var index = compiler.gtNewLclvNode(TYP_INT, 2);
+                var valueLocal = compiler.gtNewLclvNode(TYP_REF, 1);
+                valueLocal.Flags |= GTF_ORDER_SIDEEFF;
+                var value = valueLocal;
+                Assert.That(value.Flags & GTF_OBS_EFFECT, Is.Not.EqualTo(GTF_EMPTY));
+                Assert.That(compiler.opts.OptimizationEnabled, Is.True);
+
+                var helper = Compiler.eeFindHelper(CORINFO_HELP_ARRADDR_ST);
+                var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_HELPER, helper);
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(array));
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(index));
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+
+                var result = MorphCall(compiler, call);
+
+                Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                var argumentSetup = result.AsOp().Op1;
+                Assert.That(argumentSetup.Oper, Is.EqualTo(GT_COMMA));
+                var arrayAndIndexSetup = argumentSetup.AsOp().Op1;
+                Assert.That(arrayAndIndexSetup.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(arrayAndIndexSetup.AsOp().Op1.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(arrayAndIndexSetup.AsOp().Op2.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                Assert.That(argumentSetup.AsOp().Op2.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+                var valueSetup = argumentSetup.AsOp().Op2.AsLclVar().Data;
+                Assert.That(valueSetup.Flags & GTF_ORDER_SIDEEFF, Is.Not.EqualTo(GTF_EMPTY));
+                Assert.That(result.AsOp().Op2.Oper, Is.EqualTo(GT_STOREIND));
+            }
+            finally
+            {
+                s_arrayClassHandle = 0;
+                s_arrayElementClassHandle = 0;
+                s_exactTypeHandle = 0;
+            }
+        });
+    }
+
     private static GenTreeBox NewBoxedLocal(Compiler compiler, int local)
     {
         return new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, local),
@@ -568,6 +625,7 @@ internal static unsafe class CallFoldingTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.getMethodNameFromMetadata = &GetMethodName;
             vtable.Base.Base.getTypeForPrimitiveValueClass = &GetUnderlyingType;
+            vtable.Base.Base.getBuiltinClass = &GetBuiltinClass;
             vtable.Base.Base.isEnum = &IsEnum;
             vtable.Base.Base.getExactClasses = &GetExactClasses;
             vtable.Base.Base.compareTypesForEquality = &CompareTypesForEquality;
@@ -606,6 +664,9 @@ internal static unsafe class CallFoldingTests
         }
     }
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgMorphCall")]
+    private static extern GenTree MorphCall(Compiler compiler, GenTreeCall call);
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte* GetMethodName(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method, byte** className,
         byte** namespaceName, byte** enclosingClasses, nint maxEnclosingClasses)
@@ -620,6 +681,10 @@ internal static unsafe class CallFoldingTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoType GetUnderlyingType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => *(CorInfoType*)type;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetBuiltinClass(ICorJitInfo* self, CorInfoClassId classId)
+        => (CORINFO_CLASS_STRUCT_*)0x4000;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static TypeCompareState IsEnum(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, CORINFO_CLASS_STRUCT_** underlying)

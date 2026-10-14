@@ -151,6 +151,30 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
+    [Test]
+    public static void ConditionalIncrementSelectConsumesItsConditionTree()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = new GenTreeConditional(GT_SELECT, TYP_INT, Register(compiler, REG_R3),
+                Register(compiler, REG_R1), Register(compiler, REG_R4))
+            {
+                RegNum = REG_R2,
+            };
+            tree.SetOper(GT_SELECT_INC);
+            tree.Op2Ref = null;
+
+            codeGen.genCodeForSelect(tree);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.Select(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_cmp, INS_cinc]));
+            Assert.That((insCond)(uint)descriptors[1].idSmallCns(), Is.EqualTo(INS_COND_NE));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R2));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R1));
+        });
+    }
+
     [TestCase(GenCondition.CodeKind.FNE, INS_COND_GT, INS_COND_LO, REG_R2, REG_R1)]
     [TestCase(GenCondition.CodeKind.FEQU, INS_COND_EQ, INS_COND_VS, REG_R0, REG_R2)]
     public static void CompoundFloatingConditionsRetainTheSecondSelect(

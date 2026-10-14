@@ -55,7 +55,7 @@ public sealed partial class CodeGen
             ins = op2 is null ? INS_cinc : INS_csinc;
         }
 
-        if (tree.Oper is GT_SELECT or GT_SELECT_INV or GT_SELECT_NEG)
+        if (tree.Oper is GT_SELECT or GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG)
         {
             opcond = tree.AsConditional().Cond;
             genConsumeRegs(opcond);

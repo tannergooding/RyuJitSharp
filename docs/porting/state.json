@@ -3,17 +3,18 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
-    "targetObservedAt": "2026-10-13",
-    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
+    "targetCommit": "56ba1c0be24c3837e5ac4ed13267b40646b906c7",
+    "targetObservedAt": "2026-10-14",
+    "reconciledCommit": "56ba1c0be24c3837e5ac4ed13267b40646b906c7"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Resume the dynamic TLS input-ownership investigation using artifacts\\dynamic-tls-inputs: identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of the matching compilation inputs, followed by full primary-JIT dump comparison at the pinned oracle revision.",
+    "nextAction": "Resume the dynamic TLS input-ownership investigation using artifacts\\dynamic-tls-inputs: identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of the matching compilation inputs, followed by full primary-JIT dump comparison at the pinned oracle revision. Keep genAsyncResumeInfo deferred until B209's target-width table/emitter dependency closure is ported and tested; source reconciliation is not full runtime parity.",
     "activeBatch": null,
     "validationGaps": [
-      "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation."
+      "Full-analysis and fast Core runs each completed with 17,722 passed and the same three failures outside the refreshed paths: EmitterDataSectionOutputTests.FloatingDataDumpRetainsBitPatternsAndDecimalComments, HWIntrinsicDispatchTests.GatherImmediateRejectsInvalidScaleWithoutPopping, and LinearScanEdgeResolutionTests.ResolveTypeDiagnosticNamesMatchEnumOrder. Logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-14_02_06_19_net11.0.trx and artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-14_02_06_42_net11.0.trx.",
+      "The broad win-arm64 Debug baseline remains 10 failures (4 scalable TYP_SIMD clone, 3 embedded-FMA, 2 constant-count intrinsic, 1 jump-table) and 2 not executed; it is not reported as passing or attributed to this refresh."
     ],
     "parityEvidence": {
       "corelibCodegen": {
@@ -336,7 +337,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
+    "reconciledCommit": "56ba1c0be24c3837e5ac4ed13267b40646b906c7",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

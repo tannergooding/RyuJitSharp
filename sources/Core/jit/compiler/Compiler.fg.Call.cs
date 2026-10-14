@@ -758,6 +758,30 @@ public partial class Compiler
                     }
                 }
 
+                if ((value.Flags & GTF_OBS_EFFECT) != 0)
+                {
+                    var arrayTemp = fgMakeTemp(array);
+                    array = arrayTemp.Load;
+                    fgMorphTreeDone(arrayTemp.Store);
+                    argumentSetup = argumentSetup is null
+                        ? arrayTemp.Store
+                        : new GenTreeOp(GT_COMMA, TYP_VOID, argumentSetup, arrayTemp.Store);
+
+                    var indexTemp = fgMakeTemp(index);
+                    index = indexTemp.Load;
+                    fgMorphTreeDone(indexTemp.Store);
+                    argumentSetup = argumentSetup is null
+                        ? indexTemp.Store
+                        : new GenTreeOp(GT_COMMA, TYP_VOID, argumentSetup, indexTemp.Store);
+
+                    var valueTemp = fgMakeTemp(value);
+                    value = valueTemp.Load;
+                    fgMorphTreeDone(valueTemp.Store);
+                    argumentSetup = argumentSetup is null
+                        ? valueTemp.Store
+                        : new GenTreeOp(GT_COMMA, TYP_VOID, argumentSetup, valueTemp.Store);
+                }
+
                 var address = gtNewArrayIndexAddr(array, index, TYP_REF, NO_CLASS_HANDLE);
                 var result = fgMorphTree(gtNewStoreIndNode(TYP_REF, address, value));
 

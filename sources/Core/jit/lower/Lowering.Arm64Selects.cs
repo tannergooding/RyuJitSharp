@@ -128,6 +128,10 @@ public sealed partial class Lowering
                         var reversed = CompilerInstance.gtReverseCond(condition);
                         assert(reversed == condition);
                     }
+                    else
+                    {
+                        (select.Op1, select.Op2) = (select.Op2, select.Op1);
+                    }
 
                     BlockRange().Remove(select.Op2, markOperandsUnused: true);
                     select.Op2Ref = null;

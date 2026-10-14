@@ -540,6 +540,9 @@ public sealed partial class LinearScan
             }
 
             case GT_SELECT:
+            case GT_SELECT_NEG:
+            case GT_SELECT_INV:
+            case GT_SELECT_INC:
             case GT_SELECTCC:
             {
                 assert(destinationCount == 1);

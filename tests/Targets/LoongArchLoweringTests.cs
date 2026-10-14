@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -13,6 +13,7 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LoongArchLoweringTests
 {
+#if TARGET_LOONGARCH64
     [TestCase(false)]
     [TestCase(true)]
     public static void IntegerJTrueLoweringReturnsNextLirNode(bool hasComparison)
@@ -44,9 +45,34 @@ internal static unsafe class LoongArchLoweringTests
             Assert.That(successor.Prev?.Oper, Is.EqualTo(GT_JCMP));
         });
     }
+#endif
 
+    [TestCase(TYP_BYTE, TYP_INT, false)]
+    [TestCase(TYP_INT, TYP_LONG, true)]
+    public static void SmallLocalStoresDoNotContainBitcastSources(
+        var_types storeType, var_types sourceType, bool expectedContained)
+    {
+        WithLowering((compiler, _, lowering) =>
+        {
+            compiler.lvaTable[0].Type = storeType;
+            compiler.lvaTable[0].lvIsParam = true;
+            var source = compiler.gtNewIconNode(sourceType, 7);
+            var bitcast = new GenTreeUnOp(GT_BITCAST, storeType, source);
+            var store = compiler.gtNewStoreLclVarNode(0, bitcast);
+
+            ContainCheckStoreLoc(lowering, store);
+
+            Assert.That(bitcast.IsContained, Is.EqualTo(expectedContained));
+        });
+    }
+
+#if TARGET_LOONGARCH64
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNode")]
     private static extern GenTree? LowerNode(Lowering lowering, GenTree node);
+#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckStoreLoc")]
+    private static extern void ContainCheckStoreLoc(Lowering lowering, GenTreeLclVarCommon storeLoc);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

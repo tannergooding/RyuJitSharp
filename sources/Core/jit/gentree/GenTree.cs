@@ -1679,6 +1679,11 @@ public partial class GenTree
                        Compare(op1.AsCmpXchg().Comparand, op2.AsCmpXchg().Comparand);
             }
 
+#if TARGET_ARM64
+            case GT_SELECT_NEG:
+            case GT_SELECT_INV:
+            case GT_SELECT_INC:
+#endif
             case GT_SELECT:
             {
                 return GenTreeConditional.Equals(op1.AsConditional(), op2.AsConditional());
@@ -3181,6 +3186,11 @@ public partial class GenTree
                     break;
                 }
 
+#if TARGET_ARM64
+                case GT_SELECT_NEG:
+                case GT_SELECT_INV:
+                case GT_SELECT_INC:
+#endif
                 case GT_SELECT:
                 {
                     var conditional = AsConditional();
@@ -3190,7 +3200,7 @@ public partial class GenTree
                     {
                         result = visitor(ref conditional.Op1Ref);
 
-                        if (result is not VisitResult.Abort)
+                        if ((result is not VisitResult.Abort) && (conditional.Op2 is not null))
                         {
                             result = visitor(ref conditional.Op2Ref);
                         }
