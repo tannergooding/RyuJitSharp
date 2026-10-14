@@ -359,14 +359,15 @@ public partial class Compiler
             }
 
             defVarDsc.GetPerSsaData(defSsaNum)._vnPair = newLclValue;
-#if DEBUG
-            JITDUMP($"Tree [{storeNode.TreeId:D6}] assigned VN to local var V{defLclNum:D2}/{defSsaNum}: ");
-            if (verbose)
+            if (Configuration.DEBUG)
             {
-                vnpPrint(newLclValue, 1);
+                JITDUMP($"Tree [{storeNode.TreeId:D6}] assigned VN to local var V{defLclNum:D2}/{defSsaNum}: ");
+                if (verbose)
+                {
+                    vnpPrint(newLclValue, 1);
+                }
+                JITDUMP("\n");
             }
-            JITDUMP("\n");
-#endif
         }
         else if (defVarDsc.IsAddressExposed)
         {

@@ -135,13 +135,14 @@ public partial class Compiler
 
         optAssertionProp_Update(replacement, tree, statement);
 
-#if DEBUG
-        JITDUMP($"After VN-based fold of [{tree.TreeId:D6}]:\n");
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            gtDispStmt(statement);
+            JITDUMP($"After VN-based fold of [{tree.TreeId:D6}]:\n");
+            if (verbose)
+            {
+                gtDispStmt(statement);
+            }
         }
-#endif
         return WALK_CONTINUE;
     }
 
