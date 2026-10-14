@@ -218,17 +218,17 @@ public sealed partial class FlowGraphNaturalLoops
                 }
             }
 
-#if DEBUG
-            foreach (var otherLoop in loops.InPostOrder())
+            if (Configuration.DEBUG)
             {
-                var containsHeader = otherLoop.ContainsBlock(header);
-                _ = loop.VisitLoopBlocks(loopBlock => {
-                    assert(otherLoop.ContainsBlock(loopBlock) == containsHeader);
-                    return BasicBlockVisit.Continue;
-                });
+                foreach (var otherLoop in loops.InPostOrder())
+                {
+                    var containsHeader = otherLoop.ContainsBlock(header);
+                    _ = loop.VisitLoopBlocks(loopBlock => {
+                        assert(otherLoop.ContainsBlock(loopBlock) == containsHeader);
+                        return BasicBlockVisit.Continue;
+                    });
+                }
             }
-
-#endif
             loop._index = loops._loops.Count;
             loops._loops.Add(loop);
             JITDUMP($"Added loop L{loop.Index:D2} with header {FMT_BB(loop.Header.bbNum)}\n");
