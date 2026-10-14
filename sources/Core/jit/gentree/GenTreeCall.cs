@@ -225,6 +225,12 @@ public sealed class GenTreeCall : GenTree
 
     // IL offset of the call wrt its parent method.
     internal IL_OFFSET _rawILOffset;
+#else
+    internal InlineObservation _inlineObservation
+    {
+        get => throw new System.InvalidOperationException("Inline observation state is only available in Debug builds.");
+        set => throw new System.InvalidOperationException("Inline observation state is only available in Debug builds.");
+    }
 #endif
 
     internal InlineContext? _inlineContext;

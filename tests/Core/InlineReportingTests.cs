@@ -47,9 +47,10 @@ internal static unsafe class InlineReportingTests
             Assert.That(s_caller, Is.EqualTo((nint)0x100));
             Assert.That(s_callee, Is.EqualTo((nint)0x200));
             Assert.That(s_attributes, Is.EqualTo(marksNoInline ? CorInfoMethodRuntimeFlags.CORINFO_FLG_BAD_INLINEE : 0));
-#if DEBUG
-            Assert.That(call._inlineObservation, Is.EqualTo(observation));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(call._inlineObservation, Is.EqualTo(observation));
+            }
         });
     }
 
@@ -58,21 +59,20 @@ internal static unsafe class InlineReportingTests
     public static void SuppressionStillRecordsFirstDebugFailure(bool priorObservation)
     {
         WithCompiler((compiler, call) => {
-#if DEBUG
-            if (priorObservation)
+            if (TestConfiguration.IsDebug && priorObservation)
             {
                 call._inlineObservation = InlineObservation.CALLSITE_TOO_MANY_LOCALS;
             }
-#endif
             using var result = new InlineResult(compiler, call, null, "suppressed", doNotReport: true);
             result.NoteFatal(InlineObservation.CALLEE_HAS_EH);
             result.Report();
 
             Assert.That(s_callbacks, Is.Empty);
-#if DEBUG
-            Assert.That(call._inlineObservation, Is.EqualTo(priorObservation
-                ? InlineObservation.CALLSITE_TOO_MANY_LOCALS : InlineObservation.CALLEE_HAS_EH));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(call._inlineObservation, Is.EqualTo(priorObservation
+                    ? InlineObservation.CALLSITE_TOO_MANY_LOCALS : InlineObservation.CALLEE_HAS_EH));
+            }
         });
     }
 

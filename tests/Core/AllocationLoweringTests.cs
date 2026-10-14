@@ -44,9 +44,10 @@ internal static unsafe class AllocationLoweringTests
                 Assert.That(call.TreeId, Is.EqualTo(source.TreeId));
                 Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId));
             }
-#if DEBUG
-            Assert.That(call._inlineObservation, Is.EqualTo(InlineObservation.CALLSITE_IS_CALL_TO_HELPER));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(call._inlineObservation, Is.EqualTo(InlineObservation.CALLSITE_IS_CALL_TO_HELPER));
+            }
         });
     }
 
