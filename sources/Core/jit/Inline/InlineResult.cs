@@ -138,16 +138,14 @@ public sealed class InlineResult : IDisposable
 
         _doNotReport = true;
 
-#if DEBUG
         var callee = "(null)";
 
-        if (_rootCompiler.verbose || _rootCompiler.fgPrintInlinedMethods)
+        if (Configuration.DEBUG && (_rootCompiler.verbose || _rootCompiler.fgPrintInlinedMethods))
         {
             var caller = _caller is null ? "n/a" : _rootCompiler.eeGetMethodFullName(_caller);
             callee = _callee is null ? "n/a" : _rootCompiler.eeGetMethodFullName(_callee);
             JITDUMP($"INLINER: during '{_description}' result '{ResultString}' reason '{ReasonString}' for '{caller}' calling '{callee}'\n");
         }
-#endif
 
         if (IsNever && _policy.PropagateNeverToRuntime() && (_callee is not null))
         {

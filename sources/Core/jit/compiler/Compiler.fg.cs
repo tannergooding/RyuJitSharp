@@ -2147,6 +2147,8 @@ public partial class Compiler
 
 #if DEBUG
     public bool fgPrintInlinedMethods;
+#else
+    public bool fgPrintInlinedMethods => false;
 #endif
 
     public List<FlowEdge>? fgPredListSortVector;
