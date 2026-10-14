@@ -445,9 +445,10 @@ internal static class ExtendedDefaultPolicyTests
         Assert.That((nuint)context.Callee, Is.EqualTo((nuint)123));
         Assert.That((nuint)context.Code, Is.EqualTo((nuint)456));
         Assert.That(context.ILSize, Is.EqualTo(20));
-#if DEBUG
-        Assert.That(context.IsAsyncCall, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(context.IsAsyncCall, Is.True);
+        }
         var debugInfo = new DebugInfo(context, new ILLocation(17, 0)).GetRoot();
         Assert.That(debugInfo.InlineContext, Is.SameAs(root));
         Assert.That(debugInfo.Location.Offset, Is.EqualTo(5));

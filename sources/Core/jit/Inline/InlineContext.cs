@@ -110,6 +110,9 @@ public sealed partial class InlineContext
     public bool IsDevirtualized => (_flags & Flags.Devirtualized) is not 0;
 
     public bool IsGuarded => (_flags & Flags.Guarded) is not 0;
+#else
+    public bool IsAsyncCall
+        => throw new System.InvalidOperationException("Async-call diagnostic state is only available in Debug builds.");
 #endif
 
     public bool IsRoot => _parent is null;
