@@ -813,13 +813,16 @@ public partial class Emitter
             assert((uint)emitTotalCodeSize == emitCurCodeOffs(cp));
             emitTotalCodeSize = unchecked((int)actualCodeSize);
 
+            if (Configuration.DEBUG)
+            {
+                assert(VarSetOps.MaybeUninit(emitPrevGCrefVars));
+                assert(emitPrevGCrefRegs == unchecked((regMask)0xBAADFEEDu));
+                assert(emitPrevByrefRegs == unchecked((regMask)0xBAADFEEDu));
+                assert(VarSetOps.MaybeUninit(emitInitGCrefVars));
+                assert(emitInitGCrefRegs == unchecked((regMask)0xBAADFEEDu));
+                assert(emitInitByrefRegs == unchecked((regMask)0xBAADFEEDu));
+            }
 #if DEBUG
-            assert(VarSetOps.MaybeUninit(emitPrevGCrefVars));
-            assert(emitPrevGCrefRegs == unchecked((regMask)0xBAADFEEDu));
-            assert(emitPrevByrefRegs == unchecked((regMask)0xBAADFEEDu));
-            assert(VarSetOps.MaybeUninit(emitInitGCrefVars));
-            assert(emitInitGCrefRegs == unchecked((regMask)0xBAADFEEDu));
-            assert(emitInitByrefRegs == unchecked((regMask)0xBAADFEEDu));
             emitCheckIGList();
 #endif
             *prologSize = emitPrologEndPos.CodeOffset(this);
