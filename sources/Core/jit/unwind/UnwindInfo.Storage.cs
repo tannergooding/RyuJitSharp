@@ -182,23 +182,24 @@ public sealed partial class UnwindInfo
             handle.Free();
         }
 
-#if DEBUG
-        var fragmentCount = 0u;
-        for (var fragment = uwiFragmentFirst; fragment is not null; fragment = fragment.ufiNext)
+        if (Configuration.DEBUG)
         {
-            fragmentCount++;
-        }
-
-        if (fragmentCount < numberOfFragments)
-        {
-            if (compiler.verbose)
+            var fragmentCount = 0u;
+            for (var fragment = uwiFragmentFirst; fragment is not null; fragment = fragment.ufiNext)
             {
-                jitprintf($"WARNING: asked the emitter for {numberOfFragments} fragments, but only got {fragmentCount}\n");
+                fragmentCount++;
             }
 
-            assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);
+            if (fragmentCount < numberOfFragments)
+            {
+                if (compiler.verbose)
+                {
+                    jitprintf($"WARNING: asked the emitter for {numberOfFragments} fragments, but only got {fragmentCount}\n");
+                }
+
+                assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);
+            }
         }
-#endif
     }
 
     public void Reserve(bool isFunclet, bool isHotCode)
