@@ -119,9 +119,10 @@ public sealed partial class ObjectAllocator
         }
         else
         {
-#if DEBUG
-            JITDUMP($"ALLOCOBJ [{allocObj.TreeId:D6}] is not part of an empty static\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"ALLOCOBJ [{TreeIdForDump(allocObj):D6}] is not part of an empty static\n");
+            }
         }
 
         return local;
