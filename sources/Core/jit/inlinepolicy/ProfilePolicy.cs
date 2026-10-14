@@ -12,9 +12,7 @@ public sealed class ProfilePolicy : DiscretionaryPolicy
     {
     }
 
-#if DEBUG
     public override string Name => nameof(ProfilePolicy);
-#endif
 
     public override void NoteInt(InlineObservation observation, int value)
     {

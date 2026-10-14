@@ -32,9 +32,9 @@ public abstract class InlinePolicy
 #if DEBUG
     /// <summary>True if this is the inline targeted by data collection</summary>
     public bool IsDataCollectionTarget => _isDataCollectionTarget;
+#endif
 
     public abstract string Name { get; }
-#endif
 
     /// <summary>Get the observation responsible for the result</summary>
     public InlineObservation Observation => _observation;

@@ -432,11 +432,9 @@ public partial class Compiler
                         info.CanInferFromTrue = canInferFromTrue[ruleIndex];
                         info.CanInferFromFalse = canInferFromFalse[ruleIndex];
                         info.ReverseSense = reverseSense[ruleIndex];
-#if DEBUG
                         JITDUMP($"Can infer {ValueNumStore.VNFuncName(treeApp.Func)} from " +
                             $"[{(canInferFromTrue[ruleIndex] ? "true" : "false")}] " +
                             $"dominating {ValueNumStore.VNFuncName(domFunc)}\n");
-#endif
                         return;
                     }
                 }

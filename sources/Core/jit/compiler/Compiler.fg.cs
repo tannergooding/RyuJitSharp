@@ -7875,9 +7875,10 @@ public partial class Compiler
             return dsc;
         }
 
-#if DEBUG
-        jitprintf($"ERROR: Couldn't find basic block at offset {addr:X4}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            jitprintf($"ERROR: Couldn't find basic block at offset {addr:X4}\n");
+        }
 
         NO_WAY("fgLookupBB failed.");
         return null;

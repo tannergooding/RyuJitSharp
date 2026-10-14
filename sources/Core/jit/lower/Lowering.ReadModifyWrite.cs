@@ -17,9 +17,7 @@ public sealed partial class Lowering
         assert(!varTypeIsFloating(store.Type));
         if (!IsRMWMemOpRootedAtStoreInd(store, out var candidate, out var operand))
         {
-#if DEBUG
             JITDUMP($"Lower of StoreInd didn't mark the node as self contained for reason: {RMWStatusDescription(store.RmwStatus)}\n");
-#endif
             DISPTREERANGE(BlockRange(), store);
             return false;
         }
@@ -78,7 +76,6 @@ public sealed partial class Lowering
         return true;
     }
 
-#if DEBUG
     private static string RMWStatusDescription(RmwStatus status) => status switch {
         STOREIND_RMW_STATUS_UNKNOWN => "RMW status unknown",
         STOREIND_RMW_DST_IS_OP1 => "dst candidate is op1",
@@ -89,7 +86,6 @@ public sealed partial class Lowering
         STOREIND_RMW_INDIR_UNEQUAL => "read indir is not equivalent to write indir",
         _ => throw new System.ArgumentOutOfRangeException(nameof(status)),
     };
-#endif
 
     private bool IsBinOpInRMWStoreInd(GenTreeOp tree)
     {

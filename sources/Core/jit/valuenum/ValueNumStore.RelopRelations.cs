@@ -149,9 +149,7 @@ public sealed partial class ValueNumStore
     public static bool VNFuncIsSignedComparison(VNFunc func)
         => (func < VNF_Boundary) && ((genTreeOps)func).IsCompare;
 
-#if DEBUG
     public static string VNFuncName(VNFunc func) => FuncName(func);
-#endif
 
     public static string VNRelationString(VN_RELATION_KIND relation)
         => relation switch {

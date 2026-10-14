@@ -75,14 +75,12 @@ internal static unsafe class ValueNumRelopRelationTests
         });
     }
 
-#if DEBUG
     [TestCase(VNFunc.VNF_LT, "LT")]
     [TestCase(VNFunc.VNF_LT_UN, "LT_UN")]
     public static void NativeComparisonNamesAreUsedForInferenceDiagnostics(VNFunc func, string expected)
     {
         Assert.That(ValueNumStore.VNFuncName(func), Is.EqualTo(expected));
     }
-#endif
 
     private static void WithStore(Action<ValueNumStore> action)
     {

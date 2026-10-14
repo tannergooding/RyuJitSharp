@@ -193,10 +193,8 @@ public partial class Compiler
                 var previousNodes = CollectWellKnownArgs(previous, kind);
                 if (currentNodes.Count != previousNodes.Count)
                 {
-#if DEBUG
                     JITDUMP($"    No; disagreement on number of {kind} arguments " +
                         $"({currentNodes.Count} vs {previousNodes.Count})\n");
-#endif
                     return false;
                 }
 

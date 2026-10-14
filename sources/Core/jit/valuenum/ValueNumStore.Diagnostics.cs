@@ -530,17 +530,6 @@ public sealed partial class ValueNumStore
         _ => VNMapTypeName(type),
     };
 
-    private static string FuncName(VNFunc func)
-    {
-        if (func < VNF_Boundary)
-        {
-            return ((genTreeOps)func).Name;
-        }
-
-        var name = func.ToString();
-        return name.StartsWith("VNF_", StringComparison.Ordinal) ? name[4..] : name;
-    }
-
     private static string HandleKindName(GenTreeFlags flags) => (flags & GTF_ICON_HDL_MASK) switch
     {
         GTF_EMPTY => "",
@@ -566,4 +555,16 @@ public sealed partial class ValueNumStore
         _ => "ILLEGAL!",
     };
 #endif
+
+    private static string FuncName(VNFunc func)
+    {
+        if (func < VNF_Boundary)
+        {
+            var operName = ((genTreeOps)func).Name;
+            return operName.StartsWith("GT_", StringComparison.Ordinal) ? operName[3..] : operName;
+        }
+
+        var name = func.ToString();
+        return name.StartsWith("VNF_", StringComparison.Ordinal) ? name[4..] : name;
+    }
 }

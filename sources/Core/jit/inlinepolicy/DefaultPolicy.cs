@@ -37,9 +37,7 @@ public partial class DefaultPolicy : LegacyPolicy
 
     public virtual int EstimatedTotalILSize => _codeSize;
 
-#if DEBUG
     public override string Name => nameof(DefaultPolicy);
-#endif
 
     protected bool ArgFeedsIsKnownConst
     {

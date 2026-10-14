@@ -684,9 +684,9 @@ public class ExtendedDefaultPolicy : DefaultPolicy
         }
     }
 
-#if DEBUG
     public override string Name => nameof(ExtendedDefaultPolicy);
 
+#if DEBUG
     public override void OnDumpXml(StreamWriter stream, int indent = 0)
     {
         unchecked

@@ -982,7 +982,6 @@ public sealed partial class LinearScan
         Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore) =>
         _regSelector.selectMinimal(currentInterval, refPosition, out selectionScore);
 
-#if DEBUG
     private static string getScoreName(RegisterScore score) => score switch
     {
         RegisterScore.FREE => "FREE ",
@@ -1004,5 +1003,4 @@ public sealed partial class LinearScan
         RegisterScore.REG_NUM => "RGNUM",
         _ => "  -  ",
     };
-#endif
 }

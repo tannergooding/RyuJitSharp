@@ -206,7 +206,6 @@ public partial class Compiler
         return helper;
     }
 
-#if DEBUG
     internal static string sckName(SpecialCodeKind kind) => kind switch {
         SCK_RNGCHK_FAIL => nameof(SCK_RNGCHK_FAIL),
         SCK_ARG_EXCPN => nameof(SCK_ARG_EXCPN),
@@ -217,5 +216,4 @@ public partial class Compiler
         SCK_NULL_CHECK => nameof(SCK_NULL_CHECK),
         _ => "SCK_UNKNOWN",
     };
-#endif
 }

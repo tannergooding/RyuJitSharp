@@ -12,9 +12,7 @@ public sealed class ModelPolicy : DiscretionaryPolicy
     {
     }
 
-#if DEBUG
     public override string Name => nameof(ModelPolicy);
-#endif
 
     public override bool PropagateNeverToRuntime()
     {

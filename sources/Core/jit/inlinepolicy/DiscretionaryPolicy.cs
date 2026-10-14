@@ -66,9 +66,7 @@ public partial class DiscretionaryPolicy : DefaultPolicy
     {
     }
 
-#if DEBUG
     public override string Name => nameof(DiscretionaryPolicy);
-#endif
 
     public override void NoteBool(InlineObservation observation, bool value)
     {
