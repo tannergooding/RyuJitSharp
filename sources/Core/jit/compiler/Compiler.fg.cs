@@ -305,9 +305,9 @@ public partial class Compiler
         // Don't expect any surprises here.
         assert(result.IsCandidate);
 
-#if DEBUG
         assert(_inlineStrategy is not null);
 
+#if DEBUG
         // Fail if we're inlining and we've reached the acceptance limit.
         var limit = JitConfig.JitInlineLimit;
         var current = _inlineStrategy.InlineCount;
