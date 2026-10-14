@@ -384,11 +384,6 @@ public partial class Compiler
         }
     }
 
-    internal bool fgTrysContiguous()
-    {
-        return !Configuration.TARGET_WASM || (fgIndexToBlockMap is null);
-    }
-
     private bool ehCallFinallyInCorrectRegion(BasicBlock blockCallFinally, ushort finallyIndex)
     {
         assert(blockCallFinally.Kind is BBJ_CALLFINALLY);

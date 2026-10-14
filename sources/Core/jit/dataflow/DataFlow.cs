@@ -17,9 +17,11 @@ public sealed class DataFlow
     public void ForwardAnalysis<TCallback>(ref TCallback callback)
         where TCallback : ICallback
     {
-#if DEBUG
-        assert(_compiler.fgTrysContiguous());
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler.fgTrysContiguous());
+        }
+
         _compiler._dfsTree ??= _compiler.fgComputeDfs();
 
         bool changed;

@@ -2086,6 +2086,11 @@ public partial class Compiler
 
     public BasicBlock[]? fgIndexToBlockMap;
 
+    internal bool fgTrysContiguous()
+    {
+        return !Configuration.TARGET_WASM || (fgIndexToBlockMap is null);
+    }
+
     public bool fgWasmHasCatchResumptions;
 
     public FlowGraphTryRegions? fgTryRegions;
