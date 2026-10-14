@@ -23,8 +23,7 @@ public sealed partial class ValueNumStore
         size = fieldType is TYP_STRUCT ? new ValueSize(structSize) : ValueSize.FromJitType(fieldType);
         assert(!size.IsNull);
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             var fieldName = _compiler.eeGetFieldName(fieldHnd, false);
             JITDUMP($"    VNForHandle({fieldName}) is ${fieldVN:x}, fieldType is {fieldType.Name}");
@@ -34,7 +33,6 @@ public sealed partial class ValueNumStore
             }
             JITDUMP("\n");
         }
-#endif
         return fieldVN;
     }
 
