@@ -191,9 +191,7 @@ public sealed partial class SsaBuilder
                 return BasicBlockVisit.Continue;
             }
 
-#if DEBUG
             var phiFound = false;
-#endif
             foreach (var statement in succ.Statements)
             {
                 if (!statement.IsPhiDefnStmt)
@@ -206,19 +204,18 @@ public sealed partial class SsaBuilder
                 if (phiDef.LclNum == lclNum)
                 {
                     AddPhiArg(succ, statement, phiDef.Data.AsPhi(), lclNum, ssaNum, block);
-#if DEBUG
                     phiFound = true;
-#endif
                     break;
                 }
             }
 
-#if DEBUG
-            ref var ehDsc = ref _compiler.ehGetBlockHndDsc(succ);
-            var dfsTree = _compiler._dfsTree;
-            assert(phiFound || (!Unsafe.IsNullRef(in ehDsc) && (dfsTree is not null) &&
-                                !dfsTree.Contains(ehDsc.ebdTryBeg)));
-#endif
+            if (Configuration.DEBUG)
+            {
+                ref var ehDsc = ref _compiler.ehGetBlockHndDsc(succ);
+                var dfsTree = _compiler._dfsTree;
+                assert(phiFound || (!Unsafe.IsNullRef(in ehDsc) && (dfsTree is not null) &&
+                                    !dfsTree.Contains(ehDsc.ebdTryBeg)));
+            }
             return BasicBlockVisit.Continue;
         });
     }

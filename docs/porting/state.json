@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Review the DEBUG-only cseLivenessTraits assertion in sources/Core/jit/compiler/Compiler.CSE.Dataflow.cs; verify its state is Release-visible and decide whether it can be runtime-gated with the CSE dataflow tests.",
+    "nextAction": "Review assertion-only DEBUG guards in sources/Core/jit/valuenum for Release-visible invariants; identify a focused ValueNumStore test filter before selecting a coherent conversion.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "CodeGen.EHReporting.cs::genReportEHClauses now runtime-gates the funclet-index continuity assertions and counter with Configuration.DEBUG; ebdFuncIndex and HasFilter are Release-visible. CodeGenEHReportingTests passed 11/11 in Debug and 9/9 in Release; Release excluded EmitterJumpRemovalTests.cs and EmitterLoopAlignmentAdjustmentTests.cs through artifacts\\ExcludeKnownReleaseTestSources.targets. Logs: artifacts\\logs\\CodeGenEHReporting.win-x64.Debug.log and artifacts\\logs\\CodeGenEHReporting.win-x64.Release.log.",
