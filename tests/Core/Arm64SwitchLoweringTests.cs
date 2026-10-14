@@ -87,9 +87,7 @@ internal static unsafe class Arm64SwitchLoweringTests
 
     private static void WithSwitch(int[] cases, int defaultTarget, bool minopts, SwitchAction action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

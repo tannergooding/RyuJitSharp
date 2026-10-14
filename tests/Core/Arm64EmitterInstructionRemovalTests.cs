@@ -41,9 +41,7 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
             _ = SaveGroup(emitter, emitAdd: false);
         }
 
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         JitTls.Compiler = compiler;
         try

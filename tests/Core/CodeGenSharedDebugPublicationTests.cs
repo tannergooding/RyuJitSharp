@@ -317,9 +317,7 @@ internal static unsafe class CodeGenSharedDebugPublicationTests
 
     private static void WithPublication(PublicationAction action, bool seedInlineTree = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousRichConfig = RichDebugConfig(ref JitConfig);
 #if DEBUG

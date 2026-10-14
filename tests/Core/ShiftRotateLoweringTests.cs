@@ -19,9 +19,7 @@ internal static unsafe class ShiftRotateLoweringTests
     public static void CountMaskRemovalUsesOperandWidthAndUnlinksRemovedNodes(
         var_types type, int shiftCount, int maskValue, bool remove)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

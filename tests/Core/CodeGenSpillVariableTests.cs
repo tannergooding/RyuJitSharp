@@ -202,9 +202,7 @@ internal static unsafe class CodeGenSpillVariableTests
     internal static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action,
         bool minopts = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

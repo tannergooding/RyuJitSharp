@@ -24,9 +24,7 @@ internal static unsafe class Arm64EmitterFragmentTests
         ordinary.igNext = funclet;
         funclet.igNext = placeholder;
 
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         JitTls.Compiler = compiler;
         try
@@ -59,9 +57,7 @@ internal static unsafe class Arm64EmitterFragmentTests
         FirstGroup(emitter) = groups[0];
         List<insGroup> reported = [];
 
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         JitTls.Compiler = compiler;
         try
@@ -87,9 +83,7 @@ internal static unsafe class Arm64EmitterFragmentTests
         FirstGroup(emitter) = groups[0];
         List<insGroup> reported = [];
 
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         JitTls.Compiler = compiler;
         try

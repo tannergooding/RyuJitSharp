@@ -58,9 +58,7 @@ internal static unsafe class CodeGenFramePolicyClosureTests
     public static void SkippedPoisonLocalsDoNotInvokeUnsupportedRecording(
         bool parameter, bool initialized, bool exposed)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;

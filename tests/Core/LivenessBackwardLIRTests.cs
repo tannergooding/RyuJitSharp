@@ -699,9 +699,7 @@ internal static unsafe class LivenessBackwardLIRTests
 
     private static void WithCompiler(int count, Action<Compiler> action, bool minopts = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

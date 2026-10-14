@@ -239,9 +239,7 @@ internal static unsafe class NowayStatisticsTests
         var savedConfig = JitConfig;
         var savedMap = Map(null);
         var savedOutput = s_jitstdout;
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var savedCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         using var output = new MemoryStream();

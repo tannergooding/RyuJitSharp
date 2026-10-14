@@ -234,9 +234,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     private static void WithCodeGen(Action<Compiler, CodeGen> action,
         CORINFO_RUNTIME_ABI targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

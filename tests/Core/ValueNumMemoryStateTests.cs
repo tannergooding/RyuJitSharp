@@ -101,9 +101,7 @@ internal static unsafe class ValueNumMemoryStateTests
 
     private static void WithStore(Action<Compiler, ValueNumStore> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];

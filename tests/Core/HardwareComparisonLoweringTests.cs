@@ -205,9 +205,7 @@ internal static unsafe class HardwareComparisonLoweringTests
 
     private static void WithCompiler(Action<Compiler> action, bool supportsAvx512 = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

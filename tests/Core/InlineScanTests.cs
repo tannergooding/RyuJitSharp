@@ -20,9 +20,7 @@ internal static class InlineScanTests
     [TestCase(Globals.MAX_XCPTN_INDEX - 1)]
     public static unsafe void AvailableEhCapacityPreservesTheCatchRejection(int existingClauses)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var result = (InlineResult)RuntimeHelpers.GetUninitializedObject(typeof(InlineResult));
@@ -137,9 +135,7 @@ internal static class InlineScanTests
     public static unsafe void PreciseConstantScanPreservesNativeObservations(
         byte[] il, int argCount, int invariantArgs, InlineObservation[] expected)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var policy = new RecordingPolicy(compiler);

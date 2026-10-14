@@ -185,9 +185,7 @@ internal static unsafe class InlineVariableTests
 
     private static void WithCompiler(Action<Compiler, InlineInfo, GenTreeCall> action)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler._inlineStrategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));

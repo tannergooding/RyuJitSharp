@@ -449,9 +449,7 @@ internal static unsafe class LinearScanDefinitionConstructionTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action, bool enregisterLocalVars = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compRetBuffArg = BAD_VAR_NUM;

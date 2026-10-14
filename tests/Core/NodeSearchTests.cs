@@ -20,9 +20,7 @@ internal static unsafe class NodeSearchTests
     [TestCase(GTF_CALL, 0, false)]
     public static void SearchAppliesEveryRequiredFlagBeforeCallingThePredicate(GenTreeFlags required, int targetIndex, bool found)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;

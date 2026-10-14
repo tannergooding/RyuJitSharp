@@ -191,9 +191,7 @@ internal static unsafe class LoweringPhaseTests
 
     private static void WithCompiler(Action<Compiler, LinearScan> action, bool minOpts = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

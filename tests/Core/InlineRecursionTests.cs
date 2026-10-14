@@ -138,9 +138,7 @@ internal static unsafe class InlineRecursionTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = Globals.JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

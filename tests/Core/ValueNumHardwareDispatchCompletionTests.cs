@@ -494,9 +494,7 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
 
     private static void WithCompiler(Action<Compiler, ValueNumStore> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         DisableBits(ref JitConfig) = 0;

@@ -26,9 +26,7 @@ internal static unsafe class LinearScanRegisterWritebackTests
     [Test]
     public static void MultiRegisterResultsCanBeAssignedAndCopiedIndependently()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;
@@ -254,9 +252,7 @@ internal static unsafe class LinearScanRegisterWritebackTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action, bool enregStructs = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         if (enregStructs)

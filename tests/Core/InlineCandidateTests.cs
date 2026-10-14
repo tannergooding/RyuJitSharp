@@ -27,9 +27,7 @@ internal static unsafe class InlineCandidateTests
         bool classBased, bool tailCall, bool nextCallReturnAddress, bool requireInlining,
         bool unboxed, int candidateCount, bool expectedRetention)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = Globals.JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

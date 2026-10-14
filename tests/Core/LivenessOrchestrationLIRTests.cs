@@ -504,9 +504,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
 
     private static void WithCompiler(int count, bool minopts, Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

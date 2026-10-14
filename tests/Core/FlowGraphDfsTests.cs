@@ -21,9 +21,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void DetectsCyclesThatAvoidSafePoints(string shape, bool expected)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -142,9 +140,7 @@ internal static unsafe class FlowGraphDfsTests
         compiler.info.compIsStatic = true;
         var flags = new JitFlags();
         compiler.opts.jitFlags = &flags;
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 #if DEBUG
@@ -174,9 +170,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void RegularSuccessorEnumerationPreservesOrderAndAbort(int count)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -242,9 +236,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void TailcallPseudoSuccessorsUseTreeAndLirTerminals(bool lir, string kind)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -293,9 +285,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void PreservesSuccessorOrderAndTreeNumbering(bool useProfile)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -347,9 +337,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void DetectsBackedgesAndPreservesBlockNumbersOnInvalidation()
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -392,9 +380,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void VisitsFilterAndHandlerAsExceptionalSuccessors()
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -465,9 +451,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void RemovesUnreachableBlocksButRetainsNonRemovableBlocks()
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -636,9 +620,7 @@ internal static unsafe class FlowGraphDfsTests
         var flags = new JitFlags();
         compiler.info.compMethodInfo = &methodInfo;
         compiler.opts.jitFlags = &flags;
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -695,9 +677,7 @@ internal static unsafe class FlowGraphDfsTests
         var flags = new JitFlags();
         compiler.info.compMethodInfo = &methodInfo;
         compiler.opts.jitFlags = &flags;
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -736,9 +716,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void RemovingUnreachableBlockRetargetsSurvivingEHRegionEnds()
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -783,9 +761,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void RekeysAndMergesAddCodeDescriptorsWhenRemovingEHEntry()
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
@@ -856,9 +832,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void ForwardDataFlowRepeatsOnlyChangedCyclicGraphs(bool cyclic, bool changeFirstPass, int passes)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 

@@ -97,9 +97,7 @@ internal static unsafe class Arm64CodeGenMemoryBarrierTests
 
     private static void WithCodeGen(bool optimizationEnabled, Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

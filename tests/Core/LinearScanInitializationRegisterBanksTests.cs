@@ -240,9 +240,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
     private static void WithConstructor(
         bool debugEnC, bool patchpoints, bool evex, bool apx, Action<Compiler, LinearScan> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

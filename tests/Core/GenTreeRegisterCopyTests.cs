@@ -89,9 +89,7 @@ internal static unsafe class GenTreeRegisterCopyTests
 
     private static void WithCompiler(Action action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         try

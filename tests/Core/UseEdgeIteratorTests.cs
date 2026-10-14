@@ -1132,9 +1132,7 @@ internal static unsafe class UseEdgeIteratorTests
 
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

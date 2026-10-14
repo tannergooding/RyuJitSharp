@@ -300,9 +300,7 @@ internal static unsafe class SwitchLoweringTests
     private static void WithSwitch(int[] cases, int defaultTarget, int followingTarget, bool minopts, double defaultLikelihood,
         SwitchAction action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

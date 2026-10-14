@@ -254,9 +254,7 @@ internal static unsafe class AsyncContextTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = Globals.JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

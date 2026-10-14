@@ -158,9 +158,7 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
     public static void SupportedBaseTypeRequiresAnArithmeticElement(
         NamedIntrinsic intrinsic, var_types baseType, bool expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         Assert.That(IsSupportedBaseType(null, intrinsic, baseType), Is.EqualTo(expected));
     }
 
@@ -225,9 +223,7 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compCurBB = new BasicBlock(null, null);

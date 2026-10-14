@@ -29,9 +29,7 @@ internal static unsafe class AsyncTransformationTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -317,9 +315,7 @@ internal static unsafe class AsyncTransformationTests
     [Test]
     public static void DefaultValueAnalysisDistinguishesNegativeFloatingZero()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         JitTls.Compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 
@@ -344,9 +340,7 @@ internal static unsafe class AsyncTransformationTests
     [Test]
     public static void ContinuationLayoutKeepsReturnAlignmentAndWholeLiveInlineFrame()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var previousCompiler = JitTls.Compiler;
         JitTls.Compiler = compiler;

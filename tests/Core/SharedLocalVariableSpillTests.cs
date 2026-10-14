@@ -328,9 +328,7 @@ internal static unsafe class SharedLocalVariableSpillTests
     private static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action,
         uint layoutSize = 0)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

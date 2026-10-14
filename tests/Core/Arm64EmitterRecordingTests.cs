@@ -2435,9 +2435,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ConstantNodeFloatingPreservesBitsAndInstructionSelection(
         var_types type, ulong bits, instruction expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         var value = BitConverter.UInt64BitsToDouble(bits);
@@ -2480,9 +2478,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ConstantNodeVectorsPreserveBroadcastOrder(
         var_types type, uint bits, instruction expected, insOpts option)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var tree = new GenTreeVecCon(type) { RegNum = REG_ARM64_V3 };
         tree.SimdVal.AsSpan<uint>().Fill(bits);
@@ -2501,9 +2497,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(var_types.TYP_SIMD16)]
     public static void ConstantNodeVectorPoolPreservesThePhysicalPayload(var_types type)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var tree = new GenTreeVecCon(type);
         tree.SimdVal.AsSpan<uint>().Fill(0x12);
@@ -2532,9 +2526,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ConstantNodeIntegersPreserveTypeAndModifiedRegister(
         var_types type, long value, bool reloc, GCInfo.GCtype gcType)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         compiler.opts.compReloc = reloc;
@@ -2551,9 +2543,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(true)]
     public static void ConstantNodeTlsDeferralRequiresRelocation(bool reloc)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         compiler.opts.compReloc = reloc;
@@ -2573,9 +2563,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ConstantNodeAddressRecordingPreservesBindingAndJumpLinks(
         bool cold, bool reloc, bool forceLong)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         var block = compiler.compCurBB ?? throw new AssertionException("Missing block.");
@@ -2611,9 +2599,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ConstantNodeScalableRecordsLoadsBeforeTheTargetOperation(
         SimdScalableKind kind, int index, int step, int loads)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var tree = new GenTreeVecCon(var_types.TYP_SIMD_ARM64);
         tree.SimdScalableVal.BaseType = var_types.TYP_INT;
@@ -2669,9 +2655,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(0xFFFFUL)]
     public static void ConstantNodeMasksRecordTheirScalablePredicatePattern(ulong bits)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         simdmask_t value = default;
         value.u64[0] = bits;

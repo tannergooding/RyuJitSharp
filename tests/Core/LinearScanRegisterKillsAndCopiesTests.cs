@@ -427,9 +427,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action, bool trackedLocal = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

@@ -13,9 +13,7 @@ internal static unsafe class CompilerInlineHelpersTests
     [Test]
     public static void DebugDestroySupportsMultipleNodes()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;

@@ -16,9 +16,7 @@ internal static unsafe class ValueNumLoopMemoryDependenceTests
     [Test]
     public static void DependenceTracksOnlyEnclosingLoopUpdatesAndKeepsTheClosestConstraint()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];

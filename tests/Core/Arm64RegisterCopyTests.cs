@@ -283,9 +283,7 @@ internal static unsafe class Arm64RegisterCopyTests
 
     private static void WithRegisterLife(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var codeGen = CreateCodeGen();
         var compiler = codeGen.Compiler;

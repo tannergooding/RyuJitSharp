@@ -309,9 +309,7 @@ internal static class ArmEmitterPredicateTests
 
     private static unsafe void WithNyiReturning(Action action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = Globals.JitConfig;
         try

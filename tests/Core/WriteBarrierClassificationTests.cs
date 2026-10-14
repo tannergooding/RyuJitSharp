@@ -18,9 +18,7 @@ internal static unsafe class WriteBarrierClassificationTests
     public static void WriteBarrierClassificationPreservesAddressAndNullRules(
         var_types addressType, GenTreeFlags flags, bool nullValue, GCInfo.WriteBarrierForm expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
@@ -57,9 +55,7 @@ internal static unsafe class WriteBarrierClassificationTests
     [TestCase(true)]
     public static void ImplicitByrefStorageNeedsNoWriteBarrierEvenWithOffset(bool offset)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
@@ -94,9 +90,7 @@ internal static unsafe class WriteBarrierClassificationTests
     [Test]
     public static void DirectLocalAddressNeedsNoWriteBarrier()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compRetBuffArg = BAD_VAR_NUM;

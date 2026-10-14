@@ -29,9 +29,7 @@ internal static unsafe class InductionVariableConsumerTests
     [Test]
     public static void PhaseSkipsMethodsWithoutNaturalLoops()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
@@ -52,9 +50,7 @@ internal static unsafe class InductionVariableConsumerTests
     [Test]
     public static void LoopOccurrencesVisitChildrenThenReverseTreeAndStatementOrder()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -213,9 +209,7 @@ internal static unsafe class InductionVariableConsumerTests
     private static void WithStrengthReduction(
         Action<Compiler, ScalarEvolutionContext, object, MethodInfo, MethodInfo> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

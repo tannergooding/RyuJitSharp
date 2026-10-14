@@ -290,9 +290,7 @@ internal static unsafe class Arm64RationalizationTests
     private static void WithRationalizer(Action<Compiler, Rationalizer, BasicBlock> action,
         bool minopts = true, bool lir = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

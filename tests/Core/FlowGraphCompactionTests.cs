@@ -723,9 +723,7 @@ internal static unsafe class FlowGraphCompactionTests
 
     private static void WithCompiler(bool lir, Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];

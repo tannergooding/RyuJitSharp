@@ -352,9 +352,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
         SetField(typeof(JitConfigValues), config, "_jitInlineLimit", limit);
         var previousConfig = JitConfig;
         var previousCompiler = JitTls.Compiler;
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         JitConfig = (JitConfigValues)config;
         JitTls.Compiler = compiler;
         SetField(typeof(InlineStrategy), null, "s_HasDumpedDataHeader", false);

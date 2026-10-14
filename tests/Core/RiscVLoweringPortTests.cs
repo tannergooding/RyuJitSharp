@@ -69,9 +69,7 @@ internal static unsafe class RiscVLoweringPortTests
 
     private static void WithAltJitLowering(Action<Compiler, Lowering> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -100,9 +98,7 @@ internal static unsafe class RiscVLoweringPortTests
 
     private static void WithAltJit(Action action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

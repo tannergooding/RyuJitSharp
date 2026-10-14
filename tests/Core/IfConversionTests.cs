@@ -584,9 +584,7 @@ internal static unsafe class IfConversionTests
 
     private static void WithCompiler(Action<Compiler> action, bool optimized = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

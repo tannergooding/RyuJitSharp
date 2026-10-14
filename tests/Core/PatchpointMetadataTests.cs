@@ -151,9 +151,7 @@ internal static unsafe class PatchpointMetadataTests
     public static void NonXarchPublicationAdjustsLocalsAndSpecialOffsets(
         bool saveFpLr, bool varArgs, int contextKind, int frameSize, int offsetAdjust)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

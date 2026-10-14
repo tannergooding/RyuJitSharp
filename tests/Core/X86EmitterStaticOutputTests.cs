@@ -84,9 +84,7 @@ internal static unsafe class X86EmitterStaticOutputTests
 
     internal static void WithEmitter(Action<Compiler, Emitter> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

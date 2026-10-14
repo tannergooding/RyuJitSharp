@@ -1002,9 +1002,7 @@ internal static unsafe class ImporterEffectsTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

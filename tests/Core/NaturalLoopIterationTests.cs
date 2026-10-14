@@ -354,9 +354,7 @@ internal static unsafe class NaturalLoopIterationTests
     private static void WithLoop(Action<Compiler, FlowGraphNaturalLoop, BasicBlock, BasicBlock, BasicBlock> action,
         genTreeOps? guardOper = null, bool headerExit = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();

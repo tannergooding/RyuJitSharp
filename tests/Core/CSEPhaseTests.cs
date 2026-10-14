@@ -282,9 +282,7 @@ internal static unsafe class CSEPhaseTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();

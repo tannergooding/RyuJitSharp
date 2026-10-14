@@ -388,9 +388,7 @@ internal static unsafe class Arm64FrameLayoutTests
 
     private static void WithFrame(Action<Compiler, CodeGen> action, bool minOpts = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         CORINFO_METHOD_INFO methodInfo = default;

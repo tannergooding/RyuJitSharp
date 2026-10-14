@@ -307,9 +307,7 @@ internal static unsafe class LoongArchUnwindLifecycleTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

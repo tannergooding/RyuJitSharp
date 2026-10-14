@@ -280,9 +280,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

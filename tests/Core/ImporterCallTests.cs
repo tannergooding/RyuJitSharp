@@ -184,9 +184,7 @@ internal static unsafe class ImporterCallTests
     [TestCase(var_types.TYP_LONG, genTreeOps.GT_ROR)]
     public static void VariableRotatesMaskTheirAmount(var_types type, genTreeOps operation)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compCurBB = new BasicBlock(null, null);
@@ -576,9 +574,7 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.getArrayInitializationData = &GetArrayInitializationData;
         vtable.Base.Base.isSDArray = &IsInitializedSDArray;
         var state = new ArrayInitialization { Interface = new ICorJitInfo { lpVtbl = &vtable }, ElementType = elementType };
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -677,9 +673,7 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.getFieldType = &GetInitializedFieldType;
         vtable.Base.Base.getTypeForPrimitiveValueClass = &RejectSpanElementType;
         var state = new ArrayInitialization { Interface = new ICorJitInfo { lpVtbl = &vtable } };
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

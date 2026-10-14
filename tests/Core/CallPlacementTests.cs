@@ -15,9 +15,7 @@ internal static unsafe class CallPlacementTests
     [TestCase(true, true)]
     public static void PlacementMovesOnlyInvariantValuesAndPreservesFieldOrder(bool computedValue, bool fieldList)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

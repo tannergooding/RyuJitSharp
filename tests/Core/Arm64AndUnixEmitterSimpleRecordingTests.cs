@@ -19,9 +19,7 @@ internal static unsafe class Arm64AndUnixEmitterSimpleRecordingTests
     [TestCase(128, 5u)]
     public static void ImmediateOnlyRecordingUsesNativeConstantWidths(int value, uint expectedSize)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

@@ -262,9 +262,7 @@ internal static unsafe class EarlyLivenessTests
 
     private static void WithCompiler(int count, bool minOpts, Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

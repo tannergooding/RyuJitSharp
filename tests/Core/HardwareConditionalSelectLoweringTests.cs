@@ -235,9 +235,7 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
     private static void WithCompiler(Action<Compiler> action, bool supportsAvx512 = true,
         ICorJitInfo* jitInfo = null)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

@@ -214,9 +214,7 @@ internal static unsafe class ArithmeticLoweringTests
 
     private static void WithCompiler(bool minOpts, Action<Compiler, BasicBlock, Lowering> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

@@ -47,9 +47,7 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
     public static void FinalizationInitializesTargetGcAndEpilogPolicyBeforeAnUnportedDependency(
         bool framePointer, bool fullPointerMap)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new View(compiler) { emitHasFramePtr = framePointer };
         emitter.SetEpilog();

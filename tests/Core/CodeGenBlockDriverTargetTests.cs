@@ -51,9 +51,7 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 
     private static void WithDriver(Action<Compiler, CodeGen, BasicBlock> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         CORINFO_METHOD_INFO methodInfo = default;

@@ -259,9 +259,7 @@ internal static unsafe class LocalStoreCoalescingTests
 
     private static void WithCompiler(bool optimized, bool enabled, Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = Globals.JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

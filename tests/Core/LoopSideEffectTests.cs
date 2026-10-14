@@ -22,9 +22,7 @@ internal static unsafe class LoopSideEffectTests
     [Test]
     public static void LoopInvariantVNsRespectDefinitionLocationAndFunctionArguments()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -175,9 +173,7 @@ internal static unsafe class LoopSideEffectTests
     [Test]
     public static void EarlierArrayAddressSsaValueClassifiesLaterByrefStore()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -249,9 +245,7 @@ internal static unsafe class LoopSideEffectTests
     [Test]
     public static void AcyclicGraphHasNoLoopEffectRecords()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -289,9 +283,7 @@ internal static unsafe class LoopSideEffectTests
     public static void HelperCallEffectsRespectHeapAndCctorProperties(
         CorInfoHelpFunc helper, bool hoistable, bool hasHavoc)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -355,9 +347,7 @@ internal static unsafe class LoopSideEffectTests
     public static void FullAnalysisDistinguishesModifiedLocationsAndRetainsCalls(
         string location, bool includeCall, bool includeVolatileLoad)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -484,9 +474,7 @@ internal static unsafe class LoopSideEffectTests
     [Test]
     public static void EffectsPropagateFromInnerLoopToAllContainingLoops()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];

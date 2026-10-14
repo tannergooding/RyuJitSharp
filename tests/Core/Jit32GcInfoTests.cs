@@ -30,9 +30,7 @@ internal unsafe class Jit32GcInfoTests
     public void UntrackedLocalClassificationMatchesJit32Rules(
         bool isParameter, bool onFrame, bool isRegisterArgument, bool tracked, bool usesJmp, bool expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -69,9 +67,7 @@ internal unsafe class Jit32GcInfoTests
     [Test]
     public void HeaderCountsOnlyUntrackedRootsAndNonemptyLifetimes()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -205,9 +201,7 @@ internal unsafe class Jit32GcInfoTests
     [Test]
     public void HeaderSaveMeasurementMatchesSerializedSize()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -257,9 +251,7 @@ internal unsafe class Jit32GcInfoTests
     [Test]
     public void EmptyPointerTableMeasurementMatchesSerialization()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -306,9 +298,7 @@ internal unsafe class Jit32GcInfoTests
     [Test]
     public void PointerTableEncodesTrackedLifetimeAndArgumentOffset()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -745,9 +735,7 @@ internal unsafe class Jit32GcInfoTests
     [NonParallelizable]
     public void DumpEntryPointsPreserveStdoutBannersAndDebugLoggerRouting(bool noGcRegion)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var header = new GCInfo.InfoHdr
         {
             noGCRegionCnt = noGcRegion ? 1u : 0u,

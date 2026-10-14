@@ -214,9 +214,7 @@ internal static unsafe class LinearScanBlockOrderTests
 
     private static void WithAllocator(bool minOpts, Action<Compiler, LinearScan> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

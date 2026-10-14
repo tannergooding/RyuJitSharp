@@ -17,9 +17,7 @@ internal static unsafe class HardwareIntrinsicFoldExprWindowsTests
     [TestCase(NI_AVX2_TrailingZeroCount, TYP_INT, 1L)]
     public static void XarchConstantFoldsRemainAvailable(NamedIntrinsic intrinsicId, var_types type, long expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

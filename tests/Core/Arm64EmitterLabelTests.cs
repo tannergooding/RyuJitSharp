@@ -152,9 +152,7 @@ internal static unsafe class Arm64EmitterLabelTests
     [TestCase(BBJ_THROW, INS_brk)]
     public static void ChangedCallLivenessPadsThePredecessorGroup(BBKinds kind, instruction expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var (compiler, emitter) = CreateEmitter(beginFunction: true);
 #if DEBUG
         JitTls.Compiler = compiler;

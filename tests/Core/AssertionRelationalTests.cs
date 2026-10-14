@@ -574,9 +574,7 @@ internal static unsafe class AssertionRelationalTests
 
     private static void WithCompiler(Action<Compiler, ValueNumStore> action, bool local = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         object config = default(JitConfigValues);

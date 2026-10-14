@@ -20,9 +20,7 @@ internal static unsafe class InductionVariablePhaseTests
     [Test]
     public static void CountedLoopBecomesDownwardsAndUnusedPrimaryIVIsRemoved()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();

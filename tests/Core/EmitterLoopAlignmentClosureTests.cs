@@ -36,9 +36,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
     [TestCase(uint.MaxValue - 3, 4u)]
     public static void FixedPaddingUsesTheNativeSizedOffset(uint lowOffset, uint expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
@@ -69,9 +67,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
     [Test]
     public static void ArmAlignmentDescriptorCarriesTheNativeFormatAndPaddingOption()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
@@ -103,9 +99,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
     public static void ArmAdaptivePaddingKeepsTheThirtyTwoByteBoundary(
         uint offset, ushort loopSize, uint expected)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;

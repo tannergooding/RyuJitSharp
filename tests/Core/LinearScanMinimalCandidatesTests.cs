@@ -180,9 +180,7 @@ internal static unsafe class LinearScanMinimalCandidatesTests
 
     internal static void WithCompiler(Action<Compiler> action, bool minOpts = true)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -207,9 +205,7 @@ internal static unsafe class LinearScanMinimalCandidatesTests
 
     private static void WithCompiler(Action<Compiler, LinearScan> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

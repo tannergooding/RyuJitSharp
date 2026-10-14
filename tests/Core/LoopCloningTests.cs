@@ -417,9 +417,7 @@ internal static unsafe class LoopCloningTests
 
     private static void WithLoop(Action<Compiler, BasicBlock, BasicBlock, BasicBlock, BasicBlock> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var config = new JitConfigValues();

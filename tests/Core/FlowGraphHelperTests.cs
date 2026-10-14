@@ -261,9 +261,7 @@ internal static unsafe class FlowGraphHelperTests
     [TestCase(3, 1)]
     public static void IRMeasurementCountsAllStatements(int blockCount, int statementsPerBlock)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
@@ -317,9 +315,7 @@ internal static unsafe class FlowGraphHelperTests
     [TestCase(true, -8)]
     public static void StackAddressesRemainNonHeapAfterPeeling(bool isReturnBuffer, int offset)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
@@ -355,9 +351,7 @@ internal static unsafe class FlowGraphHelperTests
     [TestCase(true, genTreeOps.GT_RELOAD)]
     public static void StackAddressesRemainNonHeapAfterPeelingCopyOrReload(bool isReturnBuffer, genTreeOps wrapper)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
@@ -388,9 +382,7 @@ internal static unsafe class FlowGraphHelperTests
     [TestCase(true)]
     public static void ImplicitByRefParameterIsNonHeapAndNonNull(bool asyncMethod)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
@@ -423,9 +415,7 @@ internal static unsafe class FlowGraphHelperTests
     [Test]
     public static void ReturnBufferLocalCannotBeNull()
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTable = [new LclVarDsc { Type = var_types.TYP_BYREF }];
@@ -448,9 +438,7 @@ internal static unsafe class FlowGraphHelperTests
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT, true)]
     public static void PinnedStaticHelperResultTracksAsyncSuspensions(CorInfoHelpFunc helper, bool isAsync)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
@@ -523,9 +511,7 @@ internal static unsafe class FlowGraphHelperTests
 
     private static void WithClassInitializationCompiler(ClassInitializationAction action)
     {
-#if DEBUG
-        using var jitTls = new JitTls(null);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

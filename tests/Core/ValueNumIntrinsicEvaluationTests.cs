@@ -357,9 +357,7 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
 
     private static void WithStore(Action<ValueNumStore> action, bool aot = false)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
