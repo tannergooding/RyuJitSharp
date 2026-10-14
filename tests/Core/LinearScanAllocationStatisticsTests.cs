@@ -117,7 +117,7 @@ internal static unsafe class LinearScanAllocationStatisticsTests
             _ = CreateBlocks(compiler, 1);
             compiler.info.compFullName = "Stats::Verbose";
             _ = StartBlockSequence(allocator);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             using var summaryStream = new MemoryStream();
             using var summaryWriter = new JitTextWriter(summaryStream, leaveOpen: true);

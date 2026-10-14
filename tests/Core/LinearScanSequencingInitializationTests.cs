@@ -104,7 +104,7 @@ internal static unsafe class LinearScanSequencingInitializationTests
         WithAllocator(false, (compiler, allocator) => {
             var blocks = CreateBlocks(compiler, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Connect(compiler, blocks[0], blocks[3]));
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             using var stream = new SequenceObservationStream(allocator);
             using var writer = new JitTextWriter(stream, leaveOpen: true) { AutoFlush = true };
             var previous = s_jitstdout;

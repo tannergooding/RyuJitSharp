@@ -27,7 +27,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             _ = NewInterval(allocator, TYP_INT);
             _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
             MaxNodeLocation(allocator) = 10;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             var output = Capture(() => {
@@ -65,7 +65,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var allocator = CreateAllocator(compiler);
             _ = NewInterval(allocator, TYP_DOUBLE);
             _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             var output = Capture(() => {
@@ -91,7 +91,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var reference = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_X64_RAX);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             var output = Capture(() => {
@@ -116,7 +116,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var allocator = CreateAllocator(compiler);
             _ = allocator.newRefPosition(null, 1, RefType.RefTypeKill, null, SRBM_NONE);
             var reference = new RefPosition(0, 1, null, RefType.RefTypeInvalid);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             _ = Capture(() => InitializeAllocationDumpFormat(allocator));
 
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;

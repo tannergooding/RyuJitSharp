@@ -509,7 +509,7 @@ internal static unsafe class LivenessFixedPointTests
             Append(compiler, block, new GenTreeLclVar(TYP_INT, 0));
             Append(compiler, block, new GenTreeIndir(GT_IND, TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 4096)));
             var liveness = Prepare<Policy>(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var expected = ($"{FMT_BB(block.bbNum)} IN (1)={{V00}} + ByrefExposed + GcHeap\n" +
                 "     OUT(0)={   }\n\n").ReplaceLineEndings(Environment.NewLine);
 

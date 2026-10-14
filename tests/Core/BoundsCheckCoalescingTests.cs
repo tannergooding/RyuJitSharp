@@ -26,7 +26,7 @@ internal static unsafe class BoundsCheckCoalescingTests
             var later = AddCheck(compiler, block, 3, lengthVN);
             compiler.MethodHasBoundsChecks = false;
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING)));
             Assert.That(output, Does.Contain("Method has no bounds checks"));
@@ -51,7 +51,7 @@ internal static unsafe class BoundsCheckCoalescingTests
             var second = AddCheck(compiler, block, 3, lengthVN);
             var third = AddCheck(compiler, block, 2, lengthVN);
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var status = PhaseStatus.MODIFIED_NOTHING;
             var output = CodeGenLifeTransitionTests.Capture(() => status = Coalesce(compiler));
             Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING), output);

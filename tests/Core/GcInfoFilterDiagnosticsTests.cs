@@ -24,7 +24,7 @@ internal static class GcInfoFilterDiagnosticsTests
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.opts.dspDiffable = true;
             var filterGroup = new insGroup { igOffs = 4 };
             var handlerGroup = new insGroup { igOffs = 8 };

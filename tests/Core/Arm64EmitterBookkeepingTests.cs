@@ -53,7 +53,7 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         try
         {
             Globals.s_jitstdout = writer;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 #endif
             emitter.emitSetFrameRangeGCRs(-16, -8);
 #if DEBUG

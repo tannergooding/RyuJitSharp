@@ -357,7 +357,7 @@ internal static unsafe class ProfileCountTests
         try
         {
             s_jitstdout = writer;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             action();
             writer.Flush();
         }

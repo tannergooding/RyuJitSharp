@@ -50,7 +50,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
                 Assert.That(end.igOffs, Is.EqualTo(backward ? 6u : 5u));
 
                 View.Total(emitter) = unchecked((int)end.igOffs);
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 compiler.opts.disDiffable = true;
 
                 var text = Capture(emitter.emitJumpDistBind);

@@ -99,7 +99,7 @@ internal static class LinearScanLocalResolutionDriverTests
     {
         WithDriver((compiler, allocator, block, interval) =>
         {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaTable[0].lvIsRegArg = true;
             var parameter = new RefPosition(0, 0, null, RefType.RefTypeParamDef)
@@ -308,7 +308,7 @@ internal static class LinearScanLocalResolutionDriverTests
             }
             move._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
             allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE).bbNum = (uint)block.bbNum;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() =>
             {
@@ -354,7 +354,7 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(allocator.getOutVarToRegMap((uint)resolution.bbNum),
                 Is.SameAs(outgoing));
             allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE).bbNum = (uint)entry.bbNum;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() => VerifyFinalWithLocals(allocator));
 

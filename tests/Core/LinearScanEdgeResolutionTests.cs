@@ -278,7 +278,7 @@ internal static class LinearScanEdgeResolutionTests
     {
         WithEdge(1, (compiler, allocator, source, target, _) =>
         {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             MapInterval(compiler, allocator, 0).isSplit = true;
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
             allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);

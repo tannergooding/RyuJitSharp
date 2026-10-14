@@ -197,7 +197,7 @@ internal static unsafe class PhaseInvariantTests
                 TreeId(second) = first.TreeId;
             }
 
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(() => compiler.fgDebugCheckNodesUniqueness(), duplicate ? Throws.Exception : Throws.Nothing));
             Assert.That(output, Is.EqualTo(duplicate

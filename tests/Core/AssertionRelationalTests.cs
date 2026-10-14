@@ -382,7 +382,7 @@ internal static unsafe class AssertionRelationalTests
             {
                 Globals.s_jitstdout = writer;
                 compiler.compCurBB = new BasicBlock(null, null);
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 _ = compiler.optAssertionProp_RelOp(assertions, relop, statement,
                     compiler.compCurBB);
             }

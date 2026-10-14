@@ -73,7 +73,7 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
                 compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
                 compiler.compLclFrameSize = 23;
                 compiler.lvaTable[0].StackOffset = -123;
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 var invalidState = (Compiler.FrameLayoutState)((int)Compiler.FINAL_FRAME_LAYOUT + 1);
 
                 var text = CodeGenLifeTransitionTests.Capture(() =>
@@ -142,7 +142,7 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
             compiler.info.compPatchpointInfo = patchpoint;
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = true;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(compiler.lvaAssignVirtualFrameOffsetsToLocals);
             var offset = -48 + fieldOffset;

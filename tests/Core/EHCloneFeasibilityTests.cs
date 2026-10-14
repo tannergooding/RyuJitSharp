@@ -230,7 +230,7 @@ internal static class EHCloneFeasibilityTests
                 },
             ];
             compiler.compHndBBtabCount = 3;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var info = new CloneTryInfo(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() =>

@@ -950,7 +950,7 @@ internal static unsafe class LocalMorphTests
 
             var status = PhaseStatus.MODIFIED_NOTHING;
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = InstructionRecordingTestSupport.Capture(() => status = compiler.fgRetypeImplicitByRefArgs());
             var diagnostic = $"Changing the lvType for struct parameter V00 to {TYP_LONG.Name}.";
             Assert.That(output, implicitByRef ? Does.Contain(diagnostic) : Does.Not.Contain("Changing the lvType"));

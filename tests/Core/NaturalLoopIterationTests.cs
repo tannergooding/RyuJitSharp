@@ -58,7 +58,7 @@ internal static unsafe class NaturalLoopIterationTests
                 compiler.fgFirstBB!.LastStmt!.RootNode.AsUnOp().Op1.Flags |= GTF_UNSIGNED;
                 latch.LastStmt!.RootNode.AsUnOp().Op1.Flags |= GTF_UNSIGNED;
             }
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() => Assert.That(loop.AnalyzeIteration(out _), Is.False));
             var prefix = unsigned ? "(uns) " : "";

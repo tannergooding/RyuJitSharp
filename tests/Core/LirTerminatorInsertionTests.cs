@@ -102,9 +102,7 @@ internal static class LirTerminatorInsertionTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, _) =>
         {
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
             var node = compiler.gtNewIconNode(TYP_INT, 0);
             node.IsUnusedValue = unused;
             node.IsRegOptional = optional;

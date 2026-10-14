@@ -44,7 +44,7 @@ internal static unsafe class CompilerFinalFrameLayoutTests
                     lvOnFrame = true,
                 },
             ];
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(compiler.lvaAssignFrameOffsetsToPromotedStructs);
 

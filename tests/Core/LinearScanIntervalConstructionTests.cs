@@ -191,9 +191,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             var ret = new GenTreeUnOp(GT_RETURN, type, value);
             block.InsertAtEnd(value);
             block.InsertAtEnd(ret);
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
 
             _ = allocator.DoRegisterAllocation();
 
@@ -387,7 +385,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             SetOps.AddElemD(compiler, block.bbLiveIn, 1);
             SetOps.AddElemD(compiler, block.bbLiveOut, 2);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() => BuildIntervals(allocator));
 
@@ -408,7 +406,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             compiler.compAllowStress = true;
             compiler.info.compMethodName = nameof(MinimalIntervalsActivateInitialParameterStressWithoutCandidateParameters);
             compiler.info.compFullName = nameof(LinearScanIntervalConstructionTests);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             _ = CreateBlocks(compiler, BBJ_RETURN);
 
             var savedNames = StressNames(ref JitConfig);

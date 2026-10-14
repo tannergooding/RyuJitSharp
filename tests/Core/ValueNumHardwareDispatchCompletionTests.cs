@@ -408,7 +408,7 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
                 Operand(store, TYP_SIMD16, false), Operand(store, TYP_SIMD16, false));
             var type = store.VNForSimdType(16, TYP_INT);
             var expected = Capture(() => compiler.vnPrint(type, 1));
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var actual = Capture(() => compiler.fgValueNumberHWIntrinsic(tree));
 
             Assert.That(actual, Is.EqualTo($"    simdTypeVN is {expected}\n"));

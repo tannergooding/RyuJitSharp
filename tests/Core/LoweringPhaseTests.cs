@@ -122,7 +122,7 @@ internal static unsafe class LoweringPhaseTests
             Assert.That(compiler.fgLocalVarLivenessDone, Is.False);
 
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
             Assert.That(Occurrences(output, "had to run another liveness pass:"), Is.EqualTo(1));

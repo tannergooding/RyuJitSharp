@@ -597,7 +597,7 @@ internal static unsafe class LivenessUseDefTests
             Append(compiler, block, new GenTreeLclVar(TYP_INT, 0));
             Append(compiler, block, compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null));
             var liveness = Prepare<LirPolicy>(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = Capture(liveness.PerBlockLocalVarLiveness);
 

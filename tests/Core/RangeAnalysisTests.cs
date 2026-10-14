@@ -59,7 +59,7 @@ internal static unsafe class RangeAnalysisTests
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
             var previous = Globals.s_jitstdout;
             Globals.s_jitstdout = writer;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             try
             {
@@ -89,7 +89,7 @@ internal static unsafe class RangeAnalysisTests
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
             var previous = Globals.s_jitstdout;
             Globals.s_jitstdout = writer;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             try
             {
@@ -135,7 +135,7 @@ internal static unsafe class RangeAnalysisTests
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
             var previous = Globals.s_jitstdout;
             Globals.s_jitstdout = writer;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             try
             {

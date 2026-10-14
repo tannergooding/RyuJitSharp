@@ -159,7 +159,7 @@ internal static unsafe class CSEHeuristicModesTests
             {
                 ReplayConfig(ref JitConfig) = configuration;
                 var heuristic = new RecordingReplay(compiler);
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 var output = CodeGenLifeTransitionTests.Capture(heuristic.ConsiderCandidates);
 
                 Assert.That(Attempt(compiler), Is.EqualTo(3));
@@ -182,7 +182,7 @@ internal static unsafe class CSEHeuristicModesTests
             {
                 ReplayConfig(ref JitConfig) = configuration;
                 var heuristic = new RecordingReplay(compiler);
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 var output = CodeGenLifeTransitionTests.Capture(heuristic.ConsiderCandidates);
 
                 Assert.That(heuristic.Performed, Is.EqualTo([1]));
@@ -202,7 +202,7 @@ internal static unsafe class CSEHeuristicModesTests
             fixed (byte* configuration = bytes)
             {
                 ReplayConfig(ref JitConfig) = configuration;
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 var random = new RecordingRandom(compiler);
                 var replay = new RecordingReplay(compiler);
 

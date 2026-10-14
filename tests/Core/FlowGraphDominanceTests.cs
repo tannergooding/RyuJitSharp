@@ -287,7 +287,7 @@ internal static unsafe class FlowGraphDominanceTests
         {
             _ = CreateGraph(compiler, [[1, 2], [3], [3], []]);
             var dfs = compiler.fgComputeDfs();
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var text = CodeGenLifeTransitionTests.Capture(() =>
             {
                 var tree = FlowGraphDominatorTree.Build(dfs);

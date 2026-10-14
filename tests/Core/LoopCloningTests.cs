@@ -101,7 +101,7 @@ internal static unsafe class LoopCloningTests
             AddCountedLatch(compiler, latch, 4);
             compiler._loops = FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(compiler.optCloneLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
             Assert.That(output, Does.Contain("*************** In optCloneLoops()"));
@@ -223,7 +223,7 @@ internal static unsafe class LoopCloningTests
             AddCountedLatch(compiler, latch, 4);
             compiler.optMethodFlags |= OMF_HAS_ARRAYREF;
             compiler._loops = FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var context = new LoopCloneContext(compiler._loops.NumLoops);
             var loop = compiler._loops.GetLoopByIndex(0);
 
@@ -298,7 +298,7 @@ internal static unsafe class LoopCloningTests
             var loop = compiler._loops.GetLoopByIndex(0);
             Assert.That(context.GetLoopOptInfo(loop.Index), Has.Count.EqualTo(1));
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected)));
             if (!expected)

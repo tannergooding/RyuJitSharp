@@ -305,7 +305,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
             var epoch = compiler.CurLVEpoch;
             var phase = compiler.mostRecentlyActivePhase;
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = Capture(Act);
             Assert.That(output, Is.Empty);
 #else
@@ -367,7 +367,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
             compiler.info.compLvFrameListRoot = 0;
             var block = Blocks(compiler, 1)[0];
             SetDfs(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = Capture(new Liveness<PostLowerPolicy>(compiler).RunLIR);
 
@@ -384,7 +384,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
     {
         WithCompiler(2, false, compiler => {
             _ = DeadChain(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var text = Capture(new Liveness<PostLowerPolicy>(compiler).RunLIR);
             Assert.That(Occurrences(text, "In Liveness::Run()"), Is.EqualTo(1));
             Assert.That(Occurrences(text, "Initial local variable assignments"), Is.EqualTo(1));

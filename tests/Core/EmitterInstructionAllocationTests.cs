@@ -240,7 +240,7 @@ internal static unsafe class EmitterInstructionAllocationTests
         var emitter = CreateEmitter(out var compiler);
         var block = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
         block.bbNum = 1;
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
 
         var output = CodeGenLifeTransitionTests.Capture(() => _ = Allocate(emitter, EA_1BYTE));
 

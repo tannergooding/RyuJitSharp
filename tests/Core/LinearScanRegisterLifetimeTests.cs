@@ -288,7 +288,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
             var immediate = allocator.newRefPosition(immediateInterval, 20, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             immediate.lastUse = true;
             immediateInterval.recentRefPosition = immediate;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var verboseOutput = Capture(() => {
                 var registersToFree = new regMaskTP(SRBM_NONE);

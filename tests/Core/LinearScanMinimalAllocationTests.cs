@@ -117,7 +117,7 @@ internal static unsafe class LinearScanMinimalAllocationTests
     public static void SpillingEmitsNativeAllocationEventText()
     {
         WithAllocator((compiler, allocator) => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);

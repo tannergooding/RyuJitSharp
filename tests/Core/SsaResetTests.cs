@@ -119,7 +119,7 @@ internal static class SsaResetTests
             compiler.fgStmtRemoved = false;
 
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var text = CodeGenLifeTransitionTests.Capture(() => compiler.fgResetForSsa(deepClean));
 #else
             compiler.fgResetForSsa(deepClean);

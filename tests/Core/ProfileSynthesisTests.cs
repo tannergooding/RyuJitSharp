@@ -920,7 +920,7 @@ internal static unsafe class ProfileSynthesisTests
         try
         {
             s_jitstdout = writer;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             action();
             writer.Flush();
         }

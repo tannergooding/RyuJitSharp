@@ -41,7 +41,7 @@ internal static unsafe class SsaLivenessTests
             _ = AddStatement(compiler, last, Store(compiler, 1, new GenTreeLclVar(TYP_INT, 0)));
             SetDfs(compiler);
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
             Assert.That(Occurrences(text, "In Liveness::PerBlockLocalVarLiveness()"), Is.EqualTo(2));
             Assert.That(Occurrences(text, "IngInterBlockLocalVarLiveness()"), Is.EqualTo(2));
@@ -50,7 +50,7 @@ internal static unsafe class SsaLivenessTests
             Assert.That(text, Does.Not.Contain("fgComputeLife modified tree:"));
 #else
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
             Assert.That(Ordered(text, "Dead store has side effects...", "top level store",
                 "Extracted side effects list...", "fgComputeLife modified tree:"), Is.True);
@@ -101,9 +101,7 @@ internal static unsafe class SsaLivenessTests
             store.AssertionInfo = new AssertionInfo(1);
             store._vnPair.SetBoth(73);
             var treeId = TestConfiguration.IsDebug ? store.TreeId : 0;
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
             SetDfs(compiler);
 
 #if DEBUG

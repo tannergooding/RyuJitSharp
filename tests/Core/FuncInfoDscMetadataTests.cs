@@ -282,7 +282,7 @@ internal static class FuncInfoDscMetadataTests
     {
         var compiler = NewCompilerWithDescriptors();
         compiler.compFuncInfos[1].funKind = FuncKind.FUNC_HANDLER;
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
         ICorJitInfo jitInfo = default;
         using var tls = new JitTls(&jitInfo);
         JitTls.Compiler = compiler;

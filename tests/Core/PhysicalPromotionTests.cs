@@ -934,9 +934,7 @@ internal static class PhysicalPromotionTests
                 }
             }
 
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
             compiler._dfsTree = compiler.fgComputeDfs();
             var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
 #if DEBUG

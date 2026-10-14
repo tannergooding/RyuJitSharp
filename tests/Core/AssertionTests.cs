@@ -1523,7 +1523,7 @@ internal static unsafe class AssertionTests
             try
             {
                 s_jitstdout = writer;
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 vn = store.VNForFieldSeq(null);
                 writer.Flush();
             }

@@ -369,7 +369,7 @@ internal static class CodeGenComparisonTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.canUseAllOpts = true;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var value = Register(compiler, TYP_INT, REG_RAX);
             var zero = compiler.gtNewIconNode(TYP_INT, 0);
             zero.IsContained = true;

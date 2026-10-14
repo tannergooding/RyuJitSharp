@@ -17,7 +17,7 @@ internal static class SsaVerificationTests
     public static void InvalidSsaDoesNotRequireADfsTree()
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             Assert.That(CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckSsa), Is.Empty);
         });
@@ -337,7 +337,7 @@ internal static class SsaVerificationTests
         compiler._dfsTree = compiler.fgComputeDfs();
         compiler.fgSsaPassesCompleted = 1;
         compiler.fgSsaValid = true;
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
     }
 
     private static Statement AddStatement(Compiler compiler, BasicBlock block, GenTree root)

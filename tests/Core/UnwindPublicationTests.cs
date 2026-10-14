@@ -198,7 +198,7 @@ internal static unsafe class UnwindPublicationTests
         {
             compiler.opts.dspDiffable = diffable;
             compiler.unwindReserve();
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(
                 () => compiler.unwindEmit(context->HotCode, context->ColdCode));

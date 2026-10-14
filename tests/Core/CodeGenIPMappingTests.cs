@@ -95,7 +95,7 @@ internal static class CodeGenIPMappingTests
     {
         WithMappings((compiler, codeGen) =>
         {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var di = Info(4, ICorDebugInfo.STACK_EMPTY | ICorDebugInfo.CALL_INSTRUCTION | ICorDebugInfo.ASYNC);
             var group = codeGen.Emitter.emitCurIG;
             assert(group is not null);

@@ -239,7 +239,7 @@ internal static unsafe class CSEHeuristicDiagnosticTests
         compiler.opts.compCodeOpt = Compiler.BLENDED_CODE;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
         JitTls.Compiler = compiler;
         try
         {

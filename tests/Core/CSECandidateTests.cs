@@ -113,7 +113,7 @@ internal static unsafe class CSECandidateTests
     {
         WithCompiler(compiler => {
             ConstantMode(ref Globals.JitConfig) = shared ? Globals.CONST_CSE_ENABLE_ALL : Globals.CONST_CSE_DISABLE_ALL;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBJ_RETURN);
             compiler.vnStore = new ValueNumStore(compiler);
             var vn = compiler.vnStore.VNForIntCon(0x12345678);
@@ -245,7 +245,7 @@ internal static unsafe class CSECandidateTests
         AvailabilityScenario scenario, string message)
     {
         WithCompiler(compiler => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.fgNodeThreading = NodeThreading.AllTrees;
             var block = BasicBlock.New(compiler, BBJ_RETURN);
             compiler.fgFirstBB = block;

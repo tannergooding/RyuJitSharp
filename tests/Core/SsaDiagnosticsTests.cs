@@ -63,7 +63,7 @@ internal static class SsaDiagnosticsTests
             var label = normalize ? TestLabel.TL_VNNorm : TestLabel.TL_VN;
             compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = label, _num = 10 });
             compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = label, _num = normalize ? 10 : 11 });
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckVN);
 
@@ -119,7 +119,7 @@ internal static class SsaDiagnosticsTests
             compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
             compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
             compiler.NodeTestData.Add(third, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 10 });
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckSSA);
 
@@ -139,7 +139,7 @@ internal static class SsaDiagnosticsTests
             var second = AddLocal(compiler, 1, 4);
             compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 7 });
             compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = wideLabel });
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckSSA);
 

@@ -202,7 +202,7 @@ internal static unsafe class RegisterTrackingTests
     public static void GcRegisterDiagnosticsPreserveTransitionsAndForcedUnchangedOutput()
     {
         WithCompiler(minOpts: true, (compiler, codeGen) => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
             var previous = s_jitstdout;

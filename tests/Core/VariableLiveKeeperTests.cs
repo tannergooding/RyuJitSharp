@@ -333,7 +333,7 @@ internal static unsafe class VariableLiveKeeperTests
         WithCompiler((compiler, codeGen) =>
         {
             EmitInstruction(codeGen.Emitter, 1);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var keeper = codeGen.getVariableLiveKeeper();
             var output = Capture(() =>
             {

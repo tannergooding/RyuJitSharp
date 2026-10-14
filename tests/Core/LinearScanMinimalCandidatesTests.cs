@@ -130,7 +130,7 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             AddTrackedVar(finallyReturn.bbLiveOut, 1);
 
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = Capture(() => IdentifyCandidatesMinimal(allocator));
 #else
             IdentifyCandidatesMinimal(allocator);

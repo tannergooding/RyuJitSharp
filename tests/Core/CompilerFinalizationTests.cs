@@ -58,7 +58,7 @@ internal static unsafe class CompilerFinalizationTests
     public static void PublicFinalizationEmitsCompletionMarker()
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.info.compFullName = "Finalization";
             compiler._inlineStrategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
 
@@ -83,7 +83,7 @@ internal static unsafe class CompilerFinalizationTests
                     File.WriteAllText(path, "existing\n");
                 }
 
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 compiler.info.compMethodInfo->ILCodeSize = 10;
                 InlineXml(ref JitConfig) = 1;
                 fixed (byte* file = Encoding.UTF8.GetBytes(path + "\0"))
@@ -121,7 +121,7 @@ internal static unsafe class CompilerFinalizationTests
     public static void VerboseCompletionUsesNativeMetricFormatting(double score, string expected)
     {
         WithCompiler(compiler => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.Metrics.PerfScore = score;
             var before = Compiler.genMethodCnt;
 

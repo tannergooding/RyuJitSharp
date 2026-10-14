@@ -295,7 +295,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
                 interval, 2, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
             _ = allocator.newRefPosition(
                 interval, 4, RefType.RefTypeUse, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => AllocateRegistersMinimal(allocator));
             var intervals = output.IndexOf("Linear scan intervals before allocateRegistersMinimal:", StringComparison.Ordinal);
@@ -327,7 +327,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
                 interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             _ = allocator.newRefPosition(
                 interval, 4, RefType.RefTypeUse, tree, SRBM_X64_RAX | SRBM_X64_RBX);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => AllocateRegistersMinimal(allocator));
 
@@ -351,7 +351,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             tree.IsReuseRegVal = true;
             _ = allocator.newRefPosition(
                 interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => AllocateRegistersMinimal(allocator));
 
@@ -386,7 +386,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
                 secondInterval, 12, RefType.RefTypeUse, secondTree, SRBM_X64_RBX);
 
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = Capture(() => AllocateRegistersMinimal(allocator));
             var lines = output.Split(Environment.NewLine);
             var blockRow = Array.FindIndex(lines, line =>

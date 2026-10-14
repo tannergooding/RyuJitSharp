@@ -255,7 +255,7 @@ internal static unsafe class RedundantZeroInitTests
             AddStatement(compiler, block,
                 compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 7)));
             SetDfs(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(compiler.optRemoveRedundantZeroInits);
 

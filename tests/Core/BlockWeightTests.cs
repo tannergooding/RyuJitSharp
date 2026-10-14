@@ -219,7 +219,7 @@ internal static unsafe class BlockWeightTests
         WithCompiler(compiler => {
             var blocks = CreateGraph(compiler, [[1], [], []]);
             var dfs = compiler.fgComputeDfs();
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() => {
                 _ = BlockReachabilitySets.Build(dfs);

@@ -29,7 +29,7 @@ internal static unsafe class LinearScanAllocationEventTests
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RBX);
             _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             UpdateNextFixedReference(allocator, regNumber.REG_X64_RAX);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => {
                 var selected = allocator.selectMinimal(interval, definition);

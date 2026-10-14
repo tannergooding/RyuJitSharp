@@ -630,7 +630,7 @@ internal static unsafe class LivenessBackwardLIRTests
             node.IsUnusedValue = true;
             var block = Block(node);
             var liveness = Prepare<Dce>(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var expected = Capture(() => {
                 jitprintf("Removing dead node:\n");
                 compiler.gtDispTree(node, topOnly: true);

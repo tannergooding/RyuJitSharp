@@ -78,7 +78,7 @@ internal static unsafe class LinearScanFinalVerificationTests
             var use = AddReference(allocator, RefType.RefTypeUse, 4, interval, SRBM_X64_RBX);
             use.reload = true;
             use.lastUse = true;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => VerifyFinalAllocation(allocator));
 
@@ -102,7 +102,7 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             _ = AddReference(allocator, RefType.RefTypeBB, 10);
             MaxNodeLocation(allocator) = 8;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => VerifyFinalAllocation(allocator));
 
@@ -196,7 +196,7 @@ internal static unsafe class LinearScanFinalVerificationTests
             var special = NewInterval(allocator);
             special.isSpecialPutArg = true;
             _ = AddReference(allocator, RefType.RefTypeUse, 6, special, SRBM_X64_R15);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => VerifyFinalAllocation(allocator));
 

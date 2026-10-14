@@ -204,7 +204,7 @@ internal static class IRVerificationTests
             compiler._dfsTree = compiler.fgComputeDfs();
             compiler.fgSsaPassesCompleted = 1;
             compiler.fgSsaValid = true;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckLinks);
             Assert.That(output, Does.Contain($"SSA checks completed successfully{Environment.NewLine}"));

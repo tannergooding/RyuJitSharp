@@ -151,7 +151,7 @@ internal static unsafe class CallFoldingTests
     {
         WithCompiler("Type", "Other", (compiler, call) =>
         {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             call._callType = gtCallTypes.CT_INDIRECT;
             call._controlExpr = compiler.gtNewHelperCallNode(TYP_I_IMPL, helper);
             var output = CodeGenLifeTransitionTests.Capture(() =>

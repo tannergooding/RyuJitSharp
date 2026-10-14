@@ -299,7 +299,7 @@ internal static class EmitterJumpRemovalTests
             var successor = emitter.emitAddInlineLabel();
             target.bbEmitCookie = successor;
             TotalSize(emitter) = 5;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => emitter.emitRemoveJumpToNextInst());
 
@@ -358,7 +358,7 @@ internal static class EmitterJumpRemovalTests
             target.bbEmitCookie = successor;
             source.igFlags &= ~InsGroupFlags.HasRemovableJump;
             TotalSize(emitter) = 5;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(emitter.emitRemoveJumpToNextInst);
 

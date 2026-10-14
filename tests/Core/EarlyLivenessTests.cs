@@ -190,7 +190,7 @@ internal static unsafe class EarlyLivenessTests
             _ = AddStatement(compiler, first, Store(compiler, 0, compiler.gtNewIconNode(TYP_INT, 1)));
             _ = AddStatement(compiler, last, Store(compiler, 1, new GenTreeLclVar(TYP_INT, 0)));
             SetDfs(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() => compiler.fgEarlyLiveness());
 

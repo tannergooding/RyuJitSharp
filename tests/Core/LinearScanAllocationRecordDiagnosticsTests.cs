@@ -529,7 +529,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             var allocator = CreateAllocator(compiler, 1, 1, 1);
             _ = Capture(() => DumpHeader(allocator));
             FormatInitialized(allocator) = true;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var interval = allocator.intervals[0];
             var reference = interval.firstRefPosition
                 ?? throw new AssertionException("Missing fixture reference.");

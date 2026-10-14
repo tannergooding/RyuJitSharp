@@ -119,7 +119,7 @@ internal static unsafe class CodeGenSharedScopePublicationTests
         WithPublication((compiler, _, context) =>
         {
             context->ReturnNullAllocation = true;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = Capture(() => compiler.eeAllocateLVs(capacity));
             compiler.verbose = false;
             compiler.eeSetLVdone();

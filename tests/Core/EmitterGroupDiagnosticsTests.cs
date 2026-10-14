@@ -67,7 +67,7 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = 7;
         compiler.compCodeGenDone = true;
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
         compiler.lvaCount = 9;
         compiler.lvaTrackedCount = 3;
         compiler.lvaTrackedCountInSizeTUnits = 1;
@@ -207,7 +207,7 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     public static void GroupListMarksOnlyFuncletTransitions()
     {
         var emitter = CreateEmitter(out var compiler);
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
         var first = new insGroup { igFuncIdx = 0, igWeight = 100 };
         var second = new insGroup { igFuncIdx = 0, igWeight = 100 };
         var third = new insGroup { igFuncIdx = 1, igWeight = 100 };

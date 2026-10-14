@@ -28,4 +28,20 @@ internal static class TestConfiguration
         compiler.fgSafeFlowEdgeCreation = true;
 #endif
     }
+
+    public static void EnableVerbose(Compiler compiler)
+    {
+#if DEBUG
+        compiler.verbose = true;
+#endif
+    }
+
+    public static string CaptureDebugOutput(Action action)
+    {
+#if DEBUG
+        return CodeGenLifeTransitionTests.Capture(action);
+#else
+        throw new InvalidOperationException("Debug output capture is only available in Debug builds.");
+#endif
+    }
 }

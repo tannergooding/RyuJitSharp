@@ -66,7 +66,7 @@ internal static unsafe class LoopHoistingTests
             compiler.fgLastBB = entry;
             compiler._loops = FlowGraphNaturalLoops.Find(compiler.fgComputeDfs(false));
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING)));
             Assert.That(output, Does.Contain("No loops; no hoisting"));
@@ -145,15 +145,18 @@ internal static unsafe class LoopHoistingTests
         WithLoop((compiler, preheader, header, unusedLatch) => {
             var tree = AddInvariantCandidate(compiler, header);
 
-#if DEBUG
-            compiler.verbose = true;
-            var status = PhaseStatus.MODIFIED_NOTHING;
-            var output = CodeGenLifeTransitionTests.Capture(() => status = Hoist(compiler));
-            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING), output);
-            Assert.That(output, Does.Contain($"PostOrderVisit for [{tree.TreeId:D6}] MUL"));
-#else
-            Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var status = PhaseStatus.MODIFIED_NOTHING;
+                var output = TestConfiguration.CaptureDebugOutput(() => status = Hoist(compiler));
+                Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING), output);
+                Assert.That(output, Does.Contain($"PostOrderVisit for [{tree.TreeId:D6}] MUL"));
+            }
+            else
+            {
+                Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            }
             Assert.That(compiler.Metrics.HoistedExpressions, Is.EqualTo(1));
             Assert.That(preheader.FirstStmt!.RootNode.AsOp().Op1.Flags & GTF_MAKE_CSE,
                 Is.EqualTo(GTF_MAKE_CSE));
@@ -271,7 +274,7 @@ internal static unsafe class LoopHoistingTests
             var first = AddInvariantCandidate(compiler, header);
             var duplicate = compiler.gtCloneExpr(first)!;
             compiler.fgInsertStmtAtEnd(header, compiler.fgNewStmtFromTree(duplicate));
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var status = PhaseStatus.MODIFIED_NOTHING;
             var output = CodeGenLifeTransitionTests.Capture(() => status = Hoist(compiler));
@@ -299,7 +302,7 @@ internal static unsafe class LoopHoistingTests
             {
                 HoistLimit(ref JitConfig) = 0;
             }
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var status = PhaseStatus.MODIFIED_EVERYTHING;
             var output = CodeGenLifeTransitionTests.Capture(() => status = Hoist(compiler));
 

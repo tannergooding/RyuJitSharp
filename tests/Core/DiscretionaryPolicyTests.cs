@@ -220,7 +220,7 @@ internal static class DiscretionaryPolicyTests
     public static void BenefitMultiplierDiagnosticUsesNativeGeneralPrecision()
     {
         var compiler = CreateCompiler();
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
         JitTls.Compiler = compiler;
         var policy = new FixedMultiplierPolicy(compiler, 7.02392578125);
         Prepare(policy, 1000, InlineCallsiteFrequency.BORING);

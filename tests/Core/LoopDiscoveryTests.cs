@@ -24,7 +24,7 @@ internal static unsafe class LoopDiscoveryTests
             blocks[1].SetFlags(BBF_PROF_WEIGHT);
 
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var text = CodeGenLifeTransitionTests.Capture(() => ResetLoopInfo(compiler));
             Assert.That(text, Is.EqualTo($"*************** In optResetLoopInfo(){Environment.NewLine}"));
 #else

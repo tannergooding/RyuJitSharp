@@ -130,7 +130,7 @@ internal static class CodeGenLifeTransitionTests
         {
             compiler.lvaTrackedCount = 0;
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => compiler.compUpdateLife(VarSetOps.MakeEmpty(compiler), forCodeGen: false));
 
@@ -148,7 +148,7 @@ internal static class CodeGenLifeTransitionTests
             compiler.lvaTable[0].RegNum = REG_RAX;
             compiler.lvaTable[1].RegNum = REG_RAX;
             codeGen.genUpdateLife(Set(compiler, 1));
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var output = Capture(() =>
             {
                 codeGen.genUpdateLife(Set(compiler, 0));

@@ -54,7 +54,7 @@ internal static unsafe class OptimizedStoreLoweringTests
             var lowering = new Lowering(compiler, new LinearScan(compiler));
             LoweringBlock(lowering) = block;
 #if DEBUG
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             _ = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(LowerNode(lowering, original), Is.SameAs(successor)));
 #else

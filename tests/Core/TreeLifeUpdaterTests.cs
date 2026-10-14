@@ -273,7 +273,7 @@ internal static unsafe class TreeLifeUpdaterTests
         {
             var tree = compiler.gtNewLclvNode(TYP_REF, 0);
             tree.Flags |= GTF_VAR_DEF;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             compiler.opts.compDbgInfo = false;
             var updater = new TreeLifeUpdater(compiler, forCodeGen: true);
             using var stream = new MemoryStream();

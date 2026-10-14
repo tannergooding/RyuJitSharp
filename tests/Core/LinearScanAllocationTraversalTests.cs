@@ -272,7 +272,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
             var tree = compiler.gtNewIconNode(TYP_INT, 3);
             _ = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             _ = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_X64_RAX);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => AllocateRegisters(allocator));
             var before = output.IndexOf("REFPOSITIONS BEFORE ALLOCATION", StringComparison.Ordinal);
@@ -306,7 +306,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
             interval.assignedReg = register;
             register.assignedInterval = interval;
             _ = allocator.newRefPosition(interval, 2, RefType.RefTypeExpUse, null, SRBM_R15);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => AllocateRegisters(allocator));
 
@@ -324,7 +324,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
             var interval = NewInterval(allocator, TYP_SIMD32);
             var save = allocator.newRefPosition(
                 interval, 2, RefType.RefTypeUpperVectorSave, null, SRBM_X64_XMM0);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => AllocateRegisters(allocator));
 

@@ -247,7 +247,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
             BlockInfo(allocator) = [new LsraBlockInfo { weight = 3 }];
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var text = Capture(() => {
                 _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);

@@ -277,7 +277,7 @@ internal static class EmitterLoopAlignmentAdjustmentTests
             header.igLoopBackEdge = header;
             var end = emitter.emitAddInlineLabel();
             TotalSize(emitter) = 48;
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(emitter.emitLoopAlignAdjustments);
 

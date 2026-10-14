@@ -64,7 +64,7 @@ internal static unsafe class EmitterCallGCOutputTests
             try
             {
                 Globals.s_jitstdout = output;
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 emitter.emitSimpleStkUsed = true;
                 emitter.emitCurStackLvl = -4;
 

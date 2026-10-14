@@ -148,7 +148,7 @@ internal static unsafe class LinearScanReferenceTests
     public static void RelatedIntervalsPreserveNativeDiagnosticText()
     {
         WithCompiler(compiler => {
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
             var local = new Interval(TYP_INT, SRBM_X64_RAX) { isLocalVar = true, varNum = 7, intervalIndex = 2 };
             var temporary = new Interval(TYP_INT, SRBM_X64_RBX) { isInternal = true, intervalIndex = 3 };
             using var stream = new MemoryStream();

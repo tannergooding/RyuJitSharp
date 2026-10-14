@@ -29,7 +29,7 @@ internal static unsafe class LinearScanReferenceBuildingTests
             var previous = s_jitstdout;
             try
             {
-                compiler.verbose = true;
+                TestConfiguration.EnableVerbose(compiler);
                 s_jitstdout = writer;
                 _ = NewInterval(allocator, TYP_INT);
                 writer.Flush();

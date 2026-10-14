@@ -60,9 +60,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
             allocator.setCurrentBlockStartLocation(0);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => ProcessKills(allocator, kill));
 
@@ -128,9 +126,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_X64_RAX | SRBM_X64_RBX);
             allocator.setCurrentBlockStartLocation(0);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => SpillGCRefs(allocator, kill));
 
@@ -161,9 +157,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             AssignPhysReg(allocator, register, interval);
             var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_X64_RBX);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => SpillGCRefs(allocator, kill));
 
@@ -219,9 +213,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             var primaryRegister = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             var copyRegister = allocator.physRegs[(int)regNumber.REG_X64_RBX];
             AssignPhysReg(allocator, primaryRegister, interval);
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => {
                 var result = AssignCopyRegMinimal(allocator, copyUse);
@@ -258,9 +250,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             allocator.physRegs[(int)regNumber.REG_X64_RBX].regOrder = 0;
             allocator.physRegs[(int)regNumber.REG_X64_RCX].regOrder = 1;
             AssignPhysReg(allocator, primaryRegister, interval);
-#if DEBUG
-            compiler.verbose = true;
-#endif
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => {
                 var result = AssignCopyRegMinimal(allocator, copyUse);

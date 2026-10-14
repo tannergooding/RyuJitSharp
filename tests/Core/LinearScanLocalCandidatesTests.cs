@@ -77,7 +77,7 @@ internal static class LinearScanLocalCandidatesTests
             compiler.lvaTable[1].Type = TYP_DOUBLE;
             compiler.lvaTable[0].setLvRefCntWtd(4 * BB_UNITY_WEIGHT);
             compiler.lvaTable[1].setLvRefCntWtd(BB_UNITY_WEIGHT);
-            compiler.verbose = true;
+            TestConfiguration.EnableVerbose(compiler);
 
             var output = CodeGenLifeTransitionTests.Capture(() => Identify(allocator));
 
