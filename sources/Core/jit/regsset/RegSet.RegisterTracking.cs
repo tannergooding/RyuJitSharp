@@ -129,11 +129,16 @@ public partial struct RegSet
         assert(mask != RBM_NONE);
 #if DEBUG
         assert(_rsModifiedRegsMaskInitialized);
-        assert((Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT) ||
-               _codeGen.Emitter.emitGeneratingPrologOrFuncletProlog() ||
-               _codeGen.Emitter.emitGeneratingEpilogOrFuncletEpilog() ||
-               ((_rsModifiedRegsMask & AllCalleeSavedMask) == ((_rsModifiedRegsMask | mask) & AllCalleeSavedMask)));
+#endif
+        if (Configuration.DEBUG)
+        {
+            assert((Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT) ||
+                   _codeGen.Emitter.emitGeneratingPrologOrFuncletProlog() ||
+                   _codeGen.Emitter.emitGeneratingEpilogOrFuncletEpilog() ||
+                   ((_rsModifiedRegsMask & AllCalleeSavedMask) == ((_rsModifiedRegsMask | mask) & AllCalleeSavedMask)));
+        }
 
+#if DEBUG
         if (Compiler.verbose && !suppressDump && (_rsModifiedRegsMask != (_rsModifiedRegsMask | mask)))
         {
             jitprintf("Marking regs modified: ");
@@ -157,12 +162,15 @@ public partial struct RegSet
 #endif
 
         var remaining = AndNot(_rsModifiedRegsMask, mask);
-#if DEBUG
-        assert((Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT) ||
-               _codeGen.Emitter.emitGeneratingPrologOrFuncletProlog() ||
-               _codeGen.Emitter.emitGeneratingEpilogOrFuncletEpilog() ||
-               ((remaining & AllCalleeSavedMask) == (_rsModifiedRegsMask & AllCalleeSavedMask)));
+        if (Configuration.DEBUG)
+        {
+            assert((Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT) ||
+                   _codeGen.Emitter.emitGeneratingPrologOrFuncletProlog() ||
+                   _codeGen.Emitter.emitGeneratingEpilogOrFuncletEpilog() ||
+                   ((remaining & AllCalleeSavedMask) == (_rsModifiedRegsMask & AllCalleeSavedMask)));
+        }
 
+#if DEBUG
         if (Compiler.verbose)
         {
             jitprintf("Removing modified regs: ");
