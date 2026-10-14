@@ -17,13 +17,13 @@ public partial class Compiler
             jitprintf("\nInitial BasicBlocks");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
+#if DEBUG
             fgDispBasicBlocks(verboseTrees);
+#endif
             jitprintf("\n");
         }
-#endif
 
         if (_dfsTree is null)
         {

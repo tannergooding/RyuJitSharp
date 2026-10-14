@@ -128,8 +128,7 @@ public partial class Compiler
             block.SetFlags(BBF_COLD);
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             if (firstColdBlock is not null)
             {
@@ -140,7 +139,7 @@ public partial class Compiler
                 jitprintf("fgFirstColdBlock is NULL.\n");
             }
         }
-#endif
+
         fgFirstColdBlock = firstColdBlock;
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
