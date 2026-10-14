@@ -146,10 +146,8 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                             assert(call.SingleInlineCandidateInfo is not null);
                             call.SingleInlineCandidateInfo.retExpr = retExpr;
 
-#if DEBUG
                             JITDUMP($"Creating new RET_EXPR for [{call.TreeId:D6}]:\n");
                             DISPTREE(retExpr);
-#endif
 
                             use = retExpr;
                         }

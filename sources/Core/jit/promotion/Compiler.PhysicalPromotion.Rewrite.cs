@@ -401,10 +401,8 @@ public partial class Compiler
             }
 
             var deaths = _liveness.GetDeathsForStructLocal(local);
-#if DEBUG
             JITDUMP($"Fields of [{local.TreeId:D6}] in range [{local.LclOffs:D3}.." +
                 $"{local.LclOffs + size:D3}) need to be read back: {reason}\n");
-#endif
             for (var index = first; index < end; index++)
             {
                 var replacement = aggregate.Replacements[index];
