@@ -190,8 +190,7 @@ public partial class Compiler
         noway_assert((lvaDoneFrameLayout < curState) || (curState == REGALLOC_FRAME_LAYOUT));
         lvaDoneFrameLayout = curState;
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             var stateName = curState switch
             {
@@ -209,7 +208,6 @@ public partial class Compiler
             }
             jitprintf("\n");
         }
-#endif
         if (Configuration.FEATURE_FIXED_OUT_ARGS)
         {
             assert(lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
@@ -256,12 +254,10 @@ public partial class Compiler
             assert(codeGen is not null);
             var prespilled = codeGen.RegSet.rsMaskPreSpillRegs(true);
             JITDUMP("Prespill regs is ");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 dspRegMask(prespilled);
             }
-#endif
             JITDUMP("\n");
             relativeZero = BitOperations.PopCount(unchecked((ulong)prespilled.IntRegSet)) *
                 Configuration.TARGET_POINTER_SIZE;
