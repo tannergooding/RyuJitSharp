@@ -473,7 +473,11 @@ public sealed partial class BasicBlock : LIR.Range
 #if DEBUG
     /// <summary>Native stack depth on entry (for throw-blocks)</summary>
     public int bbTgtStkDepth;
+#else
+    public int bbTgtStkDepth => 0;
+#endif
 
+#if DEBUG
     /// <summary>The max # of tree nodes in any BB</summary>
     public static int s_nMaxTrees;
 

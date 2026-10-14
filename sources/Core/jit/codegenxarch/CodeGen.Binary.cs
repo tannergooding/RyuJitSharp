@@ -165,8 +165,7 @@ public sealed partial class CodeGen
 
     public void inst_JMPXarch(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
     {
-#if DEBUG
-        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS)
         {
             if (Configuration.UNIX_X86_ABI)
             {
@@ -179,7 +178,6 @@ public sealed partial class CodeGen
                     IsFramePointerUsed);
             }
         }
-#endif
         Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target, false, isRemovableJmpCandidate);
     }
 }

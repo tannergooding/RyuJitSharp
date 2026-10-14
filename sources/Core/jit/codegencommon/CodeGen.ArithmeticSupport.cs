@@ -127,12 +127,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_ARMARCH || Configuration.TARGET_RISCV64)
         {
-#if DEBUG
-            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+            if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS)
             {
                 assert((target.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
             }
-#endif
 
             Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target);
             return;

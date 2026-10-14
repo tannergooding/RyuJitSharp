@@ -17,12 +17,10 @@ public sealed partial class CodeGen
 {
     public void inst_JMPLoongArch64(emitJumpKind jumpKind, BasicBlock targetBlock, bool isRemovableJmpCandidate)
     {
-#if DEBUG
-        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS)
         {
             assert((targetBlock.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
         }
-#endif
 
         Emitter.emitIns_J(Emitter.emitJumpKindToIns(jumpKind), targetBlock, 0);
     }

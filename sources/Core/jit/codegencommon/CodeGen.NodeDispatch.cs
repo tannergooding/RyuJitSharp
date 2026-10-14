@@ -404,13 +404,11 @@ public sealed partial class CodeGen
 
                 var block = currentBlock!;
                 var targetBlock = block.Kind is BBJ_COND ? block.TrueTarget : block.Target;
-#if DEBUG
-                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS)
                 {
                     assert((unchecked((uint)targetBlock.bbTgtStkDepth * sizeof(int)) == genStackLevel)
                         || IsFramePointerUsed);
                 }
-#endif
 
                 var jcc = tree.AsCC();
                 assert(jcc.Condition.Code is GenCondition.EQ or GenCondition.NE);

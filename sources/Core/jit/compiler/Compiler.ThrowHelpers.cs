@@ -25,9 +25,10 @@ public partial class Compiler
                 var validKind = add.acdKind is SCK_RNGCHK_FAIL or SCK_DIV_BY_ZERO or SCK_OVERFLOW or
                     SCK_ARG_EXCPN or SCK_ARG_RNG_EXCPN or SCK_FAIL_FAST;
                 assert(validKind);
-#if DEBUG
-                assert(block.bbTgtStkDepth == add.acdStkLvl);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(block.bbTgtStkDepth == add.acdStkLvl);
+                }
                 return unchecked((uint)add.acdStkLvl);
             }
         }
