@@ -59,15 +59,17 @@ public sealed partial class CodeGen
             codeSize, prologSize, epilogSize, ref header, ref cached);
         _compiler.compInfoBlkAddr = (byte*)((nuint)_compiler.compInfoBlkAddr + writtenHeaderSize);
 
-#if DEBUG
-        assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize));
+        }
         _compiler.compInfoBlkAddr = _gcInfo.gcPtrTableSave(_compiler.compInfoBlkAddr,
             header, codeSize, ref argTabOffset);
 
-#if DEBUG
-        assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize + ptrMapSize));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize + ptrMapSize));
+        }
 
 #if DUMP_GC_TABLES
         if (_compiler.opts.dspGCtbls)
