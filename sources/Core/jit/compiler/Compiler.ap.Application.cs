@@ -86,11 +86,11 @@ public partial class Compiler
         }
 #if DEBUG
         JITDUMP($"\nZEROOBJ Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
-        if (verbose)
+#endif
+        if (Configuration.DEBUG && verbose)
         {
             optPrintAssertion(assertion, index);
         }
-#endif
         DISPNODE(tree);
         tree = tree.BashToZeroConst(TYP_INT, fgNodeThreading);
         JITDUMP(" =>\n");

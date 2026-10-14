@@ -451,9 +451,7 @@ public partial class Compiler
             gtDispTree(optAssertionPropCurrentTree, topOnly: true);
 #endif
             jitprintf($"In {FMT_BB(compCurBB.bbNum)} New {(optLocalAssertionProp ? "Local" : "Global")} ");
-#if DEBUG
             optPrintAssertion(newAssertion, optAssertionCount);
-#endif
         }
         optCanPropLclVar |= newAssertion.CanPropLclVar;
         if (optLocalAssertionProp)
@@ -793,7 +791,13 @@ public partial class Compiler
 
         jitprintf("\n");
     }
+#else
+    public void optPrintAssertion(AssertionDsc assertion, AssertionIndex assertionIndex = 0)
+    {
+    }
+#endif
 
+#if DEBUG
     public static void optPrintAssertionIndex(AssertionIndex index)
     {
         jitprintf(index == NO_ASSERTION_INDEX ? "#NA" : $"#{index:D2}");
@@ -819,6 +823,14 @@ public partial class Compiler
             optPrintAssertionIndex(GetAssertionIndex((ushort)bitIndex));
             return true;
         });
+    }
+#else
+    public static void optPrintAssertionIndex(AssertionIndex index)
+    {
+    }
+
+    public void optPrintAssertionIndices(ASSERT_TP assertions)
+    {
     }
 #endif
 

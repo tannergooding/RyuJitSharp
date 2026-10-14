@@ -317,12 +317,10 @@ public sealed partial class RangeCheck
             }
 
             assert(limit.IsConstantOrBinOp);
-#if DEBUG
-            if (comp.verbose)
+            if (Configuration.DEBUG && comp.verbose)
             {
                 comp.optPrintAssertion(assertion, assertionIndex);
             }
-#endif
             if (limit.IsBinOpArray && store.IsVNInt32Constant(limit.VN))
             {
                 var simplified = new Limit(LimitType.Constant, store.ConstantValue<int>(limit.VN));

@@ -75,8 +75,7 @@ public partial class Compiler
 
             block.bbAssertionGen = valueGen;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 if (block == fgFirstBB)
                 {
@@ -97,7 +96,6 @@ public partial class Compiler
                     jitprintf("\n");
                 }
             }
-#endif
         }
 
         return jumpDestGen;

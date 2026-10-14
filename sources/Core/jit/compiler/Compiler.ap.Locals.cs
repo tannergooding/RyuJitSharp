@@ -98,10 +98,13 @@ public partial class Compiler
         {
             assert(compCurBB is not null);
             jitprintf($"\nCopy Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
+        }
+#endif
+        if (Configuration.DEBUG && verbose)
+        {
             optPrintAssertion(assertion, index);
             DISPNODE(tree);
         }
-#endif
         return optAssertionProp_Update(tree, tree, statement);
     }
 
@@ -227,10 +230,13 @@ public partial class Compiler
         {
             assert(compCurBB is not null);
             jitprintf($"\nConstant Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
+        }
+#endif
+        if (Configuration.DEBUG && verbose)
+        {
             optPrintAssertion(assertion, index);
             gtDispTree(replacement, topOnly: true);
         }
-#endif
         return optAssertionProp_Update(replacement, tree, statement);
     }
 
@@ -346,13 +352,11 @@ public partial class Compiler
                 value.IsIntegralConst(0) && (isStruct || varTypeIsGC(store.Type)))
             {
                 // Keep integral-local zero stores visible to loop-bound recognition.
-#if DEBUG
                 JITDUMP($"[{store.TreeId:D6}] is assigning a constant zero to a struct field or gc local that is already zero\n");
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     optPrintAssertion(assertion);
                 }
-#endif
                 store.BashToNOP();
                 return optAssertionProp_Update(store, store, statement);
             }

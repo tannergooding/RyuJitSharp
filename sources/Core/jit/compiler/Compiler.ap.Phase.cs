@@ -263,17 +263,18 @@ public partial class Compiler
 
                 for (var tree = statement.TreeListBegin; tree is not null; tree = tree.Next)
                 {
-#if DEBUG
-                    optDumpAssertionIndices("Propagating ", assertions, " ");
-                    JITDUMP($"for {FMT_BB(block.bbNum)}, stmt {FMT_STMT(statement.Id)}, tree [{tree.TreeId:D6}]");
-                    JITDUMP(", tree -> ");
-                    if (verbose)
+                    if (Configuration.DEBUG)
                     {
-                        optPrintAssertionIndex(tree.AssertionInfo.AssertionIndex);
-                    }
+                        optDumpAssertionIndices("Propagating ", assertions, " ");
+                        JITDUMP($"for {FMT_BB(block.bbNum)}, stmt {FMT_STMT(statement.Id)}, tree [{tree.TreeId:D6}]");
+                        JITDUMP(", tree -> ");
+                        if (verbose)
+                        {
+                            optPrintAssertionIndex(tree.AssertionInfo.AssertionIndex);
+                        }
 
-                    JITDUMP("\n");
-#endif
+                        JITDUMP("\n");
+                    }
                     var newTree = optAssertionProp(assertions, tree, statement, block);
                     if (newTree is not null)
                     {
