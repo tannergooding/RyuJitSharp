@@ -161,8 +161,7 @@ public partial class Compiler
                     });
                 }
 
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     var allVars = BitVecOps.Union(_traits, info.VarUse, info.VarDef);
                     jitprintf($"{FMT_BB(block.bbNum)} USE({BitVecOps.Count(_traits, info.VarUse)})=");
@@ -171,7 +170,6 @@ public partial class Compiler
                     DumpVarSet(info.VarDef, allVars);
                     jitprintf("\n\n");
                 }
-#endif
             }
         }
 
@@ -289,8 +287,7 @@ public partial class Compiler
             }
             while (changed && dfs.HasCycle);
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 foreach (var block in _compiler.Blocks)
                 {
@@ -303,7 +300,6 @@ public partial class Compiler
                     jitprintf("\n\n");
                 }
             }
-#endif
         }
 
         private bool PerBlockLiveness(BasicBlock block)
@@ -483,7 +479,6 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         private void DumpVarSet(BitVec set, BitVec allVars)
         {
             jitprintf("{");
@@ -515,9 +510,7 @@ public partial class Compiler
                     }
                 }
             }
-
             jitprintf("}");
         }
-#endif
     }
 }
