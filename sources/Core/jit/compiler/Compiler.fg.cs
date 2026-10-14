@@ -11313,15 +11313,13 @@ public partial class Compiler
         noway_assert(!optValnumCSE_phase);
         fgStmtRemoved = true;
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             if (block.FirstStmt is null)
             {
                 jitprintf($"\n{FMT_BB(block.bbNum)} becomes empty\n");
             }
         }
-#endif
     }
 
     /// <summary>update BBJ_EHFINALLYRET block so that all control that previously flowed to oldSucc now flows to newSucc.</summary>
@@ -12567,10 +12565,14 @@ public partial class Compiler
             eh.ebdHandlerType = EH_HANDLER_FILTER;
             eh.ebdFilter = filterBb;
 
+            if (Configuration.DEBUG && verbose)
+            {
+                JITDUMP($"EH{ehNum}: Adding EH filter block {FMT_BB(filterBb.bbNum)} in front of generic handler {FMT_BB(handlerBb.bbNum)}:\n");
+            }
+
 #if DEBUG
             if (verbose)
             {
-                JITDUMP($"EH{ehNum}: Adding EH filter block {FMT_BB(filterBb.bbNum)} in front of generic handler {FMT_BB(handlerBb.bbNum)}:\n");
                 fgDumpBlock(filterBb);
             }
 #endif
@@ -12650,10 +12652,14 @@ public partial class Compiler
             }
         }
 
+        if (Configuration.DEBUG && verbose)
+        {
+            JITDUMP($"Synchronized method - created additional EH descriptor EH#{XTnew} for try/fault wrapping monitor enter/exit\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            JITDUMP($"Synchronized method - created additional EH descriptor EH#{XTnew} for try/fault wrapping monitor enter/exit\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
@@ -13176,10 +13182,14 @@ public partial class Compiler
             return false;
         }
 
+        if (Configuration.DEBUG && verbose)
+        {
+            jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (before)\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (before)\n");
             fgDispBasicBlocks(block, block, true);
         }
 #endif
@@ -13362,10 +13372,14 @@ public partial class Compiler
             }
         }
 
+        if (Configuration.DEBUG && verbose)
+        {
+            jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (after)\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"\nExpanding top-level qmark in {FMT_BB(block.bbNum)} (after)\n");
             fgDispBasicBlocks(block, remainderBlock, true);
         }
 #endif
