@@ -209,8 +209,8 @@ public sealed partial class ObjectAllocator
                     BitVecOps.UnionD(bitVecTraits, nodes, newNodes);
                     BitVecOps.RemoveElemD(bitVecTraits, nodesToProcess, lclIndex);
 
-#if DEBUG
-                    if (!BitVecOps.IsEmpty(bitVecTraits, newNodes) && CompilerInstance.verbose)
+                    if (Configuration.DEBUG && !BitVecOps.IsEmpty(bitVecTraits, newNodes) &&
+                        CompilerInstance.verbose)
                     {
                         BitVecOps.VisitBits(bitVecTraits, newNodes, newLclIndex => {
                             DumpIndex(lclIndex);
@@ -220,7 +220,6 @@ public sealed partial class ObjectAllocator
                             return true;
                         });
                     }
-#endif
                 }
 
                 return true;
@@ -248,12 +247,10 @@ public sealed partial class ObjectAllocator
                 if (!MayIndexPointToStack(index) &&
                     !BitVecOps.IsEmptyIntersection(bitVecTraits, _possiblyStackPointingPointers, adjacencyMatrix[index]))
                 {
-#if DEBUG
-                    if (CompilerInstance.verbose)
+                    if (Configuration.DEBUG && CompilerInstance.verbose)
                     {
                         DumpIndex(index);
                     }
-#endif
                     JITDUMP(" may point to the stack\n");
                     MarkIndexAsPossiblyStackPointing(index);
                     changed = true;
@@ -262,12 +259,10 @@ public sealed partial class ObjectAllocator
                 if (!BitVecOps.IsMember(bitVecTraits, possiblyHeapPointingPointers, index) &&
                     !BitVecOps.IsEmptyIntersection(bitVecTraits, possiblyHeapPointingPointers, adjacencyMatrix[index]))
                 {
-#if DEBUG
-                    if (CompilerInstance.verbose)
+                    if (Configuration.DEBUG && CompilerInstance.verbose)
                     {
                         DumpIndex(index);
                     }
-#endif
                     JITDUMP(" may point to the heap\n");
                     BitVecOps.AddElemD(bitVecTraits, possiblyHeapPointingPointers, index);
                     changed = true;
@@ -283,8 +278,7 @@ public sealed partial class ObjectAllocator
         assert(BitVecOps.IsSubset(bitVecTraits, _definitelyStackPointingPointers, newDefinitelyStackPointingPointers));
         BitVecOps.AssignNoCopy(bitVecTraits, ref _definitelyStackPointingPointers, newDefinitelyStackPointingPointers);
 
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             jitprintf("Definitely stack-pointing locals:");
             BitVecOps.VisitBits(bitVecTraits, _definitelyStackPointingPointers, index => {
@@ -303,6 +297,5 @@ public sealed partial class ObjectAllocator
             });
             jitprintf("\n");
         }
-#endif
     }
 }
