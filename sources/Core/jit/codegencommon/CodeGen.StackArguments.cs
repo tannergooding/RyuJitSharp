@@ -530,14 +530,15 @@ public sealed partial class CodeGen
 
         noway_assert(targetType != TYP_STRUCT);
         var argOffset = putArgStk.ArgOffset;
-#if DEBUG
-        var call = putArgStk.Call;
-        assert(call is not null);
-        var callArg = call.Args.FindByNode(putArgStk);
-        assert(callArg is not null);
-        assert(callArg.AbiInfo.HasExactlyOneStackSegment);
-        assert(argOffset == callArg.AbiInfo.Segments[0].StackOffset);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var call = putArgStk.Call;
+            assert(call is not null);
+            var callArg = call.Args.FindByNode(putArgStk);
+            assert(callArg is not null);
+            assert(callArg.AbiInfo.HasExactlyOneStackSegment);
+            assert(argOffset == callArg.AbiInfo.Segments[0].StackOffset);
+        }
         if (data.IsContainedIntOrIImmed)
         {
             Emitter.emitIns_S_I(ins_Store(targetType), targetType.EmitSize, baseVarNum, argOffset,
@@ -694,30 +695,31 @@ public sealed partial class CodeGen
             return true;
         }
 
-#if DEBUG
-        switch (putArgStk._kind)
+        if (Configuration.DEBUG)
         {
-            case GenTreePutArgStk.Kind.RepInstr:
-            case GenTreePutArgStk.Kind.Unroll:
+            switch (putArgStk._kind)
             {
-                assert(!source.GetLayout(_compiler).HasGCPtr);
-                break;
-            }
+                case GenTreePutArgStk.Kind.RepInstr:
+                case GenTreePutArgStk.Kind.Unroll:
+                {
+                    assert(!source.GetLayout(_compiler).HasGCPtr);
+                    break;
+                }
 
-            case GenTreePutArgStk.Kind.Push:
-            {
-                assert((source.Oper is GT_FIELD_LIST) || source.GetLayout(_compiler).HasGCPtr ||
-                    (argSize < Configuration.XMM_REGSIZE_BYTES));
-                break;
-            }
+                case GenTreePutArgStk.Kind.Push:
+                {
+                    assert((source.Oper is GT_FIELD_LIST) || source.GetLayout(_compiler).HasGCPtr ||
+                        (argSize < Configuration.XMM_REGSIZE_BYTES));
+                    break;
+                }
 
-            default:
-            {
-                unreached();
-                break;
+                default:
+                {
+                    unreached();
+                    break;
+                }
             }
         }
-#endif
 
         if (!putArgStk.IsPush)
         {

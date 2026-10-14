@@ -47,15 +47,16 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        if (call.IndirectionCellArgKind != WellKnownArg.None)
+        if (Configuration.DEBUG)
         {
-            var indirCellArg = call.Args.FindWellKnownArg(call.IndirectionCellArgKind);
-            assert(indirCellArg is not null);
-            assert(indirCellArg.AbiInfo.HasExactlyOneRegisterSegment);
-            assert(indirCellArg.AbiInfo.Segments[0].Register == result);
+            if (call.IndirectionCellArgKind != WellKnownArg.None)
+            {
+                var indirCellArg = call.Args.FindWellKnownArg(call.IndirectionCellArgKind);
+                assert(indirCellArg is not null);
+                assert(indirCellArg.AbiInfo.HasExactlyOneRegisterSegment);
+                assert(indirCellArg.AbiInfo.Segments[0].Register == result);
+            }
         }
-#endif
         return result;
     }
 
