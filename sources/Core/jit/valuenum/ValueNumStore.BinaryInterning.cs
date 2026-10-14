@@ -123,14 +123,12 @@ public sealed partial class ValueNumStore
 
         var class0 = (CORINFO_CLASS_HANDLE)compileTimeHandle0;
         var class1 = (CORINFO_CLASS_HANDLE)compileTimeHandle1;
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"Asking runtime to compare {FMT_PTR((void*)_compiler.dspPtr(class0))} " +
                 $"({_compiler.eeGetClassName(class0)}) and {FMT_PTR((void*)_compiler.dspPtr(class1))} " +
                 $"({_compiler.eeGetClassName(class1)}) for equality\n");
         }
-#endif
         var state = _compiler.info.compCompHnd->compareTypesForEquality(
             class0, class1);
         if (state is TypeCompareState.May)
