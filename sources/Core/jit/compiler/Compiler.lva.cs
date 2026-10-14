@@ -2544,12 +2544,10 @@ public partial class Compiler
         assert(varDsc.lvClassHnd == NO_CLASS_HANDLE);
         assert(!varDsc.lvClassIsExact);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP($"\nlvaSetClass: setting class for V{varNum:D2} to ({FMT_DSP_PTR(clsHnd)}) {eeGetClassName(clsHnd)} {(isExact ? " [exact]" : "")}\n");
         }
-#endif
 
         varDsc.lvClassHnd = clsHnd;
         varDsc.lvClassIsExact = isExact;
@@ -2986,14 +2984,12 @@ public partial class Compiler
                 shouldUpdate = true;
             }
 
-#if DEBUG
-            if (verbose && (isNewClass || (isExact != varDsc.lvClassIsExact)))
+            if (Configuration.DEBUG && verbose && (isNewClass || (isExact != varDsc.lvClassIsExact)))
             {
                 JITDUMP($"\nlvaUpdateClass:{(shouldUpdate ? "" : " NOT")} Updating class for V{varNum:D2}");
                 JITDUMP($" from ({FMT_DSP_PTR(varDsc.lvClassHnd)}) {eeGetClassName(varDsc.lvClassHnd)}{(varDsc.lvClassIsExact ? " [exact]" : "")}");
                 JITDUMP($" to ({FMT_DSP_PTR(clsHnd)}) {eeGetClassName(clsHnd)}{(isExact ? " [exact]" : "")}\n");
             }
-#endif
 
             if (shouldUpdate)
             {
