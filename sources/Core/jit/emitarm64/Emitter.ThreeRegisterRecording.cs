@@ -1177,12 +1177,13 @@ public partial class Emitter
                         fmt = IF_ARM64_LS_3C;
                     }
                 }
-#if DEBUG
-                if (fmt != IF_ARM64_LS_3C)
+                if (Configuration.DEBUG)
                 {
-                    assert(false, "Instruction cannot be encoded: IF_LS_3C");
+                    if (fmt != IF_ARM64_LS_3C)
+                    {
+                        assert(false, "Instruction cannot be encoded: IF_LS_3C");
+                    }
                 }
-#endif
             }
         }
         else if (isAddSub)
