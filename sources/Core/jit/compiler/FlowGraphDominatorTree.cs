@@ -152,8 +152,7 @@ public sealed class FlowGraphDominatorTree
             nodes[parent.bbPostorderNum].firstChild = block;
         }
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf("After computing the dominance tree:\n");
 
@@ -178,7 +177,6 @@ public sealed class FlowGraphDominatorTree
 
             jitprintf("\n");
         }
-#endif
 
         var preorderNum = new uint[count];
         var postorderNum = new uint[count];
