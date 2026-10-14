@@ -86,23 +86,24 @@ public partial class Emitter
         {
             reg = TargetRuntimeMetadata.NoRegister;
             rgx = TargetRuntimeMetadata.NoRegister;
-#if DEBUG
-            switch (id.idInsFmt())
+            if (Configuration.DEBUG)
             {
-                case IF_XARCH_RWR_LABEL or IF_XARCH_MRW_CNS or IF_XARCH_MRW_RRD or IF_XARCH_MRW_SHF:
+                switch (id.idInsFmt())
                 {
-                    break;
-                }
+                    case IF_XARCH_RWR_LABEL or IF_XARCH_MRW_CNS or IF_XARCH_MRW_RRD or IF_XARCH_MRW_SHF:
+                    {
+                        break;
+                    }
 
-                default:
-                {
-                    assert(false, "Unexpected insFormat in emitInsSizeAMD");
-                    reg = id.idAddr().iiaAddrMode.amBaseReg;
-                    rgx = id.idAddr().iiaAddrMode.amIndxReg;
-                    break;
+                    default:
+                    {
+                        assert(false, "Unexpected insFormat in emitInsSizeAMD");
+                        reg = id.idAddr().iiaAddrMode.amBaseReg;
+                        rgx = id.idAddr().iiaAddrMode.amIndxReg;
+                        break;
+                    }
                 }
             }
-#endif
         }
 
         if (id.idIsDspReloc())

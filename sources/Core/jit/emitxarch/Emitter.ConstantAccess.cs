@@ -20,9 +20,10 @@ public partial class Emitter
         {
             var id = emitAllocInstrAmd(size);
             id.idSetIsLargeDsp();
-#if DEBUG
-            id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
-#endif
+            if (Configuration.DEBUG)
+            {
+                id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+            }
             id.idaAmdVal = dsp;
 
             return id;
@@ -42,9 +43,10 @@ public partial class Emitter
         if ((dsp < AM_DISP_MIN) || (dsp > AM_DISP_MAX))
         {
             id.idSetIsLargeDsp();
-#if DEBUG
-            id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
-#endif
+            if (Configuration.DEBUG)
+            {
+                id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+            }
             id.idaAmdVal = dsp;
         }
         else
@@ -71,9 +73,10 @@ public partial class Emitter
             {
                 var id = emitAllocInstrAmd(size);
                 id.idSetIsLargeDsp();
-#if DEBUG
-                id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+                }
                 id.idaAmdVal = dsp;
                 id.idSmallCns(cns);
 
@@ -85,9 +88,10 @@ public partial class Emitter
                 id.idSetIsLargeCns();
                 id.idacCnsVal = cns;
                 id.idSetIsLargeDsp();
-#if DEBUG
-                id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+                }
                 id.idacAmdVal = dsp;
 
                 return id;
