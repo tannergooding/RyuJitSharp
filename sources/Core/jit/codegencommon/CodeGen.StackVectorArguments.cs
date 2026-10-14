@@ -14,12 +14,10 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "Stack vector argument upper-bit clearing requires SysV AMD64 SIMD.");
         }
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genClearStackVec3ArgUpperBits()\n");
         }
-#endif
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 
         for (var varNum = 0; varNum < _compiler.info.compArgsCount; varNum++)

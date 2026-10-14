@@ -41,11 +41,9 @@ public sealed partial class CodeGen
             _gcInfo.gcMarkRegSetNpt(tempMask);
             if (_compiler.lvaIsGCTracked(in varDsc))
             {
-#if DEBUG
                 JITDUMP($"\t\t\t\t\t\t\tVar V{varNum:D2} " +
                     (VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex)
                         ? "continuing live\n" : "becoming live\n"));
-#endif
                 VarSetOps.AddElemD(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex);
             }
         }
@@ -79,11 +77,9 @@ public sealed partial class CodeGen
 
             if (_compiler.lvaIsGCTracked(in varDsc))
             {
-#if DEBUG
                 JITDUMP($"\t\t\t\t\t\t\tVar V{varNum:D2} " +
                     (VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex)
                         ? "becoming dead\n" : "continuing dead\n"));
-#endif
                 VarSetOps.RemoveElemD(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex);
             }
         }
