@@ -113,39 +113,31 @@ public partial class Compiler
                 case LcTypeTestOptInfo type:
                 {
                     JITDUMP("Updating flags on GDV guard inside hot loop. Before:\n");
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         gtDispStmt(type.Stmt);
                     }
-#endif
                     optMarkLoopCloningGuard(type.Stmt, type.MethodTableIndir);
                     JITDUMP("After:\n");
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         gtDispStmt(type.Stmt);
                     }
-#endif
                     break;
                 }
                 case LcMethodAddrTestOptInfo method:
                 {
                     JITDUMP("Updating flags on GDV guard inside hot loop. Before:\n");
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         gtDispStmt(method.Stmt);
                     }
-#endif
                     optMarkLoopCloningGuard(method.Stmt, method.DelegateAddressIndir);
                     JITDUMP("After:\n");
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         gtDispStmt(method.Stmt);
                     }
-#endif
                     break;
                 }
                 default:
