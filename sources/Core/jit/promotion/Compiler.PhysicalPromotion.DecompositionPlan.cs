@@ -192,39 +192,33 @@ public partial class Compiler
                 assert(index >= 0);
                 if (deaths.IsReplacementDying(index))
                 {
-#if DEBUG
-                    if (dump)
+                    if (Configuration.DEBUG && dump)
                     {
                         JITDUMP($"  Skipping def of V{entry.ToReplacement.LclNum:D2} " +
                             $"({entry.ToReplacement.Description}); it is dying\n");
                     }
-#endif
                     return true;
                 }
             }
             else if (dstInvolvesReplacements && !_hasNonRemainderUseOfStructLocal && deaths.IsRemainderDying())
             {
-#if DEBUG
-                if (dump)
+                if (Configuration.DEBUG && dump)
                 {
                     JITDUMP($"  Skipping write to dst+{entry.Offset:D3}; " +
                         "it is the remainder and the remainder is dying\n");
                 }
-#endif
                 return true;
             }
 
             if ((entry.FromReplacement is not null) && (entry.ToReplacement is null) &&
                 (remainder.Kind is RemainderKind.FullBlock) && !entry.FromReplacement.NeedsWriteBack)
             {
-#if DEBUG
-                if (dump)
+                if (Configuration.DEBUG && dump)
                 {
                     JITDUMP($"  Skipping dst+{entry.Offset:D3} <- " +
                         $"V{entry.FromReplacement.LclNum:D2} ({entry.FromReplacement.Description}); " +
                         "it is up-to-date in its struct local and will be handled as part of the remainder\n");
                 }
-#endif
                 return true;
             }
 
