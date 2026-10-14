@@ -172,12 +172,10 @@ public sealed partial class ObjectAllocator
                         dstInfo.Connected = true;
 
                         JITDUMP(" ... Modelled GC store to");
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             DumpIndex(dstInfo.Index);
                         }
-#endif
                         JITDUMP($" at [{TreeIdForDump(parent):D6}]\n");
                         if (isAddress)
                         {
@@ -314,12 +312,10 @@ public sealed partial class ObjectAllocator
 
         if (canEscape && !CanIndexEscape(lclIndex))
         {
-#if DEBUG
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 DumpIndex(lclIndex);
             }
-#endif
             JITDUMP($" first escapes via [{TreeIdForDump(parentStack.Peek()):D6}]..." +
                 $"[{TreeIdForDump(StackNode(parentStack, parentIndex)):D6}]\n");
             MarkLclVarAsEscaping(lclNum);
@@ -327,12 +323,10 @@ public sealed partial class ObjectAllocator
 
         if (!edgeAdded && !isTrivialUse && !IsIndexUsed(lclIndex))
         {
-#if DEBUG
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 DumpIndex(lclIndex);
             }
-#endif
             JITDUMP($" first used via [{TreeIdForDump(parentStack.Peek()):D6}]\n");
             MarkIndexAsUsed(lclIndex);
         }
