@@ -317,13 +317,14 @@ internal static class CodeGenRegisterValueTests
             var comparison = new GenTreeOp(GT_EQ, TYP_INT, left, right) { IsContained = true };
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RDX, TYP_REF);
-#if DEBUG
-            var useNum = 0;
-            codeGen.genNumberOperandUse(comparison, ref useNum);
-            Assert.That(useNum, Is.EqualTo(2));
-            Assert.That(left.UseNum, Is.Zero);
-            Assert.That(right.UseNum, Is.EqualTo(1));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var useNum = 0;
+                codeGen.genNumberOperandUse(comparison, ref useNum);
+                Assert.That(useNum, Is.EqualTo(2));
+                Assert.That(left.UseNum, Is.Zero);
+                Assert.That(right.UseNum, Is.EqualTo(1));
+            }
 
             codeGen.genConsumeRegs(comparison);
 

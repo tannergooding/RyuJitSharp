@@ -207,10 +207,11 @@ internal static unsafe class SharedStructArgumentSetupTests
             var offset = incoming ? 32 : 0;
             var argument = Argument(fields, offset, 16, incoming);
             codeGen.GCInfo.gcMarkRegPtrVal(ReferenceRegister, TYP_REF);
-#if DEBUG
-            small.UseNum = 0;
-            reference.UseNum = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                small.UseNum = 0;
+                reference.UseNum = 1;
+            }
 
             StoreFieldList(codeGen, argument, 0);
 
@@ -285,11 +286,12 @@ internal static unsafe class SharedStructArgumentSetupTests
             fields.AddFieldLIR(compiler, reference, 24, TYP_REF);
             var argument = Argument(fields, 0, 32);
             codeGen.GCInfo.gcMarkRegPtrVal(ReferenceRegister, TYP_REF);
-#if DEBUG
-            small.UseNum = 0;
-            vector.UseNum = 1;
-            reference.UseNum = 2;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                small.UseNum = 0;
+                vector.UseNum = 1;
+                reference.UseNum = 2;
+            }
 
             StoreFieldList(codeGen, argument, 0);
 

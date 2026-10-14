@@ -110,11 +110,12 @@ internal static class CodeGenStackArgumentTests
             fields.AddFieldLIR(compiler, vector, 16, TYP_SIMD12);
             var argument = Argument(compiler, fields, 32, 32, incoming);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RDX, TYP_REF);
-#if DEBUG
-            small.UseNum = 0;
-            reference.UseNum = 1;
-            vector.UseNum = 2;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                small.UseNum = 0;
+                reference.UseNum = 1;
+                vector.UseNum = 2;
+            }
 
             codeGen.genPutArgStk(argument);
 

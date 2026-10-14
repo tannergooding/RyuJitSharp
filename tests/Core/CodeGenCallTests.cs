@@ -205,9 +205,10 @@ internal static unsafe class CodeGenCallTests
             {
                 codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
                 codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R11, TYP_BYREF);
-#if DEBUG
-                index.UseNum = 1;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    index.UseNum = 1;
+                }
             }
 
             codeGen.genCall(call);

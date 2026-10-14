@@ -46,11 +46,12 @@ internal static unsafe class Arm64RegisterConsumptionTests
             var pair = new GenTreeOp(oper, TYP_I_IMPL, left, right) { IsContained = true };
             codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, TYP_BYREF);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R1, TYP_BYREF);
-#if DEBUG
-            var useNumber = 0;
-            codeGen.genNumberOperandUse(pair, ref useNumber);
-            Assert.That(useNumber, Is.EqualTo(2));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var useNumber = 0;
+                codeGen.genNumberOperandUse(pair, ref useNumber);
+                Assert.That(useNumber, Is.EqualTo(2));
+            }
 
             codeGen.genConsumeRegs(pair);
 

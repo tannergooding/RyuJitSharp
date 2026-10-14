@@ -54,6 +54,9 @@ public sealed partial class CodeGen
         node._debugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
         lastConsumedNode = node;
     }
+#else
+    public void genNumberOperandUse(GenTree operand, ref int useNum)
+        => throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
 #endif
 
     public void genCopyRegIfNeeded(GenTree node, regNumber needReg)

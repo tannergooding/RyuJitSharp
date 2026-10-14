@@ -48,13 +48,14 @@ internal static class CodeGenAvxFamilyTests
                 RegNum = target,
             };
             var original = node.Operands.ToArray();
-#if DEBUG
-            var useNumber = 0;
-            foreach (var operand in original)
+            if (TestConfiguration.IsDebug)
             {
-                codeGen.genNumberOperandUse(operand, ref useNumber);
+                var useNumber = 0;
+                foreach (var operand in original)
+                {
+                    codeGen.genNumberOperandUse(operand, ref useNumber);
+                }
             }
-#endif
 
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
 

@@ -275,7 +275,6 @@ internal static unsafe class CodeGenNodeDispatchTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void EachNodeStartsANewOperandConsumptionOrder()
     {
@@ -284,8 +283,11 @@ internal static unsafe class CodeGenNodeDispatchTests
             for (var i = 0; i < 2; i++)
             {
                 var operand = Register(compiler, TYP_INT, REG_RAX);
-                var useNum = 0;
-                codeGen.genNumberOperandUse(operand, ref useNum);
+                if (TestConfiguration.IsDebug)
+                {
+                    var useNum = 0;
+                    codeGen.genNumberOperandUse(operand, ref useNum);
+                }
                 var tree = new GenTreeUnOp(GT_NEG, TYP_INT, operand) { RegNum = REG_RAX };
                 codeGen.genCodeForTreeNode(tree);
             }
@@ -293,6 +295,7 @@ internal static unsafe class CodeGenNodeDispatchTests
         });
     }
 
+#if DEBUG
     [Test]
     public static void DspCodePreservesGcPreemptionMarkerTransitions()
     {

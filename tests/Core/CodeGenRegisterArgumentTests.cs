@@ -134,10 +134,11 @@ internal static class CodeGenRegisterArgumentTests
             _ = AddArgument(compiler, call, stack, AbiPassingSegment.OnStack(32, 0, 8));
             var early = PutArg(TYP_LONG, REG_X64_R9);
             _ = AddArgument(compiler, call, early, AbiPassingSegment.InRegister(REG_X64_R9, 0, 8), late: false);
-#if DEBUG
-            first.UseNum = 0;
-            second.UseNum = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                first.UseNum = 0;
+                second.UseNum = 1;
+            }
 
             codeGen.genCallPlaceRegArgs(call);
 
