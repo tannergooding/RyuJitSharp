@@ -12,7 +12,6 @@ public static partial class Globals
         return !Configuration.TARGET_X86 || (type <= TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF);
     }
 
-#if DEBUG
     public static string varTypeGCstring(var_types type)
     {
         return type switch {
@@ -21,5 +20,4 @@ public static partial class Globals
             _ => "non",
         };
     }
-#endif
 }

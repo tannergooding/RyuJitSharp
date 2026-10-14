@@ -32,7 +32,6 @@ internal static class SharedTypeQueryTests
         Assert.That(isRegParamType(type), Is.EqualTo(expected));
     }
 
-#if DEBUG
     [TestCaseSource(nameof(Types))]
     public static void GcDiagnosticUsesExactNativeTokensAndDefault(var_types type)
     {
@@ -40,5 +39,4 @@ internal static class SharedTypeQueryTests
 
         Assert.That(varTypeGCstring(type), Is.EqualTo(expected));
     }
-#endif
 }

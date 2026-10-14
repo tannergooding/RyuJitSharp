@@ -357,7 +357,6 @@ public partial class Compiler
 
     internal sealed class AsyncAnalysis
     {
-#if DEBUG
         public static string PrintVarSet(Compiler compiler, VARSET_TP set)
         {
             var trackedToVar = compiler.lvaTrackedToVarNum ??
@@ -378,7 +377,7 @@ public partial class Compiler
 
             return result.ToString();
         }
-#endif
+
         private readonly Compiler _compiler;
         private readonly TreeLifeUpdater _updater;
         private readonly int _numVars;
