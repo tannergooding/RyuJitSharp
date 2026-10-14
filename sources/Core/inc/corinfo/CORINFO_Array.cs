@@ -16,20 +16,15 @@ public struct CORINFO_Array
     [UnscopedRef]
     public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    public int length;
+    private CORINFO_ArrayLengthAndPadding _lengthAndPadding;
 
-#if HOST_64BIT
-    public int alignpad;
-#endif
+    [UnscopedRef]
+    public ref int length => ref _lengthAndPadding.length;
 
-#if false
     // Multi-dimensional arrays have the dimension lengths and bounds here.
     // The element count of these arrays is the array rank (the number of dimensions in the
     // multi-dimensional array). So, there is one element for each dimension. The upper bound
     // of a dimension is `dimBound[d] + dimLength[d] - 1`.
-    public int dimLength[rank]; // Number of array elements in each dimension.
-    public int dimBound[rank];  // Lower bound of each dimension (possibly negative).
-#endif
 
     // actually of variable size
     private _Anonymous2_e__Union _anonymous2;
@@ -79,4 +74,15 @@ public struct CORINFO_Array
         [FieldOffset(0)]
         public float r4Elems;
     }
+}
+
+// The native header exposes a 32-bit length in a host-pointer-sized slot.
+[StructLayout(LayoutKind.Explicit)]
+internal struct CORINFO_ArrayLengthAndPadding
+{
+    [FieldOffset(0)]
+    public int length;
+
+    [FieldOffset(0)]
+    public nint hostSlot;
 }

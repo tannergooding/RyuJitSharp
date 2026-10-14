@@ -111,4 +111,68 @@ internal static class JitInterfaceLayoutTests
         Assert.That((byte*)&threadStatics.offsetOfThreadStaticBlocks - (byte*)&threadStatics, Is.EqualTo(48));
         Assert.That((byte*)&threadStatics.offsetOfBaseOfThreadLocalData - (byte*)&threadStatics, Is.EqualTo(52));
     }
+
+    [Test]
+    public static void ArrayHeadersUseHostSizedLengthSlots()
+    {
+        var array = default(CORINFO_Array);
+        var array8 = default(CORINFO_Array8);
+        var refArray = default(CORINFO_RefArray);
+
+        ref var arrayStart = ref Unsafe.As<CORINFO_Array, byte>(ref array);
+        ref var arrayLength = ref Unsafe.As<int, byte>(ref array.length);
+        ref var arrayElements = ref Unsafe.As<sbyte, byte>(ref array.i1Elems);
+        ref var array8Start = ref Unsafe.As<CORINFO_Array8, byte>(ref array8);
+        ref var array8Length = ref Unsafe.As<int, byte>(ref array8.length);
+        ref var array8Elements = ref Unsafe.As<double, byte>(ref array8.r8Elems);
+        ref var refArrayStart = ref Unsafe.As<CORINFO_RefArray, byte>(ref refArray);
+        ref var refArrayLength = ref Unsafe.As<int, byte>(ref refArray.length);
+
+        var arrayLengthOffset = Unsafe.ByteOffset(ref arrayStart, ref arrayLength);
+        var arrayElementsOffset = Unsafe.ByteOffset(ref arrayStart, ref arrayElements);
+        var array8LengthOffset = Unsafe.ByteOffset(ref array8Start, ref array8Length);
+        var array8ElementsOffset = Unsafe.ByteOffset(ref array8Start, ref array8Elements);
+        var refArrayLengthOffset = Unsafe.ByteOffset(ref refArrayStart, ref refArrayLength);
+        var refArrayElementsOffset = Marshal.OffsetOf<CORINFO_RefArray>(nameof(CORINFO_RefArray.refElems));
+
+        const byte paddingSentinel = 0x5A;
+        var hasHostPadding = IntPtr.Size > sizeof(int);
+        if (hasHostPadding)
+        {
+            Unsafe.Add(ref arrayLength, sizeof(int)) = paddingSentinel;
+            Unsafe.Add(ref array8Length, sizeof(int)) = paddingSentinel;
+            Unsafe.Add(ref refArrayLength, sizeof(int)) = paddingSentinel;
+        }
+
+        array.length = 0x12345678;
+        array8.length = 0x23456789;
+        refArray.length = 0x3456789A;
+
+        var expectedArraySize = (2 * IntPtr.Size) + sizeof(int);
+        if (hasHostPadding)
+        {
+            expectedArraySize += sizeof(int);
+        }
+
+        Assert.That(Unsafe.SizeOf<CORINFO_ArrayLengthAndPadding>(), Is.EqualTo(IntPtr.Size));
+        Assert.That(arrayLengthOffset, Is.EqualTo((nint)IntPtr.Size));
+        Assert.That(arrayElementsOffset, Is.EqualTo((nint)(2 * IntPtr.Size)));
+        Assert.That(Unsafe.SizeOf<CORINFO_Array>(), Is.EqualTo(expectedArraySize));
+        Assert.That(array8LengthOffset, Is.EqualTo((nint)IntPtr.Size));
+        Assert.That(array8ElementsOffset, Is.EqualTo((nint)(2 * IntPtr.Size)));
+        Assert.That(Unsafe.SizeOf<CORINFO_Array8>(), Is.EqualTo((2 * IntPtr.Size) + sizeof(long)));
+        Assert.That(refArrayLengthOffset, Is.EqualTo((nint)IntPtr.Size));
+        Assert.That(refArrayElementsOffset, Is.EqualTo((nint)(2 * IntPtr.Size)));
+        Assert.That(Unsafe.SizeOf<CORINFO_RefArray>(), Is.EqualTo(3 * IntPtr.Size));
+        Assert.That(array.length, Is.EqualTo(0x12345678));
+        Assert.That(array8.length, Is.EqualTo(0x23456789));
+        Assert.That(refArray.length, Is.EqualTo(0x3456789A));
+
+        if (hasHostPadding)
+        {
+            Assert.That(Unsafe.Add(ref arrayLength, sizeof(int)), Is.EqualTo(paddingSentinel));
+            Assert.That(Unsafe.Add(ref array8Length, sizeof(int)), Is.EqualTo(paddingSentinel));
+            Assert.That(Unsafe.Add(ref refArrayLength, sizeof(int)), Is.EqualTo(paddingSentinel));
+        }
+    }
 }

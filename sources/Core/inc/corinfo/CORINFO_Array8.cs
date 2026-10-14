@@ -16,11 +16,10 @@ public struct CORINFO_Array8
     [UnscopedRef]
     public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    public int length;
+    private CORINFO_ArrayLengthAndPadding _lengthAndPadding;
 
-#if HOST_64BIT
-    public int alignpad;
-#endif
+    [UnscopedRef]
+    public ref int length => ref _lengthAndPadding.length;
 
     // actually of variable size
     private _Anonymous2_e__Union _anonymous2;

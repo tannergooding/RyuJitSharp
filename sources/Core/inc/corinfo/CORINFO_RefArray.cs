@@ -15,17 +15,12 @@ public struct CORINFO_RefArray
     [UnscopedRef]
     public unsafe ref CORINFO_MethodPtr* methTable => ref _base.methTable;
 
-    public int length;
+    private CORINFO_ArrayLengthAndPadding _lengthAndPadding;
 
-#if HOST_64BIT
-    public int alignpad;
-#endif
+    [UnscopedRef]
+    public ref int length => ref _lengthAndPadding.length;
 
-#if false
     // Multi-dimensional arrays have the lengths and bounds here
-    public int dimLength[length];
-    public int dimBound[length];
-#endif
 
     // actually of variable size
     public unsafe CORINFO_Object* refElems;
