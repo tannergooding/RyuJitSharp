@@ -703,12 +703,10 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (size != 0 && size != id.idCodeSize() && (!asmfm || compiler.verbose))
+        if (Configuration.DEBUG && size != 0 && size != id.idCodeSize() && (!asmfm || compiler.verbose))
         {
             jitprintf($" (ECS:{id.idCodeSize()}, ACS:{size})");
         }
-#endif
         jitprintf("\n");
     }
 }
