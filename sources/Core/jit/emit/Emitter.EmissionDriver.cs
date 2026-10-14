@@ -27,20 +27,13 @@ public partial class Emitter
         var curInsAdr = *dp;
         var size = emitOutputInstr(ig, id, dp);
 
-#if DEBUG
-        var insExeCost = insEvaluateExecutionCost(id);
-        var insPerfScore = (ig.igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
-        compiler.Metrics.PerfScore += insPerfScore;
-        ig.igPerfScore += insPerfScore;
-#else
-        if (Configuration.LATE_DISASM)
+        if (Configuration.DEBUG || Configuration.LATE_DISASM)
         {
             var insExeCost = insEvaluateExecutionCost(id);
             var insPerfScore = (ig.igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
             compiler.Metrics.PerfScore += insPerfScore;
             ig.igPerfScore += insPerfScore;
         }
-#endif
         if (Configuration.EMIT_TRACK_STACK_DEPTH)
         {
             assert(!emitFullGCinfo || (emitCurStackLvl != 0) || (u2.emitGcArgTrackCnt == 0));
@@ -81,15 +74,16 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (size != (nuint)emitSizeOfInsDsc(id))
+        if (Configuration.DEBUG)
         {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            jitprintf($"{emitIfName(id.idInsFmt())} at {debugInfo.idNum}: Expected size = {size} , actual size = {emitSizeOfInsDsc(id)}\n");
-            assert(size == (nuint)emitSizeOfInsDsc(id));
+            if (size != (nuint)emitSizeOfInsDsc(id))
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                jitprintf($"{emitIfName(id.idInsFmt())} at {debugInfo.idNum}: Expected size = {size} , actual size = {emitSizeOfInsDsc(id)}\n");
+                assert(size == (nuint)emitSizeOfInsDsc(id));
+            }
         }
-#endif
         return size;
     }
 
