@@ -3571,6 +3571,10 @@ public partial class Compiler
         }
     }
 #else
+    public void gtDispStmt(Statement stmt, string? msg = null)
+    {
+    }
+
     public void gtDispBlockStmts(BasicBlock block)
     {
     }

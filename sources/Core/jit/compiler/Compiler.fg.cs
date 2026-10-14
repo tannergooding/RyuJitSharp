@@ -1383,12 +1383,10 @@ public partial class Compiler
 
             stmtAfter = nullStmt;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 gtDispStmt(nullStmt);
             }
-#endif
         }
 
         // There should not be any GC ref locals left to null out.
@@ -8978,24 +8976,26 @@ public partial class Compiler
 
 #if DEBUG
         fgNormalizeEHDone = true;
+#endif
 
         if (modified)
         {
             JITDUMP("Added at least one basic block in fgNormalizeEH.\n");
 
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDispBasicBlocks();
                 fgDispHandlerTab();
             }
 
+#if DEBUG
             fgVerifyHandlerTab();
+#endif
         }
         else
         {
             JITDUMP("No EH normalization performed.\n");
         }
-#endif
     }
 
     public bool fgNormalizeEHCase1()
@@ -10499,8 +10499,7 @@ public partial class Compiler
                 {
                     noway_assert((sideEffectList.Flags & GTF_SIDE_EFFECT) != 0);
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf("\nConditional has side effects! Extracting side effects...\n");
                         gtDispTree(cond);
@@ -10508,7 +10507,6 @@ public partial class Compiler
                         gtDispTree(sideEffectList);
                         jitprintf("\n");
                     }
-#endif
 
                     // Replace the conditional statement with the list of side effects
                     noway_assert(sideEffectList.Oper is not GT_JTRUE);
