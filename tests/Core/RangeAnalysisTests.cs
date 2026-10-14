@@ -27,8 +27,8 @@ internal static unsafe class RangeAnalysisTests
         var upper = new Limit(LimitType.Constant, 34);
         var range = new Range(lower, upper);
 
-        Assert.That(lower.ToString(), Is.EqualTo("-12"));
-        Assert.That(range.ToString(), Is.EqualTo("<-12, 34>"));
+        Assert.That(lower.FormatValue(), Is.EqualTo("-12"));
+        Assert.That(range.FormatValue(), Is.EqualTo("<-12, 34>"));
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesVarDefOverflow")]
