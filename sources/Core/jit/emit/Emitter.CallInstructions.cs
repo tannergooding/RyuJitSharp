@@ -30,11 +30,12 @@ public partial class Emitter
                 (parameters.xreg == REG_NA) && (parameters.xmul == 0) && (parameters.disp == 0)));
             assert((callType != EC_INDIR_ARD) || (parameters.addr == null));
 
-#if DEBUG
-            var argSize = unchecked((int)parameters.argSize);
-            var absArgSize = argSize < 0 ? unchecked((uint)-argSize) : (uint)argSize;
-            assert(absArgSize <= codeGen.getCurrentStackLevel());
-#endif
+            if (Configuration.DEBUG)
+            {
+                var argSize = unchecked((int)parameters.argSize);
+                var absArgSize = argSize < 0 ? unchecked((uint)-argSize) : (uint)argSize;
+                assert(absArgSize <= codeGen.getCurrentStackLevel());
+            }
             var savedSet = emitGetGCRegsSavedOrModified(parameters.methHnd);
             var gcrefRegs = parameters.gcrefRegs & savedSet;
             var byrefRegs = parameters.byrefRegs & savedSet;
