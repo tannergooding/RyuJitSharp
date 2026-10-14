@@ -50,12 +50,11 @@ public sealed partial class CodeGen
 
             if (!varDsc.IsAlwaysAliveInMemory)
             {
-#if DEBUG
-                if (_compiler.verbose && VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex))
+                if (Configuration.DEBUG && _compiler.verbose &&
+                    VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex))
                 {
                     jitprintf($"\t\t\t\t\t\t\tRemoving V{varNum:D2} from gcVarPtrSetCur\n");
                 }
-#endif
                 VarSetOps.RemoveElemD(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex);
             }
 

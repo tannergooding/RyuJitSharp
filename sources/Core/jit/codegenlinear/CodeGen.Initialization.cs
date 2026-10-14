@@ -116,12 +116,10 @@ public sealed partial class CodeGen
 
     private void SetStackLevel(uint newStackLevel)
     {
-#if DEBUG
-        if ((genStackLevel != newStackLevel) && _compiler.verbose)
+        if (Configuration.DEBUG && (genStackLevel != newStackLevel) && _compiler.verbose)
         {
             jitprintf($"Setting stack level from {unchecked((int)genStackLevel)} to {unchecked((int)newStackLevel)}\n");
         }
-#endif
         genStackLevel = newStackLevel;
     }
 }
