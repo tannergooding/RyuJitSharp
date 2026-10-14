@@ -494,10 +494,8 @@ internal static unsafe class FlowGraphDfsTests
     public static void UnreachableRemovalInvalidatesAnnotationsOnlyWhenDfsIsRecomputed(bool callFinallyPair)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        using var jitTls = new JitTls(null);
+        using var jitTls = TestConfiguration.CreateJitTls();
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
