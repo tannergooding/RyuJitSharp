@@ -218,12 +218,10 @@ public partial class Emitter
         {
             if (!hasSideEffect)
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     jitprintf("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
                 }
-#endif
                 return true;
             }
 
@@ -238,12 +236,10 @@ public partial class Emitter
                             break;
                         }
 
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("\n -- suppressing movzx because upper bits are zero.\n");
                         }
-#endif
                         return true;
 
                     }
@@ -255,12 +251,10 @@ public partial class Emitter
                             break;
                         }
 
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("\n -- suppressing movsx or movsxd because upper bits are sign-extended.\n");
                         }
-#endif
                         return true;
 
                     }
@@ -272,12 +266,10 @@ public partial class Emitter
                             break;
                         }
 
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("\n -- suppressing mov because upper bits are zero.\n");
                         }
-#endif
                         return true;
 
                     }
@@ -306,23 +298,19 @@ public partial class Emitter
 
         if ((lastDst == dst) && (lastSrc == src))
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("\n -- suppressing mov because last instruction already moved from src to dst register.\n");
             }
-#endif
             return true;
         }
 
         if ((lastDst == src) && (lastSrc == dst) && !hasSideEffect)
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("\n -- suppressing mov because last instruction already moved from dst to src register and the mov has no side-effects.\n");
             }
-#endif
             return true;
         }
 

@@ -200,12 +200,10 @@ public sealed partial class CodeGen
 
         if (Emitter.AreFlagsSetToZeroCmp(op1.RegNum, opSize, condition))
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("Not emitting compare due to flags being already set\n");
             }
-#endif
             return true;
         }
 

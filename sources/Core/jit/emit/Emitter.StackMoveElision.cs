@@ -186,23 +186,19 @@ public partial class Emitter
             if ((((emitLastIns.idInsFmt() == IF_XARCH_RWR_SRD) && (fmt == IF_XARCH_SWR_RRD)) ||
                  ((emitLastIns.idInsFmt() == IF_XARCH_SWR_RRD) && (fmt == IF_XARCH_RWR_SRD))) && !hasSideEffect)
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     jitprintf("\n -- suppressing mov because last instruction already moved from dst to src and the mov has no side-effects.\n");
                 }
-#endif
                 return true;
             }
 
             if (emitLastIns.idInsFmt() == fmt)
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     jitprintf("\n -- suppressing mov because last instruction already moved from src to dst.\n");
                 }
-#endif
                 return true;
             }
         }

@@ -98,12 +98,10 @@ public partial struct RegSet
         spill.spillNext = _rsSpillDesc[(int)reg];
         _rsSpillDesc[(int)reg] = spill;
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf("\n");
         }
-#endif
 
         var storeType = floatSpill ? treeType : tempType;
         _codeGen.spillReg(storeType, temp, reg);

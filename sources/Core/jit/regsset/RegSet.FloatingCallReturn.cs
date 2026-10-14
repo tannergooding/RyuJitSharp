@@ -34,12 +34,10 @@ public partial struct RegSet
         spill.spillNext = _rsSpillDesc[(int)reg];
         _rsSpillDesc[(int)reg] = spill;
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf("\n");
         }
-#endif
 
         _codeGen.GetEmitter().emitIns_S(INS_fstp, treeType.EmitActualSize, temp.tdTempNum, 0);
 

@@ -52,12 +52,10 @@ public sealed partial class CodeGen
             return;
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("*************** In genSetScopeInfo()\n");
         }
-#endif
         var keeper = getVariableLiveKeeper();
         assert(emittedCallReturnInfo is not null);
         var varsLocationsCount = unchecked((uint)(keeper.getLiveRangesCount() + (nuint)emittedCallReturnInfo.Count));

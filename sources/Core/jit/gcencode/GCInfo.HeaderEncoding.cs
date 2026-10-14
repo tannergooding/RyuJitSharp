@@ -19,12 +19,10 @@ public partial struct GCInfo
         }
 
         var compiler = Compiler;
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf("*************** In gcInfoBlockHdrSave()\n");
         }
-#endif
         var encoder = new GcInfoEncoderWithLogging(gcInfoEncoder, compiler);
         encoder.SetCodeLength(methodSize);
 

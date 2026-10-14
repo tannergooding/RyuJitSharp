@@ -220,12 +220,10 @@ public partial struct GCInfo
     internal unsafe nuint gcInfoBlockHdrSave(byte* destination, int write,
         uint codeSize, uint prologSize, uint epilogSize, ref InfoHdr header, ref int cached)
     {
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf("*************** In gcInfoBlockHdrSave()\n");
         }
-#endif
         nuint size = 0;
 
 #if VERIFY_GC_TABLES

@@ -23,12 +23,10 @@ public partial class Liveness<TLiveness>
     public void RunEarly()
     {
         RequireEarlyPolicy();
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("*************** In Liveness::Run()\n");
         }
-#endif
         Init();
         _compiler.EndPhase(PHASE_LCLVARLIVENESS_INIT);
 
