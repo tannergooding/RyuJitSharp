@@ -222,6 +222,27 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         });
     }
 
+    [TestCase(NI_Sve_Load2xVectorAndUnzip, INS_sve_ld2w, REG_ARM64_V30)]
+    [TestCase(NI_Sve_Load3xVectorAndUnzip, INS_sve_ld3w, REG_ARM64_V29)]
+    [TestCase(NI_Sve_Load4xVectorAndUnzip, INS_sve_ld4w, REG_ARM64_V28)]
+    public static void ScalableTupleLoadsRetainTheirConsecutiveResultRegisters(
+        NamedIntrinsic intrinsic, instruction expected, regNumber target)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var node = new GenTreeHWIntrinsic(TYP_STRUCT, intrinsic, TYP_INT, 16,
+                Operand(REG_ARM64_P1, TYP_MASK), Operand(REG_ARM64_R1, TYP_BYREF)) { RegNum = target };
+            EnableIsa(compiler, node);
+            codeGen.genHWIntrinsic(node);
+
+            var id = SingleDescriptor(codeGen);
+            Assert.That(id.idIns(), Is.EqualTo(expected));
+            Assert.That(id.idReg1(), Is.EqualTo(target));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_P1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_R1));
+        });
+    }
+
     [TestCase(TYP_LONG, INS_sve_whilelt)]
     [TestCase(TYP_ULONG, INS_sve_whilelo)]
     public static void WhileMaskUsesAuxiliaryScalarWidthAndSignedness(var_types auxiliaryType, instruction expected)

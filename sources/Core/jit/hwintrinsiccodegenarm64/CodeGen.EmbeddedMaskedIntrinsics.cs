@@ -71,12 +71,10 @@ public sealed partial class CodeGen
         var opt = Arm64Emitter.optGetSveInsOpt(emitTypeSize(intrinCndSel.BaseType));
         var embOpt = opt;
         var sopt = INS_SCALABLE_OPTS_NONE;
-#if DEBUG
-        if (isRMW)
+        if (Configuration.DEBUG && isRMW)
         {
             checkRMWRegisters(intrinEmbMask, targetReg);
         }
-#endif
         if (intrinEmbMask.NumOperands == 1)
         {
             assert(!isRMW);

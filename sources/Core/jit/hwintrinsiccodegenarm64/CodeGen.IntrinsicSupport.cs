@@ -259,12 +259,9 @@ public sealed partial class CodeGen
         insSvePrfop prfop, regNumber reg1, regNumber reg2, int imm, insOpts opt = INS_OPTS_NONE)
         => Emitter.emitIns_PRFOP_R_R_I(ins, attr, prfop, reg1, reg2, imm, opt);
 
-#if DEBUG
     private static int Arm64IntrinsicSveReg1ListSize(instruction ins)
         => RyuJitSharp.Emitter.insGetSveReg1ListSize(ins);
-#endif
 
-#if DEBUG
     private static void checkRMWRegisters(Arm64HWIntrinsic intrin, regNumber targetReg)
     {
         var canRepairTargetOverlap = intrin.Id == NI_Sve_MultiplyAddRotateComplex;
@@ -354,5 +351,4 @@ public sealed partial class CodeGen
             }
         }
     }
-#endif
 }

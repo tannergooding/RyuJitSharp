@@ -115,12 +115,10 @@ public sealed partial class CodeGen
         var isRMW = node.IsRmwHWIntrinsic(_compiler);
         var hasImmediateOperand = HWIntrinsicInfo.HasImmediateOperand(intrin.Id);
         genConsumeMultiOpOperands(node);
-#if DEBUG
-        if (isRMW && !HWIntrinsicInfo.IsOptionalEmbeddedMaskedOperation(intrin.Id))
+        if (Configuration.DEBUG && isRMW && !HWIntrinsicInfo.IsOptionalEmbeddedMaskedOperation(intrin.Id))
         {
             checkRMWRegisters(intrin, targetReg);
         }
-#endif
         if (intrin.CodeGenIsTableDriven)
         {
             var ins = HWIntrinsicInfo.lookupIns(intrin.Id, intrin.BaseType, _compiler);
@@ -882,15 +880,16 @@ public sealed partial class CodeGen
                 case NI_Sve_Load3xVectorAndUnzip:
                 case NI_Sve_Load4xVectorAndUnzip:
                 {
-#if DEBUG
-                    assert(node.GetMultiRegCount(_compiler) == (uint)Arm64IntrinsicSveReg1ListSize(ins));
-                    var argReg = targetReg;
-                    for (byte i = 0; i < node.GetMultiRegCount(_compiler); i++)
+                    if (Configuration.DEBUG)
                     {
-                        assert(argReg == node.GetRegNumByIdx(i));
-                        argReg = getNextSIMDRegWithWraparound(argReg);
+                        assert(node.GetMultiRegCount(_compiler) == (uint)Arm64IntrinsicSveReg1ListSize(ins));
+                        var argReg = targetReg;
+                        for (byte i = 0; i < node.GetMultiRegCount(_compiler); i++)
+                        {
+                            assert(argReg == node.GetRegNumByIdx(i));
+                            argReg = getNextSIMDRegWithWraparound(argReg);
+                        }
                     }
-#endif
                     Emitter.emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                     break;
                 }
