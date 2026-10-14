@@ -110,8 +110,7 @@ public partial struct GCInfo
                     continue;
                 }
 
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     var offset = variable.StackOffset;
                     jitprintf($"GCINFO: untrckd {Globals.varTypeGCstring(variable.Type)} lcl at " +
@@ -128,7 +127,6 @@ public partial struct GCInfo
                     }
                     jitprintf("]\n");
                 }
-#endif
 
                 untrackedCount = unchecked(untrackedCount + 1);
             }
@@ -150,8 +148,7 @@ public partial struct GCInfo
                 continue;
             }
 
-#if DEBUG
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 var offset = temp.tdTempOffs;
                 jitprintf($"GCINFO: untrck {Globals.varTypeGCstring(temp.tdTempType)} Temp at " +
@@ -168,17 +165,14 @@ public partial struct GCInfo
                 }
                 jitprintf("]\n");
             }
-#endif
 
             untrackedCount = unchecked(untrackedCount + 1);
         }
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"GCINFO: untrckVars = {untrackedCount}\n");
         }
-#endif
 
         varPtrTableSize = 0;
         for (var variable = gcVarPtrList; variable is not null; variable = variable.vpdNext)
@@ -191,12 +185,10 @@ public partial struct GCInfo
             varPtrTableSize = unchecked(varPtrTableSize + 1);
         }
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"GCINFO: trackdLcls = {varPtrTableSize}\n");
         }
-#endif
 
         var noGCRegions = 0u;
         if (_codeGen.Interruptible)
@@ -232,14 +224,12 @@ public partial struct GCInfo
         destination += sizeof(ushort);
 #endif
 
-#if DEBUG
-        if (Compiler.verbose && (write != 0))
+        if (Configuration.DEBUG && Compiler.verbose && (write != 0))
         {
             jitprintf($"GCINFO: methodSize = {codeSize:X4}\n");
             jitprintf($"GCINFO: prologSize = {prologSize:X4}\n");
             jitprintf($"GCINFO: epilogSize = {epilogSize:X4}\n");
         }
-#endif
 
         var methodSize = encodeUnsigned(destination, codeSize);
         size += methodSize;
