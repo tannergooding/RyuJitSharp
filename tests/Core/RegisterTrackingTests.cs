@@ -349,28 +349,28 @@ internal static unsafe class RegisterTrackingTests
 
     private static void WithCompiler(bool minOpts, Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
-#endif
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;
-#if DEBUG
-        JitTls.Compiler = compiler;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            JitTls.Compiler = compiler;
+        }
         try
         {
             action(compiler, codeGen);
         }
         finally
         {
-#if DEBUG
-            JitTls.Compiler = previous;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                JitTls.Compiler = previous;
+            }
         }
     }
 }
