@@ -79,9 +79,7 @@ public partial class Compiler
         {
             var before = stmt.PrevStmt ?? throw new FatalJitException("A non-first statement needs a predecessor.");
             assert(before != block.LastStmt);
-#if DEBUG
             JITDUMP($"Splitting {FMT_BB(previous.bbNum)} after statement {FMT_STMT(before.Id)}\n");
-#endif
             block = fgSplitBlockAfterStatement(previous, before);
         }
 

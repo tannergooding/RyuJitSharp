@@ -83,10 +83,8 @@ public partial class Compiler
                 {
                     if ((stmt.RootNode.Flags & (GTF_EXCEPT | GTF_CALL)) != 0)
                     {
-#if DEBUG
                         JITDUMP($"EH#{xtnum} {FMT_STMT(stmt.Id)} in {FMT_BB(block.bbNum)} " +
                             "can throw; skipping.\n");
-#endif
                         canThrow = true;
                         break;
                     }

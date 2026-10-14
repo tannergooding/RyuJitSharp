@@ -179,9 +179,7 @@ public partial class Compiler
                     assert(between is not null);
                     if (gtTreeHasLocalRead(between.RootNode, previousLocal))
                     {
-#if DEBUG
                         JITDUMP($"-- prev tree has GTF_GLOB_REF and {FMT_STMT(between.Id)} has an interfering use\n");
-#endif
                         extraUses = true;
                         break;
                     }

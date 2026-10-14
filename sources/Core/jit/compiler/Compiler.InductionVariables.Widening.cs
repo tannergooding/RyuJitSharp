@@ -215,10 +215,8 @@ public partial class Compiler
     private void optBestEffortReplaceNarrowIVUses(int lclNum, int ssaNum, int newLclNum,
         BasicBlock block, Statement? firstStmt)
     {
-#if DEBUG
         JITDUMP($"Replacing V{lclNum:D2} -> V{newLclNum:D2} in {FMT_BB(block.bbNum)} " +
             $"starting at {FMT_STMT(firstStmt?.Id ?? 0)}\n");
-#endif
         for (var stmt = firstStmt; stmt is not null; stmt = stmt.NextStmt)
         {
             JITDUMP($"Replacing V{lclNum:D2} -> V{newLclNum:D2} in [{stmt.RootNode.TreeId:D6}]\n");

@@ -359,9 +359,7 @@ public partial class Compiler
                 {
                     var tree = _compiler.PhysicalPromotionCreateWriteBack(local, replacement);
                     var statement = _compiler.fgNewStmtFromTree(tree);
-#if DEBUG
                     JITDUMP($"Writing back {replacement.Description} before {FMT_STMT(CurrentStatement.Id)}\n");
-#endif
                     DISPSTMT(statement);
                     _compiler.fgInsertStmtBefore(CurrentBlock, CurrentStatement, statement);
                     ClearNeedsWriteBack(replacement);

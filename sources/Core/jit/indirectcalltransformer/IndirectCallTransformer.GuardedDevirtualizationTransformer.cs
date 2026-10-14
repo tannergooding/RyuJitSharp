@@ -562,9 +562,7 @@ public sealed partial class IndirectCallTransformer
             assert(_remainderBlock is not null);
             foreach (var nextStmt in _remainderBlock.Statements)
             {
-#if DEBUG
                 JITDUMP($" Scouting {FMT_STMT(nextStmt.Id)}\n");
-#endif
                 var root = nextStmt.RootNode;
                 if (root.Oper.IsCall)
                 {

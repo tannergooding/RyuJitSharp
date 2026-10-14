@@ -36,9 +36,7 @@ public sealed partial class IndirectCallTransformer
 
         protected void Transform()
         {
-#if DEBUG
             JITDUMP($"*** {Name}: transforming {FMT_STMT(_stmt.Id)}\n");
-#endif
             FixupRetExpr();
             ClearFlag();
             CreateRemainder();

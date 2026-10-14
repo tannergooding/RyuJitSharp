@@ -72,9 +72,7 @@ public partial class Compiler
         newBlock.SwitchTargets.RemoveDominantCase();
         if (fgNodeThreading is NodeThreading.AllTrees)
         {
-#if DEBUG
             JITDUMP($"Rethreading {FMT_STMT(switchStatement.Id)}\n");
-#endif
             gtSetStmtInfo(switchStatement);
             fgSetStmtSeq(switchStatement);
         }

@@ -5563,9 +5563,7 @@ public partial class Compiler
                     assert(cursor.NextStmt is not null);
                     assert(allocBoxStmt == impLastStmt);
 
-#if DEBUG
                     JITDUMP($"Moving {FMT_STMT(cursor.NextStmt.Id)}...{FMT_STMT(allocBoxStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
-#endif
 
                     do
                     {

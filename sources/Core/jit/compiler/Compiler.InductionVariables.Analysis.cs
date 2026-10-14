@@ -192,9 +192,7 @@ public partial class Compiler
 
             JITDUMP(" has no essential uses and will be removed\n");
             _ = loopInfo.VisitStatementsWithOccurrences(loop, lclNum, (block, occurrenceStmt) => {
-#if DEBUG
                 JITDUMP($"  Removing {FMT_STMT(occurrenceStmt.Id)}\n");
-#endif
                 fgRemoveStmt(block, occurrenceStmt);
                 return true;
             });

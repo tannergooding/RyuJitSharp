@@ -17657,9 +17657,7 @@ public partial class Compiler
         var allocStmt = box.DefStmtWhenInlinedBoxValue;
         var copyStmt = box.CopyStmtWhenInlinedBoxValue;
 
-#if DEBUG
         JITDUMP($"gtTryRemoveBoxUpstreamEffects: {((options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting")} to {((options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects")} of BOX (valuetype) [{box.TreeId:D6}] (assign/newobj {FMT_STMT(allocStmt.Id)} copy {FMT_STMT(copyStmt.Id)}\n");
-#endif
 
         // If we don't recognize the form of the store, bail.
         var boxLclDef = allocStmt.RootNode;

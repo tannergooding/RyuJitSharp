@@ -100,9 +100,7 @@ public partial class Compiler
     {
         var first = checks[0].Stmt;
         var last = checks[^1].Stmt;
-#if DEBUG
         JITDUMP($"Checking complexity from {FMT_STMT(first.Id)} to {FMT_STMT(last.Id)}\n");
-#endif
 
         assert(checks.Count <= MaxRangeChecksPerGroup);
         var budget = (uint)checks.Count * RangeCheckCloningBudgetMultiplier;
@@ -121,9 +119,7 @@ public partial class Compiler
                 return true;
             }
 
-#if DEBUG
             JITDUMP($"\t\tSubtracting {actual} from budget in {FMT_STMT(current.Id)} statement\n");
-#endif
             budget -= actual;
         }
 
@@ -300,10 +296,8 @@ public partial class Compiler
                 lastStmt = lastGroup[^1].Stmt;
             }
 
-#if DEBUG
             JITDUMP($"Cloning bounds checks in {FMT_BB(block.bbNum)} from " +
                 $"{FMT_STMT(firstGroup[0].Stmt.Id)} to {FMT_STMT(lastStmt.Id)}\n");
-#endif
 
             var next = optRangeCheckCloningDoClone(block, firstGroup, lastStmt);
             block = next.Prev ?? throw new FatalJitException("The cloned fast path lost its predecessor.");
