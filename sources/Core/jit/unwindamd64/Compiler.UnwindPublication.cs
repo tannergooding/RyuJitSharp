@@ -237,12 +237,10 @@ public partial class Compiler
 
     private unsafe void eeReserveUnwindInfoAmd64(bool isFunclet, bool isColdCode, int unwindSize)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"reserveUnwindInfo(isFunclet={(isFunclet ? "true" : "false")}, isColdCode={(isColdCode ? "true" : "false")}, unwindSize=0x{unwindSize:x})\n");
         }
-#endif
         if (info.compMatchedVM)
         {
             info.compCompHnd->reserveUnwindInfo(isFunclet, isColdCode, unwindSize);

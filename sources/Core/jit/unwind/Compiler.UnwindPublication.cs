@@ -12,12 +12,10 @@ public partial class Compiler
     {
         RequireUnwindEETarget();
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"reserveUnwindInfo(isFunclet={(isFunclet ? "true" : "false")}, isColdCode={(isColdCode ? "true" : "false")}, unwindSize=0x{unwindSize:x})\n");
         }
-#endif
         if (info.compMatchedVM)
         {
             info.compCompHnd->reserveUnwindInfo(isFunclet, isColdCode, unwindSize);
@@ -45,8 +43,7 @@ public partial class Compiler
     private unsafe void AllocateUnwindEEInfo(byte* hotCode, byte* coldCode, int startOffset, int endOffset,
         int unwindSize, byte* unwindBlock, CorJitFuncKind functionKind)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             var functionDescription = functionKind switch
             {
@@ -60,7 +57,6 @@ public partial class Compiler
                       $"endOffset=0x{endOffset:x}, unwindSize=0x{unwindSize:x}, " +
                       $"pUnwindBlock=0x{(nuint)dspPtr(unwindBlock):X16}, funKind={(int)functionKind} ({functionDescription}))\n");
         }
-#endif
         if (info.compMatchedVM)
         {
             info.compCompHnd->allocUnwindInfo(hotCode, coldCode, startOffset, endOffset, unwindSize,
