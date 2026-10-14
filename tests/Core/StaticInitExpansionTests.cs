@@ -341,11 +341,9 @@ internal static unsafe class StaticInitExpansionTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(StaticInitExpansionTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(StaticInitExpansionTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);

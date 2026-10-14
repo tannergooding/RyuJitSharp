@@ -586,9 +586,7 @@ internal static unsafe class AssertionRelationalTests
         compiler.opts.SetMinOpts(false);
         compiler.lvaCount = 2;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
-#if DEBUG
-        compiler.info.compFullName = nameof(AssertionRelationalTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(AssertionRelationalTests));
         JitTls.Compiler = compiler;
         try
         {

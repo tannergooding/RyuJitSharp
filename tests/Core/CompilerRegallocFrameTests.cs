@@ -74,9 +74,10 @@ internal static unsafe class CompilerRegallocFrameTests
 
 #if ETW_EBP_FRAMED
             Assert.That(requiresFrame, Is.True);
-#if DEBUG
-            Assert.That(reason, Is.EqualTo("Debug Code"));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(reason, Is.EqualTo("Debug Code"));
+            }
 #else
             Assert.That(requiresFrame, Is.False);
             Assert.That(reason, Is.Null);

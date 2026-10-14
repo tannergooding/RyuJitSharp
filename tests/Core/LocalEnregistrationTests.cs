@@ -64,12 +64,13 @@ internal static unsafe class LocalEnregistrationTests
                 var expected = index is 1 or 2 or 3 or 6 || ((index == 0) && !ehEnregistration);
                 Assert.That(compiler.lvaTable[index].lvDoNotEnregister, Is.EqualTo(expected), $"V{index}");
             }
-#if DEBUG
-            Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
-            Assert.That(compiler.lvaTable[2].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
-            Assert.That(compiler.lvaTable[3].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NotRegSizeStruct));
-            Assert.That(compiler.lvaTable[6].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
+                Assert.That(compiler.lvaTable[2].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
+                Assert.That(compiler.lvaTable[3].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NotRegSizeStruct));
+                Assert.That(compiler.lvaTable[6].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+            }
         });
     }
 
@@ -86,10 +87,11 @@ internal static unsafe class LocalEnregistrationTests
             {
                 Assert.That(local.lvDoNotEnregister, Is.True);
             }
-#if DEBUG
-            Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
-            Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
+            }
         });
     }
 

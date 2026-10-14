@@ -304,10 +304,8 @@ internal static unsafe class QmarkExpansionTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;

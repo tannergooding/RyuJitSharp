@@ -311,11 +311,9 @@ internal static unsafe class HeadTailMergeTests
         compiler.compHndBBtab = [];
         compiler.fgPredsComputed = true;
         compiler.info = new Compiler.Info();
-#if DEBUG
-        compiler.info.compFullName = nameof(HeadTailMergeTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(HeadTailMergeTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;
         object config = new JitConfigValues();

@@ -534,10 +534,8 @@ internal static unsafe class NaturalLoopTests
         compiler.opts.jitFlags = &flags;
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(NaturalLoopTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(NaturalLoopTests));
         JitTls.Compiler = compiler;
 
         try

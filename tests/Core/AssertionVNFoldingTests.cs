@@ -547,9 +547,7 @@ internal static unsafe class AssertionVNFoldingTests
                 compiler.info.compCompHnd = &ee;
                 compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)&metadata;
                 compiler.vnStore = new ValueNumStore(compiler);
-#if DEBUG
-                compiler.info.compFullName = nameof(AssertionVNFoldingTests);
-#endif
+                TestConfiguration.SetCompilerFullName(compiler, nameof(AssertionVNFoldingTests));
                 JitTls.Compiler = compiler;
                 try
                 {

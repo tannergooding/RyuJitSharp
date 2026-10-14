@@ -30,7 +30,7 @@ internal static unsafe class SsaBookkeepingTests
             };
             Assert.That(definition._vnPair, Is.EqualTo(new ValueNumPair()));
 #if DEBUG
-            Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
+                Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
 #endif
         });
     }

@@ -95,7 +95,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         Assert.That(Emitter.emitGetSchedInfo(IF_XARCH_COUNT), Is.EqualTo(IS_NONE));
         Assert.That(Emitter.emitGetSchedInfo((Emitter.insFormat)uint.MaxValue), Is.EqualTo(IS_NONE));
 #if DEBUG
-        Assert.That(context.Assertions, Is.EqualTo(2));
+            Assert.That(context.Assertions, Is.EqualTo(2));
 #endif
     }
 #endif

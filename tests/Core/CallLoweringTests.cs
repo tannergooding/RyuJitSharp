@@ -38,7 +38,7 @@ internal static unsafe class CallLoweringTests
                 Assert.That(target.Flags & GenTreeFlags.GTF_IND_NONFAULTING, Is.Not.EqualTo(GenTreeFlags.GTF_EMPTY));
                 AssertAddress(target.AsIndir().Addr);
 #if DEBUG
-                Assert.That(target.AsIndir().Addr.AsIntCon().TargetHandle, Is.EqualTo((nint)0x5678));
+                    Assert.That(target.AsIndir().Addr.AsIntCon().TargetHandle, Is.EqualTo((nint)0x5678));
 #endif
             }
             else

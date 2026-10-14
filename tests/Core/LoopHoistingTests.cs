@@ -377,11 +377,9 @@ internal static unsafe class LoopHoistingTests
         compiler.opts.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
-        compiler.info.compFullName = nameof(LoopHoistingTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(LoopHoistingTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         JitTls.Compiler = compiler;
         try
         {

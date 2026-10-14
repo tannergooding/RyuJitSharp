@@ -32,9 +32,7 @@ internal static unsafe class InductionVariableConsumerTests
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(PhaseSkipsMethodsWithoutNaturalLoops);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(PhaseSkipsMethodsWithoutNaturalLoops));
         JitTls.Compiler = compiler;
         try
         {

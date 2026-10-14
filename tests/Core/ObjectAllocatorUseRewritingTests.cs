@@ -229,10 +229,8 @@ internal static unsafe class ObjectAllocatorUseRewritingTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(ObjectAllocatorUseRewritingTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorUseRewritingTests));
         compiler.lvaTable = new LclVarDsc[types.Length];
         compiler.lvaCount = types.Length;
         for (var index = 0; index < types.Length; index++)

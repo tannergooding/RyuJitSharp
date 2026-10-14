@@ -52,10 +52,9 @@ internal static unsafe class LongDecompositionTests
             Assert.That(result.IsUnusedValue, Is.True);
             Assert.That(result.Op1.IsUnusedValue, Is.False);
             Assert.That(result.Op2.IsUnusedValue, Is.False);
-if (TestConfiguration.IsDebug)
-{
-                Assert.That(result.Op1.TreeId, Is.EqualTo(originalId));
-}
+#if DEBUG
+            Assert.That(result.Op1.TreeId, Is.EqualTo(originalId));
+#endif
             Assert.That(block.ToArray(), Is.EqualTo([result.Op1, result.Op2, result]));
             CheckLir(compiler, block);
         });
@@ -420,10 +419,9 @@ if (TestConfiguration.IsDebug)
             Assert.That(multiRegMultiply.Op2.Type, Is.EqualTo(TYP_INT));
             Assert.That(multiRegMultiply.Is64RsltMul, Is.True);
             Assert.That(store.Op1, Is.SameAs(multiRegMultiply));
-if (TestConfiguration.IsDebug)
-{
-                Assert.That(multiRegMultiply.TreeId, Is.EqualTo(multiplyTreeId));
-}
+#if DEBUG
+            Assert.That(multiRegMultiply.TreeId, Is.EqualTo(multiplyTreeId));
+#endif
             Assert.That(compiler.lvaGetDesc(destination).IsMultiRegDest, Is.True);
             Assert.That(block.Any(node => node == firstCast), Is.False);
             CheckLir(compiler, block);
@@ -730,9 +728,7 @@ if (TestConfiguration.IsDebug)
 
     private static void WithLowering(Action<Compiler, BasicBlock, Lowering> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

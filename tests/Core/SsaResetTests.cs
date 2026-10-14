@@ -170,7 +170,7 @@ internal static class SsaResetTests
             Assert.That(compiler.fgSsaValid, Is.True);
             Assert.That(compiler.fgStmtRemoved, Is.False);
 #if DEBUG
-            Assert.That(text, Is.EqualTo($"Removing {(deepClean ? "all SSA artifacts" : "PHI functions")}{Environment.NewLine}"));
+                Assert.That(text, Is.EqualTo($"Removing {(deepClean ? "all SSA artifacts" : "PHI functions")}{Environment.NewLine}"));
 #endif
         });
     }

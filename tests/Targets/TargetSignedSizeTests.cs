@@ -399,18 +399,14 @@ internal static unsafe class TargetSignedSizeTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaCount = 4;
         compiler.lvaTable = new LclVarDsc[compiler.lvaCount];
         compiler.lvaRefCountState = RefCountState.RCS_EARLY;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
-#if DEBUG
-        compiler.info.compFullName = nameof(TargetSignedSizeTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(TargetSignedSizeTests));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);

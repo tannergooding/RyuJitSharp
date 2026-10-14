@@ -253,10 +253,8 @@ internal static unsafe class ArrayMorphingTests
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compIsStatic = true;
-#if DEBUG
-        compiler.info.compFullName = nameof(ArrayMorphingTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ArrayMorphingTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         compiler.compHndBBtab = [];
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);

@@ -295,11 +295,9 @@ internal static unsafe class LoopCloningModelTests
         WithCompiler(compiler => {
             compiler.compHndBBtab = [];
             compiler.info = new Compiler.Info();
-#if DEBUG
             TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-            compiler.info.compFullName = nameof(LoopCloningModelTests);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(LoopCloningModelTests));
             var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
             var fast = BasicBlock.New(compiler, BBJ_ALWAYS);
             var slow = BasicBlock.New(compiler, BBJ_ALWAYS);

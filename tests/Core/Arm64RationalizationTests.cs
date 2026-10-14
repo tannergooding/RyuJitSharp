@@ -301,10 +301,8 @@ internal static unsafe class Arm64RationalizationTests
         compiler.lvaTable[0].Type = TYP_INT;
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = lir ? NodeThreading.LIR : NodeThreading.AllTrees;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(Arm64RationalizationTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64RationalizationTests));
         JitTls.Compiler = compiler;
         try
         {

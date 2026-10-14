@@ -689,10 +689,8 @@ internal static unsafe class Arm64MemoryLoweringTests
         compiler.lvaTable[0].Type = TYP_LONG;
         compiler.lvaTable[1].Type = TYP_FLOAT;
         compiler.lvaTable[2].Type = TYP_REF;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(Arm64MemoryLoweringTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64MemoryLoweringTests));
         JitTls.Compiler = compiler;
 
         try

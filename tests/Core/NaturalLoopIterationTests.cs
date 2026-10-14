@@ -363,10 +363,8 @@ internal static unsafe class NaturalLoopIterationTests
         compiler.opts.jitFlags = &flags;
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(NaturalLoopIterationTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(NaturalLoopIterationTests));
         JitTls.Compiler = compiler;
         try
         {

@@ -72,10 +72,11 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             Assert.That(NextFixedRef(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(30u));
             Assert.That(BusyUntilKill(allocator).IsSet(regNumber.REG_X64_RAX), Is.False);
             Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
-#if DEBUG
-            Assert.That(output, Does.Contain("None     "));
-            Assert.That(output, Does.Contain("rax"));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain("None     "));
+                Assert.That(output, Does.Contain("rax"));
+            }
         });
     }
 
@@ -139,9 +140,10 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             Assert.That(integerInterval.isActive, Is.True);
             Assert.That(integerInterval.physReg, Is.EqualTo(regNumber.REG_X64_RBX));
             Assert.That(integerRegister.assignedInterval, Is.SameAs(integerInterval));
-#if DEBUG
-            Assert.That(output, Does.Contain("Done          "));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain("Done          "));
+            }
         });
     }
 

@@ -259,9 +259,7 @@ internal static unsafe class AssertionVNStatementTests
         compiler.opts.SetMinOpts(false);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;
-#if DEBUG
-        compiler.info.compFullName = nameof(AssertionVNStatementTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(AssertionVNStatementTests));
         JitTls.Compiler = compiler;
         try
         {

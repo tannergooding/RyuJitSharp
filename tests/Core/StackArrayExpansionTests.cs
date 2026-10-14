@@ -243,10 +243,8 @@ internal static unsafe class StackArrayExpansionTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(StackArrayExpansionTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(StackArrayExpansionTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);

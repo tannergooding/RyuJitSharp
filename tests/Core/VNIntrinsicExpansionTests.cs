@@ -413,11 +413,9 @@ internal static unsafe class VNIntrinsicExpansionTests
         compiler.info = new Compiler.Info { compCompHnd = &ee };
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
-#if DEBUG
-        compiler.info.compFullName = nameof(VNIntrinsicExpansionTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(VNIntrinsicExpansionTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         compiler.compHndBBtab = [];
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 4;

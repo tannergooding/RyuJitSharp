@@ -449,10 +449,8 @@ internal static unsafe class CopyPropagationTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.compHndBBtab = [];
-#if DEBUG
-        compiler.info.compFullName = nameof(CopyPropagationTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(CopyPropagationTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         JitTls.Compiler = compiler;
         try
         {

@@ -218,11 +218,9 @@ internal static unsafe class RangeCheckCloningTests
         compiler.info = new Compiler.Info();
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
-#if DEBUG
-        compiler.info.compFullName = nameof(RangeCheckCloningTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(RangeCheckCloningTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         compiler.vnStore = new ValueNumStore(compiler);
         compiler.MethodHasBoundsChecks = true;
         compiler.fgNodeThreading = NodeThreading.AllTrees;

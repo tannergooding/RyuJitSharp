@@ -367,9 +367,7 @@ internal static unsafe class AssertionArithmeticTests
         compiler.lvaCount = 2;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.compCurBB = new BasicBlock(null, null) { bbNum = 1 };
-#if DEBUG
-        compiler.info.compFullName = nameof(AssertionArithmeticTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(AssertionArithmeticTests));
         JitTls.Compiler = compiler;
         try
         {

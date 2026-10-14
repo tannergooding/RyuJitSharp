@@ -351,9 +351,7 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
 #endif
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = "ObjectAllocatorEscapeAnalysisTests";
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, "ObjectAllocatorEscapeAnalysisTests");
         compiler.lvaTable = new LclVarDsc[3];
         compiler.lvaCount = 3;
         compiler.lvaTable[0].Type = TYP_REF;

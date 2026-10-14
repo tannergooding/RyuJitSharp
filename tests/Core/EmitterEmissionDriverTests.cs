@@ -91,7 +91,7 @@ internal static unsafe class EmitterEmissionDriverTests
             Assert.That(result.Prolog, Is.EqualTo(1u));
             Assert.That(result.Epilog, Is.Zero);
 #if DEBUG
-            Assert.That(result.Instructions, Is.EqualTo(2u));
+                Assert.That(result.Instructions, Is.EqualTo(2u));
 #endif
             Assert.That((nuint)result.Hot, Is.EqualTo((nuint)allocation->HotExec));
             Assert.That((nuint)result.HotRW, Is.EqualTo((nuint)allocation->HotRW));
@@ -162,7 +162,7 @@ internal static unsafe class EmitterEmissionDriverTests
                 Is.EqualTo(Convert.FromHexString("9075030F1F00C3")));
             Assert.That(allocation->HotExec[1], Is.EqualTo(0xA5));
 #if DEBUG
-            Assert.That(result.Instructions, Is.EqualTo(4u));
+                Assert.That(result.Instructions, Is.EqualTo(4u));
 #endif
             Assert.That(compiler.Metrics.ActualCodeBytes, Is.EqualTo(7));
         });

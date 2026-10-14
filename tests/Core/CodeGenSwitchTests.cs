@@ -44,9 +44,10 @@ internal static class CodeGenSwitchTests
             Assert.That(prefix?.dsNext, Is.SameAs(section));
             Assert.That(codeGen.Emitter.emitConsDsc.dsdOffs, Is.EqualTo(offset + section.dsSize));
             Assert.That(Descriptors(codeGen), Is.Empty);
-#if DEBUG
-            Assert.That(codeGen.Emitter.emitDataSecCur, Is.Null);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.Emitter.emitDataSecCur, Is.Null);
+            }
         });
     }
 

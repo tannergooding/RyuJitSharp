@@ -250,9 +250,7 @@ internal static unsafe class ObjectAllocatorGraphTests
 #endif
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = "ObjectAllocatorGraphTests";
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, "ObjectAllocatorGraphTests");
         compiler.lvaTable = new LclVarDsc[types.Length];
         compiler.lvaCount = types.Length;
 

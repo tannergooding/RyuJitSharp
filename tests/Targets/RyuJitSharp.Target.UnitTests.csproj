@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
+    <Compile Include="..\Core\TestConfiguration.cs" Link="TestConfiguration.cs" />
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArithmeticMorphTests.cs" Link="ArithmeticMorphTests.cs" />

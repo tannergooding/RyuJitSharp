@@ -1138,9 +1138,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
         compiler.opts.compDbgEnC = debugEnC;
-#if DEBUG
-        compiler.info.compFullName = nameof(Arm64LinearScanConstructionTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64LinearScanConstructionTests));
         if (debugEnC)
         {
             flags.Set(JitFlags.JIT_FLAG_DEBUG_EnC);

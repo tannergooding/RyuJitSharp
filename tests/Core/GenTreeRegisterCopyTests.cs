@@ -35,7 +35,7 @@ internal static unsafe class GenTreeRegisterCopyTests
 
             Assert.That(destination.RegNum, Is.EqualTo(sourceHasReg ? REG_RCX : REG_NA));
 #if DEBUG
-            Assert.That(destination.RegTag, Is.EqualTo(source.RegTag));
+                Assert.That(destination.RegTag, Is.EqualTo(source.RegTag));
 #endif
         });
     }
@@ -55,7 +55,7 @@ internal static unsafe class GenTreeRegisterCopyTests
             Assert.That(destination.GetRegNumByIdx(0), Is.EqualTo(REG_RAX));
             Assert.That(destination.Flags & (GTF_SPILL | GTF_SPILLED), Is.EqualTo(GTF_SPILLED));
 #if DEBUG
-            Assert.That(destination.RegTag, Is.EqualTo(source.RegTag));
+                Assert.That(destination.RegTag, Is.EqualTo(source.RegTag));
 #endif
         });
     }
@@ -82,7 +82,7 @@ internal static unsafe class GenTreeRegisterCopyTests
             Assert.That(destination.GetRegNumByIdx(1), Is.EqualTo(REG_R9));
             Assert.That(destination.Op1, Is.SameAs(operand));
 #if DEBUG
-            Assert.That(destination.RegTag, Is.EqualTo(source.RegTag));
+                Assert.That(destination.RegTag, Is.EqualTo(source.RegTag));
 #endif
         });
     }

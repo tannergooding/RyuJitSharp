@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using RyuJitSharp.UnitTests;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.EHHandlerType;
@@ -143,9 +144,7 @@ internal static unsafe class WasmEhFlowTests
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
             compiler.opts.jitFlags = &flags;
             compiler.opts.SetMinOpts(false);
-#if DEBUG
-            compiler.info.compFullName = nameof(WasmEhFlowTests);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(WasmEhFlowTests));
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.fgPredsComputed = true;
             compiler.fgImportDone = true;

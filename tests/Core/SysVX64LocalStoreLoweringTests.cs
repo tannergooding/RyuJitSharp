@@ -125,10 +125,8 @@ internal static unsafe class SysVX64LocalStoreLoweringTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 2;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(SysVX64LocalStoreLoweringTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(SysVX64LocalStoreLoweringTests));
         JitTls.Compiler = compiler;
 
         try

@@ -293,11 +293,9 @@ internal static unsafe class RuntimeLookupExpansionTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(RuntimeLookupExpansionTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(RuntimeLookupExpansionTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);

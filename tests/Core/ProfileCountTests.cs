@@ -415,10 +415,8 @@ internal static unsafe class ProfileCountTests
         compiler.compHndBBtab = [];
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = "ProfileCountTests";
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, "ProfileCountTests");
         JitTls.Compiler = compiler;
 
         try

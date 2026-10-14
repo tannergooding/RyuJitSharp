@@ -38,7 +38,7 @@ internal static unsafe class EmitterCallInstructionTests
         Assert.That(parameters.isJump || parameters.noSafePoint, Is.False);
         Assert.That(parameters.returnValueCall, Is.Null);
 #if DEBUG
-        Assert.That(parameters.sigInfo, Is.Null);
+            Assert.That(parameters.sigInfo, Is.Null);
 #endif
     }
 

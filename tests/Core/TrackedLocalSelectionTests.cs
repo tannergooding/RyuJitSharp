@@ -222,7 +222,7 @@ internal static unsafe class TrackedLocalSelectionTests
             Assert.That(compiler.lvaCurEpoch, Is.EqualTo(21));
             Assert.That(compiler.lvaTrackedToVarNum, Is.SameAs(previousMapping));
 #if DEBUG
-            Assert.That(compiler.lvaTrackedVars, Is.Empty);
+                Assert.That(compiler.lvaTrackedVars, Is.Empty);
 #endif
         });
     }

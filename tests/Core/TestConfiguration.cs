@@ -2,7 +2,7 @@ using System;
 
 namespace RyuJitSharp.UnitTests;
 
-internal static class TestConfiguration
+internal static partial class TestConfiguration
 {
     public static bool IsDebug => Configuration.DEBUG;
 
@@ -22,8 +22,13 @@ internal static class TestConfiguration
 
     public static unsafe IDisposable? CreateJitTlsWithCompiler(Compiler? compiler)
     {
+        return CreateJitTlsWithCompiler(compiler, null);
+    }
+
+    public static unsafe IDisposable? CreateJitTlsWithCompiler(Compiler? compiler, ICorJitInfo* jitInfo)
+    {
 #if DEBUG
-        var jitTls = new JitTls(null);
+        var jitTls = new JitTls(jitInfo);
         JitTls.Compiler = compiler;
         return jitTls;
 #else
@@ -58,6 +63,14 @@ internal static class TestConfiguration
 #endif
     }
 
+    public static void SetCompilerFullName(Compiler compiler, string name)
+    {
+        if (IsDebug)
+        {
+            compiler.info.compFullName = name;
+        }
+    }
+
     public static void EnableSafeFlowEdgeCreation(Compiler compiler)
     {
 #if DEBUG
@@ -69,15 +82,6 @@ internal static class TestConfiguration
     {
 #if DEBUG
         compiler.verbose = true;
-#endif
-    }
-
-    public static string CaptureDebugOutput(Action action)
-    {
-#if DEBUG
-        return CodeGenLifeTransitionTests.Capture(action);
-#else
-        throw new InvalidOperationException("Debug output capture is only available in Debug builds.");
 #endif
     }
 }

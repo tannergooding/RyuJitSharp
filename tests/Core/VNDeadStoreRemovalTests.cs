@@ -393,9 +393,7 @@ internal static unsafe class VNDeadStoreRemovalTests
         compiler.opts.SetMinOpts(false);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;
-#if DEBUG
-        compiler.info.compFullName = nameof(VNDeadStoreRemovalTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(VNDeadStoreRemovalTests));
         JitTls.Compiler = compiler;
         try
         {

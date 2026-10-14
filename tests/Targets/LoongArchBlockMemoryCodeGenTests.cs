@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using RyuJitSharp.UnitTests;
 using static RyuJitSharp.BarrierKind;
 using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.GenTreeFlags;
@@ -84,9 +85,7 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

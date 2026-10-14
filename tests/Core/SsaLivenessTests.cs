@@ -346,10 +346,8 @@ internal static unsafe class SsaLivenessTests
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compIsStatic = true;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
-#if DEBUG
-        compiler.info.compFullName = nameof(SsaLivenessTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(SsaLivenessTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         compiler.compHndBBtab = [];
         compiler.lvaArg0Var = BAD_VAR_NUM;
         compiler.lvaCount = count;

@@ -77,7 +77,7 @@ internal static unsafe class UniversalSimdStorageTests
 
             Assert.That(GenTreeVecCon.Equals(left, right), Is.True);
 #if DEBUG
-            Assert.That(compiler.gtHashValue(left), Is.EqualTo(compiler.gtHashValue(right)));
+                Assert.That(compiler.gtHashValue(left), Is.EqualTo(compiler.gtHashValue(right)));
 #endif
             var store = new ValueNumStore(compiler);
             var reference = new ValueNumStore(compiler);

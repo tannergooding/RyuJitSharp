@@ -39,7 +39,7 @@ internal static unsafe class LoopCloningTests
             Assert.That(loops.GetLoopByIndex(0).AnalyzeIteration(out var iter, true), Is.True);
             Assert.That(iter.NeedsZeroTripGuard, Is.False);
 #if DEBUG
-            Assert.That(JitConfig.JitCloneLoops, Is.EqualTo(1));
+                Assert.That(JitConfig.JitCloneLoops, Is.EqualTo(1));
 #endif
             var configuration = JitConfig;
             SetConfig(ref configuration, "_jitCloneLoopsSizeLimit", sizeLimit);
@@ -436,11 +436,9 @@ internal static unsafe class LoopCloningTests
         compiler.info = new Compiler.Info();
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        compiler.info.compFullName = nameof(LoopCloningTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(LoopCloningTests));
         JitTls.Compiler = compiler;
         try
         {

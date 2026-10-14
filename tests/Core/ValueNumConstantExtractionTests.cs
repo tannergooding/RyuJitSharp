@@ -359,9 +359,7 @@ internal static unsafe class ValueNumConstantExtractionTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
-#if DEBUG
-        compiler.info.compFullName = nameof(ValueNumConstantExtractionTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ValueNumConstantExtractionTests));
         JitTls.Compiler = compiler;
         s_assertions = 0;
         s_lastAssertion = null;

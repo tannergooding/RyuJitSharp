@@ -191,9 +191,7 @@ internal static unsafe class MorphBlockStmtTests
         compiler.opts.SetMinOpts(false);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 1;
-#if DEBUG
-        compiler.info.compFullName = nameof(MorphBlockStmtTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(MorphBlockStmtTests));
         JitTls.Compiler = compiler;
         try
         {

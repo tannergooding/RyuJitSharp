@@ -25,7 +25,7 @@ internal static class GenTreeSetOperTests
 
             Assert.That(node.FieldSeq, Is.Null);
 #if DEBUG
-            Assert.That(node.TargetHandle, Is.EqualTo((nint)0));
+                Assert.That(node.TargetHandle, Is.EqualTo((nint)0));
 #endif
         });
     }

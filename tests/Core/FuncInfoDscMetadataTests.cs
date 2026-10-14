@@ -264,10 +264,9 @@ internal static class FuncInfoDscMetadataTests
     {
         var compiler = NewCompilerWithDescriptors();
         var descriptor = new FuncInfoDsc();
-#if DEBUG
         ICorJitInfo jitInfo = default;
-        using var tls = new JitTls(&jitInfo);
-        JitTls.Compiler = compiler;
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler, &jitInfo);
+#if DEBUG
         compiler.verbose = false;
 #endif
         descriptor.ensureUnwindableFrame(compiler);

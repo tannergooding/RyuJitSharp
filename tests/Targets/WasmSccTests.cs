@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using RyuJitSharp.UnitTests;
 using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
@@ -510,9 +511,7 @@ internal static unsafe class WasmSccTests
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
             compiler.opts.jitFlags = &flags;
             compiler.opts.SetMinOpts(false);
-#if DEBUG
-            compiler.info.compFullName = nameof(WasmSccTests);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(WasmSccTests));
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.fgPredsComputed = true;
             compiler.fgImportDone = true;

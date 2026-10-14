@@ -100,11 +100,9 @@ internal static unsafe class Arm64SwitchLoweringTests
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.fgPredsComputed = true;
         compiler.fgPgoConsistent = true;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        compiler.info.compFullName = nameof(Arm64SwitchLoweringTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64SwitchLoweringTests));
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

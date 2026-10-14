@@ -257,10 +257,8 @@ internal static unsafe class FlowGraphRegionDumpTests
         compiler.opts.jitFlags = &flags;
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(FlowGraphRegionDumpTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(FlowGraphRegionDumpTests));
         JitTls.Compiler = compiler;
 
         try

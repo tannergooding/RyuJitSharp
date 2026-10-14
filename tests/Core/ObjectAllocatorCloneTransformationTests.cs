@@ -41,11 +41,9 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(ObjectAllocatorCloneTransformationTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorCloneTransformationTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         compiler.info.compCompHnd = &jitInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[2];
@@ -165,11 +163,9 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         s_assertions.Clear();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(ObjectAllocatorCloneTransformationTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorCloneTransformationTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
         compiler.info.compCompHnd = &jitInfo;
         compiler.lvaTable = new LclVarDsc[1];
         compiler.lvaCount = 1;

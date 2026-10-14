@@ -144,9 +144,7 @@ internal static unsafe class RedundantBranchTests
     public static void ExtendedValueNumberFunctionsDoNotOverflowImplication(VNFunc func, bool wrapped)
     {
         WithCompiler(compiler => {
-#if DEBUG
-            compiler.info.compFullName = nameof(RedundantBranchTests);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(RedundantBranchTests));
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
             var left = store.VNForExpr(null, var_types.TYP_INT);

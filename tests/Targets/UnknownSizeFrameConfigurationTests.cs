@@ -172,17 +172,13 @@ internal static class UnknownSizeFrameConfigurationTests
 
     private static unsafe void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
-#if DEBUG
-        compiler.info.compFullName = nameof(UnknownSizeFrameConfigurationTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(UnknownSizeFrameConfigurationTests));
         JitTls.Compiler = compiler;
 
         try

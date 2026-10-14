@@ -524,9 +524,7 @@ internal static class PhysicalPromotionTests
             JitConfig = (JitConfigValues)config;
             FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
                 compiler.opts.compFlags = enabled ? CLFLG_STRUCTPROMOTE : 0;
-#if DEBUG
-                compiler.info.compFullName = nameof(PhysicalPromotionWrapperDispatchesOnlyEnabledProfitableCandidates);
-#endif
+                TestConfiguration.SetCompilerFullName(compiler, nameof(PhysicalPromotionWrapperDispatchesOnlyEnabledProfitableCandidates));
                 compiler.lvaTable[0].Type = TYP_STRUCT;
                 compiler.lvaTable[0].Layout = new ClassLayout(16);
                 var block = BasicBlock.New(compiler, BBJ_RETURN);

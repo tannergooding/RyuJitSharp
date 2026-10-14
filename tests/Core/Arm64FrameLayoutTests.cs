@@ -398,9 +398,7 @@ internal static unsafe class Arm64FrameLayoutTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
         compiler.opts.compJitSaveFpLrWithCalleeSavedRegisters = 1;
-#if DEBUG
-        compiler.info.compFullName = nameof(Arm64FrameLayoutTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(Arm64FrameLayoutTests));
         compiler.lvaTable = [NewLocal(TYP_LONG), NewLocal(TYP_STRUCT)];
         compiler.lvaTable[1].Layout = new ClassLayout(0);
         compiler.lvaCount = 2;

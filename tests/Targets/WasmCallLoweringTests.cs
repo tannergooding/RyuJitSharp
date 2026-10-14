@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using RyuJitSharp.UnitTests;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.InfoAccessType;
 using static RyuJitSharp.genTreeOps;
@@ -199,9 +200,7 @@ internal static unsafe class WasmCallLoweringTests
 
     private static void WithLowering(Action<Compiler, Lowering, BasicBlock> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;

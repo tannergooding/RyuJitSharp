@@ -380,9 +380,10 @@ internal static unsafe class CompilerShutdownTests
                 var jit = new CILJit();
                 jit.ProcessShutdownWork(null);
                 Assert.That(initialized.GetValue(null), Is.False);
-#if DEBUG
-                Assert.That(Encoding.UTF8.GetString(output.ToArray()), Does.Contain("Loop hoisting stats\n"));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(Encoding.UTF8.GetString(output.ToArray()), Does.Contain("Loop hoisting stats\n"));
+                }
                 var length = output.ToArray().Length;
                 jit.ProcessShutdownWork(null);
                 Assert.That(output.ToArray().Length, Is.EqualTo(length));

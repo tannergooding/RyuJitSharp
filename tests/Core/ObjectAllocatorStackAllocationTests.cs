@@ -85,10 +85,8 @@ internal static unsafe class ObjectAllocatorStackAllocationTests
         using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(ObjectAllocatorStackAllocationTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorStackAllocationTests));
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 1;
         compiler.lvaTable[0].Type = TYP_REF;

@@ -1034,10 +1034,8 @@ internal static unsafe class ProfileSynthesisTests
         compiler.opts.jitFlags = &flags;
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(ProfileSynthesisTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ProfileSynthesisTests));
         JitTls.Compiler = compiler;
 
         try

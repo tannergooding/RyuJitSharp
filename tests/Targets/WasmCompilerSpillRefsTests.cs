@@ -7,6 +7,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using RyuJitSharp.UnitTests;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.EHHandlerType;
 using static RyuJitSharp.FuncKind;
@@ -276,9 +277,7 @@ internal static unsafe class WasmCompilerSpillRefsTests
 
     private static void WithCompiler(var_types[] types, Action<Compiler> action)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;

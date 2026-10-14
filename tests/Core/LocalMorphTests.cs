@@ -332,7 +332,7 @@ internal static unsafe class LocalMorphTests
             var lookup = variableOffset.Op2.AsIndir().Addr.AsIntCon();
             Assert.That(lookup.IconValue, Is.EqualTo((nint)0x123400));
 #if DEBUG
-            Assert.That(lookup.TargetHandle, Is.EqualTo((nint)field.FldHnd));
+                Assert.That(lookup.TargetHandle, Is.EqualTo((nint)field.FldHnd));
 #endif
         });
     }
@@ -1286,10 +1286,11 @@ internal static unsafe class LocalMorphTests
             Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.True);
             Assert.That(compiler.lvaTable[1].lvDoNotEnregister, Is.True);
             Assert.That(compiler.lvaTable[2].lvDoNotEnregister, Is.False);
-#if DEBUG
-            Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
-            Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
+            }
         }, minOpts: true);
     }
 

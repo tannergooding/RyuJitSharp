@@ -138,7 +138,7 @@ internal static unsafe class CallDispatchLoweringTests
             Assert.That(call._controlExpr, Is.SameAs(target));
             Assert.That(target.IsContained, Is.True);
 #if DEBUG
-            Assert.That(target.RegTag, Is.EqualTo(GenTree.GT_REGTAG_REG));
+                Assert.That(target.RegTag, Is.EqualTo(GenTree.GT_REGTAG_REG));
 #endif
             Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(target.Next, Is.SameAs(call));

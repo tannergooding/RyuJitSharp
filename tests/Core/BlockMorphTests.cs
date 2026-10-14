@@ -366,9 +366,7 @@ internal static unsafe class BlockMorphTests
         compiler.lvaCount = 3;
         compiler.lvaRefCountState = RCS_EARLY;
         compiler.fgGlobalMorph = true;
-#if DEBUG
-        compiler.info.compFullName = nameof(BlockMorphTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(BlockMorphTests));
         JitTls.Compiler = compiler;
 
         try

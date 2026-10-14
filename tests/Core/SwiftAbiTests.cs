@@ -402,9 +402,7 @@ internal static unsafe class SwiftAbiTests
         compiler.info.compCompHnd = &state.Interface;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
-#if DEBUG
-        compiler.info.compFullName = name;
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, name);
         compiler.info.compMaxStack = 8;
         compiler.opts.jitFlags = &flags;
         compiler.compCurBB = new BasicBlock(null, null);

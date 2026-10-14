@@ -333,10 +333,8 @@ internal static unsafe class ProfileEdgeCountTests
         compiler.opts.jitFlags = &flags;
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(ProfileEdgeCountTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ProfileEdgeCountTests));
         JitTls.Compiler = compiler;
 
         try

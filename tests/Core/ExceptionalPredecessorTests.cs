@@ -327,10 +327,8 @@ internal static unsafe class ExceptionalPredecessorTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        compiler.info.compFullName = nameof(ExceptionalPredecessorTests);
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ExceptionalPredecessorTests));
         JitTls.Compiler = compiler;
 
         try

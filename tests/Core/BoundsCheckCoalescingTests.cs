@@ -313,10 +313,8 @@ internal static unsafe class BoundsCheckCoalescingTests
         compiler.opts.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
-#if DEBUG
-        compiler.info.compFullName = nameof(BoundsCheckCoalescingTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(BoundsCheckCoalescingTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         var store = new ValueNumStore(compiler);
         compiler.vnStore = store;
         compiler.fgSsaPassesCompleted = 1;

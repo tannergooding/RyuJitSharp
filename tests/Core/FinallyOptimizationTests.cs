@@ -134,7 +134,7 @@ internal static class FinallyOptimizationTests
             Assert.That(call.isBBCallFinallyPair, Is.True);
             Assert.That(tryBlock.Target, Is.SameAs(call));
 #if DEBUG
-            Assert.That(Globals.JitConfig.JitEnableFinallyCloning, Is.EqualTo(1));
+                Assert.That(Globals.JitConfig.JitEnableFinallyCloning, Is.EqualTo(1));
 #endif
             Assert.That(Clone(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.compHndBBtabCount, Is.EqualTo(1));

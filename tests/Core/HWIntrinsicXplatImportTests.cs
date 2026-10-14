@@ -27,9 +27,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
         byte simdSize, bool expectsAssertion)
     {
         WithImporter(compiler => {
-#if DEBUG
-            compiler.info.compFullName = nameof(VectorT128ExpansionKeepsDestinationIdentityAndNativeWidthAssertion);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(VectorT128ExpansionKeepsDestinationIdentityAndNativeWidthAssertion));
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT128);
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX2);
             var operand = new GenTreeLclVar(TYP_SIMD16, 0);
@@ -62,9 +60,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
         var_types baseType, var_types destinationType)
     {
         WithImporter(compiler => {
-#if DEBUG
-            compiler.info.compFullName = nameof(SignedSaturatingNarrowUsesDestinationLanesAndPreservesOperandOrder);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(SignedSaturatingNarrowUsesDestinationLanesAndPreservesOperandOrder));
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 2;
             var first = new GenTreeLclVar(TYP_SIMD16, 0);
@@ -103,9 +99,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
         NamedIntrinsic intrinsic, bool withOffset, bool fromByref)
     {
         WithImporter(compiler => {
-#if DEBUG
-            compiler.info.compFullName = nameof(MemoryImportsStripOnlyByrefAddressCasts);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(MemoryImportsStripOnlyByrefAddressCasts));
             var isStore = intrinsic is NI_Vector_StoreAligned or NI_Vector_StoreAlignedNonTemporal or NI_Vector_StoreUnsafe;
             var operandType = fromByref ? TYP_BYREF : TYP_INT;
             compiler.lvaTable[1].Type = operandType;
@@ -239,9 +233,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
     public static void PerLaneShiftUsesNativeWidthAndPreservesOperandOrder(byte size)
     {
         WithImporter(compiler => {
-#if DEBUG
-            compiler.info.compFullName = nameof(PerLaneShiftUsesNativeWidthAndPreservesOperandOrder);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(PerLaneShiftUsesNativeWidthAndPreservesOperandOrder));
 #if TARGET_XARCH
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX2);
             var expected = NI_AVX2_ShiftLeftLogicalVariable;
@@ -332,9 +324,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
     public static void LongGeometricSequenceWithConstantMultiplierDefersOrPreservesTheStack(bool minOpts)
     {
         WithImporter(compiler => {
-#if DEBUG
-            compiler.info.compFullName = nameof(LongGeometricSequenceWithConstantMultiplierDefersOrPreservesTheStack);
-#endif
+            TestConfiguration.SetCompilerFullName(compiler, nameof(LongGeometricSequenceWithConstantMultiplierDefersOrPreservesTheStack));
             compiler.opts.SetMinOpts(minOpts);
             compiler.lvaTable[0].Type = TYP_LONG;
             var initial = new GenTreeLclVar(TYP_LONG, 0);

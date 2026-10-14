@@ -2367,9 +2367,7 @@ internal static unsafe class AssertionTests
         compiler.lvaCount = Math.Max(2, tracked);
         compiler.lvaTrackedCount = tracked;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
-#if DEBUG
-        compiler.info.compFullName = "AssertionTests";
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, "AssertionTests");
         JitTls.Compiler = compiler;
         try
         {

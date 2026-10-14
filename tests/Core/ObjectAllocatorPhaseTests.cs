@@ -311,10 +311,8 @@ internal static unsafe class ObjectAllocatorPhaseTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compCompHnd = &jitInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
-#if DEBUG
-        compiler.info.compFullName = nameof(ObjectAllocatorPhaseTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorPhaseTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         compiler.lvaTable = new LclVarDsc[8];
         compiler.lvaCount = 1;
         compiler.lvaTable[0].Type = TYP_REF;

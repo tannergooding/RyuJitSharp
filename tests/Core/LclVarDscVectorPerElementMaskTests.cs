@@ -127,9 +127,10 @@ internal static class LclVarDscVectorPerElementMaskTests
             Assert.That(GetFlags(descriptor), Is.EqualTo(markedFlags));
 #if MEASURE_FATAL
             Assert.That(s_fatalNoWayAssertBodyCount, Is.EqualTo(unchecked(fatalCount + 2)));
-#if DEBUG
-            Assert.That(s_fatalNoWayAssertBodyArgsCount, Is.EqualTo(unchecked(fatalArgsCount + 2)));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(s_fatalNoWayAssertBodyArgsCount, Is.EqualTo(unchecked(fatalArgsCount + 2)));
+            }
 #endif
         }
         finally

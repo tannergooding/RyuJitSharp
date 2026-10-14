@@ -26,9 +26,7 @@ internal static unsafe class ForwardSubTargetTests
     public static void MultiUseNativeIntCopyPreservesSmallLocalNormalization(
         var_types type, bool substitutes)
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

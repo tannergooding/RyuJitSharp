@@ -121,10 +121,8 @@ internal static unsafe class ObjectAllocatorAllocationAnalysisTests
 #endif
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
-        compiler.info.compFullName = nameof(ObjectAllocatorAllocationAnalysisTests);
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorAllocationAnalysisTests));
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-#endif
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[types.Length];
         compiler.lvaCount = types.Length;

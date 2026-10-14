@@ -41,11 +41,12 @@ internal static unsafe class EmitterMethodInitializationTests
         Assert.That(emitter.emitCntStackDepth, Is.EqualTo(sizeof(int)));
         Assert.That(body.igStkLvl, Is.Zero);
         Assert.That(LastInstruction(emitter), Is.Null);
-#if DEBUG
-        Assert.That(emitter.emitChkAlign, Is.True);
-        Assert.That(prolog.igWeight, Is.EqualTo(100.0));
-        Assert.That(body.igWeight, Is.EqualTo(100.0));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(emitter.emitChkAlign, Is.True);
+            Assert.That(prolog.igWeight, Is.EqualTo(100.0));
+            Assert.That(body.igWeight, Is.EqualTo(100.0));
+        }
     }
 
     [TestCase("emitFwdJumps", true, false)]
