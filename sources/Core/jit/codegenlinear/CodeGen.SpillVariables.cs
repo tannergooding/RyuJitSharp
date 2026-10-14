@@ -52,14 +52,12 @@ public sealed partial class CodeGen
 
             if (VarSetOps.IsMember(_compiler, _gcInfo.gcTrkStkPtrLcls, varDsc._varIndex))
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     var state = VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex)
                         ? "continuing" : "becoming";
                     jitprintf($"\t\t\t\t\t\t\tVar V{varNum:D2} {state} live\n");
                 }
-#endif
                 VarSetOps.AddElemD(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex);
             }
         }
