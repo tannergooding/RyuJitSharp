@@ -302,21 +302,17 @@ public partial class Compiler
             }
             if (Configuration.DEBUG && compStressCompile(STRESS_CLONE_EXPR, 30))
             {
-#if DEBUG
                 if (verbose)
                 {
                     jitprintf("\nfgMorphTree (stressClone from):\n");
                     gtDispTree(morphedTree);
                 }
-#endif
                 morphedTree = gtCloneExpr(morphedTree);
-#if DEBUG
                 if (verbose)
                 {
                     jitprintf("\nfgMorphTree (stressClone to):\n");
                     gtDispTree(morphedTree);
                 }
-#endif
             }
 #if DEBUG
             if (verbose && (gtHashValue(morphedTree) != oldHash))
