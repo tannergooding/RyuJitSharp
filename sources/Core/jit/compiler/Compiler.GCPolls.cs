@@ -228,13 +228,11 @@ public partial class Compiler
             fgSetStmtSeq(trapCheckStmt);
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Adding trapCheck in {FMT_BB(top.bbNum)}\n");
             gtDispTree(trapCheck);
         }
-#endif
         var trueEdge = fgAddRefPred(bottom, top);
         var falseEdge = fgAddRefPred(poll, top);
         trueEdge.Likelihood = 1.0;

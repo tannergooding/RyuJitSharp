@@ -17,15 +17,13 @@ public partial class Compiler
         var morphedTree = fgMorphTree(statement.RootNode);
         if (fgIsCommaThrow(morphedTree, forFolding: true))
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("Folding a top-level fgIsCommaThrow stmt\n");
                 jitprintf("Removing op2 as unreachable:\n");
                 gtDispTree(morphedTree.AsOp().Op2);
                 jitprintf("\n");
             }
-#endif
             morphedTree = morphedTree.AsOp().Op1;
             noway_assert(morphedTree.Oper is GT_CALL);
         }
@@ -62,14 +60,12 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"{message} {(removedStatement ? "removed" : "morphed")} tree:\n");
             gtDispTree(morphedTree);
             jitprintf("\n");
         }
-#endif
         if (fgRemoveRestOfBlock)
         {
             for (var remaining = statement.NextStmt; remaining is not null;)

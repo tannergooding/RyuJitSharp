@@ -115,8 +115,7 @@ public partial class Compiler
                 if (sideEffList is not null)
                 {
                     noway_assert((sideEffList.Flags & GTF_SIDE_EFFECT) != 0);
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf("\nSwitch expression has side effects! Extracting side effects...\n");
                         gtDispTree(switchTree);
@@ -124,7 +123,6 @@ public partial class Compiler
                         gtDispTree(sideEffList);
                         jitprintf("\n");
                     }
-#endif
                     noway_assert(sideEffList.Oper is not GT_SWITCH);
                     switchStmt.RootNode = sideEffList;
                     if (fgNodeThreading is not NodeThreading.None)
