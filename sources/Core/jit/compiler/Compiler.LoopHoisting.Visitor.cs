@@ -147,10 +147,8 @@ public partial class Compiler
                     }
                     else
                     {
-#if DEBUG
                         JITDUMP($"      [{top.Node.TreeId:D6}] " +
                             $"{(top.Invariant ? "not hoistable" : "not invariant")}: {top.FailReason}\n");
-#endif
                     }
                     _values.Clear();
                 }
@@ -199,11 +197,9 @@ public partial class Compiler
                     top.FailReason = "not handled by hoisting or CSE";
                 }
 
-#if DEBUG
                 JITDUMP($"      [{tree.TreeId:D6}] {tree.Oper.Name}: " +
                     $"{(top.Invariant ? (top.Hoistable ? "hoistable" : "not hoistable") : "not invariant")}: " +
                     $"{top.FailReason}\n");
-#endif
                 return WALK_CONTINUE;
             }
 
@@ -351,10 +347,8 @@ public partial class Compiler
                         {
                             hasExcep = (tree.Flags & GTF_EXCEPT) != 0;
                         }
-#if DEBUG
                         JITDUMP($"      [{value.Node.TreeId:D6}] " +
                             $"{(value.Invariant ? "not hoistable" : "not invariant")}: {value.FailReason}\n");
-#endif
                     }
                     else
                     {
