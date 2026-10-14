@@ -332,8 +332,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (compHndBBtabCount > 0)
+        if (Configuration.DEBUG && (compHndBBtabCount > 0))
         {
             JITDUMP("EH virtual IP ranges\n");
             for (ushort ehIndex = 0; ehIndex < compHndBBtabCount; ehIndex++)
@@ -351,7 +350,6 @@ public partial class Compiler
                 JITDUMP($" Handler [{clause.HandlerOffset:D4}..{clause.HandlerLength:D4})\n");
             }
         }
-#endif
 
         if (Configuration.DEBUG && (compHndBBtabCount > 0))
         {
