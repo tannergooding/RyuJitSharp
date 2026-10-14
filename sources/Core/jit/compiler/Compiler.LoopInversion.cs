@@ -466,11 +466,15 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nDuplicated loop exit block at {FMT_BB(preheader.bbNum)} for loop L{loop.Index:D2}\n");
             jitprintf($"Estimated code size expansion is {estDupCostSz}\n");
+        }
+
+#if DEBUG
+        if (verbose)
+        {
             fgDumpBlock(preheader);
             fgDumpBlock(condBlock);
         }

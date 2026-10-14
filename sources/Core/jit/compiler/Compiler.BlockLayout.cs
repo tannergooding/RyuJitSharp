@@ -11,11 +11,15 @@ public partial class Compiler
 {
     public PhaseStatus fgSearchImprovedLayout()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("*************** In fgSearchImprovedLayout()\n");
             jitprintf("\nInitial BasicBlocks");
+        }
+
+#if DEBUG
+        if (verbose)
+        {
             fgDispBasicBlocks(verboseTrees);
             jitprintf("\n");
         }

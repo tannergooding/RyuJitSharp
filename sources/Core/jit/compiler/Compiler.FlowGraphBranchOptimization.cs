@@ -210,16 +210,30 @@ public partial class Compiler
             }
         }
 
+        if (Configuration.DEBUG && verbose)
+        {
+            jitprintf($"\nfgOptimizeBranch added these statements(s) at the end of {FMT_BB(bJump.bbNum)}:\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"\nfgOptimizeBranch added these statements(s) at the end of {FMT_BB(bJump.bbNum)}:\n");
             for (var stmt = newStmtList; stmt is not null; stmt = stmt.NextStmt)
             {
                 gtDispStmt(stmt);
             }
+        }
+#endif
+
+        if (Configuration.DEBUG && verbose)
+        {
             jitprintf($"\nfgOptimizeBranch changed block {FMT_BB(bJump.bbNum)} from BBJ_ALWAYS to BBJ_COND.\n");
             jitprintf("\nAfter this change in fgOptimizeBranch the BB graph is:");
+        }
+
+#if DEBUG
+        if (verbose)
+        {
             fgDispBasicBlocks(verboseTrees);
             jitprintf("\n");
         }
