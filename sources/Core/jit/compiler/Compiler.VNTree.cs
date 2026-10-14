@@ -242,9 +242,7 @@ public partial class Compiler
                         var handle = gtGetClassHandle(addr, out var isExact, out _);
                         if (isExact && (handle != NO_CLASS_HANDLE))
                         {
-#if DEBUG
                             JITDUMP($"IND(obj) is actually a class handle for {eeGetClassName(handle)}\n");
-#endif
                             if (!eeIsSharedInst(handle))
                             {
                                 void* indirect;

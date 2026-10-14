@@ -359,9 +359,7 @@ public sealed partial class Lowering
             var currentBitsMask = (currentMask << currentShift) & newMask;
             var result = (((previousBits & previousMask) << previousShift) & newMask & ~currentBitsMask) |
                 (((currentBits & currentMask) << currentShift) & newMask);
-#if DEBUG
             JITDUMP($"Coalesced two stores into a single store with value {unchecked((long)result)}\n");
-#endif
             store.Data.AsIntCon().IconVal = unchecked((nint)result);
             if ((oldType.Size == 1) && (store.Oper is GT_STOREIND))
             {

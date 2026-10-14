@@ -337,9 +337,7 @@ public sealed partial class Lowering
             var currentBitsMask = (currentMask << currentShift) & newMask;
             var result = (((lowerBits & previousMask) << previousShift) & newMask & ~currentBitsMask) |
                 (((upperBits & currentMask) << currentShift) & newMask);
-#if DEBUG
             JITDUMP($"Coalesced two stores into a single store with value {unchecked((long)result)}\n");
-#endif
             current.Value.AsIntCon().IconVal = unchecked((nint)result);
         }
     }
