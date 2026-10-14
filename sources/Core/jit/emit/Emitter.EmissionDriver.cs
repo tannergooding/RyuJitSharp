@@ -105,12 +105,10 @@ public partial class Emitter
         )
     {
         var compiler = _compiler ?? throw new FatalJitException("Final instruction emission requires an active compiler.");
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf("*************** In emitEndCodeGen()\n");
         }
-#endif
         assert(emitCurIG is null);
 
         // The inline table is inside a managed emitter. Keep it pinned for the
@@ -396,12 +394,10 @@ public partial class Emitter
                     cp = coldCodeChunk.block;
                     writeableOffset = unchecked((nint)(coldCodeChunk.blockRW - coldCodeChunk.block));
                     emitOffsAdj = 0;
-#if DEBUG
-                    if (compiler.opts.disAsm || compiler.verbose)
+                    if (Configuration.DEBUG && (compiler.opts.disAsm || compiler.verbose))
                     {
                         jitprintf("\n************** Beginning of cold code **************\n");
                     }
-#endif
                 }
 
 #if DEBUG
@@ -439,20 +435,22 @@ public partial class Emitter
 #endif
                 var bp = cp;
                 var newOffsAdj = unchecked((int)(ig.igOffs - emitCurCodeOffs(cp)));
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    if (newOffsAdj != 0)
+                    if (compiler.verbose)
                     {
-                        jitprintf($"Block predicted offs = {ig.igOffs:X8}, actual = {emitCurCodeOffs(cp):X8} -> size adj = {newOffsAdj}\n");
+                        if (newOffsAdj != 0)
+                        {
+                            jitprintf($"Block predicted offs = {ig.igOffs:X8}, actual = {emitCurCodeOffs(cp):X8} -> size adj = {newOffsAdj}\n");
+                        }
+                        if (emitOffsAdj != newOffsAdj)
+                        {
+                            jitprintf($"Block expected size adj {emitOffsAdj} not equal to actual size adj {newOffsAdj} (probably some instruction size was underestimated but not included in the running `emitOffsAdj` count)\n");
+                        }
                     }
-                    if (emitOffsAdj != newOffsAdj)
-                    {
-                        jitprintf($"Block expected size adj {emitOffsAdj} not equal to actual size adj {newOffsAdj} (probably some instruction size was underestimated but not included in the running `emitOffsAdj` count)\n");
-                    }
+
+                    assert(emitOffsAdj == newOffsAdj);
                 }
-                assert(emitOffsAdj == newOffsAdj);
-#endif
                 noway_assert(emitOffsAdj <= newOffsAdj);
                 emitOffsAdj = newOffsAdj;
                 assert(emitOffsAdj >= 0);
@@ -609,11 +607,11 @@ public partial class Emitter
                     }
                 }
 
-#if DEBUG
-                if (compiler.opts.disAsm || compiler.verbose)
+                if (Configuration.DEBUG && (compiler.opts.disAsm || compiler.verbose))
                 {
                     jitprintf($"\t\t\t\t\t\t;; size={cp - bp} bbWeight={refCntWtd2str(ig.igWeight)} PerfScore {ig.igPerfScore:F2}");
                 }
+#if DEBUG
                 *instrCount += ig.igInsCnt;
 #else
                 if (compiler.opts.disAsm)
@@ -774,12 +772,10 @@ public partial class Emitter
                 }
             }
 
-#if DEBUG
-            if (compiler.opts.disAsm)
+            if (Configuration.DEBUG && compiler.opts.disAsm)
             {
                 jitprintf("\n");
             }
-#endif
             var actualCodeSize = emitCurCodeOffs(cp);
             if (Configuration.TARGET_ARM64)
             {
