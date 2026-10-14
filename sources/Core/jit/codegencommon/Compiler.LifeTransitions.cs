@@ -79,12 +79,10 @@ public partial class Compiler
             if (isInMemory && (isGCRef || isByRef))
             {
                 VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, deadVarIndex);
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming dead\n");
                 }
-#endif
             }
 #endif
             codeGen.getVariableLiveKeeper().siEndVariableLiveRange(varNum);
@@ -107,12 +105,11 @@ public partial class Compiler
                     // EH and spill-at-single-definition locals retain their stack home while enregistered.
                     if (!varDsc.IsAlwaysAliveInMemory)
                     {
-#if DEBUG
-                        if (verbose && VarSetOps.IsMember(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex))
+                        if (Configuration.DEBUG && verbose &&
+                            VarSetOps.IsMember(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex))
                         {
                             jitprintf($"\t\t\t\t\t\t\tRemoving V{varNum:D2} from gcVarPtrSetCur\n");
                         }
-#endif
                         VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
                     }
 
@@ -135,12 +132,10 @@ public partial class Compiler
             else if (lvaIsGCTracked(in varDsc))
             {
                 VarSetOps.AddElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming live\n");
                 }
-#endif
             }
 #endif
             codeGen.getVariableLiveKeeper().siStartVariableLiveRange(in varDsc, varNum);
