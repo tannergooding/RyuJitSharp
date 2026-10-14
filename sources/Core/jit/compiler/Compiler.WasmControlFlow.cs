@@ -225,91 +225,92 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            JITDUMP("\n-------------- Initial set of wasm intervals\n");
-            foreach (var interval in fgWasmIntervals)
+            if (verbose)
             {
-                interval.Dump();
+                JITDUMP("\n-------------- Initial set of wasm intervals\n");
+                foreach (var interval in fgWasmIntervals)
+                {
+                    interval.Dump();
+                }
+
+                JITDUMP("--------------\n\n");
             }
 
-            JITDUMP("--------------\n\n");
-        }
-
-        foreach (var tryInterval in fgWasmIntervals)
-        {
-            if (!tryInterval.IsTry())
+            foreach (var tryInterval in fgWasmIntervals)
             {
-                continue;
-            }
-
-            foreach (var loopInterval in fgWasmIntervals)
-            {
-                if (!loopInterval.IsLoop())
+                if (!tryInterval.IsTry())
                 {
                     continue;
                 }
 
-                var tryStart = tryInterval.Start();
-                var tryEnd = tryInterval.End();
-                var loopStart = loopInterval.Start();
-                var loopEnd = loopInterval.End();
-                var disjoint = (tryEnd <= loopStart) || (loopEnd <= tryStart);
-                var loopContains = (loopStart <= tryStart) && (tryEnd <= loopEnd);
-                var tryContains = (tryStart <= loopStart) && (loopEnd <= tryEnd);
-
-                if (!(disjoint || loopContains || tryContains))
+                foreach (var loopInterval in fgWasmIntervals)
                 {
-                    JITDUMP("Try interval ");
-                    tryInterval.Dump();
-                    JITDUMP(" overlaps loop interval ");
-                    loopInterval.Dump();
-                    assert(false, "Try and loop intervals must perfectly nest");
+                    if (!loopInterval.IsLoop())
+                    {
+                        continue;
+                    }
+
+                    var tryStart = tryInterval.Start();
+                    var tryEnd = tryInterval.End();
+                    var loopStart = loopInterval.Start();
+                    var loopEnd = loopInterval.End();
+                    var disjoint = (tryEnd <= loopStart) || (loopEnd <= tryStart);
+                    var loopContains = (loopStart <= tryStart) && (tryEnd <= loopEnd);
+                    var tryContains = (tryStart <= loopStart) && (loopEnd <= tryEnd);
+
+                    if (!(disjoint || loopContains || tryContains))
+                    {
+                        JITDUMP("Try interval ");
+                        tryInterval.Dump();
+                        JITDUMP(" overlaps loop interval ");
+                        loopInterval.Dump();
+                        assert(false, "Try and loop intervals must perfectly nest");
+                    }
                 }
             }
-        }
 
-        // Crossing a try/wrapper end requires an explicit branch, even to the next block.
-        // A plain Block interval must provide the label for that branch.
-        for (var cursor = 0; cursor < numBlocks; cursor++)
-        {
-            var block = initialLayout[cursor];
-            var next = initialLayout[cursor + 1];
-            var fallsToNext = ((block.Kind is BBJ_ALWAYS or BBJ_CALLFINALLYRET) && (block.Target == next)) ||
-                ((block.Kind is BBJ_COND) && (block.FalseTarget == next));
-            if (!fallsToNext)
+            // Crossing a try/wrapper end requires an explicit branch, even to the next block.
+            // A plain Block interval must provide the label for that branch.
+            for (var cursor = 0; cursor < numBlocks; cursor++)
             {
-                continue;
-            }
-
-            var endsTryOrWrapper = false;
-            var hasBlockTarget = false;
-            foreach (var interval in fgWasmIntervals)
-            {
-                if (interval.End() != cursor + 1)
+                var block = initialLayout[cursor];
+                var next = initialLayout[cursor + 1];
+                var fallsToNext = ((block.Kind is BBJ_ALWAYS or BBJ_CALLFINALLYRET) && (block.Target == next)) ||
+                    ((block.Kind is BBJ_COND) && (block.FalseTarget == next));
+                if (!fallsToNext)
                 {
                     continue;
                 }
 
-                if (interval.IsTry() || interval.IsExnRefWrapper())
+                var endsTryOrWrapper = false;
+                var hasBlockTarget = false;
+                foreach (var interval in fgWasmIntervals)
                 {
-                    endsTryOrWrapper = true;
-                }
-                else if (!interval.IsLoop() && (interval.Start() <= cursor))
-                {
-                    hasBlockTarget = true;
-                }
-            }
+                    if (interval.End() != cursor + 1)
+                    {
+                        continue;
+                    }
 
-            if (endsTryOrWrapper && !hasBlockTarget)
-            {
-                JITDUMP($"{FMT_BB(block.bbNum)}[{cursor}] -> {FMT_BB(next.bbNum)}[{cursor + 1}] " +
-                    "crosses a Try/ExnRefWrapper end without a Block target\n");
-                assert(false, "Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
+                    if (interval.IsTry() || interval.IsExnRefWrapper())
+                    {
+                        endsTryOrWrapper = true;
+                    }
+                    else if (!interval.IsLoop() && (interval.Start() <= cursor))
+                    {
+                        hasBlockTarget = true;
+                    }
+                }
+
+                if (endsTryOrWrapper && !hasBlockTarget)
+                {
+                    JITDUMP($"{FMT_BB(block.bbNum)}[{cursor}] -> {FMT_BB(next.bbNum)}[{cursor + 1}] " +
+                        "crosses a Try/ExnRefWrapper end without a Block target\n");
+                    assert(false, "Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
+                }
             }
         }
-#endif
 
         fgWasmIntervals.Sort((left, right) => left.Start().CompareTo(right.Start()));
 
@@ -345,8 +346,7 @@ public partial class Compiler
             ResolveInterval(interval);
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP("\n-------------- After finding conflicts\n");
             foreach (var interval in fgWasmIntervals)
@@ -356,7 +356,6 @@ public partial class Compiler
 
             JITDUMP("--------------\n\n");
         }
-#endif
 
         bool ComesBefore(WasmInterval left, WasmInterval right)
         {
@@ -398,8 +397,7 @@ public partial class Compiler
 
         fgWasmIntervals.Sort((left, right) => ComesBefore(left, right) ? -1 : ComesBefore(right, left) ? 1 : 0);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP("\n-------------- After sorting\n");
             foreach (var interval in fgWasmIntervals)
@@ -409,7 +407,6 @@ public partial class Compiler
 
             JITDUMP("--------------\n\n");
         }
-#endif
 
         JITDUMP("Reordering block list\n");
         BasicBlock? lastBlock = null;

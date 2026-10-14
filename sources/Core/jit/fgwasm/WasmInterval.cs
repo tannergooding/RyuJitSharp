@@ -129,7 +129,6 @@ public sealed class WasmInterval
         };
     }
 
-#if DEBUG
     public void Dump(bool chainExtent = false)
     {
         jitprintf($"[{_start:D3},{(chainExtent ? _chainEnd : _end):D3}]");
@@ -161,6 +160,7 @@ public sealed class WasmInterval
         }
     }
 
+#if DEBUG
     public string KindString()
     {
         return _kind switch {
