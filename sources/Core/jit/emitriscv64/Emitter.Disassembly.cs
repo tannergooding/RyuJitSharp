@@ -1286,12 +1286,10 @@ public partial class Emitter
                 instruction |= (uint)Unsafe.ReadUnaligned<ushort>(instructionBytes + sizeof(ushort)) << 16;
                 instructionSize = sizeof(uint);
             }
-#if DEBUG
-            if (compiler.verbose && (i != 0))
+            if (Configuration.DEBUG && compiler.verbose && (i != 0))
             {
                 jitprintf("        ");
             }
-#endif
             emitDispInsNameRiscV64(instruction, instructionBytes, doffs, offset, id, ig);
             if (printLoadImmediate && ((i + instructionSize) < size))
             {
