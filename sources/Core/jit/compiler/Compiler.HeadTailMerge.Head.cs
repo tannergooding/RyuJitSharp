@@ -55,12 +55,10 @@ public partial class Compiler
         }
 
         JITDUMP($"Both succs of {FMT_BB(block.bbNum)} start with the same tree\n");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             gtDispStmt(next);
         }
-#endif
         if (gtTreeContainsTailCall(next.RootNode) || gtTreeContainsTailCall(destination.RootNode))
         {
             JITDUMP("But one is a tailcall\n");

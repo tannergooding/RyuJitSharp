@@ -133,12 +133,10 @@ public partial class Compiler
                 if (sameRegionAsSuccessor && allPredsMatch)
                 {
                     JITDUMP($"All {matchedPredInfo.Count} preds of {FMT_BB(commonSuccessor!.bbNum)} end with the same tree, moving\n");
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         gtDispStmt(matchedPredInfo[^1].Stmt);
                     }
-#endif
                     for (var j = 0; j < matchedPredInfo.Count; j++)
                     {
                         var (pred, stmt) = matchedPredInfo[matchedPredInfo.Count - 1 - j];
@@ -172,12 +170,10 @@ public partial class Compiler
                 {
                     JITDUMP($"A set of {matchedPredInfo.Count} return blocks end with the same tree\n");
                 }
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     gtDispStmt(matchedPredInfo[^1].Stmt);
                 }
-#endif
 
                 BasicBlock? victim = null;
                 Statement? victimStmt = null;
