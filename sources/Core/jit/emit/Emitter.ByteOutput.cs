@@ -14,36 +14,30 @@ public partial class Emitter
     {
         // Checked pointer arithmetic rejects valid negative writable-alias offsets.
         *unchecked(dst + writeableOffset) = unchecked((byte)val);
-#if DEBUG
-        if (Configuration.TARGET_AMD64)
+        if (Configuration.DEBUG && Configuration.TARGET_AMD64)
         {
             assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
         }
-#endif
         return sizeof(byte);
     }
 
     public unsafe byte emitOutputWord(byte* dst, long val)
     {
         Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((short)val));
-#if DEBUG
-        if (Configuration.TARGET_AMD64)
+        if (Configuration.DEBUG && Configuration.TARGET_AMD64)
         {
             assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
         }
-#endif
         return sizeof(short);
     }
 
     public unsafe byte emitOutputLong(byte* dst, long val)
     {
         Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((int)val));
-#if DEBUG
-        if (Configuration.TARGET_AMD64)
+        if (Configuration.DEBUG && Configuration.TARGET_AMD64)
         {
             assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
         }
-#endif
         return sizeof(int);
     }
 
