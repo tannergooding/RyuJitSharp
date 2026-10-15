@@ -35,7 +35,7 @@ public sealed partial class CodeGen
         assert(targetReg != REG_RISCV64_NA);
         assert(tree.Type is not TYP_VOID);
 
-        var isReversed = false;
+        bool isReversed;
         if (varTypeIsFloating(op1Type))
         {
             assert(!op1.IsContainedIntOrIImmed && !op2.IsContainedIntOrIImmed);
@@ -108,9 +108,11 @@ public sealed partial class CodeGen
 
             if (oper is GT_GT)
             {
-#if DEBUG
-                oper = oper.SwapRelop;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    oper = oper.SwapRelop;
+                }
+
                 (op1, op2) = (op2, op1);
             }
 
