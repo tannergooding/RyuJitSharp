@@ -13,6 +13,26 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class BlockDisplayTests
 {
+    [Test]
+    public static unsafe void NewBlockVerboseDumpUsesStableDisplay()
+    {
+        using var tls = new JitTls(null);
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        JitTls.Compiler = compiler;
+        compiler.compHndBBtab = [];
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
+        compiler.fgPredsComputed = true;
+        TestConfiguration.EnableVerbose(compiler);
+
+        var output = CodeGenLifeTransitionTests.Capture(
+            () => BasicBlock.New(compiler, BBJ_RETURN));
+
+        Assert.That(output, Does.Contain("New Basic Block BB01 [0000] created."));
+    }
+
     [TestCase(false, -2, 2)]
     [TestCase(false, 0, 0)]
     [TestCase(false, 2, 2)]

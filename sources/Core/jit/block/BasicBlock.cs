@@ -975,13 +975,11 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlock Target => TargetEdge.DestinationBlock;
 
-#if DEBUG
     public BasicBlock? GetTargetRaw()
     {
         assert(HasTarget);
         return bbTargetEdge?.DestinationBlock;
     }
-#endif
 
     public FlowEdge TargetEdge
     {
@@ -1087,13 +1085,11 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlock FalseTarget => FalseEdge.DestinationBlock;
 
-#if DEBUG
     public BasicBlock? GetFalseTargetRaw()
     {
         assert(Kind is BBJ_COND);
         return bbFalseEdge?.DestinationBlock;
     }
-#endif
 
     public bool HasAllFlags(BasicBlockFlags flags)
     {
@@ -1295,13 +1291,11 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlock TrueTarget => TrueEdge.DestinationBlock;
 
-#if DEBUG
     public BasicBlock? GetTrueTargetRaw()
     {
         assert(Kind is BBJ_COND);
         return bbTrueEdge?.DestinationBlock;
     }
-#endif
 
     public BBswtDesc SwitchTargets
     {
@@ -1413,12 +1407,10 @@ public sealed partial class BasicBlock : LIR.Range
         block.bbStkTempsIn = NO_BASE_TMP;
         block.bbStkTempsOut = NO_BASE_TMP;
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"New Basic Block {block.dspToString()} created.\n");
         }
-#endif
 
         // We will give all the blocks var sets after the number of tracked variables
         // is determined and frozen.  After that, if we dynamically create a basic block,
@@ -2136,7 +2128,8 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
+#endif
+
     public string dspToString(int blockNumPadding = 0)
         => $"{FMT_BB(bbNum)}{new string(' ', blockNumPadding)} [{bbID:D4}]";
-#endif
 }
