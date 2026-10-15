@@ -12,9 +12,7 @@ internal static class X86EmitterInstructionDispatchTests
     public static void ThreeRegisterAvxOutputIsNotSupported()
     {
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
-        {
-            Assert.That(emitter.IsThreeOperandAVXInstruction(INS_addps), Is.False);
-        });
+            Assert.That(emitter.IsThreeOperandAVXInstruction(INS_addps), Is.False));
     }
 }
 #endif
