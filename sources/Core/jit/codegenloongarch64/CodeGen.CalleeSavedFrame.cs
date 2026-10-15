@@ -27,30 +27,31 @@ public sealed partial class CodeGen
         var allSavedRegistersMask = registersToSaveMask | new regMaskTP(SRBM_LOONGARCH64_FP | SRBM_LOONGARCH64_RA);
         _regSet.rsSetCalleeSavedRegsMask(allSavedRegistersMask);
 
-#if DEBUG
-        JITDUMP($"Frame info. #outsz={unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value)}; " +
-            $"#framesz={genTotalFrameSize}; LclFrameSize={_compiler.compLclFrameSize}\n");
-
-        if (_compiler.compCalleeRegsPushed != genCountBits(allSavedRegistersMask))
+        if (Configuration.DEBUG)
         {
-            jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: " +
-                $"{_compiler.compCalleeRegsPushed}. Got: {genCountBits(allSavedRegistersMask)} ");
-            dspRegMask(allSavedRegistersMask);
-            jitprintf("\n");
-            assert(_compiler.compCalleeRegsPushed == genCountBits(allSavedRegistersMask));
-        }
+            JITDUMP($"Frame info. #outsz={unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value)}; " +
+                $"#framesz={genTotalFrameSize}; LclFrameSize={_compiler.compLclFrameSize}\n");
 
-        if (_verbose)
-        {
-            var floatMask = registersToSaveMask & new regMaskTP(SRBM_ALLFLOAT_LOONGARCH64);
-            var intMask = registersToSaveMask & ~floatMask;
-            jitprintf("Save float regs: ");
-            dspRegMask(floatMask);
-            jitprintf("\nSave int   regs: ");
-            dspRegMask(intMask);
-            jitprintf("\n");
+            if (_compiler.compCalleeRegsPushed != genCountBits(allSavedRegistersMask))
+            {
+                jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: " +
+                    $"{_compiler.compCalleeRegsPushed}. Got: {genCountBits(allSavedRegistersMask)} ");
+                dspRegMask(allSavedRegistersMask);
+                jitprintf("\n");
+                assert(_compiler.compCalleeRegsPushed == genCountBits(allSavedRegistersMask));
+            }
+
+            if (_verbose)
+            {
+                var floatMask = registersToSaveMask & new regMaskTP(SRBM_ALLFLOAT_LOONGARCH64);
+                var intMask = registersToSaveMask & ~floatMask;
+                jitprintf("Save float regs: ");
+                dspRegMask(floatMask);
+                jitprintf("\nSave int   regs: ");
+                dspRegMask(intMask);
+                jitprintf("\n");
+            }
         }
-#endif
 
         var totalFrameSize = genTotalFrameSize;
         var leftFrameSize = 0;
@@ -60,13 +61,11 @@ public sealed partial class CodeGen
             localFrameSize -= Configuration.TARGET_POINTER_SIZE;
         }
 
-#if DEBUG
-        if (_compiler.opts.disAsm)
+        if (Configuration.DEBUG && _compiler.opts.disAsm)
         {
             jitprintf($"Frame info. #outsz={unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value)}; " +
                 $"#framesz={genTotalFrameSize}; lcl={localFrameSize}\n");
         }
-#endif
 
         var fpOffset = localFrameSize;
         if (totalFrameSize <= 2040)

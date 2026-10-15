@@ -134,19 +134,20 @@ public sealed partial class CodeGen
         genFuncletInfo.fiSpDelta = unchecked((uint)-frameSize);
         genFuncletInfo.fiSaveRegs = saveRegs;
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("\n");
-            jitprintf("Funclet prolog / epilog info\n");
-            jitprintf("                        Save regs: ");
-            dspRegMask(saveRegs);
-            jitprintf("\n");
-            jitprintf($"  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
-            jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
-        }
+            if (_verbose)
+            {
+                jitprintf("\n");
+                jitprintf("Funclet prolog / epilog info\n");
+                jitprintf("                        Save regs: ");
+                dspRegMask(saveRegs);
+                jitprintf("\n");
+                jitprintf($"  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
+                jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
+            }
 
-        assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
-#endif
+            assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
+        }
     }
 }
