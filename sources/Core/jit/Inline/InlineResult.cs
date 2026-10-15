@@ -119,8 +119,7 @@ public sealed class InlineResult : IDisposable
     /// <summary>Dump and report the inline decision, optionally recording a permanent runtime rejection.</summary>
     public unsafe void Report()
     {
-#if DEBUG
-        if (IsFailure && (_call is not null))
+        if (Configuration.DEBUG && IsFailure && (_call is not null))
         {
             assert(((_call.Flags & GTF_CALL_INLINE_CANDIDATE) == 0) || _call.IsGuardedDevirtualizationCandidate);
 
@@ -129,7 +128,6 @@ public sealed class InlineResult : IDisposable
                 _call._inlineObservation = _policy.Observation;
             }
         }
-#endif
 
         if (_doNotReport)
         {
