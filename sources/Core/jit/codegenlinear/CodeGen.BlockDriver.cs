@@ -303,53 +303,54 @@ public sealed partial class CodeGen
                 _ = genConsumeReg(node);
             }
         }
-#if DEBUG
-        _regSet.rsSpillChk();
-#if EMIT_GENERATE_GCINFO
-        if (Configuration.HAS_FIXED_REGISTER_SET)
+        if (Configuration.DEBUG)
         {
-            var ptrRegs = _gcInfo.gcRegGCrefSetCur | _gcInfo.gcRegByrefSetCur;
-            var nonVarPtrRegs = ptrRegs & ~_regSet.GetMaskVars();
-            if (_compiler.compMethodReturnsRetBufAddr)
+            _regSet.rsSpillChk();
+#if EMIT_GENERATE_GCINFO
+            if (Configuration.HAS_FIXED_REGISTER_SET)
             {
-                nonVarPtrRegs &= ~new regMaskTP(TargetRuntimeMetadata.IntegerReturnMask);
-            }
-            else
-            {
-                ref readonly var retTypeDesc = ref _compiler.compRetTypeDesc;
-                var regCount = retTypeDesc.ReturnRegCount;
-                for (byte i = 0; i < regCount; i++)
+                var ptrRegs = _gcInfo.gcRegGCrefSetCur | _gcInfo.gcRegByrefSetCur;
+                var nonVarPtrRegs = ptrRegs & ~_regSet.GetMaskVars();
+                if (_compiler.compMethodReturnsRetBufAddr)
                 {
-                    var reg = retTypeDesc.GetAbiReturnReg(i, _compiler.info.compCallConv);
-                    nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                    nonVarPtrRegs &= ~new regMaskTP(TargetRuntimeMetadata.IntegerReturnMask);
                 }
+                else
+                {
+                    ref readonly var retTypeDesc = ref _compiler.compRetTypeDesc;
+                    var regCount = retTypeDesc.ReturnRegCount;
+                    for (byte i = 0; i < regCount; i++)
+                    {
+                        var reg = retTypeDesc.GetAbiReturnReg(i, _compiler.info.compCallConv);
+                        nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                    }
+                }
+                if (_compiler.compIsAsync)
+                {
+                    nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.AsyncContinuationReturnRegister,
+                        TargetRuntimeMetadata.AsyncContinuationReturnRegister.SingleTypeMask);
+                }
+                if (block.HasFlag(BBF_HAS_JMP))
+                {
+                    nonVarPtrRegs = RBM_NONE;
+                }
+                if (nonVarPtrRegs.IsNonEmpty)
+                {
+                    jitprintf($"Regset after {FMT_BB(block.bbNum)} gcr=");
+                    printRegMaskInt(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
+                    Emitter.emitDispRegSet(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
+                    jitprintf(", byr=");
+                    printRegMaskInt(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
+                    Emitter.emitDispRegSet(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
+                    jitprintf(", regVars=");
+                    printRegMaskInt(_regSet.GetMaskVars());
+                    Emitter.emitDispRegSet(_regSet.GetMaskVars());
+                    jitprintf("\n");
+                }
+                noway_assert(nonVarPtrRegs.IsEmpty);
             }
-            if (_compiler.compIsAsync)
-            {
-                nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.AsyncContinuationReturnRegister,
-                    TargetRuntimeMetadata.AsyncContinuationReturnRegister.SingleTypeMask);
-            }
-            if (block.HasFlag(BBF_HAS_JMP))
-            {
-                nonVarPtrRegs = RBM_NONE;
-            }
-            if (nonVarPtrRegs.IsNonEmpty)
-            {
-                jitprintf($"Regset after {FMT_BB(block.bbNum)} gcr=");
-                printRegMaskInt(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
-                Emitter.emitDispRegSet(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
-                jitprintf(", byr=");
-                printRegMaskInt(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
-                Emitter.emitDispRegSet(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
-                jitprintf(", regVars=");
-                printRegMaskInt(_regSet.GetMaskVars());
-                Emitter.emitDispRegSet(_regSet.GetMaskVars());
-                jitprintf("\n");
-            }
-            noway_assert(nonVarPtrRegs.IsEmpty);
+#endif
         }
-#endif
-#endif
 #if DEBUG
         if (block.IsLast)
         {
@@ -372,31 +373,32 @@ public sealed partial class CodeGen
             siEndBlock(block);
         }
         SubtractStackLevel(savedStkLvl);
-#if DEBUG
-        var mismatchLiveVars = VarSetOps.Diff(_compiler, block.bbLiveOut, _compiler.compCurLife);
-        VarSetOps.UnionD(_compiler, mismatchLiveVars, VarSetOps.Diff(_compiler, _compiler.compCurLife, block.bbLiveOut));
-        var foundMismatchedRegVar = false;
-        _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, varIndex =>
+        if (Configuration.DEBUG)
         {
-            var varNum = _compiler.lvaTrackedIndexToLclNum(varIndex);
-            ref var varDsc = ref _compiler.lvaGetDesc(varNum);
-            if (varDsc.lvIsRegCandidate)
+            var mismatchLiveVars = VarSetOps.Diff(_compiler, block.bbLiveOut, _compiler.compCurLife);
+            VarSetOps.UnionD(_compiler, mismatchLiveVars, VarSetOps.Diff(_compiler, _compiler.compCurLife, block.bbLiveOut));
+            var foundMismatchedRegVar = false;
+            _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, varIndex =>
             {
-                if (!foundMismatchedRegVar)
+                var varNum = _compiler.lvaTrackedIndexToLclNum(varIndex);
+                ref var varDsc = ref _compiler.lvaGetDesc(varNum);
+                if (varDsc.lvIsRegCandidate)
                 {
-                    JITDUMP($"Mismatched live reg vars after {FMT_BB(block.bbNum)}:");
-                    foundMismatchedRegVar = true;
+                    if (!foundMismatchedRegVar)
+                    {
+                        JITDUMP($"Mismatched live reg vars after {FMT_BB(block.bbNum)}:");
+                        foundMismatchedRegVar = true;
+                    }
+                    JITDUMP($" V{varNum:D2}");
                 }
-                JITDUMP($" V{varNum:D2}");
+                return true;
+            });
+            if (foundMismatchedRegVar)
+            {
+                JITDUMP("\n");
+                assert(false, "Found mismatched live reg var(s) after block");
             }
-            return true;
-        });
-        if (foundMismatchedRegVar)
-        {
-            JITDUMP("\n");
-            assert(false, "Found mismatched live reg var(s) after block");
         }
-#endif
         noway_assert(genStackLevel == 0);
         genEmitEndBlock(block);
 #if DEBUG

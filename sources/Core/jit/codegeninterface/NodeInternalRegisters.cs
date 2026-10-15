@@ -208,9 +208,10 @@ public partial struct NodeInternalRegisters
             result = (regNumber)BitOperations.TrailingZeroCount(lower);
         }
 
-#if DEBUG
-        table[tree] = registers & ~regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
-#endif
+        if (Configuration.DEBUG)
+        {
+            table[tree] = registers & ~regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
+        }
 
         return result;
     }

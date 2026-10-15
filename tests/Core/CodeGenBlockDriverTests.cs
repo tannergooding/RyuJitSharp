@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -85,6 +86,41 @@ internal static unsafe class CodeGenBlockDriverTests
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? RBM_RBX : RBM_NONE));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.EqualTo(alwaysAlive));
             Assert.That(compiler.compCurBB, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void BlockExitLiveRegisterMismatchIsCheckedOnlyInDebug()
+    {
+        WithDriver((compiler, codeGen) =>
+        {
+            var block = Blocks(compiler, BBJ_RETURN)[0];
+            block.bbLiveIn = VarSetOps.MakeSingleton(compiler, 0);
+            block.bbLiveOut = VarSetOps.MakeEmpty(compiler);
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            compiler.lvaTable[0].lvLRACandidate = true;
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ICorJitInfo ee = new() { lpVtbl = &vtable };
+            using var assertTls = TestConfiguration.CreateJitTls(&ee);
+            JitTls.Compiler = compiler;
+            s_assertions.Clear();
+            void Generate()
+            {
+                codeGen.genCodeForBlock(block);
+            }
+
+            Generate();
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(s_assertions, Is.Not.Empty);
+            }
+            else
+            {
+                Assert.That(s_assertions, Is.Empty);
+            }
+            s_assertions.Clear();
         });
     }
 
@@ -407,6 +443,15 @@ internal static unsafe class CodeGenBlockDriverTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitPlaceholderLast")]
     internal static extern ref insGroup? LastPlaceholder(Emitter emitter);
+
+    private static readonly List<string?> s_assertions = [];
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
+        return 0;
+    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichMappings(ref JitConfigValues config);
