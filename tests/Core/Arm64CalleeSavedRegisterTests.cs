@@ -494,6 +494,32 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     }
 
     [Test]
+    public static void ReleaseSaveCountMismatchStillEmitsTheFramePair()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+        WithCodeGen((compiler, codeGen) =>
+        {
+            codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
+            codeGen.IsFramePointerUsed = true;
+            compiler.compCalleeRegsPushed = 1;
+            compiler.compLclFrameSize = 0;
+            compiler.lvaOutgoingArgSpaceSize.Value = 0;
+
+            var zeroed = true;
+            codeGen.genPushCalleeSavedRegisters(REG_ARM64_R19, ref zeroed);
+
+            var expectedMask = Mask(REG_ARM64_FP, REG_ARM64_LR);
+            Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(expectedMask));
+            Assert.That(Descriptors(codeGen).Any(descriptor =>
+                (descriptor.idIns() == INS_stp) &&
+                (descriptor.idReg1() == REG_ARM64_FP) &&
+                (descriptor.idReg2() == REG_ARM64_LR)), Is.True);
+            Assert.That(zeroed, Is.True);
+        });
+    }
+
+    [Test]
     public static void VarargsSpaceParticipatesInWholePushWhileRecordingUnwind()
     {
         WithCodeGen((compiler, codeGen) =>

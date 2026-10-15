@@ -36,16 +36,17 @@ public sealed partial class CodeGen
             // suspension uses stack return-address hijacking.
             pushRegs |= new regMaskTP(SRBM_ARM64_LR);
             _regSet.rsSetCalleeSavedRegsMask(pushRegs);
-#if DEBUG
-            if (_compiler.compCalleeRegsPushed != genCalleeSaveCountArm64(pushRegs))
+            if (Configuration.DEBUG)
             {
-                jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. " +
-                    $"Got: {genCalleeSaveCountArm64(pushRegs)} ");
-                dspRegMask(pushRegs);
-                jitprintf("\n");
-                assert(_compiler.compCalleeRegsPushed == genCalleeSaveCountArm64(pushRegs));
+                if (_compiler.compCalleeRegsPushed != genCalleeSaveCountArm64(pushRegs))
+                {
+                    jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. " +
+                        $"Got: {genCalleeSaveCountArm64(pushRegs)} ");
+                    dspRegMask(pushRegs);
+                    jitprintf("\n");
+                    assert(_compiler.compCalleeRegsPushed == genCalleeSaveCountArm64(pushRegs));
+                }
             }
-#endif
             var totalFrameSize = genTotalFrameSize;
             int offset;
             var saveFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT_ARM64);
