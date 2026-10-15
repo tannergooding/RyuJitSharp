@@ -2204,7 +2204,8 @@ public partial class Compiler
                     jitprintf("\n");
                     jitprintf("                                                            ");
                     indentStack.Print();
-                    jitprintf($"    {fieldVarDsc.Type.Name,-6} {fieldVarDsc.lvReason} -> ");
+                    var reason = Configuration.DEBUG ? fieldVarDsc.lvReason : null;
+                    jitprintf($"    {fieldVarDsc.Type.Name,-6} {reason} -> ");
                     gtDispLclVar(fieldLclNum);
                     gtDispSsaName(fieldLclNum, tree.GetSsaNum(this, index), isDef);
 

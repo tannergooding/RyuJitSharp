@@ -34,21 +34,25 @@ public partial class Compiler
         /// <summary>useful when debugging under SuperPMI</summary>
         public int compMethodSpmiIndex = -1;
 
-#if DEBUG
         private int compMethodHashPrivate;
 
         /// <summary>get hash code for currently jitted method</summary>
         /// <returns>Hash based on method's full name</returns>
         public int compMethodHash()
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("The compiler method hash is only available in Debug builds.");
+            }
+
             if (compMethodHashPrivate == 0)
             {
                 // Use compFullName to generate the hash, as it contains the signature and return type
                 compMethodHashPrivate = HashString(compFullName);
             }
+
             return compMethodHashPrivate;
         }
-#endif
 
         /// <summary>The following holds the FLG_xxxx flags for the method we're compiling.</summary>
         public CorInfoFlag compFlags;

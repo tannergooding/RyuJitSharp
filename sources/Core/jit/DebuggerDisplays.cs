@@ -13,16 +13,23 @@ using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
-#if DEBUG
-[DebuggerDisplay("[{info.compFullName} ({DebuggerMethodHash})]")]
-#else
-[DebuggerDisplay("[{info.compFullName}]")]
-#endif
+[DebuggerDisplay(Configuration.DEBUG
+    ? "[{info.compFullName} ({DebuggerMethodHash})]"
+    : "[{info.compFullName}]")]
 public partial class Compiler
 {
-#if DEBUG
-    private string DebuggerMethodHash => unchecked((uint)info.compMethodHash()).ToString("x8", CultureInfo.InvariantCulture);
-#endif
+    private string DebuggerMethodHash
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("The debugger method hash is only available in Debug builds.");
+            }
+
+            return unchecked((uint)info.compMethodHash()).ToString("x8", CultureInfo.InvariantCulture);
+        }
+    }
 }
 
 [DebuggerTypeProxy(typeof(StatementDebuggerProxy))]
@@ -228,13 +235,16 @@ public partial class GenTree
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public partial struct LclVarDsc
 {
-#if DEBUG
-    private readonly string DebuggerDisplayText => string.IsNullOrEmpty(lvReason)
-        ? $"[V{lvSlotNum}: {Type.Name}]"
-        : $"[V{lvSlotNum}: {Type.Name}-{lvReason}]";
-#else
-    private readonly string DebuggerDisplayText => $"[V{lvSlotNum}: {Type.Name}]";
-#endif
+    private readonly string DebuggerDisplayText
+    {
+        get
+        {
+            var reason = Configuration.DEBUG ? lvReason : null;
+            return string.IsNullOrEmpty(reason)
+                ? $"[V{lvSlotNum}: {Type.Name}]"
+                : $"[V{lvSlotNum}: {Type.Name}-{reason}]";
+        }
+    }
 }
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
@@ -265,21 +275,18 @@ public sealed partial class Interval
 
     private string FormatDebuggerDisplay(string category, bool hasNamedNumber)
     {
-#if DEBUG
-        return hasNamedNumber
-            ? $"[{category}, #{intervalIndex}, reg={physReg}]"
-            : $"[{category}{intervalIndex}, reg={physReg}]";
-#else
+        if (Configuration.DEBUG)
+        {
+            return hasNamedNumber
+                ? $"[{category}, #{intervalIndex}, reg={physReg}]"
+                : $"[{category}{intervalIndex}, reg={physReg}]";
+        }
+
         return $"[{category}, reg={physReg}]";
-#endif
     }
 }
 
-#if DEBUG
-[DebuggerDisplay("[#{rpNum} - {refType}]")]
-#else
-[DebuggerDisplay("[{refType}]")]
-#endif
+[DebuggerDisplay(Configuration.DEBUG ? "[#{rpNum} - {refType}]" : "[{refType}]")]
 [DebuggerTypeProxy(typeof(RefPositionDebuggerProxy))]
 public sealed partial class RefPosition
 {

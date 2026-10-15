@@ -130,9 +130,10 @@ internal static unsafe class CSEHeuristicPerformTests
                 Assert.That(use._cseNum, Is.Zero);
                 Assert.That(compiler.lvaGetDesc(def.LclNum).lvIsCSE, Is.True);
                 Assert.That(PromotionCount(compiler), Is.EqualTo(1));
-#if DEBUG
-                Assert.That(compiler.lvaGetDesc(def.LclNum).lvReason, Is.EqualTo(FMT_CSE(index)));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(compiler.lvaGetDesc(def.LclNum).lvReason, Is.EqualTo(FMT_CSE(index)));
+                }
             });
         });
     }

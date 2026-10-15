@@ -30,6 +30,31 @@ public partial struct LclVarDsc
     /// <summary>original slot # (if remapped)</summary>
     internal int lvSlotNum;
 
+    private string? _lvReason;
+
+    public string? lvReason
+    {
+        readonly get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("The local debug reason is only available in Debug builds.");
+            }
+
+            return _lvReason;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("The local debug reason is only available in Debug builds.");
+            }
+
+            _lvReason = value;
+        }
+    }
+
 #if DEBUG
     private DoNotEnregisterReason _doNotEnregReason;
 
@@ -1815,8 +1840,6 @@ public partial struct LclVarDsc
     }
 
 #if DEBUG
-    public string lvReason;
-
     public readonly void PrintVarReg()
     {
         jitprintf($"{_lvRegNum.Name}");

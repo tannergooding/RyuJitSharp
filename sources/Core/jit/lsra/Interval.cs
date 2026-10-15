@@ -46,9 +46,30 @@ public sealed partial class Interval : Referenceable
     public bool isWriteThru;
     public bool isSingleDef;
 
-#if DEBUG
-    public uint intervalIndex;
-#endif
+    private uint _intervalIndex;
+
+    public uint intervalIndex
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("The interval index is only available in Debug builds.");
+            }
+
+            return _intervalIndex;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("The interval index is only available in Debug builds.");
+            }
+
+            _intervalIndex = value;
+        }
+    }
 
     public ref LclVarDsc getLocalVar(Compiler compiler)
     {

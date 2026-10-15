@@ -812,9 +812,9 @@ public partial class Compiler
             }
         }
 
-        if (varDsc.lvReason is not null)
+        if (Configuration.DEBUG && varDsc.lvReason is { } reason)
         {
-            jitprintf($" \"{varDsc.lvReason}\"");
+            jitprintf($" \"{reason}\"");
         }
 
         if (varDsc.lvIsStructField)

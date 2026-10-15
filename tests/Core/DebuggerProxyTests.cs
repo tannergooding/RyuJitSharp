@@ -2,9 +2,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.regMask;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -75,17 +78,40 @@ internal static class DebuggerProxyTests
     [Test]
     public static void CompilerMethodDebuggerDisplayIsAvailableInAllConfigurations()
     {
-#if DEBUG
-        AssertDebuggerDisplay<Compiler>("[{info.compFullName} ({DebuggerMethodHash})]");
-        Assert.That(
-            typeof(Compiler).GetProperty("DebuggerMethodHash", BindingFlags.Instance | BindingFlags.NonPublic),
-            Is.Not.Null);
-#else
-        AssertDebuggerDisplay<Compiler>("[{info.compFullName}]");
-        Assert.That(
-            typeof(Compiler).GetProperty("DebuggerMethodHash", BindingFlags.Instance | BindingFlags.NonPublic),
-            Is.Null);
-#endif
+        AssertDebuggerDisplay<Compiler>(
+            Configuration.DEBUG
+                ? "[{info.compFullName} ({DebuggerMethodHash})]"
+                : "[{info.compFullName}]");
+
+        var property = typeof(Compiler).GetProperty(
+            "DebuggerMethodHash",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(property, Is.Not.Null);
+
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var info = new Compiler.Info { compFullName = "DebuggerProxyTests.Method" };
+
+        if (TestConfiguration.IsDebug)
+        {
+            const int methodHash = unchecked((int)0x89ABCDEF);
+            object boxedInfo = info;
+            typeof(Compiler.Info)
+                .GetField("compMethodHashPrivate", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(boxedInfo, methodHash);
+            info = (Compiler.Info)boxedInfo;
+            compiler.info = info;
+
+            var formattedHash = (string)property!.GetValue(compiler)!;
+            Assert.That(formattedHash, Is.EqualTo("89abcdef"));
+            Assert.That(
+                $"[{compiler.info.compFullName} ({formattedHash})]",
+                Is.EqualTo("[DebuggerProxyTests.Method (89abcdef)]"));
+        }
+        else
+        {
+            var exception = Assert.Throws<TargetInvocationException>(() => property!.GetValue(compiler));
+            Assert.That(exception!.InnerException!, Is.TypeOf<InvalidOperationException>());
+        }
     }
 
     [Test]
@@ -119,17 +145,140 @@ internal static class DebuggerProxyTests
         AssertDebuggerProxy<RegRecord>(typeof(RegRecordDebuggerProxy));
 
         var interval = new Interval(TYP_INT, SRBM_NONE) { isLocalVar = true, varNum = 7 };
-#if DEBUG
-        interval.intervalIndex = 2;
-        var expected = $"[V7, #2, reg={interval.physReg}]";
-#else
-        var expected = $"[V7, reg={interval.physReg}]";
-#endif
-        var displayProperty = typeof(Interval).GetProperty(
-            "DebuggerDisplayText",
-            BindingFlags.Instance | BindingFlags.NonPublic);
+        if (TestConfiguration.IsDebug)
+        {
+            interval.intervalIndex = 2;
+        }
 
-        Assert.That(displayProperty?.GetValue(interval), Is.EqualTo(expected));
+        var expected = Configuration.DEBUG
+            ? $"[V7, #2, reg={interval.physReg}]"
+            : $"[V7, reg={interval.physReg}]";
+        Assert.That(GetDebuggerDisplayText(interval, typeof(Interval)), Is.EqualTo(expected));
+
+        if (!TestConfiguration.IsDebug)
+        {
+            _ = Assert.Throws<InvalidOperationException>(() => _ = interval.intervalIndex);
+            _ = Assert.Throws<InvalidOperationException>(() => interval.intervalIndex = 99);
+        }
+
+        var constantInterval = new Interval(TYP_INT, SRBM_NONE) { isConstant = true };
+        if (TestConfiguration.IsDebug)
+        {
+            constantInterval.intervalIndex = 4;
+        }
+
+        var expectedConstant = Configuration.DEBUG
+            ? $"[C4, reg={constantInterval.physReg}]"
+            : $"[C, reg={constantInterval.physReg}]";
+        Assert.That(GetDebuggerDisplayText(constantInterval, typeof(Interval)), Is.EqualTo(expectedConstant));
+
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            var relatedInterval = new Interval(TYP_INT, SRBM_NONE) { varNum = 11 };
+            var upperInterval = new Interval(TYP_INT, SRBM_NONE)
+            {
+                isUpperVector = true,
+                varNum = 7,
+                relatedInterval = relatedInterval,
+            };
+
+            if (TestConfiguration.IsDebug)
+            {
+                upperInterval.intervalIndex = 6;
+            }
+
+            var expectedUpper = Configuration.DEBUG
+                ? $"[U11, #6, reg={upperInterval.physReg}]"
+                : $"[U11, reg={upperInterval.physReg}]";
+            Assert.That(GetDebuggerDisplayText(upperInterval, typeof(Interval)), Is.EqualTo(expectedUpper));
+        }
+    }
+
+    [Test]
+    public static void GenTreeDebuggerDisplayPreservesDebugIdsAndReleaseOmission()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        using var jitTls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
+
+        var tree = new GenTreeIntCon(TYP_INT, 42);
+        var nextTree = new GenTreeIntCon(TYP_INT, 43);
+        var copiedTree = new GenTreeIntCon(TYP_INT, 44, fields: null, source: tree);
+
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(tree.TreeId, Is.EqualTo(0));
+            Assert.That(nextTree.TreeId, Is.EqualTo(1));
+            Assert.That(copiedTree.TreeId, Is.EqualTo(tree.TreeId));
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(2));
+        }
+
+        var prefix = Configuration.DEBUG ? "0: " : "";
+        var valueNumbers = $"VNP=[L: {tree._vnPair.Liberal:x}, C: {tree._vnPair.Conservative:x}]";
+        var expected = $"{prefix}[IntCon={tree.IconValue}], {valueNumbers}";
+        Assert.That(GetDebuggerDisplayText(tree, typeof(GenTree)), Is.EqualTo(expected));
+
+        var stringConstant = (GenTree)RuntimeHelpers.GetUninitializedObject(typeof(GenTree));
+        typeof(GenTree)
+            .GetField("_oper", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(stringConstant, GT_CNS_STR);
+        var specialValueNumbers =
+            $"VNP=[L: {stringConstant._vnPair.Liberal:x}, C: {stringConstant._vnPair.Conservative:x}]";
+        Assert.That(
+            GetDebuggerDisplayText(stringConstant, typeof(GenTree)),
+            Is.EqualTo($"CNS_STR, {specialValueNumbers}"));
+
+        if (Configuration.FEATURE_SIMD)
+        {
+            var vectorConstant = (GenTree)RuntimeHelpers.GetUninitializedObject(typeof(GenTree));
+            typeof(GenTree)
+                .GetField("_oper", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(vectorConstant, GT_CNS_VEC);
+            var vectorValueNumbers =
+                $"VNP=[L: {vectorConstant._vnPair.Liberal:x}, C: {vectorConstant._vnPair.Conservative:x}]";
+            Assert.That(
+                GetDebuggerDisplayText(vectorConstant, typeof(GenTree)),
+                Is.EqualTo($"CNS_VEC, {vectorValueNumbers}"));
+        }
+
+        if (!TestConfiguration.IsDebug)
+        {
+            _ = Assert.Throws<InvalidOperationException>(() => _ = tree.TreeId);
+        }
+    }
+
+    [Test]
+    public static void LocalVariableDebuggerDisplayIncludesItsOwnedDebugReason()
+    {
+        var local = default(LclVarDsc);
+        local.Type = TYP_INT;
+        local.lvSlotNum = 9;
+
+        if (TestConfiguration.IsDebug)
+        {
+            local.lvReason = "split temporary";
+
+            var copied = local;
+            var expected = $"[V9: {local.Type.Name}-split temporary]";
+            Assert.That(GetDebuggerDisplayText(copied, typeof(LclVarDsc)), Is.EqualTo(expected));
+
+            var locals = new[] { local };
+            Array.Resize(ref locals, 2);
+            Assert.That(GetDebuggerDisplayText(locals[0], typeof(LclVarDsc)), Is.EqualTo(expected));
+
+            Array.Clear(locals);
+            var clearedLocal = default(LclVarDsc);
+            Assert.That(
+                GetDebuggerDisplayText(locals[0], typeof(LclVarDsc)),
+                Is.EqualTo($"[V{clearedLocal.lvSlotNum}: {clearedLocal.Type.Name}]"));
+        }
+        else
+        {
+            Assert.That(
+                GetDebuggerDisplayText(local, typeof(LclVarDsc)),
+                Is.EqualTo($"[V9: {local.Type.Name}]"));
+            _ = Assert.Throws<InvalidOperationException>(() => _ = local.lvReason);
+            _ = Assert.Throws<InvalidOperationException>(() => local.lvReason = "release misuse");
+        }
     }
 
     [Test]
@@ -175,15 +324,23 @@ internal static class DebuggerProxyTests
             Is.EqualTo(displayValue));
     }
 
+    private static string GetDebuggerDisplayText(
+        object value,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type)
+    {
+        var displayProperty = type.GetProperty(
+            "DebuggerDisplayText",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+
+        return (string)displayProperty!.GetValue(value)!;
+    }
+
 #if TARGET_XARCH
     [Test]
     public static void RefPositionProxyMapsTheRegisterAssignmentUsingItsReferentType()
     {
-#if DEBUG
-        AssertDebuggerDisplay<RefPosition>("[#{rpNum} - {refType}]");
-#else
-        AssertDebuggerDisplay<RefPosition>("[{refType}]");
-#endif
+        AssertDebuggerDisplay<RefPosition>(
+            Configuration.DEBUG ? "[#{rpNum} - {refType}]" : "[{refType}]");
         AssertDebuggerProxy<RefPosition>(typeof(RefPositionDebuggerProxy));
 
         var record = new RegRecord();
