@@ -9,7 +9,6 @@ public static partial class OPCODEExtensions
 {
     extension(OPCODE opcode)
     {
-#if DEBUG
         public OPCODE_FORMAT ArgKind
         {
             get
@@ -32,11 +31,10 @@ public static partial class OPCODEExtensions
         {
             get
             {
-                assert(s_names.Length == (int)(CEE_COUNT));
-                return s_names[(int)(opcode)];
+                assert(OpcodeNameData.Values.Length == (int)(CEE_COUNT));
+                return OpcodeNameData.Values[(int)(opcode)];
             }
         }
-#endif
 
         public byte Size
         {

@@ -20,4 +20,14 @@ internal static class OpcodeTableTests
     {
         Assert.That((int)OPCODE.CEE_COUNT, Is.EqualTo(0x126));
     }
+
+    [Test]
+    public static void OpcodeDiagnosticMetadataIsAvailableInEveryConfiguration()
+    {
+        var opcode = OPCODE.CEE_NOP;
+
+        Assert.That(opcode.ArgKind, Is.EqualTo(OPCODE_FORMAT.InlineNone));
+        Assert.That(opcode.FlowKind, Is.EqualTo(OpFlow.FLOW_NEXT));
+        Assert.That(opcode.Name, Is.EqualTo("nop"));
+    }
 }

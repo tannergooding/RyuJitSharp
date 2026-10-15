@@ -5298,7 +5298,7 @@ public enum OPCODE
             var name = parts[0].AsSpan().Trim();
             var nameString = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {nameString}, // {name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                {nameString}, // {name}");
         });
 
         var argKindsBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
@@ -5348,16 +5348,22 @@ public static partial class OPCODEExtensions
     private const byte InlinePhi_size = 0;
     private const byte InlineVarTok_size = 0;
 
-#if DEBUG
     private static ReadOnlySpan<OPCODE_FORMAT> s_argKinds => [
 {{argKindsBuilder}}    ];
 
     private static ReadOnlySpan<OpFlow> s_flowKinds => [
 {{flowKindsBuilder}}    ];
 
-    private static readonly string[] s_names = [
-{{namesBuilder}}    ];
-#endif
+    private static class OpcodeNameData
+    {
+        internal static readonly string[] Values;
+
+        static OpcodeNameData()
+        {
+            Values = [
+{{namesBuilder}}            ];
+        }
+    }
 
     private static ReadOnlySpan<byte> s_sizes => [
 {{sizesBuilder}}    ];
