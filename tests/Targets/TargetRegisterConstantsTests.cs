@@ -17,11 +17,11 @@ internal static class TargetRegisterConstantsTests
             Globals.SRBM_INT_CALLEE_SAVED | Globals.SRBM_FLT_CALLEE_SAVED | Globals.SRBM_MSK_CALLEE_SAVED));
         Assert.That(Globals.SRBM_SPBASE_X86, Is.EqualTo(regMask.SRBM_X86_ESP));
 #elif TARGET_WASM
-        Assert.That(Globals.REG_OPT_RSVD, Is.EqualTo(Globals.REG_NA));
+        Assert.That(Globals.REG_OPT_RSVD_WASM, Is.EqualTo(Globals.REG_NA));
         Assert.That(Globals.SRBM_CALLEE_SAVED, Is.EqualTo(regMask.SRBM_NONE));
-        Assert.That(Globals.SRBM_OPT_RSVD, Is.EqualTo(regMask.SRBM_NONE));
+        Assert.That(Globals.SRBM_OPT_RSVD_WASM, Is.EqualTo(regMask.SRBM_NONE));
         Assert.That(Globals.SRBM_FPBASE, Is.EqualTo(regMask.SRBM_NONE));
-        Assert.That(Globals.SRBM_SPBASE, Is.EqualTo(regMask.SRBM_NONE));
+        Assert.That(Globals.SRBM_SPBASE_WASM, Is.EqualTo(regMask.SRBM_NONE));
 #elif TARGET_ARM
         Assert.That(Globals.MAX_REG_ARG, Is.EqualTo(4));
         Assert.That(Globals.REG_SHIFT_LNG, Is.EqualTo(REG_ARM32_R2));

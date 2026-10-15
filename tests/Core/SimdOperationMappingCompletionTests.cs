@@ -186,7 +186,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
                     for (var offset = 0; offset < 2; offset++)
                     {
                         var suppliesLane = (lane / 4) == source;
-                        var laneIndex = ((lane % 4) * 2) + (odd ? 1 : 0);
+                        var laneIndex = (lane % 4 * 2) + (odd ? 1 : 0);
                         var expected = suppliesLane ? (laneIndex * 2) + offset : 0xFF;
                         Assert.That(scatter.GetOp(2).AsVecCon().SimdVal.u8[(lane * 2) + offset],
                             Is.EqualTo(unchecked((byte)expected)));

@@ -43,7 +43,6 @@ public sealed unsafe partial class GcInfoEncoder
         Count,
     }
 
-#if DEBUG
     internal sealed class GcInfoSize
     {
         private readonly nuint[] m_Fields = new nuint[(int)GcInfoField.Count];
@@ -109,62 +108,50 @@ public sealed unsafe partial class GcInfoEncoder
     internal static readonly GcInfoSize g_PiGcInfoSize = new();
     internal static nuint g_NumSlimHeaders;
     internal static nuint g_NumFatHeaders;
-    internal readonly GcInfoSize m_CurrentMethodSize = new();
-#endif
+    internal readonly GcInfoSize? m_CurrentMethodSize;
 
     private void Write(BitStreamWriter writer, nuint value, uint count, GcInfoField field)
     {
         writer.Write(value, count);
-#if DEBUG
-        m_CurrentMethodSize.Record(field, count);
-#endif
+        m_CurrentMethodSize?.Record(field, count);
     }
 
     private void WriteUnsigned(BitStreamWriter writer, nuint value, uint @base, GcInfoField field)
     {
-#if DEBUG
         var bits = writer.EncodeVarLengthUnsigned(value, @base);
-        m_CurrentMethodSize.Record(field, (nuint)bits);
-#else
-        _ = writer.EncodeVarLengthUnsigned(value, @base);
-#endif
+        m_CurrentMethodSize?.Record(field, (nuint)bits);
     }
 
     private void WriteSigned(BitStreamWriter writer, nint value, uint @base, GcInfoField field)
     {
-#if DEBUG
         var bits = writer.EncodeVarLengthSigned(value, @base);
-        m_CurrentMethodSize.Record(field, (nuint)bits);
-#else
-        _ = writer.EncodeVarLengthSigned(value, @base);
-#endif
+        m_CurrentMethodSize?.Record(field, (nuint)bits);
     }
 
     private void WriteVector(BitStreamWriter writer, BitArray vector, GcInfoField field)
     {
-#if DEBUG
-        var before = writer.GetBitCount();
-#endif
+        var measurements = m_CurrentMethodSize;
+        var before = measurements is null ? (nuint)0 : writer.GetBitCount();
         WriteSlotStateVector(writer, vector);
-#if DEBUG
-        m_CurrentMethodSize.Record(field, writer.GetBitCount() - before);
-#endif
+        measurements?.Record(field, writer.GetBitCount() - before);
     }
 
     private void WriteVarVector(BitStreamWriter writer, BitArray vector, uint baseSkip, uint baseRun, GcInfoField field)
     {
-#if DEBUG
         var bits = WriteSlotStateVarLengthVector(writer, vector, baseSkip, baseRun);
-        m_CurrentMethodSize.Record(field, bits);
-#else
-        _ = WriteSlotStateVarLengthVector(writer, vector, baseSkip, baseRun);
-#endif
+        m_CurrentMethodSize?.Record(field, bits);
     }
 
     private void FinishMeasurements(bool slimHeader, uint callSites, uint ranges, uint registers, uint stack, uint untracked)
     {
-#if DEBUG
-        assert(m_CurrentMethodSize.TotalSize == m_Info1.GetBitCount() + m_Info2.GetBitCount());
+        var currentMethodSize = m_CurrentMethodSize;
+
+        if (currentMethodSize is null)
+        {
+            return;
+        }
+
+        assert(currentMethodSize.TotalSize == m_Info1.GetBitCount() + m_Info2.GetBitCount());
 
         if (slimHeader)
         {
@@ -175,22 +162,21 @@ public sealed unsafe partial class GcInfoEncoder
             g_NumFatHeaders++;
         }
 
-        m_CurrentMethodSize.NumMethods = 1;
-        m_CurrentMethodSize.NumCallSites = callSites;
-        m_CurrentMethodSize.NumRanges = ranges;
-        m_CurrentMethodSize.NumRegs = registers;
-        m_CurrentMethodSize.NumStack = stack;
-        m_CurrentMethodSize.NumUntracked = untracked;
-        m_CurrentMethodSize.SizeOfCode = m_CodeLength;
+        currentMethodSize.NumMethods = 1;
+        currentMethodSize.NumCallSites = callSites;
+        currentMethodSize.NumRanges = ranges;
+        currentMethodSize.NumRegs = registers;
+        currentMethodSize.NumStack = stack;
+        currentMethodSize.NumUntracked = untracked;
+        currentMethodSize.SizeOfCode = m_CodeLength;
 
         if (ranges != 0)
         {
-            g_FiGcInfoSize.Add(m_CurrentMethodSize);
+            g_FiGcInfoSize.Add(currentMethodSize);
         }
         else
         {
-            g_PiGcInfoSize.Add(m_CurrentMethodSize);
+            g_PiGcInfoSize.Add(currentMethodSize);
         }
-#endif
     }
 }

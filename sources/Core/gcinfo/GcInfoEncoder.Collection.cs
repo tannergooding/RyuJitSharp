@@ -10,6 +10,11 @@ namespace RyuJitSharp;
 public sealed unsafe partial class GcInfoEncoder
 {
     public GcInfoEncoder(ICorJitInfo* pCorJitInfo, CORINFO_METHOD_INFO* pMethodInfo)
+        : this(pCorJitInfo, pMethodInfo, Configuration.DEBUG)
+    {
+    }
+
+    internal GcInfoEncoder(ICorJitInfo* pCorJitInfo, CORINFO_METHOD_INFO* pMethodInfo, bool collectMeasurements)
     {
         if (Configuration.TARGET_ARM || Configuration.TARGET_ARMARCH)
         {
@@ -28,6 +33,7 @@ public sealed unsafe partial class GcInfoEncoder
         m_pCorJitInfo = pCorJitInfo;
         m_pMethodInfo = pMethodInfo;
         m_pMethodInfo = pMethodInfo;
+        m_CurrentMethodSize = collectMeasurements ? new GcInfoSize() : null;
     }
 
     public void DefineCallSites(uint* pCallSites, byte* pCallSiteSizes, uint numCallSites)

@@ -185,7 +185,7 @@ internal static unsafe class WasmCallArgumentMorphTests
             compiler.lvaTable[0].RegNum = register;
 
             var initRegStillZeroed = true;
-            new CodeGen(compiler).genHomeRegisterParams(RyuJitSharp.regNumber.REG_NA, ref initRegStillZeroed);
+            new CodeGen(compiler).genHomeRegisterParams(Globals.REG_NA, ref initRegStillZeroed);
 
             Assert.That(initRegStillZeroed, Is.True);
         });

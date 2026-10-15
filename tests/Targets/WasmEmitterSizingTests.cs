@@ -49,15 +49,15 @@ internal static class WasmEmitterSizingTests
         Assert.That(Emitter.GetWasmValueTypeCode(type), Is.EqualTo(expectedCode));
     }
 
-    [TestCase(INS_local_get, 0x20u, 0, Emitter.insFormat.IF_ULEB128)]
-    [TestCase(INS_i32_add, 0x6Au, 0, Emitter.insFormat.IF_OPCODE)]
-    [TestCase(INS_i8x16_shuffle, 13u, 0xFD, Emitter.insFormat.IF_V128)]
+    [TestCase(INS_local_get, 0x20u, 0, Emitter.insFormat.IF_WASM_ULEB128)]
+    [TestCase(INS_i32_add, 0x6Au, 0, Emitter.insFormat.IF_WASM_OPCODE)]
+    [TestCase(INS_i8x16_shuffle, 13u, 0xFD, Emitter.insFormat.IF_WASM_V128)]
     public static void WasmInstructionTablesMatchNativeEncodings(
         instruction ins, uint expectedOpcode, byte expectedPrefix, Emitter.insFormat expectedFormat)
     {
         Assert.That(Emitter.GetInsOpcode(ins), Is.EqualTo(expectedOpcode));
         Assert.That(Emitter.GetOpcodePrefix(ins), Is.EqualTo(expectedPrefix));
-        Assert.That(Emitter.emitInsFormat(ins), Is.EqualTo(expectedFormat));
+        Assert.That(Emitter.emitInsFormatWasm(ins), Is.EqualTo(expectedFormat));
     }
 
     [TestCase(1, 16)]

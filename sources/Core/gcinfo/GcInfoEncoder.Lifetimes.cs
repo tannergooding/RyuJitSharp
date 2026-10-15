@@ -177,9 +177,10 @@ public sealed unsafe partial class GcInfoEncoder
                         Write(m_Info2, 1, 1, GcInfoField.ChunkTransitionSize);
                         Write(m_Info2, delta, NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2,
                               GcInfoField.ChunkTransitionSize);
-#if DEBUG
-                        m_CurrentMethodSize.NumTransitions++;
-#endif
+                        if (m_CurrentMethodSize is { } currentMethodSize)
+                        {
+                            currentMethodSize.NumTransitions++;
+                        }
                     }
 
                     transitionIndex++;

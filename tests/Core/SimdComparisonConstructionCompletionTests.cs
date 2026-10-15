@@ -259,7 +259,7 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
             Assert.That(shift.GetOp(2).AsIntCon().IconValue, Is.EqualTo((nint)3));
             for (var index = 0; index < 16; index++)
             {
-                Assert.That(broadcast.GetOp(2).AsVecCon().SimdVal.u8[index], Is.EqualTo((byte)((index / 8) * 8)));
+                Assert.That(broadcast.GetOp(2).AsVecCon().SimdVal.u8[index], Is.EqualTo((byte)(index / 8 * 8)));
                 Assert.That(expanded.GetOp(2).AsVecCon().SimdVal.u8[index], Is.EqualTo((byte)(index & 7)));
             }
             if (native)

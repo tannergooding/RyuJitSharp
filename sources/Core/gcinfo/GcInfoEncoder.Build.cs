@@ -16,12 +16,13 @@ public sealed unsafe partial class GcInfoEncoder : IDisposable
         EnsureMutable();
         assert(m_IsSlotTableFrozen || m_SlotTable.Count == 0);
         assert(m_CodeLength > 0);
-#if DEBUG
-        var methodName = stackalloc byte[256];
-        var className = stackalloc byte[256];
-        _ = m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, 256);
-        _ = m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, 256);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var methodName = stackalloc byte[256];
+            var className = stackalloc byte[256];
+            _ = m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, 256);
+            _ = m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, 256);
+        }
         m_Built = true;
 
         var slimHeader = BuildHeader();

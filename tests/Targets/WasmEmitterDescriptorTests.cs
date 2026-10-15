@@ -83,7 +83,7 @@ internal static class WasmEmitterDescriptorTests
                 lclCnt = count,
                 lclType = type,
             };
-            descriptor.idInsFmt(IF_LOCAL_DECL);
+            descriptor.idInsFmt(IF_WASM_LOCAL_DECL);
             return (descriptor.idIsLclVarDecl(), emitGetLclVarDeclCount(descriptor),
                 emitGetLclVarDeclType(descriptor));
         }
@@ -96,7 +96,7 @@ internal static class WasmEmitterDescriptorTests
                 valType = type,
                 imm = immediate,
             };
-            descriptor.idInsFmt(IF_TRY_TABLE);
+            descriptor.idInsFmt(IF_WASM_TRY_TABLE);
             return (descriptor.idIsValTypeImm(), emitGetValTypeImmType(descriptor),
                 emitGetValTypeImmImm(descriptor));
         }
@@ -104,7 +104,7 @@ internal static class WasmEmitterDescriptorTests
         internal static (bool IsVectorImmediate, byte[] Bytes) CreateVectorImmediate(ReadOnlySpan<byte> bytes)
         {
             var descriptor = new instrDescV128Imm();
-            descriptor.idInsFmt(IF_V128);
+            descriptor.idInsFmt(IF_WASM_V128);
             descriptor.idV128Const(bytes);
             return (descriptor.idIsV128Imm(), emitGetV128ImmValue(descriptor).ToArray());
         }
@@ -112,7 +112,7 @@ internal static class WasmEmitterDescriptorTests
         internal static byte CreateMemargLaneImmediate(byte lane)
         {
             var descriptor = new instrDescMemargLane();
-            descriptor.idInsFmt(IF_MEMARG_LANE);
+            descriptor.idInsFmt(IF_WASM_MEMARG_LANE);
             descriptor.idLaneIdx(lane);
             return emitGetLaneImmValue(descriptor);
         }

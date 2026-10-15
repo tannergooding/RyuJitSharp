@@ -25,8 +25,8 @@ internal static class FuncletCreationTargetTests
         Assert.That(compiler.compFuncInfos[0].uwiCold, Is.Null);
 #endif
 #if !HAS_FIXED_REGISTER_SET
-        Assert.That(compiler.compFuncInfos[0].funStackPointerReg, Is.EqualTo(REG_NA));
-        Assert.That(compiler.compFuncInfos[0].funFramePointerReg, Is.EqualTo(REG_NA));
+        Assert.That(compiler.compFuncInfos[0].funStackPointerReg, Is.EqualTo(Globals.REG_NA));
+        Assert.That(compiler.compFuncInfos[0].funFramePointerReg, Is.EqualTo(Globals.REG_NA));
 #endif
 #if TARGET_WASM
         Assert.That(compiler.compFuncInfos[0].funWasmLocalDecls, Is.Null);

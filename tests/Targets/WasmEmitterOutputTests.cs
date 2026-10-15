@@ -91,7 +91,7 @@ internal static unsafe class WasmEmitterOutputTests
         WithCodeGen((_, codeGen) =>
         {
             var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_NA));
+                () => codeGen.instGen_Set_Reg_To_Zero(Globals.EA_PTRSIZE, Globals.REG_NA));
 
             Assert.That(failure?.Message, Does.Contain("requires a fixed register set"));
         });
@@ -118,7 +118,7 @@ internal static unsafe class WasmEmitterOutputTests
                 throw new AssertionException("Missing Wasm instruction descriptors.");
             var initialCount = descriptors.Count;
             var zeroed = false;
-            codeGen.genZeroInitFrame(40, 8, REG_NA, ref zeroed);
+            codeGen.genZeroInitFrame(40, 8, Globals.REG_NA, ref zeroed);
 
             var pointerConst = Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
             var pointerAdd = Configuration.TARGET_64BIT ? INS_i64_add : INS_i32_add;
@@ -144,9 +144,9 @@ internal static unsafe class WasmEmitterOutputTests
         {
             var zeroed = false;
             var zeroRegisterFailure = Assert.Throws<FatalJitException>(
-                () => codeGen.genGetZeroReg(REG_NA, ref zeroed));
+                () => codeGen.genGetZeroReg(Globals.REG_NA, ref zeroed));
             var floatingRegistersFailure = Assert.Throws<FatalJitException>(
-                () => codeGen.genZeroInitFltRegs(default, default, REG_NA));
+                () => codeGen.genZeroInitFltRegs(default, default, Globals.REG_NA));
 
             Assert.That(zeroRegisterFailure?.Message, Does.Contain("no architectural integer zero register"));
             Assert.That(floatingRegistersFailure?.Message, Does.Contain("no architectural floating-point registers"));
@@ -168,9 +168,9 @@ internal static unsafe class WasmEmitterOutputTests
                 ?? throw new AssertionException("xarch generic-context storage is unavailable.");
 
             var loadFailure = Assert.Throws<TargetInvocationException>(
-                () => loadMethod.Invoke(codeGen, [REG_NA, 0]));
+                () => loadMethod.Invoke(codeGen, [Globals.REG_NA, 0]));
             var storeFailure = Assert.Throws<TargetInvocationException>(
-                () => storeMethod.Invoke(codeGen, [REG_NA, (nint)0]));
+                () => storeMethod.Invoke(codeGen, [Globals.REG_NA, (nint)0]));
 
             Assert.That(loadFailure?.InnerException, Is.TypeOf<FatalJitException>());
             Assert.That(loadFailure?.InnerException?.Message,
@@ -205,7 +205,7 @@ internal static unsafe class WasmEmitterOutputTests
             value.IsContained = true;
             var comparison = compiler.gtNewBinaryNode(oper, TYP_INT,
                 zeroOnFirst ? zero : value, zeroOnFirst ? value : zero).AsOp();
-            comparison.RegNum = REG_NA;
+            comparison.RegNum = Globals.REG_NA;
             if (isBranch)
             {
                 comparison.Flags |= GTF_RELOP_JMP_USED;
@@ -426,7 +426,7 @@ internal static unsafe class WasmEmitterOutputTests
             };
             descriptor.idSetIsLargeCns();
             descriptor.idIns(INS_f64_const);
-            descriptor.idInsFmt(insFormat.IF_F64);
+            descriptor.idInsFmt(insFormat.IF_WASM_F64);
             return descriptor;
         }
     }

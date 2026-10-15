@@ -146,17 +146,12 @@ internal static class Arm64EmitterDescriptorSizeTests
         Assert.That(Size(CreateEmitter(), Descriptor(INS_align, IF_ARM64_SN_0A)), Is.EqualTo(ExpectedAlignDescriptorSize));
     }
 
-    private static int ExpectedAlignDescriptorSize
-    {
-        get
-        {
+    private static int ExpectedAlignDescriptorSize =>
 #if DEBUG
-            return 48;
+        48;
 #else
-            return Configuration.LATE_DISASM ? 48 : 40;
+        Configuration.LATE_DISASM ? 48 : 40;
 #endif
-        }
-    }
 
     private static FlagDescriptor Descriptor(instruction instruction, Emitter.insFormat format)
     {

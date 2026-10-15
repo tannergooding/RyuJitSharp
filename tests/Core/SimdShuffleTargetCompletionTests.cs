@@ -224,7 +224,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
             for (var index = 0; index < size; index++)
             {
                 Assert.That(broadcast.GetOp(2).AsVecCon().SimdVal.u8[index],
-                    Is.EqualTo(unchecked((byte)((index / baseType.Size) * baseType.Size))));
+                    Is.EqualTo(unchecked((byte)(index / baseType.Size * baseType.Size))));
                 Assert.That(expanded.GetOp(2).AsVecCon().SimdVal.u8[index],
                     Is.EqualTo(unchecked((byte)(index & (baseType.Size - 1)))));
             }

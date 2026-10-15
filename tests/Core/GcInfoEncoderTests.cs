@@ -23,13 +23,12 @@ internal static unsafe class GcInfoEncoderTests
             encoder.FinalizeSlotIds();
             encoder.Build();
             Assert.That(encoder.GetEncodedGCInfoSize(), Is.EqualTo((nuint)0));
-#if DEBUG
-            Assert.That(encoder.m_CurrentMethodSize.TotalSize, Is.EqualTo((nuint)16));
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("FlagsSize"), Is.EqualTo((nuint)4));
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("CodeLengthSize"), Is.EqualTo((nuint)9));
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)0));
-            Assert.That(encoder.m_CurrentMethodSize.NumMethods, Is.EqualTo((nuint)1));
-#endif
+            var measurements = CurrentMethodMeasurements(encoder);
+            Assert.That(measurements.TotalSize, Is.EqualTo((nuint)16));
+            Assert.That(measurements.GetFieldSize("FlagsSize"), Is.EqualTo((nuint)4));
+            Assert.That(measurements.GetFieldSize("CodeLengthSize"), Is.EqualTo((nuint)9));
+            Assert.That(measurements.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)0));
+            Assert.That(measurements.NumMethods, Is.EqualTo((nuint)1));
 
             var result = encoder.Emit();
             Assert.That((nuint)result, Is.EqualTo((nuint)context->Buffer));
@@ -37,8 +36,15 @@ internal static unsafe class GcInfoEncoderTests
             Assert.That(context->Size, Is.EqualTo((nint)2));
             Assert.That(context->Calls, Is.EqualTo(1));
             Assert.That(new ReadOnlySpan<byte>(result, 2).ToArray(), Is.EqualTo(new byte[] { 0x40, 0x00 }));
-            Assert.Throws<InvalidOperationException>(() => encoder.Emit());
-        });
+            _ = Assert.Throws<InvalidOperationException>(() => encoder.Emit());
+        }, collectMeasurements: true);
+    }
+
+    [Test]
+    public static void MeasurementCollectionDefaultsToDebugConfiguration()
+    {
+        WithEncoder((encoder, _) =>
+            Assert.That(encoder.m_CurrentMethodSize is not null, Is.EqualTo(TestConfiguration.IsDebug)));
     }
 
     [Test]
@@ -50,14 +56,13 @@ internal static unsafe class GcInfoEncoderTests
             encoder.SetIsVarArg();
             encoder.SetSizeOfStackOutgoingAndScratchArea(0);
             encoder.Build();
-#if DEBUG
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
-#endif
+            var measurements = CurrentMethodMeasurements(encoder);
+            Assert.That(measurements.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
             var result = encoder.Emit();
 
             Assert.That(new ReadOnlySpan<byte>(result, (int)context->Size).ToArray(),
                         Is.EqualTo(new byte[] { 0x03, 0x80, 0x00, 0x00 }));
-        });
+        }, collectMeasurements: true);
     }
 
     [Test]
@@ -75,17 +80,16 @@ internal static unsafe class GcInfoEncoderTests
             encoder.SetReversePInvokeFrameSlot(-32);
             encoder.SetSizeOfStackOutgoingAndScratchArea(32);
             encoder.Build();
-#if DEBUG
-            Assert.That(encoder.m_CurrentMethodSize.TotalSize, Is.EqualTo((nuint)76));
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("GsCookieSize"), Is.EqualTo((nuint)7));
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("EncInfoSize"), Is.EqualTo((nuint)10));
-#endif
+            var measurements = CurrentMethodMeasurements(encoder);
+            Assert.That(measurements.TotalSize, Is.EqualTo((nuint)76));
+            Assert.That(measurements.GetFieldSize("GsCookieSize"), Is.EqualTo((nuint)7));
+            Assert.That(measurements.GetFieldSize("EncInfoSize"), Is.EqualTo((nuint)10));
             var result = encoder.Emit();
 
             Assert.That(context->Size, Is.EqualTo((nint)10));
             Assert.That(new ReadOnlySpan<byte>(result, 10).ToArray(),
                         Is.EqualTo(new byte[] { 0xEB, 0x07, 0x72, 0x90, 0xAF, 0x07, 0x30, 0xF0, 0x08, 0x00 }));
-        });
+        }, collectMeasurements: true);
     }
 
     [Test]
@@ -155,10 +159,10 @@ internal static unsafe class GcInfoEncoderTests
             encoder.SetSlotState(96, slot, GC_SLOT_DEAD);
             encoder.FinalizeSlotIds();
             encoder.Build();
-#if DEBUG
-            Assert.That(encoder.m_CurrentMethodSize.NumRanges, Is.EqualTo((nuint)1));
-            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
-#endif
+            var measurements = CurrentMethodMeasurements(encoder);
+            Assert.That(measurements.NumRanges, Is.EqualTo((nuint)1));
+            Assert.That(measurements.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
+            Assert.That(measurements.NumTransitions, Is.GreaterThan((nuint)0));
             var result = encoder.Emit();
 
             Assert.That(context->Calls, Is.EqualTo(1));
@@ -169,7 +173,7 @@ internal static unsafe class GcInfoEncoderTests
                             0x01, 0x00, 0x04, 0x08, 0xF0, 0x0D, 0x0C, 0x89, 0x82, 0x01,
                             0xFA, 0x33,
                         }));
-        });
+        }, collectMeasurements: true);
     }
 
     [Test]
@@ -267,15 +271,18 @@ internal static unsafe class GcInfoEncoderTests
 
     private delegate void EncoderAction(GcInfoEncoder encoder, MockContext* context);
 
-    private static void WithEncoder(EncoderAction action)
+    private static void WithEncoder(EncoderAction action, bool? collectMeasurements = null)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.allocGCInfo = &AllocGCInfo;
-#if DEBUG
-        vtable.Base.Base.printMethodName = &PrintMethodName;
-        vtable.Base.Base.printClassName = &PrintClassName;
-        vtable.Base.Base.getMethodClass = &GetMethodClass;
-#endif
+
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.Base.Base.printMethodName = &PrintMethodName;
+            vtable.Base.Base.printClassName = &PrintClassName;
+            vtable.Base.Base.getMethodClass = &GetMethodClass;
+        }
+
         var output = stackalloc byte[2048];
         var context = new MockContext
         {
@@ -283,8 +290,16 @@ internal static unsafe class GcInfoEncoderTests
             Buffer = output,
         };
         var method = default(CORINFO_METHOD_INFO);
-        using var encoder = new GcInfoEncoder(&context.JitInfo, &method);
+        using var encoder = collectMeasurements is bool enabled
+            ? new GcInfoEncoder(&context.JitInfo, &method, enabled)
+            : new GcInfoEncoder(&context.JitInfo, &method);
         action(encoder, &context);
+    }
+
+    private static GcInfoEncoder.GcInfoSize CurrentMethodMeasurements(GcInfoEncoder encoder)
+    {
+        Assert.That(encoder.m_CurrentMethodSize, Is.Not.Null);
+        return encoder.m_CurrentMethodSize!;
     }
 
     private struct MockContext
@@ -304,7 +319,6 @@ internal static unsafe class GcInfoEncoderTests
         return context->Buffer;
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_CLASS_STRUCT_* GetMethodClass(ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* method)
         => default;
@@ -324,5 +338,4 @@ internal static unsafe class GcInfoEncoderTests
         buffer[0] = 0;
         return 0;
     }
-#endif
 }
