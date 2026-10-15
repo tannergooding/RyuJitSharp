@@ -86,11 +86,7 @@ public sealed partial class CodeGen
         }
 #endif
         genReportEH();
-        genCreateAndStoreGCInfo(_codeSize, _prologSize, _epilogSize
-#if DEBUG
-            , _codePtr
-#endif
-            );
+        genCreateAndStoreGCInfo(_codeSize, _prologSize, _epilogSize);
         _compiler.Metrics.GCInfoBytes = unchecked((int)_compiler.compInfoBlkSize);
         Emitter.emitEndFN();
         RegSet.rsSpillDone();

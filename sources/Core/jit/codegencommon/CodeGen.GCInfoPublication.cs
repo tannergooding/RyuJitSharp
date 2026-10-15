@@ -9,11 +9,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    internal unsafe void* genCreateAndStoreGCInfoJIT32(uint codeSize, uint prologSize, uint epilogSize
-#if DEBUG
-        , void* codePtr
-#endif
-        )
+    internal unsafe void* genCreateAndStoreGCInfoJIT32(uint codeSize, uint prologSize, uint epilogSize)
     {
         if (!Configuration.JIT32_GCENCODER)
         {
@@ -97,19 +93,11 @@ public sealed partial class CodeGen
         return infoPtr;
     }
 
-    internal unsafe void genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize
-#if DEBUG
-        , void* codePtr
-#endif
-        )
+    internal unsafe void genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize)
     {
         if (Configuration.JIT32_GCENCODER)
         {
-            _ = genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize
-#if DEBUG
-                , codePtr
-#endif
-                );
+            _ = genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize);
             return;
         }
 
@@ -121,21 +109,13 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_ARMARCH)
         {
-            genCreateAndStoreGCInfoArmArch(codeSize, prologSize, epilogSize
-#if DEBUG
-            , codePtr
-#endif
-            );
+            genCreateAndStoreGCInfoArmArch(codeSize, prologSize, epilogSize);
             return;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            genCreateAndStoreGCInfoRiscV64(codeSize, prologSize, epilogSize
-#if DEBUG
-            , codePtr
-#endif
-            );
+            genCreateAndStoreGCInfoRiscV64(codeSize, prologSize, epilogSize);
             return;
         }
 
@@ -150,18 +130,10 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication is unsupported for this target.");
         }
 
-        genCreateAndStoreGCInfoX64(codeSize, prologSize
-#if DEBUG
-            , codePtr
-#endif
-            );
+        genCreateAndStoreGCInfoX64(codeSize, prologSize);
     }
 
-    internal unsafe void genCreateAndStoreGCInfoRiscV64(uint codeSize, uint prologSize, uint epilogSize
-#if DEBUG
-        , void* codePtr
-#endif
-        )
+    internal unsafe void genCreateAndStoreGCInfoRiscV64(uint codeSize, uint prologSize, uint epilogSize)
     {
         using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);
         GCInfo.gcInfoBlockHdrSave(encoder, codeSize, prologSize);
@@ -191,11 +163,7 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
     }
 
-    internal unsafe void genCreateAndStoreGCInfoArmArch(uint codeSize, uint prologSize, uint epilogSize
-#if DEBUG
-        , void* codePtr
-#endif
-        )
+    internal unsafe void genCreateAndStoreGCInfoArmArch(uint codeSize, uint prologSize, uint epilogSize)
     {
         using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);
         GCInfo.gcInfoBlockHdrSave(encoder, codeSize, prologSize);
@@ -265,11 +233,7 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
     }
 
-    internal unsafe void genCreateAndStoreGCInfoX64(uint codeSize, uint prologSize
-#if DEBUG
-        , void* codePtr
-#endif
-        )
+    internal unsafe void genCreateAndStoreGCInfoX64(uint codeSize, uint prologSize)
     {
         if (!Configuration.TARGET_AMD64)
         {

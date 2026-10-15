@@ -71,11 +71,7 @@ internal static unsafe class RiscVCodeGenPortTests
         WithCodeGen((_, codeGen) =>
         {
             var failure = Assert.Throws<PlatformNotSupportedException>(() =>
-                codeGen.genCreateAndStoreGCInfo(16, 4, 4
-#if DEBUG
-                    , null
-#endif
-                    ));
+                codeGen.genCreateAndStoreGCInfo(16, 4, 4));
 
             Assert.That(failure?.Message, Does.Contain("Only the AMD64 GC info encoding is implemented."));
         });
