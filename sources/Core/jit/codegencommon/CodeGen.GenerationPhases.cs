@@ -42,11 +42,9 @@ public sealed partial class CodeGen
         _compiler.compCurBB = _compiler.fgFirstBB;
         if (_compiler.opts.disAsm)
         {
-#if DEBUG
-            var fullName = _compiler.info.compFullName;
-#else
-            var fullName = _compiler.eeGetMethodFullName(_compiler.info.compMethodHnd);
-#endif
+            var fullName = Configuration.DEBUG
+                ? _compiler.info.compFullName
+                : _compiler.eeGetMethodFullName(_compiler.info.compMethodHnd);
             jitprintf($"; Assembly listing for method {fullName} ({_compiler.compGetTieringName(true)})\n");
             jitprintf("; Emitting ");
             if (_compiler.compCodeOpt == Compiler.SMALL_CODE)

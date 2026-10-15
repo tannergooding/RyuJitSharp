@@ -3,10 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
-using System.Runtime.InteropServices;
-#endif
-
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -26,11 +22,7 @@ public sealed partial class CodeGen
 
         uint finalHotCodeSize = 0;
         uint finalColdCodeSize = 0;
-#if DEBUG
-        const bool shouldComputeFinalCodeSizes = true;
-#else
-        var shouldComputeFinalCodeSizes = Configuration.LATE_DISASM;
-#endif
+        var shouldComputeFinalCodeSizes = Configuration.DEBUG || Configuration.LATE_DISASM;
         if (shouldComputeFinalCodeSizes)
         {
             var allocatedHotCodeSize = unchecked((uint)_compiler.info.compTotalHotCodeSize);
@@ -67,7 +59,7 @@ public sealed partial class CodeGen
             var pathPointer = JitConfig.JitRawHexCodeFile;
             if (pathPointer is not null)
             {
-                var path = Marshal.PtrToStringUTF8((nint)pathPointer)
+                var path = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint)pathPointer)
                     ?? throw new FatalJitException(CORJIT_SKIPPED, "Raw-hex output file path is invalid.");
                 using var file = OpenRichDebugInfoFile(path);
                 if (file is not null)
