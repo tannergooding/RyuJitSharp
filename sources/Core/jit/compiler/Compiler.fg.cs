@@ -252,15 +252,13 @@ public partial class Compiler
 
         // We've successfully obtained the list of inlinee's basic blocks.
         // Let's insert it to inliner's basic block list.
-#if DEBUG
         // The inlinee's candidate group is complete only once this inline can no longer fail.
-        if (compAsyncInliningStress())
+        if (Configuration.DEBUG && compAsyncInliningStress())
         {
             assert(InlineeCompiler is not null);
             InlineeCompiler.fgAsyncStressPrepare(inlineDepth + 1);
         }
 
-#endif
         fgInsertInlineeBlocks(inlineInfo);
 
         if (Configuration.DEBUG && verbose)
@@ -13553,9 +13551,14 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgAsyncStressPrepare(int depth)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+        }
+
         assert(compAsyncInliningStress());
 
         List<InlineCandidateInfo> candidates = [];
@@ -13605,7 +13608,6 @@ public partial class Compiler
 
         JITDUMP($"Async inlining stress: {candidates.Count} async candidate(s) in this body, to be inlined at depth {unchecked((uint)depth)}\n");
     }
-#endif
 
     /// <summary>Expand top-level inline candidates and substitute their return placeholders in statement order.</summary>
     public unsafe PhaseStatus fgInline()
@@ -13636,12 +13638,10 @@ public partial class Compiler
 
         noway_assert(fgFirstBB is not null);
 
-#if DEBUG
-        if (compAsyncInliningStress())
+        if (Configuration.DEBUG && compAsyncInliningStress())
         {
             fgAsyncStressPrepare(1);
         }
-#endif
 
         var block = fgFirstBB;
         var walker = new SubstitutePlaceholdersAndDevirtualizeWalker(this);

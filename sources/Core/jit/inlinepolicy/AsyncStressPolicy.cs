@@ -7,7 +7,6 @@ using System;
 
 namespace RyuJitSharp;
 
-#if DEBUG
 public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
 {
     private bool _isAsyncCall;
@@ -17,6 +16,10 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
     public AsyncStressPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+        }
     }
 
     public override string Name => nameof(AsyncStressPolicy);
@@ -163,4 +166,3 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
         }
     }
 }
-#endif

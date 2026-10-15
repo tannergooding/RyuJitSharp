@@ -109,7 +109,9 @@ public partial struct JitConfigValues
     private int _jitSplitFunctionSize;
     private int _jitSsaStress;
     private int _jitStackChecks;
+#endif
     private int _jitStress;
+#if DEBUG
     private int _jitStressBBProf;
     private int _jitStressProcedureSplitting;
     private int _jitStressRegs;
@@ -346,14 +348,16 @@ public partial struct JitConfigValues
     private int _jitInlinePolicyDiscretionary;
     private int _jitInlinePolicyFull;
     private int _jitInlinePolicySize;
+#endif
     private int _jitInlinePolicyRandom;
+#if DEBUG
     private int _jitInlinePolicyReplay;
     private unsafe byte* _jitNoInlineRange;
     private unsafe byte* _jitInlineReplayFile;
+#endif
     private int _jitStressAsyncInlining;
     private int _jitStressAsyncInliningMaxDepth;
     private int _jitStressAsyncInliningPct;
-#endif
     private int _jitExtDefaultPolicy;
     private int _jitExtDefaultPolicyMaxIL;
     private int _jitExtDefaultPolicyMaxILRoot;
@@ -568,7 +572,19 @@ public partial struct JitConfigValues
     public int JitSplitFunctionSize => _jitSplitFunctionSize;
     public int JitSsaStress => _jitSsaStress;
     public int JitStackChecks => _jitStackChecks;
-    public int JitStress => _jitStress;
+#endif
+    public int JitStress
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitStress' is only available in Debug builds.");
+            }
+            return _jitStress;
+        }
+    }
+#if DEBUG
     public int JitStressBBProf => _jitStressBBProf;
     public int JitStressProcedureSplitting => _jitStressProcedureSplitting;
     public int JitStressRegs => _jitStressRegs;
@@ -805,14 +821,56 @@ public partial struct JitConfigValues
     public int JitInlinePolicyDiscretionary => _jitInlinePolicyDiscretionary;
     public int JitInlinePolicyFull => _jitInlinePolicyFull;
     public int JitInlinePolicySize => _jitInlinePolicySize;
-    public int JitInlinePolicyRandom => _jitInlinePolicyRandom;
+#endif
+    public int JitInlinePolicyRandom
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyRandom' is only available in Debug builds.");
+            }
+            return _jitInlinePolicyRandom;
+        }
+    }
+#if DEBUG
     public int JitInlinePolicyReplay => _jitInlinePolicyReplay;
     public unsafe byte* JitNoInlineRange => _jitNoInlineRange;
     public unsafe byte* JitInlineReplayFile => _jitInlineReplayFile;
-    public int JitStressAsyncInlining => _jitStressAsyncInlining;
-    public int JitStressAsyncInliningMaxDepth => _jitStressAsyncInliningMaxDepth;
-    public int JitStressAsyncInliningPct => _jitStressAsyncInliningPct;
 #endif
+    public int JitStressAsyncInlining
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitStressAsyncInlining' is only available in Debug builds.");
+            }
+            return _jitStressAsyncInlining;
+        }
+    }
+    public int JitStressAsyncInliningMaxDepth
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitStressAsyncInliningMaxDepth' is only available in Debug builds.");
+            }
+            return _jitStressAsyncInliningMaxDepth;
+        }
+    }
+    public int JitStressAsyncInliningPct
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitStressAsyncInliningPct' is only available in Debug builds.");
+            }
+            return _jitStressAsyncInliningPct;
+        }
+    }
     public int JitExtDefaultPolicy => _jitExtDefaultPolicy;
     public int JitExtDefaultPolicyMaxIL => _jitExtDefaultPolicyMaxIL;
     public int JitExtDefaultPolicyMaxILRoot => _jitExtDefaultPolicyMaxILRoot;
@@ -1539,7 +1597,12 @@ public partial struct JitConfigValues
         _jitSplitFunctionSize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSplitFunctionSize"u8))), 0);
         _jitSsaStress = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSsaStress"u8))), 0);
         _jitStackChecks = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStackChecks"u8))), 0);
-        _jitStress = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStress"u8))), 0);
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitStress = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStress"u8))), 0);
+        }
+#if DEBUG
         _jitStressBBProf = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressBBProf"u8))), 0);
         _jitStressProcedureSplitting = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressProcedureSplitting"u8))), 0);
         _jitStressRegs = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressRegs"u8))), 0);
@@ -1826,14 +1889,28 @@ public partial struct JitConfigValues
         _jitInlinePolicyDiscretionary = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyDiscretionary"u8))), 0);
         _jitInlinePolicyFull = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyFull"u8))), 0);
         _jitInlinePolicySize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicySize"u8))), 0);
-        _jitInlinePolicyRandom = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyRandom"u8))), 0);
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitInlinePolicyRandom = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyRandom"u8))), 0);
+        }
+#if DEBUG
         _jitInlinePolicyReplay = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyReplay"u8))), 0);
         _jitNoInlineRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoInlineRange"u8))));
         _jitInlineReplayFile = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineReplayFile"u8))));
-        _jitStressAsyncInlining = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressAsyncInlining"u8))), 0);
-        _jitStressAsyncInliningMaxDepth = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressAsyncInliningMaxDepth"u8))), 8);
-        _jitStressAsyncInliningPct = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressAsyncInliningPct"u8))), 75);
 #endif
+        if (Configuration.DEBUG)
+        {
+            _jitStressAsyncInlining = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressAsyncInlining"u8))), 0);
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitStressAsyncInliningMaxDepth = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressAsyncInliningMaxDepth"u8))), 8);
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitStressAsyncInliningPct = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressAsyncInliningPct"u8))), 75);
+        }
         _jitExtDefaultPolicy = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExtDefaultPolicy"u8))), 1);
         _jitExtDefaultPolicyMaxIL = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExtDefaultPolicyMaxIL"u8))), 0x80);
         _jitExtDefaultPolicyMaxILRoot = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExtDefaultPolicyMaxILRoot"u8))), 0x100);

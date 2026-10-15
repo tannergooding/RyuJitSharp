@@ -196,7 +196,6 @@ public partial class Globals
     public static bool InlinePInvokeEnabled => true;
 #endif
 
-#if DEBUG
     /// <summary>Should we enable JitStress mode?</summary>
     /// <remarks>
     ///   <list type="bullet">
@@ -205,8 +204,18 @@ public partial class Globals
     ///     <item>2:    Check-all stress. Performance will be REALLY horrible</item>
     ///   </list>
     /// </remarks>
-    public static int JitStressLevel => JitConfig.JitStress;
-#endif
+    public static int JitStressLevel
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT stress is only available in Debug builds.");
+            }
+
+            return JitConfig.JitStress;
+        }
+    }
 
     /// <summary>Converts input ASCII data to lower case</summary>
     /// <param name="input">Constant data to change casing to lower</param>

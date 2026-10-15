@@ -4462,12 +4462,17 @@ namespace RyuJitSharp;
                 throw new InvalidDataException($"Invalid line format: '{line}'");
             }
 
+            var configName = parts[0].AsSpan().Trim();
             var flags = GetFlagsForPrefix(prefix);
+            if (IsUniversalDebugConfig(configName))
+            {
+                flags &= ~FLAG_DEFINE_MASK;
+            }
             var type = GetTypeForFlags(flags);
 
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
-            var name = GetFieldName(parts[0].AsSpan().Trim());
+            var name = GetFieldName(configName);
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private {type} _{name};");
 
             lastFlags = flags;
@@ -4484,15 +4489,38 @@ namespace RyuJitSharp;
                 throw new InvalidDataException($"Invalid line format: '{line}'");
             }
 
+            var name = parts[0].AsSpan().Trim();
             var flags = GetFlagsForPrefix(prefix);
+            if (IsUniversalDebugConfig(name))
+            {
+                flags &= ~FLAG_DEFINE_MASK;
+            }
             var type = GetTypeForFlags(flags);
 
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
-            var name = parts[0].AsSpan().Trim();
             var fieldName = GetFieldName(name);
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {type} {name} => _{fieldName};");
+            if (IsUniversalDebugConfig(name))
+            {
+                var propertyName = name.ToString();
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {type} {propertyName}");
+                _ = builder.AppendLine("    {");
+                _ = builder.AppendLine("        get");
+                _ = builder.AppendLine("        {");
+                _ = builder.AppendLine("            if (!Configuration.DEBUG)");
+                _ = builder.AppendLine("            {");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"                throw new System.InvalidOperationException(\"JIT config value '{propertyName}' is only available in Debug builds.\");");
+                _ = builder.AppendLine("            }");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            return _{fieldName};");
+                _ = builder.AppendLine("        }");
+                _ = builder.AppendLine("    }");
+            }
+            else
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {type} {name} => _{fieldName};");
+            }
 
             lastFlags = flags;
         });
@@ -4542,13 +4570,27 @@ namespace RyuJitSharp;
                 throw new InvalidDataException($"Invalid line format: '{line}'");
             }
 
+            var configName = parts[0].AsSpan().Trim();
+            var isUniversalDebugConfig = IsUniversalDebugConfig(configName);
             var flags = GetFlagsForPrefix(prefix);
+            if (isUniversalDebugConfig)
+            {
+                flags &= ~FLAG_DEFINE_MASK;
+            }
             var kind = flags & FLAG_KIND_MASK;
 
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
-            var name = GetFieldName(parts[0].AsSpan().Trim());
+            var name = GetFieldName(configName);
             var key = parts[1].AsSpan().Trim();
+            var indent = isUniversalDebugConfig ? "            " : "        ";
+            var nestedIndent = indent + "    ";
+
+            if (isUniversalDebugConfig)
+            {
+                _ = builder.AppendLine("        if (Configuration.DEBUG)");
+                _ = builder.AppendLine("        {");
+            }
 
             if (kind == FLAG_INTEGER)
             {
@@ -4556,35 +4598,41 @@ namespace RyuJitSharp;
 
                 if (name.Equals("jitAlignLoops", StringComparison.Ordinal))
                 {
-                    _ = builder.AppendLine("        if (Configuration.FEATURE_LOOP_ALIGN)");
-                    _ = builder.AppendLine("        {");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}if (Configuration.FEATURE_LOOP_ALIGN)");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{{");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                        $"            _{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
-                    _ = builder.AppendLine("        }");
-                    _ = builder.AppendLine("        else");
-                    _ = builder.AppendLine("        {");
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            _{name} = 0;");
-                    _ = builder.AppendLine("        }");
+                        $"{nestedIndent}_{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}}}");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}else");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{{");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{nestedIndent}_{name} = 0;");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}}}");
                 }
                 else if (value.Equals("0xffffffff", StringComparison.OrdinalIgnoreCase))
                 {
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        _{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), unchecked((int)({value})));");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), unchecked((int)({value})));");
                 }
                 else
                 {
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        _{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
                 }
             }
             else if (kind == FLAG_STRING)
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        _{name} = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
             }
             else
             {
                 Debug.Assert(kind == FLAG_METHODSET);
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        var {name}Value = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        _{name} = new MethodSet({name}Value, jitHost);");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}var {name}Value = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = new MethodSet({name}Value, jitHost);");
             }
+
+            if (isUniversalDebugConfig)
+            {
+                _ = builder.AppendLine("        }");
+            }
+
             lastFlags = flags;
         });
 
@@ -4719,6 +4767,15 @@ public partial struct JitConfigValues
             }
 
             return kind;
+        }
+
+        static bool IsUniversalDebugConfig(ReadOnlySpan<char> name)
+        {
+            return name.Equals("JitStress", StringComparison.Ordinal) ||
+                   name.Equals("JitInlinePolicyRandom", StringComparison.Ordinal) ||
+                   name.Equals("JitStressAsyncInlining", StringComparison.Ordinal) ||
+                   name.Equals("JitStressAsyncInliningMaxDepth", StringComparison.Ordinal) ||
+                   name.Equals("JitStressAsyncInliningPct", StringComparison.Ordinal);
         }
 
         static string GetTypeForFlags(int flags)

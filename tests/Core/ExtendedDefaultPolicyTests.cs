@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -15,11 +16,9 @@ internal static class ExtendedDefaultPolicyTests
 {
     private static JitConfigValues s_previousConfig;
     private static Compiler? s_previousCompiler;
-#if DEBUG
-    private static JitTls? s_jitTls;
+    private static IDisposable? s_jitTls;
 
-    [TestCase(0, 123)]
-    [TestCase(456, 456)]
+    [TestCaseSource(nameof(ExplicitCalleeCases))]
     public static unsafe void CallResultPreservesExplicitCalleeAndAsyncGroup(int explicitCallee, int expectedCallee)
     {
         object config = Globals.JitConfig;
@@ -86,7 +85,8 @@ internal static class ExtendedDefaultPolicyTests
         }
 
         first.PrevStmt = previous;
-        compiler.fgAsyncStressPrepare(1);
+        var preparationDepth = 0;
+        compiler.fgAsyncStressPrepare(++preparationDepth);
 
         int[] expected = count switch {
             0 => [],
@@ -97,30 +97,108 @@ internal static class ExtendedDefaultPolicyTests
 
         for (var i = count - 1; i > 0; i--)
         {
-            _ = expectedStream.Next(i + 1);
+            if (TestConfiguration.IsDebug)
+            {
+                _ = expectedStream.Next(i + 1);
+            }
         }
 
         Assert.Multiple(() => {
             for (var i = 0; i < count; i++)
             {
-                Assert.That(candidates[i].asyncStressIndex, Is.EqualTo(expected[i]));
+                Assert.That(candidates[i].asyncStressIndex,
+                    Is.EqualTo(TestConfiguration.IsDebug ? expected[i] : 0));
             }
 
-            Assert.That(excludedInfo.asyncStressIndex, Is.EqualTo(-1));
+            Assert.That(excludedInfo.asyncStressIndex, Is.EqualTo(TestConfiguration.IsDebug ? -1 : 0));
             Assert.That(random.NextDouble(), Is.EqualTo(expectedStream.NextDouble()));
+            Assert.That(preparationDepth, Is.EqualTo(TestConfiguration.IsDebug ? 1 : 0));
         });
     }
 
-#endif
+    [Test]
+    public static unsafe void AsyncStressApisAreExplicitlyUnavailableInRelease()
+    {
+        var compiler = CreateCompiler();
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.Multiple(() => {
+                Assert.That(compiler.compAsyncInliningStress(), Is.False);
+                Assert.That(compiler.compAsyncInliningStressSeed(), Is.EqualTo(2));
+                Assert.That(compiler.compInlineStress(), Is.False);
+                Assert.That(compiler.compRandomInlineStress(), Is.False);
+                Assert.That(Globals.JitStressLevel, Is.Zero);
+                Assert.DoesNotThrow(() => new AsyncStressPolicy(compiler, isPrejitRoot: false));
+            });
+            return;
+        }
+
+        var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        var prepareStress = typeof(Compiler).GetMethod(nameof(Compiler.fgAsyncStressPrepare), BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("Missing async stress preparation method.");
+
+        Assert.Multiple(() => {
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.compAsyncInliningStress());
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.compAsyncInliningStressSeed());
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.compInlineStress());
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.compRandomInlineStress());
+            _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitStressLevel);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStress);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitInlinePolicyRandom);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStressAsyncInlining);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStressAsyncInliningMaxDepth);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = Globals.JitConfig.JitStressAsyncInliningPct);
+            _ = Assert.Throws<InvalidOperationException>(() => strategy.GetRandom());
+            var exception = Assert.Throws<TargetInvocationException>(() => prepareStress.Invoke(compiler, [1]));
+            Assert.That(exception?.InnerException, Is.TypeOf<InvalidOperationException>());
+            _ = Assert.Throws<InvalidOperationException>(() => new AsyncStressPolicy(compiler, isPrejitRoot: false));
+        });
+    }
+
+    [TestCaseSource(nameof(AsyncStressSeedCases))]
+    public static void AsyncStressSeedUsesSpecificThenGlobalThenDefault(int asyncSeed, int globalStress, int expected)
+    {
+        object config = Globals.JitConfig;
+        SetField(typeof(JitConfigValues), config, "_jitStressAsyncInlining", asyncSeed);
+        SetField(typeof(JitConfigValues), config, "_jitStress", globalStress);
+        Globals.JitConfig = (JitConfigValues)config;
+
+        Assert.That(CreateCompiler().compAsyncInliningStressSeed(), Is.EqualTo(expected));
+    }
+
+    [TestCaseSource(nameof(InlineRandomSeedCases))]
+    public static void InlineRandomUsesConfiguredSeedAndCachesState(int configuredSeed)
+    {
+        object config = Globals.JitConfig;
+        SetField(typeof(JitConfigValues), config, "_jitInlinePolicyRandom", configuredSeed);
+        Globals.JitConfig = (JitConfigValues)config;
+
+        var compiler = CreateCompiler();
+        compiler.info = new Compiler.Info { compFullName = "ExtendedDefaultPolicyTests.RandomSeed" };
+
+        var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
+        SetField(typeof(InlineStrategy), strategy, "_compiler", compiler);
+        var random = strategy.GetRandom(17);
+        var expectedSeed = ((configuredSeed != 0) ? configuredSeed : 17) ^ compiler.info.compMethodHash();
+        var expected = new CLRRandom(expectedSeed);
+
+        Assert.Multiple(() => {
+            Assert.That(random.NextDouble(), Is.EqualTo(expected.NextDouble()));
+            Assert.That(strategy.GetRandom(23), Is.SameAs(random));
+            Assert.That(random.NextDouble(), Is.EqualTo(expected.NextDouble()));
+        });
+    }
 
     [SetUp]
     public static unsafe void SetUp()
     {
         s_previousConfig = Globals.JitConfig;
         s_previousCompiler = JitTls.Compiler;
-#if DEBUG
-        s_jitTls = new JitTls(null);
-#endif
+        s_jitTls = TestConfiguration.CreateJitTls();
         JitTls.Compiler = CreateCompiler();
         object config = new JitConfigValues();
         SetConfig("_jitExtDefaultPolicyMaxIL", 128);
@@ -145,10 +223,8 @@ internal static class ExtendedDefaultPolicyTests
     {
         Globals.JitConfig = s_previousConfig;
         JitTls.Compiler = s_previousCompiler;
-#if DEBUG
         s_jitTls?.Dispose();
         s_jitTls = null;
-#endif
     }
 
     [TestCase(100, 0, 0, 100)]
@@ -303,10 +379,7 @@ internal static class ExtendedDefaultPolicyTests
         });
     }
 
-#if DEBUG
-    [TestCase(false, false, -1, InlineObservation.CALLEE_TOO_MUCH_IL)]
-    [TestCase(true, false, -1, InlineObservation.CALLEE_TOO_MUCH_IL)]
-    [TestCase(true, true, -1, InlineObservation.CALLEE_IS_PROFITABLE_INLINE)]
+    [TestCaseSource(nameof(AsyncStressDefersSizeRejectionCases))]
     public static void AsyncStressDefersSizeRejectionUntilSelection(bool isAsync, bool isPrejitRoot, int index, InlineObservation expected)
     {
         var policy = new AsyncStressPolicy(CreateCompiler(), isPrejitRoot);
@@ -325,9 +398,7 @@ internal static class ExtendedDefaultPolicyTests
         }
     }
 
-    [TestCase(65535, InlineObservation.CALLEE_IS_DISCRETIONARY_INLINE)]
-    [TestCase(65536, InlineObservation.CALLEE_TOO_MUCH_IL)]
-    [TestCase(-1, InlineObservation.CALLEE_TOO_MUCH_IL)]
+    [TestCaseSource(nameof(AsyncStressSizeLimitCases))]
     public static void AsyncStressRetainsImplementationSizeLimit(int size, InlineObservation expected)
     {
         var policy = new AsyncStressPolicy(CreateCompiler(), isPrejitRoot: true);
@@ -337,12 +408,7 @@ internal static class ExtendedDefaultPolicyTests
         Assert.That(policy.Observation, Is.EqualTo(expected));
     }
 
-    [TestCase(1, 0, true)]
-    [TestCase(1, 1, true)]
-    [TestCase(1, 2, false)]
-    [TestCase(2, 0, true)]
-    [TestCase(2, 1, false)]
-    [TestCase(3, 0, false)]
+    [TestCaseSource(nameof(AsyncStressProbabilityCases))]
     public static void AsyncStressProbabilityUsesDepthAndGroupIndex(int depth, int index, bool accepted)
     {
         object config = Globals.JitConfig;
@@ -379,6 +445,7 @@ internal static class ExtendedDefaultPolicyTests
         });
     }
 
+#if DEBUG
     [Test]
     public static void XmlUsesNativeAttributeNamesAndInvariantNumbers()
     {
@@ -409,6 +476,67 @@ internal static class ExtendedDefaultPolicyTests
             " m_ProfileFrequency=\"0.25\" m_FoldableBranch=\"1\""));
     }
 #endif
+
+    private static IEnumerable<TestCaseData> AsyncStressDefersSizeRejectionCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(false, false, -1, InlineObservation.CALLEE_TOO_MUCH_IL);
+            yield return new TestCaseData(true, false, -1, InlineObservation.CALLEE_TOO_MUCH_IL);
+            yield return new TestCaseData(true, true, -1, InlineObservation.CALLEE_IS_PROFITABLE_INLINE);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> ExplicitCalleeCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(0, 123);
+            yield return new TestCaseData(456, 456);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> AsyncStressSizeLimitCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(65535, InlineObservation.CALLEE_IS_DISCRETIONARY_INLINE);
+            yield return new TestCaseData(65536, InlineObservation.CALLEE_TOO_MUCH_IL);
+            yield return new TestCaseData(-1, InlineObservation.CALLEE_TOO_MUCH_IL);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> AsyncStressProbabilityCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(1, 0, true);
+            yield return new TestCaseData(1, 1, true);
+            yield return new TestCaseData(1, 2, false);
+            yield return new TestCaseData(2, 0, true);
+            yield return new TestCaseData(2, 1, false);
+            yield return new TestCaseData(3, 0, false);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> AsyncStressSeedCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(7, 11, 7);
+            yield return new TestCaseData(0, 11, 11);
+            yield return new TestCaseData(0, 0, 2);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> InlineRandomSeedCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(0);
+            yield return new TestCaseData(42);
+        }
+    }
 
     [TestCase(false, false)]
     [TestCase(false, true)]

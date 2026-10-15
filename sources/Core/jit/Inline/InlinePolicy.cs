@@ -49,12 +49,12 @@ public abstract class InlinePolicy
     /// <remarks>Determines which of the various policies should apply, and creates (or reuses) a policy instance to use.</remarks>
     public static unsafe InlinePolicy GetPolicy(Compiler compiler, bool isPrejitRoot)
     {
-#if DEBUG
-        if (compiler.compAsyncInliningStress())
+        if (Configuration.DEBUG && compiler.compAsyncInliningStress())
         {
             return new AsyncStressPolicy(compiler, isPrejitRoot);
         }
 
+#if DEBUG
         var useRandomPolicyForStress = compiler.compRandomInlineStress();
         var useRandomPolicy = JitConfig.JitInlinePolicyRandom is not 0;
 

@@ -2944,11 +2944,23 @@ public partial class Compiler
         compNextEnterScopeIndex = 0;
     }
 
-#if DEBUG
-    public bool compInlineStress() => compStressCompile(STRESS_LEGACY_INLINE, 50);
+    public bool compInlineStress()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("JIT stress is only available in Debug builds.");
+        }
+
+        return compStressCompile(STRESS_LEGACY_INLINE, 50);
+    }
 
     public bool compAsyncInliningStress()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+        }
+
         if (JitConfig.JitStressAsyncInlining != 0)
         {
             return true;
@@ -2959,6 +2971,11 @@ public partial class Compiler
 
     public int compAsyncInliningStressSeed()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+        }
+
         var seed = JitConfig.JitStressAsyncInlining;
 
         if (seed == 0)
@@ -2974,6 +2991,7 @@ public partial class Compiler
         return seed;
     }
 
+#if DEBUG
     /// <summary>determine if a stress mode should be enabled</summary>
     /// <param name="stressArea">stress mode to possibly enable</param>
     /// <param name="weightPercentage">percent of time this mode should be turned on (range 0 to 100); weight 0 effectively disables</param>
@@ -3982,9 +4000,15 @@ public partial class Compiler
 #endif
     }
 
-#if DEBUG
-    public bool compRandomInlineStress() => compStressCompile(STRESS_RANDOM_INLINE, 50);
-#endif
+    public bool compRandomInlineStress()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline stress is only available in Debug builds.");
+        }
+
+        return compStressCompile(STRESS_RANDOM_INLINE, 50);
+    }
 
     protected unsafe void compSetOptimizationLevel()
     {

@@ -76,14 +76,13 @@ public sealed class InlineResult : IDisposable
         const bool isPrejitRoot = false;
         _policy = InlinePolicy.GetPolicy(_rootCompiler, isPrejitRoot);
 
-#if DEBUG
-        if (_rootCompiler.compAsyncInliningStress() && call.IsAsync && call.IsInlineCandidate && !call.IsGuardedDevirtualizationCandidate)
+        if (Configuration.DEBUG && _rootCompiler.compAsyncInliningStress() &&
+            call.IsAsync && call.IsInlineCandidate && !call.IsGuardedDevirtualizationCandidate)
         {
             var candidateInfo = call.SingleInlineCandidateInfo;
             assert(candidateInfo is not null);
             _policy.NoteInt(InlineObservation.CALLSITE_ASYNC_STRESS_INDEX, candidateInfo.asyncStressIndex);
         }
-#endif
 
         // Pass along some optional information to the policy.
         if (stmt is not null)

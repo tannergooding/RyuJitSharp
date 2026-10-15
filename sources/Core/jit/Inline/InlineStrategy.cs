@@ -64,8 +64,9 @@ public sealed partial class InlineStrategy
 
 #if DEBUG
     private int _methodXmlFilePosition;
-    private CLRRandom? _random;
 #endif
+
+    private CLRRandom? _random;
 
     public InlineStrategy(Compiler compiler)
     {
@@ -278,9 +279,13 @@ public sealed partial class InlineStrategy
         streamWriter.Write($"{_inlineCount},");
     }
 
-#if DEBUG
     public CLRRandom GetRandom(int optionalSeed = 0)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline stress random state is only available in Debug builds.");
+        }
+
         var random = _random;
 
         if (random is null)
@@ -291,6 +296,7 @@ public sealed partial class InlineStrategy
         return random;
     }
 
+#if DEBUG
     private static ConfigMethodRange s_inlingDisabledRange;
 #endif
 
@@ -557,9 +563,13 @@ public sealed partial class InlineStrategy
     /// <summary>Inform strategy that a candidate was assessed and determined to be unprofitable.</summary>
     public void NoteUnprofitable() => _unprofitableCandidateCount++;
 
-#if DEBUG
     private CLRRandom CreateRandom(int optionalSeed)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline stress random state is only available in Debug builds.");
+        }
+
         var externalSeed = optionalSeed;
 
         if (_compiler.compRandomInlineStress())
@@ -590,7 +600,6 @@ public sealed partial class InlineStrategy
         JITDUMP($"\n*** Using random seed ext({externalSeed}) ^ int({internalSeed}) = {seed}\n");
         return new CLRRandom(seed);
     }
-#endif
 
     [MemberNotNull(nameof(_rootContext), nameof(_lastContext))]
     private InlineContext CreateRootContext()
