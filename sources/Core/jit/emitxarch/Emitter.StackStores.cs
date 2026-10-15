@@ -16,7 +16,7 @@ public partial class Emitter
 #if TARGET_AMD64
         RequireSupportedInstructionRecording();
 #endif
-        var fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
+        var fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
 
         if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
         {

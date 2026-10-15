@@ -137,6 +137,62 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [Test]
+    public static void NativeAotTryIntervalsEmitPlainBlocks()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getEEInfo = &GetNativeAotEEInfo;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            Assert.That(compiler.IsNativeAot, Is.True);
+            var start = new BasicBlock(null, null) { bbPreorderNum = 0 };
+            var end = new BasicBlock(null, null) { bbPreorderNum = 1 };
+            compiler.fgIndexToBlockMap = [start, end];
+            compiler.fgWasmIntervals = [new WasmInterval(0, 1, WasmInterval.Kind.Try)];
+            WasmControlFlowStack(codeGen) = new ArrayStack<WasmInterval>();
+
+            EmitStartBlockWasm(codeGen, start);
+
+            var emittedBlock = false;
+            var emittedTryTable = false;
+            var emittedInstructions = new List<instruction>();
+            for (var group = FirstInstructionGroup(codeGen.Emitter); group is not null; group = group.igNext)
+            {
+                var descriptors = group.igData;
+                if (descriptors is null)
+                {
+                    continue;
+                }
+
+                foreach (var descriptor in descriptors)
+                {
+                    emittedInstructions.Add(descriptor.idIns());
+                }
+            }
+
+            var currentDescriptors = CurrentDescriptors(codeGen.Emitter);
+            if (currentDescriptors is not null)
+            {
+                foreach (var descriptor in currentDescriptors)
+                {
+                    emittedInstructions.Add(descriptor.idIns());
+                }
+            }
+
+            foreach (var instruction in emittedInstructions)
+            {
+                emittedBlock |= instruction is INS_block;
+                emittedTryTable |= instruction is INS_try_table;
+            }
+
+            Assert.That(emittedBlock, Is.True, $"Emitted instructions: {string.Join(", ", emittedInstructions)}");
+            Assert.That(emittedTryTable, Is.False);
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void EmitterUnitTestsExerciseAllWasmSimdInstructionFormats()
@@ -302,8 +358,24 @@ internal static unsafe class WasmEmitterOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstInstructionGroup(Emitter emitter);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCompareInt")]
     private static extern void GenCompareInt(CodeGen codeGen, GenTreeOp comparison);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genEmitStartBlockWasm")]
+    private static extern void EmitStartBlockWasm(CodeGen codeGen, BasicBlock block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "wasmControlFlowStack")]
+    private static extern ref ArrayStack<WasmInterval>? WasmControlFlowStack(CodeGen codeGen);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetNativeAotEEInfo(ICorJitInfo* self, CORINFO_EE_INFO* info)
+    {
+        *info = default;
+        info->targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
+    }
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genEmitWasmEmitterTestSkipBlock")]

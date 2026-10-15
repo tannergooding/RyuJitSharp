@@ -34,7 +34,7 @@ public partial class Emitter
         noway_assert(emitVerifyEncodable(ins, size, reg));
 
         var id = emitNewInstrDsp(attr, offs);
-        var fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
+        var fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(reg);

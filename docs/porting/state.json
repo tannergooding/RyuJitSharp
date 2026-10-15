@@ -3,9 +3,9 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "56ba1c0be24c3837e5ac4ed13267b40646b906c7",
-    "targetObservedAt": "2026-10-14",
-    "reconciledCommit": "56ba1c0be24c3837e5ac4ed13267b40646b906c7"
+    "targetCommit": "ce202f8f8183262f77bf094a5860390f3af92a2d",
+    "targetObservedAt": "2026-10-15",
+    "reconciledCommit": "ce202f8f8183262f77bf094a5860390f3af92a2d"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
@@ -13,7 +13,8 @@
     "nextAction": "Resume the dynamic TLS input-ownership investigation using artifacts\\dynamic-tls-inputs: identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of the matching compilation inputs, followed by full primary-JIT dump comparison at the pinned oracle revision. Keep genAsyncResumeInfo deferred until B209's target-width table/emitter dependency closure is ported and tested; source reconciliation is not full runtime parity.",
     "activeBatch": null,
     "validationGaps": [
-      "Full-analysis and fast Core runs each completed with 17,722 passed and the same three failures outside the refreshed paths: EmitterDataSectionOutputTests.FloatingDataDumpRetainsBitPatternsAndDecimalComments, HWIntrinsicDispatchTests.GatherImmediateRejectsInvalidScaleWithoutPopping, and LinearScanEdgeResolutionTests.ResolveTypeDiagnosticNamesMatchEnumOrder. Logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-14_02_06_19_net11.0.trx and artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-14_02_06_42_net11.0.trx.",
+      "Full-analysis Core suite: 17,740 passed and 3 failures at the clean baseline: EmitterDataSectionOutputTests.FloatingDataDumpRetainsBitPatternsAndDecimalComments, HWIntrinsicDispatchTests.GatherImmediateRejectsInvalidScaleWithoutPopping, and LinearScanEdgeResolutionTests.ResolveTypeDiagnosticNamesMatchEnumOrder. Log: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-15_01_32_36_net11.0.trx.",
+      "Focused browser-wasm regressions passed in Debug (13/13) and Release (12/12); logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-15_01_45_22_net11.0.trx and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-15_01_45_23_net11.0.trx. The broader Debug Target suite had 10 shared ArithmeticMorphTests failures and aborted on an ImporterCallTests host crash; the same failures and crash reproduced at clean HEAD f96b8aff82106ab3ee5ec0f94d352d736d83e8c9, so it is not reported as a pass.",
       "The broad win-arm64 Debug baseline remains 10 failures (4 scalable TYP_SIMD clone, 3 embedded-FMA, 2 constant-count intrinsic, 1 jump-table) and 2 not executed; it is not reported as passing or attributed to this refresh."
     ],
     "parityEvidence": {
@@ -337,7 +338,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "56ba1c0be24c3837e5ac4ed13267b40646b906c7",
+    "reconciledCommit": "ce202f8f8183262f77bf094a5860390f3af92a2d",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

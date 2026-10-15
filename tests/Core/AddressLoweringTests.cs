@@ -221,6 +221,27 @@ internal static unsafe class AddressLoweringTests
         });
     }
 
+#if TARGET_XARCH
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    public static void VolatileLocalIndirectionsDoNotContainTheirAddresses(bool isVolatile, bool expectedContained)
+    {
+        WithCompiler(compiler => {
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            var address = compiler.gtNewLclAddrNode(var_types.TYP_BYREF, 0, 0);
+            var indir = new GenTreeIndir(genTreeOps.GT_IND, var_types.TYP_INT, address);
+            if (isVolatile)
+            {
+                indir.Flags |= GenTreeFlags.GTF_IND_VOLATILE;
+            }
+
+            ContainCheckIndir(lowering, indir);
+
+            Assert.That(address.IsContained, Is.EqualTo(expectedContained));
+        });
+    }
+#endif
+
     [TestCase(1, 0)]
     [TestCase(3, 0)]
     [TestCase(3, 1)]
@@ -345,6 +366,11 @@ internal static unsafe class AddressLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerIndir")]
     private static extern GenTree? LowerIndir(Lowering lowering, GenTreeIndir indir);
+
+#if TARGET_XARCH
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckIndir")]
+    private static extern void ContainCheckIndir(Lowering lowering, GenTreeIndir indir);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

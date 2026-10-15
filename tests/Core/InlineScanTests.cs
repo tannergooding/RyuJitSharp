@@ -10,12 +10,63 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.InlineObservation;
+using static RyuJitSharp.CORINFO_EH_CLAUSE_FLAGS;
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static class InlineScanTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static unsafe void RejectsMethodEntryInsideHandlerOrFilter(bool filter)
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info = new Compiler.Info();
+        compiler.compHndBBtab = [];
+        compiler.info.compXcptnsCount = 1;
+        compiler.info.compILCodeSize = filter ? 3 : 2;
+        compiler.compInlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
+        compiler.compInlineContext._ilSize = compiler.info.compILCodeSize;
+        compiler.info.compIsStatic = true;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.info.compMethodInfo = &methodInfo;
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        s_filterEntryClause = filter;
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getEHinfo = &GetEntryClause;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        compiler.info.compCompHnd = &jitInfo;
+        JitTls.Compiler = compiler;
+#if DEBUG
+        JitTls.LogEnv.Compiler = compiler;
+#endif
+        byte[] il = filter ? [0x00, 0x00, 0x2A] : [0x00, 0x2A];
+
+        try
+        {
+            var error = Assert.Throws<FatalJitException>(() =>
+            {
+                fixed (byte* code = il)
+                {
+                    compiler.info.compCode = code;
+                    compiler.fgFindBasicBlocks();
+                }
+            });
+
+            Assert.That(error!.Result, Is.EqualTo(CorJitResult.CORJIT_BADCODE));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(0)]
     [TestCase(Globals.MAX_XCPTN_INDEX - 1)]
     public static unsafe void AvailableEhCapacityPreservesTheCatchRejection(int existingClauses)
@@ -120,6 +171,29 @@ internal static class InlineScanTests
             CALLEE_ARG_FEEDS_RANGE_CHECK);
         yield return ScanCase("array-store-does-not-preserve-argument",
             [0x02, 0x03, 0x04, 0x9C, 0x7D, 0, 0, 0, 0, 0x2A], 3, 0, CALLEE_ARG_FEEDS_RANGE_CHECK);
+    }
+
+    private static bool s_filterEntryClause;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static unsafe void GetEntryClause(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method,
+        int index, CORINFO_EH_CLAUSE* clause)
+    {
+        *clause = s_filterEntryClause
+            ? new CORINFO_EH_CLAUSE {
+                Flags = CORINFO_EH_CLAUSE_FILTER,
+                TryOffset = 2,
+                TryLength = 1,
+                HandlerOffset = 1,
+                HandlerLength = 1,
+                FilterOffset = 0,
+            }
+            : new CORINFO_EH_CLAUSE {
+                TryOffset = 1,
+                TryLength = 1,
+                HandlerOffset = 0,
+                HandlerLength = 1,
+            };
     }
 
     private static TestCaseData ScanCase(string name, byte[] il, int invariantArgs, params InlineObservation[] expected)

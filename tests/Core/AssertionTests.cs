@@ -1222,6 +1222,35 @@ internal static unsafe class AssertionTests
         });
     }
 
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY, true)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY, false)]
+    public static void CastTypeFallbackPreservesNonNullnessOnlyForThrowingCasts(
+        CorInfoHelpFunc helper, bool expectedNonNull)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getObjectType = &GetAssertionObjectType;
+            var ee = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &ee;
+
+            var type = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var value = compiler.gtNewIconNode(TYP_REF, 0x4000);
+            value.Flags |= GTF_ICON_OBJ_HDL;
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER, Compiler.eeFindHelper(helper));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(type));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+
+            var classHandle = compiler.gtGetHelperCallClassHandle(call, out var isExact, out var isNonNull);
+
+            Assert.That((nint)classHandle, Is.EqualTo((nint)0x2000));
+            Assert.That(isExact, Is.True);
+            Assert.That(isNonNull, Is.EqualTo(expectedNonNull));
+        });
+    }
+
     [TestCase(false, false, true)]
     [TestCase(true, false, false)]
     [TestCase(true, true, true)]

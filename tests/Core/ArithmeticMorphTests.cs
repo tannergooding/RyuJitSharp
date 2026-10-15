@@ -14,6 +14,19 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ArithmeticMorphTests
 {
+    [Test]
+    public static void OrderedSideEffectOnSecondOperandPreventsSwapping()
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewIconNode(TYP_INT, 1);
+            first.Flags |= GTF_EXCEPT;
+            var second = compiler.gtNewIconNode(TYP_INT, 2);
+            second.Flags |= GTF_ORDER_SIDEEFF;
+
+            Assert.That(compiler.gtCanSwapOrder(first, second), Is.False);
+        });
+    }
+
     [TestCase(TYP_INT, 2)]
     [TestCase(TYP_LONG, 4)]
     public static void RepeatedAdditionReplacesTheLeftSubtreeWithoutReusingItsManagedKind(var_types type, int count)

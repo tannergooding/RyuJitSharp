@@ -79,7 +79,8 @@ public sealed partial class Lowering
             return;
         }
 
-        if ((addr.Oper is GT_LCL_ADDR) && IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+        if ((addr.Oper is GT_LCL_ADDR) && ((node.Flags & GTF_IND_VOLATILE) == 0) &&
+            IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
         {
             MakeSrcContained(node, addr);
         }

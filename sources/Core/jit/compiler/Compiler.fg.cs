@@ -4360,6 +4360,18 @@ public partial class Compiler
 
                     jumpTarget[clause.FilterOffset] = true;
                 }
+
+                // The method entry (IL offset 0) must not lie inside a handler or filter.
+                // Entry into these regions is controlled by the exception-handling mechanism
+                // (ECMA-335 I.12.4.2.8.1).
+                if (clause.HandlerOffset == 0)
+                {
+                    BADCODE3("method entry inside handler for try", " at offset %04X", clause.TryOffset);
+                }
+                if (((clause.Flags & CORINFO_EH_CLAUSE_FILTER) != 0) && (clause.FilterOffset == 0))
+                {
+                    BADCODE3("method entry inside filter for try", " at offset %04X", clause.TryOffset);
+                }
             }
         }
 
@@ -7226,8 +7238,11 @@ public partial class Compiler
     public unsafe GenTreeCall? fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
     {
 #if TARGET_WASM
-        // Wasm does not support dynamically created helpers
-        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+        // CoreCLR Wasm does not support dynamically created helpers.
+        if (!IsNativeAot)
+        {
+            return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+        }
 #endif
 
 #if FEATURE_READYTORUN
@@ -7658,6 +7673,12 @@ public partial class Compiler
             {
                 case BBJ_COND:
                 {
+                    // The false target is the next block, so there must be one.
+                    if (curBBdesc.IsLast)
+                    {
+                        BADCODE("Fall thru the end of a method");
+                    }
+
                     var trueTarget = fgLookupBB(curBBdesc.TargetOffs);
                     var falseTarget = curBBdesc.Next;
 
@@ -7704,11 +7725,6 @@ public partial class Compiler
                     if (trueTarget.bbNum <= curBBdesc.bbNum)
                     {
                         fgMarkBackwardJump(trueTarget, curBBdesc);
-                    }
-
-                    if (curBBdesc.IsLast)
-                    {
-                        BADCODE("Fall thru the end of a method");
                     }
 
                     break;

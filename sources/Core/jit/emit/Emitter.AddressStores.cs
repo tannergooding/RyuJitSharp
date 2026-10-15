@@ -60,7 +60,7 @@ public partial class Emitter
         }
         else
         {
-            fmt = ins == INS_xchg ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
+            fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
             noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
             assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
             id.idReg1(reg);

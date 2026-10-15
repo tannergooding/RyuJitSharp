@@ -15,6 +15,21 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class BlockSplittingTests
 {
+    [Test]
+    public static void LastConditionalBlockFailsBeforeResolvingItsTrueTarget()
+    {
+        WithCompiler(compiler => {
+            var last = BasicBlock.New(compiler, BBJ_COND, 100);
+            last.bbRefs = 0;
+            compiler.fgFirstBB = last;
+            compiler.fgLastBB = last;
+
+            var error = Assert.Throws<FatalJitException>(() => compiler.fgLinkBasicBlocks());
+
+            Assert.That(error!.Result, Is.EqualTo(CorJitResult.CORJIT_BADCODE));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void LinksSwitchOffsetsIntoUniqueSuccessors(bool duplicateCase)
@@ -481,6 +496,9 @@ internal static unsafe class BlockSplittingTests
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
+#if DEBUG
+        JitTls.LogEnv.Compiler = compiler;
+#endif
 
         try
         {

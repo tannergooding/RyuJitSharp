@@ -29,6 +29,17 @@ public partial class Compiler
 
         for (var block = fgFirstBB; block is not null; block = block.UniqueSucc)
         {
+            if (block != fgFirstBB)
+            {
+                var firstPred = BlockPredsWithEH(block)
+                    ?? throw new InvalidOperationException("A non-entry block in the unique-successor scan has no predecessor.");
+                if (firstPred.NextPredEdge is not null)
+                {
+                    JITDUMP($"{FMT_BB(block.bbNum)} has multiple predecessors, stopping the block scan\n");
+                    break;
+                }
+            }
+
             var dfsTree = _dfsTree ?? throw new InvalidOperationException("The flow graph DFS tree is required.");
             if (dfsTree.HasCycle)
             {

@@ -147,9 +147,25 @@ public partial class Emitter
         assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE) && (reg != REG_NA));
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
 
-        if ((ins == INS_lea) && (reg == @base) && (index == REG_NA) && (disp == 0))
+        if ((ins == INS_lea) && (index == REG_NA) && (disp == 0))
         {
-            return;
+            if (reg == @base)
+            {
+                return;
+            }
+
+            if (@base != REG_NA)
+            {
+#if TARGET_AMD64
+                if ((reg != REG_SPBASE) || (@base != REG_FPBASE))
+#endif
+                {
+                    // AMD64 epilogs require LEA to restore RSP from RBP.
+                    // A zero-offset, base-only LEA is otherwise just a register move.
+                    _ = emitIns_Mov(INS_mov, attr, reg, @base, canSkip: true);
+                    return;
+                }
+            }
         }
 
         var id = emitNewInstrAmd(attr, disp);
