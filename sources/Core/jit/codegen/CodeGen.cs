@@ -80,9 +80,10 @@ public sealed partial class CodeGen : ICodeGen
         _cgEmitter = new Emitter(this);
         _calleeRegArgMaskLiveIn = RBM_NONE;
 
-#if DEBUG
-        _verbose = compiler.verbose;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _verbose = compiler.verbose;
+        }
 
         _regSet.tmpInit();
 

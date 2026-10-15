@@ -59,6 +59,15 @@ internal static unsafe class CodeGenSharedGenerationTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConstructionCopiesDebugVerbosity(bool verbose)
+    {
+        WithGeneration(
+            (_, codeGen) => Assert.That(VerboseField(codeGen), Is.EqualTo(Configuration.DEBUG && verbose)),
+            verbose);
+    }
+
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
     [Test]
     public static void UnsupportedMachinePhaseStillClearsBorrowedOutputAddresses()
@@ -249,7 +258,7 @@ internal static unsafe class CodeGenSharedGenerationTests
 #endif
 #endif
 
-    private static void WithGeneration(Action<Compiler, CodeGen> action)
+    private static void WithGeneration(Action<Compiler, CodeGen> action, bool verbose = false)
     {
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
@@ -257,6 +266,11 @@ internal static unsafe class CodeGenSharedGenerationTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         JitTls.Compiler = compiler;
+        if (verbose)
+        {
+            TestConfiguration.EnableVerbose(compiler);
+        }
+
         try
         {
             var codeGen = new CodeGen(compiler);
@@ -277,6 +291,9 @@ internal static unsafe class CodeGenSharedGenerationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_nativeSizeOfCode")]
     private static extern ref int* NativeSizeAddress(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_verbose")]
+    private static extern ref bool VerboseField(CodeGen codeGen);
 
 #if !TARGET_X86
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_stkArgVarNum")]
