@@ -44,10 +44,16 @@ internal static class GenTreeOpsIdentityTests
                 Assert.That(oper.SwapRelop.SwapRelop, Is.EqualTo(oper), name);
             }
 
-#if DEBUG
-            _ = oper.DebugKind;
-            Assert.That(oper.StructType, Is.Not.Null, name);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                _ = oper.DebugKind;
+                Assert.That(oper.StructType, Is.Not.Null, name);
+            }
+        }
+
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Throws<InvalidOperationException>(() => _ = GT_NONE.DebugKind);
         }
 
         Assert.That(GT_BITTEST_EQ.IsCompare, Is.EqualTo(Configuration.TARGET_XARCH));

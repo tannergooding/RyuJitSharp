@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 global using static RyuJitSharp.GenTreeDebugFlags;
 using System;
 
@@ -35,4 +34,3 @@ public enum GenTreeDebugFlags : ushort
     /// <summary>GT_CAST    -- Try to prevent this cast from being folded</summary>
     GTF_DEBUG_CAST_DONT_FOLD = 0x4000,
 }
-#endif

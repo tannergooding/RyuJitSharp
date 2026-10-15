@@ -22,10 +22,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that sequence of fields.
     private FieldSeq? _fieldSeq;
 
-#if DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
-    private nint _targetHandle;
-#endif
 
     internal GenTreeIntCon(var_types type, nint value, FieldSeq? fields = null)
         : base(GT_CNS_INT, type)
@@ -119,20 +116,24 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         }
     }
 
-#if DEBUG
     public nint TargetHandle
     {
         get
         {
-            return _targetHandle;
+            return GetDebugTargetHandle();
         }
 
         set
         {
-            _targetHandle = value;
+            SetDebugTargetHandle(value);
         }
     }
-#endif
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    internal void ResetTargetHandle()
+    {
+        TargetHandle = 0;
+    }
 
     public new bool IsIconHandle()
         => (Flags & GTF_ICON_HDL_MASK) != 0;

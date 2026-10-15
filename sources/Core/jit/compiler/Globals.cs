@@ -244,7 +244,11 @@ public partial class Globals
     [Conditional("DEBUG")]
     public static void DEBUG_DESTROY_NODE(GenTree tree)
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Node destruction diagnostics are only available in Debug builds.");
+        }
+
         // jitprintf($"DEBUG_DESTROY_NODE for [0x{tree.TreeId:x8}]\n", tree);
 
         // Save gtOper in case we want to find out what this node was
@@ -262,7 +266,6 @@ public partial class Globals
         // Must do this last, because the "AsOp()" check above will fail otherwise.
         // Don't call SetOper, because GT_COUNT is not a valid value
         tree._oper = GT_COUNT;
-#endif
     }
 
     /// <summary>sets each value of trees to garbage to catch extra references</summary>

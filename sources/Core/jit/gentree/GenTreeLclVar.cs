@@ -11,16 +11,10 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
 
     private MultiRegSpillFlags _spillFlags;
 
-#if DEBUG
-    private IL_OFFSET _lclIlOffs = BAD_IL_OFFSET;
-#endif
-
     internal GenTreeLclVar(var_types type, int lclNum, IL_OFFSET offs = BAD_IL_OFFSET)
         : base(GT_LCL_VAR, type, lclNum)
     {
-#if DEBUG
-        _lclIlOffs = offs;
-#endif
+        SetLclILOffs(offs);
     }
 
     internal GenTreeLclVar(var_types type, int lclNum, GenTree data)
@@ -37,23 +31,19 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
 
     public bool IsMultiReg => (Flags & GTF_VAR_MULTIREG) != 0;
 
-#if DEBUG
     /// <summary>instr offset of ref (only for JIT dumps)</summary>
     public IL_OFFSET LclIlOffs
     {
         get
         {
-            return _lclIlOffs;
+            return Configuration.DEBUG ? GetDebugLocalILOffset() : BAD_IL_OFFSET;
         }
 
         set
         {
-            _lclIlOffs = value;
+            SetDebugLocalILOffset(value);
         }
     }
-#else
-    public IL_OFFSET LclIlOffs => BAD_IL_OFFSET;
-#endif
 
     public void ClearMultiReg()
     {
@@ -122,12 +112,17 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
         return compiler.lvaGetDesc(LclNum).IsNeverNegative;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void ResetLclILOffs()
     {
-        _lclIlOffs = BAD_IL_OFFSET;
+        SetDebugLocalILOffset(BAD_IL_OFFSET);
     }
-#endif
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void SetLclILOffs(IL_OFFSET offs)
+    {
+        SetDebugLocalILOffset(offs);
+    }
 
     public void SetMultiReg()
     {

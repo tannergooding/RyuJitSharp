@@ -381,9 +381,10 @@ public partial class Compiler
             case GT_CNS_INT:
             {
                 copy = gtCloneCnsInt(tree.AsIntCon());
-#if DEBUG
-                copy.AsIntCon().TargetHandle = 0;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    copy.AsIntCon().TargetHandle = 0;
+                }
                 break;
             }
 
@@ -486,9 +487,10 @@ public partial class Compiler
         {
             copy.Flags |= (tree.Flags & ~GTF_NODE_MASK);
 
-#if DEBUG
-            copy._debugFlags |= (tree._debugFlags & ~GTF_DEBUG_NODE_MASK);
-#endif
+            if (Configuration.DEBUG)
+            {
+                copy._debugFlags |= (tree._debugFlags & ~GTF_DEBUG_NODE_MASK);
+            }
         }
         return copy;
     }
@@ -500,7 +502,7 @@ public partial class Compiler
 
     public GenTreeIntCon gtCloneCnsInt(GenTreeIntCon intCon)
     {
-        var intConCopy = null as GenTreeIntCon;
+        GenTreeIntCon intConCopy;
 
         if (Configuration.LATE_DISASM && intCon.IsIconHandle())
         {
@@ -510,9 +512,10 @@ public partial class Compiler
         else
         {
             intConCopy = new GenTreeIntCon(intCon.Type, intCon.IconVal, intCon.FieldSeq);
-#if DEBUG
-            intConCopy.TargetHandle = intCon.TargetHandle;
-#endif
+            if (Configuration.DEBUG)
+            {
+                intConCopy.TargetHandle = intCon.TargetHandle;
+            }
         }
 
         intConCopy.CompileTimeHandle = intCon.CompileTimeHandle;

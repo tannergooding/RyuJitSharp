@@ -17,16 +17,18 @@ internal static class GenTreeSetOperTests
         SsaLivenessTests.WithCompiler(2, _ => {
             var fieldSeq = (FieldSeq)RuntimeHelpers.GetUninitializedObject(typeof(FieldSeq));
             var node = new GenTreeIntCon(TYP_INT, 1, fieldSeq);
-#if DEBUG
-            node.TargetHandle = 2;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                node.TargetHandle = 2;
+            }
 
             node.SetOper(GT_CNS_INT);
 
             Assert.That(node.FieldSeq, Is.Null);
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(node.TargetHandle, Is.EqualTo((nint)0));
-#endif
+            }
         });
     }
 
@@ -73,7 +75,6 @@ internal static class GenTreeSetOperTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void SetOperToLocalVariableResetsIlOffset()
     {
@@ -85,5 +86,4 @@ internal static class GenTreeSetOperTests
             Assert.That(node.LclIlOffs, Is.EqualTo(BAD_IL_OFFSET));
         });
     }
-#endif
 }

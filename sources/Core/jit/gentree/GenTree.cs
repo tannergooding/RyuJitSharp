@@ -16,10 +16,19 @@ public partial class GenTree
 
     internal var_types _type;
 
-#if DEBUG
     // Only used to save gtOper when we destroy a node, to aid debugging.
-    internal genTreeOps _operSave;
-#endif
+    internal genTreeOps _operSave
+    {
+        get
+        {
+            return GetDebugData().OperSave;
+        }
+
+        set
+        {
+            GetDebugData().OperSave = value;
+        }
+    }
 
     /// <summary>0 or the CSE index (negated if def)</summary>
     /// <remarks>valid only for CSE expressions</remarks>
@@ -30,33 +39,29 @@ public partial class GenTree
 
     private AssertionInfo _assertionInfo;
 
-#if DEBUG
-    // You are not allowed to read the cost values before they have been set in gtSetEvalOrder().
-    // Keep track of whether the costs have been initialized, and assert if they are read before being initialized.
-    // Obviously, this information does need to be initialized when a node is created.
-    // This is public so the dumpers can see it.
-    internal bool _costsInitialized;
-#endif
-
     /// <summary>estimate of expression execution cost</summary>
     private byte _costEx;
 
     /// <summary>estimate of expression code size cost</summary>
     private byte _costSz;
 
-#if DEBUG
-    /// <summary>What is in _gtRegNum?</summary>
-    private genRegTag _regTag;
-#endif
-
     /// <summary>This stores the register assigned to the node. If a register is not assigned, _gtRegNum is set to REG_NA.</summary>
     private regNumber _regNum;
 
     private GenTreeFlags _flags;
 
-#if DEBUG
-    internal GenTreeDebugFlags _debugFlags;
-#endif
+    internal GenTreeDebugFlags _debugFlags
+    {
+        get
+        {
+            return GetDebugData().Flags;
+        }
+
+        set
+        {
+            GetDebugData().Flags = value;
+        }
+    }
 
     internal ValueNumPair _vnPair;
 
@@ -64,21 +69,9 @@ public partial class GenTree
 
     private GenTree? _prev;
 
-#if DEBUG
-    private int _treeId;
-
-    /// <summary>liveness traversal order within the current statement</summary>
-    internal int _seqNum;
-
-    /// <summary>use-ordered traversal within the function</summary>
-    private int _useNum;
-#endif
-
     protected internal GenTree(genTreeOps oper, var_types type)
     {
-#if DEBUG
         assert(oper.StructType == GetType());
-#endif
 
         _oper = oper;
         _type = type;
@@ -90,13 +83,30 @@ public partial class GenTree
         System.Threading.Interlocked.Increment(ref GetNodeCount((uint)oper));
 #endif
 
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
+        if (Configuration.DEBUG)
+        {
+            var compiler = JitTls.Compiler ??
+                throw new InvalidOperationException("GenTree construction requires an active compiler in Debug builds.");
 
-        _useNum = -1;
-        _treeId = compiler.compGenTreeID++;
-#endif
+            _useNum = -1;
+            _treeId = compiler.compGenTreeID++;
+        }
+    }
+
+    [Conditional("DEBUG")]
+    private void ValidateContainment(bool result)
+    {
+        assert(Debugger.IsAttached || IsLirOp);
+
+        if (!CanBeContained)
+        {
+            assert(!result);
+        }
+
+        if (result)
+        {
+            assert(!IsUnusedValue);
+        }
     }
 
     /// <summary>Preserve an unthreaded node's metadata and logical identity when replacing its CLR representation.</summary>
@@ -110,9 +120,7 @@ public partial class GenTree
     {
         assert(threading is NodeThreading.None or NodeThreading.AllLocals or NodeThreading.AllTrees or NodeThreading.LIR);
         assert((threading is not NodeThreading.None) || ((source._prev is null) && (source._next is null)));
-#if DEBUG
         assert(oper.StructType == GetType());
-#endif
         _oper = oper;
         _type = type;
         _cseNum = source._cseNum;
@@ -123,15 +131,7 @@ public partial class GenTree
         _regNum = source._regNum;
         _flags = source._flags & GTF_NODE_MASK;
         _vnPair = source._vnPair;
-#if DEBUG
-        _operSave = source._operSave;
-        _costsInitialized = source._costsInitialized;
-        _regTag = source._regTag;
-        _debugFlags = source._debugFlags;
-        _treeId = source._treeId;
-        _seqNum = source._seqNum;
-        _useNum = source._useNum;
-#endif
+        CopyDebugDataFrom(source);
     }
 
     public AssertionInfo AssertionInfo
@@ -147,12 +147,16 @@ public partial class GenTree
         }
     }
 
-#if DEBUG
     /// <summary>check whether this tree node may be a subcomponent of its parent for purposes of code generation.</summary>
     public bool CanBeContained
     {
         get
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Containment diagnostics are only available in Debug builds.");
+            }
+
             assert(Debugger.IsAttached || IsLirOp);
             var result = true;
 
@@ -173,10 +177,10 @@ public partial class GenTree
             {
                 result = IsContainableHWIntrinsic;
             }
+
             return result;
         }
     }
-#endif
 
     public bool CanCse
     {
@@ -364,9 +368,7 @@ public partial class GenTree
         }
     }
 
-#if DEBUG
     public bool InReg => RegTag is not GT_REGTAG_NONE;
-#endif
 
     public bool IsBlkOp => _oper.IsStore && varTypeIsStruct(_type);
 
@@ -462,20 +464,7 @@ public partial class GenTree
         get
         {
             var result = ((_flags & GTF_CONTAINED) != 0);
-
-#if DEBUG
-            assert(Debugger.IsAttached || IsLirOp);
-
-            if (!CanBeContained)
-            {
-                assert(!result);
-            }
-
-            if (result)
-            {
-                assert(!IsUnusedValue);
-            }
-#endif
+            ValidateContainment(result);
 
             return result;
         }
@@ -654,9 +643,18 @@ public partial class GenTree
         return arrayAddress is not null;
     }
 
-#if DEBUG
-    public bool IsLirOp => (_oper.DebugKind & DBK_NOTLIR) == 0;
-#endif
+    public bool IsLirOp
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("LIR diagnostics are only available in Debug builds.");
+            }
+
+            return (_oper.DebugKind & DBK_NOTLIR) == 0;
+        }
+    }
 
     public bool IsMaskAllBitsSet => _oper.IsCnsMsk && AsMskCon().IsAllBitsSet;
 
@@ -1009,42 +1007,31 @@ public partial class GenTree
         }
     }
 
-#if DEBUG
     public regNumber Reg => (_regTag is not GT_REGTAG_NONE) ? RegNum : REG_NA;
-#endif
 
     public regNumber RegNum
     {
         get
         {
-#if DEBUG
-            // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads undefined values
-            assert((_regTag is GT_REGTAG_NONE) || genIsValidReg(_regNum) || (_regNum == REG_NA));
-#endif
+            if (Configuration.DEBUG)
+            {
+                // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads undefined values
+                assert((_regTag is GT_REGTAG_NONE) || genIsValidReg(_regNum) || (_regNum == REG_NA));
+            }
             return _regNum;
         }
 
         set
         {
-            genIsValidReg(value);
+            _ = genIsValidReg(value);
             _regNum = value;
 
-#if DEBUG
-            _regTag = GT_REGTAG_REG;
-#endif
+            if (Configuration.DEBUG)
+            {
+                _regTag = GT_REGTAG_REG;
+            }
         }
     }
-
-#if DEBUG
-    public genRegTag RegTag
-    {
-        get
-        {
-            assert(_regTag is GT_REGTAG_NONE or GT_REGTAG_REG);
-            return _regTag;
-        }
-    }
-#endif
 
     public bool RequiresAsgFlag => _oper switch {
         GT_STORE_LCL_VAR => true,
@@ -1205,11 +1192,7 @@ public partial class GenTree
         };
     }
 
-#if DEBUG
     public int TreeId => _treeId;
-#else
-    public int TreeId => throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
-#endif
 
     public var_types Type
     {
@@ -1715,18 +1698,20 @@ public partial class GenTree
     {
         _regNum = REG_NA;
 
-#if DEBUG
-        _regTag = GT_REGTAG_NONE;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _regTag = GT_REGTAG_NONE;
+        }
     }
 
     /// <summary>Optimized copy function, to avoid the SetCosts() function comparisons, and make it more clear that a node copy is happening.</summary>
     /// <param name="tree"></param>
     public void CopyCosts(GenTree tree)
     {
-#if DEBUG
-        assert(tree._costsInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(tree._costsInitialized);
+        }
         CopyCostsRaw(tree);
     }
 
@@ -1740,9 +1725,10 @@ public partial class GenTree
     {
         assert(tree._oper == _oper);
 
-#if DEBUG
-        _costsInitialized = tree._costsInitialized;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _costsInitialized = tree._costsInitialized;
+        }
 
         _costEx = tree._costEx;
         _costSz = tree._costSz;
@@ -1754,9 +1740,10 @@ public partial class GenTree
     {
         _regNum = tree._regNum;
 
-#if DEBUG
-        _regTag = tree._regTag;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _regTag = tree._regTag;
+        }
 
         if (_oper is GT_CALL)
         {
@@ -1769,9 +1756,13 @@ public partial class GenTree
         }
     }
 
-#if DEBUG
     public static int gtDispFlags(GenTreeFlags flags)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree flag diagnostics are only available in Debug builds.");
+        }
+
         // the "baseline" number of flag characters displayed
         var charsDisplayed = 10;
 
@@ -1796,7 +1787,6 @@ public partial class GenTree
 
         return charsDisplayed;
     }
-#endif
 
     /// <summary>Get exception set this tree may throw.</summary>
     /// <param name="comp">Compiler instance</param>
@@ -2790,9 +2780,10 @@ public partial class GenTree
         assert(costEx != uint.MaxValue);
         assert(costSz != uint.MaxValue);
 
-#if DEBUG
-        _costsInitialized = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _costsInitialized = true;
+        }
 
         _costEx = (byte)uint.Min(costEx, MAX_COST);
         _costSz = (byte)uint.Min(costSz, MAX_COST);
@@ -2859,18 +2850,22 @@ public partial class GenTree
         return result;
     }
 
-#if DEBUG
     internal virtual GenTree CloneForMorphStress(Compiler compiler)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Morph stress cloning is only available in Debug builds.");
+        }
+
         assert((_prev is null) && (_next is null));
         var clone = (GenTree)MemberwiseClone();
+        clone.CopyDebugDataFrom(this, copyDerivedDebugData: true);
         clone._seqNum = 0;
 
         // Native allocates a destination before ReplaceWith restores the source ID.
         compiler.compGenTreeID++;
         return clone;
     }
-#endif
 
     public void BashToNOP()
     {
@@ -2890,9 +2885,7 @@ public partial class GenTree
                 "Replace a long constant at its owning use rather than changing its managed runtime type");
         }
 
-#if DEBUG
         assert(oper.StructType == GetType());
-#endif
 
         // Make sure the node isn't too small for the new operator
         SetOperRaw(oper);
@@ -2903,20 +2896,16 @@ public partial class GenTree
             _vnPair.SetBoth(ValueNumStore.NoVN);
         }
 
-#if DEBUG
-        if (oper.IsUnary && (this is GenTreeOp op))
+        if (Configuration.DEBUG && oper.IsUnary && (this is GenTreeOp op))
         {
             op.Op2Ref = null;
         }
-#endif
 
         switch (oper)
         {
             case GT_CNS_INT:
                 AsIntCon().FieldSeq = null;
-#if DEBUG
-                AsIntCon().TargetHandle = 0;
-#endif
+                AsIntCon().ResetTargetHandle();
                 break;
             case GT_MUL_LONG:
                 if (Configuration.TARGET_ARM)
@@ -2936,12 +2925,10 @@ public partial class GenTree
             case GT_CALL:
                 AsCall().Args = default;
                 break;
-#if DEBUG
             case GT_LCL_VAR:
             case GT_STORE_LCL_VAR:
                 AsLclVar().ResetLclILOffs();
                 break;
-#endif
         }
     }
 

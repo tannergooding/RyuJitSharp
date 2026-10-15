@@ -810,7 +810,7 @@ public enum genTreeOps : byte
                 flags = flags[1..^1].Trim();
             }
 
-            var separator = "        ";
+            var separator = "            ";
             var count = 0;
 
             foreach (var flagRange in flags.Split('|'))
@@ -946,10 +946,19 @@ public static partial class genTreeOpsExtensions
     private static ReadOnlySpan<GenTreeOperKind> s_kinds => [
 {{kindsBuilder}}    ];
 
-#if DEBUG
-    private static ReadOnlySpan<GenTreeDebugOperKind> s_debugKinds => [
-{{debugKindsBuilder}}    ];
-#endif
+    private static ReadOnlySpan<GenTreeDebugOperKind> s_debugKinds
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Tree operation diagnostics are only available in Debug builds.");
+            }
+
+            return [
+{{debugKindsBuilder}}            ];
+        }
+    }
 
 #if DEBUG || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
     private static readonly string[] s_names = [

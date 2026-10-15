@@ -64,16 +64,19 @@ public static partial class genTreeOpsExtensions
             }
         }
 
-#if DEBUG
         public GenTreeDebugOperKind DebugKind
         {
             get
             {
+                if (!Configuration.DEBUG)
+                {
+                    throw new InvalidOperationException("Tree operation diagnostics are only available in Debug builds.");
+                }
+
                 assert(s_debugKinds.Length == (int)(GT_COUNT));
                 return s_debugKinds[(int)(oper)];
             }
         }
-#endif
 
         public bool IsAddrMode => oper is GT_LEA;
 

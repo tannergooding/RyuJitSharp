@@ -108,9 +108,10 @@ internal static unsafe class TreeCloneOrderTests
             {
                 original.Flags |= Globals.GTF_ICON_STATIC_HDL;
             }
-#if DEBUG
-            original.TargetHandle = 789;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                original.TargetHandle = 789;
+            }
 
             var copy = (expression ? compiler.gtCloneExpr(original) : compiler.gtClone(original, complexOK: true))
                 as GenTreeIntCon ?? throw new AssertionException("Integer cloning must produce an integer node.");
@@ -120,15 +121,16 @@ internal static unsafe class TreeCloneOrderTests
             Assert.That(copy.IconVal, Is.EqualTo(original.IconVal));
             Assert.That(copy.CompileTimeHandle, Is.EqualTo(original.CompileTimeHandle));
             Assert.That(copy.IconHandleFlag, Is.EqualTo(original.IconHandleFlag));
-#if DEBUG
-            var expectedCookie = expression ? original.TargetHandle : 0;
-            if (Configuration.LATE_DISASM && handle)
+            if (TestConfiguration.IsDebug)
             {
-                expectedCookie = 0;
+                var expectedCookie = expression ? original.TargetHandle : 0;
+                if (Configuration.LATE_DISASM && handle)
+                {
+                    expectedCookie = 0;
+                }
+                Assert.That(copy.TargetHandle, Is.EqualTo(expectedCookie));
+                Assert.That(original.TargetHandle, Is.EqualTo((nint)789));
             }
-            Assert.That(copy.TargetHandle, Is.EqualTo(expectedCookie));
-            Assert.That(original.TargetHandle, Is.EqualTo((nint)789));
-#endif
         });
     }
 
