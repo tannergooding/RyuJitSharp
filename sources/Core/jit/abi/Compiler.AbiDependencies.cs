@@ -73,8 +73,7 @@ public partial class Compiler
 
             cache[key] = lowering;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"**** getFpStructInRegistersInfo({FMT_PTR((void*)dspPtr(structHandle))} " +
                     $"({eeGetClassName(structHandle)}, {info.compCompHnd->getClassSize(structHandle)} bytes)) =>\n");
@@ -95,7 +94,6 @@ public partial class Compiler
                     }
                 }
             }
-#endif
         }
 
         return ref lowering.Value;

@@ -171,14 +171,12 @@ public partial struct AbiPassingInformation
             _singleSegment = segment,
         };
 
-#if DEBUG
-        if (passedByRef)
+        if (Configuration.DEBUG && passedByRef)
         {
             assert(segment.Size == Configuration.TARGET_POINTER_SIZE);
             assert(!segment.IsPassedInRegister ||
                    (segment.GetRegisterType().ActualType == TYP_I_IMPL.ActualType));
         }
-#endif
 
         return info;
     }

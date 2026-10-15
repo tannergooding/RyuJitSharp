@@ -485,6 +485,7 @@ internal static unsafe class AbiHeaderTests
         vtable.Base.Base.getClassSize = &GetFpStructClassSize;
         vtable.Base.Base.getClassGClayout = &GetFpStructGcLayout;
         vtable.Base.Base.getFpStructLowering = &GetFpStructLowering;
+        vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableClassName;
         FpStructLoweringState state = new() {
             Runtime = new ICorJitInfo { lpVtbl = &vtable },
             StructSize = 16,
@@ -492,6 +493,7 @@ internal static unsafe class AbiHeaderTests
         };
         var compiler = NewCompiler();
         compiler.info.compCompHnd = &state.Runtime;
+        TestConfiguration.EnableVerbose(compiler);
         var handle = (CORINFO_CLASS_STRUCT_*)1;
         var layout = new ClassLayout(handle, false, 16, TYP_STRUCT, "Struct", "Struct");
         var classifier = new PlatformClassifier(new ClassifierInfo());
@@ -542,6 +544,11 @@ internal static unsafe class AbiHeaderTests
         lowering->loweredElements[1] = CorInfoType.CORINFO_TYPE_LONG;
         lowering->offsets[1] = 8;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte UnavailableClassName(
+        ICorJitInfo* runtime, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
+        => 0;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct FpStructLoweringState
