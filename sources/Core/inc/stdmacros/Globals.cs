@@ -7,25 +7,33 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if HOST_64BIT
-    public static long INVALID_POINT_CC => unchecked((long)(0xCCCCCCCC_CCCCCCCC));
+    public static nint INVALID_POINT_CC => unchecked((nint)0xCCCCCCCC_CCCCCCCC);
 
-    public static long INVALID_POINT_CD => unchecked((long)(0xCDCDCDCD_CDCDCDCD));
+    public static nint INVALID_POINT_CD => unchecked((nint)0xCDCDCDCD_CDCDCDCD);
 
-    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)((nint)(ptr) >>> 32)):x8}`{unchecked((int)(ptr)):x8} ";
+    public static unsafe string FMT_DBG_ADDR(void* ptr)
+    {
+        var address = unchecked((nint)ptr);
 
-    public static unsafe string FMT_DSP_PTR(void* ptr) => $"{dspPtr(ptr):X16}";
+        if (Configuration.HOST_64BIT)
+        {
+            return $" {unchecked((int)(address >>> 32)):x8}`{unchecked((int)address):x8} ";
+        }
 
-    public static unsafe string FMT_PTR(void* ptr) => $"{unchecked((nint)(ptr)):X16}";
-#else
-    public const int INVALID_POINT_CC = unchecked((int)(0xCCCCCCCC));
+        return $" {unchecked((int)address):x8} ";
+    }
 
-    public const int INVALID_POINT_CD = unchecked((int)(0xCDCDCDCD));
+    public static unsafe string FMT_DSP_PTR(void* ptr)
+    {
+        var address = dspPtr(ptr);
 
-    public static unsafe string FMT_DBG_ADDR(void* ptr) => $" {unchecked((int)(ptr)):x8} ";
+        return Configuration.HOST_64BIT ? $"{address:X16}" : $"{address:X8}";
+    }
 
-    public static unsafe string FMT_DSP_PTR(void* ptr) => $"{dspPtr(ptr):X8}";
+    public static unsafe string FMT_PTR(void* ptr)
+    {
+        var address = unchecked((nint)ptr);
 
-    public static unsafe string FMT_PTR(void* ptr) => $"{unchecked((nint)(ptr)):X8}";
-#endif
+        return Configuration.HOST_64BIT ? $"{address:X16}" : $"{address:X8}";
+    }
 }
