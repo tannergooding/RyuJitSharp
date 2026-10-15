@@ -115,22 +115,27 @@ internal static unsafe class FloatingRegisterNameTests
         Assert.That(REG_FP_LAST.GetFloatName(TYP_FLOAT), Is.EqualTo("f31"));
     }
 
-    [TestCase(REG_F0, "d0")]
-    [TestCase(REG_F2, "d2")]
-    [TestCase(REG_F4, "d4")]
-    [TestCase(REG_F6, "d6")]
-    [TestCase(REG_F8, "d8")]
-    [TestCase(REG_F10, "d10")]
-    [TestCase(REG_F12, "d12")]
-    [TestCase(REG_F14, "d14")]
-    [TestCase(REG_F16, "d16")]
-    [TestCase(REG_F18, "d18")]
-    [TestCase(REG_F20, "d20")]
-    [TestCase(REG_F22, "d22")]
-    [TestCase(REG_F24, "d24")]
-    [TestCase(REG_F26, "d26")]
-    [TestCase(REG_F28, "d28")]
-    [TestCase(REG_F30, "d30")]
+    private static IEnumerable<TestCaseData> ArmEvenDoubleRegisterNameCases()
+    {
+        yield return new TestCaseData(REG_F0, "d0");
+        yield return new TestCaseData(REG_F2, "d2");
+        yield return new TestCaseData(REG_F4, "d4");
+        yield return new TestCaseData(REG_F6, "d6");
+        yield return new TestCaseData(REG_F8, "d8");
+        yield return new TestCaseData(REG_F10, "d10");
+        yield return new TestCaseData(REG_F12, "d12");
+        yield return new TestCaseData(REG_F14, "d14");
+        yield return new TestCaseData(REG_F16, "d16");
+        yield return new TestCaseData(REG_F18, "d18");
+        yield return new TestCaseData(REG_F20, "d20");
+        yield return new TestCaseData(REG_F22, "d22");
+        yield return new TestCaseData(REG_F24, "d24");
+        yield return new TestCaseData(REG_F26, "d26");
+        yield return new TestCaseData(REG_F28, "d28");
+        yield return new TestCaseData(REG_F30, "d30");
+    }
+
+    [TestCaseSource(nameof(ArmEvenDoubleRegisterNameCases))]
     public static void ArmEvenRegistersUseTheExactNativeDoubleLiterals(regNumber reg, string expected)
     {
         Assert.That(reg.GetFloatName(TYP_DOUBLE), Is.EqualTo(expected));
@@ -140,10 +145,15 @@ internal static unsafe class FloatingRegisterNameTests
 
     private static readonly List<string?> s_assertions = [];
 
-    [TestCase(REG_F1, TYP_DOUBLE, "d??", "!\"Bad double register\"", null)]
-    [TestCase(REG_FP_LAST, TYP_STRUCT, "d??", "!\"Bad double register\"", null)]
-    [TestCase(REG_INT_FIRST, TYP_DOUBLE, "d??", "genIsValidFloatReg(reg)", "!\"Bad double register\"")]
-    [TestCase(REG_INT_FIRST, TYP_FLOAT, "r0", "genIsValidFloatReg(reg)", null)]
+    private static IEnumerable<TestCaseData> ArmInvalidStorageRegisterCases()
+    {
+        yield return new TestCaseData(REG_F1, TYP_DOUBLE, "d??", "!\"Bad double register\"", null);
+        yield return new TestCaseData(REG_FP_LAST, TYP_STRUCT, "d??", "!\"Bad double register\"", null);
+        yield return new TestCaseData(REG_INT_FIRST, TYP_DOUBLE, "d??", "genIsValidFloatReg(reg)", "!\"Bad double register\"");
+        yield return new TestCaseData(REG_INT_FIRST, TYP_FLOAT, "r0", "genIsValidFloatReg(reg)", null);
+    }
+
+    [TestCaseSource(nameof(ArmInvalidStorageRegisterCases))]
     public static void ArmInStorageInvalidRegistersRetainAssertionOrderAndContinuation(
         regNumber reg, var_types type, string expectedName, string firstAssertion, string? secondAssertion)
     {

@@ -13,15 +13,13 @@ public sealed partial class CodeGen
         void* addr = null;
         void** pAddr = null;
 
-#if DEBUG
-        if (Configuration.PROFILING_SUPPORTED && !_compiler.compProfilerHookNeeded &&
+        if (Configuration.DEBUG && Configuration.PROFILING_SUPPORTED && !_compiler.compProfilerHookNeeded &&
             _compiler.opts.compJitELTHookEnabled &&
             (helper is CORINFO_HELP_PROF_FCN_ENTER or CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL))
         {
             addr = _compiler.compProfilerMethHnd;
         }
         else
-#endif
         {
             var helperFunction = _compiler.compGetHelperFtn(helper);
             if (helperFunction.accessType is IAT_VALUE)

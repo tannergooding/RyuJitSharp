@@ -262,14 +262,19 @@ internal static unsafe class ArgumentRegisterMappingTests
     }
 
 #if TARGET_ARM
-    [TestCase(0U, REG_F0, REG_F1)]
-    [TestCase(2U, REG_F2, REG_F3)]
-    [TestCase(4U, REG_F4, REG_F5)]
-    [TestCase(6U, REG_F6, REG_F7)]
-    [TestCase(8U, REG_F8, REG_F9)]
-    [TestCase(10U, REG_F10, REG_F11)]
-    [TestCase(12U, REG_F12, REG_F13)]
-    [TestCase(14U, REG_F14, REG_F15)]
+    private static IEnumerable<TestCaseData> ArmDoubleArgumentCases()
+    {
+        yield return new TestCaseData(0U, REG_F0, REG_F1);
+        yield return new TestCaseData(2U, REG_F2, REG_F3);
+        yield return new TestCaseData(4U, REG_F4, REG_F5);
+        yield return new TestCaseData(6U, REG_F6, REG_F7);
+        yield return new TestCaseData(8U, REG_F8, REG_F9);
+        yield return new TestCaseData(10U, REG_F10, REG_F11);
+        yield return new TestCaseData(12U, REG_F12, REG_F13);
+        yield return new TestCaseData(14U, REG_F14, REG_F15);
+    }
+
+    [TestCaseSource(nameof(ArmDoubleArgumentCases))]
     public static void ArmDoubleArgumentsExpandOnlyTheEvenLowRegister(uint index, regNumber low, regNumber high)
     {
         var expected = new regMaskTP(unchecked((regMask)((1UL << (int)low) | (1UL << (int)high))));

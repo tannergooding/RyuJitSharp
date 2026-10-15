@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_ARM
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
@@ -111,7 +112,7 @@ internal static unsafe class Arm32CallInstructionTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_SPBASE));
             if (frameSize == 12)
             {
-                Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)frameSize));
+                Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)frameSize));
             }
             else
             {
@@ -209,11 +210,16 @@ internal static unsafe class Arm32CallInstructionTests
         });
     }
 
-    [TestCase(CORINFO_HELP_ASSIGN_REF, SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_R12)]
-    [TestCase(CORINFO_HELP_PROF_FCN_ENTER, SRBM_NONE)]
-    [TestCase(CORINFO_HELP_PROF_FCN_LEAVE, SRBM_NONE)]
-    [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL, SRBM_NONE)]
-    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, SRBM_INT_CALLEE_TRASH)]
+    private static IEnumerable<TestCaseData> NoGcCallMaskCases()
+    {
+        yield return new TestCaseData(CORINFO_HELP_ASSIGN_REF, SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_R12);
+        yield return new TestCaseData(CORINFO_HELP_PROF_FCN_ENTER, SRBM_NONE);
+        yield return new TestCaseData(CORINFO_HELP_PROF_FCN_LEAVE, SRBM_NONE);
+        yield return new TestCaseData(CORINFO_HELP_PROF_FCN_TAILCALL, SRBM_NONE);
+        yield return new TestCaseData(CORINFO_HELP_VALIDATE_INDIRECT_CALL, SRBM_INT_CALLEE_TRASH);
+    }
+
+    [TestCaseSource(nameof(NoGcCallMaskCases))]
     public static void NoGcCallMasksMatchTheArm32HelperContracts(CorInfoHelpFunc helper, regMask expected)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>

@@ -31,7 +31,7 @@ internal static class Arm32DataLabelAddressTests
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_N2));
             Assert.That(descriptor.idInsSize(), Is.EqualTo(ISZ_32BIT));
             Assert.That(descriptor.idIsSmallDsc(), Is.EqualTo(isSmallDescriptor));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo(unchecked((nint)offs)));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo(unchecked((nint)offs)));
         }, captureAssertions: true);
     }
 
@@ -65,7 +65,7 @@ internal static class Arm32DataLabelAddressTests
 
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R4));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)42));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)42));
         }, captureAssertions: true);
     }
 

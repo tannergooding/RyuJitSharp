@@ -1,8 +1,10 @@
 #if TARGET_ARM
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
@@ -113,9 +115,14 @@ internal static class ArmEmitterPredicateTests
         Assert.That(EmitInsMayWriteToGCReg(s_emitter, descriptor), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0, EA_32BIT_PTRSIZE)]
-    [TestCase(REG_SP, EA_4BYTE)]
-    [TestCase(REG_R15, EA_32BIT_PTRSIZE)]
+    private static IEnumerable<TestCaseData> GeneralRegisterNameCases()
+    {
+        yield return new TestCaseData(REG_R0, EA_32BIT_PTRSIZE);
+        yield return new TestCaseData(REG_SP, EA_4BYTE);
+        yield return new TestCaseData(REG_R15, EA_32BIT_PTRSIZE);
+    }
+
+    [TestCaseSource(nameof(GeneralRegisterNameCases))]
     public static void GeneralRegisterNamesUseTheCompilerRegisterTable(regNumber reg, emitAttr attr)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
@@ -129,8 +136,13 @@ internal static class ArmEmitterPredicateTests
         });
     }
 
-    [TestCase(REG_F0, EA_32BIT_PTRSIZE)]
-    [TestCase(REG_F31, EA_4BYTE)]
+    private static IEnumerable<TestCaseData> FloatRegisterNameCases()
+    {
+        yield return new TestCaseData(REG_F0, EA_32BIT_PTRSIZE);
+        yield return new TestCaseData(REG_F31, EA_4BYTE);
+    }
+
+    [TestCaseSource(nameof(FloatRegisterNameCases))]
     public static void FloatRegisterNamesUseTheFloatingCompilerRegisterTable(regNumber reg, emitAttr attr)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
@@ -165,6 +177,9 @@ internal static class ArmEmitterPredicateTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitFloatRegName")]
     private static extern string EmitFloatRegName(Emitter emitter, regNumber reg, emitAttr attr, bool varName);
 
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "insOptsLSLArm32")]
+    private static extern bool InsOptsLSLArm32(Emitter? emitter, insOpts opt);
+
     private static Emitter.instrDesc NewDescriptor(instruction ins, Emitter.insFormat format, bool isLocal = false)
     {
         var descriptorType = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic)
@@ -180,26 +195,41 @@ internal static class ArmEmitterPredicateTests
         return descriptor;
     }
 
-    [TestCase(REG_R0, true)]
-    [TestCase(REG_R15, true)]
-    [TestCase(REG_F0, false)]
+    private static IEnumerable<TestCaseData> GeneralRegisterClassificationCases()
+    {
+        yield return new TestCaseData(REG_R0, true);
+        yield return new TestCaseData(REG_R15, true);
+        yield return new TestCaseData(REG_F0, false);
+    }
+
+    [TestCaseSource(nameof(GeneralRegisterClassificationCases))]
     public static void GeneralRegisterClassificationMatchesTheArmRegisterRange(regNumber reg, bool expected)
     {
         Assert.That(Emitter.isGeneralRegister(reg), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_F0, true)]
-    [TestCase(REG_F31, true)]
-    [TestCase(REG_R0, false)]
+    private static IEnumerable<TestCaseData> FloatRegisterClassificationCases()
+    {
+        yield return new TestCaseData(REG_F0, true);
+        yield return new TestCaseData(REG_F31, true);
+        yield return new TestCaseData(REG_R0, false);
+    }
+
+    [TestCaseSource(nameof(FloatRegisterClassificationCases))]
     public static void FloatRegisterClassificationMatchesTheArmRegisterRange(regNumber reg, bool expected)
     {
         Assert.That(Emitter.isFloatReg(reg), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_F0, true)]
-    [TestCase(REG_F1, false)]
-    [TestCase(REG_F30, true)]
-    [TestCase(REG_F31, false)]
+    private static IEnumerable<TestCaseData> DoubleRegisterClassificationCases()
+    {
+        yield return new TestCaseData(REG_F0, true);
+        yield return new TestCaseData(REG_F1, false);
+        yield return new TestCaseData(REG_F30, true);
+        yield return new TestCaseData(REG_F31, false);
+    }
+
+    [TestCaseSource(nameof(DoubleRegisterClassificationCases))]
     public static void DoubleRegisterClassificationUsesEvenFloatRegisters(regNumber reg, bool expected)
     {
         Assert.That(Emitter.isDoubleReg(reg), Is.EqualTo(expected));
@@ -240,7 +270,7 @@ internal static class ArmEmitterPredicateTests
     {
         Assert.That(Emitter.insOptAnyShift(option), Is.EqualTo(expectedShift));
         Assert.That(Emitter.insOptsRRX(option), Is.EqualTo(option == INS_OPTS_RRX));
-        Assert.That(Emitter.insOptsLSL(option), Is.EqualTo(option == INS_OPTS_LSL));
+        Assert.That(InsOptsLSLArm32(null, option), Is.EqualTo(option == INS_OPTS_LSL));
         Assert.That(Emitter.insOptsLSR(option), Is.EqualTo(option == INS_OPTS_LSR));
         Assert.That(Emitter.insOptsASR(option), Is.EqualTo(option == INS_OPTS_ASR));
         Assert.That(Emitter.insOptsROR(option), Is.EqualTo(option == INS_OPTS_ROR));

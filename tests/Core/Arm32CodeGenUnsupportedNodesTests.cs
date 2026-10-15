@@ -5,6 +5,7 @@
 
 #if TARGET_ARM
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -95,11 +96,19 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_add, REG_R3, 7, INS_FLAGS_SET, INS_add, IF_ARM32_T1_J0, 7, INS_FLAGS_SET)]
-    [TestCase(INS_add, REG_R3, -7, INS_FLAGS_SET, INS_sub, IF_ARM32_T1_J0, 7, INS_FLAGS_SET)]
-    [TestCase(INS_add, REG_SP, 12, INS_FLAGS_NOT_SET, INS_add, IF_ARM32_T1_F, 12, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_mov, REG_R8, 0x1234, INS_FLAGS_NOT_SET, INS_movw, IF_ARM32_T2_N, 0x1234, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_cmp, REG_R8, -1, INS_FLAGS_SET, INS_cmp, IF_ARM32_T2_L2, -1, INS_FLAGS_SET)]
+    private static IEnumerable<TestCaseData> RegisterImmediateInstructionCases()
+    {
+        yield return new TestCaseData(INS_add, REG_R3, 7, INS_FLAGS_SET, INS_add, IF_ARM32_T1_J0, 7, INS_FLAGS_SET);
+        yield return new TestCaseData(INS_add, REG_R3, -7, INS_FLAGS_SET, INS_sub, IF_ARM32_T1_J0, 7, INS_FLAGS_SET);
+        yield return new TestCaseData(
+            INS_add, REG_SP, 12, INS_FLAGS_NOT_SET, INS_add, IF_ARM32_T1_F, 12, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(
+            INS_mov, REG_R8, 0x1234, INS_FLAGS_NOT_SET, INS_movw, IF_ARM32_T2_N, 0x1234, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(
+            INS_cmp, REG_R8, -1, INS_FLAGS_SET, INS_cmp, IF_ARM32_T2_L2, -1, INS_FLAGS_SET);
+    }
+
+    [TestCaseSource(nameof(RegisterImmediateInstructionCases))]
     public static void RegisterImmediateInstructionRecordingUsesThumbFormats(
         instruction ins, regNumber reg, int immediate, insFlags flags, instruction expectedIns,
         Emitter.insFormat expectedFormat, int expectedImmediate, insFlags expectedFlags)
@@ -112,19 +121,30 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
                 ?? throw new AssertionException("No register-immediate instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedIns));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(expectedFormat));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedImmediate));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedImmediate));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(expectedFlags));
             Assert.That(descriptor.idReg1(), Is.EqualTo(reg));
         });
     }
 
-    [TestCase(INS_mov, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_D0, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T2_C3, INS_FLAGS_SET)]
-    [TestCase(INS_vmov, REG_F2, REG_F4, EA_8BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VFP2, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_vmov, REG_F2, REG_F0, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VFP2, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_vmov_i2f, REG_F1, REG_R3, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VMOVS, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_sxtb, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_E, INS_FLAGS_NOT_SET)]
+    private static IEnumerable<TestCaseData> RegisterMoveRecordingCases()
+    {
+        yield return new TestCaseData(INS_mov, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T1_E, INS_FLAGS_SET);
+        yield return new TestCaseData(
+            INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_D0, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(
+            INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T2_C3, INS_FLAGS_SET);
+        yield return new TestCaseData(
+            INS_vmov, REG_F2, REG_F4, EA_8BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VFP2, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(
+            INS_vmov, REG_F2, REG_F0, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VFP2, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(
+            INS_vmov_i2f, REG_F1, REG_R3, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VMOVS, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(
+            INS_sxtb, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_E, INS_FLAGS_NOT_SET);
+    }
+
+    [TestCaseSource(nameof(RegisterMoveRecordingCases))]
     public static void RegisterMoveRecordingUsesNativeThumbFormats(
         instruction ins, regNumber dstReg, regNumber srcReg, emitAttr attr, insFlags flags,
         Emitter.insFormat expectedFormat, insFlags expectedFlags)
@@ -158,8 +178,13 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_cmp, REG_R3, REG_R4, IF_ARM32_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_clz, REG_R8, REG_R9, IF_ARM32_T2_C10, INS_FLAGS_NOT_SET)]
+    private static IEnumerable<TestCaseData> RegisterRegisterInstructionCases()
+    {
+        yield return new TestCaseData(INS_cmp, REG_R3, REG_R4, IF_ARM32_T1_E, INS_FLAGS_SET);
+        yield return new TestCaseData(INS_clz, REG_R8, REG_R9, IF_ARM32_T2_C10, INS_FLAGS_NOT_SET);
+    }
+
+    [TestCaseSource(nameof(RegisterRegisterInstructionCases))]
     public static void RegisterRegisterInstructionRecordingUsesThumbFormats(
         instruction ins, regNumber reg1, regNumber reg2, Emitter.insFormat expectedFormat, insFlags expectedFlags)
     {
@@ -195,8 +220,13 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_add, REG_R0, REG_R1, REG_R2, IF_ARM32_T1_H, INS_FLAGS_SET)]
-    [TestCase(INS_vadd, REG_F0, REG_F1, REG_F2, IF_ARM32_T2_VFP3, INS_FLAGS_NOT_SET)]
+    private static IEnumerable<TestCaseData> ThreeRegisterInstructionCases()
+    {
+        yield return new TestCaseData(INS_add, REG_R0, REG_R1, REG_R2, IF_ARM32_T1_H, INS_FLAGS_SET);
+        yield return new TestCaseData(INS_vadd, REG_F0, REG_F1, REG_F2, IF_ARM32_T2_VFP3, INS_FLAGS_NOT_SET);
+    }
+
+    [TestCaseSource(nameof(ThreeRegisterInstructionCases))]
     public static void ThreeRegisterInstructionRecordingUsesThumbFormats(
         instruction ins, regNumber reg1, regNumber reg2, regNumber reg3,
         Emitter.insFormat expectedFormat, insFlags expectedFlags)
@@ -217,8 +247,15 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_add, REG_R0, REG_R1, REG_R2, 1, INS_FLAGS_SET, INS_OPTS_LSL, IF_ARM32_T2_C0, INS_FLAGS_SET)]
-    [TestCase(INS_ldr, REG_R0, REG_R1, REG_R2, 0, INS_FLAGS_NOT_SET, INS_OPTS_NONE, IF_ARM32_T1_H, INS_FLAGS_NOT_SET)]
+    private static IEnumerable<TestCaseData> ThreeRegisterImmediateInstructionCases()
+    {
+        yield return new TestCaseData(
+            INS_add, REG_R0, REG_R1, REG_R2, 1, INS_FLAGS_SET, INS_OPTS_LSL, IF_ARM32_T2_C0, INS_FLAGS_SET);
+        yield return new TestCaseData(
+            INS_ldr, REG_R0, REG_R1, REG_R2, 0, INS_FLAGS_NOT_SET, INS_OPTS_NONE, IF_ARM32_T1_H, INS_FLAGS_NOT_SET);
+    }
+
+    [TestCaseSource(nameof(ThreeRegisterImmediateInstructionCases))]
     public static void ThreeRegisterImmediateInstructionRecordingPreservesShiftAndFormat(
         instruction ins, regNumber reg1, regNumber reg2, regNumber reg3, int immediate, insFlags flags,
         insOpts opt, Emitter.insFormat expectedFormat, insFlags expectedFlags)
@@ -232,7 +269,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
                 ?? throw new AssertionException("No three-register-immediate instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(ins));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(expectedFormat));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)immediate));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)immediate));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(expectedFlags));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(opt));
             Assert.That(descriptor.idReg1(), Is.EqualTo(reg1));
@@ -306,12 +343,17 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_SPBASE));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)(-16)));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)(-16)));
         });
     }
 
-    [TestCase(TYP_BYREF)]
-    [TestCase(TYP_I_IMPL)]
+    private static IEnumerable<TestCaseData> LocalAddressTypeCases()
+    {
+        yield return new TestCaseData(TYP_BYREF);
+        yield return new TestCaseData(TYP_I_IMPL);
+    }
+
+    [TestCaseSource(nameof(LocalAddressTypeCases))]
     public static void LocalAddressesRecordTheTargetRegisterAndOffset(var_types type)
     {
         WithLocalStackCodeGen((_, codeGen) =>
@@ -332,7 +374,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idIsLclVar(), Is.True);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)28));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)28));
         }, stackOffset: 16);
     }
 
@@ -371,7 +413,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idIns(), Is.EqualTo(store ? INS_str : INS_ldr));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)4));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)4));
         });
     }
 
@@ -390,7 +432,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)0));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)0));
         });
     }
 
@@ -424,7 +466,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
                 ?? throw new AssertionException("No bit-field instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_bfc));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_D1));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)271));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)271));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R5));
         }, captureAssertions: true);
@@ -466,7 +508,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(expectedFormat));
             Assert.That(descriptor.idInsSize(), Is.EqualTo(
                 expectedFormat < IF_ARM32_T2_A ? ISZ_16BIT : ISZ_32BIT));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedEncoding));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedEncoding));
         });
     }
 
@@ -484,10 +526,15 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_rsb, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_rsb, REG_R8, IF_ARM32_T2_L0, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_mvn, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_mvn, REG_R8, IF_ARM32_T2_C1, INS_FLAGS_NOT_SET)]
+    private static IEnumerable<TestCaseData> SingleRegisterRsbAndMvnCases()
+    {
+        yield return new TestCaseData(INS_rsb, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET);
+        yield return new TestCaseData(INS_rsb, REG_R8, IF_ARM32_T2_L0, INS_FLAGS_NOT_SET);
+        yield return new TestCaseData(INS_mvn, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET);
+        yield return new TestCaseData(INS_mvn, REG_R8, IF_ARM32_T2_C1, INS_FLAGS_NOT_SET);
+    }
+
+    [TestCaseSource(nameof(SingleRegisterRsbAndMvnCases))]
     public static void SingleRegisterRsbAndMvnUseNativeThumbFormats(
         instruction ins, regNumber reg, Emitter.insFormat expectedFormat, insFlags expectedFlags)
     {
@@ -651,7 +698,7 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedEncoding));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedEncoding));
         });
     }
 
@@ -679,7 +726,7 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
 #if !DEBUG
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
 #endif

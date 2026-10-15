@@ -38,7 +38,7 @@ internal static class Arm32LocalHeapAndFrameSetupTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_SPBASE));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)16));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)16));
 
             var currentLocation = unwindInfo.GetCurrentEmitterLocation()
                 ?? throw new AssertionException("Frame-pointer setup did not record unwind padding.");
@@ -62,7 +62,7 @@ internal static class Arm32LocalHeapAndFrameSetupTests
             var descriptor = LastInstruction(codeGen.Emitter);
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_sub));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_SPBASE));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)16));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)16));
             Assert.That(zeroed, Is.True);
             compiler.unwindEndProlog();
         });

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_ARM
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -136,8 +137,13 @@ internal static class Arm32JumpRecordingTests
         });
     }
 
-    [TestCase(INS_cbz, REG_R0)]
-    [TestCase(INS_cbnz, REG_R7)]
+    private static IEnumerable<TestCaseData> CompareAndBranchCases()
+    {
+        yield return new TestCaseData(INS_cbz, REG_R0);
+        yield return new TestCaseData(INS_cbnz, REG_R7);
+    }
+
+    [TestCaseSource(nameof(CompareAndBranchCases))]
     public static void CompareAndBranchInstructionsUseShortRegisterBranchMetadata(
         instruction ins, regNumber reg)
     {

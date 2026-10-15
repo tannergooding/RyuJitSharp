@@ -30,17 +30,18 @@ public sealed partial class CodeGen
         pushRegs |= new regMaskTP(SRBM_ARM32_LR);
         _regSet.rsSetCalleeSavedRegsMask(pushRegs);
 
-#if DEBUG
-        var count = BitOperations.PopCount(unchecked((ulong)pushRegs.Lower));
-        if (_compiler.compCalleeRegsPushed != count)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. " +
-                $"Got: {count} ");
-            dspRegMask(pushRegs);
-            jitprintf("\n");
-            assert(_compiler.compCalleeRegsPushed == count);
+            var count = BitOperations.PopCount(unchecked((ulong)pushRegs.Lower));
+            if (_compiler.compCalleeRegsPushed != count)
+            {
+                jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. " +
+                    $"Got: {count} ");
+                dspRegMask(pushRegs);
+                jitprintf("\n");
+                assert(_compiler.compCalleeRegsPushed == count);
+            }
         }
-#endif
         var pushFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT_ARM);
         var pushInt = pushRegs & ~pushFloat;
         pushInt |= genStackAllocRegisterMaskArmCore(unchecked((uint)_compiler.compLclFrameSize), pushFloat);

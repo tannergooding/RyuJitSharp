@@ -116,18 +116,23 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         });
     }
 
-    [TestCase(0u, SRBM_NONE, false, SRBM_NONE)]
-    [TestCase(4u, SRBM_NONE, false, SRBM_R3)]
-    [TestCase(8u, SRBM_NONE, false, SRBM_R2 | SRBM_R3)]
-    [TestCase(12u, SRBM_NONE, false, SRBM_NONE)]
-    [TestCase(16u, SRBM_NONE, false, SRBM_NONE)]
-    [TestCase(3u, SRBM_NONE, false, SRBM_NONE)]
-    [TestCase(uint.MaxValue, SRBM_NONE, false, SRBM_NONE)]
-    [TestCase(4u, SRBM_F16 | SRBM_F17, false, SRBM_NONE)]
-    [TestCase(8u, SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19, false, SRBM_NONE)]
-    [TestCase(4u, SRBM_NONE, true, SRBM_NONE)]
-    [TestCase(8u, SRBM_NONE, true, SRBM_NONE)]
-    [TestCase(8u, SRBM_F16 | SRBM_F17, true, SRBM_NONE)]
+    private static IEnumerable<TestCaseData> SmallFrameCases()
+    {
+        yield return new TestCaseData(0u, SRBM_NONE, false, SRBM_NONE);
+        yield return new TestCaseData(4u, SRBM_NONE, false, SRBM_R3);
+        yield return new TestCaseData(8u, SRBM_NONE, false, SRBM_R2 | SRBM_R3);
+        yield return new TestCaseData(12u, SRBM_NONE, false, SRBM_NONE);
+        yield return new TestCaseData(16u, SRBM_NONE, false, SRBM_NONE);
+        yield return new TestCaseData(3u, SRBM_NONE, false, SRBM_NONE);
+        yield return new TestCaseData(uint.MaxValue, SRBM_NONE, false, SRBM_NONE);
+        yield return new TestCaseData(4u, SRBM_F16 | SRBM_F17, false, SRBM_NONE);
+        yield return new TestCaseData(8u, SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19, false, SRBM_NONE);
+        yield return new TestCaseData(4u, SRBM_NONE, true, SRBM_NONE);
+        yield return new TestCaseData(8u, SRBM_NONE, true, SRBM_NONE);
+        yield return new TestCaseData(8u, SRBM_F16 | SRBM_F17, true, SRBM_NONE);
+    }
+
+    [TestCaseSource(nameof(SmallFrameCases))]
     public static void SmallFramesUseOnlyScratchWordsWithoutFloatsOrAsync(
         uint frameSize, regMask floats, bool async, regMask expected)
     {
@@ -157,12 +162,17 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         });
     }
 
-    [TestCase(false, SRBM_NONE, SRBM_NONE, true)]
-    [TestCase(true, SRBM_NONE, SRBM_NONE, false)]
-    [TestCase(false, SRBM_R0, SRBM_NONE, false)]
-    [TestCase(false, SRBM_NONE, SRBM_R3, false)]
-    [TestCase(false, SRBM_R0 | SRBM_R1, SRBM_R3, false)]
-    [TestCase(true, SRBM_R0, SRBM_R3, false)]
+    private static IEnumerable<TestCaseData> PopReturnCases()
+    {
+        yield return new TestCaseData(false, SRBM_NONE, SRBM_NONE, true);
+        yield return new TestCaseData(true, SRBM_NONE, SRBM_NONE, false);
+        yield return new TestCaseData(false, SRBM_R0, SRBM_NONE, false);
+        yield return new TestCaseData(false, SRBM_NONE, SRBM_R3, false);
+        yield return new TestCaseData(false, SRBM_R0 | SRBM_R1, SRBM_R3, false);
+        yield return new TestCaseData(true, SRBM_R0, SRBM_R3, false);
+    }
+
+    [TestCaseSource(nameof(PopReturnCases))]
     public static void PopReturnRequiresNeitherTailJumpNorPrespillsIncludingAlignment(
         bool jump, regMask arguments, regMask alignment, bool expected)
     {
@@ -183,12 +193,17 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         });
     }
 
-    [TestCase(SRBM_NONE, false, 0, false)]
-    [TestCase(SRBM_R4, false, 4, true)]
-    [TestCase(SRBM_R4 | SRBM_R5, true, 8, false)]
-    [TestCase(SRBM_R0 | SRBM_R4, true, 12, true)]
-    [TestCase(SRBM_R4 | SRBM_F16 | SRBM_F17, false, 4, true)]
-    [TestCase(SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19, true, 8, false)]
+    private static IEnumerable<TestCaseData> PushRecordsCases()
+    {
+        yield return new TestCaseData(SRBM_NONE, false, 0, false);
+        yield return new TestCaseData(SRBM_R4, false, 4, true);
+        yield return new TestCaseData(SRBM_R4 | SRBM_R5, true, 8, false);
+        yield return new TestCaseData(SRBM_R0 | SRBM_R4, true, 12, true);
+        yield return new TestCaseData(SRBM_R4 | SRBM_F16 | SRBM_F17, false, 4, true);
+        yield return new TestCaseData(SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19, true, 8, false);
+    }
+
+    [TestCaseSource(nameof(PushRecordsCases))]
     public static void PushRecordsActualSaveMaskAndInstructions(
         regMask modified, bool framePointer, int frameSize, bool zeroed)
     {
@@ -218,14 +233,13 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             Assert.That(compiler.compLclFrameSize, Is.EqualTo(frameSize));
             var floatMask = expected & new regMaskTP(SRBM_ALLFLOAT);
             var intMask = expected & ~floatMask;
-            if (floatMask.IsEmpty)
+            if (floatMask.IsEmpty && frameSize == Configuration.REGSIZE_BYTES)
             {
-                intMask |= frameSize switch
-                {
-                    REGSIZE_BYTES => new regMaskTP(SRBM_R3),
-                    2 * REGSIZE_BYTES => new regMaskTP(SRBM_R2 | SRBM_R3),
-                    _ => RBM_NONE,
-                };
+                intMask |= new regMaskTP(SRBM_R3);
+            }
+            else if (floatMask.IsEmpty && frameSize == 2 * Configuration.REGSIZE_BYTES)
+            {
+                intMask |= new regMaskTP(SRBM_R2 | SRBM_R3);
             }
 
             var descriptors = Descriptors(codeGen);
@@ -239,12 +253,17 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         });
     }
 
-    [TestCase(false, SRBM_NONE, SRBM_NONE, false, 0, true)]
-    [TestCase(false, SRBM_NONE, SRBM_NONE, true, 4, true)]
-    [TestCase(false, SRBM_R0, SRBM_NONE, true, 8, false)]
-    [TestCase(false, SRBM_NONE, SRBM_R3, false, 4, false)]
-    [TestCase(true, SRBM_NONE, SRBM_NONE, true, 8, false)]
-    [TestCase(true, SRBM_R0, SRBM_R3, false, 12, false)]
+    private static IEnumerable<TestCaseData> IntegerPopCases()
+    {
+        yield return new TestCaseData(false, SRBM_NONE, SRBM_NONE, false, 0, true);
+        yield return new TestCaseData(false, SRBM_NONE, SRBM_NONE, true, 4, true);
+        yield return new TestCaseData(false, SRBM_R0, SRBM_NONE, true, 8, false);
+        yield return new TestCaseData(false, SRBM_NONE, SRBM_R3, false, 4, false);
+        yield return new TestCaseData(true, SRBM_NONE, SRBM_NONE, true, 8, false);
+        yield return new TestCaseData(true, SRBM_R0, SRBM_R3, false, 12, false);
+    }
+
+    [TestCaseSource(nameof(IntegerPopCases))]
     public static void IntegerPopRecordsPcOrLrAndRestoresRegisters(
         bool jump, regMask arguments, regMask alignment, bool framePointer, int frameSize, bool popReturn)
     {
@@ -266,14 +285,13 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             Assert.That(SavedMask(ref codeGen.RegSet).IsEmpty, Is.True);
             Assert.That(compiler.compLclFrameSize, Is.EqualTo(frameSize));
             var popMask = new regMaskTP(SRBM_R4 | SRBM_R5);
-            if (!jump)
+            if (!jump && frameSize == Configuration.REGSIZE_BYTES)
             {
-                popMask |= frameSize switch
-                {
-                    REGSIZE_BYTES => new regMaskTP(SRBM_R3),
-                    2 * REGSIZE_BYTES => new regMaskTP(SRBM_R2 | SRBM_R3),
-                    _ => RBM_NONE,
-                };
+                popMask |= new regMaskTP(SRBM_R3);
+            }
+            else if (!jump && frameSize == 2 * Configuration.REGSIZE_BYTES)
+            {
+                popMask |= new regMaskTP(SRBM_R2 | SRBM_R3);
             }
 
             if (framePointer)
@@ -314,13 +332,18 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         });
     }
 
-    [TestCase(true, REG_F16, 2)]
-    [TestCase(true, REG_F16, 4)]
-    [TestCase(true, REG_F16, 16)]
-    [TestCase(false, REG_F16, 2)]
-    [TestCase(false, REG_F16, 16)]
-    [TestCase(false, REG_F0, 2)]
-    [TestCase(false, REG_F8, 4)]
+    private static IEnumerable<TestCaseData> FloatSaveCases()
+    {
+        yield return new TestCaseData(true, REG_F16, 2);
+        yield return new TestCaseData(true, REG_F16, 4);
+        yield return new TestCaseData(true, REG_F16, 16);
+        yield return new TestCaseData(false, REG_F16, 2);
+        yield return new TestCaseData(false, REG_F16, 16);
+        yield return new TestCaseData(false, REG_F0, 2);
+        yield return new TestCaseData(false, REG_F8, 4);
+    }
+
+    [TestCaseSource(nameof(FloatSaveCases))]
     public static void FloatSavesUseContiguousSingleWordMasksForDoubleRegisterInstructions(
         bool push, regNumber first, int singleWords)
     {
@@ -433,11 +456,16 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 #endif
 
 #if DEBUG
-    [TestCase(TYP_REF, REG_R4, true, true, 1, true)]
-    [TestCase(TYP_BYREF, REG_R5, true, true, 1, true)]
-    [TestCase(TYP_REF, REG_R4, true, false, 0, false)]
-    [TestCase(TYP_REF, REG_R0, true, true, 1, false)]
-    [TestCase(TYP_REF, REG_R4, false, true, 0, false)]
+    private static IEnumerable<TestCaseData> PInvokeCalleeSavedRootCases()
+    {
+        yield return new TestCaseData(TYP_REF, REG_R4, true, true, 1, true);
+        yield return new TestCaseData(TYP_BYREF, REG_R5, true, true, 1, true);
+        yield return new TestCaseData(TYP_REF, REG_R4, true, false, 0, false);
+        yield return new TestCaseData(TYP_REF, REG_R0, true, true, 1, false);
+        yield return new TestCaseData(TYP_REF, REG_R4, false, true, 0, false);
+    }
+
+    [TestCaseSource(nameof(PInvokeCalleeSavedRootCases))]
     public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
         var_types type, regNumber reg, bool unmanaged, bool hasRoot, int expectedAssertions,
         bool expectedCalleeSavedAssertion)
@@ -583,6 +611,28 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
 #endif
 
+    [Test]
+    public static void ReleasePushCountMismatchStillEmitsTheSaveSequence()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+        WithCodeGen((compiler, codeGen) =>
+        {
+            SetPhase(codeGen, InsGroupFlags.Prolog);
+            codeGen.IsFramePointerUsed = true;
+            compiler.compCalleeRegsPushed = 1;
+
+            var zeroed = true;
+            codeGen.genPushCalleeSavedRegisters(REG_R3, ref zeroed);
+
+            var expectedMask = new regMaskTP(SRBM_FPBASE | SRBM_LR);
+            Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(expectedMask));
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            AssertArm32PushPopDescriptor(codeGen, descriptors[0], INS_push, expectedMask);
+            Assert.That(zeroed, Is.True);
+        });
+    }
+
     private static regMaskTP FloatMask(regNumber first, int singleWords)
     {
         var mask = RBM_NONE;
@@ -642,7 +692,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_VLDST));
         Assert.That(descriptor.idReg1(), Is.EqualTo(firstRegister));
         var expectedImmediate = (ins == INS_vpush ? -1 : 1) * singleWords * sizeof(uint);
-        Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedImmediate));
+        Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedImmediate));
     }
 
     private static void AssertArm32PushPopDescriptor(
@@ -673,7 +723,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
         Assert.That(descriptor.idIns(), Is.EqualTo(ins));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
-        Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)imm));
+        Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)imm));
     }
 
     internal static void WithCodeGen(

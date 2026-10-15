@@ -67,7 +67,7 @@ internal static class Arm32ShiftCodeGenTests
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)expectedCount));
+            Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)expectedCount));
         });
     }
 

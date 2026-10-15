@@ -33,7 +33,7 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
                 ?? throw new AssertionException("No integer-constant instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)7));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)7));
         });
     }
 
@@ -90,7 +90,7 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_PC));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R0));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)2));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)2));
         });
     }
 
@@ -113,7 +113,7 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
                 ?? throw new AssertionException("No jump-table address instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_movt));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R4));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)section.dsOffset));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)section.dsOffset));
         });
     }
 

@@ -45,7 +45,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)2));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)2));
         });
     }
 
@@ -68,13 +68,18 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)8));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)8));
         });
     }
 
-    [TestCase(TYP_INT, 4, REG_R3, INS_ldr, EA_4BYTE)]
-    [TestCase(TYP_FLOAT, 4, REG_F0, INS_vldr, EA_4BYTE)]
-    [TestCase(TYP_DOUBLE, 8, REG_F0, INS_vldr, EA_8BYTE)]
+    private static IEnumerable<TestCaseData> AlignedLocalFieldLoadCases()
+    {
+        yield return new TestCaseData(TYP_INT, 4, REG_R3, INS_ldr, EA_4BYTE);
+        yield return new TestCaseData(TYP_FLOAT, 4, REG_F0, INS_vldr, EA_4BYTE);
+        yield return new TestCaseData(TYP_DOUBLE, 8, REG_F0, INS_vldr, EA_8BYTE);
+    }
+
+    [TestCaseSource(nameof(AlignedLocalFieldLoadCases))]
     public static void AlignedLocalFieldLoadsUseTheLocalAndFieldOffset(
         var_types type, int offset, regNumber targetReg, instruction loadInstruction, emitAttr size)
     {
@@ -245,8 +250,8 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(
                 (instruction[])[INS_add, INS_add]));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)12));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
+            Assert.That(Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)12));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(new regMaskTP(SRBM_R0)));
         });
     }
@@ -269,7 +274,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emitted[^2].idReg2(), Is.EqualTo(REG_R2));
             Assert.That(emitted[^2].idReg3(), Is.EqualTo(REG_R3));
             Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[^1]), Is.EqualTo((nint)12));
+            Assert.That(Emitter.emitGetInsSC(emitted[^1]), Is.EqualTo((nint)12));
         });
     }
 
@@ -318,7 +323,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
                 Is.EqualTo((instruction[])[INS_add, INS_add]));
             Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R3));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
             Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R3));
             Assert.That(emitted[1].idSmallCns(), Is.EqualTo(8));
@@ -350,7 +355,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(emitted[0].idReg3(), Is.EqualTo(REG_R2));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
         });
     }
 
@@ -465,8 +470,13 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         });
     }
 
-    [TestCase(TYP_FLOAT, 1, REG_F0, INS_vmov_i2f)]
-    [TestCase(TYP_DOUBLE, 1, REG_F0, INS_vmov_i2d)]
+    private static IEnumerable<TestCaseData> MisalignedFloatingLocalFieldLoadCases()
+    {
+        yield return new TestCaseData(TYP_FLOAT, 1, REG_F0, INS_vmov_i2f);
+        yield return new TestCaseData(TYP_DOUBLE, 1, REG_F0, INS_vmov_i2d);
+    }
+
+    [TestCaseSource(nameof(MisalignedFloatingLocalFieldLoadCases))]
     public static void MisalignedFloatingLocalFieldsLoadThroughIntegerRegisters(
         var_types type, int offset, regNumber targetReg, instruction conversion)
     {
@@ -542,11 +552,11 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emittedInstructions[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(emittedInstructions[0].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(emittedInstructions[0].idReg3(), Is.EqualTo(REG_R2));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emittedInstructions[0]), Is.EqualTo((nint)2));
+            Assert.That(Emitter.emitGetInsSC(emittedInstructions[0]), Is.EqualTo((nint)2));
             Assert.That(emittedInstructions[1].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(emittedInstructions[1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emittedInstructions[1].idReg2(), Is.EqualTo(REG_R3));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emittedInstructions[1]), Is.EqualTo((nint)8));
+            Assert.That(Emitter.emitGetInsSC(emittedInstructions[1]), Is.EqualTo((nint)8));
         });
     }
 
@@ -636,7 +646,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_dmb));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)INS_BARRIER_SY));
+            Assert.That(Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)INS_BARRIER_SY));
         });
     }
 
@@ -725,7 +735,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
 
             var descriptor = LastInstruction(codeGen.Emitter);
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_dmb));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)INS_BARRIER_SY));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)INS_BARRIER_SY));
         }, minOpts: false);
     }
 
@@ -742,7 +752,7 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                 ?? throw new AssertionException("Missing descriptor buffer.");
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_dmb));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)INS_BARRIER_SY));
+            Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)INS_BARRIER_SY));
         }, minOpts: false);
     }
 #endif

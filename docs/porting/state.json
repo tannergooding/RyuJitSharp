@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue in conditional-directive inventory order at sources\\Core\\jit\\codegenarm\\CodeGen.CalleeSavedRegisters.cs:33 (#if DEBUG); inspect the ARMARCH callee-saved register group and preserve target register identity and release codegen behavior. Preserve genAsyncResumeInfo's B209 target-width table/emitter dependency deferral.",
+    "nextAction": "Continue in conditional-directive inventory order at sources\\Core\\jit\\codegenarm64\\CodeGen.CalleeSavedRegisters.cs:39 (#if DEBUG); inspect the ARM64 callee-save diagnostic dependency closure and preserve target register identity. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "validationGaps": [
       "Sixty isolated DEBUG compiler-name/safe-graph setup blocks across 55 Core test fixtures now use TestConfiguration helpers; the 55-fixture selection passed 1,266/1,266 in Debug and 1,149/1,149 in Release. The Release run excluded only EmitterJumpRemovalTests.cs and EmitterLoopAlignmentAdjustmentTests.cs, which fail compilation without xarch register symbols.",
       "Runtime-gated 173 Debug-only Core test assertion blocks and reduced DEBUG blocks in sources/Core/jit from 2,413 to 2,179, including conditional JITDUMP-only diagnostics. Calls that depend on Debug-only symbols such as compCurBB, InitTree, rpNum, reason, opcode.Name, and DspThreadLocalOffset remain guarded. The full Core test suites rebuilt and passed in Debug (17,815 passed, 15 skipped) and Release (16,108 passed, 15 skipped; known unsupported xarch emitter test sources excluded). Default full-analysis source builds remain blocked by 158 Debug and 192 Release analyzer diagnostics in unchanged files; no diagnostics were reported in changed files.",
@@ -255,7 +255,7 @@
         "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
         "sourceReview": "The target-specific genAsyncResumeInfo bodies in the pinned ARM32, ARM64, xarch, Wasm, LoongArch64 and RISC-V64 sources match the managed branches; no algorithmic parity fix was needed.",
         "tests": {
-          "win-arm": "The earlier 1/1 Debug/Release fixture used an isolated setup helper. The post-dispatch target test build is blocked by unrelated CS0246 (Arm32UnwindTests.cs:130) and CS0182 compilation errors.",
+          "win-arm": "The ARM32 Target project now compiles with full analysis in Debug and Release; the earlier CS0246/CS0182 compile blocker is resolved. Focused ARM32 selections passed 158/158 plus 40/40 supplemental in Debug and 141/141 plus 19/19 supplemental in Release. The broader selection still has unrelated fixture runtime failures (49/1004 Debug, 46/942 Release); logs: artifacts\\logs\\ArmCodeGenGuardCleanup.Target.win-arm.Debug.acceptance.log, artifacts\\logs\\ArmCodeGenGuardCleanup.Target.win-arm.Release.acceptance.log, and the corresponding focused/additional2 logs.",
           "win-arm64": "1/1 passed in Debug and Release with analyzer-disabled focused test builds.",
           "win-x64": "2/2 passed in Debug and Release with analyzer-disabled focused test builds; Release excluded two unrelated test files with missing register names.",
           "win-x86": "Full-analysis compiler builds passed in Debug and Release.",
@@ -263,7 +263,7 @@
           "linux-riscv64": "1/1 passed in Debug and Release; the full-analyzer Debug test passed and verified the 8-byte INS_addi embedded-data descriptor."
         },
         "runtimeDispatchBuilds": "Full-analysis RyuJitSharp library builds passed with zero warnings or errors in Debug and Release for win-x86, win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm.",
-        "validation": "The focused x64 and ARM64 tests passed with analyzers disabled; LoongArch64 and RISC-V64 recording tests passed in both configurations, including full-analyzer Debug runs. Full-analyzer test builds for x64 and ARM64 remain blocked by unrelated existing analyzer diagnostics, and the post-dispatch ARM32 fixture could not compile because of unrelated target-test source errors. Browser-WASM now compiles in full-analysis Debug and Release; native execution/generated-code parity is not established."
+        "validation": "The focused x64 and ARM64 tests passed with analyzers disabled; LoongArch64 and RISC-V64 recording tests passed in both configurations, including full-analyzer Debug runs. Full-analyzer test builds for x64 and ARM64 remain blocked by unrelated existing analyzer diagnostics. ARM32 Target tests now compile in full-analysis Debug/Release; focused ARM32 selections passed 158/158 plus 40/40 supplemental in Debug and 141/141 plus 19/19 supplemental in Release, while the broad selection retains unrelated fixture runtime failures (49/1004 Debug, 46/942 Release). Browser-WASM now compiles in full-analysis Debug and Release; native execution/generated-code parity is not established."
       },
       "asyncResumeTargetWidth": {
         "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",

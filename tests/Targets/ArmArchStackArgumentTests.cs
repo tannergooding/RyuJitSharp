@@ -271,7 +271,7 @@ internal static unsafe class ArmArchStackArgumentTests
                     displacement /= pair ? 8 : width;
                     Assert.That(Emitter.emitGetInsSC(load), Is.EqualTo((nint)displacement));
 #else
-                    Assert.That(codeGen.Emitter.emitGetInsSC(load), Is.EqualTo((nint)displacement));
+                    Assert.That(Emitter.emitGetInsSC(load), Is.EqualTo((nint)displacement));
 #endif
                 }
                 else

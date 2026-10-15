@@ -38,16 +38,20 @@ internal static unsafe class Arm32ProfilingEntryTests
         });
     }
 
-#if DEBUG
-    // ARM32 relocatable-instruction recording is skipped by the debug descriptor path.
-    [TestCase(false, REG_R0, false)]
-    [TestCase(false, REG_R4, true)]
-#else
-    [TestCase(false, REG_R0, false)]
-    [TestCase(false, REG_R4, true)]
-    [TestCase(true, REG_R0, false)]
-    [TestCase(true, REG_R4, true)]
-#endif
+    private static IEnumerable<TestCaseData> HookedEntryCases()
+    {
+        yield return new TestCaseData(false, REG_R0, false);
+        yield return new TestCaseData(false, REG_R4, true);
+
+        // ARM32 relocatable-instruction recording is skipped by the debug descriptor path.
+        if (!TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(true, REG_R0, false);
+            yield return new TestCaseData(true, REG_R4, true);
+        }
+    }
+
+    [TestCaseSource(nameof(HookedEntryCases))]
     public static void HookedEntryLoadsTheMethodHandleAndCallsTheProfiler(
         bool indirect, regNumber initReg, bool expectedInitRegZeroed)
     {

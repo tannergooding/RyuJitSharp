@@ -4,7 +4,9 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_ARM
+using System.Collections.Generic;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
@@ -72,9 +74,14 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.insEncodeImmT2_Mov(imm), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0, 0u, 0u, 0u, 0u)]
-    [TestCase(REG_R7, 0x7000u, 0x0700u, 7u, 0x00070000u)]
-    [TestCase(REG_PC, 0xF000u, 0x0F00u, 15u, 0x000F0000u)]
+    private static IEnumerable<TestCaseData> Thumb2GeneralRegisterEncodingCases()
+    {
+        yield return new TestCaseData(REG_R0, 0u, 0u, 0u, 0u);
+        yield return new TestCaseData(REG_R7, 0x7000u, 0x0700u, 7u, 0x00070000u);
+        yield return new TestCaseData(REG_PC, 0xF000u, 0x0F00u, 15u, 0x000F0000u);
+    }
+
+    [TestCaseSource(nameof(Thumb2GeneralRegisterEncodingCases))]
     public static void Thumb2GeneralRegisterEncodingsMatchField(regNumber reg, uint expectedT, uint expectedD, uint expectedM, uint expectedN)
     {
         Assert.That(Emitter.insEncodeRegT2_T(reg), Is.EqualTo(expectedT));
@@ -83,12 +90,17 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.insEncodeRegT2_N(reg), Is.EqualTo(expectedN));
     }
 
-    [TestCase(REG_F0, (int)EA_4BYTE, false, 0u, 0u)]
-    [TestCase(REG_F31, (int)EA_4BYTE, false, 31u, 31u)]
-    [TestCase(REG_F1, (int)EA_4BYTE, true, 1u, 16u)]
-    [TestCase(REG_F17, (int)EA_4BYTE, true, 17u, 24u)]
-    [TestCase(REG_F8, (int)EA_8BYTE, false, 4u, 4u)]
-    [TestCase(REG_F30, (int)EA_8BYTE, true, 15u, 15u)]
+    private static IEnumerable<TestCaseData> Thumb2FloatRegisterEncodingCases()
+    {
+        yield return new TestCaseData(REG_F0, (int)EA_4BYTE, false, 0u, 0u);
+        yield return new TestCaseData(REG_F31, (int)EA_4BYTE, false, 31u, 31u);
+        yield return new TestCaseData(REG_F1, (int)EA_4BYTE, true, 1u, 16u);
+        yield return new TestCaseData(REG_F17, (int)EA_4BYTE, true, 17u, 24u);
+        yield return new TestCaseData(REG_F8, (int)EA_8BYTE, false, 4u, 4u);
+        yield return new TestCaseData(REG_F30, (int)EA_8BYTE, true, 15u, 15u);
+    }
+
+    [TestCaseSource(nameof(Thumb2FloatRegisterEncodingCases))]
     public static void Thumb2FloatRegisterIndexAndEncodingMatchInstruction(regNumber reg, int size, bool variant, uint expectedIndex, uint expectedEncoding)
     {
         var index = Emitter.floatRegIndex(reg, size);
@@ -96,12 +108,17 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.floatRegEncoding(index, size, variant), Is.EqualTo(expectedEncoding));
     }
 
-    [TestCase(REG_F0, (int)EA_4BYTE, false, 0u, 0u, 0u)]
-    [TestCase(REG_F1, (int)EA_4BYTE, true, 0x20u, 0x80u, 0x00400000u)]
-    [TestCase(REG_F17, (int)EA_4BYTE, true, 0x28u, 0x00080080u, 0x00408000u)]
-    [TestCase(REG_F31, (int)EA_4BYTE, false, 0x2Fu, 0x000F0080u, 0x0040F000u)]
-    [TestCase(REG_F8, (int)EA_8BYTE, true, 4u, 0x00040000u, 0x00004000u)]
-    [TestCase(REG_F30, (int)EA_8BYTE, true, 15u, 0x000F0000u, 0x0000F000u)]
+    private static IEnumerable<TestCaseData> Thumb2VectorRegisterEncodingCases()
+    {
+        yield return new TestCaseData(REG_F0, (int)EA_4BYTE, false, 0u, 0u, 0u);
+        yield return new TestCaseData(REG_F1, (int)EA_4BYTE, true, 0x20u, 0x80u, 0x00400000u);
+        yield return new TestCaseData(REG_F17, (int)EA_4BYTE, true, 0x28u, 0x00080080u, 0x00408000u);
+        yield return new TestCaseData(REG_F31, (int)EA_4BYTE, false, 0x2Fu, 0x000F0080u, 0x0040F000u);
+        yield return new TestCaseData(REG_F8, (int)EA_8BYTE, true, 4u, 0x00040000u, 0x00004000u);
+        yield return new TestCaseData(REG_F30, (int)EA_8BYTE, true, 15u, 0x000F0000u, 0x0000F000u);
+    }
+
+    [TestCaseSource(nameof(Thumb2VectorRegisterEncodingCases))]
     public static void Thumb2VectorRegisterEncodingsMatchInstruction(regNumber reg, int size, bool variant, uint expectedM, uint expectedN, uint expectedD)
     {
         Assert.That(Emitter.insEncodeRegT2_VectorM(reg, size, variant), Is.EqualTo(expectedM));

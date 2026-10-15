@@ -27,12 +27,12 @@ internal static class TargetRegisterConstantsTests
         Assert.That(Globals.REG_SHIFT_LNG, Is.EqualTo(REG_ARM32_R2));
         Assert.That(Globals.REG_WRITE_BARRIER_DST, Is.EqualTo(REG_ARM32_R0));
         Assert.That(Globals.REG_WRITE_BARRIER_SRC, Is.EqualTo(REG_ARM32_R1));
-        Assert.That(Globals.REG_PINVOKE_SCRATCH, Is.EqualTo(REG_ARM32_R6));
+        Assert.That(Globals.REG_PINVOKE_SCRATCH_ARM, Is.EqualTo(REG_ARM32_R6));
         Assert.That(Globals.MAX_HFA_RET_SLOTS, Is.EqualTo(8));
-        Assert.That(Globals.LBL_DIST_SMALL_MAX_POS, Is.EqualTo(1020));
+        Assert.That(Globals.LBL_DIST_SMALL_MAX_POS_ARM, Is.EqualTo(1020));
         Assert.That(Globals.CALL_DIST_MAX_NEG, Is.EqualTo(-16777216));
         Assert.That(Globals.JCC_DIST_MEDIUM_MAX_POS, Is.EqualTo(1048574));
-        Assert.That(Globals.SRBM_STACK_PROBE_HELPER_TRASH,
+        Assert.That(Globals.SRBM_STACK_PROBE_HELPER_TRASH_ARM,
             Is.EqualTo(regMask.SRBM_ARM32_R5 | regMask.SRBM_ARM32_LR));
 #elif TARGET_ARM64
         Assert.That(Globals.MAX_REG_ARG, Is.EqualTo(8));

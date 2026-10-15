@@ -205,28 +205,43 @@ internal static unsafe class TypedRegisterMaskTests
         Assert.That(mask, Is.EqualTo(new regMaskTP(SRBM_R0)));
     }
 
-    [TestCase(REG_R0, (regNumber)255)]
-    [TestCase(REG_R1, REG_R0)]
-    [TestCase(REG_STK, REG_F31)]
-    [TestCase(REG_NA, (regNumber)((int)REG_NA - 1))]
+    private static IEnumerable<TestCaseData> ArmDoubleNormalizationCases()
+    {
+        yield return new TestCaseData(REG_R0, (regNumber)255);
+        yield return new TestCaseData(REG_R1, REG_R0);
+        yield return new TestCaseData(REG_STK, REG_F31);
+        yield return new TestCaseData(REG_NA, (regNumber)((int)REG_NA - 1));
+    }
+
+    [TestCaseSource(nameof(ArmDoubleNormalizationCases))]
     public static void ArmDoubleNormalizationDecrementsEveryNonDoubleRegisterWithoutValidation(
         regNumber reg, regNumber expected)
     {
         Assert.That(getRegForType(reg, TYP_DOUBLE), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_F1, REG_F3)]
-    [TestCase(REG_F29, REG_F31)]
-    [TestCase(REG_F31, REG_NA)]
+    private static IEnumerable<TestCaseData> ArmOddDoubleIterationCases()
+    {
+        yield return new TestCaseData(REG_F1, REG_F3);
+        yield return new TestCaseData(REG_F29, REG_F31);
+        yield return new TestCaseData(REG_F31, REG_NA);
+    }
+
+    [TestCaseSource(nameof(ArmOddDoubleIterationCases))]
     public static void ArmOddDoubleIterationAssertsThePreconditionButDoesNotNormalize(regNumber reg, regNumber expected)
     {
         WithAssertionRecorder(() => Assert.That(regNextOfType(reg, TYP_DOUBLE), Is.EqualTo(expected)),
             "floatRegCanHoldType(reg, type)");
     }
 
-    [TestCase(REG_R0, TYP_FLOAT, "genIsValidFloatReg(reg)")]
-    [TestCase(REG_R0, TYP_DOUBLE, "genIsValidFloatReg(reg)")]
-    [TestCase(REG_F0, TYP_INT, "(type == TYP_FLOAT) || (type == TYP_STRUCT)")]
+    private static IEnumerable<TestCaseData> ArmCapacityCases()
+    {
+        yield return new TestCaseData(REG_R0, TYP_FLOAT, "genIsValidFloatReg(reg)");
+        yield return new TestCaseData(REG_R0, TYP_DOUBLE, "genIsValidFloatReg(reg)");
+        yield return new TestCaseData(REG_F0, TYP_INT, "(type == TYP_FLOAT) || (type == TYP_STRUCT)");
+    }
+
+    [TestCaseSource(nameof(ArmCapacityCases))]
     public static void ArmCapacityPreservesNativeAssertions(regNumber reg, var_types type, string expectedAssertion)
     {
         WithAssertionRecorder(() => Assert.That(floatRegCanHoldType(reg, type), Is.True), expectedAssertion);
@@ -239,8 +254,13 @@ internal static unsafe class TypedRegisterMaskTests
             "genIsValidFloatReg(reg)", "(type == TYP_FLOAT) || (type == TYP_STRUCT)");
     }
 
-    [TestCase(REG_R0, REG_R2, false)]
-    [TestCase(REG_R1, REG_R3, true)]
+    private static IEnumerable<TestCaseData> ArmDoubleIterationNestedCapacityCases()
+    {
+        yield return new TestCaseData(REG_R0, REG_R2, false);
+        yield return new TestCaseData(REG_R1, REG_R3, true);
+    }
+
+    [TestCaseSource(nameof(ArmDoubleIterationNestedCapacityCases))]
     public static void ArmDoubleIterationPreservesNestedCapacityAssertions(
         regNumber reg, regNumber expected, bool odd)
     {
@@ -252,9 +272,14 @@ internal static unsafe class TypedRegisterMaskTests
             expectedAssertions);
     }
 
-    [TestCase(REG_R1, 3UL)]
-    [TestCase(REG_STK, 3UL << (int)REG_F31)]
-    [TestCase(REG_NA, 0UL)]
+    private static IEnumerable<TestCaseData> ArmDoubleMaskAlignmentCases()
+    {
+        yield return new TestCaseData(REG_R1, 3UL);
+        yield return new TestCaseData(REG_STK, 3UL << (int)REG_F31);
+        yield return new TestCaseData(REG_NA, 0UL);
+    }
+
+    [TestCaseSource(nameof(ArmDoubleMaskAlignmentCases))]
     public static void ArmDoubleMaskChecksAlignmentAfterNormalizationAndLookup(regNumber reg, ulong expected)
     {
         WithAssertionRecorder(

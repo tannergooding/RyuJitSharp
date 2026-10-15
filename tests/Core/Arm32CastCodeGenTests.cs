@@ -105,10 +105,19 @@ internal static unsafe class Arm32CastCodeGenTests
         }, captureAssertions: true);
     }
 
-    [TestCase(false, TYP_INT, REG_R1, new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_b, INS_cmp, INS_bne, INS_mov })]
-    [TestCase(true, TYP_INT, REG_R1, new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_mov })]
-    [TestCase(false, TYP_UINT, REG_R2, new instruction[] { INS_tst, INS_bne, INS_mov })]
-    [TestCase(true, TYP_UINT, REG_R2, new instruction[] { INS_tst, INS_bne, INS_mov })]
+    private static IEnumerable<TestCaseData> CheckedLongToIntCastCases()
+    {
+        yield return new TestCaseData(false, TYP_INT, REG_R1,
+            new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_b, INS_cmp, INS_bne, INS_mov });
+        yield return new TestCaseData(true, TYP_INT, REG_R1,
+            new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_mov });
+        yield return new TestCaseData(false, TYP_UINT, REG_R2,
+            new instruction[] { INS_tst, INS_bne, INS_mov });
+        yield return new TestCaseData(true, TYP_UINT, REG_R2,
+            new instruction[] { INS_tst, INS_bne, INS_mov });
+    }
+
+    [TestCaseSource(nameof(CheckedLongToIntCastCases))]
     public static void CheckedLongToIntCastRetainsNativeOverflowChecks(
         bool isUnsigned, var_types destinationType, regNumber expectedSource, instruction[] expected)
     {

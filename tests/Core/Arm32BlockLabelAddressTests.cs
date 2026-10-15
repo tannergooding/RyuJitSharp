@@ -10,6 +10,7 @@ using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
