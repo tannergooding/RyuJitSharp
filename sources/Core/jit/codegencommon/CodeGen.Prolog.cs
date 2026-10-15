@@ -52,9 +52,10 @@ public sealed partial class CodeGen
 
         _compiler.funSetCurrentFunc(0);
         JITDUMP("*************** In genFnProlog()\n");
-#if DEBUG
-        _genInterruptibleUsed = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _genInterruptibleUsed = true;
+        }
         assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
         Emitter.emitBegProlog();
         _compiler.unwindBegProlog();

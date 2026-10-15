@@ -181,12 +181,13 @@ public sealed partial class CodeGen
         assert(_compiler.compInlineContext is not null);
         genRecordRichDebugInfoInlineTree(_compiler.compInlineContext, inlineTree);
 
-#if DEBUG
-        for (var index = 0u; index < numContexts; index++)
+        if (Configuration.DEBUG)
         {
-            assert(inlineTree[index].Method != NO_METHOD_HANDLE);
+            for (var index = 0u; index < numContexts; index++)
+            {
+                assert(inlineTree[index].Method != NO_METHOD_HANDLE);
+            }
         }
-#endif
 
         var mappingIndex = 0;
         foreach (var richMapping in _compiler.genRichIPmappings)

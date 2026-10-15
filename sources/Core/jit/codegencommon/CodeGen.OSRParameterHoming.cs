@@ -123,13 +123,14 @@ public sealed partial class CodeGen
                     ref readonly var segment = ref abiInfo.Segments[1];
 
                     genHomeStackSegment(localNumber, in segment, initReg, ref initRegStillZeroed);
-#if DEBUG
-                    for (localNumber += 1; localNumber < _compiler.info.compArgsCount; localNumber++)
+                    if (Configuration.DEBUG)
                     {
-                        ref readonly var otherAbiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
-                        assert(!otherAbiInfo.IsSplitAcrossRegistersAndStack);
+                        for (localNumber += 1; localNumber < _compiler.info.compArgsCount; localNumber++)
+                        {
+                            ref readonly var otherAbiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
+                            assert(!otherAbiInfo.IsSplitAcrossRegistersAndStack);
+                        }
                     }
-#endif
                     break;
                 }
             }
