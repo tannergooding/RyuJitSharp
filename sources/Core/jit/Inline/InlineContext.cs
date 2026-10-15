@@ -172,12 +172,7 @@ public sealed partial class InlineContext
         }
         else
         {
-
-#if DEBUG
             calleeName = compiler.eeGetMethodFullName(_callee);
-#else
-            calleeName = "callee";
-#endif
         }
 
         var calleeToken = compiler.info.compCompHnd->getMethodDefFromMethod(_callee);
