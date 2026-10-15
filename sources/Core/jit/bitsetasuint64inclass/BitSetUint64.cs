@@ -269,10 +269,8 @@ public struct BitSetUint64<TEnv, TBitSetTraits>
         }
     }
 
-#if DEBUG
     // Default struct storage is zero; offset epochs so it represents the native UINT32_MAX uninitialized marker.
     private static uint GetEpoch(TEnv env) => unchecked((uint)TBitSetTraits.GetEpoch(env) + 1);
-#endif
 
     internal readonly void CheckEpoch(TEnv env)
     {
