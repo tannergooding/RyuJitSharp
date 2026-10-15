@@ -298,16 +298,18 @@ public sealed partial class CodeGen
     {
         var nextBlock = block.Next;
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("*************** In genFnEpilog()\n");
+            if (_verbose)
+            {
+                jitprintf("*************** In genFnEpilog()\n");
+            }
+
+            if (_compiler.opts.dspCode)
+            {
+                jitprintf("\n__epilog:\n");
+            }
         }
-        if (_compiler.opts.dspCode)
-        {
-            jitprintf("\n__epilog:\n");
-        }
-#endif
         var jmpEpilog = block.HasFlag(BBF_HAS_JMP);
         if (jmpEpilog)
         {

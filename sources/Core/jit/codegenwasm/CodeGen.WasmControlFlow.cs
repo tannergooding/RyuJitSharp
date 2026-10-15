@@ -163,16 +163,17 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        jitprintf($"Could not find {FMT_BB(targetBlock.bbNum)}[{targetIndex}]"
-            + $"{(isBackedge ? " (backedge)" : "")} in active control stack\n");
-        jitprintf("Current stack is\n");
-
-        for (var i = 0; i < height; i++)
+        if (Configuration.DEBUG)
         {
-            stack.Top(i).Dump();
+            jitprintf($"Could not find {FMT_BB(targetBlock.bbNum)}[{targetIndex}]"
+                + $"{(isBackedge ? " (backedge)" : "")} in active control stack\n");
+            jitprintf("Current stack is\n");
+
+            for (var i = 0; i < height; i++)
+            {
+                stack.Top(i).Dump();
+            }
         }
-#endif
 
         assert(false, conditionExpression: "Can't find target in control stack");
         return uint.MaxValue;
