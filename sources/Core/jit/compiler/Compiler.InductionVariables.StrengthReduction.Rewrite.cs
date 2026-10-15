@@ -124,10 +124,11 @@ public partial class Compiler
                 var postUseInsertionPoint = FindPostUseUpdateInsertionPoint(cursors, insertionPoint, out afterStmt);
                 if (postUseInsertionPoint is not null)
                 {
-#if DEBUG
-                    var latestUse = afterStmt ?? throw new FatalJitException("Post-use placement needs a use statement.");
-                    JITDUMP($"    Found a legal insertion point after a last use of the IV in {FMT_BB(postUseInsertionPoint.bbNum)} after {FMT_STMT(latestUse.Id)}\n");
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        var latestUse = afterStmt ?? throw new FatalJitException("Post-use placement needs a use statement.");
+                        JITDUMP($"    Found a legal insertion point after a last use of the IV in {FMT_BB(postUseInsertionPoint.bbNum)} after {FMT_STMT(latestUse.Id)}\n");
+                    }
                     return postUseInsertionPoint;
                 }
             }

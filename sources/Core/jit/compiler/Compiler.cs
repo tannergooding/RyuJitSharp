@@ -580,14 +580,12 @@ public partial class Compiler
 
         compMaxUncheckedOffsetForNullObject = (int)(eeInfo.maxUncheckedOffsetForNullObject);
 
-#if DEBUG
         // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
         // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
-        if (Configuration.TARGET_WASM && !info.compMatchedVM)
+        if (Configuration.DEBUG && Configuration.TARGET_WASM && !info.compMatchedVM)
         {
             compMaxUncheckedOffsetForNullObject = 1024 - 1;
         }
-#endif
 
         info.compCode = methodInfo->ILCode;
         info.compILCodeSize = methodInfo->ILCodeSize;
@@ -913,12 +911,7 @@ public partial class Compiler
         Configuration.TARGET_XARCH ? cntCalleeTrashMask : Globals.CNT_CALLEE_TRASH_MASK;
 
     /// <summary>Are we running a replay under SuperPMI?</summary>
-#if DEBUG
-    public bool RunningSuperPmiReplay => info.compMethodSpmiIndex is not -1;
-#else
-    // Note: you can certainly run a SuperPMI replay with a non-DEBUG JIT, and if necessary and useful we could make compMethodSuperPMIIndex always available.
-    public bool RunningSuperPmiReplay => false;
-#endif
+    public bool RunningSuperPmiReplay => Configuration.DEBUG && (info.compMethodSpmiIndex is not -1);
 
     /// <summary>Returns underlying type of handles returned by ldtoken instruction</summary>
     /// <remarks>RuntimeTypeHandle is backed by raw pointer on NativeAOT and by object reference on other runtimes</remarks>
@@ -1245,15 +1238,13 @@ public partial class Compiler
 
     public nint dspOffset(nint offs)
     {
-#if DEBUG
-        if (offs != 0)
+        if (Configuration.DEBUG && (offs != 0))
         {
             if (opts.dspDiffable)
             {
                 offs = unchecked((nint)(0xD1FFAB1E));
             }
         }
-#endif
         return offs;
     }
 

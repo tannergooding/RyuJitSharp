@@ -93,13 +93,11 @@ public partial class Compiler
 
         // Copy propagation can invalidate the last-use decision made during morph.
         tree.Flags &= ~GTF_VAR_DEATH;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             assert(compCurBB is not null);
             jitprintf($"\nCopy Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
         }
-#endif
         if (Configuration.DEBUG && verbose)
         {
             optPrintAssertion(assertion, index);
@@ -225,13 +223,11 @@ public partial class Compiler
             replacement._vnPair.SetBoth(assertion.Op2.VN);
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             assert(compCurBB is not null);
             jitprintf($"\nConstant Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
         }
-#endif
         if (Configuration.DEBUG && verbose)
         {
             optPrintAssertion(assertion, index);

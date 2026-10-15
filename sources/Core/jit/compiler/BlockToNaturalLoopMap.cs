@@ -46,9 +46,13 @@ public sealed class BlockToNaturalLoopMap
         return new(loops, indices);
     }
 
-#if DEBUG
     public void Dump()
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         var dfs = _loops.DfsTree;
         var count = dfs.PostOrderCount;
         jitprintf($"Block -> natural loop map: {count} blocks\n");
@@ -67,5 +71,4 @@ public sealed class BlockToNaturalLoopMap
             }
         }
     }
-#endif
 }

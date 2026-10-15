@@ -13,13 +13,11 @@ public partial class Compiler
         noway_assert(check.Oper is GT_BOUNDS_CHECK);
         var tree = comma ?? check;
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("Before optRemoveRangeCheck:\n");
             gtDispTree(tree);
         }
-#endif
 
         // A proved bounds check also proves the length load does not fault.
         GenTree? sideEffects = null;
@@ -50,13 +48,11 @@ public partial class Compiler
 
         gtUpdateSideEffects(statement, tree);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"After optRemoveRangeCheck for [{tree.TreeId:D6}]:\n");
             gtDispTree(statement.RootNode);
         }
-#endif
         return check;
     }
 

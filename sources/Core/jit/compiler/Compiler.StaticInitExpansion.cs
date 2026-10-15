@@ -73,12 +73,10 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP($"Expanding static initialization for '{eeGetClassName(call._initClsHnd)}', call: [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}\n");
         }
-#endif
 
         var debugInfo = stmt.DebugInfo;
         var prevBb = block;

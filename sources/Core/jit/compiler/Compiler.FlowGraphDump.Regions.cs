@@ -131,7 +131,6 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         private static void DumpRegionNode(Region region, int indent)
         {
             var spaces = new string(' ', indent);
@@ -197,7 +196,6 @@ public partial class Compiler
             assert(_root.Next is null);
             Verify(_root);
         }
-#endif
 
         public void Output(TextWriter writer)
         {
@@ -293,14 +291,15 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            regions.Dump();
-        }
+            if (verbose)
+            {
+                regions.Dump();
+            }
 
-        regions.Verify();
-#endif
+            regions.Verify();
+        }
         regions.Output(writer);
     }
 

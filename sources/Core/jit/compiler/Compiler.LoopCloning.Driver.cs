@@ -251,11 +251,7 @@ public partial class Compiler
                 context.CancelLoopOptInfo(loop.Index);
                 continue;
             }
-            context.EvaluateConditions(loop.Index, out var allTrue, out var anyFalse
-#if DEBUG
-                , verbose
-#endif
-            );
+            context.EvaluateConditions(loop.Index, out var allTrue, out var anyFalse, verbose);
             if (anyFalse)
             {
                 context.CancelLoopOptInfo(loop.Index);
@@ -289,16 +285,8 @@ public partial class Compiler
             }
 
             Metrics.LoopsCloned++;
-            context.OptimizeConditions(loop.Index
-#if DEBUG
-                , verbose
-#endif
-            );
-            context.OptimizeBlockConditions(loop.Index
-#if DEBUG
-                , verbose
-#endif
-            );
+            context.OptimizeConditions(loop.Index, verbose);
+            context.OptimizeBlockConditions(loop.Index, verbose);
             optCloneLoop(loop, context);
         }
 

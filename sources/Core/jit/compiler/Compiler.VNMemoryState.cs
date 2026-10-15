@@ -38,12 +38,10 @@ public partial class Compiler
             fgSetCurrentMemoryVN(ByrefExposed, vnStore.VNForExpr(compCurBB, TYP_HEAP));
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"  fgCurMemoryVN[GcHeap] assigned for {message} at [{tree.TreeId:D6}] to VN: ${gcHeapVN:x}.\n");
         }
-#endif
 
         // Shared memory states also share their node-to-SSA map entries.
         fgValueNumberRecordMemorySsa(GcHeap, tree);
@@ -56,12 +54,10 @@ public partial class Compiler
         assert((compCurBB.bbMemoryDef & (1 << (int)ByrefExposed)) != 0);
         fgSetCurrentMemoryVN(ByrefExposed, memoryVN);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"  fgCurMemoryVN[ByrefExposed] assigned for {message} at [{tree.TreeId:D6}] to VN: ${memoryVN:x}.\n");
         }
-#endif
 
         fgValueNumberRecordMemorySsa(ByrefExposed, tree);
     }

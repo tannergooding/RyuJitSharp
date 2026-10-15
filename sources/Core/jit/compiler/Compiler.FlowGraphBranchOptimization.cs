@@ -215,15 +215,13 @@ public partial class Compiler
             jitprintf($"\nfgOptimizeBranch added these statements(s) at the end of {FMT_BB(bJump.bbNum)}:\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             for (var stmt = newStmtList; stmt is not null; stmt = stmt.NextStmt)
             {
                 gtDispStmt(stmt);
             }
         }
-#endif
 
         if (Configuration.DEBUG && verbose)
         {

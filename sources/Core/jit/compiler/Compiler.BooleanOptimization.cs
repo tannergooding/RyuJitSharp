@@ -271,9 +271,7 @@ public partial class Compiler
             {
                 JITDUMP($"Folded {(_operand2.Oper.IsLeaf ? "" : "non-leaf ")}boolean conditions of " +
                     $"{FMT_BB(_first.bbNum)} and {FMT_BB(_second.bbNum)} to :\n");
-#if DEBUG
                 _compiler.gtDispStmt(firstStatement);
-#endif
                 JITDUMP("\n");
             }
 

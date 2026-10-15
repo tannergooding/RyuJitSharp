@@ -179,9 +179,7 @@ public partial class Compiler
                 PhysicalPromotionAccessKindFlags flags;
                 if (local.Oper is GT_LCL_ADDR)
                 {
-#if DEBUG
                     assert(user is GenTreeCall && descriptor.IsDefinedViaAddress);
-#endif
                     accessType = TYP_STRUCT;
                     layout = _compiler.typGetObjLayout(user!.AsCall().RetClsHnd);
                     flags = PhysicalPromotionAccessKindFlags.IsCallRetBuf;
@@ -264,9 +262,10 @@ public partial class Compiler
             var flags = PhysicalPromotionAccessKindFlags.None;
             if (local.Oper.IsLocalStore)
             {
-#if DEBUG
-                flags |= PhysicalPromotionAccessKindFlags.IsStoreDestination;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    flags |= PhysicalPromotionAccessKindFlags.IsStoreDestination;
+                }
                 if (local.Data.EffectiveVal.Oper.IsCall)
                 {
                     flags |= PhysicalPromotionAccessKindFlags.IsStoredFromCall;
@@ -297,8 +296,7 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            if (user is not null)
+            if (Configuration.DEBUG && (user is not null))
             {
                 if (user.Oper.IsStore && ReferenceEquals(user.Data.EffectiveVal, local))
                 {
@@ -310,7 +308,6 @@ public partial class Compiler
                     flags |= PhysicalPromotionAccessKindFlags.IsReturned;
                 }
             }
-#endif
 
             return flags;
         }
@@ -452,12 +449,10 @@ public partial class Compiler
                 }
 
                 JITDUMP("  Unpromoted remainder: ");
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     aggregate.Unpromoted.Dump();
                 }
-#endif
                 JITDUMP("\n\n");
 
                 if (aggregate.Unpromoted.CoveringSegment(out var segment))

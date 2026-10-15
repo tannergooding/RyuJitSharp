@@ -2,9 +2,7 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime, optcse.cpp.
 
-#if DEBUG
 using System;
-#endif
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;

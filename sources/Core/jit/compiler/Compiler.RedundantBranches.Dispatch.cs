@@ -140,12 +140,10 @@ public partial class Compiler
         {
             return false;
         }
-#if DEBUG
-        else
+        else if (Configuration.DEBUG)
         {
             JITDUMP($"Relop [{tree.TreeId:D6}] {FMT_BB(block.bbNum)} value unknown, trying inference\n");
         }
-#endif
 
         var trySpeculativeDom = false;
         while ((relopValue == -1) && !trySpeculativeDom)

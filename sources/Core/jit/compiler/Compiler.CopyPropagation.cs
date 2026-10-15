@@ -148,9 +148,13 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     public void optDumpCopyPropStack(LclNumToLiveDefsMap curSsaName)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         JITDUMP("{ ");
         foreach (var local in s_copyPropKeyOrders.GetValue(curSsaName, static _ => new CopyPropKeyOrder()).Keys(curSsaName))
         {
@@ -160,11 +164,6 @@ public partial class Compiler
         }
         JITDUMP("}\n\n");
     }
-#else
-    public void optDumpCopyPropStack(LclNumToLiveDefsMap curSsaName)
-    {
-    }
-#endif
 
     public bool optCopyProp(BasicBlock block, Statement statement, GenTreeLclVarCommon tree,
         int lclNum, LclNumToLiveDefsMap curSsaName)

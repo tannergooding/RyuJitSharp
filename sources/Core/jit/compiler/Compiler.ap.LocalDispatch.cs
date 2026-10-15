@@ -171,14 +171,12 @@ public partial class Compiler
         }
 
         noway_assert(constantIsEqual || assertionIsEqual);
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             assert(compCurBB is not null);
             jitprintf($"\nAssertion prop for index #{index:D2} in {FMT_BB(compCurBB.bbNum)}:\n");
             gtDispTree(tree, topOnly: true);
         }
-#endif
 
         var result = constantIsEqual == assertionIsEqual;
         if (tree.Oper is GT_NE)

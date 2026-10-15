@@ -61,9 +61,10 @@ public partial class Compiler
         assert(numBlocks == dfsCount);
 
         var bb0 = new BasicBlock(firstNode: null, lastNode: null);
-#if DEBUG
-        bb0.bbNum = 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            bb0.bbNum = 0;
+        }
         bb0.SetFlags(BBF_EMPTY);
         bb0.bbPreorderNum = numBlocks;
         bb0.bbPostorderNum = dfsTree.PostOrderCount;

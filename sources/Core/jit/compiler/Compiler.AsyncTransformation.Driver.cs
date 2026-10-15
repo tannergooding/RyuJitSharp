@@ -61,9 +61,10 @@ public partial class Compiler
             _compiler._dfsTree ??= _compiler.fgComputeDfs();
             _compiler.lvaComputePreciseRefCounts(isRecompute: true, setSlotNumbers: false);
             new Liveness<AsyncLivenessPolicy>(_compiler).RunLIR();
-#if DEBUG
-            _compiler.mostRecentlyActivePhase = PHASE_ASYNC;
-#endif
+            if (Configuration.DEBUG)
+            {
+                _compiler.mostRecentlyActivePhase = PHASE_ASYNC;
+            }
             VarSetOps.AssignNoCopy(_compiler, ref _compiler.compCurLife,
                 VarSetOps.MakeEmpty(_compiler));
             _compiler._blockToEHPreds = null;
@@ -203,8 +204,7 @@ public partial class Compiler
         private BasicBlock Transform(BasicBlock block, GenTreeCall call,
             List<GenTree> defs, AsyncAnalysis analyses)
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 JITDUMP($"Processing call [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}\n");
                 JITDUMP($"  {defs.Count} live LIR edges\n");
@@ -216,11 +216,9 @@ public partial class Compiler
                         JITDUMP($"{separator}[{def.TreeId:D6}] ({def.Type.Name})");
                         separator = ", ";
                     }
-
                     JITDUMP("\n");
                 }
             }
-#endif
             var resumeReachable = analyses.ResumeReachable;
             var mutated = VarSetOps.MakeCopy(_compiler, analyses.MutatedSinceResumption);
             JITDUMP($"  This suspension point is{(resumeReachable ? "" : " NOT")} resume-reachable\n");

@@ -3,10 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
-using System.Runtime.CompilerServices;
-#endif
-
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -63,7 +59,7 @@ public sealed partial class CodeGen
 #if DEBUG
         if (!call.IsHelperCall())
         {
-            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>(call.CallSigInfo.Value);
+            parameters.sigInfo = new System.Runtime.CompilerServices.StrongBox<CORINFO_SIG_INFO>(call.CallSigInfo.Value);
         }
         genCheckTailCallEpilogRegisters(call);
 #endif

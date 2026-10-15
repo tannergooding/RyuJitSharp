@@ -209,12 +209,10 @@ public sealed partial class CodeGen
 
         if ((consumer is not null) && Emitter.AreFlagsSetForSignJumpOpt(op1.RegNum, opSize, condition))
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf($"Not emitting compare due to sign being already set; modifying [{consumer.TreeId:D6}] to check sign flag\n");
             }
-#endif
             condition = new GenCondition(condition.Code == GenCondition.CodeKind.SLT
                 ? GenCondition.CodeKind.S : GenCondition.CodeKind.NS);
 

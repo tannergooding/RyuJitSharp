@@ -133,10 +133,11 @@ public partial class Compiler
                         : vnStore.VNZeroForType(TYP_INT);
                     tree._vnPair.SetBoth(vnStore.VNForFunc(TYP_BYREF, VNF_PtrToLoc,
                         vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(local.LclOffs), frameVersion));
-#if DEBUG
-                    ref var descriptor = ref lvaGetDesc(lclNum);
-                    assert(descriptor.IsAddressExposed || descriptor.IsDefinedViaAddress);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        ref var descriptor = ref lvaGetDesc(lclNum);
+                        assert(descriptor.IsAddressExposed || descriptor.IsDefinedViaAddress);
+                    }
                     break;
                 }
 

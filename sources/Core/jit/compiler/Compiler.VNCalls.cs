@@ -73,12 +73,13 @@ public partial class Compiler
             default:
             {
                 assert(call.HelperNum.IsPure);
-#if DEBUG
-                foreach (var argument in call.Args.Args)
+                if (Configuration.DEBUG)
                 {
-                    assert(!argument.AbiInfo.IsPassedByReference);
+                    foreach (var argument in call.Args.Args)
+                    {
+                        assert(!argument.AbiInfo.IsPassedByReference);
+                    }
                 }
-#endif
                 break;
             }
         }

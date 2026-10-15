@@ -140,9 +140,8 @@ public partial class Compiler
             block.bbAssertionOut = BitVecOps.UninitVal();
         }
 
-#if DEBUG
-        var baseTreeID = compGenTreeID;
-#endif
+        var baseTreeID = Configuration.DEBUG ? compGenTreeID : 0;
+
         List<BasicBlock> switchBlocks = [];
         foreach (var block in Blocks)
         {
@@ -163,9 +162,11 @@ public partial class Compiler
                 {
                     var nextStatement = optVNAssertionPropCurStmt(block, statement);
                     madeChanges |= optAssertionPropagatedCurrentStmt;
-#if DEBUG
-                    madeChanges |= baseTreeID != compGenTreeID;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        madeChanges |= baseTreeID != compGenTreeID;
+                    }
+
                     if (fgRemoveRestOfBlock)
                     {
                         statement = statement.NextStmt;
@@ -299,7 +300,7 @@ public partial class Compiler
                     var wasConditional = block.Kind is BBJ_COND;
                     var trueBlock = wasConditional ? block.TrueTarget : null;
                     var falseBlock = wasConditional ? block.FalseTarget : null;
-                    fgMorphBlockStmt(block, statement, message: nameof(optAssertionPropMain));
+                    _ = fgMorphBlockStmt(block, statement, message: nameof(optAssertionPropMain));
                     madeChanges = true;
 
                     if (wasConditional && !optLocalAssertionProp)

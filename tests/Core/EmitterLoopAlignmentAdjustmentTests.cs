@@ -10,9 +10,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
-#if DEBUG
 using static RyuJitSharp.Globals;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 

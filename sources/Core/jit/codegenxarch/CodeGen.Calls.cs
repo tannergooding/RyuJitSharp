@@ -30,22 +30,23 @@ public sealed partial class CodeGen
                     var argSize = putArgStk.StackByteSize;
                     stackArgBytes = unchecked(stackArgBytes + argSize);
 
-#if DEBUG
-                    var stackBytesConsumed = 0;
-                    foreach (ref readonly var segment in arg.AbiInfo.Segments)
+                    if (Configuration.DEBUG)
                     {
-                        if (!segment.IsPassedInRegister)
+                        var stackBytesConsumed = 0;
+                        foreach (ref readonly var segment in arg.AbiInfo.Segments)
                         {
-                            stackBytesConsumed = unchecked(stackBytesConsumed + segment.StackSize);
+                            if (!segment.IsPassedInRegister)
+                            {
+                                stackBytesConsumed = unchecked(stackBytesConsumed + segment.StackSize);
+                            }
+                        }
+                        assert(argSize == stackBytesConsumed);
+                        if ((source.Type == TYP_STRUCT) && (source.Oper != GT_FIELD_LIST))
+                        {
+                            var loadSize = source.GetLayout(_compiler).Size;
+                            assert(argSize == roundUp(unchecked((int)loadSize), Configuration.TARGET_POINTER_SIZE));
                         }
                     }
-                    assert(argSize == stackBytesConsumed);
-                    if ((source.Type == TYP_STRUCT) && (source.Oper != GT_FIELD_LIST))
-                    {
-                        var loadSize = source.GetLayout(_compiler).Size;
-                        assert(argSize == roundUp(unchecked((int)loadSize), Configuration.TARGET_POINTER_SIZE));
-                    }
-#endif
                 }
             }
         }

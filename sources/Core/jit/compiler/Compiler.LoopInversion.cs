@@ -378,8 +378,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             var conditionStatement = condBlock.LastStmt;
             assert(conditionStatement is not null);
@@ -390,7 +389,6 @@ public partial class Compiler
                 $"{totalInfo.sharedStaticHelperCount}, hasSplitIVTestAndIncrement = {dspBool(hasSplitIVTestAndIncrement)}, " +
                 $"haveProfileWeights = {dspBool(haveProfileWeights)}\n");
         }
-#endif
         if (costIsTooHigh)
         {
             // Preparing costs above can change IR metadata even without inversion.

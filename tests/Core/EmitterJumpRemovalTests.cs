@@ -12,9 +12,7 @@ using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.var_types;
 using static RyuJitSharp.regNumber;
-#if DEBUG
 using static RyuJitSharp.Globals;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 

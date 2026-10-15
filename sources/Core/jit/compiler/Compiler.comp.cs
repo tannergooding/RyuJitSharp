@@ -300,17 +300,13 @@ public partial class Compiler
     public static StreamWriter? compJitFuncInfoFile;
 #endif
 
-#if false
     // Switching between size & speed has measurable throughput impact
     // (3.5% on AOT CoreLib when measured). It used to be enabled for
     // DEBUG, but should generate identical code between CHK & RET builds,
     // so that's not acceptable.
     // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
     //                  Investigate the cause of the throughput regression.
-    public codeOptimize compCodeOpt => opts.compCodeOpt;
-#else
     public codeOptimize compCodeOpt => BLENDED_CODE;
-#endif
 
     [MemberNotNullWhen(true, nameof(impInlineInfo), nameof(compInlineResult))]
     public bool compDonotInline
@@ -1149,12 +1145,10 @@ public partial class Compiler
             info.compFlags |= CORINFO_FLG_FORCEINLINE;
         }
 
-#if DEBUG
-        if (compIsForInlining)
+        if (Configuration.DEBUG && compIsForInlining)
         {
             JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} is 0x{FMT_DSP_PTR(impTokenLookupContextHandle)}.\n");
         }
-#endif
 
         impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
@@ -1754,13 +1748,11 @@ public partial class Compiler
 
         opts.altJit = false;
 
-#if !DEBUG
-        if (Configuration.LATE_DISASM)
+        if (!Configuration.DEBUG && Configuration.LATE_DISASM)
         {
             // Non-debug builds cannot select late disassembly by method name.
             opts.doLateDisasm = true;
         }
-#endif
 
 #if DEBUG
         var pfAltJit = jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) ? JitConfig.AltJitNgen : JitConfig.AltJit;
@@ -2247,9 +2239,7 @@ public partial class Compiler
         }
 #endif
 
-#if !DEBUG
-        if (opts.disAsm)
-#endif
+        if (Configuration.DEBUG || opts.disAsm)
         {
             if (JitConfig.JitDisasmTesting != 0)
             {
@@ -2381,18 +2371,16 @@ public partial class Compiler
             // TBD: Exclude PInvoke stubs
             if (opts.compJitELTHookEnabled)
             {
-#if DEBUG
                 // We currently only know if we're running under SuperPMI in DEBUG
                 // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use the address of `DummyProfilerELTStub` in the JIT binary, without relocation.
                 // So just use a fixed address in this case; It's SuperPMI replay, so the generated code won't be run.
-                if (RunningSuperPmiReplay)
+                if (Configuration.DEBUG && RunningSuperPmiReplay)
                 {
                     compProfilerMethHnd = sizeof(void*) == 8
                         ? (void*)(0x0BADF00DBEADCAFE)
                         : (void*)(0x0BADF00D);
                 }
                 else
-#endif
                 {
                     if (Configuration.TARGET_AMD64)
                     {
@@ -3458,9 +3446,10 @@ public partial class Compiler
 
             fgExpandQmarkNodes(early: false);
 
-#if DEBUG
-            compCurBB = null;
-#endif
+            if (Configuration.DEBUG)
+            {
+                compCurBB = null;
+            }
 
             // Enable IR checks
             activePhaseChecks |= PhaseChecks.CHECK_IR;
@@ -3737,9 +3726,10 @@ public partial class Compiler
 
         optLoopsCanonical = false;
 
-#if DEBUG
-        DoPhase(this, PHASE_STRESS_SPLIT_TREE, StressSplitTree);
-#endif
+        if (Configuration.DEBUG)
+        {
+            DoPhase(this, PHASE_STRESS_SPLIT_TREE, StressSplitTree);
+        }
 
         // Try again to remove empty try finally/fault clauses
         DoPhase(this, PHASE_EMPTY_FINALLY_3, fgRemoveEmptyFinally);
@@ -4009,9 +3999,7 @@ public partial class Compiler
 
         if (opts.compFlags == CLFLG_MINOPT)
         {
-#if DEBUG
             JITLOG(LL_INFO100, $"CLFLG_MINOPT set for method {info.compFullName}\n");
-#endif
 
             theMinOptsValue = true;
         }
@@ -4168,9 +4156,7 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG
         JITLOG(LL_INFO10000, $"IL Code Size,Instr {info.compILCodeSize,4},{opts.instrCount,4}, Basic Block count {fgBBcount,3}, Local Variable Num,Ref count {lvaCount,3},{opts.lvRefCount,3} for method {info.compFullName}\n");
-#endif
         SetMinOpts(this, theMinOptsValue);
 
         static void SetMinOpts(Compiler compiler, bool theMinOptsValue)
@@ -4241,10 +4227,11 @@ public partial class Compiler
                     codeGen.ShouldAlignLoops = Configuration.FEATURE_LOOP_ALIGN && (JitConfig.JitAlignLoops == 1);
                 }
 
-#if DEBUG
-                var tieringName = compiler.compGetTieringName(true);
-                JitMetadata.report(compiler, JitMetadata.TieringName, tieringName);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    var tieringName = compiler.compGetTieringName(true);
+                    JitMetadata.report(compiler, JitMetadata.TieringName, tieringName);
+                }
             }
         }
     }
@@ -4482,12 +4469,10 @@ public partial class Compiler
     /// <remarks>Use this api when asking the question so that future ISA questions can be asked correctly or when asserting support/nonsupport for an instruction set</remarks>
     internal bool compIsaSupportedDebugOnly(ManagedInstructionSet isa)
     {
-#if DEBUG
-        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
+        if (Configuration.DEBUG && (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64))
         {
             return opts.compSupportsISA.HasInstructionSet(isa);
         }
-#endif
         unreached();
         return false;
     }

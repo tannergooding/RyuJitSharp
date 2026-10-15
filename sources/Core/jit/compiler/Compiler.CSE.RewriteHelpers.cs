@@ -26,13 +26,11 @@ public partial class Compiler
             var cseNum = GET_CSE_INDEX(tree._cseNum);
             var descriptor = optCSEfindDsc(cseNum);
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 JITDUMP($"Unmark CSE use #{cseNum:D2} at [{tree.TreeId:D6}]: " +
                     $"{descriptor.csdUseCount,3} -> {descriptor.csdUseCount - 1,3}\n");
             }
-#endif
 
             noway_assert(descriptor.csdUseCount > 0);
             if (descriptor.csdUseCount > 0)
@@ -97,12 +95,10 @@ public partial class Compiler
             }
 
             assert(IS_CSE_DEF(node._cseNum));
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 JITDUMP($"Preserving the CSE def #{GET_CSE_INDEX(node._cseNum):D2} at [{node.TreeId:D6}]\n");
             }
-#endif
             Append(node);
             return WALK_SKIP_SUBTREES;
         }

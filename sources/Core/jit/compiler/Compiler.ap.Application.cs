@@ -79,17 +79,17 @@ public partial class Compiler
             return false;
         }
 
-        var assertion = optGetAssertion(index);
         if (Configuration.DEBUG)
         {
             assert(compCurBB is not null);
         }
-#if DEBUG
-        JITDUMP($"\nZEROOBJ Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"\nZEROOBJ Assertion prop in {FMT_BB(compCurBB!.bbNum)}:\n");
+        }
         if (Configuration.DEBUG && verbose)
         {
-            optPrintAssertion(assertion, index);
+            optPrintAssertion(optGetAssertion(index), index);
         }
         DISPNODE(tree);
         tree = tree.BashToZeroConst(TYP_INT, fgNodeThreading);
@@ -139,9 +139,10 @@ public partial class Compiler
             {
                 assert(compCurBB is not null);
             }
-#if DEBUG
-            JITDUMP($"Non-null assertion prop for tree [{operand.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)}:\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"Non-null assertion prop for tree [{operand.TreeId:D6}] in {FMT_BB(compCurBB!.bbNum)}:\n");
+            }
             call.Flags &= ~(GTF_CALL_NULLCHECK | GTF_EXCEPT);
             noway_assert((call.Flags & GTF_SIDE_EFFECT) != 0);
             return call;
@@ -164,9 +165,10 @@ public partial class Compiler
             {
                 assert(compCurBB is not null);
             }
-#if DEBUG
-            JITDUMP($"Non-null assertion prop for indirection [{indir.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)}:\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"Non-null assertion prop for indirection [{indir.TreeId:D6}] in {FMT_BB(compCurBB!.bbNum)}:\n");
+            }
             indir.Flags &= ~GTF_EXCEPT;
             indir.Flags |= GTF_IND_NONFAULTING;
             indir.HasOrderingSideEffect = true;

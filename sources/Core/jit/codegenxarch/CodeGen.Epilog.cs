@@ -137,9 +137,10 @@ public sealed partial class CodeGen
         GCInfo.gcRegGCrefSetCur = Emitter.InitGCrefRegs;
         GCInfo.gcRegByrefSetCur = Emitter.InitByrefRegs;
         noway_assert(!_compiler.opts.MinOpts || IsFramePointerUsed);
-#if DEBUG
-        _genInterruptibleUsed = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _genInterruptibleUsed = true;
+        }
         var jmpEpilog = block.HasFlag(BBF_HAS_JMP);
 
         if (Configuration.DEBUG && _compiler.opts.dspCode)

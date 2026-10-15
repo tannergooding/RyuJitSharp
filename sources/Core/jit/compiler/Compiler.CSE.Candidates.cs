@@ -57,9 +57,10 @@ public partial class Compiler
 
     private void optValnumCSE_Init()
     {
-#if DEBUG
-        optCSEtab = [];
-#endif
+        if (Configuration.DEBUG)
+        {
+            optCSEtab = [];
+        }
         cseLivenessTraits = null;
         cseMaskTraits = null;
         optCSEhash = new CSEdsc[(int)s_optCSEhashSizeInitial];

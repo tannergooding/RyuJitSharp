@@ -797,59 +797,56 @@ public partial class Compiler
     }
 #endif
 
-#if DEBUG
     public static void optPrintAssertionIndex(AssertionIndex index)
     {
-        jitprintf(index == NO_ASSERTION_INDEX ? "#NA" : $"#{index:D2}");
+        if (Configuration.DEBUG)
+        {
+            jitprintf(index == NO_ASSERTION_INDEX ? "#NA" : $"#{index:D2}");
+        }
     }
 
     public void optPrintAssertionIndices(ASSERT_TP assertions)
     {
-        assert(apTraits is not null);
-        if (BitVecOps.IsEmpty(apTraits, assertions))
+        if (Configuration.DEBUG)
         {
-            optPrintAssertionIndex(NO_ASSERTION_INDEX);
-            return;
-        }
-
-        var first = true;
-        _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex => {
-            if (!first)
+            assert(apTraits is not null);
+            if (BitVecOps.IsEmpty(apTraits, assertions))
             {
-                jitprintf(" ");
+                optPrintAssertionIndex(NO_ASSERTION_INDEX);
+                return;
             }
 
-            first = false;
-            optPrintAssertionIndex(GetAssertionIndex((ushort)bitIndex));
-            return true;
-        });
-    }
-#else
-    public static void optPrintAssertionIndex(AssertionIndex index)
-    {
-    }
+            var first = true;
+            _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex => {
+                if (!first)
+                {
+                    jitprintf(" ");
+                }
 
-    public void optPrintAssertionIndices(ASSERT_TP assertions)
-    {
+                first = false;
+                optPrintAssertionIndex(GetAssertionIndex((ushort)bitIndex));
+                return true;
+            });
+        }
     }
-#endif
 
     [Conditional("DEBUG")]
     public static void optDumpAssertionIndices(string header, ASSERT_TP assertions, string? footer = null)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf(header);
-            compiler.optPrintAssertionIndices(assertions);
-            if (footer is not null)
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+            if (compiler.verbose)
             {
-                jitprintf(footer);
+                jitprintf(header);
+                compiler.optPrintAssertionIndices(assertions);
+                if (footer is not null)
+                {
+                    jitprintf(footer);
+                }
             }
         }
-#endif
     }
 
     [Conditional("DEBUG")]

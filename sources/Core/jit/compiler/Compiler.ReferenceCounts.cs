@@ -255,9 +255,7 @@ public partial class Compiler
         if (tree.Oper is GT_LCL_ADDR)
         {
             ref var addressLocal = ref lvaGetDesc(tree.AsLclVarCommon().LclNum);
-#if DEBUG
             assert(addressLocal.IsAddressExposed || addressLocal.IsDefinedViaAddress);
-#endif
             addressLocal.incRefCnts(weight, this);
             return;
         }
@@ -279,12 +277,10 @@ public partial class Compiler
         var localNumber = tree.AsLclVarCommon().LclNum;
         ref var descriptor = ref lvaGetDesc(localNumber);
         descriptor.incRefCnts(weight, this);
-#if DEBUG
-        if (descriptor.lvIsStructField)
+        if (Configuration.DEBUG && descriptor.lvIsStructField)
         {
             assert(!lvaGetDesc(descriptor.lvParentLcl).lvUndoneStructPromotion);
         }
-#endif
         if (descriptor.IsAddressExposed)
         {
             descriptor.lvAllDefsAreNoGc = false;

@@ -82,12 +82,10 @@ public partial class Compiler
         var info2 = shadowInfo[lclNum2];
         var traits = new BitVecTraits(this, gsShadowVarInfoCount);
 
-#if DEBUG
-        if (info1.AssignGroup != info2.AssignGroup)
+        if (Configuration.DEBUG && (info1.AssignGroup != info2.AssignGroup))
         {
             JITDUMP($"Unifying assign groups of V{lclNum1:D2} and V{lclNum2:D2} because of [{reason.TreeId:D6}]\n");
         }
-#endif
         if (info1.AssignGroup is not null)
         {
             if (info2.AssignGroup is not null)
@@ -148,12 +146,10 @@ public partial class Compiler
     {
         gsVisitDependentLocals(tree, lclNum => {
             ref var descriptor = ref lvaGetDesc(lclNum);
-#if DEBUG
-            if (!descriptor.lvIsPtr)
+            if (Configuration.DEBUG && !descriptor.lvIsPtr)
             {
                 JITDUMP($"Marking V{lclNum:D2} as a pointer because of [{tree.TreeId:D6}]\n");
             }
-#endif
             descriptor.lvIsPtr = true;
         });
     }

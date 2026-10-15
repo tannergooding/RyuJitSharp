@@ -147,7 +147,7 @@ public partial class Compiler
         }
 
         var exceptions = ValueNumStore.VNPForEmptyExcSet();
-        var normal = default(ValueNumPair);
+        ValueNumPair normal;
         var count = tree.Operands.Length;
         if ((count > 3) || ((JitConfig.JitDisableSimdVN & 2) == 2) ||
             HWIntrinsicInfo.HasSpecialSideEffect(id))
@@ -163,14 +163,12 @@ public partial class Compiler
             var func = GetVNFuncForNode(tree);
             var typeVN = vnStore.VNForSimdType(tree.SimdSize, tree.SimdBaseType, tree.AuxiliaryType);
             var typePair = new ValueNumPair(typeVN, typeVN);
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("    simdTypeVN is ");
                 vnPrint(typeVN, 1);
                 jitprintf("\n");
             }
-#endif
 
             if (count == 0)
             {

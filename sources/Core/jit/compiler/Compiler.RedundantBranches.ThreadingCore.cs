@@ -46,8 +46,7 @@ public partial class Compiler
                     assert(use.Oper is GT_LCL_VAR);
                 }
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     JITDUMP($"Updating [{use.TreeId:D6}] VN from ");
                     vnpPrint(use._vnPair, 1);
@@ -55,7 +54,6 @@ public partial class Compiler
                     vnpPrint(newVNPair, 1);
                     JITDUMP("\n");
                 }
-#endif
 
                 use._vnPair = newVNPair;
                 // The rewritten local's value also flows through COMMA right operands.

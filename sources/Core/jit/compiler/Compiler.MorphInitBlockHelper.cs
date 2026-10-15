@@ -129,8 +129,7 @@ public partial class Compiler
 
             assert(_blockSize != 0);
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf($"PrepareDst for [{_store.TreeId:D6}] ");
                 if (_dstLclNode is not null)
@@ -142,7 +141,6 @@ public partial class Compiler
                     jitprintf("have not found a local var.\n");
                 }
             }
-#endif
         }
 
         protected void PropagateBlockAssertions()

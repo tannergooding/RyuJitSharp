@@ -34,16 +34,14 @@ public partial class Compiler
             }
             else if (local.lvRefCnt() == 0)
             {
-#if DEBUG
                 // Debug lifetime extension gives every in-scope local a reference.
-                if (opts.compDbgCode && !local.lvIsParam && local.lvTracked)
+                if (Configuration.DEBUG && opts.compDbgCode && !local.lvIsParam && local.lvTracked)
                 {
                     for (var scopeNumber = 0; scopeNumber < info.compVarScopesCount; scopeNumber++)
                     {
                         noway_assert(info.compVarScopes[scopeNumber].vsdVarNum != localNumber);
                     }
                 }
-#endif
                 local.lvOnFrame = false;
                 local.lvMustInit = false;
                 goto NOT_STK;
@@ -66,15 +64,13 @@ public partial class Compiler
 
             noway_assert(local.lvIsInReg || local.lvOnFrame || (local.lvRefCnt() == 0));
             noway_assert(!local.lvRegister || !local.lvOnFrame);
-#if DEBUG
-            if (local.lvIsParam && lvaIsArgAccessedViaVarArgsCookie(localNumber))
+            if (Configuration.DEBUG && local.lvIsParam && lvaIsArgAccessedViaVarArgsCookie(localNumber))
             {
                 if (!local.lvPromoted && !local.lvIsStructField)
                 {
                     noway_assert((local.lvRefCnt() == 0) && !local.lvRegister && !local.lvOnFrame);
                 }
             }
-#endif
         }
     }
 }

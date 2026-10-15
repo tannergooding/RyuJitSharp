@@ -243,12 +243,10 @@ public partial class Compiler
 
             JITDUMP($"... JT-PHI [interestingVN] in {FMT_BB(block.bbNum)} relop " +
                 $"{(index == 0 ? "first" : "second")} operand VN is PhiDef for V{phiVN.LclNum:D2}.{phiVN.SsaDef}\n");
-#if DEBUG
-            if (!foundPhiDef)
+            if (Configuration.DEBUG && !foundPhiDef)
             {
                 DISPTREE(tree);
             }
-#endif
 
             foreach (var statement in block.Statements)
             {

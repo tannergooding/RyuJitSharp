@@ -1833,7 +1833,7 @@ public partial class Compiler
                         if (!notNull && compiler.fgAddrCouldBeNull(array))
                         {
                             array = compiler.impCloneExpr(array, out var arrayClone, CHECK_SPILL_ALL, "MemoryMarshal.GetArrayDataReference array");
-                            compiler.impAppendTree(compiler.gtNewNullCheck(array), CHECK_SPILL_ALL, compiler.impCurStmtDI);
+                            _ = compiler.impAppendTree(compiler.gtNewNullCheck(array), CHECK_SPILL_ALL, compiler.impCurStmtDI);
                             array = arrayClone;
                         }
 
@@ -1928,8 +1928,7 @@ public partial class Compiler
                         assert(index.Type.ActualType is TYP_INT);
                         assert((ptrToSpan.Type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
 
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             jitprintf("with ptr-to-span\n");
                             compiler.gtDispTree(ptrToSpan);
@@ -1937,7 +1936,6 @@ public partial class Compiler
                             jitprintf("and index\n");
                             compiler.gtDispTree(index);
                         }
-#endif
 
                         // We need to use both index and ptr-to-span twice, so clone or spill.
                         // Keep ptr-to-span on the stack so it is evaluated before any index spill.
@@ -2011,13 +2009,11 @@ public partial class Compiler
 
                         var ptrToSpan = compiler.impPopStack().val;
 
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             jitprintf("with ptr-to-span\n");
                             compiler.gtDispTree(ptrToSpan);
                         }
-#endif
 
                         var lengthHnd = compiler.info.compCompHnd->getFieldInClass(clsHnd, 1);
                         var lengthOffset = compiler.info.compCompHnd->getFieldOffset(lengthHnd);
@@ -2089,7 +2085,7 @@ public partial class Compiler
 
                                     if (argCall.IsHelperCall() && compiler.gtIsTypeHandleToRuntimeTypeHelper(argCall))
                                     {
-                                        compiler.impPopStack();
+                                        _ = compiler.impPopStack();
 
                                         // Bash the RET_EXPR's call to no-op since it's unused now
                                         retExpr?.InlineCandidate.BashToNOP();
@@ -2253,7 +2249,7 @@ public partial class Compiler
 
                                 var realHandle = arg.Node;
                                 var storeHandleFld = compiler.gtNewStoreLclFldNode(realHandle.Type, structLcl, offset: 0, realHandle);
-                                compiler.impAppendTree(storeHandleFld, CHECK_SPILL_NONE, compiler.impCurStmtDI);
+                                _ = compiler.impAppendTree(storeHandleFld, CHECK_SPILL_NONE, compiler.impCurStmtDI);
 
                                 retNode = compiler.gtNewLclVarNode(TYP_UNDEF, structLcl);
                                 _ = compiler.impPopStack();
@@ -2385,7 +2381,7 @@ public partial class Compiler
                                 if (compiler.lookupNamedIntrinsic(call._callMethHnd) is NI_System_Threading_Thread_get_CurrentThread)
                                 {
                                     // drop get_CurrentThread() call
-                                    compiler.impPopStack();
+                                    _ = compiler.impPopStack();
 
                                     // Inline candidates are also roots in the import statement list.
                                     var statement = compiler.impStmtList;
@@ -2408,7 +2404,7 @@ public partial class Compiler
 
                                     if (tidCall.IsInlineCandidate)
                                     {
-                                        compiler.impAppendTree(tidCall, CHECK_SPILL_ALL, compiler.impCurStmtDI, false);
+                                        _ = compiler.impAppendTree(tidCall, CHECK_SPILL_ALL, compiler.impCurStmtDI, false);
                                         var tidRetExpr = compiler.gtNewInlineCandidateReturnExpr(tidCall, TYP_INT);
                                         var candidateInfo = tidCall.SingleInlineCandidateInfo;
                                         assert(candidateInfo is not null);
@@ -3145,7 +3141,7 @@ public partial class Compiler
                                 if (boxTypeHandle is not null)
                                 {
                                     // Note we don't need to play the TYP_STRUCT games here like do for LDTOKEN since the return value of this operator is Type, not RuntimeTypeHandle.
-                                    compiler.impPopStack();
+                                    _ = compiler.impPopStack();
                                     retNode = compiler.gtNewHelperCallNode(TYP_REF, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, boxTypeHandle);
                                 }
                             }
@@ -3181,8 +3177,7 @@ public partial class Compiler
                             }
                         }
 
-#if DEBUG
-                        if (retNode is not null)
+                        if (Configuration.DEBUG && (retNode is not null))
                         {
                             JITDUMP("Optimized result for call to GetType is\n");
 
@@ -3191,7 +3186,6 @@ public partial class Compiler
                                 compiler.gtDispTree(retNode);
                             }
                         }
-#endif
 
                         // Else expand as an intrinsic, unless the call is constrained,
                         // in which case we defer expansion to allow impImportCall do the
@@ -3481,7 +3475,7 @@ public partial class Compiler
 
                         if (op1.Oper.IsCnsFltOrDbl)
                         {
-                            compiler.impPopStack();
+                            _ = compiler.impPopStack();
 
                             var f64Cns = op1.AsDblCon().DconVal;
                             retNode = compiler.gtNewLconNode(BitConverter.DoubleToInt64Bits(f64Cns));
@@ -3489,7 +3483,7 @@ public partial class Compiler
                         else if (Configuration.TARGET_64BIT)
                         {
                             // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
-                            compiler.impPopStack();
+                            _ = compiler.impPopStack();
 
                             op1 = compiler.impImplicitR4orR8Cast(op1, TYP_DOUBLE);
                             retNode = compiler.gtNewBitCastNode(TYP_LONG, op1);
@@ -3521,7 +3515,7 @@ public partial class Compiler
 
                         if (op1.Oper.IsIntegralConst)
                         {
-                            compiler.impPopStack();
+                            _ = compiler.impPopStack();
 
                             var i64Cns = op1.AsIntConCommon().LngValue;
                             retNode = compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(i64Cns));

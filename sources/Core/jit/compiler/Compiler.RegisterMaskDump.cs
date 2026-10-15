@@ -3,11 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public void dumpRegMask(SingleTypeRegSet regs, var_types type)
     {
         if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeIsMask(type))
@@ -21,6 +23,7 @@ public partial class Compiler
         dumpRegMask(new regMaskTP(regs));
     }
 
+    [Conditional("DEBUG")]
     public void dumpRegMask(regMaskTP regs)
     {
         if (!Configuration.TARGET_AMD64)
@@ -57,5 +60,4 @@ public partial class Compiler
             dspRegMask(regs);
         }
     }
-#endif
 }

@@ -45,8 +45,6 @@ global using CallSiteDebugInfoTable = System.Collections.Generic.Dictionary<RyuJ
 
 global using VarNumToScopeDscMap = System.Collections.Generic.Dictionary<int, RyuJitSharp.Compiler.VarScopeMapInfo>;
 
-#if DEBUG
 global using NodeToIntMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, int>;
-#endif
 
 global using FpStructLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, System.Runtime.CompilerServices.StrongBox<RyuJitSharp.CORINFO_FPSTRUCT_LOWERING>>;
