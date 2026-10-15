@@ -13,8 +13,7 @@ public partial class Compiler
         var success = info.compCompHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHandle, descriptor);
         noway_assert(success);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP($"**** getSystemVAmd64PassStructInRegisterDescriptor({FMT_DSP_PTR(structHandle)} ({eeGetClassName(structHandle)}), ...) =>\n");
             JITDUMP($"        passedInRegisters = {dspBool(descriptor->passedInRegisters)}\n");
@@ -39,7 +38,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
     }
 
     public unsafe void eeGetSystemVAmd64PassStructInRegisterDescriptor(

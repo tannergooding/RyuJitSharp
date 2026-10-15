@@ -48,12 +48,10 @@ public partial class Emitter
                 assert(emitCurIG is not null);
                 assert((id.idIns() != INS_align) && ((emitLastAlignedIg is null) || emitCurIG.IsAfter(emitLastAlignedIg)));
             }
-#if DEBUG || DEBUG_EMIT
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 jitprintf($"Instruction predicted size = {estimatedSize}, actual = {actualSize}\n");
             }
-#endif
             // Adjust per instruction, not per group, so debug descriptor sizes cannot
             // affect the forward jump distances observed later in the same group.
             var offsShrinkage = unchecked((int)(estimatedSize - actualSize));
@@ -499,11 +497,7 @@ public partial class Emitter
                 emitCurIG = ig;
                 var descriptors = ig.igData.AsSpan();
                 assert(descriptors.Length == ig.igInsCnt);
-                if (!compiler.opts.disAsm
-#if DEBUG
-                    && !compiler.verbose
-#endif
-                    )
+                if (!compiler.opts.disAsm && !(Configuration.DEBUG && compiler.verbose))
                 {
                     for (var index = 0; index < ig.igInsCnt; index++)
                     {
@@ -540,15 +534,12 @@ public partial class Emitter
                         }
 #endif
                         _ = emitIssue1Instr(ig, id, &cp);
-                        if ((compiler.opts.disAsm
+                        if ((compiler.opts.disAsm || (Configuration.DEBUG && compiler.verbose)) &&
 #if DEBUG
-                            || compiler.verbose
+                            (compiler.opts.disAddr || compiler.opts.disAlignment))
+#else
+                            compiler.opts.disAlignment)
 #endif
-                            ) && (
-#if DEBUG
-                            compiler.opts.disAddr ||
-#endif
-                            compiler.opts.disAlignment))
                         {
                             var afterInstrAddr = (nuint)cp;
                             var curIns = id.idIns();

@@ -223,12 +223,13 @@ public partial class Compiler
                     assert(apLocal is not null);
                 }
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG)
                 {
-                    optDumpAssertionIndices("Assertions in: ", apLocal);
+                    if (verbose)
+                    {
+                        optDumpAssertionIndices("Assertions in: ", apLocal);
+                    }
                 }
-#endif
             }
         }
 

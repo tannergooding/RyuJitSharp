@@ -119,11 +119,14 @@ public partial struct Disassembler
             _ = InitCoredistoolsDisasm();
         }
 
-#if DEBUG
-        _diffable = compiler.opts.dspDiffable;
-#else
-        _diffable = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _diffable = compiler.opts.dspDiffable;
+        }
+        else
+        {
+            _diffable = true;
+        }
 
 #if DEBUG
         var fileName = JitConfig.JitLateDisasmTo;

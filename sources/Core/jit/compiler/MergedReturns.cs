@@ -152,8 +152,7 @@ public sealed class MergedReturns
         _compiler.fgInsertStmtAtEnd(newReturnBB, _compiler.gtNewStmt(returnExpr));
         returnExpr.Flags |= GTF_RET_MERGED;
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("\nmergeReturns statement tree ");
             Compiler.printTreeId(returnExpr);
@@ -161,7 +160,6 @@ public sealed class MergedReturns
             _compiler.gtDispTree(returnExpr);
             jitprintf("\n");
         }
-#endif
         assert(index < _maxReturns.Value);
         _returnBlocks[index] = newReturnBB;
         return newReturnBB;

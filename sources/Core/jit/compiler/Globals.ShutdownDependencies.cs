@@ -4,9 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if COUNT_AST_OPERS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_MEM_ALLOC || EMITTER_STATS
-#if EMITTER_STATS
 using System.IO;
-#endif
 
 namespace RyuJitSharp;
 

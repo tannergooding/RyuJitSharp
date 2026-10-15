@@ -79,13 +79,11 @@ public partial class Emitter
                 {
                     assert(_compiler is not null);
                 }
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler!.verbose)
                 {
                     assert(ig is not null);
                     jitprintf($"emitSplit: can't split at IG{ig.GetDisplayId():D2}; we don't have a candidate to report\n");
                 }
-#endif
                 return;
             }
 
@@ -95,12 +93,10 @@ public partial class Emitter
                 {
                     assert(_compiler is not null);
                 }
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler!.verbose)
                 {
                     jitprintf($"emitSplit: can't split at IG{igLastCandidate.GetDisplayId():D2}; we already reported it\n");
                 }
-#endif
                 return;
             }
 
@@ -112,12 +108,10 @@ public partial class Emitter
                 {
                     assert(_compiler is not null);
                 }
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler!.verbose)
                 {
                     jitprintf($"emitSplit: can't split at IG{igLastCandidate.GetDisplayId():D2}; zero-sized candidate\n");
                 }
-#endif
                 return;
             }
 
@@ -125,13 +119,11 @@ public partial class Emitter
             {
                 assert(_compiler is not null);
             }
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler!.verbose)
             {
                 jitprintf($"emitSplit: split at IG{igLastCandidate.GetDisplayId():D2} is size {candidateSize:x}, "
                     + $"{(candidateSize >= maxSplitSize ? "larger" : "less")} than requested maximum size of {maxSplitSize:x}\n");
             }
-#endif
 
             // The value handed to the callback remains valid independently of this invocation.
             var location = new emitLocation(igLastCandidate);

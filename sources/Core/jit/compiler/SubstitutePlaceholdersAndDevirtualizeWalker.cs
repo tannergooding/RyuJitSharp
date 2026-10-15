@@ -73,13 +73,11 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
 
             if (tryLateDevirt)
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     jitprintf("**** Late devirt opportunity\n");
                     _compiler.gtDispTree(call);
                 }
-#endif
 
                 var lateDevirtualizationInfo = call._lateDevirtualizationInfo;
                 assert(lateDevirtualizationInfo is not null);
@@ -304,28 +302,29 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
             UpdateInlineReturnExpressionPlaceHolder(ref use, user);
         }
 
-#if DEBUG
-        // Make sure we don't have a tree like so: V05 = (, , , retExpr);
-        // Since we only look one level above for the parent for '=' and
-        // do not check if there is a series of COMMAs. See above.
-        // Importer and FlowGraph will not generate such a tree, so just
-        // leaving an assert in here. This can be fixed by looking ahead
-        // when we visit stores similar to AttachStructInlineeToStore.
-
-        if (Configuration.FEATURE_MULTIREG_RET && tree.Oper.IsStore)
+        if (Configuration.DEBUG)
         {
-            var value = tree.Data;
+            // Make sure we don't have a tree like so: V05 = (, , , retExpr);
+            // Since we only look one level above for the parent for '=' and
+            // do not check if there is a series of COMMAs. See above.
+            // Importer and FlowGraph will not generate such a tree, so just
+            // leaving an assert in here. This can be fixed by looking ahead
+            // when we visit stores similar to AttachStructInlineeToStore.
 
-            if (value.Oper is GT_COMMA)
+            if (Configuration.FEATURE_MULTIREG_RET && tree.Oper.IsStore)
             {
-                var effectiveValue = value.EffectiveVal;
+                var value = tree.Data;
 
-                noway_assert(!varTypeIsStruct(effectiveValue.Type) ||
-                             (effectiveValue.Oper is not GT_RET_EXPR) ||
-                             !effectiveValue.AsRetExpr().InlineCandidate.IsMultiRegCall);
+                if (value.Oper is GT_COMMA)
+                {
+                    var effectiveValue = value.EffectiveVal;
+
+                    noway_assert(!varTypeIsStruct(effectiveValue.Type) ||
+                                 (effectiveValue.Oper is not GT_RET_EXPR) ||
+                                 !effectiveValue.AsRetExpr().InlineCandidate.IsMultiRegCall);
+                }
             }
         }
-#endif
 
         return Compiler.fgWalkResult.WALK_CONTINUE;
     }

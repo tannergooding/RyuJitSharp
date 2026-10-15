@@ -991,24 +991,25 @@ public partial class Compiler
 
             fpBased = varDsc.lvFramePointerBased;
 
-#if DEBUG
-            if (Configuration.FEATURE_FIXED_OUT_ARGS && (varNum == lvaOutgoingArgSpaceVar))
+            if (Configuration.DEBUG)
             {
-                assert(!fpBased);
-            }
-            else
-            {
-                if (Configuration.DOUBLE_ALIGN)
+                if (Configuration.FEATURE_FIXED_OUT_ARGS && (varNum == lvaOutgoingArgSpaceVar))
                 {
-                    assert(fpBased == (IsFramePointerUsed ||
-                        (genDoubleAlign && varDsc.lvIsParam && !varDsc.lvIsRegArg)));
+                    assert(!fpBased);
                 }
-                else if (Configuration.TARGET_X86)
+                else
                 {
-                    assert(fpBased == IsFramePointerUsed);
+                    if (Configuration.DOUBLE_ALIGN)
+                    {
+                        assert(fpBased == (IsFramePointerUsed ||
+                            (genDoubleAlign && varDsc.lvIsParam && !varDsc.lvIsRegArg)));
+                    }
+                    else if (Configuration.TARGET_X86)
+                    {
+                        assert(fpBased == IsFramePointerUsed);
+                    }
                 }
             }
-#endif
 
             varOffset = varDsc.StackOffset;
         }
@@ -3053,26 +3054,27 @@ public partial class Compiler
     {
         ref var varDsc = ref lvaGetDesc(varNum);
 
-#if DEBUG
-        if (opts.IsOSR)
+        if (Configuration.DEBUG)
         {
-            if (varDsc.lvIsOSRLocal)
+            if (opts.IsOSR)
             {
-                // Sanity check for promoted fields of OSR locals.
-                //
-                if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
-                    (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
+                if (varDsc.lvIsOSRLocal)
                 {
-                    assert(varDsc.lvIsStructField);
-                    assert(varDsc.lvParentLcl < info.compLocalsCount);
+                    // Sanity check for promoted fields of OSR locals.
+                    //
+                    if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
+                        (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
+                    {
+                        assert(varDsc.lvIsStructField);
+                        assert(varDsc.lvParentLcl < info.compLocalsCount);
+                    }
                 }
             }
+            else
+            {
+                assert(!varDsc.lvIsOSRLocal);
+            }
         }
-        else
-        {
-            assert(!varDsc.lvIsOSRLocal);
-        }
-#endif
 
         return varDsc.lvIsOSRLocal;
     }

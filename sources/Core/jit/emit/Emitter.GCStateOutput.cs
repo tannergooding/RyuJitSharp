@@ -74,7 +74,6 @@ public partial class Emitter
         {
             return;
         }
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             assert(gcType is GCT_GCREF or GCT_BYREF);
@@ -115,6 +114,5 @@ public partial class Emitter
             }
             assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
         }
-#endif
     }
 }

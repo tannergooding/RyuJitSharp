@@ -245,23 +245,23 @@ public sealed partial class FlowGraphNaturalLoops
             }
         }
 
-#if DEBUG
-        if (loops.NumLoops > 0)
+        if (Configuration.DEBUG)
         {
-            JITDUMP($"\nFound {loops.NumLoops} loops\n");
-        }
+            if (loops.NumLoops > 0)
+            {
+                JITDUMP($"\nFound {loops.NumLoops} loops\n");
+            }
 
-        if (loops._improperLoopHeaders > 0)
-        {
-            JITDUMP($"Rejected {loops._improperLoopHeaders} loop headers\n");
-        }
+            if (loops._improperLoopHeaders > 0)
+            {
+                JITDUMP($"Rejected {loops._improperLoopHeaders} loop headers\n");
+            }
 
-        if (comp.verbose)
-        {
-            Dump(loops);
+            if (comp.verbose)
+            {
+                Dump(loops);
+            }
         }
-
-#endif
         return loops;
     }
 

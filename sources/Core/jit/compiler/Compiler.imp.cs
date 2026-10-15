@@ -2928,12 +2928,13 @@ public partial class Compiler
             }
             helperMap[helperCallHnd] = managedCallHnd;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG)
             {
-                JITDUMP($"Converting helperCall [{call.TreeId:D6}] to user call [{eeGetMethodFullName(managedCallHnd)}] and marking for inlining\n");
+                if (verbose)
+                {
+                    JITDUMP($"Converting helperCall [{call.TreeId:D6}] to user call [{eeGetMethodFullName(managedCallHnd)}] and marking for inlining\n");
+                }
             }
-#endif
         }
     }
 
@@ -3388,11 +3389,10 @@ public partial class Compiler
             JITDUMP($"    Class not final or exact{(isInterface ? "" : ", and method not final")}\n");
 
 #if DEBUG
-            // If we know the object type exactly, we generally expect we can devirtualize.
-            // (don't when doing late devirt as we won't have an owner type (yet))
-
             if (!isLateDevirtualization && (isExact || objClassIsFinal) && (JitConfig.JitNoteFailedExactDevirtualization is not 0))
             {
+                // If we know the object type exactly, we generally expect we can devirtualize.
+                // (don't when doing late devirt as we won't have an owner type (yet))
                 jitprintf($"@@@ Exact/Final devirt failure in {info.compFullName} at [{call.TreeId:D6}] $ {DevirtualizationDetailToString(dvInfo.detail)}\n");
             }
 #endif
@@ -11800,7 +11800,7 @@ public partial class Compiler
 
         // Get an entry to add to the pending list
 
-        var dsc = null as PendingDsc;
+        PendingDsc dsc;
 
         if (impPendingFree is not null)
         {
@@ -11834,12 +11834,10 @@ public partial class Compiler
         // the final time...)
         block.RemoveFlags(BBF_IMPORTED);
 
-#if DEBUG
         if (false && verbose)
         {
             jitprintf($"Added PendingDsc - {dspOffset(dsc.GetHashCode()):x8} for {FMT_BB(block.bbNum)}\n");
         }
-#endif
     }
 
     public GenTreeCall impImportIndirectCall(in CORINFO_SIG_INFO sig, in DebugInfo di = default)
@@ -16919,7 +16917,7 @@ public partial class Compiler
 
         // Get an entry to add to the pending list
 
-        var dsc = null as PendingDsc;
+        PendingDsc dsc;
 
         if (impPendingFree is not null)
         {
@@ -16949,12 +16947,10 @@ public partial class Compiler
         // the final time...)
         block.RemoveFlags(BBF_IMPORTED);
 
-#if DEBUG
         if (false && verbose)
         {
             jitprintf($"Added PendingDsc - {dspOffset(dsc.GetHashCode()):x8} for {FMT_BB(block.bbNum)}\n");
         }
-#endif
     }
 
     /// <summary>Mark the block as unimported.</summary>
@@ -17267,13 +17263,14 @@ public partial class Compiler
                     return false;
                 }
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG)
                 {
-                    jitprintf("\n\n    Inlinee Return expression (before normalization)  =>\n");
-                    gtDispTree(op2);
+                    if (verbose)
+                    {
+                        jitprintf("\n\n    Inlinee Return expression (before normalization)  =>\n");
+                        gtDispTree(op2);
+                    }
                 }
-#endif
 
                 var inlCandInfo = impInlineInfo.inlineCandidateInfo;
                 var inlRetExpr = inlCandInfo.retExpr;
@@ -17429,13 +17426,14 @@ public partial class Compiler
                         }
                     }
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG)
                     {
-                        jitprintf("\n\n    Inlinee Return expression (after normalization) =>\n");
-                        gtDispTree(op2);
+                        if (verbose)
+                        {
+                            jitprintf("\n\n    Inlinee Return expression (after normalization) =>\n");
+                            gtDispTree(op2);
+                        }
                     }
-#endif
 
                     // Report the return expression
                     inlRetExpr.SubstExpr = op2;
@@ -19987,13 +19985,14 @@ public partial class Compiler
             call._entryPoint = derivedCallInfo.codePointerLookup.constLookup;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("... after devirt...\n");
-            gtDispTree(call);
+            if (verbose)
+            {
+                jitprintf("... after devirt...\n");
+                gtDispTree(call);
+            }
         }
-#endif
     }
 
     public unsafe GenTree? impTransformThis(GenTree thisPtr, in CORINFO_RESOLVED_TOKEN constrainedResolvedToken, CORINFO_THIS_TRANSFORM transform)
@@ -22364,12 +22363,11 @@ public partial class Compiler
         {
             JITDUMP("Not recognized - inlining boost\n");
         }
-#if DEBUG
-        else if (Configuration.FEATURE_HW_INTRINSICS && (result > NI_HW_INTRINSIC_START) && (result < NI_HW_INTRINSIC_END))
+        else if (Configuration.DEBUG && Configuration.FEATURE_HW_INTRINSICS &&
+            (result > NI_HW_INTRINSIC_START) && (result < NI_HW_INTRINSIC_END))
         {
             JITDUMP($"Recognized hardware intrinsic: {HWIntrinsicInfo.lookupName(result)} ({(uint)result})\n");
         }
-#endif
         else
         {
             JITDUMP("Recognized\n");

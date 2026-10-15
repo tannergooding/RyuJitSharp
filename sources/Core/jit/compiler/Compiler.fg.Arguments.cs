@@ -481,13 +481,14 @@ public partial struct CallArgs
             }
             if (argument.NeedTmp)
             {
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    jitprintf("Argument with 'side effect'...\n");
-                    compiler.gtDispTree(value);
+                    if (compiler.verbose)
+                    {
+                        jitprintf("Argument with 'side effect'...\n");
+                        compiler.gtDispTree(value);
+                    }
                 }
-#endif
                 var effectiveValue = value.EffectiveVal;
                 if (effectiveValue.Oper is GT_FIELD_LIST)
                 {
@@ -536,13 +537,14 @@ public partial struct CallArgs
 
                     late = compiler.gtNewLclvNode(localType, temporary);
                 }
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    jitprintf("\n  Evaluate to a temp:\n");
-                    compiler.gtDispTree(setup);
+                    if (compiler.verbose)
+                    {
+                        jitprintf("\n  Evaluate to a temp:\n");
+                        compiler.gtDispTree(setup);
+                    }
                 }
-#endif
             }
             else
             {
@@ -554,14 +556,15 @@ public partial struct CallArgs
                 }
 
                 late = value;
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    jitprintf(argument.AbiInfo.HasAnyRegisterSegment ? "Deferred argument:\n" : "Deferred stack argument:\n");
-                    compiler.gtDispTree(value);
-                    jitprintf("Moved to late list\n");
+                    if (compiler.verbose)
+                    {
+                        jitprintf(argument.AbiInfo.HasAnyRegisterSegment ? "Deferred argument:\n" : "Deferred stack argument:\n");
+                        compiler.gtDispTree(value);
+                        jitprintf("Moved to late list\n");
+                    }
                 }
-#endif
                 argument.EarlyNode = null;
             }
 
@@ -578,22 +581,23 @@ public partial struct CallArgs
             lateTail = argument;
             lateTail = ref argument.LateNextRef;
         }
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("\nRegister placement order:");
-            foreach (var argument in LateArgs)
+            if (compiler.verbose)
             {
-                foreach (var segment in argument.AbiInfo.Segments)
+                jitprintf("\nRegister placement order:");
+                foreach (var argument in LateArgs)
                 {
-                    if (segment.IsPassedInRegister)
+                    foreach (var segment in argument.AbiInfo.Segments)
                     {
-                        jitprintf($" {segment.Register.Name}");
+                        if (segment.IsPassedInRegister)
+                        {
+                            jitprintf($" {segment.Register.Name}");
+                        }
                     }
                 }
+                jitprintf("\n");
             }
-            jitprintf("\n");
         }
-#endif
     }
 }

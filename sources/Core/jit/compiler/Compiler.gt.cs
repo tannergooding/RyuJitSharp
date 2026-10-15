@@ -1081,9 +1081,10 @@ public partial class Compiler
 
                 default:
                 {
-#if DEBUG
-                    compiler.gtDispTree(tree);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        compiler.gtDispTree(tree);
+                    }
                     NO_WAY("unexpected special operator");
                     break;
                 }

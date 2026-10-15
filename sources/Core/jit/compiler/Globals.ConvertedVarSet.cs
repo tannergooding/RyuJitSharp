@@ -12,34 +12,35 @@ public static partial class Globals
     [Conditional("DEBUG")]
     public static void dumpConvertedVarSet(Compiler compiler, VARSET_TP vars)
     {
-#if DEBUG
-        var localNumbers = new bool[compiler.lvaCount];
-        _ = VarSetOps.VisitBits(compiler, vars, index =>
+        if (Configuration.DEBUG)
         {
-            assert(compiler.lvaTrackedToVarNum is not null);
-            localNumbers[compiler.lvaTrackedToVarNum[index]] = true;
-
-            return true;
-        });
-
-        jitprintf("{");
-        var first = true;
-
-        for (var localNumber = 0; localNumber < localNumbers.Length; localNumber++)
-        {
-            if (localNumbers[localNumber])
+            var localNumbers = new bool[compiler.lvaCount];
+            _ = VarSetOps.VisitBits(compiler, vars, index =>
             {
-                if (!first)
+                assert(compiler.lvaTrackedToVarNum is not null);
+                localNumbers[compiler.lvaTrackedToVarNum[index]] = true;
+
+                return true;
+            });
+
+            jitprintf("{");
+            var first = true;
+
+            for (var localNumber = 0; localNumber < localNumbers.Length; localNumber++)
+            {
+                if (localNumbers[localNumber])
                 {
-                    jitprintf(" ");
+                    if (!first)
+                    {
+                        jitprintf(" ");
+                    }
+
+                    jitprintf($"V{localNumber:D2}");
+                    first = false;
                 }
-
-                jitprintf($"V{localNumber:D2}");
-                first = false;
             }
-        }
 
-        jitprintf("}");
-#endif
+            jitprintf("}");
+        }
     }
 }

@@ -174,7 +174,6 @@ public partial class Compiler
             }
         }
 
-#if REARRANGE_ADDS
         // ((x + constant) + y) -> ((x + y) + constant), without an
         // intermediate byref that a GC could fail to update.
         if (fgGlobalMorph && (operation is GT_ADD) && !tree.HasOverflowCheck && (op1.Oper is GT_ADD)
@@ -191,7 +190,6 @@ public partial class Compiler
                 op2 = tree.AsOp().Op2;
             }
         }
-#endif
 
         switch (operation)
         {

@@ -472,9 +472,10 @@ public partial class Compiler
             if (call._returnType is not TYP_VOID)
             {
                 assert(fgMorphStmt is not null);
-#if DEBUG
-                JITDUMP($"Inlining [{call.TreeId:D6}] failed, so bashing {FMT_STMT(fgMorphStmt.Id)} to NOP\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    JITDUMP($"Inlining [{call.TreeId:D6}] failed, so bashing {FMT_STMT(fgMorphStmt.Id)} to NOP\n");
+                }
 
                 // Detach the GT_CALL tree from the original statement by
                 // hanging a "nothing" node to it. Later the "nothing" node will be removed
@@ -12685,14 +12686,15 @@ public partial class Compiler
             var initNode = gtNewStoreLclVarNode(lvaMonAcquired, gtNewZeroConNode(typeMonAcquired));
             fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(initNode));
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG)
             {
-                jitprintf($"\nSynchronized method - Add 'acquired' initialization in first block {fgFirstBB.dspToString()}\n");
-                gtDispTree(initNode);
-                jitprintf("\n");
+                if (verbose)
+                {
+                    jitprintf($"\nSynchronized method - Add 'acquired' initialization in first block {fgFirstBB.dspToString()}\n");
+                    gtDispTree(initNode);
+                    jitprintf("\n");
+                }
             }
-#endif
         }
 
         // Keep handler uses from inhibiting enregistration of the original this.
@@ -12734,14 +12736,15 @@ public partial class Compiler
         var target = info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(TYP_REF, thisVar);
         GenTree tree = gtNewHelperCallNode(TYP_VOID, enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, target, varAddrNode);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"\nSynchronized method - Add monitor {(enter ? "enter" : "exit")} call to block {block.dspToString()}\n");
-            gtDispTree(tree);
-            jitprintf("\n");
+            if (verbose)
+            {
+                jitprintf($"\nSynchronized method - Add monitor {(enter ? "enter" : "exit")} call to block {block.dspToString()}\n");
+                gtDispTree(tree);
+                jitprintf("\n");
+            }
         }
-#endif
         if (enter)
         {
             fgInsertStmtAtBeg(block, gtNewStmt(tree));
@@ -12838,14 +12841,15 @@ public partial class Compiler
 
         fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(tree));
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"\nReverse PInvoke method - Add reverse pinvoke enter in first basic block {fgFirstBB.dspToString()}\n");
-            gtDispTree(tree);
-            jitprintf("\n");
+            if (verbose)
+            {
+                jitprintf($"\nReverse PInvoke method - Add reverse pinvoke enter in first basic block {fgFirstBB.dspToString()}\n");
+                gtDispTree(tree);
+                jitprintf("\n");
+            }
         }
-#endif
         tree = gtNewLclVarAddrNode(TYP_I_IMPL, lvaReversePInvokeFrameVar);
         var reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TRACK_TRANSITIONS)
             ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
@@ -12854,14 +12858,15 @@ public partial class Compiler
         assert(genReturnBB is not null);
         _ = fgNewStmtNearEnd(genReturnBB, tree);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"\nReverse PInvoke method - Add reverse pinvoke exit in return basic block {genReturnBB.dspToString()}\n");
-            gtDispTree(tree);
-            jitprintf("\n");
+            if (verbose)
+            {
+                jitprintf($"\nReverse PInvoke method - Add reverse pinvoke exit in return basic block {genReturnBB.dspToString()}\n");
+                gtDispTree(tree);
+                jitprintf("\n");
+            }
         }
-#endif
     }
 
     public unsafe PhaseStatus fgAddInternal()
@@ -12882,14 +12887,15 @@ public partial class Compiler
 
             var store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(TYP_UNDEF, info.compThisArg));
             fgInsertStmtAtBeg(fgFirstBB, gtNewStmt(store));
-#if DEBUG
-            JITDUMP($"\nCopy \"this\" to lvaArg0Var in first basic block {fgFirstBB.dspToString()}\n");
-            if (verbose)
+            if (Configuration.DEBUG)
             {
-                gtDispTree(store);
+                JITDUMP($"\nCopy \"this\" to lvaArg0Var in first basic block {fgFirstBB.dspToString()}\n");
+                if (verbose)
+                {
+                    gtDispTree(store);
+                }
+                JITDUMP("\n");
             }
-            JITDUMP("\n");
-#endif
             madeChanges = true;
         }
 

@@ -55,14 +55,15 @@ public partial struct CILJit
             return;
         }
 
-#if HOST_UNIX
-        var err = PAL_InitializeDLL();
-
-        if (err != 0)
+        if (!Configuration.HOST_WINDOWS)
         {
-            return;
+            var err = PAL_InitializeDLL();
+
+            if (err != 0)
+            {
+                return;
+            }
         }
-#endif
 
         s_jitHost = jitHost;
 

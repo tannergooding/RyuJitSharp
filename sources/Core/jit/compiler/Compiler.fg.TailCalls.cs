@@ -15,13 +15,14 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
-        if (callee.IsTailPrefixedCall)
+        if (Configuration.DEBUG)
         {
-            assert(impTailCallRetTypeCompatible(false, info.compRetType, info.compMethodInfo->args.retTypeClass,
-                info.compCallConv, callee._returnType, callee._retClsHnd, callee.UnmanagedCallConv));
+            if (callee.IsTailPrefixedCall)
+            {
+                assert(impTailCallRetTypeCompatible(false, info.compRetType, info.compMethodInfo->args.retTypeClass,
+                    info.compCallConv, callee._returnType, callee._retClsHnd, callee.UnmanagedCallConv));
+            }
         }
-#endif
         assert(!callee.Args.AreArgsComplete);
         callee.Args.AddFinalArgsAndDetermineAbiInfo(this, callee);
 

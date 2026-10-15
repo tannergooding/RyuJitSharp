@@ -162,10 +162,11 @@ public partial class Emitter
 
     private void perfScoreUnhandledInstruction(instrDesc id, ref insExecutionCharacteristics result)
     {
-#if DEBUG
-        jitprintf($"PerfScore: unhandled instruction: {codeGen.genInsDisplayName(id)}, format {emitIfName(id.idInsFmt())}");
-        assert(false, "PerfScore: unhandled instruction");
-#endif
+        if (Configuration.DEBUG)
+        {
+            jitprintf($"PerfScore: unhandled instruction: {codeGen.genInsDisplayName(id)}, format {emitIfName(id.idInsFmt())}");
+            assert(false, "PerfScore: unhandled instruction");
+        }
         result.insThroughput = PERFSCORE_THROUGHPUT_1C;
         result.insLatency = PERFSCORE_LATENCY_1C;
     }
