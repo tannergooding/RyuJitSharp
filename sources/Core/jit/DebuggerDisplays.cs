@@ -173,11 +173,7 @@ public partial class GenTree
         {
             var valueNumbers = $"VNP=[L: {_vnPair.Liberal:x}, C: {_vnPair.Conservative:x}]";
 
-#if DEBUG
-            var prefix = $"{TreeId}: ";
-#else
-            var prefix = "";
-#endif
+            var prefix = Configuration.DEBUG ? $"{TreeId}: " : "";
 
             if (Oper is GT_CNS_STR)
             {
