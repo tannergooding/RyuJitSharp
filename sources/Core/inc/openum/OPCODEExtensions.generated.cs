@@ -323,11 +323,9 @@ public static partial class OPCODEExtensions
         InlineNone, // CEE_UNUSED54
         InlineNone, // CEE_UNUSED55
         InlineNone, // CEE_UNUSED70
-#if !OPDEF_REAL_OPCODES_ONLY
         InlineNone, // CEE_ILLEGAL
         InlineNone, // CEE_MACRO_END
         InlineNone, // CEE_CODE_LABEL
-#endif
     ];
 
     private static ReadOnlySpan<OpFlow> s_flowKinds => [
@@ -622,11 +620,9 @@ public static partial class OPCODEExtensions
         FLOW_NEXT, // CEE_UNUSED54
         FLOW_NEXT, // CEE_UNUSED55
         FLOW_NEXT, // CEE_UNUSED70
-#if !OPDEF_REAL_OPCODES_ONLY
         FLOW_META, // CEE_ILLEGAL
         FLOW_META, // CEE_MACRO_END
         FLOW_META, // CEE_CODE_LABEL
-#endif
     ];
 
     private static readonly string[] s_names = [
@@ -921,11 +917,9 @@ public static partial class OPCODEExtensions
         "unused", // CEE_UNUSED54
         "unused", // CEE_UNUSED55
         "unused", // CEE_UNUSED70
-#if !OPDEF_REAL_OPCODES_ONLY
         "illegal", // CEE_ILLEGAL
         "endmac", // CEE_MACRO_END
         "codelabel", // CEE_CODE_LABEL
-#endif
     ];
 #endif
 
@@ -1221,10 +1215,8 @@ public static partial class OPCODEExtensions
         InlineNone_size, // CEE_UNUSED54
         InlineNone_size, // CEE_UNUSED55
         InlineNone_size, // CEE_UNUSED70
-#if !OPDEF_REAL_OPCODES_ONLY
         InlineNone_size, // CEE_ILLEGAL
         InlineNone_size, // CEE_MACRO_END
         InlineNone_size, // CEE_CODE_LABEL
-#endif
     ];
 }

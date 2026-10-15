@@ -5225,7 +5225,7 @@ public enum NamedIntrinsic : ushort
 
     private static void GenerateOpcode()
     {
-        var builder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+        var builder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -5256,7 +5256,7 @@ public enum OPCODE
 
     private static void GenerateOpcodeExtensions()
     {
-        var flowKindsBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+        var flowKindsBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -5268,7 +5268,7 @@ public enum OPCODE
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        FLOW_{ctrl}, // {name}");
         });
 
-        var sizesBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+        var sizesBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -5280,7 +5280,7 @@ public enum OPCODE
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {type}_size, // {name}");
         });
 
-        var namesBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+        var namesBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -5292,7 +5292,7 @@ public enum OPCODE
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {nameString}, // {name}");
         });
 
-        var argKindsBuilder = ProcessMacroBasedFile(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
+        var argKindsBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
