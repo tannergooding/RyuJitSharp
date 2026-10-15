@@ -492,9 +492,10 @@ public partial struct GCInfo
 #pragma warning disable IDE0007
         byte* temporary = stackalloc byte[17];
 #pragma warning restore IDE0007
-#if DEBUG
-        temporary[16] = 0xAB;
-#endif
+        if (Configuration.DEBUG)
+        {
+            temporary[16] = 0xAB;
+        }
         var size = gcMakeRegPtrTable(temporary, 0, header, codeSize, ref argTabOffset);
         if (Configuration.DEBUG)
         {
