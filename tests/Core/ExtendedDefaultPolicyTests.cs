@@ -46,6 +46,21 @@ internal static class ExtendedDefaultPolicyTests
         });
     }
 
+    [Test]
+    public static void InlinePolicyDataCollectionStateIsExplicitlyUnavailableInRelease()
+    {
+        var policy = new ProbePolicy(CreateCompiler());
+
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(policy.IsDataCollectionTarget, Is.False);
+        }
+        else
+        {
+            _ = Assert.Throws<InvalidOperationException>(() => _ = policy.IsDataCollectionTarget);
+        }
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(3)]

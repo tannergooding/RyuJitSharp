@@ -17,10 +17,6 @@ public abstract class InlinePolicy
 
     protected bool _isPrejitRoot;
 
-#if DEBUG
-    protected bool _isDataCollectionTarget;
-#endif
-
     protected InlinePolicy(bool isPrejitRoot)
     {
         _isPrejitRoot = isPrejitRoot;
@@ -29,10 +25,19 @@ public abstract class InlinePolicy
     /// <summary>Get the current decision</summary>
     public InlineDecision Decision => _decision;
 
-#if DEBUG
     /// <summary>True if this is the inline targeted by data collection</summary>
-    public bool IsDataCollectionTarget => _isDataCollectionTarget;
-#endif
+    public virtual bool IsDataCollectionTarget
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Inline-policy data-collection state is only available in Debug builds.");
+            }
+
+            return false;
+        }
+    }
 
     public abstract string Name { get; }
 

@@ -22,6 +22,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
     private InlineContext? _inlineContext;
     private IL_OFFSET _offset = BAD_IL_OFFSET;
     private bool _wasForceInline;
+    private bool _isDataCollectionTarget;
 
     public ReplayPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
@@ -51,6 +52,8 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
     }
 
     public override string Name => nameof(ReplayPolicy);
+
+    public override bool IsDataCollectionTarget => _isDataCollectionTarget;
 
     public static void FinalizeXml()
     {

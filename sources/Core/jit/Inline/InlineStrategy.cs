@@ -468,23 +468,24 @@ public sealed partial class InlineStrategy
         {
             _inlineCount++;
 
-#if DEBUG
-            // Keep track of the inline targeted for data collection or,
-            // if we don't have one (yet), the last successful inline.
-            var updateLast = (_lastSuccessfulPolicy is null) || !_lastSuccessfulPolicy.IsDataCollectionTarget;
+            if (Configuration.DEBUG)
+            {
+                // Keep track of the inline targeted for data collection or,
+                // if we don't have one (yet), the last successful inline.
+                var updateLast = (_lastSuccessfulPolicy is null) || !_lastSuccessfulPolicy.IsDataCollectionTarget;
 
-            if (updateLast)
-            {
-                _lastContext = context;
-                _lastSuccessfulPolicy = context._policy;
+                if (updateLast)
+                {
+                    _lastContext = context;
+                    _lastSuccessfulPolicy = context._policy;
+                }
+                else
+                {
+                    // We only expect one inline to be a data collection target.
+                    assert(context._policy is not null);
+                    assert(!context._policy.IsDataCollectionTarget);
+                }
             }
-            else
-            {
-                // We only expect one inline to be a data collection target.
-                assert(context._policy is not null);
-                assert(!context._policy.IsDataCollectionTarget);
-            }
-#endif
 
             // Budget update.
             //
