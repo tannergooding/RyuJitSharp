@@ -13,7 +13,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if DEBUG
     public string emitRegNameRiscV64(regNumber reg, emitAttr size, bool varName)
     {
         RequireRiscV64Target();
@@ -21,7 +20,6 @@ public partial class Emitter
         assert((uint)reg < (uint)REG_RISCV64_COUNT);
         return RiscVRegisterName((uint)reg);
     }
-#endif
 
     private static string RiscVRegisterName(uint reg)
     {

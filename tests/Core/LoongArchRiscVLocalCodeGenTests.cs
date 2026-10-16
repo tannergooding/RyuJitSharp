@@ -236,11 +236,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
-#if DEBUG
     [TestCase(false, null)]
-#else
-    [TestCase(false, null)]
-#endif
     [TestCase(true, "Absolute-address instruction recording requires xarch.")]
     public static void GSCookieCheckReachesTheRiscVEmissionBoundary(bool useCookieAddress, string? expectedBoundary)
     {
@@ -450,11 +446,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = CaptureFatalJitException(() => codeGen.genCodeForInitBlkUnroll(tree));
             if (isVolatile)
             {
-#if DEBUG
                 const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-                const string? expectedBoundary = null;
-#endif
                 AssertRiscVRecorderOutcome(
                     codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -468,11 +460,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
             else
             {
-#if DEBUG
                 const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-                const string? expectedBoundary = null;
-#endif
                 AssertRiscVRecorderOutcome(
                     codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
             }
@@ -584,11 +572,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVRecorderOutcome(
@@ -705,11 +689,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
 
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
@@ -772,12 +752,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(
                 () => codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
-#if DEBUG
             AssertRiscVRecorderOutcome(
                 codeGen, failure, RiscVRecorderDebugBoundary, initialInstructionCount, initialGroupSize);
-#else
-            AssertRiscVRecorderOutcome(codeGen, failure, null, initialInstructionCount, initialGroupSize);
-#endif
 #else
             var failure = Assert.Throws<FatalJitException>(() =>
                 codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
@@ -815,9 +791,10 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             compiler.info.compCompHnd = &context.JitInfo;
             compiler.info.compMatchedVM = true;
             compiler.opts.compReloc = useRelocation;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = enablePcRelAddr;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CompEnablePCRelAddr(ref compiler.opts) = enablePcRelAddr;
+            }
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
                 ?? throw new AssertionException("Missing current instruction buffer.");
@@ -827,11 +804,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = CaptureFatalJitException(() =>
                 codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
 
-#if DEBUG
-            var addressInRange = useRelocation || (useRelocationHint && enablePcRelAddr);
-#else
-            var addressInRange = useRelocation || useRelocationHint;
-#endif
+            var addressInRange = useRelocation ||
+                (useRelocationHint && (!TestConfiguration.IsDebug || enablePcRelAddr));
             if (addressInRange)
             {
                 Assert.That(failure, Is.Null);
@@ -895,11 +869,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 RegNum = REG_S2,
             };
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -950,11 +920,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var tree = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, operand);
 
 #if TARGET_RISCV64
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -994,11 +960,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var tree = new GenTreeIndir(oper, TYP_INT, address, data) { RegNum = REG_S2 };
 
 #if TARGET_RISCV64
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1012,13 +974,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
 #if TARGET_RISCV64
-#if DEBUG
     [TestCase(TYP_LONG, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_INT, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(TYP_LONG, null)]
-    [TestCase(TYP_INT, null)]
-#endif
 #else
     [TestCase(TYP_LONG, "unimplemented on LOONGARCH64 yet")]
 #endif
@@ -1222,11 +1179,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
             var failure = CaptureFatalJitException(
                 () => codeGen.Emitter.emitIns_J_cond_la(INS_bnez, target, REG_S3));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -1255,11 +1208,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
@@ -1328,11 +1277,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(() => emitter.emitIns_R_C(
                 INS_addi, EA_PTRSIZE, REG_S0, REG_NA, fieldHandle));
@@ -1406,11 +1351,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_RISCV64
             var failure = CaptureFatalJitException(() => codeGen.genLclHeap(tree));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
@@ -1450,11 +1391,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             tree.RegNum = isFloating ? REG_F2 : REG_S1;
 
 #if TARGET_RISCV64
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1512,11 +1449,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_RISCV64
             var failure = CaptureFatalJitException(() => codeGen.genCodeForBswap(tree));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
@@ -1562,11 +1495,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
 
 #if TARGET_RISCV64
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForDivMod(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1603,11 +1532,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_RISCV64
             var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
@@ -1648,11 +1573,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_RISCV64
             var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
@@ -1723,11 +1644,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             tree.RegNum = REG_S1;
 
 #if TARGET_RISCV64
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1764,11 +1681,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             tree.Flags |= GTF_RELOP_NAN_UN;
 
 #if TARGET_RISCV64
-#if DEBUG
-            const string expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1823,11 +1736,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForStoreInd(store));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1835,10 +1744,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var barrier = instructionBuffer[initialInstructionCount];
             Assert.That(barrier.idIns(), Is.EqualTo(INS_fence));
             Assert.That(barrier.idAddr().iiaInstrEncode, Is.EqualTo(0x0330000Fu));
-#if !DEBUG
-            var storeInstruction = instructionBuffer[initialInstructionCount + 1];
-            Assert.That(storeInstruction.idIns(), Is.EqualTo(INS_sw));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                var storeInstruction = instructionBuffer[initialInstructionCount + 1];
+                Assert.That(storeInstruction.idIns(), Is.EqualTo(INS_sw));
+            }
 #endif
         });
     }
@@ -1858,11 +1768,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForIndir(load));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -1897,19 +1803,16 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() =>
                 RiscVCodeGenPortTests.EmitTargetLoadStoreOp(emitter, INS_lw, EA_4BYTE, REG_S1, load));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
-#if !DEBUG
-            Assert.That(instructionBuffer.Count - initialInstructionCount,
-                Is.GreaterThanOrEqualTo(minimumInstructionCount));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(instructionBuffer.Count - initialInstructionCount,
+                    Is.GreaterThanOrEqualTo(minimumInstructionCount));
+            }
         });
     }
 
@@ -1929,19 +1832,16 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() =>
                 RiscVCodeGenPortTests.EmitTargetLoadStoreOp(emitter, INS_lw, EA_4BYTE, REG_S1, load));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
-#if !DEBUG
-            Assert.That(instructionBuffer.Count - initialInstructionCount,
-                Is.GreaterThanOrEqualTo(minimumInstructionCount));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(instructionBuffer.Count - initialInstructionCount,
+                    Is.GreaterThanOrEqualTo(minimumInstructionCount));
+            }
         });
     }
 
@@ -1961,18 +1861,15 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() =>
                 RiscVCodeGenPortTests.EmitTargetLoadStoreOp(emitter, INS_sw, EA_4BYTE, REG_S1, store));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
-#if !DEBUG
-            Assert.That(instructionBuffer.Count - initialInstructionCount, Is.GreaterThan(1));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(instructionBuffer.Count - initialInstructionCount, Is.GreaterThan(1));
+            }
         });
     }
 
@@ -1992,9 +1889,10 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             compiler.info.compCompHnd = &context.JitInfo;
             compiler.info.compMatchedVM = true;
             compiler.opts.compReloc = true;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CompEnablePCRelAddr(ref compiler.opts) = true;
+            }
             var address = compiler.gtNewIconHandleNode((nint)context.Address, GTF_ICON_CONST_PTR);
             address.IsContained = true;
             var load = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_S1 };
@@ -2004,18 +1902,15 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() =>
                 RiscVCodeGenPortTests.EmitTargetLoadStoreOp(emitter, INS_lw, EA_4BYTE, REG_S1, load));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
-#if !DEBUG
-            Assert.That(instructionBuffer.Count - initialInstructionCount, Is.EqualTo(1));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(instructionBuffer.Count - initialInstructionCount, Is.EqualTo(1));
+            }
         });
     }
 #endif
@@ -2043,11 +1938,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 tree, regMaskTP.CreateFromRegNum(REG_A1, REG_A1.SingleTypeMask));
             codeGen.GCInfo.gcMarkRegPtrVal(REG_S0, TYP_REF);
 
-#if DEBUG
-            const string expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
             var failure = CaptureFatalJitException(() => codeGen.genCodeForIndexAddr(tree));
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -2070,11 +1961,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Message,
                 Does.Contain("Two-register-immediate instruction recording requires xarch."));
 #else
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
                 ?? throw new AssertionException("Missing current instruction buffer.");
@@ -2191,11 +2078,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
 
             action(compiler, codeGen);
         }
@@ -2339,5 +2222,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
+    private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
 }
 #endif

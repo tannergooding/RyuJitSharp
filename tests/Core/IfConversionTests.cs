@@ -21,10 +21,8 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IfConversionTests
 {
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoIfConversion")]
     private static extern ref int IfConversionEnabled(ref JitConfigValues config);
-#endif
 
     [Test]
     public static void SimpleStoreCreatesSelectAndRemovesSingleArm()
@@ -604,11 +602,12 @@ internal static unsafe class IfConversionTests
 #if TARGET_RISCV64
         EnableZicond(compiler);
 #endif
-#if DEBUG
-        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        IfConversionEnabled(ref JitConfig) = 1;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
+            IfConversionEnabled(ref JitConfig) = 1;
+        }
         JitTls.Compiler = compiler;
         try
         {

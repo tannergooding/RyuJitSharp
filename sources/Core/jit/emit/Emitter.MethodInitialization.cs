@@ -11,11 +11,7 @@ public partial class Emitter
     private static uint emitTotalIGmcnt;
 #endif
 
-    public void emitBegFN(bool hasFramePtr
-#if DEBUG
-        , bool chkAlign
-#endif
-        )
+    public void emitBegFN(bool hasFramePtr, bool chkAlign = false)
     {
         assert(_compiler is not null);
         emitCurIGfreeBase = null;

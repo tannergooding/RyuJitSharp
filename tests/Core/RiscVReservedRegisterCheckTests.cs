@@ -131,11 +131,7 @@ internal static unsafe class RiscVReservedRegisterCheckTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
 
             action(compiler, codeGen);
         }

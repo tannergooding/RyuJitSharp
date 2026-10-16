@@ -130,11 +130,10 @@ internal static unsafe class RiscVCodeGenPortTests
             descriptor.idInsOpt((insOpts)63);
 
             var failure = CaptureFatalJitException(() => DescriptorSize(codeGen.Emitter, descriptor));
-#if DEBUG
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
-#else
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_INTERNALERROR));
-#endif
+            var expectedResult = TestConfiguration.IsDebug
+                ? CORJIT_RECOVERABLEERROR
+                : CORJIT_INTERNALERROR;
+            Assert.That(failure?.Result, Is.EqualTo(expectedResult));
         });
     }
 
@@ -156,11 +155,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() =>
                 emitter.emitIns_S_R_R(ins, EA_8BYTE, REG_A0, tempReg, 0, offset));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var expectedImmediate = tempReg == REG_RISCV64_NA ? 32 + offset : offset;
@@ -214,11 +209,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() =>
                 emitter.emitIns_R_S(ins, EA_8BYTE, REG_A0, 0, offset));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var imm = offset < 0 ? -offset - 8 : baseOffset + offset;
@@ -271,11 +262,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() =>
                 emitter.emitIns_R_I(ins, EA_PTRSIZE, REG_A0, immediate, INS_OPTS_NONE));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var descriptor = descriptors[^1];
@@ -286,19 +273,11 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_INT, -2048, null, true)]
     [TestCase(TYP_INT, 2047, null, true)]
     [TestCase(TYP_BYREF, 42, null, true)]
     [TestCase(TYP_INT, -2049, null, true)]
     [TestCase(TYP_LONG, 2048, null, true)]
-#else
-    [TestCase(TYP_INT, -2048, null, true)]
-    [TestCase(TYP_INT, 2047, null, true)]
-    [TestCase(TYP_BYREF, 42, null, true)]
-    [TestCase(TYP_INT, -2049, null, true)]
-    [TestCase(TYP_LONG, 2048, null, true)]
-#endif
     public static void IntegerConstantNodeDispatchPreservesRiscVImmediateRecordingBoundary(
         var_types type,
         long immediate,
@@ -364,15 +343,12 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
             var call = new GenTreeCall(TYP_VOID)
             {
+                _callSig = new StrongBox<CORINFO_SIG_INFO>(new CORINFO_SIG_INFO { numArgs = 0 }),
                 _callType = CT_USER_FUNC,
                 _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x4000,
                 _directCallAddress = (void*)0x1234,
                 _returnType = TYP_VOID,
             };
-#if DEBUG
-            call._callSig = new StrongBox<CORINFO_SIG_INFO>();
-            call._callSig.Value.numArgs = 0;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCall(call));
 
             var instructionBuffer = CurrentInstructionBuffer(codeGen.Emitter)
@@ -679,11 +655,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
-            const string expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
 
             var failure = CaptureFatalJitException(() => emitter.emitIns_R_R(ins, attr, reg1, reg2));
             AssertRiscVInstructionBoundary(
@@ -740,11 +712,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
-            const string expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_I(ins, attr, immediate));
@@ -771,11 +739,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => codeGen.instGen_MemoryBarrier(barrierKind));
@@ -820,11 +784,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = CaptureFatalJitException(
                 () => codeGen.inst_JMP(EJ_jmp, target));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var descriptor = descriptors[^1] as Emitter.instrDescJmp
@@ -854,11 +814,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_J_cond_la(INS_bne, target, REG_A0, REG_A1));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var descriptor = descriptors[^1] as Emitter.instrDescJmp
@@ -886,11 +842,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_J_cond_la(INS_beqz, target, REG_A0));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var descriptor = descriptors[^1] as Emitter.instrDescJmp
@@ -941,11 +893,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 }
             });
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
             var descriptor = descriptors[^1] as Emitter.instrDescJmp
@@ -957,13 +905,14 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if DEBUG
-    [Test]
-    public static void RiscVLongAddressModeKeepsBackwardJumpLong()
+    [TestCaseSource(nameof(DebugOnlyTestCases))]
+    public static void RiscVLongAddressModeKeepsBackwardJumpLong(bool isDebug)
     {
+        Assert.That(isDebug, Is.True);
+
         WithCodeGen((compiler, codeGen) =>
         {
-            compiler.opts.compLongAddress = true;
+            CompLongAddress(ref compiler.opts) = true;
             var target = CreateLabel();
             var emitter = codeGen.Emitter;
             var targetGroup = CurrentGroup(emitter)
@@ -988,7 +937,14 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idjKeepLong, Is.True);
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> DebugOnlyTestCases()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(TestConfiguration.IsDebug);
+        }
+    }
 
     [Test]
     public static void InstructionClassificationIdentifiesGCRegisterWrites()
@@ -1082,11 +1038,7 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 #endif
 
-#if !DEBUG
-    [TestCase(-2048, true, INS_addi)]
-    [TestCase(2047, true, INS_addi)]
-    [TestCase(-2049, false, INS_add)]
-    [TestCase(2048, false, INS_add)]
+    [TestCaseSource(nameof(FrameInstructionWithConstantCases))]
     public static void FrameInstructionWithConstantUsesTheSignedImmediateBoundary(
         int immediate,
         bool expectedImmediateFit,
@@ -1106,9 +1058,22 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [Test]
-    public static void LargeFrameMemoryOperandUsesTemporaryBaseRegister()
+    private static IEnumerable<TestCaseData> FrameInstructionWithConstantCases()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(-2048, true, INS_addi);
+            yield return new TestCaseData(2047, true, INS_addi);
+            yield return new TestCaseData(-2049, false, INS_add);
+            yield return new TestCaseData(2048, false, INS_add);
+        }
+    }
+
+    [TestCaseSource(nameof(ReleaseOnlyTestCases))]
+    public static void LargeFrameMemoryOperandUsesTemporaryBaseRegister(bool isDebug)
+    {
+        Assert.That(isDebug, Is.False);
+
         WithCodeGen((_, codeGen) =>
         {
             var immediateFits = GenInstrWithConstant(
@@ -1124,7 +1089,14 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_T2));
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> ReleaseOnlyTestCases()
+    {
+        if (!TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(TestConfiguration.IsDebug);
+        }
+    }
 
     [Test]
     public static void UnsupportedJmpVarargsStopsBeforeEmittingCode()
@@ -1180,11 +1152,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() =>
                 codeGen.genEstablishFramePointer(delta, reportUnwindData));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -1222,11 +1190,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialInstructionCount = descriptors.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() => codeGen.genFuncletProlog(block));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -1236,25 +1200,26 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(firstDescriptor.idReg2(), Is.EqualTo(REG_SPBASE));
             Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(firstStackAdjustment));
 
-#if !DEBUG
-            var expected = splitFrame
-                ? (instruction[])[INS_addi, INS_sd, INS_sd, INS_sd, INS_addi]
-                : [INS_addi, INS_sd, INS_sd, INS_sd];
-            Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
-                Is.EqualTo(expected));
-            Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
-            Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(saveOffset));
-            Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(saveOffset + 8));
-            Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
-            Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(saveOffset + 16));
-            if (splitFrame)
+            if (!TestConfiguration.IsDebug)
             {
-                Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(-2032));
-            }
+                var expected = splitFrame
+                    ? (instruction[])[INS_addi, INS_sd, INS_sd, INS_sd, INS_addi]
+                    : [INS_addi, INS_sd, INS_sd, INS_sd];
+                Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
+                    Is.EqualTo(expected));
+                Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
+                Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(saveOffset));
+                Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(saveOffset + 8));
+                Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
+                Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(saveOffset + 16));
+                if (splitFrame)
+                {
+                    Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(-2032));
+                }
 
-            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
-#endif
+                Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+            }
         });
     }
 
@@ -1279,39 +1244,38 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() => codeGen.genFuncletEpilog(block));
             Assert.That(descriptors.Count, Is.GreaterThan(initialInstructionCount), failure?.ToString());
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
-#if DEBUG
-            var firstDescriptor = descriptors[initialInstructionCount];
-            Assert.That(firstDescriptor.idIns(), Is.EqualTo(splitFrame ? INS_addi : INS_ld));
-            Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(splitFrame ? 2032 : outgoingArgSpaceSize + 16));
-#else
-            var expected = splitFrame
-                ? (instruction[])[INS_addi, INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr]
-                : [INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr];
-            Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
-                Is.EqualTo(expected));
+            if (TestConfiguration.IsDebug)
+            {
+                var firstDescriptor = descriptors[initialInstructionCount];
+                Assert.That(firstDescriptor.idIns(), Is.EqualTo(splitFrame ? INS_addi : INS_ld));
+                Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(splitFrame ? 2032 : outgoingArgSpaceSize + 16));
+            }
+            else
+            {
+                var expected = splitFrame
+                    ? (instruction[])[INS_addi, INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr]
+                    : [INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr];
+                Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
+                    Is.EqualTo(expected));
 
-            var firstLoad = initialInstructionCount + (splitFrame ? 1 : 0);
-            var saveOffset = splitFrame ? 0 : outgoingArgSpaceSize;
-            Assert.That(descriptors[firstLoad].idReg1(), Is.EqualTo(REG_S1));
-            Assert.That(descriptors[firstLoad].idSmallCns(), Is.EqualTo(saveOffset + 16));
-            Assert.That(descriptors[firstLoad + 1].idReg1(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[firstLoad + 1].idSmallCns(), Is.EqualTo(saveOffset + 8));
-            Assert.That(descriptors[firstLoad + 2].idReg1(), Is.EqualTo(REG_FP));
-            Assert.That(descriptors[firstLoad + 2].idSmallCns(), Is.EqualTo(saveOffset));
-            Assert.That(descriptors[^2].idSmallCns(), Is.EqualTo(finalStackAdjustment));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_RA));
-            Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
-            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
-#endif
+                var firstLoad = initialInstructionCount + (splitFrame ? 1 : 0);
+                var saveOffset = splitFrame ? 0 : outgoingArgSpaceSize;
+                Assert.That(descriptors[firstLoad].idReg1(), Is.EqualTo(REG_S1));
+                Assert.That(descriptors[firstLoad].idSmallCns(), Is.EqualTo(saveOffset + 16));
+                Assert.That(descriptors[firstLoad + 1].idReg1(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[firstLoad + 1].idSmallCns(), Is.EqualTo(saveOffset + 8));
+                Assert.That(descriptors[firstLoad + 2].idReg1(), Is.EqualTo(REG_FP));
+                Assert.That(descriptors[firstLoad + 2].idSmallCns(), Is.EqualTo(saveOffset));
+                Assert.That(descriptors[^2].idSmallCns(), Is.EqualTo(finalStackAdjustment));
+                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0));
+                Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_RA));
+                Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
+                Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+            }
         });
     }
 
@@ -1334,11 +1298,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = CaptureFatalJitException(
                 () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
             Assert.That(zeroed, Is.True);
@@ -1348,33 +1308,35 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(firstDescriptor.idReg1(), Is.EqualTo(REG_SPBASE));
             Assert.That(firstDescriptor.idReg2(), Is.EqualTo(REG_SPBASE));
 
-#if !DEBUG
-            Assert.That(descriptors.Count, Is.EqualTo(initialInstructionCount + 6));
-            Assert.That(descriptors[initialInstructionCount + 1].idIns(), Is.EqualTo(INS_sd));
-            Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
-            Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(64));
-            Assert.That(descriptors[initialInstructionCount + 2].idIns(), Is.EqualTo(INS_sd));
-            Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(72));
-            Assert.That(descriptors[initialInstructionCount + 3].idIns(), Is.EqualTo(INS_sd));
-            Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
-            Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(80));
-            Assert.That(descriptors[initialInstructionCount + 4].idIns(), Is.EqualTo(INS_fsd));
-            Assert.That(descriptors[initialInstructionCount + 4].idReg1(), Is.EqualTo(REG_FS0));
-            Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(88));
-            Assert.That(descriptors[initialInstructionCount + 5].idIns(), Is.EqualTo(INS_addi));
-            Assert.That(descriptors[initialInstructionCount + 5].idReg1(), Is.EqualTo(REG_FPBASE));
-            Assert.That(descriptors[initialInstructionCount + 5].idReg2(), Is.EqualTo(REG_SPBASE));
-            Assert.That(descriptors[initialInstructionCount + 5].idSmallCns(), Is.EqualTo(64));
-            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(descriptors.Count, Is.EqualTo(initialInstructionCount + 6));
+                Assert.That(descriptors[initialInstructionCount + 1].idIns(), Is.EqualTo(INS_sd));
+                Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
+                Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(64));
+                Assert.That(descriptors[initialInstructionCount + 2].idIns(), Is.EqualTo(INS_sd));
+                Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(72));
+                Assert.That(descriptors[initialInstructionCount + 3].idIns(), Is.EqualTo(INS_sd));
+                Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
+                Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(80));
+                Assert.That(descriptors[initialInstructionCount + 4].idIns(), Is.EqualTo(INS_fsd));
+                Assert.That(descriptors[initialInstructionCount + 4].idReg1(), Is.EqualTo(REG_FS0));
+                Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(88));
+                Assert.That(descriptors[initialInstructionCount + 5].idIns(), Is.EqualTo(INS_addi));
+                Assert.That(descriptors[initialInstructionCount + 5].idReg1(), Is.EqualTo(REG_FPBASE));
+                Assert.That(descriptors[initialInstructionCount + 5].idReg2(), Is.EqualTo(REG_SPBASE));
+                Assert.That(descriptors[initialInstructionCount + 5].idSmallCns(), Is.EqualTo(64));
+                Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+            }
         });
     }
 
-#if !DEBUG
-    [Test]
-    public static void LargeCalleeSavedRegisterPrologRejectsUnportedUnwindPadding()
+    [TestCaseSource(nameof(ReleaseOnlyTestCases))]
+    public static void LargeCalleeSavedRegisterPrologRejectsUnportedUnwindPadding(bool isDebug)
     {
+        Assert.That(isDebug, Is.False);
+
         WithProlog((compiler, codeGen) =>
         {
             InitializeCalleeSavedFrame(compiler, codeGen, 4096, default);
@@ -1387,9 +1349,11 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [Test]
-    public static void VarargsCalleeSavedRegisterPrologStopsAfterFrameSetup()
+    [TestCaseSource(nameof(ReleaseOnlyTestCases))]
+    public static void VarargsCalleeSavedRegisterPrologStopsAfterFrameSetup(bool isDebug)
     {
+        Assert.That(isDebug, Is.False);
+
         WithProlog((compiler, codeGen) =>
         {
             compiler.info.compIsVarArgs = true;
@@ -1408,7 +1372,6 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(zeroed, Is.True);
         });
     }
-#endif
 
     [Test]
     public static void CalleeSavedRegisterEpilogRestoresFrameSavesAndReturns()
@@ -1431,46 +1394,44 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var failure = CaptureFatalJitException(() => codeGen.genFnEpilog(block));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
-#if !DEBUG
-            Assert.That(descriptors.Count, Is.EqualTo(initialInstructionCount + 6));
-            Assert.That(descriptors[initialInstructionCount].idIns(), Is.EqualTo(INS_fld));
-            Assert.That(descriptors[initialInstructionCount].idReg1(), Is.EqualTo(REG_FS0));
-            Assert.That(descriptors[initialInstructionCount].idSmallCns(), Is.EqualTo(88));
-            Assert.That(descriptors[initialInstructionCount + 1].idIns(), Is.EqualTo(INS_ld));
-            Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_S1));
-            Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(80));
-            Assert.That(descriptors[initialInstructionCount + 2].idIns(), Is.EqualTo(INS_ld));
-            Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(72));
-            Assert.That(descriptors[initialInstructionCount + 3].idIns(), Is.EqualTo(INS_ld));
-            Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_FP));
-            Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(64));
-            Assert.That(descriptors[initialInstructionCount + 4].idIns(), Is.EqualTo(INS_addi));
-            Assert.That(descriptors[initialInstructionCount + 4].idReg1(), Is.EqualTo(REG_SPBASE));
-            Assert.That(descriptors[initialInstructionCount + 4].idReg2(), Is.EqualTo(REG_SPBASE));
-            Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(96));
-            Assert.That(descriptors[initialInstructionCount + 5].idIns(), Is.EqualTo(INS_jalr));
-            Assert.That(descriptors[initialInstructionCount + 5].idReg1(), Is.EqualTo(REG_R0));
-            Assert.That(descriptors[initialInstructionCount + 5].idReg2(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[initialInstructionCount + 5].idSmallCns(), Is.EqualTo(0));
-            Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
-            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(descriptors.Count, Is.EqualTo(initialInstructionCount + 6));
+                Assert.That(descriptors[initialInstructionCount].idIns(), Is.EqualTo(INS_fld));
+                Assert.That(descriptors[initialInstructionCount].idReg1(), Is.EqualTo(REG_FS0));
+                Assert.That(descriptors[initialInstructionCount].idSmallCns(), Is.EqualTo(88));
+                Assert.That(descriptors[initialInstructionCount + 1].idIns(), Is.EqualTo(INS_ld));
+                Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_S1));
+                Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(80));
+                Assert.That(descriptors[initialInstructionCount + 2].idIns(), Is.EqualTo(INS_ld));
+                Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(72));
+                Assert.That(descriptors[initialInstructionCount + 3].idIns(), Is.EqualTo(INS_ld));
+                Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_FP));
+                Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(64));
+                Assert.That(descriptors[initialInstructionCount + 4].idIns(), Is.EqualTo(INS_addi));
+                Assert.That(descriptors[initialInstructionCount + 4].idReg1(), Is.EqualTo(REG_SPBASE));
+                Assert.That(descriptors[initialInstructionCount + 4].idReg2(), Is.EqualTo(REG_SPBASE));
+                Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(96));
+                Assert.That(descriptors[initialInstructionCount + 5].idIns(), Is.EqualTo(INS_jalr));
+                Assert.That(descriptors[initialInstructionCount + 5].idReg1(), Is.EqualTo(REG_R0));
+                Assert.That(descriptors[initialInstructionCount + 5].idReg2(), Is.EqualTo(REG_RA));
+                Assert.That(descriptors[initialInstructionCount + 5].idSmallCns(), Is.EqualTo(0));
+                Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
+                Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+            }
         });
     }
 
-#if !DEBUG
-    [Test]
-    public static void LargeCalleeSavedRegisterEpilogRejectsUnportedUnwindPadding()
+    [TestCaseSource(nameof(ReleaseOnlyTestCases))]
+    public static void LargeCalleeSavedRegisterEpilogRejectsUnportedUnwindPadding(bool isDebug)
     {
+        Assert.That(isDebug, Is.False);
+
         WithEpilog((compiler, codeGen) =>
         {
             InitializeCalleeSavedFrame(compiler, codeGen, 4096, default);
@@ -1484,7 +1445,6 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(failure?.Message, Does.Contain("Target prolog unwind padding is not ported."));
         });
     }
-#endif
 
     [TestCase(EA_64BIT_PTRSIZE, REG_RISCV64_A0, REG_RISCV64_A1, INS_mov, 0x00058513u, false)]
     [TestCase(EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, INS_sext_w, 0x0005851Bu, false)]
@@ -1509,11 +1469,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_Mov(attr, dstReg, srcReg, canSkip: false));
@@ -1545,11 +1501,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             var expectedBoundary = canSkip ? null : RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_Mov(EA_PTRSIZE, REG_A0, REG_A0, canSkip));
@@ -1600,11 +1552,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_R_R_I(ins, attr, reg1, reg2, (nint)immediate));
@@ -1636,11 +1584,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var attr = hasRelocation
                 ? EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG)
                 : EA_PTRSIZE;
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_R_C(INS_addi, attr, REG_A0, REG_NA, fieldHandle));
@@ -1679,11 +1623,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             const nint address = 0x12345678;
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_R_AI(ins, EA_PTR_DSP_RELOC, dataReg, addrReg, address));
@@ -1746,11 +1686,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_R_I_I(ins, EA_8BYTE, reg, (nint)imm1, (nint)imm2));
@@ -1886,11 +1822,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
 
             var failure = CaptureFatalJitException(
                 () => codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_A0, 42));
@@ -1909,26 +1841,13 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_FLOAT, 0UL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, 0UL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_FLOAT, 0x7FFUL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, 0x7FFUL, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(TYP_FLOAT, 0UL, null)]
-    [TestCase(TYP_DOUBLE, 0UL, null)]
-    [TestCase(TYP_FLOAT, 0x7FFUL, null)]
-    [TestCase(TYP_DOUBLE, 0x7FFUL, null)]
-#endif
-#if DEBUG
     [TestCase(TYP_FLOAT, 0x12345000UL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, 0x12345000UL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_FLOAT, 0x80000000UL, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(TYP_FLOAT, 0x12345000UL, null)]
-    [TestCase(TYP_DOUBLE, 0x12345000UL, null)]
-    [TestCase(TYP_FLOAT, 0x80000000UL, null)]
-#endif
     public static void InlineFloatingConstantNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         var_types type,
         ulong bits,
@@ -1980,11 +1899,7 @@ internal static unsafe class RiscVCodeGenPortTests
             constant.RegNum = REG_FA0;
 
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(constant));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -2036,15 +1951,9 @@ internal static unsafe class RiscVCodeGenPortTests
         yield return new TestCaseData(TYP_I_IMPL);
     }
 
-#if DEBUG
     [TestCase(TYP_INT, TYP_LONG, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_LONG, TYP_INT, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_LONG, TYP_LONG, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(TYP_INT, TYP_LONG, null)]
-    [TestCase(TYP_LONG, TYP_INT, null)]
-    [TestCase(TYP_LONG, TYP_LONG, null)]
-#endif
     public static void RangeCheckNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         var_types indexType,
         var_types lengthType,
@@ -2087,11 +1996,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(nullCheck));
 
             AssertRiscVInstructionBoundary(
@@ -2115,13 +2020,8 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if DEBUG
     [TestCase(8, RiscVRecorderDebugBoundary)]
     [TestCase(0x12345, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(8, null)]
-    [TestCase(0x12345, null)]
-#endif
     public static void LeaNodeDispatchRecordsRiscVImmediateInstruction(int offset, string? expectedBoundary)
     {
         WithCodeGen((_, codeGen) =>
@@ -2205,11 +2105,7 @@ internal static unsafe class RiscVCodeGenPortTests
             compiler.gsGlobalSecurityCookieVal = 1;
             var zeroed = true;
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
                 ?? throw new AssertionException("Missing current instruction buffer.");
@@ -2285,30 +2181,18 @@ internal static unsafe class RiscVCodeGenPortTests
             };
             codeGen.InternalRegisters.Add(select, regMaskTP.CreateFromRegNum(REG_A4, REG_A4.SingleTypeMask));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(select));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
     }
 
-#if DEBUG
     [TestCase(GT_LSH, TYP_INT, true, false, RiscVRecorderDebugBoundary)]
     [TestCase(GT_RSH, TYP_LONG, false, false, RiscVRecorderDebugBoundary)]
     [TestCase(GT_ROR, TYP_INT, false, false, RiscVRecorderDebugBoundary)]
     [TestCase(GT_ROR, TYP_LONG, false, true, RiscVRecorderDebugBoundary)]
     [TestCase(GT_ROL, TYP_INT, true, true, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(GT_LSH, TYP_INT, true, false, null)]
-    [TestCase(GT_RSH, TYP_LONG, false, false, null)]
-    [TestCase(GT_ROR, TYP_INT, false, false, null)]
-    [TestCase(GT_ROR, TYP_LONG, false, true, null)]
-    [TestCase(GT_ROL, TYP_INT, true, true, null)]
-#endif
     public static void ShiftNodeDispatchRecordsRiscVImmediateInstruction(
         genTreeOps oper,
         var_types type,
@@ -2380,11 +2264,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var right = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
             var tree = new GenTreeOp(oper, TYP_LONG, left, right) { RegNum = REG_A2 };
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -2410,11 +2290,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var right = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
             var tree = new GenTreeOp(GT_ADD_UW, TYP_LONG, left, right) { RegNum = REG_A2 };
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -2441,11 +2317,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var tree = new GenTreeOp(GT_SLLI_UW, TYP_LONG, value, shiftBy) { RegNum = REG_A2 };
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -2473,11 +2345,7 @@ internal static unsafe class RiscVCodeGenPortTests
             codeGen.InternalRegisters.Add(
                 block, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForCpBlkUnroll(block));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -2504,11 +2372,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 _kind = BlkOpKindLoop,
             };
 
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(() => codeGen.genCodeForStoreBlk(block));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -2577,13 +2441,8 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if DEBUG
     [TestCase(false, RiscVRecorderDebugBoundary)]
     [TestCase(true, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(false, null)]
-    [TestCase(true, null)]
-#endif
     public static void IntegerCastDispatchRecordsRiscVExtensionInstruction(
         bool useZba,
         string? expectedBoundary)
@@ -2643,11 +2502,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => result = emitter.emitInsTernary(ins, EA_8BYTE, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -2681,11 +2536,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => result = emitter.emitInsTernary(ins, EA_8BYTE, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -2716,11 +2567,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => result = emitter.emitInsTernary(INS_fadd_s, EA_4BYTE, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -2754,21 +2601,20 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitInsTernary(INS_add, EA_8BYTE, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
             var emitted = RecordedInstructions(emitter).Skip(initialInstructionCount).ToList();
-#if DEBUG
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_slli));
-#else
-            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
-                Is.EqualTo([INS_slli, INS_srli, INS_slli, INS_srli, INS_add]));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(emitted[0].idIns(), Is.EqualTo(INS_slli));
+            }
+            else
+            {
+                Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                    Is.EqualTo([INS_slli, INS_srli, INS_slli, INS_srli, INS_add]));
+            }
         });
     }
 
@@ -2797,21 +2643,20 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitInsTernary(INS_add, EA_8BYTE, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
             var emitted = RecordedInstructions(emitter).Skip(initialInstructionCount).ToList();
-#if DEBUG
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
-#else
-            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
-                Is.EqualTo([INS_add, INS_slt, INS_slti, INS_beq, INS_slli, INS_jalr]));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
+            }
+            else
+            {
+                Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                    Is.EqualTo([INS_add, INS_slt, INS_slti, INS_beq, INS_slli, INS_jalr]));
+            }
         });
     }
 
@@ -2831,11 +2676,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => emitter.emitInsTernary(INS_and, EA_4BYTE, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -2881,23 +2722,22 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => result = emitter.emitInsTernary(ins, attr, dst, src1, src2));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
             var emitted = RecordedInstructions(emitter).Skip(initialInstructionCount).ToList();
-#if DEBUG
-            Assert.That(emitted[0].idIns(), Is.EqualTo(isUnsigned ? INS_slli : INS_mulh));
-#else
-            instruction[] expectedInstructions = isUnsigned
-                ? [INS_slli, INS_slli, INS_mulhu, INS_srai, INS_mulw, INS_beq, INS_slli, INS_jalr]
-                : [INS_mulh, INS_mul, INS_srai, INS_beq, INS_slli, INS_jalr];
-            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(emitted[0].idIns(), Is.EqualTo(isUnsigned ? INS_slli : INS_mulh));
+            }
+            else
+            {
+                instruction[] expectedInstructions = isUnsigned
+                    ? [INS_slli, INS_slli, INS_mulhu, INS_srai, INS_mulw, INS_beq, INS_slli, INS_jalr]
+                    : [INS_mulh, INS_mul, INS_srai, INS_beq, INS_slli, INS_jalr];
+                Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
+            }
         });
     }
 
@@ -2922,11 +2762,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 cast, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
 
             var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
@@ -2949,30 +2785,16 @@ internal static unsafe class RiscVCodeGenPortTests
             };
 
             var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
     }
 
-#if DEBUG
     [TestCase(TYP_FLOAT, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, TYP_FLOAT, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(TYP_FLOAT, TYP_DOUBLE, null)]
-    [TestCase(TYP_DOUBLE, TYP_FLOAT, null)]
-#endif
-#if DEBUG
     [TestCase(TYP_FLOAT, TYP_FLOAT, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(TYP_FLOAT, TYP_FLOAT, null)]
-    [TestCase(TYP_DOUBLE, TYP_DOUBLE, null)]
-#endif
     public static void FloatToFloatCastDispatchPreservesRiscVRecordingBoundary(
         var_types sourceType,
         var_types destinationType,
@@ -3046,11 +2868,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var restoreMask = regMaskTP.CreateFromRegNum(REG_S1, REG_S1.SingleTypeMask);
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             var failure = CaptureFatalJitException(
                 () => RestoreCalleeSavedRegisters(codeGen, restoreMask, REG_FP, 16, reportUnwindData: false));
             AssertRiscVInstructionBoundary(
@@ -3085,11 +2903,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(
                 () => codeGen.genOSRHandleTier0CalleeSavedRegistersAndFrame());
-#if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-            const string? expectedBoundary = null;
-#endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
@@ -3102,24 +2916,14 @@ internal static unsafe class RiscVCodeGenPortTests
     public static void SaturationIntrinsicDispatchPreservesRiscVRegisterRecordingBoundary(
         NamedIntrinsic intrinsic)
     {
-#if DEBUG
         const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-        const string? expectedBoundary = null;
-#endif
         WithCodeGen((compiler, codeGen) => AssertIntrinsicBoundary(
             compiler, codeGen, intrinsic, TYP_INT, hasSecondOperand: false,
             expectedBoundary: expectedBoundary));
     }
 
-#if DEBUG
     [TestCase(NI_System_Math_Abs, TYP_FLOAT, RiscVRecorderDebugBoundary)]
     [TestCase(NI_System_Math_Abs, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(NI_System_Math_Abs, TYP_FLOAT, null)]
-    [TestCase(NI_System_Math_Abs, TYP_DOUBLE, null)]
-#endif
-#if DEBUG
     [TestCase(NI_System_Math_Sqrt, TYP_FLOAT, RiscVRecorderDebugBoundary)]
     [TestCase(NI_System_Math_Sqrt, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
     [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_INT, RiscVRecorderDebugBoundary)]
@@ -3128,16 +2932,6 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG, RiscVRecorderDebugBoundary)]
     [TestCase(NI_PRIMITIVE_PopCount, TYP_INT, RiscVRecorderDebugBoundary)]
     [TestCase(NI_PRIMITIVE_PopCount, TYP_LONG, RiscVRecorderDebugBoundary)]
-#else
-    [TestCase(NI_System_Math_Sqrt, TYP_FLOAT, null)]
-    [TestCase(NI_System_Math_Sqrt, TYP_DOUBLE, null)]
-    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_INT, null)]
-    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG, null)]
-    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_INT, null)]
-    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG, null)]
-    [TestCase(NI_PRIMITIVE_PopCount, TYP_INT, null)]
-    [TestCase(NI_PRIMITIVE_PopCount, TYP_LONG, null)]
-#endif
     public static void UnaryIntrinsicDispatchPreservesRiscVRegisterRecordingBoundary(
         NamedIntrinsic intrinsic,
         var_types type,
@@ -3160,11 +2954,7 @@ internal static unsafe class RiscVCodeGenPortTests
         NamedIntrinsic intrinsic,
         var_types type)
     {
-#if DEBUG
         const string? expectedBoundary = RiscVRecorderDebugBoundary;
-#else
-        const string? expectedBoundary = null;
-#endif
         WithCodeGen((compiler, codeGen) => AssertIntrinsicBoundary(
             compiler, codeGen, intrinsic, type, hasSecondOperand: true,
             expectedBoundary: expectedBoundary));
@@ -3283,11 +3073,7 @@ internal static unsafe class RiscVCodeGenPortTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
 
             action(compiler, codeGen);
         }
@@ -3471,7 +3257,6 @@ internal static unsafe class RiscVCodeGenPortTests
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 #endif
 
-#if !DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genInstrWithConstant")]
     private static extern bool GenInstrWithConstant(
         CodeGen codeGen,
@@ -3482,7 +3267,9 @@ internal static unsafe class RiscVCodeGenPortTests
         nint immediate,
         regNumber tempReg,
         bool inUnwindRegion);
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compLongAddress")]
+    private static extern ref bool CompLongAddress(ref Compiler.Options options);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
