@@ -369,12 +369,10 @@ public partial class Emitter
         emitCmpHandle = cmpHandle;
         _debugInfoSize = Configuration.TARGET_POINTER_SIZE;
 
-#if !DEBUG
-        if (!comp.opts.disAsm)
+        if (!Configuration.DEBUG && !comp.opts.disAsm)
         {
             _debugInfoSize = 0;
         }
-#endif
 
         if (Configuration.TARGET_AMD64)
         {

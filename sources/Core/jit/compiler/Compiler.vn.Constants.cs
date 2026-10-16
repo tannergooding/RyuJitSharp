@@ -70,13 +70,11 @@ public partial class Compiler
             }
             case TYP_MASK when Configuration.FEATURE_SIMD:
             {
-#if DEBUG
-                if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
+                if (Configuration.DEBUG && Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
                 {
                     tree._vnPair.SetBoth(vnStore.VNForSimdMaskScalableCon(tree.AsMskCon().SimdScalableMaskVal));
                     break;
                 }
-#endif
                 tree._vnPair.SetBoth(vnStore.VNForSimdMaskCon(tree.AsMskCon().SimdMaskVal));
                 break;
             }

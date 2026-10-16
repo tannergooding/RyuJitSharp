@@ -353,15 +353,15 @@ internal static unsafe class LinearScanDefinitionConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildKills")]
     private static extern void BuildKills(LinearScan allocator, GenTree tree, regMaskTP killMask);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForCall")]
+    private static extern regMaskTP GetKillSetForCall(LinearScan allocator, GenTreeCall tree);
+
 #if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "compHelperCallKillSet")]
     private static extern regMaskTP HelperCallKillSet(Compiler compiler, CorInfoHelpFunc helper);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForStoreInd")]
     private static extern regMaskTP GetKillSetForStoreInd(LinearScan allocator, GenTreeStoreInd tree);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForCall")]
-    private static extern regMaskTP GetKillSetForCall(LinearScan allocator, GenTreeCall tree);
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForNode")]

@@ -81,13 +81,13 @@ internal static unsafe class Arm64HWIntrinsicLayoutTests
         });
     }
 
-#if DEBUG
     [TestCase(NI_Sve_Load2xVectorAndUnzip, 2, 32)]
     [TestCase(NI_Sve_Load3xVectorAndUnzip, 3, 48)]
     [TestCase(NI_Sve_Load4xVectorAndUnzip, 4, 64)]
     public static void SveAggregateLayoutsResolveRuntimeVectorLength(
         NamedIntrinsic intrinsic, int vectors, int byteLength)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.getBuiltinClass = &GetVectorClass;
@@ -131,8 +131,6 @@ internal static unsafe class Arm64HWIntrinsicLayoutTests
         state->ClassSizeRequests++;
         return cls == (CORINFO_CLASS_STRUCT_*)0x1234 ? state->ByteLength : 0;
     }
-#endif
-
     private static GenTreeHWIntrinsic NewIntrinsic(NamedIntrinsic intrinsic)
     {
         var operands = new GenTree[HWIntrinsicInfo.lookupNumArgs(intrinsic)];

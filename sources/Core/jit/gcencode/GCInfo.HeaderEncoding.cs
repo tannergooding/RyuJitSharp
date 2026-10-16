@@ -46,29 +46,25 @@ public partial struct GCInfo
             };
 
             var offset = compiler.lvaCachedGenericContextArgOffset();
-#if DEBUG
-            if (compiler.opts.IsOSR)
+            if (Configuration.DEBUG && compiler.opts.IsOSR)
             {
                 var callerSpOffset = compiler.lvaToCallerSPRelativeOffset(offset, _codeGen.IsFramePointerUsed);
                 var patchpoint = compiler.info.compPatchpointInfo;
                 assert(patchpoint is not null);
                 assert(callerSpOffset == patchpoint->GenericContextArgOffset - (2 * Configuration.REGSIZE_BYTES));
             }
-#endif
             encoder.SetGenericsInstContextStackSlot(offset, contextType);
         }
         else if (compiler.lvaKeepAliveAndReportThis())
         {
             assert(compiler.info.compThisArg != BAD_VAR_NUM);
             var offset = compiler.lvaCachedGenericContextArgOffset();
-#if DEBUG
-            if (compiler.opts.IsOSR && compiler.info.compPatchpointInfo->HasKeptAliveThis)
+            if (Configuration.DEBUG && compiler.opts.IsOSR && compiler.info.compPatchpointInfo->HasKeptAliveThis)
             {
                 var callerSpOffset = compiler.lvaToCallerSPRelativeOffset(offset, _codeGen.IsFramePointerUsed, true);
                 assert(callerSpOffset == compiler.info.compPatchpointInfo->KeptAliveThisOffset -
                     (2 * Configuration.REGSIZE_BYTES));
             }
-#endif
             encoder.SetGenericsInstContextStackSlot(offset, GENERIC_CONTEXTPARAM_THIS);
         }
 

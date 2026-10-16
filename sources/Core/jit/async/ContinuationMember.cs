@@ -84,7 +84,7 @@ public readonly struct ContinuationMember
         };
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print()
     {
         var description = Type switch {
@@ -96,5 +96,4 @@ public readonly struct ContinuationMember
         };
         jitprintf(description);
     }
-#endif
 }

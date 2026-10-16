@@ -223,12 +223,12 @@ internal static unsafe class ValueNumMapTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void SelectorAxiomDiagnosticsMatchNativeEvaluationPoints(
         [Values("precise-hit", "precise-miss", "physical-hit", "enclosing", "disjoint", "aliasing", "bitcast")] string operation,
         [Values] bool verbose)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithStore((compiler, store, blocks) =>
         {
             compiler.compCurBB = blocks[0];
@@ -311,7 +311,10 @@ internal static unsafe class ValueNumMapTests
                 expected = $"      select({printedMap}, {selector})" + expected;
             }
 
-            compiler.verbose = verbose;
+            if (verbose)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+            }
             var actual = CodeGenLifeTransitionTests.Capture(() =>
             {
                 if (precise)
@@ -346,6 +349,7 @@ internal static unsafe class ValueNumMapTests
     [TestCase(nameof(ValueNumStore.VNForMapPhysicalSelect), true)]
     public static void MapOperationDiagnosticsUseNativeValueNumberFormat(string operation, bool verbose)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithStore((compiler, store, blocks) =>
         {
             compiler.compCurBB = blocks[0];
@@ -357,7 +361,10 @@ internal static unsafe class ValueNumMapTests
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
             var previous = Globals.s_jitstdout;
             Globals.s_jitstdout = writer;
-            compiler.verbose = verbose;
+            if (verbose)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+            }
 
             try
             {
@@ -400,6 +407,7 @@ internal static unsafe class ValueNumMapTests
     [Test]
     public static void FloatingConstantDumpsUseUcrtSpecialValuesAndSignedZero()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithStore((compiler, store, _) =>
         {
             using var stream = new MemoryStream();
@@ -453,6 +461,7 @@ internal static unsafe class ValueNumMapTests
     [Test]
     public static void NativeMapAndPhiDiagnosticShapesArePrintedByVnPrint()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithStore((compiler, store, blocks) =>
         {
             using var stream = new MemoryStream();
@@ -532,8 +541,6 @@ internal static unsafe class ValueNumMapTests
             }
         });
     }
-#endif
-
     private static void AssertMapSelect(ValueNumStore store, int result, int map, int index)
     {
         var app = new VNFuncApp();

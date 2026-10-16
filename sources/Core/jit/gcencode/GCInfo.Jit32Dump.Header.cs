@@ -219,10 +219,9 @@ public partial struct GCInfo
             uint epilogCount = header.epilogCount;
             var epilogEnd = header.epilogAtEnd != 0;
 
-#if DEBUG
-            nuint stackSize = header.frameSize;
-            if (offs == 0)
+            if (Configuration.DEBUG && (offs == 0))
             {
+                nuint stackSize = header.frameSize;
                 Print($"    method      size = {methodSize:X4}\n");
                 Print($"    stack frame size = {stackSize,3} \n");
                 Print($"    prolog      size = {prologSize,3} \n");
@@ -235,7 +234,6 @@ public partial struct GCInfo
                 Print($"    var ptr tab count= {header.varPtrTableSize,3} \n");
                 Print("\n");
             }
-#endif
 
             if (offs < prologSize)
             {

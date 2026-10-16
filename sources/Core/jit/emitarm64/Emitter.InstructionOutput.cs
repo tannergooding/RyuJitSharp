@@ -1353,12 +1353,10 @@ public partial class Emitter
                         {
                             skipIns = true;
                         }
-#if DEBUG
-                        if (!ig.endsWithAlignInstr())
+                        if (Configuration.DEBUG && !ig.endsWithAlignInstr())
                         {
                             assert(id.idIsEmptyAlign());
                         }
-#endif
                         sz = (nuint)DescriptorSizes.Align;
                         ins = INS_nop;
                         if (Configuration.DEBUG &&

@@ -49,18 +49,14 @@ public partial class Emitter
             GTF_ICON_CLASS_HDL => compiler.eeGetClassName((CORINFO_CLASS_HANDLE)handle),
             GTF_ICON_FIELD_HDL => compiler.eeGetFieldName((CORINFO_FIELD_HANDLE)handle, true),
             GTF_ICON_METHOD_HDL => compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)handle),
-#if !DEBUG
             GTF_ICON_OBJ_HDL => "frozen object handle",
-#endif
             _ => null,
         };
-#if DEBUG
-        if (kind == GTF_ICON_OBJ_HDL)
+        if (Configuration.DEBUG && (kind == GTF_ICON_OBJ_HDL))
         {
             compiler.eePrintObjectDescription(prefix, (CORINFO_OBJECT_HANDLE)handle);
             return;
         }
-#endif
         if (description is not null)
         {
             jitprintf($"{prefix} {description}");

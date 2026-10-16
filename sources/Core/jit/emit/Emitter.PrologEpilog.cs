@@ -359,8 +359,7 @@ public partial class Emitter
         {
             assert(_compiler is not null);
         }
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler!.verbose)
         {
             var count = unchecked((uint)(offsHi - offsLo)) / Configuration.TARGET_POINTER_SIZE;
             jitprintf($"{count} tracked GC refs are at stack offsets ");
@@ -405,7 +404,6 @@ public partial class Emitter
                 }
             }
         }
-#endif
         assert(((offsHi - offsLo) % Configuration.TARGET_POINTER_SIZE) == 0);
         assert((offsLo % Configuration.TARGET_POINTER_SIZE) == 0);
         assert((offsHi % Configuration.TARGET_POINTER_SIZE) == 0);

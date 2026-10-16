@@ -485,7 +485,7 @@ internal static unsafe class HWIntrinsicDispatchTests
                 Assert.That(s_fieldQueries, Is.EqualTo(1));
                 Assert.That(s_fieldTypeQueries, Is.EqualTo(1));
                 Assert.That(s_lastFieldClass == (CORINFO_CLASS_STRUCT_*)&tupleClass, Is.True);
-                Assert.That(compiler.UsesSimdTypes, Is.True);
+                Assert.That(compiler._usesSimdTypes, Is.True);
                 Assert.That(compiler.impStackHeight, Is.EqualTo(2));
                 Assert.That(compiler.impStackTop().val, Is.SameAs(tuple));
                 Assert.That(compiler.compFloatingPointUsed, Is.False);

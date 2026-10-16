@@ -143,11 +143,7 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (compiler.opts.disAsm || compiler.verbose)
-#else
-        if (compiler.opts.disAsm)
-#endif
+        if (compiler.opts.disAsm || (Configuration.DEBUG && compiler.verbose))
         {
             var disassemblyAddress = unchecked(*dp + writeableOffset);
             while (disassemblyAddress != dstRW)

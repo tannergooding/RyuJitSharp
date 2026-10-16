@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -18,9 +19,14 @@ public sealed partial class ValueNumStore
         return VNForFunc(TYP_STRUCT, VNF_ZeroObj, layoutVN);
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public unsafe void vnDump(Compiler compiler, ValueNum vn, bool isPtr = false)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Value number diagnostics are only available in Debug builds.");
+        }
+
         jitprintf(" {");
         VNPhiDef phiDef = default;
         VNMemoryPhiDef memoryPhiDef = default;
@@ -378,8 +384,14 @@ public sealed partial class ValueNumStore
         DumpExcSequence(compiler, exceptionSequence, isHead: true);
     }
 
+    [Conditional("DEBUG")]
     public void vnDumpExc(Compiler compiler, ValueNum vn)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Value number diagnostics are only available in Debug builds.");
+        }
+
         if (vn == VNForEmptyExcSet())
         {
             jitprintf("EmptyExcSet");
@@ -554,8 +566,6 @@ public sealed partial class ValueNumStore
         GTF_ICON_TLSGD_OFFSET => nameof(GTF_ICON_TLSGD_OFFSET),
         _ => "ILLEGAL!",
     };
-#endif
-
     private static string FuncName(VNFunc func)
     {
         if (func < VNF_Boundary)

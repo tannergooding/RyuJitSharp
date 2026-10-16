@@ -865,10 +865,11 @@ public partial class Emitter
 
                 default:
                 {
-#if DEBUG
-                    jitprintf($"unexpected format {emitIfName(id.idInsFmt())}\n");
-                    assert(false, "don't know how to encode this instruction");
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        jitprintf($"unexpected format {emitIfName(id.idInsFmt())}\n");
+                        assert(false, "don't know how to encode this instruction");
+                    }
                     break;
                 }
             }

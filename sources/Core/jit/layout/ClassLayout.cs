@@ -32,31 +32,27 @@ public sealed class ClassLayout
     // The normalized type to use in IR for block nodes with this layout.
     private readonly var_types _type;
 
-#if DEBUG
-    // Name of the layout
-    private string _name;
+    internal sealed class DebugNames
+    {
+        internal string ClassName = string.Empty;
+        internal string ShortClassName = string.Empty;
+    }
 
-    // Short name of the layout
-    private string _shortName;
-#endif
+    private static class DebugNamesStorage
+    {
+        internal static readonly ConditionalWeakTable<ClassLayout, DebugNames> Table = [];
+    }
 
     public ClassLayout(uint size)
     {
         _size = size;
         _type = TYP_STRUCT;
 
-#if DEBUG
-        if (size == 0)
+        if (Configuration.DEBUG)
         {
-            _name = "Empty";
-            _shortName = "Empty";
+            var name = size == 0 ? "Empty" : "Custom";
+            SetDebugNames(name, name);
         }
-        else
-        {
-            _name = "Custom";
-            _shortName = "Custom";
-        }
-#endif
     }
 
     public ClassLayout(int size) : this(checked((uint)size))
@@ -70,19 +66,45 @@ public sealed class ClassLayout
         _size = size;
         _bitfield = isValueClass ? 1 : 0;
         _type = type;
-#if DEBUG
-        _name = className;
-        _shortName = shortClassName;
-#endif
+
+        if (Configuration.DEBUG)
+        {
+            SetDebugNames(className, shortClassName);
+        }
     }
 
     public unsafe CORINFO_CLASS_HANDLE ClassHandle => _classHandle;
 
-#if DEBUG
-    public string ClassName => _name;
+    public string ClassName => GetDebugNames().ClassName;
 
-    public string ShortClassName => _shortName;
-#endif
+    public string ShortClassName => GetDebugNames().ShortClassName;
+
+    internal void SetDebugNames(string className, string shortClassName)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Class layout names are only available in Debug builds.");
+        }
+
+        var names = DebugNamesStorage.Table.GetValue(this, static _ => new DebugNames());
+        names.ClassName = className;
+        names.ShortClassName = shortClassName;
+    }
+
+    private DebugNames GetDebugNames()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Class layout names are only available in Debug builds.");
+        }
+
+        if (!DebugNamesStorage.Table.TryGetValue(this, out var names))
+        {
+            throw new InvalidOperationException("Class layout names were not initialized.");
+        }
+
+        return names;
+    }
 
     /// <summary>The number of GC pointers in this layout.</summary>
     /// <remarks>Since the maximum size == 2^32-1 the count can fit in at most 30 bits.</remarks>
@@ -246,13 +268,14 @@ public sealed class ClassLayout
 
         var type = compiler.impNormStructType(classHandle);
 
-#if DEBUG
-        var className = compiler.eeGetClassName(classHandle);
-        var shortClassName = compiler.eeGetShortClassName(classHandle);
-#else
-        var className = "";
-        var shortClassName = "";
-#endif
+        var className = string.Empty;
+        var shortClassName = string.Empty;
+
+        if (Configuration.DEBUG)
+        {
+            className = compiler.eeGetClassName(classHandle);
+            shortClassName = compiler.eeGetShortClassName(classHandle);
+        }
 
         var layout = new ClassLayout(classHandle, isValueClass, unchecked((uint)size), type, className, shortClassName);
 
@@ -305,11 +328,13 @@ public sealed class ClassLayout
         var newLayout = new ClassLayout(builder._size) {
             GCPtrCount = builder._gcPtrCount,
             _nonPadding = builder._nonPadding,
-#if DEBUG
-            _name = builder._name,
-            _shortName = builder._shortName,
-#endif
         };
+
+        if (Configuration.DEBUG)
+        {
+            var names = builder._debugNames;
+            newLayout.SetDebugNames(names?.ClassName ?? "UNNAMED", names?.ShortClassName ?? "UNNAMED");
+        }
 
         if (builder._gcPtrCount > 0 && newLayout.SlotCount <= Configuration.TARGET_POINTER_SIZE)
         {
@@ -479,9 +504,7 @@ public sealed class ClassLayout
         var builder = new ClassLayoutBuilder(compiler, size);
         var end = unchecked(offset + size);
 
-#if DEBUG
         builder.SetName($"{ClassName}[{offset:D3}..{end:D3}]", $"{ShortClassName}[{offset:D3}..{end:D3}]");
-#endif
 
         if (((offset % Configuration.TARGET_POINTER_SIZE) == 0) && ((size % Configuration.TARGET_POINTER_SIZE) == 0) && HasGCPtr)
         {

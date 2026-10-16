@@ -12,11 +12,7 @@ public struct ClassLayoutBuilder
     internal uint _size;
     internal int _gcPtrCount;
     internal SegmentList? _nonPadding;
-
-#if DEBUG
-    internal string _name = "UNNAMED";
-    internal string _shortName = "UNNAMED";
-#endif
+    internal ClassLayout.DebugNames? _debugNames;
 
     public ClassLayoutBuilder(Compiler compiler, uint size)
     {
@@ -107,11 +103,7 @@ public struct ClassLayoutBuilder
             }
         }
 
-#if DEBUG
-        var className = compiler.eeGetClassName(arrayHandle);
-        var shortClassName = compiler.eeGetShortClassName(arrayHandle);
-        builder.SetName(className, shortClassName);
-#endif
+        builder.SetName(compiler.eeGetClassName(arrayHandle), compiler.eeGetShortClassName(arrayHandle));
 
         return builder;
     }
@@ -144,10 +136,10 @@ public struct ClassLayoutBuilder
         }
     }
 
-#if DEBUG
     /// <summary>Copy layout names, with optional prefix.</summary>
     /// <param name="layout">layout to copy from</param>
     /// <param name="prefix">prefix to add (or empty)</param>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void CopyNameFrom(ClassLayout layout, string prefix)
     {
         var layoutName = layout.ClassName;
@@ -160,7 +152,6 @@ public struct ClassLayoutBuilder
         }
         SetName(layoutName, layoutShortName);
     }
-#endif
 
     /// <summary>Copy padding from another layout.</summary>
     /// <param name="offset">Offset in this builder to start copy information into.</param>
@@ -221,16 +212,19 @@ public struct ClassLayoutBuilder
         }
     }
 
-#if DEBUG
     /// <summary>Set the long and short name of the layout.</summary>
     /// <param name="name">The long name</param>
     /// <param name="shortName">The short name</param>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void SetName(string name, string shortName)
     {
-        _name      = name;
-        _shortName = shortName;
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Class layout names are only available in Debug builds.");
+        }
+
+        _debugNames = new ClassLayout.DebugNames { ClassName = name, ShortClassName = shortName };
     }
-#endif
 
     /// <summary>Get the non padding segment list, or create it if it does not exist.</summary>
     /// <returns>The ClassLayoutBuilder starts out with the entire layout being considered to NOT be padding.</returns>

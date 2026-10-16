@@ -38,48 +38,55 @@ public partial class Emitter
 
     private unsafe void emitDispInsHexLoongArch64(instrDesc id, byte* code, nuint size)
     {
-#if DEBUG
-        _ = id;
-        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 disassembly requires an active compiler.");
-        if (!compiler.opts.disCodeBytes)
+        if (Configuration.DEBUG)
         {
-            return;
-        }
+            _ = id;
+            var compiler = _compiler ?? throw new FatalJitException("LoongArch64 disassembly requires an active compiler.");
+            if (!compiler.opts.disCodeBytes)
+            {
+                return;
+            }
 
-        if (!compiler.opts.disDiffable)
-        {
-            if (size == 4)
+            if (!compiler.opts.disDiffable)
             {
-                jitprintf($"  {Unsafe.ReadUnaligned<uint>(code):X8}    ");
-            }
-            else
-            {
-                assert(size == 0);
-                jitprintf("              ");
+                if (size == 4)
+                {
+                    jitprintf($"  {Unsafe.ReadUnaligned<uint>(code):X8}    ");
+                }
+                else
+                {
+                    assert(size == 0);
+                    jitprintf("              ");
+                }
             }
         }
-#endif
     }
 
     private unsafe void emitDisInsNameLoongArch64(uint code, byte* address, instrDesc id)
     {
-        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 disassembly requires an active compiler.");
+        if (_compiler is null)
+        {
+            throw new FatalJitException("LoongArch64 disassembly requires an active compiler.");
+        }
         var instructionAddress = address - writeableOffset;
 
-#if DEBUG
-        emitDispInsAddr(instructionAddress);
-        jitprintf("  ");
-        if (compiler.opts.disCodeBytes && !compiler.opts.disDiffable)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"{code:X8}  ");
+            emitDispInsAddr(instructionAddress);
+            jitprintf("  ");
+            if (_compiler!.opts.disCodeBytes && !_compiler!.opts.disDiffable)
+            {
+                jitprintf($"{code:X8}  ");
+            }
+            else
+            {
+                jitprintf("          ");
+            }
         }
         else
         {
-            jitprintf("          ");
+            jitprintf("            ");
         }
-#else
-        jitprintf("            ");
-#endif
 
         var destination = (int)(code & 0x1f);
         var source = (int)((code >> 5) & 0x1f);
@@ -109,7 +116,7 @@ public partial class Emitter
         emitDispInstLoongArch64(ins);
         var format = emitGetInsFmtLoongArch64(ins);
         var thirdRegister = (int)((code >> 10) & 0x1f);
-        var operands = string.Empty;
+        string operands;
 
         if (!Configuration.FEATURE_SIMD &&
             format is insDisasmFmt.DF_S_4R or insDisasmFmt.DF_S_3R or insDisasmFmt.DF_S_RG or
@@ -150,16 +157,17 @@ public partial class Emitter
             case insDisasmFmt.DF_G_B2:
             {
                 var offset = unchecked((short)((code >> 10) & 0xffff)) << 2;
-#if DEBUG
-                var debugInfo = id.idDebugOnlyInfo();
-                if ((debugInfo is not null) && (debugInfo.idMemCookie != 0))
+                if (Configuration.DEBUG)
                 {
-                    assert(debugInfo.idMemCookie > 0);
-                    operands = $"{RegName(destination)}, {RegName(source)}, " +
-                        $"#{compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie)}";
-                    break;
+                    var debugInfo = id.idDebugOnlyInfo();
+                    if ((debugInfo is not null) && (debugInfo.idMemCookie != 0))
+                    {
+                        assert(debugInfo.idMemCookie > 0);
+                        operands = $"{RegName(destination)}, {RegName(source)}, " +
+                            $"#{_compiler!.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie)}";
+                        break;
+                    }
                 }
-#endif
                 if (ins == INS_jirl)
                 {
                     operands = $"{RegName(destination)}, {RegName(source)}, 0x{offset:x}";
@@ -189,15 +197,16 @@ public partial class Emitter
             {
                 var encodedOffset = unchecked((int)(((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6);
                 var offset = encodedOffset >> 4;
-#if DEBUG
-                var debugInfo = id.idDebugOnlyInfo();
-                if ((debugInfo is not null) && (debugInfo.idMemCookie != 0))
+                if (Configuration.DEBUG)
                 {
-                    assert(debugInfo.idMemCookie > 0);
-                    operands = $"# {compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie)}";
-                    break;
+                    var debugInfo = id.idDebugOnlyInfo();
+                    if ((debugInfo is not null) && (debugInfo.idMemCookie != 0))
+                    {
+                        assert(debugInfo.idMemCookie > 0);
+                        operands = $"# {_compiler!.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie)}";
+                        break;
+                    }
                 }
-#endif
                 operands = IsInProlog(address)
                     ? FormatInstructionOffset(offset >> 2)
                     : $"0x{unchecked((ulong)((long)(nint)instructionAddress + offset)):x}";

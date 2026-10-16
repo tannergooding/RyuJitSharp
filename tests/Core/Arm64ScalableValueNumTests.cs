@@ -158,7 +158,6 @@ internal static class Arm64ScalableValueNumTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_LONG, SimdScalableRepeated, ulong.MaxValue, 2UL,
         "long   0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff...]")]
     [TestCase(TYP_LONG, SimdScalableSequence, ulong.MaxValue, 2UL,
@@ -172,6 +171,7 @@ internal static class Arm64ScalableValueNumTests
     public static void DumpsUseRawUnsignedArithmetic(
         var_types type, SimdScalableKind kind, ulong index, ulong step, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
             var vn = store.VNForSimdScalableCon(Value(type, kind, index, step));
@@ -191,7 +191,6 @@ internal static class Arm64ScalableValueNumTests
             }
         });
     }
-#endif
 
     private static simdscalable_t Value(var_types type, SimdScalableKind kind, ulong index, ulong step)
     {

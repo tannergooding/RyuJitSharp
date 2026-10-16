@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -32,21 +33,25 @@ public sealed partial class Statement
 
     private DebugInfo _debugInfo;
 
-#if DEBUG
-    /// <summary>The instr offset at the end of this statement.</summary>
-    private IL_OFFSET _lastILOffset;
+    private sealed class DebugData
+    {
+        internal int Id;
+        internal IL_OFFSET LastILOffset;
+    }
 
-    private int _stmtId;
-#endif
+    private static class DebugDataStorage
+    {
+        internal static readonly ConditionalWeakTable<Statement, DebugData> Table = [];
+    }
 
     public Statement(GenTree expr, int stmtId)
     {
         _rootNode = expr;
 
-#if DEBUG
-        _lastILOffset = BAD_IL_OFFSET;
-        _stmtId = stmtId;
-#endif
+        if (Configuration.DEBUG)
+        {
+            DebugDataStorage.Table.Add(this, new DebugData { Id = stmtId, LastILOffset = BAD_IL_OFFSET });
+        }
     }
 
     public byte CostEx => _rootNode.CostEx;
@@ -55,24 +60,35 @@ public sealed partial class Statement
 
     public ref readonly DebugInfo DebugInfo => ref _debugInfo;
 
-#if DEBUG
-    public int Id => _stmtId;
+    public int Id => GetDebugData().Id;
 
     public IL_OFFSET LastILOffset
     {
         get
         {
-            return _lastILOffset;
+            return GetDebugData().LastILOffset;
         }
 
         set
         {
-            _lastILOffset = value;
+            GetDebugData().LastILOffset = value;
         }
     }
-#else
-    public int Id => throw new System.InvalidOperationException("Statement IDs are only available in Debug builds.");
-#endif
+
+    private DebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Statement debug data is only available in Debug builds.");
+        }
+
+        if (!DebugDataStorage.Table.TryGetValue(this, out var debugData))
+        {
+            throw new InvalidOperationException("Statement debug data was not initialized.");
+        }
+
+        return debugData;
+    }
 
     public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;
 

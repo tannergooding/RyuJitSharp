@@ -298,15 +298,13 @@ public partial class CodeGen
                     break;
                 }
 
-#if DEBUG
-                if (JitConfig.JitUseScalableVectorT == 1)
+                if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT == 1))
                 {
                     assert(mask.SimdScalableMaskVal.Index == 1);
                     var scalableOpt = Emitter.optGetSveInsOpt(mask.SimdScalableMaskVal.BaseType.EmitSize);
                     emit.emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE_ARM64, targetReg, scalableOpt, SVE_PATTERN_ALL);
                     break;
                 }
-#endif
 
                 var opt = INS_OPTS_SCALABLE_B;
                 var pattern = EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask.SimdMaskVal);

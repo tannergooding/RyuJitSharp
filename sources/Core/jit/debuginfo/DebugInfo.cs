@@ -57,8 +57,8 @@ public readonly struct DebugInfo
         return result;
     }
 
-#if DEBUG
     // Dump textual representation of this DebugInfo to jitstdout.
+    [Conditional("DEBUG")]
     public void Dump(bool recurse)
     {
         // The DebugInfo is printed in the format
@@ -97,7 +97,6 @@ public readonly struct DebugInfo
             par.Dump(recurse);
         }
     }
-#endif
 
     /// <summary>Validate this DebugInfo instance.</summary>
     /// <remarks>This validates that if there is DebugInfo, then it looks sane by checking that the IL location correctly points to the beginning of an IL instruction.</remarks>

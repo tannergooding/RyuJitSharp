@@ -62,12 +62,10 @@ public partial class Compiler
             throw new InvalidOperationException("Scalable-vector mask folding requires an ARM64 target.");
         }
 
-#if DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
+        if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0))
         {
             return gtNewMskConNode(TYP_MASK, TYP_BYTE, false);
         }
-#endif
 
         return gtNewMskConNode(simdmask_t.Zero);
     }

@@ -410,11 +410,10 @@ public sealed partial class ValueNumStore
         _ => throw new FatalJitException("Unrecognized map value type."),
     };
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void DumpPhysicalSelector(ValueNum selector)
     {
         var offset = DecodePhysicalSelector(selector, out var size);
         jitprintf(size == 1 ? $"[{offset}]" : $"[{offset}:{unchecked(offset + size - 1)}]");
     }
-#endif
 }

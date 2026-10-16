@@ -19,13 +19,11 @@ public partial class Emitter
         var ins = id.idIns();
         var debug = id.idDebugOnlyInfo();
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             var info = debug ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
             jitprintf($"IN{info.idNum:x4}: ");
         }
-#endif
         if (!isNew && !asmfm)
         {
             doffs = true;
@@ -303,7 +301,6 @@ public partial class Emitter
             case IF_XARCH_MWR_RRD_CNS:
             case IF_XARCH_MRW_RRD_CNS:
             {
-                var memoryName = sizeName;
                 if (ins is INS_vextractf32x4 or INS_vextractf64x2 or INS_vextracti32x4 or INS_vextracti64x2)
                 {
                     sizeName = emitSizeString(EA_16BYTE);
@@ -313,7 +310,6 @@ public partial class Emitter
                     sizeName = emitSizeString(EA_32BYTE);
                 }
                 MemReg(1, constant: true);
-                sizeName = memoryName;
                 break;
             }
 

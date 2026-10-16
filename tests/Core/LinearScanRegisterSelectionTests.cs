@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 #if TARGET_ARM || (DEBUG && TARGET_ARM64)
 using System.Reflection;
 #endif
@@ -245,6 +247,15 @@ internal static unsafe class LinearScanRegisterSelectionTests
 #endif
 
 #if DEBUG && TARGET_ARM64
+    private static readonly int[] s_consecutiveExpected = [
+        0x10000, 0x08000, 0x04000, 0x02000, 0x01000, 0x00800,
+        0x00400, 0x00200, 0x00100, 0x00080, 0x00040, 0x00020,
+        0x00010, 0x00008, 0x00004, 0x00002, 0x00001,
+    ];
+    private static readonly int[] s_nonconsecutiveExpected = [
+        0x10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ];
+
     [TestCase(false)]
     [TestCase(true)]
     public static void MinimalOrderingRetainsFullHeuristicsForConsecutiveMethods(bool needsConsecutive)
@@ -257,15 +268,10 @@ internal static unsafe class LinearScanRegisterSelectionTests
             var actual = new int[order.Length];
             for (var index = 0; index < order.Length; index++)
             {
-                actual[index] = Convert.ToInt32(order.GetValue(index));
+                actual[index] = Convert.ToInt32(order.GetValue(index), CultureInfo.InvariantCulture);
             }
-            var expected = needsConsecutive
-                ? new[] { 0x10000, 0x08000, 0x04000, 0x02000, 0x01000, 0x00800,
-                    0x00400, 0x00200, 0x00100, 0x00080, 0x00040, 0x00020,
-                    0x00010, 0x00008, 0x00004, 0x00002, 0x00001 }
-                : new[] { 0x10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-
-            Assert.That(actual, Is.EqualTo(expected));
+            Assert.That(actual, Is.EqualTo(
+                needsConsecutive ? s_consecutiveExpected : s_nonconsecutiveExpected));
         });
     }
 
@@ -298,6 +304,8 @@ internal static unsafe class LinearScanRegisterSelectionTests
         return field.GetValue(allocator) ?? throw new AssertionException("Missing register selector instance.");
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects private register-selector state retained in the test assembly.")]
     private static T GetSelectorField<T>(object selector, string name)
     {
         var field = selector.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
@@ -315,6 +323,8 @@ internal static unsafe class LinearScanRegisterSelectionTests
     }
 #endif
 
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects private register-selector methods retained in the test assembly.")]
     private static void InvokeSelector(object selector, string name, params object[] arguments)
     {
         var method = selector.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)

@@ -12,9 +12,7 @@ public partial class Compiler
         if (Configuration.DEBUG && verbose)
         {
             jitprintf("\n************ Trees at start of optValnumCSE_Heuristic()\n");
-#if DEBUG
             fgDumpTrees(fgFirstBB, null);
-#endif
             jitprintf("\n");
         }
 

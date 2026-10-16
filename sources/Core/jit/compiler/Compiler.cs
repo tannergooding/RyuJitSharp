@@ -55,8 +55,6 @@ public partial class Compiler
 #if DEBUG
     public bool verboseTrees;
 
-    /// <summary>If true, dump trees using only ASCII characters</summary>
-    public bool asciiTrees;
 #else
     public bool verboseTrees => false;
 #endif
@@ -2089,12 +2087,11 @@ public partial class Compiler
 
         if (Configuration.TARGET_ARM64)
         {
-#if DEBUG
-            if ((JitConfig.JitUseScalableVectorT != 0) && compExactlyDependsOn(InstructionSet_VectorT))
+            if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0) &&
+                compExactlyDependsOn(InstructionSet_VectorT))
             {
                 return SIZE_UNKNOWN;
             }
-#endif
             if (compExactlyDependsOn(InstructionSet_VectorT128))
             {
                 return Configuration.FP_REGSIZE_BYTES;
@@ -2340,14 +2337,20 @@ public partial class Compiler
         return (ciType == CORINFO_TYPE_CLASS) ? new typeInfo(clsHnd) : new typeInfo(ciType.VarType);
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public static void printStmtId(Statement stmt)
     {
         jitprintf(FMT_STMT(stmt.Id));
     }
 
+    [Conditional("DEBUG")]
     public static void printTreeId(GenTree? tree)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         if (tree is null)
         {
             jitprintf("[------]");
@@ -2357,11 +2360,6 @@ public partial class Compiler
             jitprintf($"[{tree.TreeId:D6}]");
         }
     }
-#else
-    public static void printTreeId(GenTree? tree)
-    {
-    }
-#endif
 
     /// <summary>Use to determine if a struct *might* be a simd type. As this function only takes a size, many structs will fit the criteria.</summary>
     /// <param name="structSize"></param>
@@ -3230,9 +3228,14 @@ public partial class Compiler
     }
 #endif
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void vnPrint(ValueNum vn, int level)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         var reserved = vn switch
         {
             ValueNumStore.RecursiveVN => "$VN.Recursive",
@@ -3258,8 +3261,14 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void vnpPrint(ValueNumPair vnp, int level)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         if (vnp.BothEqual())
         {
             vnPrint(vnp.Liberal, level);
@@ -3273,13 +3282,4 @@ public partial class Compiler
             jitprintf(">");
         }
     }
-#else
-    public void vnPrint(ValueNum vn, int level)
-    {
-    }
-
-    public void vnpPrint(ValueNumPair vnp, int level)
-    {
-    }
-#endif
 }

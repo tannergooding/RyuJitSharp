@@ -192,10 +192,10 @@ internal static unsafe class Arm64FrameLayoutTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void OsrScalableLocalUsesItsTier0FrameAndRuntimeSizedHome()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithFrame((compiler, _) => {
             var previousScalableSetting = JitConfig.JitUseScalableVectorT;
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
@@ -238,7 +238,6 @@ internal static unsafe class Arm64FrameLayoutTests
             }
         });
     }
-#endif
 
     [TestCase(0, 16)]
     [TestCase(7, 64)]

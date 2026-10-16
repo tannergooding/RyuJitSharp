@@ -6,11 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 
-#if TARGET_AMD64
 using indexType = ulong;
-#else
-using indexType = uint;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 

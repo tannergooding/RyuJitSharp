@@ -25,14 +25,10 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     public GenTreePutArgStk(var_types type, GenTree op1, GenTreeCall? call, int argOffset, int stackByteSize, bool putInIncomingArgArea)
         : base(GT_PUTARG_STK, type, op1)
     {
-#if DEBUG
-        _call = call;
-#else
-        if (Configuration.UNIX_X86_ABI)
+        if (Configuration.DEBUG || Configuration.UNIX_X86_ABI)
         {
             _call = call;
         }
-#endif
 
         _argOffset = argOffset;
         _stackByteSize = stackByteSize;
@@ -90,12 +86,9 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
         }
     }
 
-    public GenTreeCall? Call =>
-#if DEBUG
-            _call;
-#else
-            Configuration.UNIX_X86_ABI ? _call : null;
-#endif
+    public GenTreeCall? Call => (Configuration.DEBUG || Configuration.UNIX_X86_ABI)
+        ? _call
+        : null;
 
     public new GenTree Data => Op1;
 

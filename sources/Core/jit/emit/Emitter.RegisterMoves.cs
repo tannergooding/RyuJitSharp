@@ -51,66 +51,67 @@ public partial class Emitter
             RequireSupportedInstructionRecording();
         }
 
-#if DEBUG
-        switch (ins)
+        if (Configuration.DEBUG)
         {
-            case INS_mov or INS_movsx or INS_movzx:
+            switch (ins)
             {
-                assert(dstReg.IsIntReg && srcReg.IsIntReg);
-                break;
-            }
+                case INS_mov or INS_movsx or INS_movzx:
+                {
+                    assert(dstReg.IsIntReg && srcReg.IsIntReg);
+                    break;
+                }
 
-            case INS_movsxd:
-            {
-                if (!Configuration.TARGET_AMD64)
+                case INS_movsxd:
+                {
+                    if (!Configuration.TARGET_AMD64)
+                    {
+                        unreached();
+                        break;
+                    }
+
+                    assert(dstReg.IsIntReg && srcReg.IsIntReg);
+                    break;
+                }
+
+                case INS_movapd or INS_movaps or INS_movdqa32 or INS_vmovdqa64 or INS_movdqu32 or
+                    INS_vmovdqu8 or INS_vmovdqu16 or INS_vmovdqu64 or INS_movsd_simd or INS_movss or
+                    INS_vmovsh or INS_movupd or INS_movups:
+                {
+                    assert(dstReg.IsFltReg && srcReg.IsFltReg);
+                    break;
+                }
+
+                case INS_movq:
+                {
+                    assert(dstReg.IsFltReg && srcReg.IsFltReg);
+                    break;
+                }
+
+                case INS_movd32 or INS_movd64:
+                {
+                    assert(dstReg.IsFltReg != srcReg.IsFltReg);
+                    break;
+                }
+
+                case INS_kmovb_msk or INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk:
+                {
+                    assert((isMaskReg(dstReg) || isMaskReg(srcReg)) && !dstReg.IsIntReg && !srcReg.IsIntReg);
+                    break;
+                }
+
+                case INS_kmovb_gpr or INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr:
+                {
+                    assert(dstReg.IsIntReg || srcReg.IsIntReg);
+                    break;
+                }
+
+                default:
                 {
                     unreached();
                     break;
                 }
-
-                assert(dstReg.IsIntReg && srcReg.IsIntReg);
-                break;
-            }
-
-            case INS_movapd or INS_movaps or INS_movdqa32 or INS_vmovdqa64 or INS_movdqu32 or
-                INS_vmovdqu8 or INS_vmovdqu16 or INS_vmovdqu64 or INS_movsd_simd or INS_movss or
-                INS_vmovsh or INS_movupd or INS_movups:
-            {
-                assert(dstReg.IsFltReg && srcReg.IsFltReg);
-                break;
-            }
-
-            case INS_movq:
-            {
-                assert(dstReg.IsFltReg && srcReg.IsFltReg);
-                break;
-            }
-
-            case INS_movd32 or INS_movd64:
-            {
-                assert(dstReg.IsFltReg != srcReg.IsFltReg);
-                break;
-            }
-
-            case INS_kmovb_msk or INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk:
-            {
-                assert((isMaskReg(dstReg) || isMaskReg(srcReg)) && !dstReg.IsIntReg && !srcReg.IsIntReg);
-                break;
-            }
-
-            case INS_kmovb_gpr or INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr:
-            {
-                assert(dstReg.IsIntReg || srcReg.IsIntReg);
-                break;
-            }
-
-            default:
-            {
-                unreached();
-                break;
             }
         }
-#endif
         var size = EA_SIZE(attr);
         assert(size <= EA_64BYTE);
         noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));

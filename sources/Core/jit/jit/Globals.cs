@@ -145,100 +145,99 @@ public partial class Globals
     [Conditional("DEBUG")]
     public static void DISPNODE(GenTree? tree)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            compiler.gtDispTree(tree, msg: "", topOnly: true);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                compiler.gtDispTree(tree, msg: "", topOnly: true);
+            }
         }
-#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPTREE(GenTree tree)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            compiler.gtDispTree(tree);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                compiler.gtDispTree(tree);
+            }
         }
-#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPSTMT(Statement stmt)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            compiler.gtDispStmt(stmt);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                compiler.gtDispStmt(stmt);
+            }
         }
-#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPRANGE(LIR.ReadOnlyRange range)
     {
-
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            compiler.gtDispRange(range);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                compiler.gtDispRange(range);
+            }
         }
-#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPTREERANGE(LIR.Range range, GenTree tree)
     {
-
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            compiler.gtDispTreeRange(range, tree);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                compiler.gtDispTreeRange(range, tree);
+            }
         }
-#endif
     }
 
     public static string dspBool(bool b) => b ? "true" : "false";
 
     public static nint dspOffset(nint offs)
     {
-#if DEBUG
-        if (offs != 0)
+        if (Configuration.DEBUG && (offs != 0))
         {
             var compiler = JitTls.Compiler;
             assert(compiler is not null);
             return compiler.dspOffset(offs);
         }
-#endif
         return offs;
     }
 
     public static unsafe nint dspPtr(void* ptr)
     {
-#if DEBUG
-        if (ptr != null)
+        if (Configuration.DEBUG && (ptr != null))
         {
             var compiler = JitTls.Compiler;
             assert(compiler is not null);
             return compiler.dspPtr(ptr);
         }
-#endif
         return unchecked((nint)ptr);
     }
 

@@ -877,13 +877,10 @@ public sealed class ProfileSynthesis
 #endif
         JITDUMP($"Synthesis: exception weight {FMT_WT(ehWeight)}\n");
 
-#if DEBUG
-        if (ehWeight == 0)
+        if (Configuration.DEBUG && (ehWeight == 0))
         {
             return;
         }
-
-#endif
         if (!_comp.compIsForInlining)
         {
             // Inlinees share the caller's EH table; only this method's reachable

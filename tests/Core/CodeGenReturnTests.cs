@@ -100,7 +100,7 @@ internal static unsafe class CodeGenReturnTests
         WithReturn(type, (compiler, codeGen) =>
         {
             compiler.info.compCallConv = CorInfoCallConvExtension.Swift;
-            var errorReg = aliasedError ? REG_SWIFT_ERROR : REG_RDX;
+            var errorReg = aliasedError ? TargetRuntimeMetadata.SwiftErrorRegister : REG_RDX;
             var error = Register(compiler, TYP_BYREF, errorReg);
             var value = type == TYP_VOID ? null : Register(compiler, type, REG_RCX);
             var tree = new GenTreeOp(GT_SWIFT_ERROR_RET, type, error, value);
@@ -113,7 +113,7 @@ internal static unsafe class CodeGenReturnTests
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
                 Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_PTRSIZE));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SWIFT_ERROR));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(TargetRuntimeMetadata.SwiftErrorRegister));
                 Assert.That(descriptors[0].idReg2(), Is.EqualTo(errorReg));
             }
             if (type != TYP_VOID)

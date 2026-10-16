@@ -93,15 +93,16 @@ public struct ReturnTypeDesc
                 regCount++;
             }
 
-#if DEBUG
-            // Any remaining elements in _regTypes[] should also be TYP_UNKNOWN
-            for (var i = regCount + 1; i < Configuration.MAX_RET_REG_COUNT; i++)
+            if (Configuration.DEBUG)
             {
-                assert(_regType[i] == TYP_UNKNOWN);
+                // Any remaining elements in _regTypes[] should also be TYP_UNKNOWN
+                for (var i = regCount + 1; i < Configuration.MAX_RET_REG_COUNT; i++)
+                {
+                    assert(_regType[i] == TYP_UNKNOWN);
 
-                assert(_fieldOffset[i] == 0);
+                    assert(_fieldOffset[i] == 0);
+                }
             }
-#endif
 
             return regCount;
         }

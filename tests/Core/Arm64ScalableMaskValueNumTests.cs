@@ -112,11 +112,11 @@ internal static class Arm64ScalableMaskValueNumTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void AllBitsUsesConfigurationButZeroRemainsFixed(bool scalable)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             SetScalableConfiguration(scalable);
             var store = new ValueNumStore(compiler);
@@ -141,6 +141,7 @@ internal static class Arm64ScalableMaskValueNumTests
     [Test]
     public static void ScalableTreeNumberingUsesTheScalablePayload()
     {
+        Assume.That(TestConfiguration.IsDebug);
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             SetScalableConfiguration(true);
             compiler.vnStore = new ValueNumStore(compiler);
@@ -157,6 +158,7 @@ internal static class Arm64ScalableMaskValueNumTests
     [TestCase(true, " {SimdMaskScalableCns[base:long idx:1]}")]
     public static void DiagnosticsUseStoredTagRatherThanCurrentConfiguration(bool scalable, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             SetScalableConfiguration(!scalable);
             var store = new ValueNumStore(compiler);
@@ -190,6 +192,5 @@ internal static class Arm64ScalableMaskValueNumTests
         field.SetValue(config, enabled ? 1 : 0);
         JitConfig = (JitConfigValues)config;
     }
-#endif
 }
 #endif

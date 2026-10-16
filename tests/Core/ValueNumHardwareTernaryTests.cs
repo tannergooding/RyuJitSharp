@@ -301,10 +301,11 @@ internal static unsafe class ValueNumHardwareTernaryTests
             var trueBits = new byte[16];
             var falseBits = new byte[16];
             var expected = new byte[16];
+            var rawMask = unchecked((ulong)mask.RawBits);
             for (var index = 0; index < expected.Length; index++)
             {
                 var laneStart = index - (index % baseType.Size);
-                vectorMask[index] = (mask.RawBits & (1UL << laneStart)) != 0 ? (byte)0xFF : (byte)0;
+                vectorMask[index] = (rawMask & (1UL << laneStart)) != 0 ? (byte)0xFF : (byte)0;
                 trueBits[index] = (byte)(first[index] & vectorMask[index]);
                 falseBits[index] = (byte)(second[index] & ~vectorMask[index]);
                 expected[index] = (byte)(trueBits[index] | falseBits[index]);
@@ -328,7 +329,7 @@ internal static unsafe class ValueNumHardwareTernaryTests
     {
         WithStore((_, store) =>
         {
-            var mask = store.VNForSimdMaskScalableCon(allBits ? simdmaskscalable_t.AllBitsSet : simdmaskscalable_t.Zero);
+            var mask = store.VNForSimdMaskScalableCon(allBits ? simdmaskscalable_t.AllBitsSet : default);
             var first = store.VNForGenericCon(TYP_SIMD16, SelectionFirst());
             var second = store.VNForGenericCon(TYP_SIMD16, SelectionSecond());
             var typeVN = store.VNForSimdType(16, TYP_INT);
@@ -347,7 +348,7 @@ internal static unsafe class ValueNumHardwareTernaryTests
         WithStore((_, store) =>
         {
             var mask = constant
-                ? store.VNForSimdMaskScalableCon(simdmaskscalable_t.Zero)
+                ? store.VNForSimdMaskScalableCon(default)
                 : store.VNForExpr(null, TYP_MASK);
             var value = store.VNForGenericCon(TYP_SIMD16, SelectionFirst());
             var typeVN = store.VNForSimdType(16, TYP_INT);

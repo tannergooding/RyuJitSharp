@@ -346,9 +346,10 @@ internal static unsafe class LinearScanCallBuildingTests
     {
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_LONG, 0);
-            var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_LONG, source) { RegNum = REG_SWIFT_ERROR };
+            var swiftErrorRegister = TargetRuntimeMetadata.SwiftErrorRegister;
+            var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_LONG, source) { RegNum = swiftErrorRegister };
             ReferenceBuildLocation(allocator) = 2;
-            _ = BuildDef(allocator, putArg, SRBM_SWIFT_ERROR, 0);
+            _ = BuildDef(allocator, putArg, swiftErrorRegister.SingleTypeMask, 0);
             var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
             call.Flags |= GTF_CALL_UNMANAGED;
             call._unmgdCallConv = CorInfoCallConvExtension.Swift;
@@ -361,7 +362,7 @@ internal static unsafe class LinearScanCallBuildingTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildCall(allocator, call), Is.EqualTo(1));
-            var fixedUse = allocator.physRegs[(int)REG_SWIFT_ERROR].lastRefPosition
+            var fixedUse = allocator.physRegs[(int)swiftErrorRegister].lastRefPosition
                 ?? throw new AssertionException("The Swift error register has no fixed argument use.");
             Assert.That(fixedUse.refType, Is.EqualTo(RefType.RefTypeFixedReg));
             Assert.That(fixedUse.nodeLocation, Is.EqualTo(4));

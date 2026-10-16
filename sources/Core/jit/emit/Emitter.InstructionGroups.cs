@@ -65,14 +65,10 @@ public partial class Emitter
 
         ig.igWeight = 0;
         ig.igPerfScore = 0.0;
-#if DEBUG
-        ig.igWeight = getCurrentBlockWeight();
-#else
-        if (Configuration.LATE_DISASM)
+        if (Configuration.DEBUG || Configuration.LATE_DISASM)
         {
             ig.igWeight = getCurrentBlockWeight();
         }
-#endif
 
         ig.igData = null;
         ig.igPhData = null;

@@ -4,10 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Numerics;
-#if DEBUG
 using System.Globalization;
 using System.Text;
-#endif
 
 namespace RyuJitSharp;
 
@@ -114,16 +112,17 @@ public partial class Emitter
 
             if (ReferenceEquals(group.igLoopBackEdge, loopHeader) || (loopSize > maxLoopSize))
             {
-#if DEBUG
-                if (ReferenceEquals(group.igLoopBackEdge, loopHeader))
+                if (Configuration.DEBUG)
                 {
-                    JITDUMP(" -- Found the back edge.\n");
+                    if (ReferenceEquals(group.igLoopBackEdge, loopHeader))
+                    {
+                        JITDUMP(" -- Found the back edge.\n");
+                    }
+                    else
+                    {
+                        JITDUMP($" -- loopSize exceeded the threshold of {maxLoopSize} bytes.\n");
+                    }
                 }
-                else
-                {
-                    JITDUMP($" -- loopSize exceeded the threshold of {maxLoopSize} bytes.\n");
-                }
-#endif
                 break;
             }
 

@@ -127,17 +127,18 @@ public partial class Globals
         s_fatalNoWayAssertBodyCount = unchecked(s_fatalNoWayAssertBodyCount + 1);
 #endif
 
-#if !DEBUG
-        // Even in retail, if we hit a noway, and we have this variable set, we don't want to fall back
-        // to MinOpts, which might hide a regression. Instead, hit a breakpoint (and crash). We don't
-        // have the assert code to fall back on here.
-        // The debug path goes through this function also, to do the call to 'fatal'.
-        // This kind of noway is hit for unreached().
-        if (JitConfig.JitEnableNoWayAssert != 0)
+        if (!Configuration.DEBUG)
         {
-            Debugger.Break();
+            // Even in retail, if we hit a noway, and we have this variable set, we don't want to fall back
+            // to MinOpts, which might hide a regression. Instead, hit a breakpoint (and crash). We don't
+            // have the assert code to fall back on here.
+            // The debug path goes through this function also, to do the call to 'fatal'.
+            // This kind of noway is hit for unreached().
+            if (JitConfig.JitEnableNoWayAssert != 0)
+            {
+                Debugger.Break();
+            }
         }
-#endif
 
         fatal(CORJIT_RECOVERABLEERROR);
     }

@@ -139,7 +139,9 @@ public partial struct JitConfigValues
 #if DEBUG
     private int _jitDumpVerboseSsa;
     private int _jitDumpVerboseTrees;
+#endif
     private int _jitDumpTreeIDs;
+#if DEBUG
     private int _jitDumpBeforeAfterMorph;
     private int _jitDumpTerseNextBlock;
     private MethodSet _jitEHDump;
@@ -475,9 +477,7 @@ public partial struct JitConfigValues
 #if DEBUG
     private int _jitSaveFpLrWithCalleeSavedRegisters;
 #endif
-#if DEBUG
     private int _jitUseScalableVectorT;
-#endif
 #if DEBUG
     private int _jitDispIns;
 #endif
@@ -724,7 +724,19 @@ public partial struct JitConfigValues
 #if DEBUG
     public int JitDumpVerboseSsa => _jitDumpVerboseSsa;
     public int JitDumpVerboseTrees => _jitDumpVerboseTrees;
-    public int JitDumpTreeIDs => _jitDumpTreeIDs;
+#endif
+    public int JitDumpTreeIDs
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitDumpTreeIDs' is only available in Debug builds.");
+            }
+            return _jitDumpTreeIDs;
+        }
+    }
+#if DEBUG
     public int JitDumpBeforeAfterMorph => _jitDumpBeforeAfterMorph;
     public int JitDumpTerseNextBlock => _jitDumpTerseNextBlock;
     public MethodSet JitEHDump => _jitEHDump;
@@ -1480,9 +1492,17 @@ public partial struct JitConfigValues
 #if DEBUG
     public int JitSaveFpLrWithCalleeSavedRegisters => _jitSaveFpLrWithCalleeSavedRegisters;
 #endif
-#if DEBUG
-    public int JitUseScalableVectorT => _jitUseScalableVectorT;
-#endif
+    public int JitUseScalableVectorT
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitUseScalableVectorT' is only available in Debug builds.");
+            }
+            return _jitUseScalableVectorT;
+        }
+    }
 #if DEBUG
     public int JitDispIns => _jitDispIns;
 #endif
@@ -1645,7 +1665,9 @@ public partial struct JitConfigValues
 #if DEBUG
         // _jitDumpVerboseSsa = unchecked((int)(0xCDCDCDCD));
         // _jitDumpVerboseTrees = unchecked((int)(0xCDCDCDCD));
+#endif
         // _jitDumpTreeIDs = unchecked((int)(0xCDCDCDCD));
+#if DEBUG
         // _jitDumpBeforeAfterMorph = unchecked((int)(0xCDCDCDCD));
         // _jitDumpTerseNextBlock = unchecked((int)(0xCDCDCDCD));
         _jitEHDump.destroy(jitHost);
@@ -2087,9 +2109,7 @@ public partial struct JitConfigValues
             // _jitSaveFpLrWithCalleeSavedRegisters = unchecked((int)(0xCDCDCDCD));
 #endif
         }
-#if DEBUG
         // _jitUseScalableVectorT = unchecked((int)(0xCDCDCDCD));
-#endif
         if (Configuration.TARGET_LOONGARCH64)
         {
 #if DEBUG
@@ -2283,7 +2303,12 @@ public partial struct JitConfigValues
 #if DEBUG
         _jitDumpVerboseSsa = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpVerboseSsa"u8))), 0);
         _jitDumpVerboseTrees = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpVerboseTrees"u8))), 0);
-        _jitDumpTreeIDs = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpTreeIDs"u8))), 1);
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitDumpTreeIDs = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpTreeIDs"u8))), 1);
+        }
+#if DEBUG
         _jitDumpBeforeAfterMorph = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpBeforeAfterMorph"u8))), 0);
         _jitDumpTerseNextBlock = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpTerseNextBlock"u8))), 0);
         var jitEHDumpValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEHDump"u8))));
@@ -2796,9 +2821,10 @@ public partial struct JitConfigValues
             _jitSaveFpLrWithCalleeSavedRegisters = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSaveFpLrWithCalleeSavedRegisters"u8))), 0);
 #endif
         }
-#if DEBUG
-        _jitUseScalableVectorT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUseScalableVectorT"u8))), 0);
-#endif
+        if (Configuration.DEBUG)
+        {
+            _jitUseScalableVectorT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUseScalableVectorT"u8))), 0);
+        }
         if (Configuration.TARGET_LOONGARCH64)
         {
 #if DEBUG

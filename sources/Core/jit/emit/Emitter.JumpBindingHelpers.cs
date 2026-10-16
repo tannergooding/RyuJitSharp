@@ -25,19 +25,17 @@ public partial class Emitter
 
         assert(!jump.idIsBound());
         var block = jump.idjTarget ?? throw new FatalJitException("An unbound jump requires a basic-block target.");
-#if DEBUG
-        var compiler = _compiler ?? throw new FatalJitException("Jump target binding requires an active compiler.");
-        if (compiler.verbose)
+        if (Configuration.DEBUG &&
+            (_compiler ?? throw new FatalJitException("Jump target binding requires an active compiler.")).verbose)
         {
             jitprintf("Binding: ");
             emitDispIns(jump, false, false, false);
-            jitprintf($"Binding L_M{unchecked((uint)compiler.compMethodID):D3}_{FMT_BB(block.bbNum)}");
+            jitprintf($"Binding L_M{unchecked((uint)_compiler!.compMethodID):D3}_{FMT_BB(block.bbNum)}");
         }
-#endif
 
         var target = emitCodeGetCookie(block);
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG &&
+            (_compiler ?? throw new FatalJitException("Jump target binding requires an active compiler.")).verbose)
         {
             if (target is not null)
             {
@@ -48,7 +46,6 @@ public partial class Emitter
                 jitprintf($"-- ERROR, no emitter cookie for {FMT_BB(block.bbNum)}; it is probably missing BBF_HAS_LABEL.\n");
             }
         }
-#endif
 
         assert(block.HasFlag(BBF_HAS_LABEL));
         var boundTarget = target ?? throw new FatalJitException("A jump target requires an emitter label cookie.");

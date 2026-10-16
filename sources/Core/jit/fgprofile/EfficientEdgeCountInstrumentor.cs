@@ -144,18 +144,19 @@ public sealed unsafe class EfficientEdgeCountInstrumentor : Instrumentor
 
         foreach (var block in Compiler.Blocks)
         {
-            _probeHeads.TryGetValue(block, out var head);
+            _ = _probeHeads.TryGetValue(block, out var head);
             if (!ShouldProcess(block))
             {
-#if DEBUG
-                for (var probe = head; probe is not null; probe = probe.Next)
+                if (Configuration.DEBUG)
                 {
-                    if (probe.Kind is EdgeKind.CriticalEdge)
+                    for (var probe = head; probe is not null; probe = probe.Next)
                     {
-                        edgesIgnored++;
+                        if (probe.Kind is EdgeKind.CriticalEdge)
+                        {
+                            edgesIgnored++;
+                        }
                     }
                 }
-#endif
                 continue;
             }
 

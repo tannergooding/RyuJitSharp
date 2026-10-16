@@ -5,6 +5,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -890,10 +891,10 @@ public partial class Compiler
         jitprintf($"{prefix} '{objectDescription}'");
     }
 
-#if DEBUG
     /// <summary>Print a string literal. If missing information (in SPMI), then print a placeholder string.</summary>
     /// <param name="module">The literal's scope handle</param>
     /// <param name="token">The literal's token</param>
+    [Conditional("DEBUG")]
     public unsafe void eePrintStringLiteral(CORINFO_MODULE_HANDLE module, int token)
     {
         var str = "<unknown string literal>";
@@ -930,7 +931,6 @@ public partial class Compiler
         });
         jitprintf(succeeded ? str : "<unknown string literal>");
     }
-#endif
 
     /// <summary>Print a type given by a class handle.</summary>
     /// <param name="stringBuilder">the builder</param>

@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -62,6 +62,7 @@ public readonly struct IndentStack
     public int Depth => _stack.Count;
 
     // Push a new indentation onto the stack, of the given type.
+    [Conditional("DEBUG")]
     public void Push(Compiler.IndentInfo info) => _stack.Add(info);
 
     // Pop the most recent indentation type off the stack.
@@ -75,6 +76,7 @@ public readonly struct IndentStack
     }
 
     // Print the current indentation and arcs.
+    [Conditional("DEBUG")]
     public void Print()
     {
         // A default stack represents native printIndent(nullptr), which emits no arcs.
@@ -138,4 +140,3 @@ public readonly struct IndentStack
         jitprintf($"{_indents[(int)(ICTerminal)]}");
     }
 }
-#endif

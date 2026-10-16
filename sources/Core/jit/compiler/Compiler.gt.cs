@@ -5,6 +5,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -1481,11 +1482,11 @@ public partial class Compiler
         return walker.Flags;
     }
 
-#if DEBUG
     /// <summary>Dump the tree for a call arg list</summary>
     /// <param name="call">the call to dump arguments for</param>
     /// <param name="lastCallOperand">the call's last operand (to determine the arc types)</param>
     /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    [Conditional("DEBUG")]
     public void gtDispArgList(GenTreeCall call, GenTree? lastCallOperand, ref IndentStack indentStack)
     {
         foreach (var arg in call.Args.EarlyArgs)
@@ -1500,6 +1501,7 @@ public partial class Compiler
 
     /// <summary>dumps all statements inside `block`.</summary>
     /// <param name="block">the block to display statements for.</param>
+    [Conditional("DEBUG")]
     public void gtDispBlockStmts(BasicBlock block)
     {
         foreach (var stmt in block.Statements)
@@ -1515,6 +1517,7 @@ public partial class Compiler
     /// <param name="arcType">the type of arc to use for this child</param>
     /// <param name="msg">a contextual method (i.e. from the parent) to print</param>
     /// <param name="topOnly">a boolean indicating whether to print the children, or just the top node</param>
+    [Conditional("DEBUG")]
     public void gtDispChild(GenTree child, ref IndentStack indentStack, IndentInfo arcType, string msg = "", bool topOnly = false)
     {
         indentStack.Push(arcType);
@@ -1522,6 +1525,7 @@ public partial class Compiler
         _ = indentStack.Pop();
     }
 
+    [Conditional("DEBUG")]
     public void gtDispClassLayout(ClassLayout layout, var_types type)
     {
         assert(layout is not null);
@@ -1540,6 +1544,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void gtDispCommonEndLine(GenTree tree)
     {
         // Utility function that prints the following node information
@@ -1553,6 +1558,7 @@ public partial class Compiler
         jitprintf("\n");
     }
 
+    [Conditional("DEBUG")]
     public unsafe void gtDispConst(GenTree tree)
     {
         assert(tree.Oper.IsConst);
@@ -1883,7 +1889,8 @@ public partial class Compiler
             case GT_CNS_MSK:
             {
                 var mskCon = tree.AsMskCon();
-                if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
+                if (Configuration.DEBUG && Configuration.TARGET_ARM64 &&
+                    (JitConfig.JitUseScalableVectorT != 0))
                 {
                     var value = mskCon.SimdScalableMaskVal;
                     jitprintf($"{value.BaseType.Name,-6} <0x{value.Index:x}, 0x{value.Index:x}, 0x{value.Index:x}...>");
@@ -1904,6 +1911,7 @@ public partial class Compiler
     /// <summary>Print out the fields in this field sequence.</summary>
     /// <param name="fieldSeq">The field sequence</param>
     /// <param name="offset">Offset of the (implicit) struct fields in the sequence</param>
+    [Conditional("DEBUG")]
     public unsafe void gtDispFieldSeq(FieldSeq? fieldSeq, nint offset)
     {
         if (fieldSeq is null)
@@ -1919,6 +1927,7 @@ public partial class Compiler
         jitprintf("]");
     }
 
+    [Conditional("DEBUG")]
     public void gtDispLclVar(int lclNum, bool padForBiggestDisp = true)
     {
         var name = gtGetLclVarName(lclNum);
@@ -1936,6 +1945,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void gtDispLclVarStructType(int lclNum)
     {
         ref var varDsc = ref lvaGetDesc(lclNum);
@@ -1952,6 +1962,7 @@ public partial class Compiler
     /// <summary>Print a single leaf node to jitstdout.</summary>
     /// <param name="tree">the tree to be printed</param>
     /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
+    [Conditional("DEBUG")]
     public unsafe void gtDispLeaf(GenTree tree, ref IndentStack indentStack)
     {
         if (tree.Oper.IsConst)
@@ -2075,6 +2086,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void gtDispLIRNode(GenTree node, string prefixMsg = "")
     {
         var indentStack = new IndentStack(this);
@@ -2160,6 +2172,7 @@ public partial class Compiler
     /// <param name="tree">the local tree</param>
     /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
     /// <remarks>Prints the information common to all local nodes. Does not print children.</remarks>
+    [Conditional("DEBUG")]
     public void gtDispLocal(GenTreeLclVarCommon tree, ref IndentStack indentStack)
     {
         jitprintf(" ");
@@ -2226,7 +2239,8 @@ public partial class Compiler
         {
             // a normal not-promoted lclvar
 
-            if ((varDsc.lvTracked || varDsc.lvTrackedWithoutIndex) && fgLocalVarLivenessDone && ((tree.Flags & GTF_VAR_DEATH) is not 0))
+            if ((varDsc.lvTracked || GetLocalVarTrackedWithoutIndex(varNum)) &&
+                fgLocalVarLivenessDone && ((tree.Flags & GTF_VAR_DEATH) is not 0))
             {
                 jitprintf(" (last use)");
             }
@@ -2274,6 +2288,7 @@ public partial class Compiler
     /// <param name="indentStack">the specification for the current level of indentation &amp; arcs</param>
     /// <param name="msg">a contextual method (i.e. from the parent) to print</param>
     /// <param name="isLIR">'indentStack' may be null, in which case no indentation or arcs are printed 'msg' may be null</param>
+    [Conditional("DEBUG")]
     public unsafe void gtDispNode(GenTree tree, ref IndentStack indentStack, string msg, bool isLIR)
     {
         var printFlags = true; // always true..
@@ -2322,7 +2337,7 @@ public partial class Compiler
         }
 
         // Print the node ID
-        printTreeId((JitConfig.JitDumpTreeIDs is not 0) ? tree : null);
+        printTreeId((Configuration.DEBUG && (JitConfig.JitDumpTreeIDs is not 0)) ? tree : null);
         jitprintf(" ");
 
         if (tree.Oper >= GT_COUNT)
@@ -2730,6 +2745,7 @@ public partial class Compiler
         _ => "UnknownCallConv",
     };
 
+    [Conditional("DEBUG")]
     public void gtDispNodeName(GenTree tree)
     {
         // print the node name
@@ -2872,6 +2888,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void gtDispRange(LIR.ReadOnlyRange range)
     {
         foreach (var node in range)
@@ -2882,6 +2899,7 @@ public partial class Compiler
 
     /// <summary>Print the register(s) defined by the given node</summary>
     /// <param name="tree">GenTree node whose registers we want to print</param>
+    [Conditional("DEBUG")]
     public void gtDispRegVal(GenTree tree)
     {
         switch (tree.RegTag)
@@ -2920,6 +2938,7 @@ public partial class Compiler
     /// <param name="lclNum">The local's number.</param>
     /// <param name="ssaNum">The SSA number.</param>
     /// <param name="isDef">Whether this is a def.</param>
+    [Conditional("DEBUG")]
     public void gtDispSsaName(int lclNum, int ssaNum, bool isDef)
     {
         if (ssaNum is SsaConfig.RESERVED_SSA_NUM)
@@ -2949,6 +2968,7 @@ public partial class Compiler
         jitprintf($"{(isValid ? "" : "?")}{(isDef ? "d" : "u")}:{ssaNum}");
     }
 
+    [Conditional("DEBUG")]
     public void gtDispStmt(Statement stmt, string? msg = null)
     {
         if (msg is not null)
@@ -2993,27 +3013,30 @@ public partial class Compiler
         gtDispTree(stmt.RootNode);
     }
 
+    [Conditional("DEBUG")]
     public void gtDispTree(GenTree? tree, string msg = "", bool topOnly = false, bool isLIR = false)
     {
         var indentStack = new IndentStack(this);
         gtDispTree(tree, ref indentStack, msg, topOnly, isLIR);
     }
 
-#if DEBUG
-    private static readonly string[] s_insCflagsNames =
-    [
-        "0", "v", "c", "cv", "z", "zv", "zc", "zcv",
-        "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv",
-    ];
+    private static class InsCflagsNames
+    {
+        internal static readonly string[] Values =
+        [
+            "0", "v", "c", "cv", "z", "zv", "zc", "zcv",
+            "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv",
+        ];
+    }
 
     private static string InsCflagsToString(insCFlags flags)
     {
         var index = (int)flags;
-        assert((index >= 0) && (index < s_insCflagsNames.Length));
-        return s_insCflagsNames[index];
+        assert((index >= 0) && (index < InsCflagsNames.Values.Length));
+        return InsCflagsNames.Values[index];
     }
-#endif
 
+    [Conditional("DEBUG")]
     public unsafe void gtDispTree(GenTree? tree, ref IndentStack indentStack, string msg = "", bool topOnly = false, bool isLIR = false)
     {
         if (tree is null)
@@ -3559,6 +3582,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void gtDispTreeRange(LIR.Range containingRange, GenTree tree)
     {
         gtDispRange(containingRange.GetTreeRangeWithFlags(tree, out _, out _));
@@ -3566,6 +3590,7 @@ public partial class Compiler
 
     /// <summary>Utility function that prints a tree's ValueNumber: gtVNPair</summary>
     /// <param name="tree"></param>
+    [Conditional("DEBUG")]
     public void gtDispVN(GenTree tree)
     {
         if (tree._vnPair.Liberal != ValueNumStore.NoVN)
@@ -3575,20 +3600,6 @@ public partial class Compiler
             vnpPrint(tree._vnPair, 0);
         }
     }
-#else
-    public void gtDispStmt(Statement stmt, string? msg = null)
-    {
-    }
-
-    public void gtDispBlockStmts(BasicBlock block)
-    {
-    }
-
-    public void gtDispTree(GenTree? tree, string msg = "", bool topOnly = false, bool isLIR = false)
-    {
-    }
-#endif
-
     /// <summary>Extracts side effects from the given expression.</summary>
     /// <param name="expr">the expression tree to extract side effects from</param>
     /// <param name="list">reference to a (possibly null) node</param>
@@ -3621,7 +3632,6 @@ public partial class Compiler
         list = sideEffectExtractor.Result;
     }
 
-#if DEBUG
     public string gtGetArgMsg(GenTreeCall call, CallArg arg)
     {
         var stringBuilder = new StringBuilder();
@@ -3780,8 +3790,6 @@ public partial class Compiler
         }
         return stringBuilder;
     }
-
-#endif
 
     public string gtGetWellKnownArgNameForArgMsg(WellKnownArg arg) => arg switch {
         WellKnownArg.ThisPointer => "this",
@@ -7393,7 +7401,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     /// <summary>Get the local var name</summary>
     /// <param name="lclNum"></param>
     /// <returns></returns>
@@ -7535,7 +7542,6 @@ public partial class Compiler
         ilName = name;
         ilNum = num;
     }
-#endif
 
     public static var_types gtGetTypeForIconFlags(GenTreeFlags flags) => (flags == GTF_ICON_OBJ_HDL) ? TYP_REF : TYP_I_IMPL;
 

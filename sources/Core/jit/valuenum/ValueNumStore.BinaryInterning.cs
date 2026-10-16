@@ -221,11 +221,9 @@ public sealed partial class ValueNumStore
             TYP_MASK when !Configuration.FEATURE_MASKED_HW_INTRINSICS
                 => throw new PlatformNotSupportedException(
                     "Masked hardware intrinsics are not enabled for this target."),
-#if DEBUG
-            TYP_MASK when Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+            TYP_MASK when Configuration.DEBUG && Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
                 Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0)
                 => VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet),
-#endif
             TYP_MASK => VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount)),
             _ => NoVN,
         };

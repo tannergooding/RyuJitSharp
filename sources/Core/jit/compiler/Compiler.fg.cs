@@ -3961,9 +3961,31 @@ public partial class Compiler
             HBtab.DispEntry(XTnum);
         }
     }
+#else
+    public List<BasicBlock>? fgBBOrder
+        => throw new InvalidOperationException("Basic block dump order is only available in Debug builds.");
 
+    public void fgDispBasicBlocks(bool dumpTrees = false)
+    {
+    }
+
+    public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
+    {
+    }
+
+    public void fgDispHandlerTab()
+    {
+    }
+#endif
+
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDumpTrees(BasicBlock? firstBlock, BasicBlock? lastBlock)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+        }
+
         // The block table normally precedes this dump; do not repeat its edges.
         for (var block = firstBlock; block is not null; block = block.Next)
         {
@@ -3978,8 +4000,14 @@ public partial class Compiler
         jitprintf("\n-------------------------------------------------------------------------------------------------------------------\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDumpBlock(BasicBlock block)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+        }
+
         jitprintf("\n------------ ");
         block.dspBlockHeader();
 
@@ -4007,8 +4035,14 @@ public partial class Compiler
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDumpBlockMemorySsaIn(BasicBlock block)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+        }
+
         foreach (var memoryKind in new AllMemoryKinds())
         {
             if (byrefStatesMatchGcHeapStates)
@@ -4049,8 +4083,14 @@ public partial class Compiler
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDumpBlockMemorySsaOut(BasicBlock block)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+        }
+
         foreach (var memoryKind in new AllMemoryKinds())
         {
             if (byrefStatesMatchGcHeapStates)
@@ -4071,27 +4111,17 @@ public partial class Compiler
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDumpStmtTree(BasicBlock block, Statement stmt)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+        }
+
         jitprintf($"\n***** {block.dspToString()}\n");
         gtDispStmt(stmt);
     }
-#else
-    public List<BasicBlock>? fgBBOrder
-        => throw new InvalidOperationException("Basic block dump order is only available in Debug builds.");
-
-    public void fgDispBasicBlocks(bool dumpTrees = false)
-    {
-    }
-
-    public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
-    {
-    }
-
-    public void fgDispHandlerTab()
-    {
-    }
-#endif
 
     /// <summary>Return the first basic block after the main part of the function. With funclets, it is the block of the first funclet. Otherwise it is null if there are no funclets. This is equivalent to fgLastBBInMainFunction()->Next().</summary>
     /// <returns></returns>

@@ -44,9 +44,7 @@ public partial class Liveness<TLiveness>
         {
             ref var descriptor = ref _compiler.lvaGetDesc(localNumber);
             var isTracked = true;
-#if DEBUG
-            descriptor.lvTrackedWithoutIndex = false;
-#endif
+            _compiler.SetLocalVarTrackedWithoutIndex(localNumber, false);
             if (descriptor.lvRefCnt(_compiler.lvaRefCountState) == 0)
             {
                 isTracked = false;

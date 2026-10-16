@@ -31,12 +31,13 @@ public sealed unsafe class BlockCountInstrumentor(Compiler compiler) : Instrumen
 
         RelocateProbes();
 
-#if DEBUG
-        foreach (var block in Compiler.Blocks)
+        if (Configuration.DEBUG)
         {
-            block.bbCountSchemaIndex = -1;
+            foreach (var block in Compiler.Blocks)
+            {
+                block.bbCountSchemaIndex = -1;
+            }
         }
-#endif
     }
 
     private void RelocateProbes()

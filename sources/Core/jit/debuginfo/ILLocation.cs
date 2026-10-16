@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -54,7 +55,7 @@ public readonly struct ILLocation : IEquatable<ILLocation>
 
     public static bool operator !=(ILLocation left, ILLocation right) => !left.Equals(right);
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Dump()
     {
         if (!IsValid)
@@ -70,5 +71,4 @@ public readonly struct ILLocation : IEquatable<ILLocation>
             jitprintf("]");
         }
     }
-#endif
 }

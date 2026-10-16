@@ -27,13 +27,11 @@ public partial class Emitter
         assert(emitCurIG is not null);
         assert(emitAlignLastGroup is not null);
         assert(emitAlignLastGroup.idaIG is not null);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler!.verbose)
         {
             jitprintf($"Mapping 'align' instruction in IG{emitAlignLastGroup.idaIG.GetDisplayId():D2} " +
                 $"to target IG{emitCurIG.GetDisplayId():D2}\n");
         }
-#endif
         // Track the predecessor because the next group, not this one, will start the loop.
         emitAlignLastGroup.idaLoopHeadPredIG = emitCurIG;
         emitNxtIG();
@@ -76,13 +74,11 @@ public partial class Emitter
 
         assert(emitLastIns is not null);
         assert(emitLastIns.idIns() == INS_align);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler!.verbose)
         {
             assert(emitCurIG is not null);
             jitprintf($"Adding 'align' instruction of {paddingBytes} bytes in {emitLabelString(emitCurIG)}.\n");
         }
-#endif
     }
 
     public bool emitSetLoopBackEdge(BasicBlock loopTopBlock)
@@ -93,25 +89,21 @@ public partial class Emitter
         var dstIG = emitCodeGetCookie(loopTopBlock);
         if (dstIG is null)
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler!.verbose)
             {
                 jitprintf($"ALIGN: loop block BB{loopTopBlock.bbNum:D2} " +
                     "needing alignment has not been generated yet; not marking IG back edge.\n");
             }
-#endif
             return false;
         }
 
         if (dstIG.IsAfter(emitCurIG))
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler!.verbose)
             {
                 jitprintf($"ALIGN: found forward branch from IG{emitCurIG.GetDisplayId():D2} " +
                     $"to IG{dstIG.GetDisplayId():D2}; not marking IG back edge.\n");
             }
-#endif
             return false;
         }
 
@@ -126,13 +118,11 @@ public partial class Emitter
             assert(emitCurIG.igLoopBackEdge is null);
             emitCurIG.igLoopBackEdge = dstIG;
             backEdgeSet = true;
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler!.verbose)
             {
                 jitprintf($"** IG{currLoopEnd.GetDisplayId():D2} jumps back to " +
                     $"IG{currLoopStart.GetDisplayId():D2} forming a loop.\n");
             }
-#endif
             emitLastLoopStart = currLoopStart;
             emitLastLoopEnd = currLoopEnd;
         }
@@ -174,14 +164,12 @@ public partial class Emitter
                     assert(!markedCurrLoop);
                     alignInstr.removeAlignFlags();
                     markedCurrLoop = true;
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler!.verbose)
                     {
                         jitprintf($";; Skip alignment for current loop IG{currLoopStart.GetDisplayId():D2} ~ " +
                             $"IG{currLoopEnd.GetDisplayId():D2} because it encloses an aligned loop " +
                             $"IG{emitLastLoopStart.GetDisplayId():D2} ~ IG{emitLastLoopEnd.GetDisplayId():D2}.\n");
                     }
-#endif
                 }
 
                 if (!alignLastLoop && (loopHeadIG is not null) && (loopHeadIG == emitLastLoopStart))
@@ -191,14 +179,12 @@ public partial class Emitter
                     assert(alignInstr.idaIG.endsWithAlignInstr() || alignInstr.idaIG.hadAlignInstr());
                     alignInstr.removeAlignFlags();
                     markedLastLoop = true;
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler!.verbose)
                     {
                         jitprintf($";; Skip alignment for aligned loop IG{emitLastLoopStart.GetDisplayId():D2} ~ " +
                             $"IG{emitLastLoopEnd.GetDisplayId():D2} because it encloses the current loop " +
                             $"IG{currLoopStart.GetDisplayId():D2} ~ IG{currLoopEnd.GetDisplayId():D2}.\n");
                     }
-#endif
                 }
 
                 if (markedLastLoop && markedCurrLoop)

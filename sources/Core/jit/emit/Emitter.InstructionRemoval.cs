@@ -36,12 +36,10 @@ public partial class Emitter
             {
                 assert(_compiler is not null);
             }
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler!.verbose)
             {
                 emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);
             }
-#endif
             if (Configuration.DEBUG)
             {
                 assert(emitCurIGnonEmpty());

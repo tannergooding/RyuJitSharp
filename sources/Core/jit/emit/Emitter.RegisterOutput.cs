@@ -237,9 +237,10 @@ public partial class Emitter
 
             default:
             {
-#if DEBUG
-                emitDispIns(id, false, false, false);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    emitDispIns(id, false, false, false);
+                }
                 assert(false, "unexpected instruction format");
                 break;
             }

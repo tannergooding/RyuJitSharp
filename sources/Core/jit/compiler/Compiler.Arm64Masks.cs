@@ -24,12 +24,10 @@ public partial class Compiler
     {
         EnsureArm64HWIntrinsicSupport();
 
-#if DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
+        if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0))
         {
             return gtNewMskConNode(TYP_MASK, simdBaseType, true);
         }
-#endif
 
         var mask = new GenTreeMskCon(default);
         var found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, ref mask.SimdMaskVal, SveMaskPattern.SveMaskPatternAll);

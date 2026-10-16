@@ -78,13 +78,11 @@ public partial class Compiler
             {
                 _structLclToTrackedIndex[aggregate.LclNum] = trackedIndex;
                 trackedIndex += 1 + aggregate.Replacements.Count;
-#if DEBUG
-                compiler.lvaGetDesc(aggregate.LclNum).lvTrackedWithoutIndex = true;
+                compiler.SetLocalVarTrackedWithoutIndex(aggregate.LclNum, true);
                 foreach (var replacement in aggregate.Replacements)
                 {
-                    compiler.lvaGetDesc(replacement.LclNum).lvTrackedWithoutIndex = true;
+                    compiler.SetLocalVarTrackedWithoutIndex(replacement.LclNum, true);
                 }
-#endif
             }
 
             _traits = new BitVecTraits(compiler, trackedIndex);

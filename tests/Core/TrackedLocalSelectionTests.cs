@@ -124,9 +124,7 @@ internal static unsafe class TrackedLocalSelectionTests
             for (var index = 0; index < 6; index++)
             {
                 SetLocal(compiler, index, TYP_INT, (ushort)(6 - index), (6 - index) * BB_UNITY_WEIGHT);
-#if DEBUG
-                compiler.lvaTable[index].lvTrackedWithoutIndex = true;
-#endif
+                compiler.SetLocalVarTrackedWithoutIndex(index, true);
             }
             compiler.lvaTable[0].setLvRefCnt(0);
             compiler.lvaTable[1].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
@@ -154,12 +152,13 @@ internal static unsafe class TrackedLocalSelectionTests
             Assert.That(compiler.lvaTable[2].lvTracked, Is.False);
             Assert.That(compiler.lvaTable[3].lvTracked, Is.False);
             Assert.That(compiler.lvaTable[4].lvDoNotEnregister, Is.True);
-#if DEBUG
-            foreach (ref var local in compiler.lvaTable.AsSpan())
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(local.lvTrackedWithoutIndex, Is.False);
+                for (var index = 0; index < compiler.lvaTable.Length; index++)
+                {
+                    Assert.That(compiler.GetLocalVarTrackedWithoutIndex(index), Is.False);
+                }
             }
-#endif
         });
     }
 

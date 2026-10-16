@@ -213,13 +213,11 @@ public partial class Emitter
                         {
                             previousJumpIG = previousJumpIG.igNext
                                 ?? throw new FatalJitException("A jump's instruction group is absent from the group list.");
-#if DEBUG
-                            if (compiler.verbose)
+                            if (Configuration.DEBUG && _compiler!.verbose)
                             {
                                 jitprintf($"Adjusted offset of {FMT_BB(checked((int)previousJumpIG.GetDisplayId()))} " +
                                     $"from {previousJumpIG.igOffs:X4} to {unchecked(previousJumpIG.igOffs - groupAdjustment):X4}\n");
                             }
-#endif
                             previousJumpIG.igOffs = unchecked(previousJumpIG.igOffs - groupAdjustment);
                             assert(IsCodeAligned(previousJumpIG.igOffs));
                         }
@@ -491,13 +489,11 @@ public partial class Emitter
             assert(previousJumpIG is not null);
             for (var group = previousJumpIG.igNext; group is not null; group = group.igNext)
             {
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && _compiler!.verbose)
                 {
                     jitprintf($"Adjusted offset of {FMT_BB(checked((int)group.GetDisplayId()))} from {group.igOffs:X4} " +
                         $"to {unchecked(group.igOffs - groupAdjustment):X4}\n");
                 }
-#endif
                 group.igOffs = unchecked(group.igOffs - groupAdjustment);
                 assert(IsCodeAligned(group.igOffs));
             }

@@ -267,9 +267,10 @@ public sealed partial class CodeGen
                 if (dspMetrics)
                 {
                     jitprintf($", num cse {_compiler.CseCount} num cand {_compiler.CseCandidateCount}");
-#if DEBUG
-                    _compiler.optGetCSEheuristic().DumpMetrics();
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        _compiler.optGetCSEheuristic().DumpMetrics();
+                    }
 
                     if (_compiler.info.compMethodSpmiIndex >= 0)
                     {

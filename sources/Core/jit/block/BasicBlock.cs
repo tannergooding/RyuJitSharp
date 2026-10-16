@@ -1820,13 +1820,19 @@ public sealed partial class BasicBlock : LIR.Range
         return true;
     }
 
-#if DEBUG
     /// <summary>Print a simple basic block header for various output, including a list of predecessors and successors.</summary>
     /// <param name="showKind"></param>
     /// <param name="showFlags"></param>
     /// <param name="showPreds"></param>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dspBlockHeader(bool showKind = true, bool showFlags = false, bool showPreds = true)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Basic block dumps are only available in Debug builds.");
+        }
+
+#if DEBUG
         jitprintf($"{dspToString()} ");
         dspBlockILRange();
 
@@ -1852,8 +1858,10 @@ public sealed partial class BasicBlock : LIR.Range
             dspFlags();
         }
         jitprintf("\n");
+#endif
     }
 
+#if DEBUG
     public void dspBlockILRange()
     {
         if (bbCodeOffs != BAD_IL_OFFSET)

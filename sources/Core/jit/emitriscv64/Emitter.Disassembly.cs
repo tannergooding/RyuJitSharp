@@ -1171,17 +1171,18 @@ public partial class Emitter
 
     private void emitDispInsInstrNumRiscV64(instrDesc id)
     {
-#if DEBUG
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
-        if (!compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            return;
-        }
+            var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+            if (!compiler.verbose)
+            {
+                return;
+            }
 
-        var debugInfo = id.idDebugOnlyInfo()
-            ?? throw new InvalidOperationException("RISC-V instruction disassembly requires debug descriptor info.");
-        jitprintf($"IN{debugInfo.idNum:x4}: ");
-#endif
+            var debugInfo = id.idDebugOnlyInfo()
+                ?? throw new InvalidOperationException("RISC-V instruction disassembly requires debug descriptor info.");
+            jitprintf($"IN{debugInfo.idNum:x4}: ");
+        }
     }
 
     private unsafe void emitDispIns_OptsRelocRiscV64(instrDesc id)

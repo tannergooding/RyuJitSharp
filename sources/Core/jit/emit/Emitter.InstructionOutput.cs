@@ -483,9 +483,10 @@ public partial class Emitter
                     }
                     else
                     {
-#if DEBUG
-                        emitDispIns(id, false, false, false);
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            emitDispIns(id, false, false, false);
+                        }
                         throw new FatalJitException("Unexpected APX immediate instruction format.");
                     }
                     break;
@@ -1183,9 +1184,10 @@ public partial class Emitter
 
             default:
             {
-#if DEBUG
-                jitprintf($"unexpected format {emitIfName(id.idInsFmt())}\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    jitprintf($"unexpected format {emitIfName(id.idInsFmt())}\n");
+                }
                 throw new FatalJitException("Unknown instruction-output format.");
             }
         }
@@ -1340,11 +1342,7 @@ public partial class Emitter
             }
         assert(emitCurStackLvl >= 0);
         assert(*dp != dst || emitInstHasNoCode(id));
-#if DEBUG
-        var display = _compiler.opts.disAsm || _compiler.verbose;
-#else
-        var display = _compiler.opts.disAsm;
-#endif
+        var display = _compiler.opts.disAsm || (Configuration.DEBUG && _compiler.verbose);
         if (display && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
         {
             if (Configuration.TARGET_AMD64 && convertedJmpToNop)
@@ -1378,14 +1376,15 @@ public partial class Emitter
                     assert(id.idIns() != INS_align);
                 }
 
-#if DEBUG
-                JITDUMP($"Added over-estimation compensation: {diff}\n");
-                if (_compiler.opts.disAsm)
+                if (Configuration.DEBUG)
                 {
-                    emitDispInsAddr(dst);
-                    jitprintf($"\t\t  ;; NOP compensation instructions of {diff} bytes.\n");
+                    JITDUMP($"Added over-estimation compensation: {diff}\n");
+                    if (_compiler.opts.disAsm)
+                    {
+                        emitDispInsAddr(dst);
+                        jitprintf($"\t\t  ;; NOP compensation instructions of {diff} bytes.\n");
+                    }
                 }
-#endif
                 dst = emitOutputNOP(dst, (nuint)diff);
             }
             assert(id.idCodeSize() == (uint)(dst - *dp));

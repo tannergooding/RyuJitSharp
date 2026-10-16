@@ -247,13 +247,16 @@ public partial class LIR
             return GetMarkedRange(root, out isClosed, out sideEffects, markCount: 1);
         }
 
-#if DEBUG
         public ReadOnlyRange GetTreeRangeWithFlags(GenTree root, out bool isClosed, out GenTreeFlags sideEffects)
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Tree-range flag traversal is only available in Debug builds.");
+            }
+
             root._lirFlags |= Flags.Mark;
             return GetMarkedRange(root, out isClosed, out sideEffects, markCount: 1, markFlagsOperands: true);
         }
-#endif
 
         /// <summary>Computes the subrange containing the operand trees, excluding the root.</summary>
         /// <param name="root">The node whose operand trees are included.</param>

@@ -11,12 +11,10 @@ public sealed partial class Lowering
 
     private GenTree? LowerCnsMask(GenTreeMskCon mask)
     {
-#if DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
+        if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0))
         {
             return mask.Next;
         }
-#endif
 
         if (mask.IsZero ||
             (EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask.SimdMaskVal) != SveMaskPattern.SveMaskPatternNone) ||

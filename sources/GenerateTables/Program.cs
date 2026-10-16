@@ -4462,9 +4462,9 @@ namespace RyuJitSharp;
                 throw new InvalidDataException($"Invalid line format: '{line}'");
             }
 
-            var configName = parts[0].AsSpan().Trim();
+            var name = parts[0].AsSpan().Trim();
             var flags = GetFlagsForPrefix(prefix);
-            if (IsUniversalDebugConfig(configName))
+            if (IsUniversalDebugConfig(name))
             {
                 flags &= ~FLAG_DEFINE_MASK;
             }
@@ -4472,8 +4472,8 @@ namespace RyuJitSharp;
 
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
-            var name = GetFieldName(configName);
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private {type} _{name};");
+            var fieldName = GetFieldName(name);
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private {type} _{fieldName};");
 
             lastFlags = flags;
         });
@@ -4814,6 +4814,7 @@ public partial struct JitConfigValues
                    name.Equals("JitStressAsyncInliningPct", StringComparison.Ordinal) ||
                    name.Equals("JitAwaitHashBreak", StringComparison.Ordinal) ||
                    name.Equals("JitDumpToDebugger", StringComparison.Ordinal) ||
+                   name.Equals("JitDumpTreeIDs", StringComparison.Ordinal) ||
                    name.Equals("JitCSEHash", StringComparison.Ordinal) ||
                    name.Equals("JitCSEMask", StringComparison.Ordinal) ||
                    name.Equals("JitMetrics", StringComparison.Ordinal) ||
@@ -4829,6 +4830,7 @@ public partial struct JitConfigValues
                    name.Equals("JitRLHook", StringComparison.Ordinal) ||
                    name.Equals("JitRLHookEmitFeatureNames", StringComparison.Ordinal) ||
                    name.Equals("JitRLHookCSEDecisions", StringComparison.Ordinal) ||
+                   name.Equals("JitUseScalableVectorT", StringComparison.Ordinal) ||
                    name.Equals("JitR2RUnsupportedRange", StringComparison.Ordinal) ||
                    name.Equals("JitEnableRboRange", StringComparison.Ordinal) ||
                    name.Equals("JitEnableHeadTailMergeRange", StringComparison.Ordinal) ||

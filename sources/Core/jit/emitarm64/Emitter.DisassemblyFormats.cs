@@ -19,14 +19,12 @@ public partial class Emitter
         var debugInfo = id.idDebugOnlyInfo();
         assert(debugInfo is not null);
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             var idNum = debugInfo.idNum; // Do not remove this!  It is needed for VisualStudio conditional breakpoints
 
             jitprintf($"IN{idNum:x4}: ");
         }
-#endif
 
         if (pCode == null)
         {
@@ -1517,8 +1515,7 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (id.idIsLclVar())
+        if (Configuration.DEBUG && id.idIsLclVar())
         {
             jitprintf("\t// ");
             emitDispFrameRef(id.idAddr().iiaLclVar.lvaVarNum(), unchecked((int)id.idAddr().iiaLclVar.lvaOffset()),
@@ -1531,7 +1528,6 @@ public partial class Emitter
                                  asmfm);
             }
         }
-#endif
 
         jitprintf("\n");
     }

@@ -31,12 +31,10 @@ public sealed class GenTreeMskCon : GenTree
 
     public bool IsAllBitsSetForType(var_types simdBaseType)
     {
-#if DEBUG
-        if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
+        if (Configuration.DEBUG && Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
         {
             return SimdScalableMaskVal.IsAllBitsSet(simdBaseType);
         }
-#endif
 
         return _simdMaskVal.IsAllBitsSet;
     }
@@ -50,12 +48,10 @@ public sealed class GenTreeMskCon : GenTree
     {
         get
         {
-#if DEBUG
-            if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
+            if (Configuration.DEBUG && Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
             {
                 return SimdScalableMaskVal.IsZero;
             }
-#endif
 
             return _simdMaskVal.IsZero;
         }
@@ -77,12 +73,10 @@ public sealed class GenTreeMskCon : GenTree
 
     public static bool Equals(GenTreeMskCon left, GenTreeMskCon right)
     {
-#if DEBUG
-        if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
+        if (Configuration.DEBUG && Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
         {
             return left.SimdScalableMaskVal == right.SimdScalableMaskVal;
         }
-#endif
 
         return left._simdMaskVal == right._simdMaskVal;
     }
@@ -97,12 +91,10 @@ public sealed class GenTreeMskCon : GenTree
             return false;
         }
 
-#if DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
+        if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0))
         {
             return (SimdScalableMaskVal.Index == 1) && (SimdScalableMaskVal.BaseType.Size <= simdBaseType.Size);
         }
-#endif
 
         return EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, _simdMaskVal) == SveMaskPattern.SveMaskPatternAll;
     }

@@ -724,14 +724,13 @@ public partial class Compiler
                         instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
                     }
 
-#if DEBUG
-                    if ((JitConfig.JitUseScalableVectorT != 0) && currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+                    if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0) &&
+                        currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
                     {
                         // Vector<T> will use SVE instead of NEON.
                         instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
                         instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
                     }
-#endif
                 }
 
                 instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
@@ -1461,10 +1460,11 @@ public partial class Compiler
                 return GetResult(this, compInlineResult);
             }
 
-#if DEBUG
-            compGenTreeID = impInlineInfo.InlinerCompiler.compGenTreeID;
-            compStatementID = impInlineInfo.InlinerCompiler.compStatementID;
-#endif
+            if (Configuration.DEBUG)
+            {
+                compGenTreeID = impInlineInfo.InlinerCompiler.compGenTreeID;
+                compStatementID = impInlineInfo.InlinerCompiler.compStatementID;
+            }
         }
 
         compCompile(out methodCodePtr, out methodCodeSize, jitFlags);
@@ -1473,10 +1473,11 @@ public partial class Compiler
         {
             var inlinerCompiler = impInlineInfo.InlinerCompiler;
 
-#if DEBUG
-            inlinerCompiler.compGenTreeID = compGenTreeID;
-            inlinerCompiler.compStatementID = compStatementID;
-#endif
+            if (Configuration.DEBUG)
+            {
+                inlinerCompiler.compGenTreeID = compGenTreeID;
+                inlinerCompiler.compStatementID = compStatementID;
+            }
 
             inlinerCompiler.compBasicBlockID = compBasicBlockID;
         }

@@ -20,14 +20,12 @@ public partial class Emitter
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
         assert(_compiler is not null);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             jitprintf($"IN{debugInfo.idNum:x4}: ");
         }
-#endif
 
         if (code == null)
         {

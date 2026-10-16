@@ -58,16 +58,11 @@ public partial class Emitter
         {
             assert(emitCurIG is not null);
             assert((emitCurIG.igFlags & InsGroupFlags.Extend) == 0);
-#if DEBUG
-            emitCurIG.igWeight = getCurrentBlockWeight();
-            emitCurIG.igPerfScore = 0.0;
-#else
-            if (Configuration.LATE_DISASM)
+            if (Configuration.DEBUG || Configuration.LATE_DISASM)
             {
                 emitCurIG.igWeight = getCurrentBlockWeight();
                 emitCurIG.igPerfScore = 0.0;
             }
-#endif
         }
 
         VarSetOps.Assign(_compiler, ref emitThisGCrefVars, gcVars);
@@ -78,8 +73,7 @@ public partial class Emitter
         emitThisByrefRegs = (regMask)byrefRegs;
 
         assert(emitCurIG is not null);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler!.verbose)
         {
             jitprintf($"Label: {emitLabelString(emitCurIG)}, GCvars={VarSetOps.ToString(_compiler, gcVars)} ");
             dumpConvertedVarSet(_compiler, gcVars);
@@ -91,7 +85,6 @@ public partial class Emitter
             emitDispRegSet(byrefRegs);
             jitprintf("\n");
         }
-#endif
         return emitCurIG;
     }
 

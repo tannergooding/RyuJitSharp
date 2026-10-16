@@ -83,9 +83,9 @@ internal static unsafe class CodeGenRegisterCallOperandTests
     {
         EmitterCallInstructionTests.WithEmitter((_, codeGen) =>
         {
-            var tree = new GenTree(GT_SWIFT_ERROR, type) { RegNum = REG_SWIFT_ERROR };
-            var mask = regMaskTP.CreateFromRegNum(REG_SWIFT_ERROR, REG_SWIFT_ERROR.SingleTypeMask);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_SWIFT_ERROR, type);
+            var tree = new GenTree(GT_SWIFT_ERROR, type) { RegNum = REG_SWIFT_ERROR_AMD64 };
+            var mask = regMaskTP.CreateFromRegNum(REG_SWIFT_ERROR_AMD64, REG_SWIFT_ERROR_AMD64.SingleTypeMask);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_SWIFT_ERROR_AMD64, type);
 
             codeGen.genCodeForSwiftErrorReg(tree);
 

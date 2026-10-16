@@ -22,15 +22,13 @@ public sealed unsafe class HandleHistogramProbeInstrumentor(Compiler compiler) :
 
     public override void Prepare(bool preImport)
     {
-#if DEBUG
-        if (!preImport)
+        if (Configuration.DEBUG && !preImport)
         {
             foreach (var block in Compiler.Blocks)
             {
                 block.bbHandleHistogramSchemaIndex = -1;
             }
         }
-#endif
     }
 
     public override void BuildSchemaElements(BasicBlock block, List<ICorJitInfo.PgoInstrumentationSchema> schema)
@@ -77,15 +75,13 @@ public sealed unsafe class ValueInstrumentor(Compiler compiler) : Instrumentor(c
 
     public override void Prepare(bool preImport)
     {
-#if DEBUG
-        if (!preImport)
+        if (Configuration.DEBUG && !preImport)
         {
             foreach (var block in Compiler.Blocks)
             {
                 block.bbValueHistogramSchemaIndex = -1;
             }
         }
-#endif
     }
 
     public override void BuildSchemaElements(BasicBlock block, List<ICorJitInfo.PgoInstrumentationSchema> schema)
@@ -287,14 +283,15 @@ internal unsafe struct HistogramProbeVisitor : IGenTreeVisitor<HistogramProbeVis
 
         _schemaIndex += 2;
         var histogram = _profileMemory + count.Offset;
-#if DEBUG
-        var tableOffset = is32
-            ? (int)System.Runtime.InteropServices.Marshal.OffsetOf<ICorJitInfo.HandleHistogram32>(
-                nameof(ICorJitInfo.HandleHistogram32.HandleTable))
-            : (int)System.Runtime.InteropServices.Marshal.OffsetOf<ICorJitInfo.HandleHistogram64>(
-                nameof(ICorJitInfo.HandleHistogram64.HandleTable));
-        assert(count.Offset + tableOffset == table.Offset);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var tableOffset = is32
+                ? (int)System.Runtime.InteropServices.Marshal.OffsetOf<ICorJitInfo.HandleHistogram32>(
+                    nameof(ICorJitInfo.HandleHistogram32.HandleTable))
+                : (int)System.Runtime.InteropServices.Marshal.OffsetOf<ICorJitInfo.HandleHistogram64>(
+                    nameof(ICorJitInfo.HandleHistogram64.HandleTable));
+            assert(count.Offset + tableOffset == table.Offset);
+        }
         return histogram;
     }
 
