@@ -601,6 +601,7 @@ internal static class ExtendedDefaultPolicyTests
         Assert.That(context.IsSuccess, Is.EqualTo(success));
         Assert.That(context.Observation, Is.EqualTo(observation));
         Assert.That(context.ImportedILSize, Is.EqualTo(20));
+        Assert.That(context.CodeSizeEstimate, Is.EqualTo(TestConfiguration.IsDebug ? 30 : 0));
         Assert.That(strategy.InlineCount, Is.EqualTo(success ? 1 : 0));
         Assert.That(context.Ordinal, Is.EqualTo(success ? 1 : 0));
         Assert.That(strategy.BudgetCheck(7), Is.EqualTo(success && !force));

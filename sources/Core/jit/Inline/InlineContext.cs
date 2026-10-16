@@ -3,7 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Collections;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -56,16 +58,48 @@ public sealed partial class InlineContext
 
     internal Flags _flags;
 
-#if DEBUG
     /// <summary>policy that evaluated this inline</summary>
-    internal InlinePolicy? _policy;
+    internal InlinePolicy? _policy
+    {
+        get
+        {
+            return GetDebugData().Policy;
+        }
+
+        set
+        {
+            GetDebugData().Policy = value;
+        }
+    }
 
     /// <summary>ID of the GenTreeCall in the parent</summary>
-    internal int _treeId;
+    internal int _treeId
+    {
+        get
+        {
+            return GetDebugData().TreeId;
+        }
+
+        set
+        {
+            GetDebugData().TreeId = value;
+        }
+    }
 
     /// <summary>Set of offsets where instructions begin</summary>
-    internal BitArray _ilInstsSet;
-#endif
+    internal BitArray _ilInstsSet
+    {
+        get
+        {
+            return GetDebugData().ILInstsSet
+                ?? throw new InvalidOperationException("Inline instruction state has not been initialized.");
+        }
+
+        set
+        {
+            GetDebugData().ILInstsSet = value;
+        }
+    }
 
     internal InlineContext(InlineStrategy strategy)
     {
@@ -74,9 +108,7 @@ public sealed partial class InlineContext
         _observation = InlineObservation.CALLEE_UNUSED_INITIAL;
         _flags = Flags.Success;
 
-#if DEBUG
-        _ilInstsSet = new BitArray(0);
-#endif
+        InitializeDebugData();
     }
 
     public IL_OFFSET ActualCallOffset => _actualCallOffset;
@@ -95,34 +127,57 @@ public sealed partial class InlineContext
 
     public unsafe bool HasPgoInfo => (_pgoInfo.PgoSchema is not null) && (_pgoInfo.PgoSchemaCount > 0) && (_pgoInfo.PgoData is not null);
 
-#if DEBUG
     public BitArray ILInstsSet => _ilInstsSet;
-#endif
 
     /// <summary>Get the IL code size for this inline.</summary>
     public int ILSize => _ilSize;
 
     public int ImportedILSize => _importedILSize;
 
-#if DEBUG
-    public bool IsAsyncCall => (_flags & Flags.AsyncCall) is not 0;
-
-    public bool IsDevirtualized => (_flags & Flags.Devirtualized) is not 0;
-
-    public bool IsGuarded => (_flags & Flags.Guarded) is not 0;
-#else
     public bool IsAsyncCall
-        => throw new System.InvalidOperationException("Async-call diagnostic state is only available in Debug builds.");
-#endif
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Async-call diagnostic state is only available in Debug builds.");
+            }
+
+            return (_flags & Flags.AsyncCall) is not 0;
+        }
+    }
+
+    public bool IsDevirtualized
+    {
+        get
+        {
+            EnsureDebugStateAvailable();
+            return (_flags & Flags.Devirtualized) is not 0;
+        }
+    }
+
+    public bool IsGuarded
+    {
+        get
+        {
+            EnsureDebugStateAvailable();
+            return (_flags & Flags.Guarded) is not 0;
+        }
+    }
 
     public bool IsRoot => _parent is null;
 
     /// <summary>True if this context describes a successful inline.</summary>
     public bool IsSuccess => (_flags & Flags.Success) is not 0;
 
-#if DEBUG
-    public bool IsUnboxed => (_flags & Flags.Unboxed) is not 0;
-#endif
+    public bool IsUnboxed
+    {
+        get
+        {
+            EnsureDebugStateAvailable();
+            return (_flags & Flags.Unboxed) is not 0;
+        }
+    }
 
     public ILLocation Location => _location;
 
@@ -152,10 +207,10 @@ public sealed partial class InlineContext
     /// <summary>Get the sibling context.</summary>
     public InlineContext? Sibling => _sibling;
 
-#if DEBUG
     /// <summary>Dump an InlineContext entry and all descendants to jitstdout</summary>
     /// <param name="verbose">indentation level for this node</param>
     /// <param name="indent">more verbose output if true</param>
+    [Conditional("DEBUG")]
     public unsafe void Dump(bool verbose, int indent = 0)
     {
         // Handle fact that siblings are in reverse order.
@@ -229,7 +284,6 @@ public sealed partial class InlineContext
         // Recurse to first child
         _child?.Dump(verbose, indent + 2);
     }
-#endif
 
     public void SetFailed(InlineResult result)
     {
@@ -238,10 +292,7 @@ public sealed partial class InlineContext
         _importedILSize = result.ImportedILSize;
         _flags &= ~Flags.Success;
 
-#if DEBUG
-        _policy = result.Policy;
-        _codeSizeEstimate = _policy.CodeSizeEstimate();
-#endif
+        SetDebugOutcome(result.Policy);
 
         _inlineStrategy.NoteOutcome(this);
     }
@@ -255,10 +306,7 @@ public sealed partial class InlineContext
         _importedILSize = inlineResult.ImportedILSize;
         _flags |= Flags.Success;
 
-#if DEBUG
-        _policy = inlineResult.Policy;
-        _codeSizeEstimate = _policy.CodeSizeEstimate();
-#endif
+        SetDebugOutcome(inlineResult.Policy);
 
         _ordinal = _inlineStrategy.InlineCount + 1;
         _inlineStrategy.NoteOutcome(this);
@@ -271,7 +319,6 @@ public sealed partial class InlineContext
         /// <summary>true if this was a successful inline</summary>
         Success = 1 << 0,
 
-#if DEBUG
         /// <summary>true if this was a devirtualized call</summary>
         Devirtualized = 1 << 1,
 
@@ -282,6 +329,26 @@ public sealed partial class InlineContext
         Unboxed = 1 << 3,
 
         AsyncCall = 1 << 4,
-#endif
+    }
+
+    [Conditional("DEBUG")]
+    private void InitializeDebugData()
+    {
+        _ilInstsSet = new BitArray(0);
+    }
+
+    [Conditional("DEBUG")]
+    private void SetDebugOutcome(InlinePolicy policy)
+    {
+        _policy = policy;
+        _codeSizeEstimate = policy.CodeSizeEstimate();
+    }
+
+    private static void EnsureDebugStateAvailable()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Inline context diagnostic state is only available in Debug builds.");
+        }
     }
 }
