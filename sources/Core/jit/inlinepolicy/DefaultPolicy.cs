@@ -786,7 +786,6 @@ public partial class DefaultPolicy : LegacyPolicy
         _decision = InlineDecision.SUCCESS;
     }
 
-#if DEBUG
     public override void OnDumpXml(StreamWriter stream, int indent = 0)
     {
         XATTR_R8(stream, _multiplier, "m_Multiplier");
@@ -815,7 +814,6 @@ public partial class DefaultPolicy : LegacyPolicy
         XATTR_B(stream, InsideThrowBlock, "m_InsideThrowBlock");
         XATTR_B(stream, IsIntrinsicType, "m_IsIntrinsicType");
     }
-#endif
 
     public override bool PropagateNeverToRuntime()
     {

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -331,15 +332,14 @@ public sealed class InlineResult : IDisposable
     public void NoteInt(InlineObservation observation, int value)
         => _policy.NoteInt(observation, value);
 
-#if DEBUG
     /// <summary>Record observation from an earlier failure.</summary>
     /// <param name="obs"></param>
+    [Conditional("DEBUG")]
     public void NotePriorFailure(InlineObservation obs)
     {
         _policy.NotePriorFailure(obs);
         assert(IsFailure);
     }
-#endif
 
     /// <summary>NoteSuccess means the all the various checks have passed and the inline can happen.</summary>
     public void NoteSuccess()

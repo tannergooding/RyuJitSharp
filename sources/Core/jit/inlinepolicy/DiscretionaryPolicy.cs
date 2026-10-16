@@ -324,7 +324,6 @@ public partial class DiscretionaryPolicy : DefaultPolicy
         return _modelCodeSizeEstimate;
     }
 
-#if DEBUG
     public override void DumpSchema(StreamWriter stream)
     {
         stream.Write("ILSize,CallsiteFrequency,InstructionCount,LoadStoreCount,BlockCount,Maxstack,ArgCount");
@@ -398,5 +397,4 @@ public partial class DiscretionaryPolicy : DefaultPolicy
             }
         }
     }
-#endif
 }

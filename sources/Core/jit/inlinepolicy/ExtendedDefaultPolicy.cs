@@ -686,7 +686,6 @@ public class ExtendedDefaultPolicy : DefaultPolicy
 
     public override string Name => nameof(ExtendedDefaultPolicy);
 
-#if DEBUG
     public override void OnDumpXml(StreamWriter stream, int indent = 0)
     {
         unchecked
@@ -722,7 +721,6 @@ public class ExtendedDefaultPolicy : DefaultPolicy
             XATTR_B(stream, _mayReturnSmallArray, "m_MayReturnSmallArray");
         }
     }
-#endif
 
     private static string FormatGeneral(double value) => formatFloat(value, "g6");
 }

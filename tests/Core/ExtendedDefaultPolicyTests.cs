@@ -61,6 +61,31 @@ internal static class ExtendedDefaultPolicyTests
         }
     }
 
+    [Test]
+    public static void InlinePolicyDebugDiagnosticsAreConditional()
+    {
+        InlinePolicy policy = new ProbePolicy(CreateCompiler());
+        using var stream = new MemoryStream();
+        using var writer = new StreamWriter(stream, leaveOpen: true);
+        var argumentEvaluated = false;
+
+        StreamWriter GetWriter()
+        {
+            argumentEvaluated = true;
+            return writer;
+        }
+
+        policy.DumpXml(GetWriter());
+        policy.NotePriorFailure(InlineObservation.CALLSITE_NOT_CANDIDATE);
+        writer.Flush();
+
+        Assert.Multiple(() => {
+            Assert.That(argumentEvaluated, Is.EqualTo(TestConfiguration.IsDebug));
+            Assert.That(stream.Length > 0, Is.EqualTo(TestConfiguration.IsDebug));
+            Assert.That(policy.Decision.IsFailure, Is.EqualTo(TestConfiguration.IsDebug));
+        });
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(3)]
@@ -460,10 +485,14 @@ internal static class ExtendedDefaultPolicyTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void XmlUsesNativeAttributeNamesAndInvariantNumbers()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Inline XML diagnostics are available only in Debug builds.");
+        }
+
         var policy = new ProbePolicy(CreateCompiler());
         policy.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, true);
         policy.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, 100);
@@ -490,7 +519,6 @@ internal static class ExtendedDefaultPolicyTests
             " m_CodeSize=\"100\" m_IsForceInline=\"True\" m_IsForceInlineKnown=\"True\"" +
             " m_ProfileFrequency=\"0.25\" m_FoldableBranch=\"1\""));
     }
-#endif
 
     private static IEnumerable<TestCaseData> AsyncStressDefersSizeRejectionCases()
     {
@@ -566,9 +594,10 @@ internal static class ExtendedDefaultPolicyTests
         SetField(typeof(InlineStrategy), strategy, "_currentTimeBudget", 100);
         SetField(typeof(InlineStrategy), strategy, "_currentSizeEstimate", 500);
         var root = new InlineContext(strategy) { _ilSize = 20 };
-#if DEBUG
-        root._ilInstsSet = new System.Collections.BitArray(20, true);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            root._ilInstsSet = new System.Collections.BitArray(20, true);
+        }
         SetField(typeof(InlineStrategy), strategy, "_rootContext", root);
         var call = new GenTreeCall(var_types.TYP_INT) {
             _inlineContext = root,
@@ -620,11 +649,7 @@ internal static class ExtendedDefaultPolicyTests
         Assert.That(strategy.InlineCount, Is.EqualTo(success ? 1 : 0));
         Assert.That(context.Ordinal, Is.EqualTo(success ? 1 : 0));
         Assert.That(strategy.BudgetCheck(7), Is.EqualTo(success && !force));
-#if DEBUG
-        Assert.That(strategy.CurrentSizeEstimate, Is.EqualTo(success ? 530 : 500));
-#else
-        Assert.That(strategy.CurrentSizeEstimate, Is.EqualTo(500));
-#endif
+        Assert.That(strategy.CurrentSizeEstimate, Is.EqualTo(TestConfiguration.IsDebug && success ? 530 : 500));
         var sibling = strategy.NewContext(root, stmt, call);
         Assert.That(root.Child, Is.SameAs(sibling));
         Assert.That(sibling.Sibling, Is.SameAs(context));

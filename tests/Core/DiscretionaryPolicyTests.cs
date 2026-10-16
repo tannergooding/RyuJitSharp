@@ -18,18 +18,14 @@ internal static class DiscretionaryPolicyTests
 {
     private static JitConfigValues s_previousConfig;
     private static Compiler? s_previousCompiler;
-#if DEBUG
-    private static JitTls? s_jitTls;
-#endif
+    private static IDisposable? s_jitTls;
 
     [SetUp]
     public static unsafe void SetUp()
     {
         s_previousConfig = Globals.JitConfig;
         s_previousCompiler = JitTls.Compiler;
-#if DEBUG
-        s_jitTls = new JitTls(null);
-#endif
+        s_jitTls = TestConfiguration.CreateJitTls();
         JitTls.Compiler = CreateCompiler();
         object config = new JitConfigValues();
         SetField(typeof(JitConfigValues), config, "_jitInlinePolicyProfileThreshold", 40);
@@ -41,10 +37,8 @@ internal static class DiscretionaryPolicyTests
     {
         Globals.JitConfig = s_previousConfig;
         JitTls.Compiler = s_previousCompiler;
-#if DEBUG
         s_jitTls?.Dispose();
         s_jitTls = null;
-#endif
     }
 
     [TestCase(InlineObservation.CALLEE_NOT_PROFITABLE_INLINE, false)]

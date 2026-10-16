@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -150,21 +151,22 @@ public abstract class InlinePolicy
     /// </remarks>
     public abstract void DetermineProfitability(in CORINFO_METHOD_INFO methodInfo);
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public virtual void DumpData(StreamWriter stream) { }
 
+    [Conditional("DEBUG")]
     public virtual void DumpSchema(StreamWriter stream) { }
 
     /// <summary>Dump DefaultPolicy data as XML</summary>
     /// <param name="stream">stream to output to</param>
     /// <param name="indent">indent level</param>
+    [Conditional("DEBUG")]
     public virtual void DumpXml(StreamWriter stream, int indent = 0)
     {
         stream.Write($"{new string(' ', indent)}<{Name}");
         OnDumpXml(stream);
         stream.WriteLine(" />");
     }
-#endif
 
     /// <summary>handle a boolean observation with non-fatal impact</summary>
     /// <param name="observation">the current obsevation</param>
@@ -189,19 +191,17 @@ public abstract class InlinePolicy
 
     public virtual void NoteOffset(IL_OFFSET offset) { }
 
-#if DEBUG
     /// <summary>record reason for earlier inline failure</summary>
     /// <param name="observation">the current obsevation</param>
     /// <remarks>Used to "resurrect" failure observations from the early inline screen when building the inline context tree. Only used during debug modes.</remarks>
+    [Conditional("DEBUG")]
     public abstract void NotePriorFailure(InlineObservation observation);
-#endif
 
     /// <summary>handle finishing all the inlining checks successfully</summary>
     public abstract void NoteSuccess();
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public virtual void OnDumpXml(StreamWriter stream, int indent = 0) { }
-#endif
 
     /// <summary>determine if a never result should cause the method to be marked as un-inlinable.</summary>
     /// <returns></returns>

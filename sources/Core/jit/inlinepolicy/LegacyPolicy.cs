@@ -23,13 +23,11 @@ public abstract class LegacyPolicy : InlinePolicy
         assert(_decision.IsFailure);
     }
 
-#if DEBUG
     public override void NotePriorFailure(InlineObservation observation)
     {
         NoteInternal(observation);
         assert(_decision.IsFailure);
     }
-#endif
 
     /// <summary>helper for handling an observation</summary>
     /// <param name="observation">The current observation</param>
