@@ -1,9 +1,23 @@
 using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static partial class TestConfiguration
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verbose")]
+    private static extern ref bool Verbose(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspMetrics")]
+    private static extern ref bool DspMetrics(ref Compiler.Options options);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgSafeBasicBlockCreation")]
+    private static extern ref bool SafeBasicBlockCreation(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgSafeFlowEdgeCreation")]
+    private static extern ref bool SafeFlowEdgeCreation(Compiler compiler);
+
     public static bool IsDebug => Configuration.DEBUG;
 
     public static unsafe IDisposable? CreateJitTls()
@@ -12,13 +26,7 @@ internal static partial class TestConfiguration
     }
 
     public static unsafe IDisposable? CreateJitTls(ICorJitInfo* jitInfo)
-    {
-#if DEBUG
-        return new JitTls(jitInfo);
-#else
-        return null;
-#endif
-    }
+        => JitTls.CreateScope(jitInfo);
 
     public static unsafe IDisposable? CreateJitTlsWithCompiler(Compiler? compiler)
     {
@@ -27,40 +35,36 @@ internal static partial class TestConfiguration
 
     public static unsafe IDisposable? CreateJitTlsWithCompiler(Compiler? compiler, ICorJitInfo* jitInfo)
     {
-#if DEBUG
-        var jitTls = new JitTls(jitInfo);
-        JitTls.Compiler = compiler;
+        var jitTls = JitTls.CreateScope(jitInfo);
+        if (IsDebug)
+        {
+            JitTls.Compiler = compiler;
+        }
         return jitTls;
-#else
-        return null;
-#endif
     }
 
     public static unsafe IDisposable? CreateJitTlsWithCompilerAndLogEnv(
         Compiler? compiler, ICorJitInfo* jitInfo)
     {
-#if DEBUG
-        var jitTls = new JitTls(jitInfo);
-        JitTls.Compiler = compiler;
-        JitTls.LogEnv.Compiler = compiler;
+        var jitTls = JitTls.CreateScope(jitInfo);
+        if (IsDebug)
+        {
+            JitTls.Compiler = compiler;
+            JitTls.LogEnv.Compiler = compiler;
+        }
         return jitTls;
-#else
-        return null;
-#endif
     }
 
+    [Conditional("DEBUG")]
     public static void SetJitTlsLogCompiler(Compiler? compiler)
     {
-#if DEBUG
         JitTls.LogEnv.Compiler = compiler;
-#endif
     }
 
+    [Conditional("DEBUG")]
     public static void EnableSafeBasicBlockCreation(Compiler compiler)
     {
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        SafeBasicBlockCreation(compiler) = true;
     }
 
     public static void SetCompilerFullName(Compiler compiler, string name)
@@ -71,17 +75,30 @@ internal static partial class TestConfiguration
         }
     }
 
+    public static void SetDspMetrics(Compiler compiler, bool enabled)
+    {
+        if (IsDebug)
+        {
+            DspMetrics(ref compiler.opts) = enabled;
+        }
+    }
+
+    [Conditional("DEBUG")]
     public static void EnableSafeFlowEdgeCreation(Compiler compiler)
     {
-#if DEBUG
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        SafeFlowEdgeCreation(compiler) = true;
     }
 
     public static void EnableVerbose(Compiler compiler)
     {
-#if DEBUG
-        compiler.verbose = true;
-#endif
+        SetVerbose(compiler, true);
+    }
+
+    public static void SetVerbose(Compiler compiler, bool enabled)
+    {
+        if (IsDebug)
+        {
+            Verbose(compiler) = enabled;
+        }
     }
 }

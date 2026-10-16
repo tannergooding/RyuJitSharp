@@ -10,9 +10,6 @@ using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if DEBUG
-using static RyuJitSharp.GenTreeDebugFlags;
-#endif
 
 namespace RyuJitSharp;
 
@@ -23,22 +20,20 @@ public abstract partial class CSE_HeuristicCommon
         AdjustHeuristic(successfulCandidate);
         var descriptor = successfulCandidate.CseDsc();
 
-#if DEBUG
-        var category = successfulCandidate.IsAggressive() ? ": aggressive"
-            : successfulCandidate.IsModerate() ? ": moderate"
-            : successfulCandidate.IsConservative() ? ": conservative"
-            : successfulCandidate.IsStressCSE() ? ": stress"
-            : successfulCandidate.IsRandom() ? ": random" : "";
-        m_sequence.Add(unchecked((uint)descriptor.csdIndex));
-#endif
+        var cseLclVarName = FMT_CSE(descriptor.csdIndex);
+        if (Configuration.DEBUG)
+        {
+            var category = successfulCandidate.IsAggressive() ? ": aggressive"
+                : successfulCandidate.IsModerate() ? ": moderate"
+                : successfulCandidate.IsConservative() ? ": conservative"
+                : successfulCandidate.IsStressCSE() ? ": stress"
+                : successfulCandidate.IsRandom() ? ": random" : "";
+            cseLclVarName += category;
+            (m_sequence ?? throw new InvalidOperationException(
+                "CSE heuristic metrics have not been initialized.")).Add(unchecked((uint)descriptor.csdIndex));
+        }
 
-        var cseLclVarNum = m_compiler.lvaGrabTemp(false,
-#if DEBUG
-            $"{FMT_CSE(descriptor.csdIndex)}{category}"
-#else
-            FMT_CSE(descriptor.csdIndex)
-#endif
-        );
+        var cseLclVarNum = m_compiler.lvaGrabTemp(false, cseLclVarName);
         var cseLclVarTyp = successfulCandidate.Expr().Type.ActualType;
         if (cseLclVarTyp is TYP_STRUCT)
         {
@@ -52,9 +47,10 @@ public abstract partial class CSE_HeuristicCommon
         m_addCSEcount++;
         m_compiler.RecordCsePromotion();
 
-#if DEBUG
-        local.lvIsMultiDefCSE = descriptor.csdDefCount > 1;
-#endif
+        if (Configuration.DEBUG)
+        {
+            local.lvIsMultiDefCSE = descriptor.csdDefCount > 1;
+        }
 
         var setRefCnt = true;
         var isSharedConst = successfulCandidate.IsSharedConst();
@@ -119,16 +115,17 @@ public abstract partial class CSE_HeuristicCommon
             if (isDef)
             {
                 local.incRefCnts(weight, m_compiler);
-#if DEBUG
-                local.lvIsHoist |= (expression.Flags & GTF_MAKE_CSE) != 0;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    local.lvIsHoist |= (expression.Flags & GTF_MAKE_CSE) != 0;
+                }
             }
         }
 
         descriptor.csdConstDefValue = bestConstValue;
         descriptor.csdConstDefVN = bestVN;
 
-        if (Configuration.DEBUG && !allSame && m_compiler.verbose)
+        if (!allSame && Configuration.DEBUG && m_compiler.verbose)
         {
             JITDUMP($"\nWe have shared Const CSE's and selected ${bestVN:x} " +
                 $"with a value of 0x{bestConstValue:x} as the base.\n");
@@ -149,13 +146,11 @@ public abstract partial class CSE_HeuristicCommon
 
             var statement = occurrence.tslStmt;
             var block = occurrence.tslBlock;
-#if DEBUG
-            if (m_compiler.verbose)
+            if (Configuration.DEBUG && m_compiler.verbose)
             {
                 Globals.jitprintf($"\n{FMT_CSE(GET_CSE_INDEX(expression._cseNum))} def at " +
                     $"[{expression.TreeId:D6}] replaced in {FMT_BB(block.bbNum)} with def of V{cseLclVarNum:D2}\n");
             }
-#endif
             var value = expression;
             if (isSharedConst)
             {
@@ -237,14 +232,12 @@ public abstract partial class CSE_HeuristicCommon
             var block = occurrence.tslBlock;
             m_compiler.SetCseWeight(block.getBBWeight(m_compiler));
 
-#if DEBUG
-            if (m_compiler.verbose)
+            if (Configuration.DEBUG && m_compiler.verbose)
             {
                 Globals.jitprintf($"\nWorking on the replacement of the " +
                     $"{FMT_CSE(expression._cseNum)} use at [{expression.TreeId:D6}] " +
                     $"in {FMT_BB(block.bbNum)}\n");
             }
-#endif
             var cseLocal = m_compiler.gtNewLclvNode(cseLclVarTyp, cseLclVarNum);
             GenTree replacement = cseLocal;
             if (isSharedConst)
@@ -270,14 +263,12 @@ public abstract partial class CSE_HeuristicCommon
             var sideEffects = m_compiler.ExtractCseSideEffects(expression);
             if (sideEffects is not null)
             {
-#if DEBUG
-                if (m_compiler.verbose)
+                if (Configuration.DEBUG && m_compiler.verbose)
                 {
                     Globals.jitprintf("\nThis CSE use has side effects and/or nested CSE defs. The sideEffectList:\n");
                     m_compiler.gtDispTree(sideEffects);
                     Globals.jitprintf("\n");
                 }
-#endif
                 var sideEffectExceptions = vnStore.VNPExceptionSet(sideEffects._vnPair);
                 var combinedVN = vnStore.VNPWithExc(replacement._vnPair, sideEffectExceptions);
                 replacement = m_compiler.gtNewCommaNode(expression.Type.ActualType, sideEffects, replacement);
@@ -306,13 +297,11 @@ public abstract partial class CSE_HeuristicCommon
         expression.ClearRegNum();
 
         var link = m_compiler.gtFindLink(statement, expression);
-#if DEBUG
-        if (Unsafe.IsNullRef(ref link.result))
+        if (Configuration.DEBUG && Unsafe.IsNullRef(ref link.result))
         {
             m_compiler.gtDispStmt(statement);
             m_compiler.gtDispTree(expression);
         }
-#endif
         noway_assert(!Unsafe.IsNullRef(ref link.result));
         link.result = replacement;
 

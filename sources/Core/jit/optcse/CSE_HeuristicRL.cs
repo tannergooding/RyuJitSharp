@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -13,7 +12,7 @@ namespace RyuJitSharp;
 
 public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
 {
-    private readonly double[] m_rewards = new double[MaxSteps];
+    private readonly double[] m_rewards;
     private readonly CLRRandom m_cseRng;
     private readonly bool m_updateParameters;
     private readonly bool m_greedy;
@@ -21,6 +20,8 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
 
     public CSE_HeuristicRL(Compiler compiler) : base(compiler)
     {
+        EnsureDebugDiagnosticsAvailable();
+        m_rewards = new double[MaxSteps];
         m_cseRng = new CLRRandom(compiler.info.compMethodHash() ^ JitConfig.JitRandomCSE);
 
         var parameters = new ConfigDoubleArray();
@@ -80,6 +81,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
 
     public override void Announce()
     {
+        EnsureDebugDiagnosticsAvailable();
         JITDUMP($"{Name()} salt {JitConfig.JitRandomCSE} parameters ");
         for (var index = 0; index < NumParameters; index++)
         {
@@ -124,9 +126,11 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         {
             var baseLikelihoods = m_baseLikelihoods
                 ?? throw new InvalidOperationException("RL CSE base likelihoods have not been initialized.");
+            var likelihoods = m_likelihoods
+                ?? throw new InvalidOperationException("RL CSE likelihoods have not been initialized.");
             jitprintf(" likelihoods ");
             var first = true;
-            foreach (var likelihood in m_likelihoods)
+            foreach (var likelihood in likelihoods)
             {
                 jitprintf($"{(first ? "" : ",")}{formatFloat(likelihood, "F3")}");
                 first = false;
@@ -168,6 +172,8 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
     {
         var baseLikelihoods = m_baseLikelihoods
             ?? throw new InvalidOperationException("RL CSE base likelihoods have not been initialized.");
+        var likelihoods = m_likelihoods
+            ?? throw new InvalidOperationException("RL CSE likelihoods have not been initialized.");
         if (m_verbose)
         {
             jitprintf("RL using softmax policy\n");
@@ -193,7 +199,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             var descriptor = choice.Descriptor;
             if (descriptor is null)
             {
-                m_likelihoods.Add(choice.Softmax);
+                likelihoods.Add(choice.Softmax);
                 break;
             }
 
@@ -216,7 +222,7 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
 
             PerformCSE(candidate);
             madeChanges = true;
-            m_likelihoods.Add(choice.Softmax);
+            likelihoods.Add(choice.Softmax);
         }
     }
 
@@ -421,4 +427,3 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
         return null;
     }
 }
-#endif

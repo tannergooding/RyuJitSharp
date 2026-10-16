@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Collections.Generic;
 using static RyuJitSharp.Globals;
 
@@ -13,6 +12,7 @@ public partial class CSE_HeuristicParameterized
 {
     public override void Announce()
     {
+        EnsureDebugDiagnosticsAvailable();
         JITDUMP($"{Name()} parameters ");
         for (var index = 0; index < NumParameters; index++)
         {
@@ -33,6 +33,7 @@ public partial class CSE_HeuristicParameterized
 
     public void DumpFeatures(CSEdsc? descriptor, double[] features)
     {
+        EnsureDebugDiagnosticsAvailable();
         jitprintf($"features,{m_compiler.info.compMethodSpmiIndex},{FMT_CSE(descriptor?.csdIndex ?? 0)}");
         for (var index = 0; index < NumParameters; index++)
         {
@@ -43,6 +44,7 @@ public partial class CSE_HeuristicParameterized
 
     public void DumpChoices(List<Choice> choices, int highlight = -1)
     {
+        EnsureDebugDiagnosticsAvailable();
         for (var index = 0; index < choices.Count; index++)
         {
             var choice = choices[choices.Count - 1 - index];
@@ -68,6 +70,7 @@ public partial class CSE_HeuristicParameterized
 
     public void DumpChoices(List<Choice> choices, CSEdsc? highlight)
     {
+        EnsureDebugDiagnosticsAvailable();
         for (var index = 0; index < choices.Count; index++)
         {
             var choice = choices[choices.Count - 1 - index];
@@ -91,4 +94,3 @@ public partial class CSE_HeuristicParameterized
         }
     }
 }
-#endif

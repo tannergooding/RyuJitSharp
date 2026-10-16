@@ -130,12 +130,10 @@ public partial class CSE_HeuristicParameterized
     {
         var features = new double[NumParameters];
         GetFeatures(descriptor, features);
-#if DEBUG
-        if (JitConfig.JitRLCSECandidateFeatures > 0)
+        if (Configuration.DEBUG && JitConfig.JitRLCSECandidateFeatures > 0)
         {
             DumpFeatures(descriptor, features);
         }
-#endif
         double preference = 0;
         for (var index = 0; index < NumParameters; index++)
         {
@@ -149,12 +147,10 @@ public partial class CSE_HeuristicParameterized
     {
         var features = new double[NumParameters];
         GetFeatures(null, features);
-#if DEBUG
-        if (JitConfig.JitRLCSECandidateFeatures > 0)
+        if (Configuration.DEBUG && JitConfig.JitRLCSECandidateFeatures > 0)
         {
             DumpFeatures(null, features);
         }
-#endif
         double preference = 0;
         for (var index = 0; index < NumParameters; index++)
         {

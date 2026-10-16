@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -98,7 +97,12 @@ internal static unsafe class CSEHeuristicRLHookTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-        using var tls = new JitTls(null);
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("RLHook CSE diagnostics are only available in Debug builds.");
+        }
+
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
@@ -119,4 +123,3 @@ internal static unsafe class CSEHeuristicRLHookTests
         }
     }
 }
-#endif

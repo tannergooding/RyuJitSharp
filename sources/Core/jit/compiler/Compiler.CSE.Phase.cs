@@ -9,16 +9,19 @@ public partial class Compiler
 {
     private void optValnumCSE_Heuristic(CSE_HeuristicCommon heuristic)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\n************ Trees at start of optValnumCSE_Heuristic()\n");
+#if DEBUG
             fgDumpTrees(fgFirstBB, null);
+#endif
             jitprintf("\n");
         }
 
-        heuristic.Announce();
-#endif
+        if (Configuration.DEBUG)
+        {
+            heuristic.Announce();
+        }
         heuristic.Initialize();
         heuristic.SortCandidates();
         heuristic.ConsiderCandidates();
@@ -32,18 +35,17 @@ public partial class Compiler
             return optCSEheuristic;
         }
 
-#if DEBUG
-        if (JitConfig.JitRLHook > 0)
+        if (Configuration.DEBUG && (JitConfig.JitRLHook > 0))
         {
             optCSEheuristic = new CSE_HeuristicRLHook(this);
         }
 
-        if ((optCSEheuristic is null) && (JitConfig.JitRLCSE is not null))
+        if (Configuration.DEBUG && (optCSEheuristic is null) && (JitConfig.JitRLCSE is not null))
         {
             optCSEheuristic = new CSE_HeuristicRL(this);
         }
 
-        if (optCSEheuristic is null)
+        if (Configuration.DEBUG && (optCSEheuristic is null))
         {
             var useRandomHeuristic = JitConfig.JitRandomCSE > 0;
             if (!useRandomHeuristic && compStressCompile(STRESS_MAKE_CSE, MAX_STRESS_WEIGHT))
@@ -57,38 +59,35 @@ public partial class Compiler
             }
         }
 
-        if ((optCSEheuristic is null) && (JitConfig.JitReplayCSE is not null))
+        if (Configuration.DEBUG && (optCSEheuristic is null) && (JitConfig.JitReplayCSE is not null))
         {
             optCSEheuristic = new CSE_HeuristicReplay(this);
         }
         if ((optCSEheuristic is null) && (JitConfig.JitRLCSEGreedy > 0))
-#else
-        if (JitConfig.JitRLCSEGreedy > 0)
-#endif
         {
             optCSEheuristic = new CSE_HeuristicParameterized(this);
         }
 
         optCSEheuristic ??= new CSE_Heuristic(this);
-#if DEBUG
-        optCSEheuristic.Announce();
-#endif
+        if (Configuration.DEBUG)
+        {
+            optCSEheuristic.Announce();
+        }
         return optCSEheuristic;
     }
 
     public PhaseStatus optOptimizeValnumCSEs()
     {
-#if DEBUG
-        if (optConfigDisableCSE())
+        if (Configuration.DEBUG && optConfigDisableCSE())
         {
             JITDUMP("Disabled by JitNoCSE\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
         var heuristic = optGetCSEheuristic();
-#if DEBUG
-        heuristic.Announce();
-#endif
+        if (Configuration.DEBUG)
+        {
+            heuristic.Announce();
+        }
         optValnumCSE_phase = true;
         optCSEweight = -1.0f;
 
@@ -108,9 +107,13 @@ public partial class Compiler
     public bool optIsCSEcandidate(GenTree tree, bool isReturn = false)
         => optGetCSEheuristic().ConsiderTree(tree, isReturn);
 
-#if DEBUG
     private bool optConfigDisableCSE()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("CSE diagnostic configuration is only available in Debug builds.");
+        }
+
         var jitNoCSE = unchecked((uint)JitConfig.JitNoCSE);
         if (jitNoCSE > 0)
         {
@@ -132,10 +135,8 @@ public partial class Compiler
                 return true;
             }
         }
-
         return false;
     }
-#endif
 
     public void optOptimizeCSEs()
     {

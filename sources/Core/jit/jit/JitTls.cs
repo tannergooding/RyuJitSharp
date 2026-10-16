@@ -29,6 +29,8 @@ public sealed class JitTls : IDisposable
         t_jitTls = this;
     }
 
+    public static unsafe IDisposable? CreateScope(ICorJitInfo* jitInfo) => new JitTls(jitInfo);
+
     // Native JitTls is a stack scope; restore TLS on the owning thread, not a finalizer thread.
     public void Dispose()
     {
@@ -65,6 +67,12 @@ public static class JitTls
 {
     [ThreadStatic]
     private static Compiler? t_compiler;
+
+    public static unsafe IDisposable? CreateScope(ICorJitInfo* jitInfo)
+    {
+        _ = jitInfo;
+        return null;
+    }
 
     public static ref LogEnv LogEnv => throw new InvalidOperationException("JitTls.LogEnv is only available in Debug builds.");
 

@@ -12,12 +12,10 @@ public sealed partial class CSE_Heuristic
 {
     public override bool PromotionCheck(CSE_Candidate candidate)
     {
-#if DEBUG
-        if (m_compiler.optConfigDisableCSE2())
+        if (Configuration.DEBUG && m_compiler.optConfigDisableCSE2())
         {
             return false;
         }
-#endif
 
         uint cseDefCost;
         uint cseUseCost;

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.HWIntrinsicCategory;
@@ -24,6 +23,7 @@ internal static class Arm64CSECandidateTests
     public static void IntrinsicCategoriesFollowNativeEligibility(
         NamedIntrinsic intrinsic, HWIntrinsicCategory category, bool expected)
     {
+        RequireArm64HardwareIntrinsics();
         CSELiveAcrossCallCostTests.WithCompiler(compiler =>
         {
             var tree = Candidate(compiler, intrinsic);
@@ -42,6 +42,7 @@ internal static class Arm64CSECandidateTests
     public static void AdmittedIntrinsicsRetainCostSideEffectAndValueNumberExclusions(
         GenTreeFlags flags, uint cost, bool constant, bool expected)
     {
+        RequireArm64HardwareIntrinsics();
         CSELiveAcrossCallCostTests.WithCompiler(compiler =>
         {
             var tree = Candidate(compiler, NI_ArmBase_LeadingZeroCount);
@@ -99,5 +100,12 @@ internal static class Arm64CSECandidateTests
 
         return tree;
     }
+
+    private static void RequireArm64HardwareIntrinsics()
+    {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            Assert.Ignore("Arm64 CSE intrinsic tests require Arm64 hardware intrinsics.");
+        }
+    }
 }
-#endif

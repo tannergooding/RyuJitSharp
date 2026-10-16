@@ -32,10 +32,8 @@ internal static unsafe class CSEHeuristicPerformTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "moderateRefCnt")]
     private static extern ref double ModerateCutoff(CSE_Heuristic heuristic);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitCSEHash")]
     private static extern ref int CseHash(ref JitConfigValues config);
-#endif
 
     [Test]
     public static void BaseInitializationDispatchesToStandardHeuristic()
@@ -343,12 +341,13 @@ internal static unsafe class CSEHeuristicPerformTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        compiler.info.compFullName = nameof(CSEHeuristicPerformTests);
-        CseHash(ref JitConfig) = -1;
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(CSEHeuristicPerformTests));
+        if (TestConfiguration.IsDebug)
+        {
+            CseHash(ref JitConfig) = -1;
+        }
         JitTls.Compiler = compiler;
         try
         {

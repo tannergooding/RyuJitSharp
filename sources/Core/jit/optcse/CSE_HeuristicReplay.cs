@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -12,13 +11,17 @@ public unsafe class CSE_HeuristicReplay : CSE_HeuristicCommon
 {
     public CSE_HeuristicReplay(Compiler compiler) : base(compiler)
     {
+        EnsureDebugDiagnosticsAvailable();
     }
 
     public override string Name() => "Replay CSE Heuristic";
 
     public override void Announce()
-        => JITDUMP($"JitReplayCSE is enabled with config {System.Runtime.InteropServices.Marshal.PtrToStringUTF8(
+    {
+        EnsureDebugDiagnosticsAvailable();
+        JITDUMP($"JitReplayCSE is enabled with config {System.Runtime.InteropServices.Marshal.PtrToStringUTF8(
             (nint)JitConfig.JitReplayCSE)}\n");
+    }
 
     public override bool ConsiderTree(GenTree tree, bool isReturn)
         => CanConsiderTree(tree, isReturn);
@@ -66,4 +69,3 @@ public unsafe class CSE_HeuristicReplay : CSE_HeuristicCommon
         }
     }
 }
-#endif

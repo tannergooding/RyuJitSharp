@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -43,7 +42,7 @@ internal static unsafe class CSEHeuristicDiagnosticTests
     public static void InitializationCutoffsUseInvariantSixDecimalFormatting(bool verbose)
     {
         WithCompiler(compiler => {
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
             var heuristic = new CSE_Heuristic(compiler);
             AggressiveCutoff(heuristic) = 123.5;
             ModerateCutoff(heuristic) = 456.125;
@@ -227,7 +226,12 @@ internal static unsafe class CSEHeuristicDiagnosticTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-        using var tls = new JitTls(null);
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("CSE heuristic diagnostics are only available in Debug builds.");
+        }
+
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();
@@ -252,4 +256,3 @@ internal static unsafe class CSEHeuristicDiagnosticTests
         }
     }
 }
-#endif

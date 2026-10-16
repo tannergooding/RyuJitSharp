@@ -26,8 +26,7 @@ public abstract partial class CSE_HeuristicCommon
             }
 
             candidate.InitializeCounts();
-#if DEBUG
-            if (m_compiler.verbose)
+            if (Configuration.DEBUG && m_compiler.verbose)
             {
                 var key = descriptor.csdIsSharedConst
                     ? $"K_{Compiler.DecodeSharedCseConstant(descriptor.csdHashKey):x}"
@@ -40,20 +39,24 @@ public abstract partial class CSE_HeuristicCommon
                 m_compiler.gtDispTree(candidate.Expr());
                 Globals.jitprintf("\n");
             }
-#endif
             var promote = PromotionCheck(candidate);
 
-#if DEBUG
-            var hash = JitConfig.JitCSEHash;
-            if ((hash == 0) || (m_compiler.info.compMethodHash() == hash))
+            if (attempt >= 32)
             {
-                // The native mask only represents the first 32 attempts.
-                if (attempt >= 32)
+                if (Configuration.DEBUG)
                 {
-                    promote = false;
-                    JITDUMP($"{FMT_CSE(candidate.CseIndex())} attempt {attempt} disabled, out of mask range\n");
+                    var hash = JitConfig.JitCSEHash;
+                    if ((hash == 0) || (m_compiler.info.compMethodHash() == hash))
+                    {
+                        promote = false;
+                        JITDUMP($"{FMT_CSE(candidate.CseIndex())} attempt {attempt} disabled, out of mask range\n");
+                    }
                 }
-                else
+            }
+            else if (Configuration.DEBUG)
+            {
+                var hash = JitConfig.JitCSEHash;
+                if ((hash == 0) || (m_compiler.info.compMethodHash() == hash))
                 {
                     var mask = unchecked((uint)JitConfig.JitCSEMask);
                     promote = ((1u << attempt) & mask) != 0;
@@ -62,11 +65,13 @@ public abstract partial class CSE_HeuristicCommon
                 }
             }
 
-            if (m_compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                Globals.jitprintf(promote ? "\nPromoting CSE:\n" : "Did Not promote this CSE\n");
+                if (m_compiler.verbose)
+                {
+                    Globals.jitprintf(promote ? "\nPromoting CSE:\n" : "Did Not promote this CSE\n");
+                }
             }
-#endif
 
             if (promote)
             {

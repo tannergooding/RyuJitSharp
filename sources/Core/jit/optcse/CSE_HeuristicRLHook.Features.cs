@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
@@ -21,17 +20,19 @@ public partial class CSE_HeuristicRLHook : CSE_HeuristicCommon
     private const int RlHookTypeStruct = 5;
     private const int RlHookTypeSimd = 6;
 
-    private static readonly string[] s_featureNameAndType =
-    [
-        "type", "viable", "live_across_call", "const",
-        "shared_const", "make_cse", "has_call", "containable",
-        "cost_ex", "cost_sz", "use_count", "def_count",
-        "use_wt_cnt", "def_wt_cnt", "distinct_locals", "local_occurrences",
-        "bb_count", "block_spread", "enreg_count",
-    ];
+    private static readonly string[]? s_featureNameAndType = Configuration.DEBUG
+        ? [
+            "type", "viable", "live_across_call", "const",
+            "shared_const", "make_cse", "has_call", "containable",
+            "cost_ex", "cost_sz", "use_count", "def_count",
+            "use_wt_cnt", "def_wt_cnt", "distinct_locals", "local_occurrences",
+            "bb_count", "block_spread", "enreg_count",
+        ]
+        : null;
 
     public CSE_HeuristicRLHook(Compiler compiler) : base(compiler)
     {
+        EnsureDebugDiagnosticsAvailable();
     }
 
     public override string Name() => "RL Hook CSE Heuristic";
@@ -125,4 +126,3 @@ public partial class CSE_HeuristicRLHook : CSE_HeuristicCommon
         }
     }
 }
-#endif

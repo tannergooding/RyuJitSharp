@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -272,7 +271,12 @@ internal static unsafe class CSEHeuristicModesTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-        using var tls = new JitTls(null);
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("CSE heuristic modes are only available in Debug builds.");
+        }
+
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();
@@ -310,4 +314,3 @@ internal static unsafe class CSEHeuristicModesTests
         public override void PerformCSE(CSE_Candidate candidate) => Performed.Add(candidate.CseIndex());
     }
 }
-#endif

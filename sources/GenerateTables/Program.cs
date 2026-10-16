@@ -4813,6 +4813,22 @@ public partial struct JitConfigValues
                    name.Equals("JitStressAsyncInliningMaxDepth", StringComparison.Ordinal) ||
                    name.Equals("JitStressAsyncInliningPct", StringComparison.Ordinal) ||
                    name.Equals("JitAwaitHashBreak", StringComparison.Ordinal) ||
+                   name.Equals("JitDumpToDebugger", StringComparison.Ordinal) ||
+                   name.Equals("JitCSEHash", StringComparison.Ordinal) ||
+                   name.Equals("JitCSEMask", StringComparison.Ordinal) ||
+                   name.Equals("JitMetrics", StringComparison.Ordinal) ||
+                   name.Equals("JitNoCSE", StringComparison.Ordinal) ||
+                   name.Equals("JitNoCSE2", StringComparison.Ordinal) ||
+                   name.Equals("JitRandomCSE", StringComparison.Ordinal) ||
+                   name.Equals("JitReplayCSE", StringComparison.Ordinal) ||
+                   name.Equals("JitReplayCSEReward", StringComparison.Ordinal) ||
+                   name.Equals("JitRLCSE", StringComparison.Ordinal) ||
+                   name.Equals("JitRLCSEAlpha", StringComparison.Ordinal) ||
+                   name.Equals("JitRLCSECandidateFeatures", StringComparison.Ordinal) ||
+                   name.Equals("JitRLCSEVerbose", StringComparison.Ordinal) ||
+                   name.Equals("JitRLHook", StringComparison.Ordinal) ||
+                   name.Equals("JitRLHookEmitFeatureNames", StringComparison.Ordinal) ||
+                   name.Equals("JitRLHookCSEDecisions", StringComparison.Ordinal) ||
                    name.Equals("JitR2RUnsupportedRange", StringComparison.Ordinal) ||
                    name.Equals("JitEnableRboRange", StringComparison.Ordinal) ||
                    name.Equals("JitEnableHeadTailMergeRange", StringComparison.Ordinal) ||

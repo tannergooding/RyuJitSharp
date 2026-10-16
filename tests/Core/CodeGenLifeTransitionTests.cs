@@ -1,10 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -122,7 +120,6 @@ internal static class CodeGenLifeTransitionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void ZeroTrackedVariablesRetainNativeHexWidthInLifeDiagnostics()
     {
@@ -135,7 +132,14 @@ internal static class CodeGenLifeTransitionTests
             var output = Capture(() => compiler.compUpdateLife(VarSetOps.MakeEmpty(compiler), forCodeGen: false));
 
             Assert.That(VarSetOps.ToString(compiler, compiler.compCurLife), Is.EqualTo("0000000000000000"));
-            Assert.That(output, Is.EqualTo($"Liveness not changing: 0000000000000000 {{}}{Environment.NewLine}"));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Is.EqualTo($"Liveness not changing: 0000000000000000 {{}}{Environment.NewLine}"));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -156,13 +160,20 @@ internal static class CodeGenLifeTransitionTests
             });
             var indent = new string('\t', 7);
 
-            Assert.That(output, Is.EqualTo(
-                $"Change life 0000000000000002 {{V00}} -> 0000000000000001 {{V01}}{Environment.NewLine}" +
-                $"{indent}V00 in reg rax is becoming dead  [------]{Environment.NewLine}" +
-                $"{indent}Live regs: 0000000000000001 {{rax}} - {{rax}} => 0000000000000000 {{}}{Environment.NewLine}" +
-                $"{indent}V01 in reg rax is becoming live  [------]{Environment.NewLine}" +
-                $"{indent}Live regs: 0000000000000000 {{}} + {{rax}} => 0000000000000001 {{rax}}{Environment.NewLine}" +
-                $"Liveness not changing: 0000000000000001 {{V01}}{Environment.NewLine}"));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Is.EqualTo(
+                    $"Change life 0000000000000002 {{V00}} -> 0000000000000001 {{V01}}{Environment.NewLine}" +
+                    $"{indent}V00 in reg rax is becoming dead  [------]{Environment.NewLine}" +
+                    $"{indent}Live regs: 0000000000000001 {{rax}} - {{rax}} => 0000000000000000 {{}}{Environment.NewLine}" +
+                    $"{indent}V01 in reg rax is becoming live  [------]{Environment.NewLine}" +
+                    $"{indent}Live regs: 0000000000000000 {{}} + {{rax}} => 0000000000000001 {{rax}}{Environment.NewLine}" +
+                    $"Liveness not changing: 0000000000000001 {{V01}}{Environment.NewLine}"));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -184,7 +195,6 @@ internal static class CodeGenLifeTransitionTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     private static nint[] Set(Compiler compiler, int index)
     {

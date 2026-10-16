@@ -42,20 +42,16 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
     protected List<double>? m_localWeights;
     protected bool m_verbose;
 
-#if DEBUG
-    protected readonly List<double> m_likelihoods = [];
+    protected readonly List<double>? m_likelihoods = Configuration.DEBUG ? [] : null;
     protected List<double>? m_baseLikelihoods;
     protected List<string>? m_features;
-#endif
 
     public CSE_HeuristicParameterized(Compiler compiler) : base(compiler)
     {
         m_parameters = (double[])s_defaultParameters.Clone();
         m_registerPressure = unchecked((uint)(compiler.CNT_CALLEE_TRASH_INT + CNT_CALLEE_SAVED));
-        m_verbose = JitConfig.JitRLCSEVerbose > 0;
-#if DEBUG
-        m_verbose |= compiler.verbose;
-#endif
+        m_verbose = Configuration.DEBUG && JitConfig.JitRLCSEVerbose > 0;
+        m_verbose |= Configuration.DEBUG && compiler.verbose;
     }
 
     public override string Name() => "Parameterized CSE Heuristic";
@@ -98,12 +94,10 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
 
     public void GreedyPolicy()
     {
-#if DEBUG
-        if (m_verbose)
+        if (Configuration.DEBUG && m_verbose)
         {
             logf("RL using greedy policy\n");
         }
-#endif
         List<Choice> choices = [with(m_compiler.CseCandidateCount + 1)];
         var numUnmarked = m_compiler.CseUnmarks;
         var recomputeFeatures = true;
@@ -112,9 +106,11 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
         {
             var choice = ChooseGreedy(choices, recomputeFeatures);
             var descriptor = choice.Descriptor;
-#if DEBUG
-            m_likelihoods.Add(choice.Softmax);
-#endif
+            if (Configuration.DEBUG)
+            {
+                (m_likelihoods ?? throw new InvalidOperationException(
+                    "CSE heuristic likelihoods have not been initialized.")).Add(choice.Softmax);
+            }
             if (descriptor is null)
             {
                 break;
@@ -132,12 +128,10 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
             }
 
             JITDUMP("CSE Expression : \n");
-#if DEBUG
-            if (m_compiler.verbose)
+            if (Configuration.DEBUG && m_compiler.verbose)
             {
                 m_compiler.gtDispTree(candidate.Expr());
             }
-#endif
             JITDUMP("\n");
 
             PerformCSE(candidate);
@@ -205,13 +199,11 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
             }
         }
 
-#if DEBUG
-        if (m_verbose)
+        if (Configuration.DEBUG && m_verbose)
         {
             logf("Greedy candidate evaluation\n");
             DumpChoices(choices, choiceNum);
         }
-#endif
         return choices[choices.Count - 1 - choiceNum];
     }
 }

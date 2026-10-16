@@ -48,9 +48,7 @@ public sealed partial class CSE_Heuristic
                 JITDUMP($"{FMT_CSE(descriptor.csdIndex)}, {{{key}}} useCnt={descriptor.csdUseCount}: " +
                     $"[def={definitions:F6}, use={uses:F6}, cost={cost,3}" +
                     $"{(descriptor.csdLiveAcrossCall ? ", call" : "      ")}]\n        :: ");
-#if DEBUG
                 m_compiler.gtDispTree(expression, topOnly: true);
-#endif
             }
             JITDUMP("\n");
         }

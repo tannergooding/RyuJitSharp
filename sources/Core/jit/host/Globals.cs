@@ -43,16 +43,26 @@ public partial class Globals
         }
     }
 
-#if DEBUG
     public static bool vlogf(int level, string message)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+        }
+
         // TODO: This can't be implemented without varargs support
         // return JitTls.GetLogEnv().jitInfo->logMsg(level, message);
         return false;
     }
 
+    [Conditional("DEBUG")]
     public static void vflogf(StreamWriter stream, string message)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+        }
+
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(message);
 
@@ -74,8 +84,14 @@ public partial class Globals
 
     private static bool s_logToEEfailed;
 
+    [Conditional("DEBUG")]
     public static void logf(string message)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+        }
+
         // We remember when the EE failed to log, because vlogf()
         // is very slow in a checked build.
         //
@@ -95,6 +111,7 @@ public partial class Globals
             // if the EE refuses to log it, we try to send it to stdout
             vflogf(jitstdout(), message);
         }
+
 #if false  // Enable this only when you need it
         else
         {
@@ -118,12 +135,32 @@ public partial class Globals
 #endif
     }
 
-    public static void flogf(StreamWriter stream, string message) => vflogf(stream, message);
+    [Conditional("DEBUG")]
+    public static void flogf(StreamWriter stream, string message)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+        }
 
-    public static void gcDump_logf(string message) => logf(message);
+        vflogf(stream, message);
+    }
 
-    public static void logf(int level, string message) => vlogf(level, message);
-#endif
+    public static void gcDump_logf(string message)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+        }
+
+        logf(message);
+    }
+
+    [Conditional("DEBUG")]
+    public static void logf(int level, string message)
+    {
+        _ = vlogf(level, message);
+    }
 
     [Conditional("DEBUG")]
     public static unsafe void assertAbort(ReadOnlySpan<char> reason, ReadOnlySpan<char> filePath, int lineNumber)

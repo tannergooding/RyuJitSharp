@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_SIMD && (TARGET_AMD64 || TARGET_ARM64)
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -14,6 +14,49 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CSELiveAcrossCallCostTests
 {
+    private static bool SupportsTarget =>
+        Configuration.FEATURE_SIMD && (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64);
+
+    private static IEnumerable<TestCaseData> CallCrossingCostCases()
+    {
+        if (!SupportsTarget)
+        {
+            yield return new TestCaseData(TYP_INT, true);
+            yield break;
+        }
+
+        yield return new TestCaseData(TYP_INT, true);
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            yield return new TestCaseData(TYP_MASK, Configuration.TARGET_ARM64);
+        }
+
+        if (Configuration.TARGET_AMD64 && Configuration.UNIX_AMD64_ABI)
+        {
+            yield return new TestCaseData(TYP_FLOAT, false);
+            yield return new TestCaseData(TYP_SIMD8, false);
+            yield return new TestCaseData(TYP_SIMD16, false);
+        }
+        else if (Configuration.TARGET_AMD64)
+        {
+            yield return new TestCaseData(TYP_FLOAT, true);
+            yield return new TestCaseData(TYP_SIMD8, true);
+            yield return new TestCaseData(TYP_SIMD16, true);
+        }
+        else
+        {
+            yield return new TestCaseData(TYP_FLOAT, true);
+            yield return new TestCaseData(TYP_SIMD8, true);
+            yield return new TestCaseData(TYP_SIMD16, false);
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            yield return new TestCaseData(TYP_SIMD32, false);
+            yield return new TestCaseData(TYP_SIMD64, false);
+        }
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "aggressiveRefCnt")]
     private static extern ref double AggressiveCutoff(CSE_Heuristic heuristic);
 
@@ -26,34 +69,15 @@ internal static unsafe class CSELiveAcrossCallCostTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "enregCountMsk")]
     private static extern ref int MaskRegisterUse(CSE_Heuristic heuristic);
 
-    [TestCase(TYP_INT, true)]
-#if FEATURE_MASKED_HW_INTRINSICS
-#if TARGET_ARM64
-    [TestCase(TYP_MASK, true)]
-#else
-    [TestCase(TYP_MASK, false)]
-#endif
-#endif
-#if TARGET_AMD64 && UNIX_AMD64_ABI
-    [TestCase(TYP_FLOAT, false)]
-    [TestCase(TYP_SIMD8, false)]
-    [TestCase(TYP_SIMD16, false)]
-#elif TARGET_AMD64
-    [TestCase(TYP_FLOAT, true)]
-    [TestCase(TYP_SIMD8, true)]
-    [TestCase(TYP_SIMD16, true)]
-#else
-    [TestCase(TYP_FLOAT, true)]
-    [TestCase(TYP_SIMD8, true)]
-    [TestCase(TYP_SIMD16, false)]
-#endif
-#if TARGET_AMD64
-    [TestCase(TYP_SIMD32, false)]
-    [TestCase(TYP_SIMD64, false)]
-#endif
+    [TestCaseSource(nameof(CallCrossingCostCases))]
     public static void CallCrossingChangesProfitabilityAtTheSpillCostBoundary(
         var_types expressionType, bool keepsValueInCalleeSavedRegister)
     {
+        if (!SupportsTarget)
+        {
+            Assert.Ignore("CSE call-crossing costs require SIMD on AMD64 or ARM64.");
+        }
+
         WithCompiler(compiler => {
             compiler.lvaTable = [new LclVarDsc { Type = expressionType }];
             compiler.lvaCount = 1;
@@ -113,12 +137,13 @@ internal static unsafe class CSELiveAcrossCallCostTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
         compiler.opts.compCodeOpt = Compiler.BLENDED_CODE;
-#if DEBUG
-        compiler.info.compFullName = nameof(CSELiveAcrossCallCostTests);
-        compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
-        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
+        }
+        TestConfiguration.SetCompilerFullName(compiler, nameof(CSELiveAcrossCallCostTests));
         JitTls.Compiler = compiler;
         TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
@@ -135,4 +160,3 @@ internal static unsafe class CSELiveAcrossCallCostTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression) => 0;
 }
-#endif

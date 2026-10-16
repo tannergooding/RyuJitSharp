@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.Runtime.InteropServices;
 
@@ -15,6 +14,8 @@ public struct ConfigIntArray
 
     public unsafe void EnsureInit(byte* str)
     {
+        EnsureDebugDiagnosticsAvailable();
+
         if (_values is null)
         {
             if (str is null)
@@ -26,12 +27,22 @@ public struct ConfigIntArray
         }
     }
 
-    public readonly ReadOnlySpan<int> GetData() => _values;
+    public readonly ReadOnlySpan<int> GetData()
+    {
+        EnsureDebugDiagnosticsAvailable();
+        return _values;
+    }
 
-    public readonly uint GetLength() => (uint)(_values?.Length ?? 0);
+    public readonly uint GetLength()
+    {
+        EnsureDebugDiagnosticsAvailable();
+        return (uint)(_values?.Length ?? 0);
+    }
 
     public readonly void Dump()
     {
+        EnsureDebugDiagnosticsAvailable();
+
         if (_values is null)
         {
             jitprintf("<uninitialized config int array>\n");
@@ -108,5 +119,12 @@ public struct ConfigIntArray
 
         _values = values;
     }
+
+    private static void EnsureDebugDiagnosticsAvailable()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Configuration arrays are only available in Debug builds.");
+        }
+    }
 }
-#endif

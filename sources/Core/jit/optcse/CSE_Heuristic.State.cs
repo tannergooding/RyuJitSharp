@@ -16,9 +16,7 @@ public abstract partial class CSE_HeuristicCommon
     protected readonly int cntCalleeTrashInt;
     protected readonly int cntCalleeTrashFlt;
     protected readonly int cntCalleeTrashMsk;
-#if DEBUG
-    protected readonly List<uint> m_sequence = [];
-#endif
+    protected readonly List<uint>? m_sequence = Configuration.DEBUG ? [] : null;
 
     public Compiler.codeOptimize CodeOptKind() => codeOptKind;
     public bool MadeChanges() => madeChanges;
@@ -35,25 +33,40 @@ public abstract partial class CSE_HeuristicCommon
 
     public virtual void Cleanup()
     {
-#if DEBUG
-        m_sequence.Add(0);
-#endif
+        if (Configuration.DEBUG)
+        {
+            (m_sequence ?? throw new System.InvalidOperationException(
+                "CSE heuristic metrics are only available in Debug builds.")).Add(0);
+        }
     }
 
     public virtual string Name() => "Common CSE Heuristic";
 
-#if DEBUG
-    public virtual void Announce() => Globals.JITDUMP($"{Name()}\n");
+    protected static void EnsureDebugDiagnosticsAvailable()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("CSE heuristic diagnostics are only available in Debug builds.");
+        }
+    }
+
+    public virtual void Announce()
+    {
+        EnsureDebugDiagnosticsAvailable();
+        Globals.JITDUMP($"{Name()}\n");
+    }
 
     public virtual void DumpMetrics()
     {
+        EnsureDebugDiagnosticsAvailable();
+        var sequence = m_sequence
+            ?? throw new System.InvalidOperationException("CSE heuristic metrics have not been initialized.");
         Globals.jitprintf($" {Name()} seq ");
-        for (var index = 0; index < m_sequence.Count; index++)
+        for (var index = 0; index < sequence.Count; index++)
         {
-            Globals.jitprintf($"{(index == 0 ? "" : ",")}{m_sequence[index]}");
+            Globals.jitprintf($"{(index == 0 ? "" : ",")}{sequence[index]}");
         }
     }
-#endif
 }
 
 public sealed partial class CSE_Heuristic

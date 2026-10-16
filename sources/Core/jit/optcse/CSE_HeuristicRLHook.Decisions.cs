@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -12,6 +11,7 @@ public partial class CSE_HeuristicRLHook
 {
     public override unsafe void ConsiderCandidates()
     {
+        EnsureDebugDiagnosticsAvailable();
         if (JitConfig.JitRLHookCSEDecisions is null)
         {
             return;
@@ -54,12 +54,15 @@ public partial class CSE_HeuristicRLHook
 
     public override unsafe void DumpMetrics()
     {
+        EnsureDebugDiagnosticsAvailable();
+        var featureNameAndType = s_featureNameAndType
+            ?? throw new System.InvalidOperationException("RLHook CSE feature names have not been initialized.");
         if (JitConfig.JitRLHookEmitFeatureNames > 0)
         {
             jitprintf(" featureNames ");
             for (var index = 0; index < MaxFeatures; index++)
             {
-                jitprintf($"{(index == 0 ? "" : ",")}{s_featureNameAndType[index]}");
+                jitprintf($"{(index == 0 ? "" : ",")}{featureNameAndType[index]}");
             }
         }
 
@@ -93,4 +96,3 @@ public partial class CSE_HeuristicRLHook
         }
     }
 }
-#endif

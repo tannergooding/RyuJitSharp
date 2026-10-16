@@ -5,9 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
@@ -34,7 +32,6 @@ internal static unsafe class CSEPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optCSECandidateCount")]
     private static extern ref int CandidateCount(Compiler compiler);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitRLHook")]
     private static extern ref int Hook(ref JitConfigValues config);
 
@@ -65,6 +62,7 @@ internal static unsafe class CSEPhaseTests
     public static void DebugFactoryHonorsNativePriorityAndCachesItsChoice(
         int hook, int rl, int random, int replay, int greedy, Type expected)
     {
+        RequireDebug();
         WithCompiler(compiler => {
             var config = Encoding.ASCII.GetBytes("0\0");
             fixed (byte* value = config)
@@ -92,6 +90,7 @@ internal static unsafe class CSEPhaseTests
     [Test]
     public static void StressSelectsRandomAheadOfReplayAndParameterized()
     {
+        RequireDebug();
         WithCompiler(compiler => {
             compiler.info.compMethodName = nameof(StressSelectsRandomAheadOfReplayAndParameterized);
             Stress(ref JitConfig) = 1;
@@ -109,6 +108,7 @@ internal static unsafe class CSEPhaseTests
     [TestCase(0x0F000000)]
     public static void NoCseSkipsPhaseBeforeCreatingHeuristic(int disable)
     {
+        RequireDebug();
         WithCompiler(compiler => {
             var block = BasicBlock.New(compiler, BBJ_RETURN);
             compiler.fgFirstBB = block;
@@ -124,6 +124,7 @@ internal static unsafe class CSEPhaseTests
         });
     }
 
+#if DEBUG
     [Test]
     public static void TreeDumpHonorsInclusiveRangeAndAlwaysPrintsFooter()
     {
@@ -212,9 +213,10 @@ internal static unsafe class CSEPhaseTests
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
             var vn = store.VNForExpr(null, TYP_INT);
-#if DEBUG
-            CseMask(ref JitConfig) = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CseMask(ref JitConfig) = 1;
+            }
 
             GenTree NewExpression()
             {
@@ -288,10 +290,11 @@ internal static unsafe class CSEPhaseTests
         JitConfig = new JitConfigValues();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-#if DEBUG
-        compiler.compAllowStress = true;
-        compiler.info.compFullName = nameof(CSEPhaseTests);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            compiler.compAllowStress = true;
+        }
+        TestConfiguration.SetCompilerFullName(compiler, nameof(CSEPhaseTests));
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         JitFlags flags = default;
@@ -309,6 +312,14 @@ internal static unsafe class CSEPhaseTests
         {
             JitConfig = previousConfig;
             JitTls.Compiler = previousCompiler;
+        }
+    }
+
+    private static void RequireDebug()
+    {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("CSE debug configuration and tree diagnostics are only available in Debug builds.");
         }
     }
 }

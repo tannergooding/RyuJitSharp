@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -14,13 +13,17 @@ public class CSE_HeuristicRandom : CSE_HeuristicCommon
 
     public CSE_HeuristicRandom(Compiler compiler) : base(compiler)
     {
+        EnsureDebugDiagnosticsAvailable();
         _cseRng = new CLRRandom(compiler.info.compMethodHash() ^ JitConfig.JitRandomCSE);
     }
 
     public override string Name() => "Random CSE Heuristic";
 
     public override void Announce()
-        => JITDUMP($"JitRandomCSE is enabled with salt {JitConfig.JitRandomCSE}\n");
+    {
+        EnsureDebugDiagnosticsAvailable();
+        JITDUMP($"JitRandomCSE is enabled with salt {JitConfig.JitRandomCSE}\n");
+    }
 
     public override bool ConsiderTree(GenTree tree, bool isReturn)
         => CanConsiderTree(tree, isReturn);
@@ -88,4 +91,3 @@ public class CSE_HeuristicRandom : CSE_HeuristicCommon
         }
     }
 }
-#endif

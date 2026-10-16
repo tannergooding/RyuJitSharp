@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI && DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -51,8 +50,8 @@ internal static unsafe class CodeGenCSEMetricsTests
     {
         WithEmission((compiler, codeGen, state, hotCode, nativeSize) =>
         {
-            compiler.opts.dspMetrics = true;
-            compiler.opts.disAsm = disassemble;
+            TestConfiguration.SetDspMetrics(compiler, true);
+            compiler.opts.disAsm = disassemble && TestConfiguration.IsDebug;
             compiler.info.compMethodSpmiIndex = spmiIndex;
             compiler.info.compFullName = "MetricsFixture()";
             compiler.Metrics.PerfScore = 12.25;
@@ -68,20 +67,29 @@ internal static unsafe class CodeGenCSEMetricsTests
             Assert.That(state->InvalidRequests, Is.Zero);
             Assert.That((nuint)(*hotCode), Is.EqualTo((nuint)state->HotCode));
             Assert.That(*nativeSize, Is.EqualTo(2));
-            Assert.That(Heuristic(compiler), Is.TypeOf<CSE_Heuristic>());
-            Assert.That(output, disassemble
-                ? Does.Contain("\n; Total bytes of code ")
-                : Does.StartWith("; Total bytes of code "));
-            Assert.That(output, Does.Contain(
-                ", prolog size 1, PerfScore 12.25, instruction count 2, allocated bytes for code 2"));
-            Assert.That(output, Does.Contain(
-                ", num cse 2 num cand 3 Standard CSE Heuristic seq "));
-            Assert.That(output, Does.Not.Contain("num cse 99"));
-            Assert.That(output, Does.Contain(spmiIndex >= 0 ? " spmi index 17" : " seq  (MethodHash="));
-            Assert.That(output, Does.Contain(
-                $"(MethodHash={compiler.info.compMethodHash():x8}) for method MetricsFixture() ({compiler.compGetTieringName(true)})"));
-            Assert.That(output.Contains("; ============================================================", StringComparison.Ordinal),
-                Is.EqualTo(disassemble));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(Heuristic(compiler), Is.TypeOf<CSE_Heuristic>());
+                Assert.That(output, disassemble
+                    ? Does.Contain("\n; Total bytes of code ")
+                    : Does.StartWith("; Total bytes of code "));
+                Assert.That(output, Does.Contain(
+                    ", prolog size 1, PerfScore 12.25, instruction count 2, allocated bytes for code 2"));
+                Assert.That(output, Does.Contain(
+                    ", num cse 2 num cand 3 Standard CSE Heuristic seq "));
+                Assert.That(output, Does.Not.Contain("num cse 99"));
+                Assert.That(output, Does.Contain(spmiIndex >= 0 ? " spmi index 17" : " seq  (MethodHash="));
+                Assert.That(output, Does.Contain(
+                    $"(MethodHash={compiler.info.compMethodHash():x8}) for method MetricsFixture() ({compiler.compGetTieringName(true)})"));
+                Assert.That(output.Contains("; ============================================================", StringComparison.Ordinal),
+                    Is.EqualTo(disassemble));
+            }
+            else
+            {
+                Assert.That(Heuristic(compiler), Is.Null);
+                Assert.That(output, Does.Not.Contain("num cse"));
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -90,7 +98,7 @@ internal static unsafe class CodeGenCSEMetricsTests
     {
         WithEmission((compiler, codeGen, state, _, _) =>
         {
-            compiler.opts.dspMetrics = true;
+            TestConfiguration.SetDspMetrics(compiler, true);
             compiler.info.compFullName = "ParameterizedMetricsFixture()";
             compiler.info.compMethodSpmiIndex = -1;
             var heuristic = new CSE_HeuristicParameterized(compiler);
@@ -101,9 +109,17 @@ internal static unsafe class CodeGenCSEMetricsTests
 
             Assert.That(state->Calls, Is.EqualTo(2));
             Assert.That(Heuristic(compiler), Is.SameAs(heuristic));
-            Assert.That(output, Does.Contain(" num cand 0 Parameterized CSE Heuristic seq 0 params 0.242500,0.247900"));
-            Assert.That(output, Does.Not.Contain(" spmi index "));
-            Assert.That(output, Does.Not.Contain("; ============================================================"));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain(
+                    " num cand 0 Parameterized CSE Heuristic seq 0 params 0.242500,0.247900"));
+                Assert.That(output, Does.Not.Contain(" spmi index "));
+                Assert.That(output, Does.Not.Contain("; ============================================================"));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -112,52 +128,67 @@ internal static unsafe class CodeGenCSEMetricsTests
 
     private static void WithEmission(EmissionAction action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            compiler.eeInfoInitialized = true;
-            compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;
-            compiler.genRichIPmappings = [];
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
-            compiler.compFuncInfoCount = 1;
-            compiler.fgFuncletsCreated = true;
-            compiler.info.compMatchedVM = true;
+            Assert.Ignore("CSE codegen metrics require the Windows AMD64 ABI target.");
+        }
 
-            var arena = stackalloc byte[160];
-            var hotExec = (byte*)(((nuint)arena + 15u) & ~(nuint)15);
-            var hotRW = hotExec + 64;
-            new Span<byte>(hotExec, 128).Fill(0xA5);
-            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-            vtable.reserveUnwindInfo =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, bool, bool, int, void>)
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte, byte, int, void>)&Reserve;
-            vtable.allocMem = &Allocate;
-            var state = new EmissionState
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+
+        try
+        {
+            CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
             {
-                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
-                HotCode = hotExec,
-                HotCodeRW = hotRW,
-            };
-            compiler.info.compCompHnd = &state.JitInfo;
-            codeGen.Emitter.emitCmpHandle = &state.JitInfo;
+                compiler.eeInfoInitialized = true;
+                compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;
+                compiler.genRichIPmappings = [];
+                compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+                compiler.compFuncInfoCount = 1;
+                compiler.fgFuncletsCreated = true;
+                compiler.info.compMatchedVM = true;
 
-            var emitter = codeGen.Emitter;
-            emitter.emitIns(INS_ret);
-            emitter.emitStartPrologEpilogGeneration();
-            emitter.emitBegProlog();
-            compiler.unwindBegProlog();
-            emitter.emitIns(INS_nop);
-            emitter.emitMarkPrologEnd();
-            compiler.unwindEndProlog();
-            emitter.emitEndProlog();
-            emitter.emitFinishPrologEpilogGeneration();
-            emitter.emitJumpDistBind();
+                var arena = stackalloc byte[160];
+                var hotExec = (byte*)(((nuint)arena + 15u) & ~(nuint)15);
+                var hotRW = hotExec + 64;
+                new Span<byte>(hotExec, 128).Fill(0xA5);
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.reserveUnwindInfo =
+                    (delegate* unmanaged[MemberFunction]<ICorJitInfo*, bool, bool, int, void>)
+                    (delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte, byte, int, void>)&Reserve;
+                vtable.allocMem = &Allocate;
+                var state = new EmissionState
+                {
+                    JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                    HotCode = hotExec,
+                    HotCodeRW = hotRW,
+                };
+                compiler.info.compCompHnd = &state.JitInfo;
+                codeGen.Emitter.emitCmpHandle = &state.JitInfo;
 
-            void* code = null;
-            var size = -1;
-            CodePointerAddress(codeGen) = &code;
-            NativeSizeAddress(codeGen) = &size;
-            action(compiler, codeGen, &state, &code, &size);
-        });
+                var emitter = codeGen.Emitter;
+                emitter.emitIns(INS_ret);
+                emitter.emitStartPrologEpilogGeneration();
+                emitter.emitBegProlog();
+                compiler.unwindBegProlog();
+                emitter.emitIns(INS_nop);
+                emitter.emitMarkPrologEnd();
+                compiler.unwindEndProlog();
+                emitter.emitEndProlog();
+                emitter.emitFinishPrologEpilogGeneration();
+                emitter.emitJumpDistBind();
+
+                void* code = null;
+                var size = -1;
+                CodePointerAddress(codeGen) = &code;
+                NativeSizeAddress(codeGen) = &size;
+                action(compiler, codeGen, &state, &code, &size);
+            });
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
     }
 
     private static string Capture(Action action)
@@ -211,4 +242,3 @@ internal static unsafe class CodeGenCSEMetricsTests
         }
     }
 }
-#endif

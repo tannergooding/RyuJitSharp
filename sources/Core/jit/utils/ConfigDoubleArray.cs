@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -17,18 +16,30 @@ public struct ConfigDoubleArray
 
     public unsafe void EnsureInit(byte* str)
     {
+        EnsureDebugDiagnosticsAvailable();
+
         if (_values is null)
         {
             Init(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(str));
         }
     }
 
-    public readonly ReadOnlySpan<double> GetData() => _values;
+    public readonly ReadOnlySpan<double> GetData()
+    {
+        EnsureDebugDiagnosticsAvailable();
+        return _values;
+    }
 
-    public readonly uint GetLength() => (uint)(_values?.Length ?? 0);
+    public readonly uint GetLength()
+    {
+        EnsureDebugDiagnosticsAvailable();
+        return (uint)(_values?.Length ?? 0);
+    }
 
     public readonly void Dump()
     {
+        EnsureDebugDiagnosticsAvailable();
+
         if (_values is null)
         {
             jitprintf("<uninitialized config double array>\n");
@@ -106,5 +117,12 @@ public struct ConfigDoubleArray
 
         throw new FormatException("Invalid floating-point JIT configuration value.");
     }
+
+    private static void EnsureDebugDiagnosticsAvailable()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Configuration arrays are only available in Debug builds.");
+        }
+    }
 }
-#endif

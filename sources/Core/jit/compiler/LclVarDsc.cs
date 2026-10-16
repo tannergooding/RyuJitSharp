@@ -939,7 +939,35 @@ public partial struct LclVarDsc
             _debugFlags = (_debugFlags & ~DebugFlags.IsMultiDefCse) | (value ? DebugFlags.IsMultiDefCse : DebugFlags.None);
         }
     }
+#else
+    public bool lvIsHoist
+    {
+        readonly get
+        {
+            throw new System.InvalidOperationException("CSE debug flags are only available in Debug builds.");
+        }
 
+        set
+        {
+            throw new System.InvalidOperationException("CSE debug flags are only available in Debug builds.");
+        }
+    }
+
+    public bool lvIsMultiDefCSE
+    {
+        readonly get
+        {
+            throw new System.InvalidOperationException("CSE debug flags are only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("CSE debug flags are only available in Debug builds.");
+        }
+    }
+#endif
+
+#if DEBUG
     /// <summary>Don't change the type of this variable</summary>
     public bool lvKeepType
     {
@@ -1839,10 +1867,9 @@ public partial struct LclVarDsc
         return true;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void PrintVarReg()
     {
         jitprintf($"{_lvRegNum.Name}");
     }
-#endif
 }

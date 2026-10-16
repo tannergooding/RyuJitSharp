@@ -53,7 +53,6 @@ internal static unsafe class CSECandidateTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitConstCSE")]
     private static extern ref int ConstantMode(ref JitConfigValues config);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optCSECandidateCount")]
     private static extern ref int CandidateCount(Compiler compiler);
 
@@ -72,6 +71,7 @@ internal static unsafe class CSECandidateTests
     public static void DataFlowSetDisplaysAvailabilityAndIgnoresTheVisitedBit(
         bool includeBits, bool multiword, bool empty)
     {
+        RequireDebug();
         WithCompiler(compiler => {
             var count = multiword ? 64 : 3;
             CandidateCount(compiler) = count;
@@ -111,6 +111,7 @@ internal static unsafe class CSECandidateTests
     [TestCase(true)]
     public static void CandidateDiagnosticRetainsValueNumberAndSharedConstantKeyForms(bool shared)
     {
+        RequireDebug();
         WithCompiler(compiler => {
             ConstantMode(ref Globals.JitConfig) = shared ? Globals.CONST_CSE_ENABLE_ALL : Globals.CONST_CSE_DISABLE_ALL;
             TestConfiguration.EnableVerbose(compiler);
@@ -140,7 +141,6 @@ internal static unsafe class CSECandidateTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void SharedConstantEncodingPreservesHostPayloadOnThirtyTwoBitTargets()
     {
@@ -161,14 +161,14 @@ internal static unsafe class CSECandidateTests
             AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
         }
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
     public static void CandidateLimitDiagnosticDoesNotAssignAnIndex(bool verbose)
     {
+        RequireDebug();
         WithCompiler(compiler => {
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
             compiler.compCurBB = BasicBlock.New(compiler, BBJ_RETURN);
             compiler.vnStore = new ValueNumStore(compiler);
             var vn = compiler.vnStore.VNForIntCon(142);
@@ -198,8 +198,9 @@ internal static unsafe class CSECandidateTests
     [TestCase(true)]
     public static void BetterExceptionCandidateReportsTheReplacedOccurrence(bool verbose)
     {
+        RequireDebug();
         WithCompiler(compiler => {
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
             compiler.compCurBB = BasicBlock.New(compiler, BBJ_RETURN);
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
@@ -244,6 +245,7 @@ internal static unsafe class CSECandidateTests
     public static void AvailabilityReportsExceptionRejectionAndNewCallLiveness(
         AvailabilityScenario scenario, string message)
     {
+        RequireDebug();
         WithCompiler(compiler => {
             TestConfiguration.EnableVerbose(compiler);
             compiler.fgNodeThreading = NodeThreading.AllTrees;
@@ -312,7 +314,6 @@ internal static unsafe class CSECandidateTests
             }
         });
     }
-#endif
 
     [Test]
     public static void DescriptorCountsDistinctAndRepeatedLocalsWithNativeEightLocalBudget()
@@ -534,33 +535,44 @@ internal static unsafe class CSECandidateTests
             Assert.That(Index(compiler, first, firstStmt), Is.Zero);
             Assert.That(Index(compiler, second, secondStmt), Is.EqualTo(1));
             Stop(compiler);
-#if DEBUG
-            compiler.verbose = verbose;
-            var output = CodeGenLifeTransitionTests.Capture(() => {
-#endif
+
+            void ExecuteDataFlow()
+            {
                 InitializeDataFlow(compiler);
                 RunDataFlow(compiler);
                 Classify(compiler);
-#if DEBUG
-            });
+            }
 
-            if (verbose)
+            string? output = null;
+            if (TestConfiguration.IsDebug)
             {
-                var zeros = new string('0', IntPtr.Size * 2);
-                var gen = $"{new string('0', (IntPtr.Size * 2) - 1)}3 CSE #01.c";
-                var expected = $"\nBlocks that generate CSE def/uses\nBB01 cseGen = {gen}\n" +
-                    "\nPerforming DataFlow for ValnumCSE's\n" +
-                    $"\nAfter performing DataFlow for ValnumCSE's\nBB01\n in: {zeros} \ngen: {gen}\nout: {gen}\n\n" +
-                    "Labeling the CSEs with Use/Def information\n" +
-                    $"BB01 [{first.TreeId:D6}] Def of CSE #01 [weight=1]\n" +
-                    $"BB01 [{second.TreeId:D6}] Use of CSE #01 [weight=1]\n";
-                Assert.That(output, Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
+                TestConfiguration.SetVerbose(compiler, verbose);
+                output = CodeGenLifeTransitionTests.Capture(ExecuteDataFlow);
             }
             else
             {
-                Assert.That(output, Is.Empty);
+                ExecuteDataFlow();
             }
-#endif
+
+            if (output is not null)
+            {
+                if (verbose)
+                {
+                    var zeros = new string('0', IntPtr.Size * 2);
+                    var gen = $"{new string('0', (IntPtr.Size * 2) - 1)}3 CSE #01.c";
+                    var expected = $"\nBlocks that generate CSE def/uses\nBB01 cseGen = {gen}\n" +
+                        "\nPerforming DataFlow for ValnumCSE's\n" +
+                        $"\nAfter performing DataFlow for ValnumCSE's\nBB01\n in: {zeros} \ngen: {gen}\nout: {gen}\n\n" +
+                        "Labeling the CSEs with Use/Def information\n" +
+                        $"BB01 [{first.TreeId:D6}] Def of CSE #01 [weight=1]\n" +
+                        $"BB01 [{second.TreeId:D6}] Use of CSE #01 [weight=1]\n";
+                    Assert.That(output, Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
+                }
+                else
+                {
+                    Assert.That(output, Is.Empty);
+                }
+            }
 
             var descriptor = Table(compiler)[0]!;
             Assert.Multiple(() =>
@@ -644,6 +656,14 @@ internal static unsafe class CSECandidateTests
         {
             Globals.JitConfig = previousConfig;
             JitTls.Compiler = previous;
+        }
+    }
+
+    private static void RequireDebug()
+    {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("CSE availability diagnostics are only available in Debug builds.");
         }
     }
 }

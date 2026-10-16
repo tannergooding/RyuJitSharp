@@ -170,7 +170,18 @@ public partial class Compiler
 #if DEBUG
     internal int compGenTreeID;
 #else
-    internal int compGenTreeID => throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+    internal int compGenTreeID
+    {
+        get
+        {
+            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+    }
 #endif
 
     public int compStatementID;
@@ -2143,7 +2154,7 @@ public partial class Compiler
                 opts.optRepeatCount = JitConfig.JitOptRepeatCount;
             }
 
-            opts.dspMetrics = (JitConfig.JitMetrics != 0);
+            opts.dspMetrics = Configuration.DEBUG && (JitConfig.JitMetrics != 0);
         }
 
         if (verboseDump)
@@ -3952,12 +3963,10 @@ public partial class Compiler
 #endif
 
             var metricPart = "";
-#if DEBUG
-            if (JitConfig.JitMetrics > 0)
+            if (Configuration.DEBUG && (JitConfig.JitMetrics > 0))
             {
                 metricPart = $", perfScore={Metrics.PerfScore:F2}, numCse={optCSEcount}";
             }
-#endif
 
             var hasProf = fgHaveProfileData;
             jitprintf($"{methodsCompiled,4}: JIT compiled {fullName} [{compGetTieringName()}{osrName}{(hasProf ? " with " : "")}{(hasProf ? compPgoSourceName : "")}, IL size={info.compILCodeSize}, code size={methodCodeSize}{debugPart}{metricPart}]\n");

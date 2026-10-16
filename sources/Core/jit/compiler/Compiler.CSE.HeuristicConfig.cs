@@ -7,11 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private static uint s_totalCseCount;
 
     internal bool optConfigDisableCSE2()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("CSE diagnostic configuration is only available in Debug builds.");
+        }
+
         var jitNoCSE2 = unchecked((uint)JitConfig.JitNoCSE2);
         s_totalCseCount = unchecked(s_totalCseCount + 1);
 
@@ -46,8 +50,6 @@ public partial class Compiler
                 return true;
             }
         }
-
         return false;
     }
-#endif
 }
