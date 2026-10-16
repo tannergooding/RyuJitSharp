@@ -86,6 +86,49 @@ internal static class ExtendedDefaultPolicyTests
         });
     }
 
+    [Test]
+    public static void InlineStrategyConfigurationIsBuildSpecific()
+    {
+        object config = Globals.JitConfig;
+        SetField(typeof(JitConfigValues), config, "_jitInlineSize", 120);
+        SetField(typeof(JitConfigValues), config, "_jitInlineDepth", 40);
+        SetField(typeof(JitConfigValues), config, "_jitForceInlineDepth", 15);
+        Globals.JitConfig = (JitConfigValues)config;
+
+        var compiler = CreateCompiler();
+        compiler.info = new Compiler.Info();
+        var strategy = new InlineStrategy(compiler);
+
+        Assert.Multiple(() => {
+            Assert.That(GetField<int>(typeof(InlineStrategy), strategy, "_maxInlineSize"),
+                Is.EqualTo(TestConfiguration.IsDebug ? 120 : Globals.DEFAULT_MAX_INLINE_SIZE));
+            Assert.That(GetField<int>(typeof(InlineStrategy), strategy, "_maxInlineDepth"),
+                Is.EqualTo(TestConfiguration.IsDebug ? 40 : Globals.DEFAULT_MAX_INLINE_DEPTH));
+            Assert.That(GetField<int>(typeof(InlineStrategy), strategy, "_maxForceInlineDepth"),
+                Is.EqualTo(TestConfiguration.IsDebug ? 15 : Globals.DEFAULT_MAX_FORCE_INLINE_DEPTH));
+        });
+    }
+
+    [Test]
+    public static void AdditionalInlineMultiplierIsBuildSpecific()
+    {
+        object config = Globals.JitConfig;
+        SetField(typeof(JitConfigValues), config, "_jitInlineAdditionalMultiplier", 2);
+        Globals.JitConfig = (JitConfigValues)config;
+
+        var compiler = CreateCompiler();
+        var defaultPolicy = new DefaultPolicyProbe(compiler);
+        defaultPolicy.NoteInt(InlineObservation.CALLSITE_FREQUENCY, (int)InlineCallsiteFrequency.HOT);
+        var extendedPolicy = new ProbePolicy(compiler);
+        extendedPolicy.NoteBool(InlineObservation.CALLSITE_FOLDABLE_BRANCH, true);
+        extendedPolicy.NoteInt(InlineObservation.CALLSITE_FREQUENCY, (int)InlineCallsiteFrequency.HOT);
+
+        Assert.Multiple(() => {
+            Assert.That(defaultPolicy.Multiplier, Is.EqualTo(TestConfiguration.IsDebug ? 5.0 : 3.0).Within(1e-12));
+            Assert.That(extendedPolicy.Multiplier, Is.EqualTo(TestConfiguration.IsDebug ? 9.0 : 7.0).Within(1e-12));
+        });
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(3)]
@@ -758,11 +801,23 @@ internal static class ExtendedDefaultPolicyTests
         field.SetValue(target, value);
     }
 
+    private static T GetField<T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, object target, string name)
+    {
+        var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Missing field {name}.");
+        return (T)(field.GetValue(target) ?? throw new InvalidOperationException($"Missing value for {name}."));
+    }
+
     private static Compiler CreateCompiler()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTable = [];
         return compiler;
+    }
+
+    private sealed class DefaultPolicyProbe(Compiler compiler) : DefaultPolicy(compiler, isPrejitRoot: false)
+    {
+        public double Multiplier => DetermineMultiplier();
     }
 
     private sealed class ProbePolicy(Compiler compiler, bool isPrejitRoot = false) : ExtendedDefaultPolicy(compiler, isPrejitRoot)

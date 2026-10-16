@@ -57,15 +57,15 @@ public partial struct JitConfigValues
     private int _jitGCInfoLogging;
     private int _jitHashBreak;
     private int _jitHashHalt;
+#endif
     private int _jitInlineAdditionalMultiplier;
+#if DEBUG
     private int _jitInlinePrintStats;
+#endif
     private int _jitInlineSize;
     private int _jitInlineDepth;
-#endif
     private int _jitInlineBudget;
-#if DEBUG
     private int _jitForceInlineDepth;
-#endif
     private int _jitInlineMethodsWithEH;
 #if DEBUG
     private unsafe byte* _jitInlineMethodsWithEHRange;
@@ -346,9 +346,9 @@ public partial struct JitConfigValues
     private int _jitInlinePolicyDumpXml;
     private int _jitInlineLimit;
     private int _jitInlinePolicyDiscretionary;
+#endif
     private int _jitInlinePolicyFull;
     private int _jitInlinePolicySize;
-#endif
     private int _jitInlinePolicyRandom;
 #if DEBUG
     private int _jitInlinePolicyReplay;
@@ -520,15 +520,55 @@ public partial struct JitConfigValues
     public int JitGCInfoLogging => _jitGCInfoLogging;
     public int JitHashBreak => _jitHashBreak;
     public int JitHashHalt => _jitHashHalt;
-    public int JitInlineAdditionalMultiplier => _jitInlineAdditionalMultiplier;
-    public int JitInlinePrintStats => _jitInlinePrintStats;
-    public int JitInlineSize => _jitInlineSize;
-    public int JitInlineDepth => _jitInlineDepth;
 #endif
-    public int JitInlineBudget => _jitInlineBudget;
+    public int JitInlineAdditionalMultiplier
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlineAdditionalMultiplier' is only available in Debug builds.");
+            }
+            return _jitInlineAdditionalMultiplier;
+        }
+    }
 #if DEBUG
-    public int JitForceInlineDepth => _jitForceInlineDepth;
+    public int JitInlinePrintStats => _jitInlinePrintStats;
 #endif
+    public int JitInlineSize
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlineSize' is only available in Debug builds.");
+            }
+            return _jitInlineSize;
+        }
+    }
+    public int JitInlineDepth
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlineDepth' is only available in Debug builds.");
+            }
+            return _jitInlineDepth;
+        }
+    }
+    public int JitInlineBudget => _jitInlineBudget;
+    public int JitForceInlineDepth
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitForceInlineDepth' is only available in Debug builds.");
+            }
+            return _jitForceInlineDepth;
+        }
+    }
     public int JitInlineMethodsWithEH => _jitInlineMethodsWithEH;
 #if DEBUG
     public unsafe byte* JitInlineMethodsWithEHRange => _jitInlineMethodsWithEHRange;
@@ -819,9 +859,29 @@ public partial struct JitConfigValues
     public int JitInlinePolicyDumpXml => _jitInlinePolicyDumpXml;
     public int JitInlineLimit => _jitInlineLimit;
     public int JitInlinePolicyDiscretionary => _jitInlinePolicyDiscretionary;
-    public int JitInlinePolicyFull => _jitInlinePolicyFull;
-    public int JitInlinePolicySize => _jitInlinePolicySize;
 #endif
+    public int JitInlinePolicyFull
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyFull' is only available in Debug builds.");
+            }
+            return _jitInlinePolicyFull;
+        }
+    }
+    public int JitInlinePolicySize
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicySize' is only available in Debug builds.");
+            }
+            return _jitInlinePolicySize;
+        }
+    }
     public int JitInlinePolicyRandom
     {
         get
@@ -1040,15 +1100,15 @@ public partial struct JitConfigValues
         // _jitGCInfoLogging = unchecked((int)(0xCDCDCDCD));
         // _jitHashBreak = unchecked((int)(0xCDCDCDCD));
         // _jitHashHalt = unchecked((int)(0xCDCDCDCD));
+#endif
         // _jitInlineAdditionalMultiplier = unchecked((int)(0xCDCDCDCD));
+#if DEBUG
         // _jitInlinePrintStats = unchecked((int)(0xCDCDCDCD));
+#endif
         // _jitInlineSize = unchecked((int)(0xCDCDCDCD));
         // _jitInlineDepth = unchecked((int)(0xCDCDCDCD));
-#endif
         // _jitInlineBudget = unchecked((int)(0xCDCDCDCD));
-#if DEBUG
         // _jitForceInlineDepth = unchecked((int)(0xCDCDCDCD));
-#endif
         // _jitInlineMethodsWithEH = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
         jitHost->freeStringConfigValue(_jitInlineMethodsWithEHRange);
@@ -1352,8 +1412,10 @@ public partial struct JitConfigValues
         // _jitInlinePolicyDumpXml = unchecked((int)(0xCDCDCDCD));
         // _jitInlineLimit = unchecked((int)(0xCDCDCDCD));
         // _jitInlinePolicyDiscretionary = unchecked((int)(0xCDCDCDCD));
+#endif
         // _jitInlinePolicyFull = unchecked((int)(0xCDCDCDCD));
         // _jitInlinePolicySize = unchecked((int)(0xCDCDCDCD));
+#if DEBUG
         // _jitInlinePolicyRandom = unchecked((int)(0xCDCDCDCD));
         // _jitInlinePolicyReplay = unchecked((int)(0xCDCDCDCD));
         jitHost->freeStringConfigValue(_jitNoInlineRange);
@@ -1539,15 +1601,27 @@ public partial struct JitConfigValues
         _jitGCInfoLogging = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGCInfoLogging"u8))), 0);
         _jitHashBreak = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitHashBreak"u8))), -1);
         _jitHashHalt = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitHashHalt"u8))), -1);
-        _jitInlineAdditionalMultiplier = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineAdditionalMultiplier"u8))), 0);
-        _jitInlinePrintStats = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePrintStats"u8))), 0);
-        _jitInlineSize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineSize"u8))), DEFAULT_MAX_INLINE_SIZE);
-        _jitInlineDepth = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineDepth"u8))), DEFAULT_MAX_INLINE_DEPTH);
 #endif
-        _jitInlineBudget = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineBudget"u8))), DEFAULT_INLINE_BUDGET);
+        if (Configuration.DEBUG)
+        {
+            _jitInlineAdditionalMultiplier = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineAdditionalMultiplier"u8))), 0);
+        }
 #if DEBUG
-        _jitForceInlineDepth = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitForceInlineDepth"u8))), DEFAULT_MAX_FORCE_INLINE_DEPTH);
+        _jitInlinePrintStats = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePrintStats"u8))), 0);
 #endif
+        if (Configuration.DEBUG)
+        {
+            _jitInlineSize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineSize"u8))), DEFAULT_MAX_INLINE_SIZE);
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitInlineDepth = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineDepth"u8))), DEFAULT_MAX_INLINE_DEPTH);
+        }
+        _jitInlineBudget = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineBudget"u8))), DEFAULT_INLINE_BUDGET);
+        if (Configuration.DEBUG)
+        {
+            _jitForceInlineDepth = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitForceInlineDepth"u8))), DEFAULT_MAX_FORCE_INLINE_DEPTH);
+        }
         _jitInlineMethodsWithEH = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineMethodsWithEH"u8))), 1);
 #if DEBUG
         _jitInlineMethodsWithEHRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineMethodsWithEHRange"u8))));
@@ -1887,9 +1961,15 @@ public partial struct JitConfigValues
         _jitInlinePolicyDumpXml = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyDumpXml"u8))), 0);
         _jitInlineLimit = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineLimit"u8))), -1);
         _jitInlinePolicyDiscretionary = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyDiscretionary"u8))), 0);
-        _jitInlinePolicyFull = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyFull"u8))), 0);
-        _jitInlinePolicySize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicySize"u8))), 0);
 #endif
+        if (Configuration.DEBUG)
+        {
+            _jitInlinePolicyFull = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyFull"u8))), 0);
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitInlinePolicySize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicySize"u8))), 0);
+        }
         if (Configuration.DEBUG)
         {
             _jitInlinePolicyRandom = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyRandom"u8))), 0);

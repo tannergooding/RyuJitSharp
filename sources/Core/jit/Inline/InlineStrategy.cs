@@ -78,53 +78,54 @@ public sealed partial class InlineStrategy
         // Verify compiler is a root compiler instance
         assert(_compiler.impInlineRoot == _compiler);
 
-#if DEBUG
-        // Possibly modify the max inline size.
-        //
-        // Default value of JitInlineSize is the same as our default.
-        // So normally this next line does not change the size.
-        _maxInlineSize = JitConfig.JitInlineSize;
-
-        // Up the max size under stress
-        if (_compiler.compInlineStress())
+        if (Configuration.DEBUG)
         {
-            _maxInlineSize *= 10;
+            // Possibly modify the max inline size.
+            //
+            // Default value of JitInlineSize is the same as our default.
+            // So normally this next line does not change the size.
+            _maxInlineSize = JitConfig.JitInlineSize;
+
+            // Up the max size under stress
+            if (_compiler.compInlineStress())
+            {
+                _maxInlineSize *= 10;
+            }
+
+            // But don't overdo it
+            if (_maxInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
+            {
+                _maxInlineSize = IMPLEMENTATION_MAX_INLINE_SIZE;
+            }
+
+            // Verify: not too small, not too big.
+            assert(_maxInlineSize >= ALWAYS_INLINE_SIZE);
+            assert(_maxInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
+
+            // Possibly modify the max inline depth
+            //
+            // Default value of JitInlineDepth is the same as our default.
+            // So normally this next line does not change the size.
+            _maxInlineDepth = JitConfig.JitInlineDepth;
+
+            // But don't overdo it
+            if (_maxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
+            {
+                _maxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
+            }
+
+            // Possibly modify the max force inline depth
+            //
+            // Default value of JitForceInlineDepth is the same as our default.
+            // So normally this next line does not change the size.
+            _maxForceInlineDepth = JitConfig.JitForceInlineDepth;
+
+            // But don't overdo it
+            if (_maxForceInlineDepth > _maxInlineDepth)
+            {
+                _maxForceInlineDepth = _maxInlineDepth;
+            }
         }
-
-        // But don't overdo it
-        if (_maxInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
-        {
-            _maxInlineSize = IMPLEMENTATION_MAX_INLINE_SIZE;
-        }
-
-        // Verify: not too small, not too big.
-        assert(_maxInlineSize >= ALWAYS_INLINE_SIZE);
-        assert(_maxInlineSize <= IMPLEMENTATION_MAX_INLINE_SIZE);
-
-        // Possibly modify the max inline depth
-        //
-        // Default value of JitInlineDepth is the same as our default.
-        // So normally this next line does not change the size.
-        _maxInlineDepth = JitConfig.JitInlineDepth;
-
-        // But don't overdo it
-        if (_maxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
-        {
-            _maxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
-        }
-
-        // Possibly modify the max force inline depth
-        //
-        // Default value of JitForceInlineDepth is the same as our default.
-        // So normally this next line does not change the size.
-        _maxForceInlineDepth = JitConfig.JitForceInlineDepth;
-
-        // But don't overdo it
-        if (_maxForceInlineDepth > _maxInlineDepth)
-        {
-            _maxForceInlineDepth = _maxInlineDepth;
-        }
-#endif
     }
 
     public Compiler Compiler => _compiler;

@@ -664,21 +664,22 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                 JITDUMP($"\nCallsite is in a no-return region.  Multiplier limited to {FormatGeneral(multiplier)}.");
             }
 
-#if DEBUG
-            var additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier;
-
-            if (additionalMultiplier != 0)
+            if (Configuration.DEBUG)
             {
-                multiplier += additionalMultiplier;
-                JITDUMP($"\nmultiplier increased via JitInlineAdditionalMultiplier={additionalMultiplier} to {FormatGeneral(multiplier)}.");
-            }
+                var additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier;
 
-            if (_rootCompiler.compInlineStress())
-            {
-                multiplier += 10;
-                JITDUMP($"\nmultiplier increased via inline stress to {FormatGeneral(multiplier)}.");
+                if (additionalMultiplier != 0)
+                {
+                    multiplier += additionalMultiplier;
+                    JITDUMP($"\nmultiplier increased via JitInlineAdditionalMultiplier={additionalMultiplier} to {FormatGeneral(multiplier)}.");
+                }
+
+                if (_rootCompiler.compInlineStress())
+                {
+                    multiplier += 10;
+                    JITDUMP($"\nmultiplier increased via inline stress to {FormatGeneral(multiplier)}.");
+                }
             }
-#endif
 
             return multiplier;
         }

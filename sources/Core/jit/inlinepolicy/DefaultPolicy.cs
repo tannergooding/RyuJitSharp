@@ -970,21 +970,22 @@ public partial class DefaultPolicy : LegacyPolicy
             }
         }
 
-#if DEBUG
-        var additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier;
-
-        if (additionalMultiplier is not 0)
+        if (Configuration.DEBUG)
         {
-            multiplier += additionalMultiplier;
-            JITDUMP($"\nmultiplier increased via JitInlineAdditionalMultiplier={additionalMultiplier} to {multiplier}.");
-        }
+            var additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier;
 
-        if (_rootCompiler.compInlineStress())
-        {
-            multiplier += 10;
-            JITDUMP($"\nmultiplier increased via inline stress to {multiplier}.");
+            if (additionalMultiplier is not 0)
+            {
+                multiplier += additionalMultiplier;
+                JITDUMP($"\nmultiplier increased via JitInlineAdditionalMultiplier={additionalMultiplier} to {multiplier}.");
+            }
+
+            if (_rootCompiler.compInlineStress())
+            {
+                multiplier += 10;
+                JITDUMP($"\nmultiplier increased via inline stress to {multiplier}.");
+            }
         }
-#endif
 
         return multiplier;
     }

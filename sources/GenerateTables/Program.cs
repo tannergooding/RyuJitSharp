@@ -4538,10 +4538,15 @@ namespace RyuJitSharp;
 
             var flags = GetFlagsForPrefix(prefix);
             var kind = flags & FLAG_KIND_MASK;
+            var configName = parts[0].AsSpan().Trim();
+            if ((kind == FLAG_INTEGER) && IsUniversalInlineConfig(configName))
+            {
+                flags &= ~FLAG_DEFINE_MASK;
+            }
 
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
-            var name = GetFieldName(parts[0].AsSpan().Trim());
+            var name = GetFieldName(configName);
 
             if (kind == FLAG_INTEGER)
             {
@@ -4769,9 +4774,20 @@ public partial struct JitConfigValues
             return kind;
         }
 
+        static bool IsUniversalInlineConfig(ReadOnlySpan<char> name)
+        {
+            return name.Equals("JitForceInlineDepth", StringComparison.Ordinal) ||
+                   name.Equals("JitInlineAdditionalMultiplier", StringComparison.Ordinal) ||
+                   name.Equals("JitInlineDepth", StringComparison.Ordinal) ||
+                   name.Equals("JitInlinePolicyFull", StringComparison.Ordinal) ||
+                   name.Equals("JitInlinePolicySize", StringComparison.Ordinal) ||
+                   name.Equals("JitInlineSize", StringComparison.Ordinal);
+        }
+
         static bool IsUniversalDebugConfig(ReadOnlySpan<char> name)
         {
-            return name.Equals("JitStress", StringComparison.Ordinal) ||
+            return IsUniversalInlineConfig(name) ||
+                   name.Equals("JitStress", StringComparison.Ordinal) ||
                    name.Equals("JitInlinePolicyRandom", StringComparison.Ordinal) ||
                    name.Equals("JitStressAsyncInlining", StringComparison.Ordinal) ||
                    name.Equals("JitStressAsyncInliningMaxDepth", StringComparison.Ordinal) ||
