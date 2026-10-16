@@ -13,9 +13,13 @@ public sealed partial class CodeGen
 #if TARGET_64BIT
     private const instruction INS_I_const = INS_i64_const;
     private const instruction INS_I_add = INS_i64_add;
+    private const instruction INS_I_or = INS_i64_or;
+    private const instruction INS_I_shl = INS_i64_shl;
 #else
     private const instruction INS_I_const = INS_i32_const;
     private const instruction INS_I_add = INS_i32_add;
+    private const instruction INS_I_or = INS_i32_or;
+    private const instruction INS_I_shl = INS_i32_shl;
 #endif
 
     public void ensureCurrentFuncIsUnwindable()
@@ -119,7 +123,26 @@ public sealed partial class CodeGen
             assert(_compiler.lvaWasmFunctionIndex != BAD_VAR_NUM);
 
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-            Emitter.emitFuncletAddressConstant((nint)0);
+            if (_compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_WASM_MANAGED_HELPER))
+            {
+                Emitter.emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+            }
+            else if (_compiler.lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
+            {
+                ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(
+                    _compiler.lvaWasmPortableEntryPointArg);
+                var pepIndex = regNumberExtensions.WasmRegToIndex(abiInfo.Segments[0].Register);
+                Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)pepIndex));
+            }
+            else
+            {
+                Emitter.emitFuncletAddressConstant((nint)0);
+                Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+                Emitter.emitIns(INS_I_shl);
+                Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+                Emitter.emitIns(INS_I_or);
+            }
+
             Emitter.emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, _compiler.lvaWasmFunctionIndex, 0);
 
             if ((_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX) && (_compiler.lvaWasmResumeIP != BAD_VAR_NUM))

@@ -74,6 +74,15 @@ public partial class Emitter
                 break;
             }
 
+            case IF_FRAMEIDENTITY:
+            {
+                assert(_compiler is not null);
+                dst += emitOutputOpcode(dst, ins);
+                emitRecordRelocation(dst, _compiler.info.compMethodHnd, CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB);
+                dst += emitOutputPaddedReloc(dst);
+                break;
+            }
+
             case IF_DATAOFFS:
             {
                 dst += emitOutputOpcode(dst, ins);

@@ -5776,8 +5776,8 @@ public partial class Compiler
 
         var valueOffset = gtNewIconNode(TYP_I_IMPL, cnsValueOffset);
         var valueAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
-        var value = gtNewLoadValueNode(valueType, valueAddr, layout);
-        var hasValue = gtNewLoadValueNode(TYP_UBYTE, nullableObj, layout: null);
+        var value = gtNewLoadValueNode(valueType, valueAddr, layout, indirFlags);
+        var hasValue = gtNewLoadValueNode(TYP_UBYTE, nullableObj, layout: null, indirFlags);
 
         // Create the allocation node for the box
         var typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
@@ -16688,7 +16688,7 @@ public partial class Compiler
                     qmark.ThenNodeLikelihood = 0;
 
                     var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for Log2 Qmark");
-                    impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                    impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
                     result = gtNewLclvNode(retType, tmp);
                 }
 

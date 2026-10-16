@@ -42,6 +42,7 @@ public partial struct JitFlags
     public const JitFlag JIT_FLAG_USE_DISPATCH_HELPERS = JitFlag.JIT_FLAG_USE_DISPATCH_HELPERS;
 
     public const JitFlag JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = JitFlag.JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+    public const JitFlag JIT_FLAG_WASM_MANAGED_HELPER = JitFlag.JIT_FLAG_WASM_MANAGED_HELPER;
 
     public enum JitFlag
     {
@@ -142,6 +143,9 @@ public partial struct JitFlags
 
         /// <summary>The JIT should emit diagnostic helpers that verify GC mode transitions are legal</summary>
         JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32,
+
+        /// <summary>Store a constant CoreLib frame identity instead of the incoming portable entrypoint</summary>
+        JIT_FLAG_WASM_MANAGED_HELPER = 33,
 
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,

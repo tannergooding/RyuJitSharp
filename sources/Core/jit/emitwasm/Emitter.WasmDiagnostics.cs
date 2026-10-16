@@ -149,6 +149,7 @@ public partial class Emitter
 
             case IF_FUNCLETPTR:
             case IF_FUNCLETIDX:
+            case IF_FRAMEIDENTITY:
             {
                 jitprintf($"funclet {emitGetInsSC(id)}");
                 dispLocalInfoIfAny(id);

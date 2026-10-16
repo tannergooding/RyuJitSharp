@@ -327,6 +327,7 @@ public partial class Emitter
 
             case insFormat.IF_FUNCLETPTR:
             case insFormat.IF_FUNCLETIDX:
+            case insFormat.IF_FRAMEIDENTITY:
             case insFormat.IF_DATAOFFS:
             {
                 size += PADDED_RELOC_SIZE;

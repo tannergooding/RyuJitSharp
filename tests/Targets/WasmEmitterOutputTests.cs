@@ -61,6 +61,48 @@ internal static unsafe class WasmEmitterOutputTests
     }
 
     [Test]
+    public static void FrameIdentityInstructionRecordsMethodRelocation()
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.recordRelocation = &RecordRelocation;
+            var callbacks = new CallbackContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+            };
+
+            var method = (CORINFO_METHOD_STRUCT_*)0x1234;
+            compiler.info.compMethodHnd = method;
+            compiler.info.compMatchedVM = true;
+            emitter.emitCmpHandle = &callbacks.JitInfo;
+
+            var buffer = stackalloc byte[16];
+            new Span<byte>(buffer, 16).Fill(0xA5);
+            emitter.writeableOffset = 8;
+            emitter.emitCodeBlock = buffer;
+
+            var descriptor = TestEmitter.Constant(0);
+            descriptor.idIns(INS_i32_const_frameidentity);
+            descriptor.idInsFmt(Emitter.insFormat.IF_FRAMEIDENTITY);
+            var destination = buffer + 2;
+            var next = destination;
+            _ = EmitOutputInstrWasm(emitter, new insGroup(), descriptor, &next);
+
+            Assert.That((nuint)next, Is.EqualTo((nuint)(destination + 6)));
+            Assert.That(buffer[10], Is.EqualTo((byte)0x41));
+            Assert.That(callbacks.Relocations, Is.EqualTo(1));
+            Assert.That((nuint)callbacks.Location, Is.EqualTo((nuint)(destination + 1)));
+            Assert.That((nuint)callbacks.WritableLocation, Is.EqualTo((nuint)(buffer + 11)));
+            Assert.That((nuint)callbacks.Target, Is.EqualTo((nuint)method));
+            Assert.That(callbacks.RelocationType, Is.EqualTo(CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB));
+            Assert.That(callbacks.AdditionalDelta, Is.Zero);
+            Assert.That(new ReadOnlySpan<byte>(buffer + 11, 5).ToArray(),
+                Is.EqualTo(new byte[] { 0x80, 0x80, 0x80, 0x80, 0x00 }));
+        });
+    }
+
+    [Test]
     public static void FloatingDiagnosticsUseInvariantCrtFormatting()
     {
         WithEmitter((_, emitter) =>
@@ -354,6 +396,10 @@ internal static unsafe class WasmEmitterOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputConstantFunclet")]
     private static extern nuint EmitOutputConstantFunclet(Emitter emitter, byte* destination,
         Emitter.instrDesc descriptor, CorInfoReloc relocationType);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputInstrWasm")]
+    private static extern nuint EmitOutputInstrWasm(Emitter emitter, insGroup group,
+        Emitter.instrDesc descriptor, byte** destination);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);

@@ -358,26 +358,45 @@ public static class RangeOps
         var rightLow = right.LowerLimit;
         var rightHigh = right.UpperLimit;
         var unknown = new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 1));
+
+        static bool TryGetLimitDiff(Limit first, Limit second, out long difference)
+        {
+            if ((first.IsConstant && second.IsConstant) ||
+                (first.IsBinOpArray && second.IsBinOpArray && (first.VN == second.VN) &&
+                 (first.GetConstant() <= 0) && (second.GetConstant() <= 0)))
+            {
+                difference = (long)first.GetConstant() - second.GetConstant();
+                return true;
+            }
+
+            difference = 0;
+            return false;
+        }
+
+        static bool IsNonNegative(Limit limit)
+        {
+            return (limit.IsConstant && (limit.GetConstant() >= 0)) ||
+                (limit.IsBinOpArray && (limit.GetConstant() == 0));
+        }
+
         if (isUnsigned && (oper is not GT_EQ and not GT_NE) &&
-            (!leftLow.IsConstant || !rightLow.IsConstant ||
-                (leftLow.GetConstant() < 0) || (rightLow.GetConstant() < 0)))
+            (!IsNonNegative(leftLow) || !IsNonNegative(rightLow)))
         {
             return unknown;
         }
 
+        long difference;
         switch (oper)
         {
             case GT_GE:
             case GT_LT:
             {
-                if (leftLow.IsConstant && rightHigh.IsConstant &&
-                    (leftLow.GetConstant() >= rightHigh.GetConstant()))
+                if (TryGetLimitDiff(leftLow, rightHigh, out difference) && (difference >= 0))
                 {
                     return new(new(LimitType.Constant, oper is GT_GE ? 1 : 0));
                 }
 
-                if (leftHigh.IsConstant && rightLow.IsConstant &&
-                    (leftHigh.GetConstant() < rightLow.GetConstant()))
+                if (TryGetLimitDiff(leftHigh, rightLow, out difference) && (difference < 0))
                 {
                     return new(new(LimitType.Constant, oper is GT_GE ? 0 : 1));
                 }
@@ -387,14 +406,12 @@ public static class RangeOps
             case GT_GT:
             case GT_LE:
             {
-                if (leftLow.IsConstant && rightHigh.IsConstant &&
-                    (leftLow.GetConstant() > rightHigh.GetConstant()))
+                if (TryGetLimitDiff(leftLow, rightHigh, out difference) && (difference > 0))
                 {
                     return new(new(LimitType.Constant, oper is GT_GT ? 1 : 0));
                 }
 
-                if (leftHigh.IsConstant && rightLow.IsConstant &&
-                    (leftHigh.GetConstant() <= rightLow.GetConstant()))
+                if (TryGetLimitDiff(leftHigh, rightLow, out difference) && (difference <= 0))
                 {
                     return new(new(LimitType.Constant, oper is GT_GT ? 0 : 1));
                 }
@@ -404,10 +421,8 @@ public static class RangeOps
             case GT_EQ:
             case GT_NE:
             {
-                if ((leftLow.IsConstant && rightHigh.IsConstant &&
-                    (leftLow.GetConstant() > rightHigh.GetConstant())) ||
-                    (leftHigh.IsConstant && rightLow.IsConstant &&
-                    (leftHigh.GetConstant() < rightLow.GetConstant())))
+                if ((TryGetLimitDiff(leftLow, rightHigh, out difference) && (difference > 0)) ||
+                    (TryGetLimitDiff(leftHigh, rightLow, out difference) && (difference < 0)))
                 {
                     return new(new(LimitType.Constant, oper is GT_EQ ? 0 : 1));
                 }

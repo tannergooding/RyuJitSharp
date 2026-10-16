@@ -122,10 +122,13 @@ public partial class Compiler
     /// <summary>lcl var index of Wasm stack pointer arg</summary>
     public int lvaWasmSpArg = BAD_VAR_NUM;
 
+    /// <summary>lcl var index of the incoming Wasm portable entrypoint</summary>
+    public int lvaWasmPortableEntryPointArg = BAD_VAR_NUM;
+
     /// <summary>Wasm virtual IP slot</summary>
     public int lvaWasmVirtualIP = BAD_VAR_NUM;
 
-    /// <summary>Wasm function index slot</summary>
+    /// <summary>Wasm frame identity slot</summary>
     public int lvaWasmFunctionIndex = BAD_VAR_NUM;
 
     /// <summary>Wasm catch resumption IP slot</summary>
@@ -1815,6 +1818,7 @@ public partial class Compiler
     {
         if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
         {
+            lvaWasmPortableEntryPointArg = curVarNum;
             ref var varDsc = ref lvaGetDesc(curVarNum);
             varDsc.Type = TYP_I_IMPL;
             varDsc.lvIsParam = true;

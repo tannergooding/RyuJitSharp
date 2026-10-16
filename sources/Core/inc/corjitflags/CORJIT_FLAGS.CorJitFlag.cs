@@ -45,6 +45,7 @@ public partial struct CORJIT_FLAGS
     public const CorJitFlag CORJIT_FLAG_USE_DISPATCH_HELPERS = CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS;
 
     public const CorJitFlag CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = CorJitFlag.CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+    public const CorJitFlag CORJIT_FLAG_WASM_MANAGED_HELPER = CorJitFlag.CORJIT_FLAG_WASM_MANAGED_HELPER;
 
     // No number should be re-used between different target conditions, so platform-independent code can know uniquely which number corresponds to which flag.
     public enum CorJitFlag
@@ -149,5 +150,8 @@ public partial struct CORJIT_FLAGS
 
         /// <summary>The JIT should emit diagnostic helpers that verify GC mode transitions are legal.</summary>
         CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32,
+
+        /// <summary>Store a constant CoreLib frame identity instead of the incoming portable entrypoint.</summary>
+        CORJIT_FLAG_WASM_MANAGED_HELPER = 33,
     }
 }

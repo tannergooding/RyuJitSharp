@@ -839,6 +839,7 @@ public partial class Emitter
         IF_FUNCPTR,
         IF_FUNCLETPTR,
         IF_FUNCLETIDX,
+        IF_FRAMEIDENTITY,
         IF_DATAOFFS,
         IF_F32,
         IF_F64,
@@ -1568,6 +1569,7 @@ public partial class Emitter
         (byte)ID_OP_NONE, // IF_FUNCPTR
         (byte)ID_OP_NONE, // IF_FUNCLETPTR
         (byte)ID_OP_NONE, // IF_FUNCLETIDX
+        (byte)ID_OP_NONE, // IF_FRAMEIDENTITY
         (byte)ID_OP_NONE, // IF_DATAOFFS
         (byte)ID_OP_NONE, // IF_F32
         (byte)ID_OP_NONE, // IF_F64

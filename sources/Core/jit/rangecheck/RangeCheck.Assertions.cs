@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using static RyuJitSharp.Compiler.optOp1Kind;
 using static RyuJitSharp.Compiler.optAssertionKind;
 using static RyuJitSharp.Compiler.optOp2Kind;
 
@@ -13,7 +14,7 @@ namespace RyuJitSharp;
 public sealed partial class RangeCheck
 {
     public static Range GetRange(Compiler comp, GenTree tree, BasicBlock block,
-        ASSERT_TP? assertions, bool fast = true)
+        ASSERT_TP? assertions, bool fast = true, ValueNum preferredBoundVN = ValueNumStore.NoVN)
     {
         var budget = 256;
 #if DEBUG
@@ -29,7 +30,7 @@ public sealed partial class RangeCheck
                 BitVecOps.MaybeUninit(assertions) ? block.bbAssertionIn : assertions);
         }
 
-        return comp.GetRangeCheck(budget).TryGetRange(block, tree, out var range)
+        return comp.GetRangeCheck(budget).TryGetRange(block, tree, out var range, preferredBoundVN)
             ? range : new(new(LimitType.Unknown));
     }
 

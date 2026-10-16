@@ -33,6 +33,39 @@ public partial class Compiler
         var defs = new List<GenTree>();
         var spillSlotsToZeroAtEndOfBlock = new List<int>();
 
+        void RemoveUse(GenTree operand)
+        {
+            if (!operand.IsValue)
+            {
+                return;
+            }
+
+            if (operand.IsContained)
+            {
+                _ = operand.VisitOperands(innerOperand =>
+                {
+                    RemoveUse(innerOperand);
+                    return GenTree.VisitResult.Continue;
+                });
+                return;
+            }
+
+            if (operand.Type is not (TYP_REF or TYP_BYREF))
+            {
+                return;
+            }
+
+            for (var i = defs.Count; i > 0; i--)
+            {
+                if (ReferenceEquals(operand, defs[i - 1]))
+                {
+                    defs[i - 1] = defs[^1];
+                    defs.RemoveAt(defs.Count - 1);
+                    break;
+                }
+            }
+        }
+
         foreach (var block in Blocks)
         {
             // LIR values cannot span blocks, so only references defined in this block can reach a call.
@@ -49,102 +82,77 @@ public partial class Compiler
 
             foreach (var tree in block)
             {
-                if (tree.Oper.IsCall && (defs.Count != 0))
+                if (tree.Oper.IsCall)
                 {
-                    // Keep live references in pinned stack slots so the GC cannot move them across the call.
-                    _wasmSpillSlots ??= [];
-
-                    JITDUMP($"Spilling {defs.Count} live ref(s) for call\n");
-                    DISPNODE(tree);
-
-                    foreach (var def in defs)
+                    _ = tree.VisitOperands(operand =>
                     {
-                        JITDUMP("    ");
-                        DISPNODE(def);
+                        RemoveUse(operand);
+                        return GenTree.VisitResult.Continue;
+                    });
 
-                        var spillSlot = -1;
-                        foreach (var slot in _wasmSpillSlots)
+                    if (defs.Count != 0)
+                    {
+                        // Keep references not consumed by this call in pinned stack slots so the GC cannot move them.
+                        _wasmSpillSlots ??= [];
+
+                        JITDUMP($"Spilling {defs.Count} live ref(s) for call\n");
+                        DISPNODE(tree);
+
+                        foreach (var def in defs)
                         {
-                            if (slot.InUse || (slot.IsByRef != (def.Type is TYP_BYREF)))
+                            JITDUMP("    ");
+                            DISPNODE(def);
+
+                            var spillSlot = -1;
+                            foreach (var slot in _wasmSpillSlots)
                             {
-                                continue;
+                                if (slot.InUse || (slot.IsByRef != (def.Type is TYP_BYREF)))
+                                {
+                                    continue;
+                                }
+
+                                spillSlot = slot.LocalNumber;
+                                slot.InUse = true;
+                                break;
                             }
 
-                            spillSlot = slot.LocalNumber;
-                            slot.InUse = true;
-                            break;
-                        }
-
-                        if (spillSlot == -1)
-                        {
-                            spillSlot = lvaGrabTemp(false, "WasmSpillRefs spill slot");
-                            ref var varDsc = ref lvaGetDesc(spillSlot);
-                            varDsc.Type = def.Type;
-                            varDsc.lvPinned = true;
-                            varDsc.lvMustInit = true;
-                            lvaSetVarDoNotEnregister(spillSlot, DoNotEnregisterReason.WasmGCVisibility);
-
-                            var slot = new WasmSpillSlot(spillSlot, def.Type is TYP_BYREF)
+                            if (spillSlot == -1)
                             {
-                                InUse = true,
-                            };
-                            _wasmSpillSlots.Add(slot);
-                        }
+                                spillSlot = lvaGrabTemp(false, "WasmSpillRefs spill slot");
+                                ref var varDsc = ref lvaGetDesc(spillSlot);
+                                varDsc.Type = def.Type;
+                                varDsc.lvPinned = true;
+                                varDsc.lvMustInit = true;
+                                lvaSetVarDoNotEnregister(spillSlot, DoNotEnregisterReason.WasmGCVisibility);
 
-                        var spill = gtNewStoreLclVarNode(spillSlot, def);
-                        var reload = gtNewLclVarNode(def.Type, spillSlot);
-                        noway_assert(block.TryGetUse(def, out var use));
-                        block.InsertAfter(def, spill);
-                        block.InsertAfter(spill, reload);
-                        use.ReplaceWith(reload);
+                                var slot = new WasmSpillSlot(spillSlot, def.Type is TYP_BYREF)
+                                {
+                                    InUse = true,
+                                };
+                                _wasmSpillSlots.Add(slot);
+                            }
 
-                        if ((def._lirFlags & LIR.Flags.MultiplyUsed) != LIR.Flags.None)
-                        {
+                            var spill = gtNewStoreLclVarNode(spillSlot, def);
+                            var reload = gtNewLclVarNode(def.Type, spillSlot);
+                            noway_assert(block.TryGetUse(def, out var use));
+                            block.InsertAfter(def, spill);
+                            block.InsertAfter(spill, reload);
+                            use.ReplaceWith(reload);
+
+                            if ((def._lirFlags & LIR.Flags.MultiplyUsed) != LIR.Flags.None)
+                            {
 #if DEBUG
-                            JITDUMP($"Transferring multiply-used flag from [{def.TreeId:D6}] to [{reload.TreeId:D6}] for spill\n");
+                                JITDUMP($"Transferring multiply-used flag from [{def.TreeId:D6}] to [{reload.TreeId:D6}] for spill\n");
 #endif
-                            def._lirFlags &= ~LIR.Flags.MultiplyUsed;
-                            reload._lirFlags |= LIR.Flags.MultiplyUsed;
+                                def._lirFlags &= ~LIR.Flags.MultiplyUsed;
+                                reload._lirFlags |= LIR.Flags.MultiplyUsed;
+                            }
+
+                            spillSlotsToZeroAtEndOfBlock.Add(spillSlot);
+                            anyChanges = true;
                         }
 
-                        spillSlotsToZeroAtEndOfBlock.Add(spillSlot);
-                        anyChanges = true;
-                    }
-
-                    defs.Clear();
-                }
-
-                void RemoveUse(GenTree operand)
-                {
-                    if (!operand.IsValue)
-                    {
-                        return;
-                    }
-
-                    if (operand.IsContained)
-                    {
-                        // A contained value is part of its parent; only the underlying operands are live values.
-                        _ = operand.VisitOperands(innerOperand =>
-                        {
-                            RemoveUse(innerOperand);
-                            return GenTree.VisitResult.Continue;
-                        });
-                        return;
-                    }
-
-                    if (operand.Type is not (TYP_REF or TYP_BYREF))
-                    {
-                        return;
-                    }
-
-                    for (var i = defs.Count; i > 0; i--)
-                    {
-                        if (ReferenceEquals(operand, defs[i - 1]))
-                        {
-                            defs[i - 1] = defs[^1];
-                            defs.RemoveAt(defs.Count - 1);
-                            break;
-                        }
+                        defs.Clear();
                     }
                 }
 
@@ -153,11 +161,14 @@ public partial class Compiler
                     continue;
                 }
 
-                _ = tree.VisitOperands(operand =>
+                if (!tree.Oper.IsCall)
                 {
-                    RemoveUse(operand);
-                    return GenTree.VisitResult.Continue;
-                });
+                    _ = tree.VisitOperands(operand =>
+                    {
+                        RemoveUse(operand);
+                        return GenTree.VisitResult.Continue;
+                    });
+                }
 
                 if (!tree.IsValue || tree.IsUnusedValue || tree.IsInvariant || (tree.Type is not (TYP_REF or TYP_BYREF)))
                 {

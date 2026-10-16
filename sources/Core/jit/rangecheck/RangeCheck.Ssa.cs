@@ -128,14 +128,40 @@ public sealed partial class RangeCheck
         }
 #endif
 
-        if ((range.LowerLimit.IsDependent || range.LowerLimit.IsUnknown) &&
+        var lowerLimit = range.LowerLimit;
+        if ((lowerLimit.IsDependent || lowerLimit.IsUnknown ||
+             (lowerLimit.IsConstant && (lowerLimit.GetConstant() < 0))) &&
             IsMonotonicallyIncreasing(tree, false))
         {
 #if DEBUG
             JITDUMP($"[{tree.TreeId:D6}] is monotonically increasing.\n");
 #endif
+
+            if (lowerLimit.IsConstant &&
+                ComputeDoesOverflow(block, tree, new Range(new Limit(LimitType.Dependent), range.UpperLimit)))
+            {
+#if DEBUG
+                JITDUMP($"[{tree.TreeId:D6}] may overflow, not widening.\n");
+#endif
+                return;
+            }
+
             _rangeMap.Clear();
-            range = GetRangeWorker(block, tree, true);
+            var widened = GetRangeWorker(block, tree, true);
+            if (!lowerLimit.IsConstant)
+            {
+                range = widened;
+            }
+            else if (widened.LowerLimit.IsConstant &&
+                (widened.LowerLimit.GetConstant() > lowerLimit.GetConstant()))
+            {
+                var tightened = range;
+                tightened.LowerLimit = widened.LowerLimit;
+                if (tightened.IsValid())
+                {
+                    range = tightened;
+                }
+            }
         }
     }
 

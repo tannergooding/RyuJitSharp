@@ -132,7 +132,7 @@ public partial class Compiler
             virtualIPVar.lvImplicitlyReferenced = true;
             lvaSetVarAddrExposed(lvaWasmVirtualIP, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
 
-            lvaWasmFunctionIndex = lvaGrabTemp(shortLifetime: true, "Wasm Function Index");
+            lvaWasmFunctionIndex = lvaGrabTemp(shortLifetime: true, "Wasm Frame Identity");
             ref var functionIndexVar = ref lvaGetDesc(lvaWasmFunctionIndex);
             functionIndexVar.Type = TYP_INT;
             functionIndexVar.lvImplicitlyReferenced = true;

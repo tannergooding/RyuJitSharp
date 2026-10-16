@@ -112,6 +112,85 @@ public partial class Compiler
         return optAssertionPropLocal_RelOp(assertions, tree, statement);
     }
 
+    public bool optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_TP assertions)
+    {
+        ArgumentNullException.ThrowIfNull(vnStore);
+        if (!vnStore.IsVNCheckedBound(vn))
+        {
+            return false;
+        }
+
+        var range = RangeCheck.GetRangeFromAssertions(this, vn, assertions);
+        return range.LowerLimit.IsConstant && (range.LowerLimit.GetConstant() >= 0);
+    }
+
+    public ValueNum optGetPreferredBoundForRange(ValueNum vn, ASSERT_TP assertions)
+    {
+        if (BitVecOps.MaybeUninit(assertions) || !optAssertionHasAssertionsForVN(vn))
+        {
+            return ValueNumStore.NoVN;
+        }
+
+        ArgumentNullException.ThrowIfNull(assertions);
+        assert(apTraits is not null);
+        var preferredBoundVN = ValueNumStore.NoVN;
+        _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex =>
+        {
+            var assertion = optGetAssertion(GetAssertionIndex((ushort)bitIndex));
+            if (assertion.IsRelop && (assertion.Op1.VN == vn) &&
+                assertion.Op2.KindIs(O2K_VN_ADD_CNS) &&
+                optIsNeverNegativeCheckedBound(assertion.Op2.VN, assertions))
+            {
+                preferredBoundVN = assertion.Op2.VN;
+                return false;
+            }
+
+            return true;
+        });
+
+        return preferredBoundVN;
+    }
+
+    private static Range GetBoundMinusXRange(Compiler compiler, GenTree tree, BasicBlock block, ValueNum boundVN)
+    {
+        tree = tree.EffectiveVal;
+        while ((tree.Oper is GT_LCL_VAR) && tree.AsLclVar().HasSsaName)
+        {
+            ref var local = ref compiler.lvaGetDesc(tree.AsLclVar().LclNum);
+            ref var definition = ref local.GetPerSsaData(tree.AsLclVar().SsaNum);
+            var defStore = definition.DefNode;
+            if ((local.Type is not TYP_INT) || (defStore is null) ||
+                (defStore.Oper is not GT_STORE_LCL_VAR))
+            {
+                return new(new(LimitType.Unknown));
+            }
+
+            tree = (defStore.Data ?? throw new InvalidOperationException("SSA store has no value.")).EffectiveVal;
+            block = definition.Block ?? throw new InvalidOperationException("SSA store has no defining block.");
+        }
+
+        if ((tree.Oper is not GT_SUB) || (tree.Type is not TYP_INT) ||
+            (compiler.optConservativeNormalVN(tree.AsOp().Op1) != boundVN))
+        {
+            return new(new(LimitType.Unknown));
+        }
+
+        var xRange = RangeCheck.GetRange(
+            compiler, tree.AsOp().Op2, block, assertions: null, fast: false, preferredBoundVN: boundVN);
+        var xLow = xRange.LowerLimit;
+        var xHigh = xRange.UpperLimit;
+        if (xLow.IsConstant && (xLow.GetConstant() >= 0) &&
+            xHigh.IsBinOpArray && (xHigh.VN == boundVN) &&
+            (xHigh.GetConstant() <= 0) && (xHigh.GetConstant() > int.MinValue))
+        {
+            return new(
+                new Limit(LimitType.Constant, -xHigh.GetConstant()),
+                new Limit(LimitType.BinOpArray, boundVN, -xLow.GetConstant()));
+        }
+
+        return new(new(LimitType.Unknown));
+    }
+
     public GenTree? optAssertionPropGlobal_RelOp(ASSERT_TP assertions, GenTree tree,
         Statement statement, BasicBlock block)
     {
@@ -219,12 +298,37 @@ public partial class Compiler
                 }
 
                 if (!relopRange.IsSingleValueConstant(out relopResult) &&
-                    (op1.Type is TYP_INT) && op2.IsIntCnsFitsInI32 &&
-                    (tree.Oper is GT_LE or GT_LT or GT_GE or GT_GT))
+                    (op1.Type is TYP_INT) && (tree.Oper is GT_LE or GT_LT or GT_GE or GT_GT))
                 {
-                    var op1Range = RangeCheck.GetRange(this, op1, block, assertions, fast: false);
-                    var op2Range = RangeCheck.GetRange(this, op2, block, assertions, fast: false);
-                    relopRange = RangeOps.EvalRelop(tree.Oper, tree.AsOp().IsUnsigned, op1Range, op2Range);
+                    if (op2.IsIntCnsFitsInI32)
+                    {
+                        var op1Range = new Range(new Limit(LimitType.Unknown));
+                        var boundVN = ValueNumStore.NoVN;
+                        var xVN = ValueNumStore.NoVN;
+                        if (vnStore.IsVNBinFunc(op1VN, VNF_SUB, ref boundVN, ref xVN) &&
+                            optIsNeverNegativeCheckedBound(boundVN, assertions))
+                        {
+                            op1Range = GetBoundMinusXRange(this, op1, block, boundVN);
+                        }
+
+                        if (op1Range.LowerLimit.IsUnknown)
+                        {
+                            op1Range = RangeCheck.GetRange(
+                                this, op1, block, assertions, fast: false,
+                                preferredBoundVN: optGetPreferredBoundForRange(op1VN, assertions));
+                        }
+
+                        var op2Range = RangeCheck.GetRange(this, op2, block, assertions, fast: false);
+                        relopRange = RangeOps.EvalRelop(tree.Oper, tree.AsOp().IsUnsigned, op1Range, op2Range);
+                    }
+                    else if ((tree.Oper is GT_GT or GT_LE) && tree.AsOp().IsUnsigned &&
+                        (op2.Type is TYP_INT) && optIsNeverNegativeCheckedBound(op2VN, assertions))
+                    {
+                        var op1Range = RangeCheck.GetRange(
+                            this, op1, block, assertions, fast: false, preferredBoundVN: op2VN);
+                        var op2Range = new Range(new Limit(LimitType.BinOpArray, op2VN, 0));
+                        relopRange = RangeOps.EvalRelop(tree.Oper, true, op1Range, op2Range);
+                    }
                 }
 
                 if (relopRange.IsSingleValueConstant(out relopResult))
