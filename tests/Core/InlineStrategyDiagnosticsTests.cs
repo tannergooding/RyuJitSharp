@@ -174,11 +174,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
                 strategy.DumpXml();
                 InlineStrategy.FinalizeXml();
                 stdout.Flush();
-#if HOST_WINDOWS
-                const string newline = "\r\n";
-#else
-                const string newline = "\n";
-#endif
+                var newline = OperatingSystem.IsWindows() ? "\r\n" : "\n";
                 var expected = string.Join(newline,
                     "<?xml version=\"1.0\"?>", "<InlineForest>", "<Policy>DefaultPolicy</Policy>",
                     "<Methods>", "</Methods>", "</InlineForest>", "");

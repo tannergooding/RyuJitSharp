@@ -201,17 +201,16 @@ internal static unsafe class InlineInvocationTests
                 if (TestConfiguration.IsDebug)
                 {
                     Assert.That(call.WasInlineCandidate, Is.EqualTo(!guardedOnly));
-                }
-#if DEBUG
-                var failedContext = candidate.inlinersContext?.Child;
-                Assert.That(failedContext is not null, Is.EqualTo(!guardedOnly));
 
-                if (failedContext is not null)
-                {
-                    Assert.That(failedContext.IsSuccess, Is.False);
-                    Assert.That(failedContext.Observation, Is.EqualTo(InlineObservation.CALLSITE_IS_VIRTUAL));
+                    var failedContext = candidate.inlinersContext?.Child;
+                    Assert.That(failedContext is not null, Is.EqualTo(!guardedOnly));
+
+                    if (failedContext is not null)
+                    {
+                        Assert.That(failedContext.IsSuccess, Is.False);
+                        Assert.That(failedContext.Observation, Is.EqualTo(InlineObservation.CALLSITE_IS_VIRTUAL));
+                    }
                 }
-#endif
             });
         });
     }
@@ -223,11 +222,12 @@ internal static unsafe class InlineInvocationTests
         var previousConfig = JitConfig;
         object config = previousConfig;
         SetField(typeof(JitConfigValues), config, "_jitMaxLocalsToTrack", 512);
-#if DEBUG
-        SetField(typeof(JitConfigValues), config, "_jitInlineLimit", -1);
-        SetField(typeof(JitConfigValues), config, "_jitEnableLateDevirtualization", 1);
-        SetField(typeof(JitConfigValues), config, "_jitPrintInlinedMethods", new JitConfigValues.MethodSet(null, null));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            SetField(typeof(JitConfigValues), config, "_jitInlineLimit", -1);
+            SetField(typeof(JitConfigValues), config, "_jitEnableLateDevirtualization", 1);
+            SetField(typeof(JitConfigValues), config, "_jitPrintInlinedMethods", new JitConfigValues.MethodSet(null, null));
+        }
         JitConfig = (JitConfigValues)config;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));

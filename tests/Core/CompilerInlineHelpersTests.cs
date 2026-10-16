@@ -24,13 +24,16 @@ internal static unsafe class CompilerInlineHelpersTests
             var second = new GenTreeIntCon(TYP_INT, 2);
 
             Globals.DEBUG_DESTROY_NODE(first, second);
-#if DEBUG
-            Assert.That(first.Oper, Is.EqualTo(GT_COUNT));
-            Assert.That(second.Oper, Is.EqualTo(GT_COUNT));
-#else
-            Assert.That(first.Oper, Is.EqualTo(GT_CNS_INT));
-            Assert.That(second.Oper, Is.EqualTo(GT_CNS_INT));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(first.Oper, Is.EqualTo(GT_COUNT));
+                Assert.That(second.Oper, Is.EqualTo(GT_COUNT));
+            }
+            else
+            {
+                Assert.That(first.Oper, Is.EqualTo(GT_CNS_INT));
+                Assert.That(second.Oper, Is.EqualTo(GT_CNS_INT));
+            }
         }
         finally
         {

@@ -36,13 +36,17 @@ internal static class InlineDecisionTests
         Assert.That(decision.CorInfo, Is.EqualTo(result));
     }
 
-#if !DEBUG
     [TestCase(InlineDecision.UNDECIDED)]
     [TestCase(InlineDecision.CANDIDATE)]
     [TestCase((InlineDecision)5)]
     [TestCase((InlineDecision)(-1))]
     public static void InvalidRuntimeResultMappingIsFatal(InlineDecision decision)
     {
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Invalid runtime mapping behavior is only applicable to Release builds.");
+        }
+
         AssertUnreachable(() => _ = decision.CorInfo);
     }
 
@@ -50,6 +54,11 @@ internal static class InlineDecisionTests
     [TestCase((InlineDecision)(-1))]
     public static void UnknownDecisionIsUnreachable(InlineDecision decision)
     {
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Invalid runtime mapping behavior is only applicable to Release builds.");
+        }
+
         AssertUnreachable(() => _ = decision.IsCandidate);
         AssertUnreachable(() => _ = decision.IsDecided);
         AssertUnreachable(() => _ = decision.IsFailure);
@@ -63,5 +72,4 @@ internal static class InlineDecisionTests
         var exception = Assert.Throws<FatalJitException>(action);
         Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
     }
-#endif
 }

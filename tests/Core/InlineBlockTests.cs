@@ -155,9 +155,10 @@ internal static unsafe class InlineBlockTests
             inlinee.optNoReturnCallCount = 5;
             inlinee.fgPgoFailReason = "no data";
             inlinee.fgPgoConsistent = false;
-#if DEBUG
-            inlinee.Metrics.ImporterBranchFold = 7;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                inlinee.Metrics.ImporterBranchFold = 7;
+            }
 
             compiler.fgInsertInlineeBlocks(info);
 
@@ -290,18 +291,22 @@ internal static unsafe class InlineBlockTests
         inlinee.info.compMethodInfo = &methodInfo;
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
         compiler._inlineStrategy = strategy;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = inlinee.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = inlinee.fgSafeFlowEdgeCreation = true;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeBasicBlockCreation(inlinee);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(inlinee);
+        }
         JitTls.Compiler = compiler;
 
         try
         {
             var root = new InlineContext(strategy) { _ilSize = 6 };
-#if DEBUG
-            root._ilInstsSet = new BitArray(6, true);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                root._ilInstsSet = new BitArray(6, true);
+            }
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             var stmt = compiler.gtNewStmt(call, new DebugInfo(root, new ILLocation(5, 0)));
             var block = NewBlock(compiler, BBJ_RETURN);
