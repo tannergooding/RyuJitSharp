@@ -1035,7 +1035,6 @@ public partial class Compiler
         mostRecentlyActivePhase = phase;
     }
 
-#if MEASURE_CLRAPI_CALLS
     public void CLRApiCallEnter(uint apix)
     {
         if (Configuration.FEATURE_JIT_METHOD_PERF)
@@ -1061,7 +1060,6 @@ public partial class Compiler
     {
         CLRApiCallLeave(unchecked((uint)ename));
     }
-#endif
 
     /// <summary>Answer the question: Is Vex encoding supported on this target</summary>
     /// <returns></returns>

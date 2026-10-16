@@ -115,9 +115,9 @@ For direct `dotnet build` or `dotnet test` iterations, use
 the default: build and test without these overrides in the same configuration
 before committing a porting batch, and keep final NativeAOT publication and
 execution validation unchanged. Fast-mode success is not a full-analysis checkpoint.
-CLR API timing can be compiled into Release with
-`-p:RyuJitMeasureClrApiCalls=true`; Debug intentionally rejects this option because
-timing Debug compiler code is not meaningful.
+CLR API timing is compiled universally and remains off by default. Enable it
+with `JitEECallTimingInfo` in a Release build on an x86/x64 host; Debug builds
+and unsupported hosts reject an enabled request.
 
 Full analysis uses the repository's analyzer configuration. The root
 `.editorconfig` temporarily disables CA1508, CA2329, CA2330, CA3001, CA5390 and

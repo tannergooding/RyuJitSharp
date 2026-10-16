@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_CLRAPI_CALLS
 using System;
 using System.Runtime.InteropServices;
 using static RyuJitSharp.Globals;
@@ -20,6 +19,11 @@ public sealed unsafe partial class WrapICorJitInfo : ICorJitInfo.Interface, IDis
 
     public WrapICorJitInfo(Compiler compiler, ICorJitInfo* jitInfo)
     {
+        if (JitConfig.JitEECallTimingInfo is not 0)
+        {
+            EnsureClrApiTimingSupported();
+        }
+
         wrapComp = compiler;
         wrapHnd = jitInfo;
 
@@ -97,4 +101,3 @@ public sealed unsafe partial class WrapICorJitInfo : ICorJitInfo.Interface, IDis
         public nint WrapperHandle;
     }
 }
-#endif

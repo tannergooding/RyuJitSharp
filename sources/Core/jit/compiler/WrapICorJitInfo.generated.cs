@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_CLRAPI_CALLS
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.ICorJitInfo;
 
@@ -1555,4 +1554,3 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
 }
-#endif

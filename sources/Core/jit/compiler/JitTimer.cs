@@ -27,7 +27,6 @@ public sealed class JitTimer
     /// <summary>Start of the current phase.</summary>
     private long _curPhaseStart;
 
-#if MEASURE_CLRAPI_CALLS
     /// <summary>Start of the current CLR API call (if any).</summary>
     private long _clrCallStart;
 
@@ -39,7 +38,6 @@ public sealed class JitTimer
 
     /// <summary>The enum/index of the current CLR API call (or -1).</summary>
     private API_ICorJitInfo_Names _clrCallApiNum;
-#endif
 
 #if DEBUG
     /// <summary>The last phase that was completed (or (Phases)-1 to start).</summary>
@@ -52,15 +50,18 @@ public sealed class JitTimer
     // Initialized the timer instance
     public JitTimer(int byteCodeSize)
     {
+        if (JitConfig.JitEECallTimingInfo is not 0)
+        {
+            Globals.EnsureClrApiTimingSupported();
+        }
+
         _info = new CompTimeInfo(byteCodeSize);
 
 #if DEBUG
         _lastPhase = (Phases)(-1);
 #endif
 
-#if MEASURE_CLRAPI_CALLS
         _clrCallApiNum = (API_ICorJitInfo_Names)(-1);
-#endif
 
         var timestamp = Stopwatch.GetTimestamp();
         _start = timestamp;
@@ -109,8 +110,15 @@ public sealed class JitTimer
                     streamWriter.Write("\"Alignment Candidates\",");
                     streamWriter.Write("\"Loops Aligned\",");
                 }
+                var includeClrApiTiming = JitConfig.JitEECallTimingInfo is not 0;
+
                 for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
                 {
+                    if ((phase is PHASE_CLR_API) && !includeClrApiTiming)
+                    {
+                        continue;
+                    }
+
                     streamWriter.Write($"\"{phase.Name}\",");
 
                     if ((JitConfig.JitMeasureIR is not 0) && phase.ReportsIRSize)
@@ -144,6 +152,7 @@ public sealed class JitTimer
     // Ends the current phase (argument is for a redundant check).
     public void EndPhase(Compiler compiler, Phases phase)
     {
+        var includeClrApiTiming = JitConfig.JitEECallTimingInfo is not 0;
         // Otherwise...
         // We re-run some phases currently, so this following assert doesn't work.
         // assert((int)phase > (int)_lastPhase);  // We should end phases in increasing order.
@@ -163,13 +172,14 @@ public sealed class JitTimer
             _info._invokesByPhase[(int)(phase)]++;
             _info._cyclesByPhase[(int)(phase)] += phaseCycles;
 
-#if MEASURE_CLRAPI_CALLS
-            // Record the CLR API timing info as well.
-            _info._clrInvokesByPhase[(int)phase] = unchecked(
-                _info._clrInvokesByPhase[(int)phase] + _clrCallInvokes);
-            _info._clrCyclesByPhase[(int)phase] = unchecked(
-                _info._clrCyclesByPhase[(int)phase] + _clrCallCycles);
-#endif
+            if (includeClrApiTiming)
+            {
+                // Record the CLR API timing info as well.
+                _info._clrInvokesByPhase[(int)phase] = unchecked(
+                    _info._clrInvokesByPhase[(int)phase] + _clrCallInvokes);
+                _info._clrCyclesByPhase[(int)phase] = unchecked(
+                    _info._clrCyclesByPhase[(int)phase] + _clrCallCycles);
+            }
 
             // Credit the phase's ancestors, if any.
             var ancPhase = phase.Parent;
@@ -180,11 +190,7 @@ public sealed class JitTimer
                 ancPhase = ancPhase.Parent;
             }
 
-#if MEASURE_CLRAPI_CALLS
-            var lastPhase = PHASE_CLR_API;
-#else
-            var lastPhase = PHASE_NUMBER_OF;
-#endif
+            var lastPhase = includeClrApiTiming ? PHASE_NUMBER_OF : PHASE_CLR_API;
 
             if ((phase + 1) == lastPhase)
             {
@@ -209,10 +215,11 @@ public sealed class JitTimer
         _lastPhase = phase;
 #endif
 
-#if MEASURE_CLRAPI_CALLS
-        _clrCallInvokes = 0;
-        _clrCallCycles = 0;
-#endif
+        if (includeClrApiTiming)
+        {
+            _clrCallInvokes = 0;
+            _clrCallCycles = 0;
+        }
     }
 
     public unsafe void PrintCsvMethodStats(Compiler compiler)
@@ -281,9 +288,15 @@ public sealed class JitTimer
             }
 
             var totCycles = 0UL;
+            var includeClrApiTiming = JitConfig.JitEECallTimingInfo is not 0;
 
             for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
             {
+                if ((phase is PHASE_CLR_API) && !includeClrApiTiming)
+                {
+                    continue;
+                }
+
                 if (!phase.HasChildren)
                 {
                     totCycles += _info._cyclesByPhase[(int)(phase)];
@@ -310,7 +323,6 @@ public sealed class JitTimer
         }
     }
 
-#if MEASURE_CLRAPI_CALLS
     /// <summary>Start the stopwatch for an EE call.</summary>
     /// <param name="apix">The API index</param>
     public void ClrApiCallEnter(API_ICorJitInfo_Names apix)
@@ -358,7 +370,6 @@ public sealed class JitTimer
             _clrCallStart = 0;
         }
     }
-#endif
 
     // Completes the timing of the current method, which is assumed to have "byteCodeBytes" bytes of bytecode, and adds it to "sum".
     public void Terminate(Compiler comp, ref CompTimeSummaryInfo sum, bool includePhases)

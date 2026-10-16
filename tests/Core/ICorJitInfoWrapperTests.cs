@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if MEASURE_CLRAPI_CALLS
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -22,16 +22,28 @@ internal static unsafe class ICorJitInfoWrapperTests
     private static nint s_observedOutput;
     private static nint s_observedMethodOutput;
 
+    private static bool CanRunClrApiTiming =>
+        !TestConfiguration.IsDebug &&
+        (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64);
+
     [Test]
     public static void ForwardingPreservesReceiverArgumentsResultsAndExactApiAccounting()
     {
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();
         TimingEnabled(ref JitConfig) = 1;
+        Compiler? compiler = null;
 
         try
         {
-            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            if (!CanRunClrApiTiming)
+            {
+                compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+                _ = Assert.Throws<FatalJitException>(() => new WrapICorJitInfo(compiler, null));
+                return;
+            }
+
+            compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             s_timer = new JitTimer(0);
             CompilerTimer(compiler) = s_timer;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -39,10 +51,11 @@ internal static unsafe class ICorJitInfoWrapperTests
             vtable.Base.getHelperFtn = &GetHelperFtn;
             vtable.setEHcount = &SetEHCount;
             vtable.allocGCInfo = &AllocGCInfo;
-            ICorJitInfo jitInfo = new ICorJitInfo { lpVtbl = &vtable };
+            var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-            using var wrapper = new WrapICorJitInfo(compiler, &jitInfo);
-            wrapper.Install();
+            InitializeTimingProxy(compiler);
+            var wrapper = CompilerTimingProxy(compiler)
+                ?? throw new InvalidOperationException("CLR timing proxy was not installed.");
             var proxy = compiler.info.compCompHnd;
 
             var slots = (nint*)proxy->lpVtbl;
@@ -115,11 +128,16 @@ internal static unsafe class ICorJitInfoWrapperTests
             Assert.That(cycles, Is.EqualTo(info._allClrApiCycles));
             Assert.That(info._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo((ulong)cycles));
             Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)proxy));
-            wrapper.Dispose();
+            DisposeTimingProxy(compiler);
             Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)(&jitInfo)));
         }
         finally
         {
+            if (compiler is not null)
+            {
+                DisposeTimingProxy(compiler);
+            }
+
             JitConfig = previousConfig;
         }
     }
@@ -185,5 +203,13 @@ internal static unsafe class ICorJitInfoWrapperTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_info")]
     private static extern ref CompTimeInfo TimerInfo(JitTimer timer);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InitializeClrApiTimingProxy")]
+    private static extern void InitializeTimingProxy(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DisposeClrApiTimingProxy")]
+    private static extern void DisposeTimingProxy(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_wrapICorJitInfo")]
+    private static extern ref WrapICorJitInfo? CompilerTimingProxy(Compiler compiler);
 }
-#endif

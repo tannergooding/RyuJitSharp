@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "The JitConfigValues conditional closure has passed acceptance. Next, obtain explicit decisions on the pending optional-mode policy proposal before changing other mode-owned generator/configuration families; keep the ABI gate separate. Preserve the 4,991-row queue with zero Retained and CFG-0001 as the sole approved exception. Keep CORINFO_AsyncResumeInfo and B209 genAsyncResumeInfo deferred until the target-width table/emitter dependency closure is ported and tested. Reconciliation evidence: artifacts\\jit-analysis\\inventory\\jitconfigvalues-universalization-reconciliation-20261016.json.",
+    "nextAction": "Reconcile the next already-transformed open inventory row, sources\\Core\\inc\\stdmacros\\Globals.cs:10 (HOST_64BIT), against current source and commit evidence, then continue ordered family bucketing under the no-#if/no-conditional-include policy. Keep CORINFO_AsyncResumeInfo/B209 deferred until its target-width table/emitter closure is tested, preserve CFG-0001 as the sole approved exception, and maintain zero Retained.",
     "activeBatch": null,
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",
@@ -1215,6 +1215,7 @@
     "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
+      "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."
     },
     "outputPathMapping": "Outputs\\jit\\emitxarch\\*.generated.cs maps to sources\\Core\\jit\\emit\\*.generated.cs for the five shared emitter tables."

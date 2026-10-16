@@ -391,7 +391,6 @@ public static partial class API_ICorJitInfo_NamesExtensions
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_CLRAPI_CALLS
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.ICorJitInfo;
 
@@ -400,7 +399,6 @@ namespace RyuJitSharp;
 public sealed unsafe partial class WrapICorJitInfo
 {
 {{builder}}}
-#endif
 """);
 
         File.WriteAllText(@"Outputs\jit\compiler\WrapICorJitInfo.Vtbl.generated.cs", $$"""
@@ -409,7 +407,6 @@ public sealed unsafe partial class WrapICorJitInfo
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_CLRAPI_CALLS
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -454,7 +451,6 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
 {{thunks}}}
-#endif
 """);
     }
 

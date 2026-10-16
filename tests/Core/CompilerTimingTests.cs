@@ -9,9 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
-#if MEASURE_CLRAPI_CALLS
 using static RyuJitSharp.API_ICorJitInfo_Names;
-#endif
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.Phases;
 
@@ -20,72 +18,106 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CompilerTimingTests
 {
-#if MEASURE_CLRAPI_CALLS
     private static int _isIntrinsicCallCount;
+
+    private static bool CanRunClrApiTiming =>
+        !TestConfiguration.IsDebug &&
+        (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64);
+
+    [Test]
+    public static void ClrApiTimingRejectsDebugAndUnsupportedHosts()
+    {
+        _ = Assert.Throws<FatalJitException>(() => EnsureClrApiTimingSupported(debug: true, hostX86: true, hostAmd64: true));
+        _ = Assert.Throws<FatalJitException>(() => EnsureClrApiTimingSupported(debug: false, hostX86: false, hostAmd64: false));
+    }
 
     [Test]
     public static void ClrCountersUseNativeWidthsAndIndependentInlineStorage()
     {
-        var first = new CompTimeInfo(0);
-        first._allClrApiCalls = uint.MaxValue;
-        first._allClrApiCycles = ulong.MaxValue;
-        first._perClrApiCalls[(int)API_isIntrinsic] = uint.MaxValue;
-        first._perClrApiCycles[(int)API_isIntrinsic] = ulong.MaxValue;
-        first._maxClrApiCycles[(int)API_isIntrinsic] = uint.MaxValue;
-        first._clrInvokesByPhase[(int)PHASE_IMPORTATION] = ulong.MaxValue;
-        first._clrCyclesByPhase[(int)PHASE_IMPORTATION] = ulong.MaxValue;
-        var second = new CompTimeInfo(0);
-        second._allClrApiCalls = 2;
-        second._allClrApiCycles = 2;
-        second._perClrApiCalls[(int)API_isIntrinsic] = 2;
-        second._perClrApiCycles[(int)API_isIntrinsic] = 2;
-        second._maxClrApiCycles[(int)API_isIntrinsic] = 2;
-        second._clrInvokesByPhase[(int)PHASE_IMPORTATION] = 2;
-        second._clrCyclesByPhase[(int)PHASE_IMPORTATION] = 2;
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
 
-        var copy = first;
-        copy._perClrApiCalls[(int)API_isIntrinsic] = 0;
-        Assert.That(first._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+        try
+        {
+            var first = new CompTimeInfo(0) {
+                _allClrApiCalls = uint.MaxValue,
+                _allClrApiCycles = ulong.MaxValue
+            };
+            first._perClrApiCalls[(int)API_isIntrinsic] = uint.MaxValue;
+            first._perClrApiCycles[(int)API_isIntrinsic] = ulong.MaxValue;
+            first._maxClrApiCycles[(int)API_isIntrinsic] = uint.MaxValue;
+            first._clrInvokesByPhase[(int)PHASE_IMPORTATION] = ulong.MaxValue;
+            first._clrCyclesByPhase[(int)PHASE_IMPORTATION] = ulong.MaxValue;
+            var second = new CompTimeInfo(0) {
+                _allClrApiCalls = 2,
+                _allClrApiCycles = 2
+            };
+            second._perClrApiCalls[(int)API_isIntrinsic] = 2;
+            second._perClrApiCycles[(int)API_isIntrinsic] = 2;
+            second._maxClrApiCycles[(int)API_isIntrinsic] = 2;
+            second._clrInvokesByPhase[(int)PHASE_IMPORTATION] = 2;
+            second._clrCyclesByPhase[(int)PHASE_IMPORTATION] = 2;
 
-        CompTimeSummaryInfo summary = default;
-        summary.AddInfo(first, includePhases: true);
-        summary.AddInfo(second, includePhases: true);
-        summary.AddInfo(new CompTimeInfo(0) { _timerFailure = true }, includePhases: true);
+            var copy = first;
+            copy._perClrApiCalls[(int)API_isIntrinsic] = 0;
+            Assert.That(first._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
 
-        ref var total = ref TotalInfo(ref summary);
-        ref var maximum = ref MaximumInfo(ref summary);
-        Assert.That(total._allClrApiCalls, Is.EqualTo(1u));
-        Assert.That(total._allClrApiCycles, Is.EqualTo(1UL));
-        Assert.That(total._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(1u));
-        Assert.That(total._perClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(1UL));
-        Assert.That(total._clrInvokesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
-        Assert.That(total._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
-        Assert.That(maximum._allClrApiCalls, Is.EqualTo(uint.MaxValue));
-        Assert.That(maximum._allClrApiCycles, Is.EqualTo(ulong.MaxValue));
-        Assert.That(maximum._maxClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
-        Assert.That(maximum._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(ulong.MaxValue));
-        Assert.That(first._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+            CompTimeSummaryInfo summary = default;
+            summary.AddInfo(first, includePhases: true);
+            summary.AddInfo(second, includePhases: true);
+            summary.AddInfo(new CompTimeInfo(0) { _timerFailure = true }, includePhases: true);
+
+            ref var total = ref TotalInfo(ref summary);
+            ref var maximum = ref MaximumInfo(ref summary);
+            Assert.That(total._allClrApiCalls, Is.EqualTo(1u));
+            Assert.That(total._allClrApiCycles, Is.EqualTo(1UL));
+            Assert.That(total._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(1u));
+            Assert.That(total._perClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(1UL));
+            Assert.That(total._clrInvokesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
+            Assert.That(total._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
+            Assert.That(maximum._allClrApiCalls, Is.EqualTo(uint.MaxValue));
+            Assert.That(maximum._allClrApiCycles, Is.EqualTo(ulong.MaxValue));
+            Assert.That(maximum._maxClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+            Assert.That(maximum._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(ulong.MaxValue));
+            Assert.That(first._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
     }
 
     [Test]
     public static void PartialImportsPreservePinnedPerApiMaximumSlotAndDoNotCreditNormalPhases()
     {
-        var first = new CompTimeInfo(7) { _allClrApiCalls = 2, _allClrApiCycles = 10 };
-        first._perClrApiCalls[(int)PHASE_CLR_API] = 6;
-        first._cyclesByPhase[(int)PHASE_IMPORTATION] = 100;
-        var second = new CompTimeInfo(9) { _allClrApiCalls = 1, _allClrApiCycles = 20 };
-        CompTimeSummaryInfo summary = default;
-        summary.AddInfo(first, includePhases: false);
-        summary.AddInfo(second, includePhases: false);
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
 
-        ref var total = ref TotalInfo(ref summary);
-        ref var maximum = ref MaximumInfo(ref summary);
-        Assert.That(total._byteCodeBytes, Is.Zero);
-        Assert.That(total._cyclesByPhase[(int)PHASE_IMPORTATION], Is.Zero);
-        Assert.That(total._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(3UL));
-        Assert.That(total._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo(30UL));
-        Assert.That(maximum._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(6UL));
-        Assert.That(maximum._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo(20UL));
+        try
+        {
+            var first = new CompTimeInfo(7) { _allClrApiCalls = 2, _allClrApiCycles = 10 };
+            first._perClrApiCalls[(int)PHASE_CLR_API] = 6;
+            first._cyclesByPhase[(int)PHASE_IMPORTATION] = 100;
+            var second = new CompTimeInfo(9) { _allClrApiCalls = 1, _allClrApiCycles = 20 };
+            CompTimeSummaryInfo summary = default;
+            summary.AddInfo(first, includePhases: false);
+            summary.AddInfo(second, includePhases: false);
+
+            ref var total = ref TotalInfo(ref summary);
+            ref var maximum = ref MaximumInfo(ref summary);
+            Assert.That(total._byteCodeBytes, Is.Zero);
+            Assert.That(total._cyclesByPhase[(int)PHASE_IMPORTATION], Is.Zero);
+            Assert.That(total._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(3UL));
+            Assert.That(total._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo(30UL));
+            Assert.That(maximum._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(6UL));
+            Assert.That(maximum._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo(20UL));
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
     }
 
     [TestCase(false, false)]
@@ -100,6 +132,12 @@ internal static unsafe class CompilerTimingTests
 
         try
         {
+            if (enabled && !CanRunClrApiTiming)
+            {
+                _ = Assert.Throws<FatalJitException>(() => new JitTimer(0));
+                return;
+            }
+
             var timer = new JitTimer(0);
             timer.ClrApiCallEnter(API_isIntrinsic);
 
@@ -129,6 +167,12 @@ internal static unsafe class CompilerTimingTests
 
         try
         {
+            if (!CanRunClrApiTiming)
+            {
+                _ = Assert.Throws<FatalJitException>(() => new JitTimer(0));
+                return;
+            }
+
             var timer = new JitTimer(0);
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             var phaseStart = CurrentPhaseStart(timer);
@@ -167,6 +211,13 @@ internal static unsafe class CompilerTimingTests
 
         try
         {
+            if (!CanRunClrApiTiming)
+            {
+                var invalidCompiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+                _ = Assert.Throws<FatalJitException>(() => new WrapICorJitInfo(invalidCompiler, null));
+                return;
+            }
+
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             var timer = new JitTimer(0);
             CompilerJitTimer(compiler) = timer;
@@ -211,8 +262,14 @@ internal static unsafe class CompilerTimingTests
             methodInfo.ILCodeSize = 23;
             compiler.info.compMethodInfo = &methodInfo;
 
-            InitializeJitTimer(compiler);
+            if (!CanRunClrApiTiming)
+            {
+                _ = Assert.Throws<FatalJitException>(() => InitializeJitTimer(compiler));
+                Assert.That(CompilerJitTimer(compiler), Is.Null);
+                return;
+            }
 
+            InitializeJitTimer(compiler);
             var timer = CompilerJitTimer(compiler) ?? throw new InvalidOperationException("CLR timing did not initialize its JIT timer.");
             Assert.That(TimerInfo(timer)._byteCodeBytes, Is.EqualTo(23));
         }
@@ -224,24 +281,66 @@ internal static unsafe class CompilerTimingTests
     }
 
     [Test]
+    public static void DefaultOffDoesNotCreateClrApiTimerOrProxy()
+    {
+        var previousConfig = JitConfig;
+        var previousLogFilename = JitTimeLogFilename(null);
+        JitConfig = new JitConfigValues();
+        JitTimeLogFilename(null) = 0;
+
+        try
+        {
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            CORINFO_METHOD_INFO methodInfo = default;
+            compiler.info.compMethodInfo = &methodInfo;
+
+            InitializeJitTimer(compiler);
+            InitializeClrApiTimingProxy(compiler);
+
+            Assert.That(CompilerJitTimer(compiler), Is.Null);
+            Assert.That(CompilerTimingProxy(compiler), Is.Null);
+            Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)0));
+
+            var info = new CompTimeInfo(0) {
+                _totalCycles = (ulong)Stopwatch.Frequency,
+                _allClrApiCalls = 1,
+                _allClrApiCycles = (ulong)Stopwatch.Frequency
+            };
+            CompTimeSummaryInfo summary = default;
+            summary.AddInfo(info, includePhases: true);
+            var output = PrintSummary(summary);
+            Assert.That(output, Does.Not.Contain("CLR API calls"));
+            Assert.That(output, Does.Not.Contain("# calls   total time"));
+        }
+        finally
+        {
+            JitTimeLogFilename(null) = previousLogFilename;
+            JitConfig = previousConfig;
+        }
+    }
+
+    [Test]
     public static void ClrSummaryUsesNativeApiNamesHeaderAndInvariantNumbers()
     {
-        var info = new CompTimeInfo(0) {
-            _totalCycles = (ulong)Stopwatch.Frequency,
-            _allClrApiCalls = 2,
-            _allClrApiCycles = (ulong)Stopwatch.Frequency
-        };
-        info._perClrApiCalls[(int)API_isIntrinsic] = 1;
-        info._perClrApiCycles[(int)API_isIntrinsic] = (ulong)Stopwatch.Frequency;
-        info._maxClrApiCycles[(int)API_isIntrinsic] = unchecked((uint)Stopwatch.Frequency);
-        info._perClrApiCalls[(int)API_getExpectedTargetArchitecture] = 1;
-        CompTimeSummaryInfo summary = default;
-        summary.AddInfo(info, includePhases: true);
-
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
         var previousCulture = CultureInfo.CurrentCulture;
 
         try
         {
+            var info = new CompTimeInfo(0) {
+                _totalCycles = (ulong)Stopwatch.Frequency,
+                _allClrApiCalls = 2,
+                _allClrApiCycles = (ulong)Stopwatch.Frequency
+            };
+            info._perClrApiCalls[(int)API_isIntrinsic] = 1;
+            info._perClrApiCycles[(int)API_isIntrinsic] = (ulong)Stopwatch.Frequency;
+            info._maxClrApiCycles[(int)API_isIntrinsic] = unchecked((uint)Stopwatch.Frequency);
+            info._perClrApiCalls[(int)API_getExpectedTargetArchitecture] = 1;
+            CompTimeSummaryInfo summary = default;
+            summary.AddInfo(info, includePhases: true);
+
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
             var output = PrintSummary(summary);
             Assert.That(output, Does.Contain("     " + new string('-', 100) + "\n"));
@@ -254,6 +353,7 @@ internal static unsafe class CompilerTimingTests
         finally
         {
             CultureInfo.CurrentCulture = previousCulture;
+            JitConfig = previousConfig;
         }
     }
 
@@ -272,6 +372,12 @@ internal static unsafe class CompilerTimingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InitializeJitTimer")]
     private static extern void InitializeJitTimer(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InitializeClrApiTimingProxy")]
+    private static extern void InitializeClrApiTimingProxy(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_wrapICorJitInfo")]
+    private static extern ref WrapICorJitInfo? CompilerTimingProxy(Compiler compiler);
+
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "compJitTimeLogFilename")]
     private static extern ref nint JitTimeLogFilename(Compiler? compiler);
 
@@ -281,8 +387,6 @@ internal static unsafe class CompilerTimingTests
         _isIntrinsicCallCount++;
         return 1;
     }
-#endif
-
     [Test]
     public static void SummaryAggregatesCompletedMethodsAndSkipsFailuresAndPartialCompiles()
     {
@@ -507,8 +611,10 @@ internal static unsafe class CompilerTimingTests
                 JitTimer.PrintCsvHeader();
                 JitTimer.PrintCsvHeader();
                 var writer = CsvWriter() ?? throw new InvalidOperationException("CSV output was not opened.");
-                Assert.That(ReadSharedCsv(path), Does.StartWith("\"Method Name\",\"Assembly or SPMI Index\","));
-                Assert.That(ReadSharedCsv(path).Split("\"Method Name\"").Length, Is.EqualTo(2));
+                var csv = ReadSharedCsv(path);
+                Assert.That(csv, Does.StartWith("\"Method Name\",\"Assembly or SPMI Index\","));
+                Assert.That(csv, Does.Not.Contain("\"CLR API calls\","));
+                Assert.That(csv.Split("\"Method Name\"").Length, Is.EqualTo(2));
                 JitTimer.Shutdown();
                 Assert.That(writer.BaseStream.CanWrite, Is.False);
                 Assert.That(CsvWriter(), Is.Null);
@@ -578,6 +684,8 @@ internal static unsafe class CompilerTimingTests
                 Assert.That(rows[3], Is.EqualTo("native,second"));
                 var fields = rows[2].Split(',');
                 var nextFields = rows[4].Split(',');
+                Assert.That(fields, Has.Length.EqualTo(rows[0].Split(',').Length));
+                Assert.That(nextFields, Has.Length.EqualTo(fields.Length));
                 Assert.That(fields[0], Is.EqualTo("\"TimingMethod\""));
                 Assert.That(fields[1], Is.EqualTo("-1"));
                 Assert.That(long.Parse(fields[^3], CultureInfo.InvariantCulture), Is.GreaterThan(0));

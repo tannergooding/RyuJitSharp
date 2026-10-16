@@ -45,6 +45,8 @@ public struct CompTimeSummaryInfo
             return;
         }
 
+        var includeClrApiTiming = JitConfig.JitEECallTimingInfo is not 0;
+
         lock (s_compTimeSummaryLock)
         {
             if (includePhases)
@@ -60,14 +62,15 @@ public struct CompTimeSummaryInfo
                 _total._totalCycles = unchecked(_total._totalCycles + info._totalCycles);
                 _maximum._totalCycles = ulong.Max(_maximum._totalCycles, info._totalCycles);
 
-#if MEASURE_CLRAPI_CALLS
-                // Update the CLR-API values.
-                _total._allClrApiCalls = unchecked(_total._allClrApiCalls + info._allClrApiCalls);
-                _maximum._allClrApiCalls = uint.Max(_maximum._allClrApiCalls, info._allClrApiCalls);
+                if (includeClrApiTiming)
+                {
+                    // Update the CLR-API values.
+                    _total._allClrApiCalls = unchecked(_total._allClrApiCalls + info._allClrApiCalls);
+                    _maximum._allClrApiCalls = uint.Max(_maximum._allClrApiCalls, info._allClrApiCalls);
 
-                _total._allClrApiCycles = unchecked(_total._allClrApiCycles + info._allClrApiCycles);
-                _maximum._allClrApiCycles = ulong.Max(_maximum._allClrApiCycles, info._allClrApiCycles);
-#endif
+                    _total._allClrApiCycles = unchecked(_total._allClrApiCycles + info._allClrApiCycles);
+                    _maximum._allClrApiCycles = ulong.Max(_maximum._allClrApiCycles, info._allClrApiCycles);
+                }
 
                 if (includeInFiltered)
                 {
@@ -82,39 +85,41 @@ public struct CompTimeSummaryInfo
                     _total._invokesByPhase[(int)(phase)] = unchecked(_total._invokesByPhase[(int)(phase)] + info._invokesByPhase[(int)(phase)]);
                     _total._cyclesByPhase[(int)(phase)] = unchecked(_total._cyclesByPhase[(int)(phase)] + info._cyclesByPhase[(int)(phase)]);
 
-#if MEASURE_CLRAPI_CALLS
-                    _total._clrInvokesByPhase[(int)phase] = unchecked(
-                        _total._clrInvokesByPhase[(int)phase] + info._clrInvokesByPhase[(int)phase]);
-                    _total._clrCyclesByPhase[(int)phase] = unchecked(
-                        _total._clrCyclesByPhase[(int)phase] + info._clrCyclesByPhase[(int)phase]);
-#endif
+                    if (includeClrApiTiming)
+                    {
+                        _total._clrInvokesByPhase[(int)phase] = unchecked(
+                            _total._clrInvokesByPhase[(int)phase] + info._clrInvokesByPhase[(int)phase]);
+                        _total._clrCyclesByPhase[(int)phase] = unchecked(
+                            _total._clrCyclesByPhase[(int)phase] + info._clrCyclesByPhase[(int)phase]);
+                    }
 
                     if (includeInFiltered)
                     {
                         _filtered._invokesByPhase[(int)(phase)] = unchecked(_filtered._invokesByPhase[(int)(phase)] + info._invokesByPhase[(int)(phase)]);
                         _filtered._cyclesByPhase[(int)(phase)] = unchecked(_filtered._cyclesByPhase[(int)(phase)] + info._cyclesByPhase[(int)(phase)]);
 
-#if MEASURE_CLRAPI_CALLS
-                        _filtered._clrInvokesByPhase[(int)phase] = unchecked(
-                            _filtered._clrInvokesByPhase[(int)phase] + info._clrInvokesByPhase[(int)phase]);
-                        _filtered._clrCyclesByPhase[(int)phase] = unchecked(
-                            _filtered._clrCyclesByPhase[(int)phase] + info._clrCyclesByPhase[(int)phase]);
-#endif
+                        if (includeClrApiTiming)
+                        {
+                            _filtered._clrInvokesByPhase[(int)phase] = unchecked(
+                                _filtered._clrInvokesByPhase[(int)phase] + info._clrInvokesByPhase[(int)phase]);
+                            _filtered._clrCyclesByPhase[(int)phase] = unchecked(
+                                _filtered._clrCyclesByPhase[(int)phase] + info._clrCyclesByPhase[(int)phase]);
+                        }
                     }
 
                     _maximum._cyclesByPhase[(int)(phase)] = ulong.Max(_maximum._cyclesByPhase[(int)(phase)], info._cyclesByPhase[(int)(phase)]);
 
-#if MEASURE_CLRAPI_CALLS
-                    _maximum._clrCyclesByPhase[(int)phase] = ulong.Max(
-                        _maximum._clrCyclesByPhase[(int)phase], info._clrCyclesByPhase[(int)phase]);
-#endif
+                    if (includeClrApiTiming)
+                    {
+                        _maximum._clrCyclesByPhase[(int)phase] = ulong.Max(
+                            _maximum._clrCyclesByPhase[(int)phase], info._clrCyclesByPhase[(int)phase]);
+                    }
                 }
 
                 _total._parentPhaseEndSlop = unchecked(_total._parentPhaseEndSlop + info._parentPhaseEndSlop);
                 _maximum._parentPhaseEndSlop = ulong.Max(_maximum._parentPhaseEndSlop, info._parentPhaseEndSlop);
             }
-#if MEASURE_CLRAPI_CALLS
-            else
+            else if (includeClrApiTiming)
             {
                 _totMethods++;
 
@@ -139,17 +144,19 @@ public struct CompTimeSummaryInfo
                     _maximum._cyclesByPhase[(int)PHASE_CLR_API], info._allClrApiCycles);
             }
 
-            for (var i = 0; i < (int)API_COUNT; i++)
+            if (includeClrApiTiming)
             {
-                _total._perClrApiCalls[i] = unchecked(_total._perClrApiCalls[i] + info._perClrApiCalls[i]);
-                _maximum._perClrApiCalls[i] = uint.Max(_maximum._perClrApiCalls[i], info._perClrApiCalls[i]);
+                for (var i = 0; i < (int)API_COUNT; i++)
+                {
+                    _total._perClrApiCalls[i] = unchecked(_total._perClrApiCalls[i] + info._perClrApiCalls[i]);
+                    _maximum._perClrApiCalls[i] = uint.Max(_maximum._perClrApiCalls[i], info._perClrApiCalls[i]);
 
-                _total._perClrApiCycles[i] = unchecked(_total._perClrApiCycles[i] + info._perClrApiCycles[i]);
-                _maximum._perClrApiCycles[i] = ulong.Max(_maximum._perClrApiCycles[i], info._perClrApiCycles[i]);
+                    _total._perClrApiCycles[i] = unchecked(_total._perClrApiCycles[i] + info._perClrApiCycles[i]);
+                    _maximum._perClrApiCycles[i] = ulong.Max(_maximum._perClrApiCycles[i], info._perClrApiCycles[i]);
 
-                _maximum._maxClrApiCycles[i] = uint.Max(_maximum._maxClrApiCycles[i], info._maxClrApiCycles[i]);
+                    _maximum._maxClrApiCycles[i] = uint.Max(_maximum._maxClrApiCycles[i], info._maxClrApiCycles[i]);
+                }
             }
-#endif
         }
     }
 
@@ -163,6 +170,7 @@ public struct CompTimeSummaryInfo
         }
 
         var countsPerSec = (double)Stopwatch.Frequency;
+        var extraInfo = JitConfig.JitEECallTimingInfo is not 0;
 
         if (countsPerSec is 0.0)
         {
@@ -187,15 +195,11 @@ public struct CompTimeSummaryInfo
             var extraHdr1 = "";
             var extraHdr2 = "";
 
-#if MEASURE_CLRAPI_CALLS
-            var extraInfo = JitConfig.JitEECallTimingInfo is not 0;
-
             if (extraInfo)
             {
                 extraHdr1 = "    CLRs/meth   % in CLR";
                 extraHdr2 = "-----------------------";
             }
-#endif
 
             streamWriter.WriteLine();
             streamWriter.WriteLine("  Total time by phases:");
@@ -208,13 +212,11 @@ public struct CompTimeSummaryInfo
                 var phase_tot_ms = ((double)_total._cyclesByPhase[(int)(phase)] / countsPerSec) * 1000.0;
                 var phase_max_ms = ((double)_maximum._cyclesByPhase[(int)(phase)] / countsPerSec) * 1000.0;
 
-#if MEASURE_CLRAPI_CALLS  
                 if ((phase is PHASE_CLR_API) && !extraInfo)
                 {
                     // Skip showing CLR API call info if we didn't collect any
                     continue;
                 }
-#endif
 
                 // Indent nested phases, according to depth.
                 var ancPhase = phase.Parent;
@@ -226,7 +228,6 @@ public struct CompTimeSummaryInfo
                 }
                 streamWriter.Write(FormattableString.Invariant($"     {phase.Name,-30} {_total._invokesByPhase[(int)(phase)] / (double)(_numMethods),6:F2}  {_total._cyclesByPhase[(int)(phase)] / 1000000.0,10:F2}   {phase_tot_ms,9:F3}   {formatFloat(phase_tot_ms * 100.0 / totTime_ms, "F2"),8}%    {phase_max_ms,8:F3}"));
 
-#if MEASURE_CLRAPI_CALLS
                 if (extraInfo && (phase != PHASE_CLR_API))
                 {
                     var nest_tot_ms = ((double)_total._clrCyclesByPhase[(int)phase] / countsPerSec) * 1000.0;
@@ -238,7 +239,6 @@ public struct CompTimeSummaryInfo
                         streamWriter.Write(FormattableString.Invariant($"       {calls_per_fn,5:F1}   {nest_percent,8:F2}%"));
                     }
                 }
-#endif
                 streamWriter.WriteLine();
             }
 
@@ -267,6 +267,11 @@ public struct CompTimeSummaryInfo
 
             for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
             {
+                if ((phase is PHASE_CLR_API) && !extraInfo)
+                {
+                    continue;
+                }
+
                 var phase_tot_ms = ((double)_filtered._cyclesByPhase[(int)(phase)] / countsPerSec) * 1000.0;
 
                 // Indent nested phases, according to depth.
@@ -290,8 +295,7 @@ public struct CompTimeSummaryInfo
             }
         }
 
-#if MEASURE_CLRAPI_CALLS
-        if ((_total._allClrApiCalls > 0) && (_total._allClrApiCycles > 0))
+        if (extraInfo && (_total._allClrApiCalls > 0) && (_total._allClrApiCycles > 0))
         {
             streamWriter.WriteLine();
 
@@ -307,9 +311,6 @@ public struct CompTimeSummaryInfo
 
             uint shownCalls = 0;
             var shownMillis = 0.0;
-            uint checkedCalls = 0;
-            var checkedMillis = 0.0;
-
             for (var pass = 0; pass < 2; pass++)
             {
                 for (var api = default(API_ICorJitInfo_Names); api < API_COUNT; api++)
@@ -353,18 +354,12 @@ public struct CompTimeSummaryInfo
                     streamWriter.WriteLine(FormattableString.Invariant(
                         $"     {api.Name,-40} {calls,8} {ms,9:F1} ms {max_ms,8:F1} ms  {(1000000.0 * ms) / calls,8:F1} ns     {(100.0 * ms) / shownMillis,5:F1}%"));
 
-                    if (Configuration.DEBUG)
-                    {
-                        checkedCalls = unchecked(checkedCalls + _total._perClrApiCalls[(int)api]);
-                        checkedMillis += ms;
-                    }
                 }
             }
 
             if (Configuration.DEBUG)
             {
-                assert(checkedCalls == shownCalls);
-                assert(checkedMillis == shownMillis);
+                assert(ClrApiSummaryTotalsMatch(shownCalls, shownMillis));
             }
 
             if ((shownCalls > 0) || (shownMillis > 0))
@@ -378,11 +373,39 @@ public struct CompTimeSummaryInfo
                 }
                 streamWriter.WriteLine();
             }
+
             streamWriter.WriteLine();
         }
-#endif
 
         streamWriter.WriteLine();
+    }
+
+    private readonly bool ClrApiSummaryTotalsMatch(uint shownCalls, double shownMillis)
+    {
+        uint checkedCalls = 0;
+        var checkedMillis = 0.0;
+
+        for (var api = default(API_ICorJitInfo_Names); api < API_COUNT; api++)
+        {
+            var calls = _total._perClrApiCalls[(int)api];
+
+            if (calls is 0)
+            {
+                continue;
+            }
+
+            var ms = 1000.0 * _total._perClrApiCycles[(int)api] / Stopwatch.Frequency;
+
+            if ((ms < 0.5) && (api != API_getExpectedTargetArchitecture))
+            {
+                continue;
+            }
+
+            checkedCalls = unchecked(checkedCalls + calls);
+            checkedMillis += ms;
+        }
+
+        return (checkedCalls == shownCalls) && (checkedMillis == shownMillis);
     }
 
     // This can use what ever data you want to determine if the value to be added

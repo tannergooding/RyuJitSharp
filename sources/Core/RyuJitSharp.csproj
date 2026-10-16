@@ -494,13 +494,6 @@
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
     <!-- FEATURE_JIT_METHOD_PERF -->
     <!-- <DefineConstants>$(DefineConstants);FEATURE_JIT_METHOD_PERF</DefineConstants> -->
-
-    <!-- MEASURE_CLRAPI_CALLS -->
-    <!-- <DefineConstants>$(DefineConstants);MEASURE_CLRAPI_CALLS</DefineConstants> -->
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RyuJitMeasureClrApiCalls)' == 'true'">
-    <DefineConstants>$(DefineConstants);MEASURE_CLRAPI_CALLS</DefineConstants>
   </PropertyGroup>
   
   <PropertyGroup>

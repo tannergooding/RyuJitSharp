@@ -431,9 +431,7 @@ public partial class Globals
                     if (compiler is not null)
                     {
                         compiler.info.compCode = null;
-#if MEASURE_CLRAPI_CALLS
                         compiler.DisposeClrApiTimingProxy();
-#endif
 
                         // pop the compiler off the TLS stack only if it was linked above
                         assert(JitTls.Compiler == compiler);

@@ -21,13 +21,6 @@ public partial class Globals
         Configuration.EnsureSupportedHostArchitecture();
         ValidateTargetConfiguration();
 
-#if MEASURE_CLRAPI_CALLS
-        if (!Configuration.HOST_X86 && !Configuration.HOST_AMD64)
-        {
-            throw new FatalJitException("Cycle counters only hooked up on x86/x64.");
-        }
-#endif
-
         if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
         {
             throw new FatalJitException("SIMD Unimplemented yet LOONGARCH");
@@ -72,6 +65,24 @@ public partial class Globals
         }
     }
 
+    internal static void EnsureClrApiTimingSupported()
+    {
+        EnsureClrApiTimingSupported(Configuration.DEBUG, Configuration.HOST_X86, Configuration.HOST_AMD64);
+    }
+
+    internal static void EnsureClrApiTimingSupported(bool debug, bool hostX86, bool hostAmd64)
+    {
+        if (debug)
+        {
+            throw new FatalJitException("No point in measuring DEBUG code.");
+        }
+
+        if (!hostX86 && !hostAmd64)
+        {
+            throw new FatalJitException("Cycle counters only hooked up on x86/x64.");
+        }
+    }
+
     public const int REGEN_SHORTCUTS = 0;
 
     public const int REGEN_CALLPAT = 0;
@@ -110,12 +121,6 @@ public partial class Globals
 
     // offset of vtable pointer from obj ptr
     public const int VPTR_OFFS = 0;
-
-#if MEASURE_CLRAPI_CALLS
-#if DEBUG
-#error No point in measuring DEBUG code.
-#endif
-#endif
 
     public const int CLFLG_REGVAR = 0x00008;
 

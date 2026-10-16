@@ -3,9 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_CLRAPI_CALLS
 using System.Runtime.CompilerServices;
-#endif
 
 namespace RyuJitSharp;
 
@@ -21,10 +19,8 @@ public struct CompTimeInfo
     public InlineArrayPhaseCount<ulong> _invokesByPhase;
     public InlineArrayPhaseCount<ulong> _cyclesByPhase;
 
-#if MEASURE_CLRAPI_CALLS
     public InlineArrayPhaseCount<ulong> _clrInvokesByPhase;
     public InlineArrayPhaseCount<ulong> _clrCyclesByPhase;
-#endif
 
     public InlineArrayPhaseCount<uint> _nodeCountAfterPhase;
 
@@ -39,7 +35,6 @@ public struct CompTimeInfo
     public ulong _parentPhaseEndSlop;
     public bool _timerFailure;
 
-#if MEASURE_CLRAPI_CALLS
     // The following measures the time spent inside each individual CLR API call.
     public uint _allClrApiCalls;
     public ClrApiArray<uint> _perClrApiCalls;
@@ -52,7 +47,6 @@ public struct CompTimeInfo
     {
         public T e0;
     }
-#endif
 
     public CompTimeInfo(int byteCodeBytes)
     {

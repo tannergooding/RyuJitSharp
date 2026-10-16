@@ -138,9 +138,7 @@ public static partial class PhasesExtensions
         Phases.PHASE_EMIT_CODE => "Emit code",
         Phases.PHASE_EMIT_GCEH => "Emit GC+EH tables",
         Phases.PHASE_POST_EMIT => "Post-Emit",
-#if MEASURE_CLRAPI_CALLS
         Phases.PHASE_CLR_API => "CLR API calls",
-#endif
         _ => throw new FatalJitException("Invalid compiler phase."),
     };
 
@@ -272,9 +270,7 @@ public static partial class PhasesExtensions
         false, // PHASE_EMIT_CODE
         false, // PHASE_EMIT_GCEH
         false, // PHASE_POST_EMIT
-#if MEASURE_CLRAPI_CALLS
         false, // PHASE_CLR_API
-#endif
     ];
 
     private static ReadOnlySpan<Phases> s_parents => [
@@ -405,9 +401,7 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_EMIT_CODE
         (Phases)(-1), // PHASE_EMIT_GCEH
         (Phases)(-1), // PHASE_POST_EMIT
-#if MEASURE_CLRAPI_CALLS
         (Phases)(-1), // PHASE_CLR_API
-#endif
     ];
 
     private static ReadOnlySpan<bool> s_reportsIRSize => [
@@ -538,8 +532,6 @@ public static partial class PhasesExtensions
         false, // PHASE_EMIT_CODE
         false, // PHASE_EMIT_GCEH
         false, // PHASE_POST_EMIT
-#if MEASURE_CLRAPI_CALLS
         false, // PHASE_CLR_API
-#endif
     ];
 }

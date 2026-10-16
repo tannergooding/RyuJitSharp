@@ -289,9 +289,7 @@ public partial class Compiler
     /// <summary>If a log file for JIT time is desired, filename to write it to.</summary>
     private static nint compJitTimeLogFilename;
 
-#if MEASURE_CLRAPI_CALLS
     private WrapICorJitInfo? _wrapICorJitInfo;
-#endif
 
 #if DEBUG
     // These variables are associated with maintaining SQM data about compile time.
@@ -590,13 +588,22 @@ public partial class Compiler
         compDisplayStaticSizes();
     }
 
-#if MEASURE_CLRAPI_CALLS
     internal void DisposeClrApiTimingProxy()
     {
         _wrapICorJitInfo?.Dispose();
         _wrapICorJitInfo = null;
     }
-#endif
+
+    private unsafe void InitializeClrApiTimingProxy()
+    {
+        if (JitConfig.JitEECallTimingInfo is 0)
+        {
+            return;
+        }
+
+        _wrapICorJitInfo = new WrapICorJitInfo(this, info.compCompHnd);
+        _wrapICorJitInfo.Install();
+    }
 
     private static ConfigMethodRange s_jitInstrumentIfOptimizingRange;
 
@@ -617,6 +624,11 @@ public partial class Compiler
         noway_assert(info.compCompHnd is not null);
         noway_assert(info.compMethodHnd is not null);
 
+        if (JitConfig.JitEECallTimingInfo is not 0)
+        {
+            EnsureClrApiTimingSupported();
+        }
+
         if (Configuration.FEATURE_JIT_METHOD_PERF)
         {
             if (!s_checkedForJitTimeLog)
@@ -632,13 +644,7 @@ public partial class Compiler
             InitializeJitTimer();
         }
 
-#if MEASURE_CLRAPI_CALLS
-        if (JitConfig.JitEECallTimingInfo is not 0)
-        {
-            _wrapICorJitInfo = new WrapICorJitInfo(this, info.compCompHnd);
-            _wrapICorJitInfo.Install();
-        }
-#endif
+        InitializeClrApiTimingProxy();
 
 #if FUNC_INFO_LOGGING
         var pTmpJitFuncInfoFilenameUtf8 = JitConfig.JitFuncInfoFile;
@@ -3270,9 +3276,11 @@ public partial class Compiler
         {
             if (Configuration.FEATURE_JIT_METHOD_PERF && (compJitTimer is not null))
             {
-#if MEASURE_CLRAPI_CALLS
-                EndPhase(PHASE_CLR_API);
-#endif
+                if (JitConfig.JitEECallTimingInfo is not 0)
+                {
+                    EndPhase(PHASE_CLR_API);
+                }
+
                 compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, includePhases: false);
             }
 
@@ -3309,9 +3317,11 @@ public partial class Compiler
         {
             if (Configuration.FEATURE_JIT_METHOD_PERF && (compJitTimer is not null))
             {
-#if MEASURE_CLRAPI_CALLS
-                EndPhase(PHASE_CLR_API);
-#endif
+                if (JitConfig.JitEECallTimingInfo is not 0)
+                {
+                    EndPhase(PHASE_CLR_API);
+                }
+
                 compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, false);
             }
 
@@ -3935,11 +3945,11 @@ public partial class Compiler
 
         if (Configuration.FEATURE_JIT_METHOD_PERF && (compJitTimer is not null))
         {
-#if MEASURE_CLRAPI_CALLS
-            EndPhase(PHASE_CLR_API);
-#else
-            EndPhase(PHASE_POST_EMIT);
-#endif
+            var lastPhase = JitConfig.JitEECallTimingInfo is not 0
+                ? PHASE_CLR_API
+                : PHASE_POST_EMIT;
+            EndPhase(lastPhase);
+
             compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, true);
         }
 
