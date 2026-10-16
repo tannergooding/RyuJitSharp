@@ -41,14 +41,12 @@ public partial class Compiler
             var abiInfo = classifier.Classify(this, dsc.Type, structLayout, wellKnownArg);
             lvaParameterPassingInfo[i] = abiInfo;
 
-#if DEBUG
             JITDUMP($"Parameter V{i:D2} ABI info: ");
 
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 abiInfo.Dump();
             }
-#endif
 
             if (Configuration.FEATURE_IMPLICIT_BYREFS)
             {

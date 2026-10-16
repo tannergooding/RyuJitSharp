@@ -1,10 +1,13 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.IO;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
 
+[NonParallelizable]
 internal static class AbiPassingInformationTests
 {
     [TestCase(1)]
@@ -93,6 +96,31 @@ internal static class AbiPassingInformationTests
         Assert.That(info.NumSegments, Is.EqualTo(1));
         Assert.That(info.IsPassedByReference, Is.EqualTo(passedByRef));
         Assert.That(info.Segments[0].Register, Is.EqualTo(firstRegister));
+    }
+
+    [Test]
+    public static void DiagnosticDumpPreservesDebugOutputAndIsOmittedInRelease()
+    {
+        var segment = AbiPassingSegment.OnStack(16, 0, 4);
+        var info = AbiPassingInformation.FromSegment(null!, false, in segment);
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previous = s_jitstdout;
+
+        try
+        {
+            s_jitstdout = writer;
+            info.Dump();
+            writer.Flush();
+
+            var text = Encoding.UTF8.GetString(stream.ToArray());
+            var expected = TestConfiguration.IsDebug ? $"[00..04) stack @ +16{System.Environment.NewLine}" : string.Empty;
+            Assert.That(text, Is.EqualTo(expected));
+        }
+        finally
+        {
+            s_jitstdout = previous;
+        }
     }
 
     private static regNumber IntArgumentRegister(int index)

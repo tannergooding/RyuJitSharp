@@ -154,7 +154,7 @@ public struct AbiPassingSegment
         };
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void Dump()
     {
         if (IsPassedInRegister)
@@ -166,7 +166,6 @@ public struct AbiPassingSegment
             jitprintf($"[{Offset:D2}..{Offset + Size:D2}) stack @ +{StackOffset:D2}");
         }
     }
-#endif
 
     public readonly var_types GetRegisterType()
     {

@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public sealed partial class CallArg
@@ -204,8 +206,8 @@ public sealed partial class CallArg
         }
     }
 
-#if DEBUG
     /// <summary>Dump information about a CallArg to jitstdout.</summary>
+    [Conditional("DEBUG")]
     public void Dump()
     {
         jitprintf($"CallArg[[{Node.TreeId:D6}].{Node.Oper.Name}");
@@ -236,5 +238,4 @@ public sealed partial class CallArg
         }
         jitprintf("]\n");
     }
-#endif
 }

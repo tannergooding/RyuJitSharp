@@ -29,12 +29,10 @@ public sealed partial class CodeGen
 
             JITDUMP($"Homing Swift parameter stack segments for V{localNumber:D2}: ");
             ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 abiInfo.Dump();
             }
-#endif
             foreach (ref readonly var segment in abiInfo.Segments)
             {
                 if (segment.IsPassedOnStack)

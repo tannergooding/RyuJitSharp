@@ -81,8 +81,7 @@ public partial class Compiler
         {
             call.Args.EvalArgsToTemps(this, call);
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             JITDUMP($"Args for [{call.TreeId:D6}].{call.Oper.Name} after fgMorphArgs:\n");
             foreach (var argument in call.Args.Args)
@@ -91,7 +90,6 @@ public partial class Compiler
             }
             jitprintf($"OutgoingArgsStackSize is {call.Args.OutgoingArgsStackSize}\n\n");
         }
-#endif
 
         return call;
     }

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
@@ -195,7 +196,7 @@ public partial struct AbiPassingInformation
         return info;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Dump()
     {
         if (NumSegments != 1)
@@ -215,5 +216,4 @@ public partial struct AbiPassingInformation
             jitprintf($"{(IsPassedByReference ? " (implicit by-ref)" : "")}\n");
         }
     }
-#endif
 }

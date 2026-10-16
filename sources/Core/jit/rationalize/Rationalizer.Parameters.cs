@@ -199,12 +199,10 @@ public sealed partial class Rationalizer
         }
 
         JITDUMP($"LCL_FLD use [{field.TreeId:D6}] in {FMT_BB(block.bbNum)} of parameter V{field.LclNum:D2} is contained in ");
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             selected.Dump();
         }
-#endif
         JITDUMP("\n");
         if (!block.TryGetUse(field, out var use))
         {
@@ -236,12 +234,10 @@ public sealed partial class Rationalizer
             CompilerInstance._paramRegLocalMappings.Add(new(selected, remappedLocal, 0));
             descriptor.lvIsParamRegTarget = true;
             JITDUMP("New mapping: ");
-#if DEBUG
-            if (CompilerInstance.verbose)
+            if (Configuration.DEBUG && CompilerInstance.verbose)
             {
                 selected.Dump();
             }
-#endif
             JITDUMP($" -> V{remappedLocal:D2}\n");
         }
         else
@@ -299,7 +295,7 @@ public sealed partial class Rationalizer
             }
         }
 
-        CompilerInstance.gtSetEvalOrder(value);
+        _ = CompilerInstance.gtSetEvalOrder(value);
         block.InsertAfter(field, new LIR.Range(CompilerInstance.fgSetTreeSeq(value, isLIR: true), value));
         use.ReplaceWith(value);
         JITDUMP("New user tree range:\n");

@@ -21,12 +21,10 @@ public sealed partial class Lowering
 
         ref var abiInfo = ref callArg.AbiInfo;
         JITDUMP("Passed in ");
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             abiInfo.Dump();
         }
-#endif
 
         if (!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM)
         {

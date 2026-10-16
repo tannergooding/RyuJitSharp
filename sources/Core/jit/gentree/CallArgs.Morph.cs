@@ -489,12 +489,10 @@ public partial struct CallArgs
 
             argument.AbiInfo = ClassifyArgument(compiler, call, argument, ref classifier);
             JITDUMP($"Argument {GetIndex(argument)} ABI info: ");
-#if DEBUG
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 argument.AbiInfo.Dump();
             }
-#endif
             foreach (ref readonly var segment in argument.AbiInfo.Segments)
             {
                 if (segment.IsPassedOnStack)
@@ -510,8 +508,7 @@ public partial struct CallArgs
         }
 
         _argsStackSize = classifier.StackSize;
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             JITDUMP($"Args for call [{call.TreeId:D6}] {call.Oper.Name} after AddFinalArgsAndDetermineABIInfo:\n");
             foreach (var argument in Args)
@@ -520,7 +517,6 @@ public partial struct CallArgs
             }
             JITDUMP("\n");
         }
-#endif
         _flags |= Flags.AbiInformationDetermined | Flags.HasAddedFinalArgs;
     }
 
