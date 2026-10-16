@@ -4464,7 +4464,8 @@ namespace RyuJitSharp;
 
             var name = parts[0].AsSpan().Trim();
             var flags = GetFlagsForPrefix(prefix);
-            if (IsUniversalDebugConfig(name))
+            var isDebugConfig = (flags & FLAG_DEFINE_MASK) is FLAG_DEBUG or FLAG_OPT;
+            if (isDebugConfig)
             {
                 flags &= ~FLAG_DEFINE_MASK;
             }
@@ -4491,7 +4492,8 @@ namespace RyuJitSharp;
 
             var name = parts[0].AsSpan().Trim();
             var flags = GetFlagsForPrefix(prefix);
-            if (IsUniversalDebugConfig(name))
+            var isDebugConfig = (flags & FLAG_DEFINE_MASK) is FLAG_DEBUG or FLAG_OPT;
+            if (isDebugConfig)
             {
                 flags &= ~FLAG_DEFINE_MASK;
             }
@@ -4501,7 +4503,7 @@ namespace RyuJitSharp;
 
             var fieldName = GetFieldName(name);
 
-            if (IsUniversalDebugConfig(name))
+            if (isDebugConfig)
             {
                 var propertyName = name.ToString();
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {type} {propertyName}");
@@ -4539,8 +4541,8 @@ namespace RyuJitSharp;
             var flags = GetFlagsForPrefix(prefix);
             var kind = flags & FLAG_KIND_MASK;
             var configName = parts[0].AsSpan().Trim();
-            var isUniversalDebugConfig = IsUniversalDebugConfig(configName);
-            if (isUniversalDebugConfig)
+            var isDebugConfig = (flags & FLAG_DEFINE_MASK) is FLAG_DEBUG or FLAG_OPT;
+            if (isDebugConfig)
             {
                 flags &= ~FLAG_DEFINE_MASK;
             }
@@ -4548,7 +4550,7 @@ namespace RyuJitSharp;
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
             var name = GetFieldName(configName);
-            var needsDebugCleanup = isUniversalDebugConfig && (kind != FLAG_INTEGER);
+            var needsDebugCleanup = isDebugConfig && (kind != FLAG_INTEGER);
             if (needsDebugCleanup)
             {
                 _ = builder.AppendLine("        if (Configuration.DEBUG)");
@@ -4591,9 +4593,9 @@ namespace RyuJitSharp;
             }
 
             var configName = parts[0].AsSpan().Trim();
-            var isUniversalDebugConfig = IsUniversalDebugConfig(configName);
             var flags = GetFlagsForPrefix(prefix);
-            if (isUniversalDebugConfig)
+            var isDebugConfig = (flags & FLAG_DEFINE_MASK) is FLAG_DEBUG or FLAG_OPT;
+            if (isDebugConfig)
             {
                 flags &= ~FLAG_DEFINE_MASK;
             }
@@ -4603,10 +4605,10 @@ namespace RyuJitSharp;
 
             var name = GetFieldName(configName);
             var key = parts[1].AsSpan().Trim();
-            var indent = isUniversalDebugConfig ? "            " : "        ";
+            var indent = isDebugConfig ? "            " : "        ";
             var nestedIndent = indent + "    ";
 
-            if (isUniversalDebugConfig)
+            if (isDebugConfig)
             {
                 _ = builder.AppendLine("        if (Configuration.DEBUG)");
                 _ = builder.AppendLine("        {");
@@ -4648,7 +4650,7 @@ namespace RyuJitSharp;
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = new MethodSet({name}Value, jitHost);");
             }
 
-            if (isUniversalDebugConfig)
+            if (isDebugConfig)
             {
                 _ = builder.AppendLine("        }");
             }
@@ -4789,71 +4791,6 @@ public partial struct JitConfigValues
             return kind;
         }
 
-        static bool IsUniversalInlineConfig(ReadOnlySpan<char> name)
-        {
-            return name.Equals("JitForceInlineDepth", StringComparison.Ordinal) ||
-                   name.Equals("JitInlineAdditionalMultiplier", StringComparison.Ordinal) ||
-                   name.Equals("JitInlineDepth", StringComparison.Ordinal) ||
-                   name.Equals("JitInlinePolicyFull", StringComparison.Ordinal) ||
-                   name.Equals("JitInlinePolicySize", StringComparison.Ordinal) ||
-                   name.Equals("JitInlineSize", StringComparison.Ordinal);
-        }
-
-        static bool IsUniversalDebugConfig(ReadOnlySpan<char> name)
-        {
-            return IsUniversalInlineConfig(name) ||
-                   name.Equals("JitExclude", StringComparison.Ordinal) ||
-                   name.Equals("JitInclude", StringComparison.Ordinal) ||
-                   name.Equals("JitRange", StringComparison.Ordinal) ||
-                   name.Equals("JitStressOnly", StringComparison.Ordinal) ||
-                   name.Equals("JitStressRange", StringComparison.Ordinal) ||
-                   name.Equals("JitStress", StringComparison.Ordinal) ||
-                   name.Equals("JitInlinePolicyRandom", StringComparison.Ordinal) ||
-                   name.Equals("JitStressAsyncInlining", StringComparison.Ordinal) ||
-                   name.Equals("JitStressAsyncInliningMaxDepth", StringComparison.Ordinal) ||
-                   name.Equals("JitStressAsyncInliningPct", StringComparison.Ordinal) ||
-                   name.Equals("JitAwaitHashBreak", StringComparison.Ordinal) ||
-                   name.Equals("JitDumpToDebugger", StringComparison.Ordinal) ||
-                   name.Equals("JitDumpTreeIDs", StringComparison.Ordinal) ||
-                   name.Equals("JitCSEHash", StringComparison.Ordinal) ||
-                   name.Equals("JitCSEMask", StringComparison.Ordinal) ||
-                   name.Equals("JitMetrics", StringComparison.Ordinal) ||
-                   name.Equals("JitNoCSE", StringComparison.Ordinal) ||
-                   name.Equals("JitNoCSE2", StringComparison.Ordinal) ||
-                   name.Equals("JitRandomCSE", StringComparison.Ordinal) ||
-                   name.Equals("JitReplayCSE", StringComparison.Ordinal) ||
-                   name.Equals("JitReplayCSEReward", StringComparison.Ordinal) ||
-                   name.Equals("JitRLCSE", StringComparison.Ordinal) ||
-                   name.Equals("JitRLCSEAlpha", StringComparison.Ordinal) ||
-                   name.Equals("JitRLCSECandidateFeatures", StringComparison.Ordinal) ||
-                   name.Equals("JitRLCSEVerbose", StringComparison.Ordinal) ||
-                   name.Equals("JitRLHook", StringComparison.Ordinal) ||
-                   name.Equals("JitRLHookEmitFeatureNames", StringComparison.Ordinal) ||
-                   name.Equals("JitRLHookCSEDecisions", StringComparison.Ordinal) ||
-                   name.Equals("JitUseScalableVectorT", StringComparison.Ordinal) ||
-                   name.Equals("JitR2RUnsupportedRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableRboRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableHeadTailMergeRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableVNBasedDeadStoreRemovalRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableEarlyLivenessRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableLocalAddrPropagationRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnablePatchpointRange", StringComparison.Ordinal) ||
-                   name.Equals("JitOnlyOptimizeRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnablePhysicalPromotionRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableCrossBlockLocalAssertionPropRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableInductionVariableOptsRange", StringComparison.Ordinal) ||
-                   name.Equals("JitOptRepeatRange", StringComparison.Ordinal) ||
-                   name.Equals("JitOptimizeAwaitRange", StringComparison.Ordinal) ||
-                   name.Equals("JitGuardedDevirtualizationRange", StringComparison.Ordinal) ||
-                   name.Equals("JitAsyncDefaultValueAnalysisRange", StringComparison.Ordinal) ||
-                   name.Equals("JitAsyncPreservedValueAnalysisRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnableOsrRange", StringComparison.Ordinal) ||
-                   name.Equals("JitEnablePGORange", StringComparison.Ordinal) ||
-                   name.Equals("JitInlineMethodsWithEHRange", StringComparison.Ordinal) ||
-                   name.Equals("JitInstrumentIfOptimizing", StringComparison.Ordinal) ||
-                   name.Equals("JitInstrumentIfOptimizingRange", StringComparison.Ordinal);
-        }
-
         static string GetTypeForFlags(int flags)
         {
             var kind = flags & FLAG_KIND_MASK;
@@ -4872,8 +4809,15 @@ public partial struct JitConfigValues
         Property,
     }
 
+    private enum JitConfigConditionalKind
+    {
+        Other,
+        Target,
+        BuildConfiguration,
+    }
+
     private readonly record struct JitConfigConditionalScope(
-        bool IsTargetCondition,
+        JitConfigConditionalKind Kind,
         int GroupId,
         int BranchIndex);
 
@@ -4886,7 +4830,7 @@ public partial struct JitConfigValues
         var conditionalScopes = new Stack<JitConfigConditionalScope>();
         var declarations = new Dictionary<string, string>(StringComparer.Ordinal);
         var runtimeDepth = 0;
-        var targetConditionalDepth = 0;
+        var runtimeConditionalDepth = 0;
         var nextConditionalGroupId = 0;
 
         using var reader = new StringReader(input.ToString());
@@ -4903,22 +4847,32 @@ public partial struct JitConfigValues
             if (directive.StartsWith("if ", StringComparison.Ordinal))
             {
                 var condition = directive[3..].Trim().ToString();
-                var isTargetCondition = IsJitConfigTargetCondition(condition);
+                var kind = GetJitConfigConditionalKind(condition);
                 conditionalScopes.Push(new JitConfigConditionalScope(
-                    isTargetCondition,
+                    kind,
                     nextConditionalGroupId++,
                     BranchIndex: 0));
-                if (isTargetCondition)
+                if (kind is not JitConfigConditionalKind.Other)
                 {
-                    targetConditionalDepth++;
+                    runtimeConditionalDepth++;
                 }
 
-                if (isTargetCondition && !includeAllTargetBranches)
+                if ((kind is JitConfigConditionalKind.BuildConfiguration) &&
+                    (declarationKind is not JitConfigDeclarationKind.None))
+                {
+                    continue;
+                }
+
+                if ((kind is JitConfigConditionalKind.Target) && includeAllTargetBranches)
+                {
+                    continue;
+                }
+                else if (kind is not JitConfigConditionalKind.Other)
                 {
                     AppendRuntimeBranch("if", condition);
                     runtimeDepth++;
                 }
-                else if (!isTargetCondition)
+                else
                 {
                     AppendLine(line);
                 }
@@ -4932,14 +4886,23 @@ public partial struct JitConfigValues
                     throw new InvalidDataException($"Unmatched JitConfigValues #elif directive: '{line}'");
                 }
 
-                if (conditionalScopes.Peek().IsTargetCondition && !includeAllTargetBranches)
+                var scope = conditionalScopes.Peek();
+                if ((scope.Kind is JitConfigConditionalKind.BuildConfiguration) &&
+                    (declarationKind is not JitConfigDeclarationKind.None))
+                {
+                    continue;
+                }
+
+                if (((scope.Kind is JitConfigConditionalKind.Target) && !includeAllTargetBranches) ||
+                    ((scope.Kind is JitConfigConditionalKind.BuildConfiguration) &&
+                     (declarationKind is JitConfigDeclarationKind.None)))
                 {
                     var condition = directive[5..].Trim().ToString();
                     runtimeDepth--;
                     AppendRuntimeBranch("else if", condition);
                     runtimeDepth++;
                 }
-                else if (!conditionalScopes.Peek().IsTargetCondition)
+                else if (scope.Kind is JitConfigConditionalKind.Other)
                 {
                     AppendLine(line);
                     AdvanceConditionalArm();
@@ -4954,13 +4917,22 @@ public partial struct JitConfigValues
                     throw new InvalidDataException($"Unmatched JitConfigValues #else directive: '{line}'");
                 }
 
-                if (conditionalScopes.Peek().IsTargetCondition && !includeAllTargetBranches)
+                var scope = conditionalScopes.Peek();
+                if ((scope.Kind is JitConfigConditionalKind.BuildConfiguration) &&
+                    (declarationKind is not JitConfigDeclarationKind.None))
+                {
+                    continue;
+                }
+
+                if (((scope.Kind is JitConfigConditionalKind.Target) && !includeAllTargetBranches) ||
+                    ((scope.Kind is JitConfigConditionalKind.BuildConfiguration) &&
+                     (declarationKind is JitConfigDeclarationKind.None)))
                 {
                     runtimeDepth--;
                     AppendRuntimeBranch("else", condition: null);
                     runtimeDepth++;
                 }
-                else if (!conditionalScopes.Peek().IsTargetCondition)
+                else if (scope.Kind is JitConfigConditionalKind.Other)
                 {
                     AppendLine(line);
                     AdvanceConditionalArm();
@@ -4975,18 +4947,23 @@ public partial struct JitConfigValues
                     throw new InvalidDataException($"Unmatched JitConfigValues #endif directive: '{line}'");
                 }
 
-                var isTargetCondition = conditionalScopes.Pop().IsTargetCondition;
-                if (isTargetCondition)
+                var scope = conditionalScopes.Pop();
+                if (scope.Kind is not JitConfigConditionalKind.Other)
                 {
-                    targetConditionalDepth--;
+                    runtimeConditionalDepth--;
                 }
-                if (isTargetCondition && !includeAllTargetBranches)
+
+                if (((scope.Kind is JitConfigConditionalKind.Target) && !includeAllTargetBranches) ||
+                    ((scope.Kind is JitConfigConditionalKind.BuildConfiguration) &&
+                     (declarationKind is JitConfigDeclarationKind.None)))
                 {
                     runtimeDepth--;
                     _ = output.AppendLine(CultureInfo.InvariantCulture,
                         $"{new string(' ', 8 + (4 * runtimeDepth))}}}");
                 }
-                else if (!isTargetCondition)
+                else if (!((scope.Kind is JitConfigConditionalKind.BuildConfiguration) &&
+                           (declarationKind is not JitConfigDeclarationKind.None)) &&
+                         !((scope.Kind is JitConfigConditionalKind.Target) && includeAllTargetBranches))
                 {
                     AppendLine(line);
                 }
@@ -5006,20 +4983,20 @@ public partial struct JitConfigValues
         void AppendLine(string line)
         {
             if (declarationKind is not JitConfigDeclarationKind.None &&
-                (targetConditionalDepth > 0) &&
+                (runtimeConditionalDepth > 0) &&
                 TryGetJitConfigDeclarationName(line, declarationKind, out var name))
             {
                 var declaration = line.Trim();
                 var compileTimeBranchPath = string.Join(
                     ",",
                     conditionalScopes
-                        .Where(static scope => !scope.IsTargetCondition)
+                        .Where(static scope => scope.Kind is JitConfigConditionalKind.Other)
                         .Reverse()
                         .Select(static scope => $"{scope.GroupId}:{scope.BranchIndex}"));
                 var targetConditionalPath = string.Join(
                     ",",
                     conditionalScopes
-                        .Where(static scope => scope.IsTargetCondition)
+                        .Where(static scope => scope.Kind is not JitConfigConditionalKind.Other)
                         .Reverse()
                         .Select(static scope => scope.GroupId));
                 var declarationKey = $"{name}\0{targetConditionalPath}\0{compileTimeBranchPath}";
@@ -5090,16 +5067,36 @@ public partial struct JitConfigValues
                condition.Contains("FEATURE_", StringComparison.Ordinal);
     }
 
-    private static string TranslateJitConfigCondition(string condition)
+    // OPT_CONFIG is Debug-only in RyuJitSharp.csproj, and native _DEBUG tracks DEBUG here.
+    private static JitConfigConditionalKind GetJitConfigConditionalKind(string condition)
     {
-        if (!IsJitConfigTargetCondition(condition))
+        if (IsJitConfigTargetCondition(condition))
         {
-            throw new InvalidDataException(
-                $"JitConfigValues runtime branch lacks a target or feature condition: '{condition}'");
+            return JitConfigConditionalKind.Target;
         }
 
-        return Regex.Replace(condition, @"\b(TARGET|FEATURE)_[A-Za-z0-9_]+\b",
+        return Regex.IsMatch(condition, @"\b(?:DEBUG|_DEBUG|OPT_CONFIG)\b")
+            ? JitConfigConditionalKind.BuildConfiguration
+            : JitConfigConditionalKind.Other;
+    }
+
+    private static string TranslateJitConfigCondition(string condition)
+    {
+        if (condition.Equals("!DEBUG && !_DEBUG", StringComparison.Ordinal))
+        {
+            return "!Configuration.DEBUG";
+        }
+
+        if (!IsJitConfigTargetCondition(condition) &&
+            !Regex.IsMatch(condition, @"\b(?:DEBUG|_DEBUG|OPT_CONFIG)\b"))
+        {
+            throw new InvalidDataException(
+                $"JitConfigValues runtime branch lacks a target, feature, or build configuration condition: '{condition}'");
+        }
+
+        var translated = Regex.Replace(condition, @"\b(TARGET|FEATURE)_[A-Za-z0-9_]+\b",
             static match => $"Configuration.{match.Value}");
+        return Regex.Replace(translated, @"\b(?:DEBUG|_DEBUG|OPT_CONFIG)\b", "Configuration.DEBUG");
     }
 
     private static bool TryGetJitConfigDeclarationName(
