@@ -15175,9 +15175,7 @@ public partial class Compiler
         return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);
     }
 
-#if DEBUG
     private static ConfigMethodRange s_localAddrPropagationRange;
-#endif
 
     private unsafe PhaseStatus fgLocalMorph()
     {
@@ -15203,14 +15201,16 @@ public partial class Compiler
             var loopDefs = new LoopDefinitions(_loops);
             var assertions = new LocalEqualsLocalAddrAssertions(this, loopDefs);
             var activeAssertions = assertions;
-#if DEBUG
-            s_localAddrPropagationRange.EnsureInit(JitConfig.JitEnableLocalAddrPropagationRange);
-
-            if (!s_localAddrPropagationRange.Contains(info.compMethodHash()))
+            if (Configuration.DEBUG)
             {
-                activeAssertions = null;
+                s_localAddrPropagationRange.EnsureInit(JitConfig.JitEnableLocalAddrPropagationRange);
+
+                if (!s_localAddrPropagationRange.Contains(info.compMethodHash()))
+                {
+                    activeAssertions = null;
+                }
             }
-#endif
+
             var visitor = new LocalAddressVisitor(this, new LocalSequencer(this), activeAssertions);
 
             for (var i = dfs.PostOrderCount; i != 0; i--)

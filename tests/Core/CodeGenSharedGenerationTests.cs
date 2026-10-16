@@ -200,13 +200,14 @@ internal static unsafe class CodeGenSharedGenerationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCheckWasmFunclets")]
     private static extern void CheckWasmFunclets(CodeGen codeGen);
 
-#if DEBUG
     [TestCase("", false)]
     [TestCase("00001233", false)]
     [TestCase("00001234", true)]
     [TestCase("00001230-00001240", true)]
     public static void WasmDebugRangeUsesTheInlineRootAndExcludesEmptyConfiguration(string range, bool rejected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var previousConfig = Globals.JitConfig;
         var previousRange = UnsupportedRange(null);
         try
@@ -255,7 +256,6 @@ internal static unsafe class CodeGenSharedGenerationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCheckWasmR2RRange")]
     private static extern void CheckWasmRange(CodeGen codeGen);
-#endif
 #endif
 
     private static void WithGeneration(Action<Compiler, CodeGen> action, bool verbose = false)

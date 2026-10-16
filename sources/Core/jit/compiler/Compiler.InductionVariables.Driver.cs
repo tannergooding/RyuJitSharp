@@ -8,20 +8,20 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private static ConfigMethodRange s_jitEnableInductionVariableOptsRange;
-#endif
 
     public unsafe PhaseStatus optInductionVariables()
     {
         JITDUMP("*************** In optInductionVariables()\n");
-#if DEBUG
-        s_jitEnableInductionVariableOptsRange.EnsureInit(JitConfig.JitEnableInductionVariableOptsRange);
-        if (!s_jitEnableInductionVariableOptsRange.Contains(info.compMethodHash()))
+        if (Configuration.DEBUG)
         {
-            return PhaseStatus.MODIFIED_NOTHING;
+            s_jitEnableInductionVariableOptsRange.EnsureInit(JitConfig.JitEnableInductionVariableOptsRange);
+            if (!s_jitEnableInductionVariableOptsRange.Contains(info.compMethodHash()))
+            {
+                return PhaseStatus.MODIFIED_NOTHING;
+            }
         }
-#endif
+
         if (!fgMightHaveNaturalLoops)
         {
             JITDUMP("  Skipping since this method has no natural loops\n");

@@ -122,9 +122,9 @@ internal static unsafe class CodeGenSharedEHReportingTests
     [Test]
     public static void WasmRetainsTheExcludedTableConstructionBoundary()
     {
-        WithReporting((_, codeGen, context) =>
+        WithReporting((_compiler, codeGen, context) =>
         {
-            Assert.Throws<FatalJitException>(codeGen.genReportEH);
+            _ = Assert.Throws<FatalJitException>(codeGen.genReportEH);
             Assert.That(context->Calls, Is.Zero);
         });
     }

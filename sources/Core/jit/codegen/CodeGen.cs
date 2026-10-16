@@ -57,9 +57,7 @@ public sealed partial class CodeGen : ICodeGen
 
     internal bool genReverseAndPairCalleeSavedRegisters;
 
-#if DEBUG
     private static ConfigMethodRange s_jitR2RUnsupportedRange;
-#endif
 
     public CodeGen(Compiler compiler)
     {
@@ -1083,12 +1081,10 @@ public sealed partial class CodeGen : ICodeGen
                 }
             }
 #endif
-#if DEBUG
-            if (Configuration.TARGET_WASM)
+            if (Configuration.DEBUG && Configuration.TARGET_WASM)
             {
                 genCheckWasmR2RRange();
             }
-#endif
             codePtr = generatedCode;
             nativeSizeOfCode = generatedSize;
         }
@@ -1130,7 +1126,6 @@ public sealed partial class CodeGen : ICodeGen
         }
     }
 
-#if DEBUG
     private unsafe void genCheckWasmR2RRange()
     {
         if (!Configuration.TARGET_WASM)
@@ -1153,7 +1148,6 @@ public sealed partial class CodeGen : ICodeGen
             implReadyToRunUnsupported();
         }
     }
-#endif
 
     public regNumber GetFramePointerReg(int funcletIndex)
     {

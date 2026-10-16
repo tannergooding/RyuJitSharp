@@ -9,9 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private static ConfigMethodRange s_physicalPromotionRange;
-#endif
 
     private unsafe bool PhysicalPromotionIsEnabled()
     {
@@ -26,13 +24,15 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
-        s_physicalPromotionRange.EnsureInit(JitConfig.JitEnablePhysicalPromotionRange);
-        if (!s_physicalPromotionRange.Contains(info.compMethodHash()))
+        if (Configuration.DEBUG)
         {
-            return false;
+            s_physicalPromotionRange.EnsureInit(JitConfig.JitEnablePhysicalPromotionRange);
+            if (!s_physicalPromotionRange.Contains(info.compMethodHash()))
+            {
+                return false;
+            }
         }
-#endif
+
         return true;
     }
 

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -12,13 +11,20 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ConfigMethodRangeTests
 {
+    private static void AssumeDebug()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+    }
+
     [TestCase(0, false)]
     [TestCase(1, true)]
     [TestCase(2, false)]
     [TestCase(3, true)]
     public static void InlineDisableRangePreservesUnsetAndCachedSelection(int selection, bool expected)
     {
-        using var jitTls = new JitTls(null);
+        AssumeDebug();
+
+        using var jitTls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compFullName = "InlineRange";
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
@@ -92,7 +98,9 @@ internal static unsafe class ConfigMethodRangeTests
     [TestCase("00000000", 0, true)]
     public static void RangesPreserveNativeHexadecimalAndBoundarySemantics(string? text, int hash, bool expected)
     {
-        using var jitTls = new JitTls(null);
+        AssumeDebug();
+
+        using var jitTls = TestConfiguration.CreateJitTls();
         var bytes = text is null ? null : Encoding.ASCII.GetBytes(text + '\0');
 
         fixed (byte* pointer = bytes)
@@ -115,7 +123,9 @@ internal static unsafe class ConfigMethodRangeTests
     [TestCase(2, true)]
     public static void CapacityTruncationRetainsNativeSelection(int capacity, bool containsSecond)
     {
-        using var jitTls = new JitTls(null);
+        AssumeDebug();
+
+        using var jitTls = TestConfiguration.CreateJitTls();
 
         fixed (byte* pointer = "1,2"u8)
         {
@@ -132,7 +142,9 @@ internal static unsafe class ConfigMethodRangeTests
     [TestCase(true, 17, -1)]
     public static void AwaitSelectionHashesRootMethodInlineOrdinalAndOffset(bool inlining, int ordinal, int offset)
     {
-        using var jitTls = new JitTls(null);
+        AssumeDebug();
+
+        using var jitTls = TestConfiguration.CreateJitTls();
         var root = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         root.info = new Compiler.Info { compFullName = "AwaitRangeRoot" };
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -177,5 +189,47 @@ internal static unsafe class ConfigMethodRangeTests
             rangeField.SetValue(null, oldRange);
         }
     }
+
+    [Test]
+    public static void ReleaseRangeApisFailExplicitly()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+
+        var range = default(ConfigMethodRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = range.BadCharIndex);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = range.Error);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = range.IsEmpty);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = range.IsInit);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = range.Contains(0));
+        _ = Assert.Throws<InvalidOperationException>(() => range.EnsureInit(null));
+
+        var dump = typeof(ConfigMethodRange).GetMethod(nameof(ConfigMethodRange.Dump), BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("Missing ConfigMethodRange.Dump.");
+        var exception = Assert.Throws<TargetInvocationException>(() => dump.Invoke(range, null));
+        Assert.That(exception!.InnerException, Is.TypeOf<InvalidOperationException>());
+    }
+
+    [Test]
+    public static void ReleaseRangeConfigurationApisFailExplicitly()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+
+        var config = default(JitConfigValues);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitR2RUnsupportedRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitEnableRboRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitOnlyOptimizeRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitStressOnly);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitInstrumentIfOptimizing);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitEnableLocalAddrPropagationRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitGuardedDevirtualizationRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitEnablePatchpointRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitOptimizeAwaitRange);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = config.JitAwaitHashBreak);
+        _ = Assert.Throws<InvalidOperationException>(() => _ = JitTls.LogEnv);
+
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        Assert.That(compiler.impCheckOptimizeAwait(0), Is.True);
+        _ = Assert.Throws<InvalidOperationException>(() => compiler.SkipMethod());
+    }
 }
-#endif

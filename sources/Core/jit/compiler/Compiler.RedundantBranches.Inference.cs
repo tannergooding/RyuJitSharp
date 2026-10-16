@@ -373,9 +373,7 @@ public partial class Compiler
         return RelopResult.Unknown;
     }
 
-#if DEBUG
     private static ConfigMethodRange s_jitEnableRboRange;
-#endif
 
     private unsafe void optRelopImpliesRelop(ref RelopImplicationInfo info)
     {
@@ -402,12 +400,13 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
-        s_jitEnableRboRange.EnsureInit(JitConfig.JitEnableRboRange);
-        var inRange = s_jitEnableRboRange.Contains(impInlineRoot.info.compMethodHash());
-#else
-        const bool inRange = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            s_jitEnableRboRange.EnsureInit(JitConfig.JitEnableRboRange);
+        }
+
+        var inRange = !Configuration.DEBUG || s_jitEnableRboRange.Contains(impInlineRoot.info.compMethodHash());
+
         var domFunc = domApp.Func;
         var treeApp = new VNFuncApp();
         if (inRange && ValueNumStore.VNFuncIsComparison(domFunc) &&

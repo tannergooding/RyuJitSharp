@@ -407,9 +407,7 @@ public partial class Compiler
 
     internal regMask srbmMskCalleeTrash;
 
-#if DEBUG
     private static ConfigMethodRange fJitStressRange;
-#endif
 
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
@@ -466,20 +464,21 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        // Opt-in to jit stress based on method hash ranges.
-        //
-        // Note the default (with JitStressRange not set) is that all
-        // methods will be subject to stress.
-        fJitStressRange.EnsureInit(JitConfig.JitStressRange);
-        assert(!fJitStressRange.Error);
-
-        if (fJitStressRange.Contains(info.compMethodHash()))
+        if (Configuration.DEBUG)
         {
-            var jitStressOnlyMethodSet = JitConfig.JitStressOnly;
-            compAllowStress = jitStressOnlyMethodSet.isEmpty() || jitStressOnlyMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+            // Opt-in to jit stress based on method hash ranges.
+            //
+            // Note the default (with JitStressRange not set) is that all
+            // methods will be subject to stress.
+            fJitStressRange.EnsureInit(JitConfig.JitStressRange);
+            assert(!fJitStressRange.Error);
+
+            if (fJitStressRange.Contains(info.compMethodHash()))
+            {
+                var jitStressOnlyMethodSet = JitConfig.JitStressOnly;
+                compAllowStress = jitStressOnlyMethodSet.isEmpty() || jitStressOnlyMethodSet.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+            }
         }
-#endif
 
         if (compIsForInlining)
         {
@@ -2288,11 +2287,15 @@ public partial class Compiler
 #endif
     }
 
-#if DEBUG
     private static ConfigMethodRange fJitRange;
 
     public unsafe bool SkipMethod()
-    {        
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("SkipMethod is only available in Debug builds.");
+        }
+
         fJitRange.EnsureInit(JitConfig.JitRange);
         assert(!fJitRange.Error);
 
@@ -2319,7 +2322,6 @@ public partial class Compiler
         }
         return false;
     }
-#endif
 
     public unsafe typeInfo makeTypeInfoForLocal(int lclNum)
     {

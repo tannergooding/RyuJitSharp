@@ -25,9 +25,7 @@ public partial class Compiler
 
     public unsafe ASSERT_TP? apLocalIfTrue;
 
-#if DEBUG
     private static ConfigMethodRange s_jitEnableCrossBlockLocalAssertionPropRange;
-#endif
 
     public AssertionIndex AssertionCount => optAssertionCount;
 
@@ -164,14 +162,15 @@ public partial class Compiler
                 optCrossBlockLocalAssertionProp = false;
             }
 
-#if DEBUG
-            s_jitEnableCrossBlockLocalAssertionPropRange.EnsureInit(JitConfig.JitEnableCrossBlockLocalAssertionPropRange);
-            if (!s_jitEnableCrossBlockLocalAssertionPropRange.Contains(info.compMethodHash()))
+            if (Configuration.DEBUG)
             {
-                JITDUMP("Disabling cross-block assertion prop by config range\n");
-                optCrossBlockLocalAssertionProp = false;
+                s_jitEnableCrossBlockLocalAssertionPropRange.EnsureInit(JitConfig.JitEnableCrossBlockLocalAssertionPropRange);
+                if (!s_jitEnableCrossBlockLocalAssertionPropRange.Contains(info.compMethodHash()))
+                {
+                    JITDUMP("Disabling cross-block assertion prop by config range\n");
+                    optCrossBlockLocalAssertionProp = false;
+                }
             }
-#endif
 
             if (lvaCount > maxTrackedLocals)
             {

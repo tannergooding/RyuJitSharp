@@ -733,9 +733,7 @@ public partial class Compiler
         helper.StoreRetExprResultsInArgs(call);
     }
 
-#if DEBUG
     private static ConfigMethodRange s_jitGuardedDevirtualizationRange;
-#endif
 
     /// <summary>potentially mark the call as a guarded devirtualization candidate</summary>
     /// <param name="call">potential guarded devirtualization candidate</param>
@@ -789,18 +787,19 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
-        // See if disabled by range
-
-        s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig.JitGuardedDevirtualizationRange);
-        assert(!s_jitGuardedDevirtualizationRange.Error);
-
-        if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
+        if (Configuration.DEBUG)
         {
-            JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- excluded by JitGuardedDevirtualizationRange");
-            return;
+            // See if disabled by range
+
+            s_jitGuardedDevirtualizationRange.EnsureInit(JitConfig.JitGuardedDevirtualizationRange);
+            assert(!s_jitGuardedDevirtualizationRange.Error);
+
+            if (!s_jitGuardedDevirtualizationRange.Contains(impInlineRoot.info.compMethodHash()))
+            {
+                JITDUMP($"NOT Marking call [{call.TreeId:D6}] as guarded devirtualization candidate -- excluded by JitGuardedDevirtualizationRange");
+                return;
+            }
         }
-#endif
 
         // We're all set, proceed with candidate creation.
 
@@ -6113,37 +6112,36 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     private static ConfigMethodRange s_jitEnablePatchpointRange;
     private static ConfigMethodRange s_jitOptimizeAwaitRange;
-#endif
 
     /// <summary>Check whether an await's root-method, inline-ordinal and IL-offset hash is selected.</summary>
     public unsafe bool impCheckOptimizeAwait(IL_OFFSET awaitOffset)
     {
-#if DEBUG
-        s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange);
-        var hash = unchecked((uint)impInlineRoot.info.compMethodHash());
-        var ordinal = 0;
-
-        if (compIsForInlining)
+        if (Configuration.DEBUG)
         {
-            assert(compInlineContext is not null);
-            ordinal = compInlineContext.Ordinal;
+            s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange);
+            var hash = unchecked((uint)impInlineRoot.info.compMethodHash());
+            var ordinal = 0;
+
+            if (compIsForInlining)
+            {
+                assert(compInlineContext is not null);
+                ordinal = compInlineContext.Ordinal;
+            }
+
+            hash = unchecked(((hash << 5) + hash) ^ (uint)ordinal);
+            hash = unchecked(((hash << 5) + hash) ^ (uint)awaitOffset);
+
+            if ((JitConfig.JitAwaitHashBreak != -1) && (hash == unchecked((uint)JitConfig.JitAwaitHashBreak)))
+            {
+                assert(false, "JitAwaitHashBreak reached");
+            }
+
+            return s_jitOptimizeAwaitRange.Contains(unchecked((int)hash));
         }
 
-        hash = unchecked(((hash << 5) + hash) ^ (uint)ordinal);
-        hash = unchecked(((hash << 5) + hash) ^ (uint)awaitOffset);
-
-        if ((JitConfig.JitAwaitHashBreak != -1) && (hash == unchecked((uint)JitConfig.JitAwaitHashBreak)))
-        {
-            assert(false, "JitAwaitHashBreak reached");
-        }
-
-        return s_jitOptimizeAwaitRange.Contains(unchecked((int)hash));
-#else
         return true;
-#endif
     }
 
     public unsafe void impImportBlockCode(BasicBlock block)
@@ -6165,8 +6163,7 @@ public partial class Compiler
         var enablePartialCompilation = featureOnStackReplacement &&
             opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation > 0);
 
-#if DEBUG
-        if (featureOnStackReplacement)
+        if (Configuration.DEBUG && featureOnStackReplacement)
         {
             // Optionally suppress patchpoints by method hash
             s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
@@ -6175,7 +6172,6 @@ public partial class Compiler
             enableOSR &= inRange;
             enablePartialCompilation &= inRange;
         }
-#endif
 
         if (enableOSR)
         {

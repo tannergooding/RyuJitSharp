@@ -26,8 +26,7 @@ internal static unsafe class SimdRearrangementCompletionTests
     [TestCase(TYP_FLOAT, true, 0xDD)]
     public static void Unzip128UsesNativeFourByteLaneControl(var_types baseType, bool odd, int control)
     {
-        WithCompiler(compiler =>
-        {
+        WithCompiler(compiler => {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
             var result = compiler.gtNewSimdUnzipNode(TYP_SIMD16, left, right, baseType, 16, odd).AsHWIntrinsic();
@@ -50,8 +49,7 @@ internal static unsafe class SimdRearrangementCompletionTests
     public static void WideUnzipPreservesEverySelectorAndBothOperandIdentities(
         byte size, var_types baseType, bool odd, NamedIntrinsic intrinsic)
     {
-        WithCompiler(compiler =>
-        {
+        WithCompiler(compiler => {
             Enable(compiler, InstructionSet_AVX512);
             Enable(compiler, InstructionSet_AVX512v2);
             var type = Compiler.GetSimdTypeForSize(size);
@@ -77,8 +75,7 @@ internal static unsafe class SimdRearrangementCompletionTests
     [TestCase(true, 0xDD)]
     public static void RecursiveUnzipExtractsEachSourceBeforeCombiningItsSelectedLanes(bool odd, int control)
     {
-        WithCompiler(compiler =>
-        {
+        WithCompiler(compiler => {
             Enable(compiler, InstructionSet_AVX2);
             var left = Local(compiler, TYP_SIMD32);
             var right = Local(compiler, TYP_SIMD32);
@@ -108,8 +105,7 @@ internal static unsafe class SimdRearrangementCompletionTests
     public static void Reverse128KeepsNativeLanePermutationAndSourceEvaluation(var_types baseType,
         NamedIntrinsic intrinsic)
     {
-        WithCompiler(compiler =>
-        {
+        WithCompiler(compiler => {
             var source = Local(compiler, TYP_SIMD16);
             var result = compiler.gtNewSimdReverseNode(TYP_SIMD16, source, baseType, 16).AsHWIntrinsic();
             Assert.That(result.HWIntrinsicId, Is.EqualTo(intrinsic));
@@ -125,8 +121,7 @@ internal static unsafe class SimdRearrangementCompletionTests
     [TestCase(true)]
     public static void SingleLaneUnzipSequencesBothEffectsAndReturnsOnlyTheRequestedValue(bool odd)
     {
-        WithCompiler(compiler =>
-        {
+        WithCompiler(compiler => {
             var leftEffect = compiler.gtNewStoreLclVarNode(Local(compiler, TYP_SIMD8).LclNum,
                 compiler.gtNewVconNode(TYP_SIMD8));
             var leftLocal = Local(compiler, TYP_SIMD8);
@@ -171,8 +166,7 @@ internal static unsafe class SimdRearrangementCompletionTests
     [Test]
     public static void SingleLaneReverseReturnsTheOriginalOperandEvenWithEffects()
     {
-        WithCompiler(compiler =>
-        {
+        WithCompiler(compiler => {
             var source = compiler.gtNewBinaryNode(GT_COMMA, TYP_SIMD8,
                 compiler.gtNewStoreLclVarNode(Local(compiler, TYP_SIMD8).LclNum, compiler.gtNewVconNode(TYP_SIMD8)),
                 Local(compiler, TYP_SIMD8));
@@ -252,7 +246,11 @@ internal static unsafe class SimdRearrangementCompletionTests
             Assert.That(second.GetOp(1), Is.SameAs(right));
             for (var index = 0; index < 16; index++)
             {
-                var selector = (byte)(((index % 8) / 2 * 4) + (odd ? 2 : 0) + (index % 2));
+                var selectorGroup = index % 8 / 2;
+                var selectorBase = selectorGroup * 4;
+                var oddOffset = odd ? 2 : 0;
+                var laneOffset = index % 2;
+                var selector = (byte)(selectorBase + oddOffset + laneOffset);
                 Assert.That(first.GetOp(2).AsVecCon().SimdVal.u8[index],
                     Is.EqualTo(index < 8 ? selector : (byte)0xFF));
                 Assert.That(second.GetOp(2).AsVecCon().SimdVal.u8[index],

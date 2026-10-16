@@ -67,9 +67,9 @@ public partial struct JitConfigValues
     private int _jitInlineBudget;
     private int _jitForceInlineDepth;
     private int _jitInlineMethodsWithEH;
-#if DEBUG
     private unsafe byte* _jitInlineMethodsWithEHRange;
     private unsafe byte* _jitOptimizeAwaitRange;
+#if DEBUG
     private int _jitAwaitHashBreak;
     private int _jitLongAddress;
     private int _jitMaxUncheckedOffset;
@@ -141,23 +141,29 @@ public partial struct JitConfigValues
     private MethodSet _jitEHDump;
     private MethodSet _jitExclude;
     private int _jitFakeProcedureSplitting;
+#endif
     private MethodSet _jitForceProcedureSplitting;
     private MethodSet _jitGCDump;
+#if DEBUG
     private MethodSet _jitDebugDump;
     private MethodSet _jitHalt;
     private MethodSet _jitInclude;
     private MethodSet _jitLateDisasm;
     private unsafe byte* _jitLateDisasmTo;
     private MethodSet _jitNoProcedureSplitting;
+#endif
     private MethodSet _jitNoProcedureSplittingEH;
     private MethodSet _jitStressOnly;
+#if DEBUG
     private MethodSet _jitUnwindDump;
     private MethodSet _jitDumpFg;
     private int _jitDumpFgHash;
     private int _jitDumpFgTier0;
     private unsafe byte* _jitDumpFgDir;
+#endif
     private unsafe byte* _jitDumpFgFile;
     private unsafe byte* _jitDumpFgPhase;
+#if DEBUG
     private unsafe byte* _jitDumpFgPrePhase;
     private int _jitDumpFgDot;
     private int _jitDumpFgEH;
@@ -177,13 +183,17 @@ public partial struct JitConfigValues
     private MethodSet _jitEmitUnitTests;
     private unsafe byte* _jitEmitUnitTestsSections;
 #endif
+#endif
     private MethodSet _jitDisasm;
+#if DEBUG
     private int _jitDisasmTesting;
     private int _jitDisasmDiffable;
     private int _jitDisasmSummary;
     private int _jitDisasmOnlyOptimized;
     private int _jitDisasmWithAlignmentBoundaries;
+#endif
     private int _jitDisasmWithCodeBytes;
+#if DEBUG
 #if DEBUG
     private unsafe byte* _jitDisasmAssemblies;
     private int _jitDisasmWithGC;
@@ -314,6 +324,7 @@ public partial struct JitConfigValues
     private int _jitDoSsa;
     private int _jitDoValueNumber;
     private unsafe byte* _jitOptRepeatRange;
+#endif
     private int _jitDoIfConversion;
     private int _jitDoOptimizeMaskConversions;
     private int _jitOptimizeAwait;
@@ -324,15 +335,19 @@ public partial struct JitConfigValues
     private int _jitEnableOptRepeat;
     private MethodSet _jitOptRepeat;
     private int _jitOptRepeatCount;
+#if OPT_CONFIG
     private int _jitVNMapSelBudget;
     private int _tailCallLoopOpt;
     private MethodSet _altJit;
+#endif
     private MethodSet _altJitNgen;
     private unsafe byte* _altJitExcludeAssemblies;
+#if OPT_CONFIG
     private int _jitMeasureIR;
     private int _jitReportMetrics;
     private unsafe byte* _jitFuncInfoFile;
     private unsafe byte* _jitTimeLogCsv;
+#endif
     private unsafe byte* _jitTimeLogFile;
     private unsafe byte* _tailCallOpt;
     private int _fastTailCalls;
@@ -346,7 +361,6 @@ public partial struct JitConfigValues
     private int _jitInlinePolicyDumpXml;
     private int _jitInlineLimit;
     private int _jitInlinePolicyDiscretionary;
-#endif
     private int _jitInlinePolicyFull;
     private int _jitInlinePolicySize;
     private int _jitInlinePolicyRandom;
@@ -427,13 +441,12 @@ public partial struct JitConfigValues
     private int _jitVTableProfiling;
     private int _jitEdgeProfiling;
     private int _jitCollect64BitCounts;
+#endif
 #if DEBUG
     private int _jitInstrumentIfOptimizing;
     private unsafe byte* _jitInstrumentIfOptimizingRange;
-#endif
     private int _jitInstrumentInlinees;
     private int _jitDisablePGO;
-#if DEBUG
     private unsafe byte* _jitEnablePGORange;
     private int _jitRandomEdgeCounts;
     private int _jitCrossCheckDevirtualizationAndPGO;
@@ -443,7 +456,6 @@ public partial struct JitConfigValues
     private int _jitPropagateSynthesizedCountsToProfileData;
     private int _jitSynthesisUseSolver;
     private unsafe byte* _jitSynthesisExceptionWeight;
-#endif
     private int _jitEnableExactDevirtualization;
     private int _jitForceControlFlowGuard;
     private int _jitCFGUseDispatcher;
@@ -469,11 +481,9 @@ public partial struct JitConfigValues
 #endif
 #if DEBUG
     private unsafe byte* _jitR2RUnsupportedRange;
-#endif
     private int _jitWasmFunclets;
     private int _jitEnregStructLocals;
 
-#if DEBUG
     public int AltJitLimit => _altJitLimit;
     public int AltJitSkipOnAssert => _altJitSkipOnAssert;
     public int BreakOnDumpToken => _breakOnDumpToken;
@@ -571,9 +581,6 @@ public partial struct JitConfigValues
     }
     public int JitInlineMethodsWithEH => _jitInlineMethodsWithEH;
 #if DEBUG
-    public unsafe byte* JitInlineMethodsWithEHRange => _jitInlineMethodsWithEHRange;
-    public unsafe byte* JitOptimizeAwaitRange => _jitOptimizeAwaitRange;
-    public int JitAwaitHashBreak => _jitAwaitHashBreak;
     public int JitLongAddress => _jitLongAddress;
     public int JitMaxUncheckedOffset => _jitMaxUncheckedOffset;
 #endif
@@ -583,6 +590,39 @@ public partial struct JitConfigValues
     public int JitMinOpts => _jitMinOpts;
     public MethodSet JitMinOptsName => _jitMinOptsName;
     public int JitMinOptsBbCount => _jitMinOptsBbCount;
+    public unsafe byte* JitInlineMethodsWithEHRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInlineMethodsWithEHRange' is only available in Debug builds.");
+            }
+            return _jitInlineMethodsWithEHRange;
+        }
+    }
+    public unsafe byte* JitOptimizeAwaitRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitOptimizeAwaitRange' is only available in Debug builds.");
+            }
+            return _jitOptimizeAwaitRange;
+        }
+    }
+    public int JitAwaitHashBreak
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitAwaitHashBreak' is only available in Debug builds.");
+            }
+            return _jitAwaitHashBreak;
+        }
+    }
     public int JitMinOptsCodeSize => _jitMinOptsCodeSize;
     public int JitMinOptsInstrCount => _jitMinOptsInstrCount;
     public int JitMinOptsLvNumCount => _jitMinOptsLvNumCount;
@@ -652,18 +692,54 @@ public partial struct JitConfigValues
     public int JitDumpBeforeAfterMorph => _jitDumpBeforeAfterMorph;
     public int JitDumpTerseNextBlock => _jitDumpTerseNextBlock;
     public MethodSet JitEHDump => _jitEHDump;
-    public MethodSet JitExclude => _jitExclude;
+#endif
+    public MethodSet JitExclude
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitExclude' is only available in Debug builds.");
+            }
+            return _jitExclude;
+        }
+    }
+#if DEBUG
     public int JitFakeProcedureSplitting => _jitFakeProcedureSplitting;
     public MethodSet JitForceProcedureSplitting => _jitForceProcedureSplitting;
     public MethodSet JitGCDump => _jitGCDump;
     public MethodSet JitDebugDump => _jitDebugDump;
     public MethodSet JitHalt => _jitHalt;
-    public MethodSet JitInclude => _jitInclude;
+#endif
+    public MethodSet JitInclude
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInclude' is only available in Debug builds.");
+            }
+            return _jitInclude;
+        }
+    }
+#if DEBUG
     public MethodSet JitLateDisasm => _jitLateDisasm;
     public unsafe byte* JitLateDisasmTo => _jitLateDisasmTo;
     public MethodSet JitNoProcedureSplitting => _jitNoProcedureSplitting;
     public MethodSet JitNoProcedureSplittingEH => _jitNoProcedureSplittingEH;
-    public MethodSet JitStressOnly => _jitStressOnly;
+#endif
+    public MethodSet JitStressOnly
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitStressOnly' is only available in Debug builds.");
+            }
+            return _jitStressOnly;
+        }
+    }
+#if DEBUG
     public MethodSet JitUnwindDump => _jitUnwindDump;
     public MethodSet JitDumpFg => _jitDumpFg;
     public int JitDumpFgHash => _jitDumpFgHash;
@@ -681,12 +757,36 @@ public partial struct JitConfigValues
     public int JitDumpFgLoopFlags => _jitDumpFgLoopFlags;
     public int JitDumpFgBlockOrder => _jitDumpFgBlockOrder;
     public int JitDumpFgMemorySsa => _jitDumpFgMemorySsa;
-    public unsafe byte* JitRange => _jitRange;
+#endif
+    public unsafe byte* JitRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitRange' is only available in Debug builds.");
+            }
+            return _jitRange;
+        }
+    }
+#if DEBUG
     public unsafe byte* JitStressModeNames => _jitStressModeNames;
     public int JitStressModeNamesOnly => _jitStressModeNamesOnly;
     public unsafe byte* JitStressModeNamesAllow => _jitStressModeNamesAllow;
     public unsafe byte* JitStressModeNamesNot => _jitStressModeNamesNot;
-    public unsafe byte* JitStressRange => _jitStressRange;
+#endif
+    public unsafe byte* JitStressRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitStressRange' is only available in Debug builds.");
+            }
+            return _jitStressRange;
+        }
+    }
+#if DEBUG
     public MethodSet JitEmitUnitTests => _jitEmitUnitTests;
     public unsafe byte* JitEmitUnitTestsSections => _jitEmitUnitTestsSections;
 #endif
@@ -815,23 +915,125 @@ public partial struct JitConfigValues
     public int JitDoRangeAnalysis => _jitDoRangeAnalysis;
     public int JitDoVNBasedDeadStoreRemoval => _jitDoVNBasedDeadStoreRemoval;
     public int JitDoRedundantBranchOpts => _jitDoRedundantBranchOpts;
-    public unsafe byte* JitEnableRboRange => _jitEnableRboRange;
-    public unsafe byte* JitEnableHeadTailMergeRange => _jitEnableHeadTailMergeRange;
-    public unsafe byte* JitEnableVNBasedDeadStoreRemovalRange => _jitEnableVNBasedDeadStoreRemovalRange;
-    public unsafe byte* JitEnableEarlyLivenessRange => _jitEnableEarlyLivenessRange;
-    public unsafe byte* JitOnlyOptimizeRange => _jitOnlyOptimizeRange;
-    public unsafe byte* JitEnablePhysicalPromotionRange => _jitEnablePhysicalPromotionRange;
-    public unsafe byte* JitEnableCrossBlockLocalAssertionPropRange => _jitEnableCrossBlockLocalAssertionPropRange;
-    public unsafe byte* JitEnableInductionVariableOptsRange => _jitEnableInductionVariableOptsRange;
-    public unsafe byte* JitEnableLocalAddrPropagationRange => _jitEnableLocalAddrPropagationRange;
+#endif
+    public unsafe byte* JitEnableRboRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableRboRange' is only available in Debug builds.");
+            }
+            return _jitEnableRboRange;
+        }
+    }
+    public unsafe byte* JitEnableHeadTailMergeRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableHeadTailMergeRange' is only available in Debug builds.");
+            }
+            return _jitEnableHeadTailMergeRange;
+        }
+    }
+    public unsafe byte* JitEnableVNBasedDeadStoreRemovalRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableVNBasedDeadStoreRemovalRange' is only available in Debug builds.");
+            }
+            return _jitEnableVNBasedDeadStoreRemovalRange;
+        }
+    }
+    public unsafe byte* JitEnableEarlyLivenessRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableEarlyLivenessRange' is only available in Debug builds.");
+            }
+            return _jitEnableEarlyLivenessRange;
+        }
+    }
+    public unsafe byte* JitOnlyOptimizeRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitOnlyOptimizeRange' is only available in Debug builds.");
+            }
+            return _jitOnlyOptimizeRange;
+        }
+    }
+    public unsafe byte* JitEnablePhysicalPromotionRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnablePhysicalPromotionRange' is only available in Debug builds.");
+            }
+            return _jitEnablePhysicalPromotionRange;
+        }
+    }
+    public unsafe byte* JitEnableCrossBlockLocalAssertionPropRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableCrossBlockLocalAssertionPropRange' is only available in Debug builds.");
+            }
+            return _jitEnableCrossBlockLocalAssertionPropRange;
+        }
+    }
+    public unsafe byte* JitEnableInductionVariableOptsRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableInductionVariableOptsRange' is only available in Debug builds.");
+            }
+            return _jitEnableInductionVariableOptsRange;
+        }
+    }
+    public unsafe byte* JitEnableLocalAddrPropagationRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableLocalAddrPropagationRange' is only available in Debug builds.");
+            }
+            return _jitEnableLocalAddrPropagationRange;
+        }
+    }
+#if OPT_CONFIG
     public int JitDoSsa => _jitDoSsa;
     public int JitDoValueNumber => _jitDoValueNumber;
-    public unsafe byte* JitOptRepeatRange => _jitOptRepeatRange;
+#endif
+    public unsafe byte* JitOptRepeatRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitOptRepeatRange' is only available in Debug builds.");
+            }
+            return _jitOptRepeatRange;
+        }
+    }
+#if OPT_CONFIG
     public int JitDoIfConversion => _jitDoIfConversion;
     public int JitDoOptimizeMaskConversions => _jitDoOptimizeMaskConversions;
     public int JitOptimizeAwait => _jitOptimizeAwait;
-    public unsafe byte* JitAsyncDefaultValueAnalysisRange => _jitAsyncDefaultValueAnalysisRange;
-    public unsafe byte* JitAsyncPreservedValueAnalysisRange => _jitAsyncPreservedValueAnalysisRange;
 #endif
     public int JitAsyncInlining => _jitAsyncInlining;
     public int JitEnableOptRepeat => _jitEnableOptRepeat;
@@ -971,7 +1173,6 @@ public partial struct JitConfigValues
     public int JitGuardedDevirtualizationChainLikelihood => _jitGuardedDevirtualizationChainLikelihood;
     public int JitGuardedDevirtualizationChainStatements => _jitGuardedDevirtualizationChainStatements;
 #if DEBUG
-    public unsafe byte* JitGuardedDevirtualizationRange => _jitGuardedDevirtualizationRange;
     public int JitRandomGuardedDevirtualization => _jitRandomGuardedDevirtualization;
 #endif
     public int TC_OnStackReplacement => _tC_OnStackReplacement;
@@ -984,8 +1185,6 @@ public partial struct JitConfigValues
 #if DEBUG
     public int JitRandomOnStackReplacement => _jitRandomOnStackReplacement;
     public int JitOffsetOnStackReplacement => _jitOffsetOnStackReplacement;
-    public unsafe byte* JitEnableOsrRange => _jitEnableOsrRange;
-    public unsafe byte* JitEnablePatchpointRange => _jitEnablePatchpointRange;
 #endif
     public int JitInterlockedProfiling => _jitInterlockedProfiling;
     public int JitScalableProfiling => _jitScalableProfiling;
@@ -1000,14 +1199,31 @@ public partial struct JitConfigValues
     public int JitVTableProfiling => _jitVTableProfiling;
     public int JitEdgeProfiling => _jitEdgeProfiling;
     public int JitCollect64BitCounts => _jitCollect64BitCounts;
-#if DEBUG
-    public int JitInstrumentIfOptimizing => _jitInstrumentIfOptimizing;
-    public unsafe byte* JitInstrumentIfOptimizingRange => _jitInstrumentIfOptimizingRange;
-#endif
+    public int JitInstrumentIfOptimizing
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInstrumentIfOptimizing' is only available in Debug builds.");
+            }
+            return _jitInstrumentIfOptimizing;
+        }
+    }
+    public unsafe byte* JitInstrumentIfOptimizingRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitInstrumentIfOptimizingRange' is only available in Debug builds.");
+            }
+            return _jitInstrumentIfOptimizingRange;
+        }
+    }
     public int JitInstrumentInlinees => _jitInstrumentInlinees;
     public int JitDisablePGO => _jitDisablePGO;
 #if DEBUG
-    public unsafe byte* JitEnablePGORange => _jitEnablePGORange;
     public int JitRandomEdgeCounts => _jitRandomEdgeCounts;
     public int JitCrossCheckDevirtualizationAndPGO => _jitCrossCheckDevirtualizationAndPGO;
     public int JitNoteFailedExactDevirtualization => _jitNoteFailedExactDevirtualization;
@@ -1033,6 +1249,28 @@ public partial struct JitConfigValues
 #endif
 #if DEBUG
     public int JitSaveFpLrWithCalleeSavedRegisters => _jitSaveFpLrWithCalleeSavedRegisters;
+    public unsafe byte* JitAsyncDefaultValueAnalysisRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitAsyncDefaultValueAnalysisRange' is only available in Debug builds.");
+            }
+            return _jitAsyncDefaultValueAnalysisRange;
+        }
+    }
+    public unsafe byte* JitAsyncPreservedValueAnalysisRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitAsyncPreservedValueAnalysisRange' is only available in Debug builds.");
+            }
+            return _jitAsyncPreservedValueAnalysisRange;
+        }
+    }
 #endif
 #if DEBUG
     public int JitUseScalableVectorT => _jitUseScalableVectorT;
@@ -1040,9 +1278,17 @@ public partial struct JitConfigValues
 #if DEBUG
     public int JitDispIns => _jitDispIns;
 #endif
-#if DEBUG
-    public unsafe byte* JitR2RUnsupportedRange => _jitR2RUnsupportedRange;
-#endif
+    public unsafe byte* JitR2RUnsupportedRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitR2RUnsupportedRange' is only available in Debug builds.");
+            }
+            return _jitR2RUnsupportedRange;
+        }
+    }
     public int JitWasmFunclets => _jitWasmFunclets;
     public int JitEnregStructLocals => _jitEnregStructLocals;
 
@@ -1110,9 +1356,14 @@ public partial struct JitConfigValues
         // _jitInlineBudget = unchecked((int)(0xCDCDCDCD));
         // _jitForceInlineDepth = unchecked((int)(0xCDCDCDCD));
         // _jitInlineMethodsWithEH = unchecked((int)(0xCDCDCDCD));
-#if DEBUG
-        jitHost->freeStringConfigValue(_jitInlineMethodsWithEHRange);
-        jitHost->freeStringConfigValue(_jitOptimizeAwaitRange);
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitInlineMethodsWithEHRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitOptimizeAwaitRange);
+        }
         // _jitAwaitHashBreak = unchecked((int)(0xCDCDCDCD));
         // _jitLongAddress = unchecked((int)(0xCDCDCDCD));
         // _jitMaxUncheckedOffset = unchecked((int)(0xCDCDCDCD));
@@ -1179,22 +1430,70 @@ public partial struct JitConfigValues
         // _jitDumpToDebugger = unchecked((int)(0xCDCDCDCD));
         // _jitDumpVerboseSsa = unchecked((int)(0xCDCDCDCD));
         // _jitDumpVerboseTrees = unchecked((int)(0xCDCDCDCD));
+    public unsafe byte* JitGuardedDevirtualizationRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitGuardedDevirtualizationRange' is only available in Debug builds.");
+            }
+            return _jitGuardedDevirtualizationRange;
+        }
+    }
         // _jitDumpTreeIDs = unchecked((int)(0xCDCDCDCD));
         // _jitDumpBeforeAfterMorph = unchecked((int)(0xCDCDCDCD));
         // _jitDumpTerseNextBlock = unchecked((int)(0xCDCDCDCD));
         _jitEHDump.destroy(jitHost);
-        _jitExclude.destroy(jitHost);
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitExclude.destroy(jitHost);
+        }
+#if DEBUG
         // _jitFakeProcedureSplitting = unchecked((int)(0xCDCDCDCD));
         _jitForceProcedureSplitting.destroy(jitHost);
         _jitGCDump.destroy(jitHost);
         _jitDebugDump.destroy(jitHost);
         _jitHalt.destroy(jitHost);
-        _jitInclude.destroy(jitHost);
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitInclude.destroy(jitHost);
+        }
+#if DEBUG
         _jitLateDisasm.destroy(jitHost);
+    public unsafe byte* JitEnableOsrRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnableOsrRange' is only available in Debug builds.");
+            }
+            return _jitEnableOsrRange;
+        }
+    }
+    public unsafe byte* JitEnablePatchpointRange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnablePatchpointRange' is only available in Debug builds.");
+            }
+            return _jitEnablePatchpointRange;
+        }
+    }
         jitHost->freeStringConfigValue(_jitLateDisasmTo);
         _jitNoProcedureSplitting.destroy(jitHost);
         _jitNoProcedureSplittingEH.destroy(jitHost);
-        _jitStressOnly.destroy(jitHost);
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitStressOnly.destroy(jitHost);
+        }
+#if DEBUG
         _jitUnwindDump.destroy(jitHost);
         _jitDumpFg.destroy(jitHost);
         // _jitDumpFgHash = unchecked((int)(0xCDCDCDCD));
@@ -1212,12 +1511,22 @@ public partial struct JitConfigValues
         // _jitDumpFgLoopFlags = unchecked((int)(0xCDCDCDCD));
         // _jitDumpFgBlockOrder = unchecked((int)(0xCDCDCDCD));
         // _jitDumpFgMemorySsa = unchecked((int)(0xCDCDCDCD));
-        jitHost->freeStringConfigValue(_jitRange);
+#endif
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitRange);
+        }
+#if DEBUG
         jitHost->freeStringConfigValue(_jitStressModeNames);
         // _jitStressModeNamesOnly = unchecked((int)(0xCDCDCDCD));
         jitHost->freeStringConfigValue(_jitStressModeNamesAllow);
         jitHost->freeStringConfigValue(_jitStressModeNamesNot);
-        jitHost->freeStringConfigValue(_jitStressRange);
+#endif
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitStressRange);
+        }
+#if DEBUG
         _jitEmitUnitTests.destroy(jitHost);
         jitHost->freeStringConfigValue(_jitEmitUnitTestsSections);
 #endif
@@ -1253,6 +1562,17 @@ public partial struct JitConfigValues
 #endif
         if (Configuration.TARGET_AMD64 || Configuration.TARGET_X86)
         {
+    public unsafe byte* JitEnablePGORange
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("JIT config value 'JitEnablePGORange' is only available in Debug builds.");
+            }
+            return _jitEnablePGORange;
+        }
+    }
 #if DEBUG
             // _jitStressEvexEncoding = unchecked((int)(0xCDCDCDCD));
 #endif
@@ -1368,23 +1688,56 @@ public partial struct JitConfigValues
         // _jitDoRangeAnalysis = unchecked((int)(0xCDCDCDCD));
         // _jitDoVNBasedDeadStoreRemoval = unchecked((int)(0xCDCDCDCD));
         // _jitDoRedundantBranchOpts = unchecked((int)(0xCDCDCDCD));
-        jitHost->freeStringConfigValue(_jitEnableRboRange);
-        jitHost->freeStringConfigValue(_jitEnableHeadTailMergeRange);
-        jitHost->freeStringConfigValue(_jitEnableVNBasedDeadStoreRemovalRange);
-        jitHost->freeStringConfigValue(_jitEnableEarlyLivenessRange);
-        jitHost->freeStringConfigValue(_jitOnlyOptimizeRange);
-        jitHost->freeStringConfigValue(_jitEnablePhysicalPromotionRange);
-        jitHost->freeStringConfigValue(_jitEnableCrossBlockLocalAssertionPropRange);
-        jitHost->freeStringConfigValue(_jitEnableInductionVariableOptsRange);
-        jitHost->freeStringConfigValue(_jitEnableLocalAddrPropagationRange);
+#endif
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableRboRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableHeadTailMergeRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableVNBasedDeadStoreRemovalRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableEarlyLivenessRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitOnlyOptimizeRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnablePhysicalPromotionRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableCrossBlockLocalAssertionPropRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableInductionVariableOptsRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableLocalAddrPropagationRange);
+#if DEBUG
+        }
+#if OPT_CONFIG
         // _jitDoSsa = unchecked((int)(0xCDCDCDCD));
         // _jitDoValueNumber = unchecked((int)(0xCDCDCDCD));
-        jitHost->freeStringConfigValue(_jitOptRepeatRange);
+#endif
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitOptRepeatRange);
+        }
+#if OPT_CONFIG
         // _jitDoIfConversion = unchecked((int)(0xCDCDCDCD));
         // _jitDoOptimizeMaskConversions = unchecked((int)(0xCDCDCDCD));
         // _jitOptimizeAwait = unchecked((int)(0xCDCDCDCD));
-        jitHost->freeStringConfigValue(_jitAsyncDefaultValueAnalysisRange);
-        jitHost->freeStringConfigValue(_jitAsyncPreservedValueAnalysisRange);
 #endif
         // _jitAsyncInlining = unchecked((int)(0xCDCDCDCD));
         // _jitEnableOptRepeat = unchecked((int)(0xCDCDCDCD));
@@ -1414,7 +1767,9 @@ public partial struct JitConfigValues
         // _jitInlinePolicyDiscretionary = unchecked((int)(0xCDCDCDCD));
 #endif
         // _jitInlinePolicyFull = unchecked((int)(0xCDCDCDCD));
+#endif
         // _jitInlinePolicySize = unchecked((int)(0xCDCDCDCD));
+#if DEBUG
 #if DEBUG
         // _jitInlinePolicyRandom = unchecked((int)(0xCDCDCDCD));
         // _jitInlinePolicyReplay = unchecked((int)(0xCDCDCDCD));
@@ -1440,7 +1795,9 @@ public partial struct JitConfigValues
         // _jitObjectStackAllocation = unchecked((int)(0xCDCDCDCD));
         // _jitObjectStackAllocationRefClass = unchecked((int)(0xCDCDCDCD));
         // _jitObjectStackAllocationBoxedValueClass = unchecked((int)(0xCDCDCDCD));
+#endif
         // _jitObjectStackAllocationConditionalEscape = unchecked((int)(0xCDCDCDCD));
+#if DEBUG
 #if DEBUG
         jitHost->freeStringConfigValue(_jitObjectStackAllocationConditionalEscapeRange);
 #endif
@@ -1464,7 +1821,6 @@ public partial struct JitConfigValues
         // _jitGuardedDevirtualizationChainLikelihood = unchecked((int)(0xCDCDCDCD));
         // _jitGuardedDevirtualizationChainStatements = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
-        jitHost->freeStringConfigValue(_jitGuardedDevirtualizationRange);
         // _jitRandomGuardedDevirtualization = unchecked((int)(0xCDCDCDCD));
 #endif
         // _tC_OnStackReplacement = unchecked((int)(0xCDCDCDCD));
@@ -1477,8 +1833,6 @@ public partial struct JitConfigValues
 #if DEBUG
         // _jitRandomOnStackReplacement = unchecked((int)(0xCDCDCDCD));
         // _jitOffsetOnStackReplacement = unchecked((int)(0xCDCDCDCD));
-        jitHost->freeStringConfigValue(_jitEnableOsrRange);
-        jitHost->freeStringConfigValue(_jitEnablePatchpointRange);
 #endif
         // _jitInterlockedProfiling = unchecked((int)(0xCDCDCDCD));
         // _jitScalableProfiling = unchecked((int)(0xCDCDCDCD));
@@ -1495,12 +1849,13 @@ public partial struct JitConfigValues
         // _jitCollect64BitCounts = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
         // _jitInstrumentIfOptimizing = unchecked((int)(0xCDCDCDCD));
-        jitHost->freeStringConfigValue(_jitInstrumentIfOptimizingRange);
-#endif
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitInstrumentIfOptimizingRange);
+        }
         // _jitInstrumentInlinees = unchecked((int)(0xCDCDCDCD));
         // _jitDisablePGO = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
-        jitHost->freeStringConfigValue(_jitEnablePGORange);
         // _jitRandomEdgeCounts = unchecked((int)(0xCDCDCDCD));
         // _jitCrossCheckDevirtualizationAndPGO = unchecked((int)(0xCDCDCDCD));
         // _jitNoteFailedExactDevirtualization = unchecked((int)(0xCDCDCDCD));
@@ -1541,9 +1896,10 @@ public partial struct JitConfigValues
         }
         if (Configuration.TARGET_WASM)
         {
-#if DEBUG
-            jitHost->freeStringConfigValue(_jitR2RUnsupportedRange);
-#endif
+            if (Configuration.DEBUG)
+            {
+                jitHost->freeStringConfigValue(_jitR2RUnsupportedRange);
+            }
             // _jitWasmFunclets = unchecked((int)(0xCDCDCDCD));
         }
         // _jitEnregStructLocals = unchecked((int)(0xCDCDCDCD));
@@ -1624,9 +1980,6 @@ public partial struct JitConfigValues
         }
         _jitInlineMethodsWithEH = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineMethodsWithEH"u8))), 1);
 #if DEBUG
-        _jitInlineMethodsWithEHRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineMethodsWithEHRange"u8))));
-        _jitOptimizeAwaitRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptimizeAwaitRange"u8))));
-        _jitAwaitHashBreak = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAwaitHashBreak"u8))), -1);
         _jitLongAddress = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLongAddress"u8))), 0);
         _jitMaxUncheckedOffset = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMaxUncheckedOffset"u8))), 8);
 #endif
@@ -1708,8 +2061,13 @@ public partial struct JitConfigValues
         _jitDumpTerseNextBlock = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpTerseNextBlock"u8))), 0);
         var jitEHDumpValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEHDump"u8))));
         _jitEHDump = new MethodSet(jitEHDumpValue, jitHost);
-        var jitExcludeValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExclude"u8))));
-        _jitExclude = new MethodSet(jitExcludeValue, jitHost);
+#endif
+        if (Configuration.DEBUG)
+        {
+            var jitExcludeValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitExclude"u8))));
+            _jitExclude = new MethodSet(jitExcludeValue, jitHost);
+        }
+#if DEBUG
         _jitFakeProcedureSplitting = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitFakeProcedureSplitting"u8))), 0);
         var jitForceProcedureSplittingValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitForceProcedureSplitting"u8))));
         _jitForceProcedureSplitting = new MethodSet(jitForceProcedureSplittingValue, jitHost);
@@ -1719,8 +2077,13 @@ public partial struct JitConfigValues
         _jitDebugDump = new MethodSet(jitDebugDumpValue, jitHost);
         var jitHaltValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitHalt"u8))));
         _jitHalt = new MethodSet(jitHaltValue, jitHost);
-        var jitIncludeValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInclude"u8))));
-        _jitInclude = new MethodSet(jitIncludeValue, jitHost);
+#endif
+        if (Configuration.DEBUG)
+        {
+            var jitIncludeValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInclude"u8))));
+            _jitInclude = new MethodSet(jitIncludeValue, jitHost);
+        }
+#if DEBUG
         var jitLateDisasmValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLateDisasm"u8))));
         _jitLateDisasm = new MethodSet(jitLateDisasmValue, jitHost);
         _jitLateDisasmTo = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLateDisasmTo"u8))));
@@ -1728,8 +2091,13 @@ public partial struct JitConfigValues
         _jitNoProcedureSplitting = new MethodSet(jitNoProcedureSplittingValue, jitHost);
         var jitNoProcedureSplittingEHValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoProcedureSplittingEH"u8))));
         _jitNoProcedureSplittingEH = new MethodSet(jitNoProcedureSplittingEHValue, jitHost);
-        var jitStressOnlyValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressOnly"u8))));
-        _jitStressOnly = new MethodSet(jitStressOnlyValue, jitHost);
+#endif
+        if (Configuration.DEBUG)
+        {
+            var jitStressOnlyValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressOnly"u8))));
+            _jitStressOnly = new MethodSet(jitStressOnlyValue, jitHost);
+        }
+#if DEBUG
         var jitUnwindDumpValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUnwindDump"u8))));
         _jitUnwindDump = new MethodSet(jitUnwindDumpValue, jitHost);
         var jitDumpFgValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpFg"u8))));
@@ -1749,12 +2117,30 @@ public partial struct JitConfigValues
         _jitDumpFgLoopFlags = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpFgLoopFlags"u8))), 0);
         _jitDumpFgBlockOrder = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpFgBlockOrder"u8))), 0);
         _jitDumpFgMemorySsa = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDumpFgMemorySsa"u8))), 0);
-        _jitRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRange"u8))));
+#endif
+        if (Configuration.DEBUG)
+        {
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitAsyncDefaultValueAnalysisRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitAsyncPreservedValueAnalysisRange);
+        }
+            _jitRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRange"u8))));
+        }
+#if DEBUG
         _jitStressModeNames = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressModeNames"u8))));
         _jitStressModeNamesOnly = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressModeNamesOnly"u8))), 0);
         _jitStressModeNamesAllow = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressModeNamesAllow"u8))));
         _jitStressModeNamesNot = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressModeNamesNot"u8))));
-        _jitStressRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressRange"u8))));
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitStressRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressRange"u8))));
+        }
+#if DEBUG
         var jitEmitUnitTestsValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEmitUnitTests"u8))));
         _jitEmitUnitTests = new MethodSet(jitEmitUnitTestsValue, jitHost);
         _jitEmitUnitTestsSections = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEmitUnitTestsSections"u8))));
@@ -1784,6 +2170,7 @@ public partial struct JitConfigValues
             _jitAlignLoops = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAlignLoops"u8))), 1);
         }
         else
+#endif
         {
             _jitAlignLoops = 0;
         }
@@ -1795,7 +2182,6 @@ public partial struct JitConfigValues
 #if DEBUG
         _jitStressRex2Encoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressRex2Encoding"u8))), 0);
         _jitStressPromotedEvexEncoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressPromotedEvexEncoding"u8))), 0);
-#endif
 #endif
         if (Configuration.TARGET_AMD64 || Configuration.TARGET_X86)
         {
@@ -1827,6 +2213,10 @@ public partial struct JitConfigValues
             _enableAVXIFMA = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXIFMA"u8))), 1);
             _enableAVXVNNI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXVNNI"u8))), 1);
             _enableAVXVNNIINT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXVNNIINT"u8))), 1);
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitGuardedDevirtualizationRange);
+        }
             _enableGFNI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableGFNI"u8))), 1);
             _enableSHA = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableSHA"u8))), 1);
             _enableVAES = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableVAES"u8))), 1);
@@ -1842,6 +2232,14 @@ public partial struct JitConfigValues
             _enableArm64Dczva = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Dczva"u8))), 1);
             _enableArm64Dp = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Dp"u8))), 1);
             _enableArm64Fp16 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Fp16"u8))), 1);
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnableOsrRange);
+        }
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnablePatchpointRange);
+        }
             _enableArm64Rdm = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Rdm"u8))), 1);
             _enableArm64Sha1 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha1"u8))), 1);
             _enableArm64Sha256 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha256"u8))), 1);
@@ -1872,9 +2270,12 @@ public partial struct JitConfigValues
             _jitDisableSimdVN = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisableSimdVN"u8))), 0);
         }
         _jitConstCSE = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitConstCSE"u8))), CONST_CSE_ENABLE_ARM_RISCV64);
+        if (Configuration.DEBUG)
+        {
+            jitHost->freeStringConfigValue(_jitEnablePGORange);
+        }
         _jitRLCSEGreedy = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRLCSEGreedy"u8))), 0);
         _jitRLCSEVerbose = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRLCSEVerbose"u8))), 0);
-#if DEBUG
         _jitCSEHash = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCSEHash"u8))), -1);
         _jitCSEMask = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCSEMask"u8))), 0);
         _jitMetrics = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMetrics"u8))), 0);
@@ -1894,7 +2295,6 @@ public partial struct JitConfigValues
         _jitEnableNoWayAssert = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableNoWayAssert"u8))), 1);
 #endif
         _displayMemStats = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMemStats"u8))), 0);
-#if DEBUG
         _jitEnregStats = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnregStats"u8))), 0);
 #endif
         _jitAggressiveInlining = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAggressiveInlining"u8))), 0);
@@ -1908,29 +2308,60 @@ public partial struct JitConfigValues
         _jitDoEarlyProp = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoEarlyProp"u8))), 1);
         _jitDoLoopHoisting = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoLoopHoisting"u8))), 1);
         _jitDoLoopInversion = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoLoopInversion"u8))), 1);
-#endif
         _jitLoopInversionSizeLimit = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLoopInversionSizeLimit"u8))), 100);
 #if OPT_CONFIG
         _jitDoRangeAnalysis = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoRangeAnalysis"u8))), 1);
         _jitDoVNBasedDeadStoreRemoval = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoVNBasedDeadStoreRemoval"u8))), 1);
         _jitDoRedundantBranchOpts = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoRedundantBranchOpts"u8))), 1);
-        _jitEnableRboRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableRboRange"u8))));
-        _jitEnableHeadTailMergeRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableHeadTailMergeRange"u8))));
-        _jitEnableVNBasedDeadStoreRemovalRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableVNBasedDeadStoreRemovalRange"u8))));
-        _jitEnableEarlyLivenessRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableEarlyLivenessRange"u8))));
-        _jitOnlyOptimizeRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOnlyOptimizeRange"u8))));
-        _jitEnablePhysicalPromotionRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePhysicalPromotionRange"u8))));
-        _jitEnableCrossBlockLocalAssertionPropRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableCrossBlockLocalAssertionPropRange"u8))));
-        _jitEnableInductionVariableOptsRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableInductionVariableOptsRange"u8))));
-        _jitEnableLocalAddrPropagationRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableLocalAddrPropagationRange"u8))));
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitEnableRboRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableRboRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableHeadTailMergeRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableHeadTailMergeRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableVNBasedDeadStoreRemovalRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableVNBasedDeadStoreRemovalRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableEarlyLivenessRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableEarlyLivenessRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitOnlyOptimizeRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOnlyOptimizeRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnablePhysicalPromotionRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePhysicalPromotionRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableCrossBlockLocalAssertionPropRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableCrossBlockLocalAssertionPropRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableInductionVariableOptsRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableInductionVariableOptsRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableLocalAddrPropagationRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableLocalAddrPropagationRange"u8))));
+        }
+#if OPT_CONFIG
         _jitDoSsa = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoSsa"u8))), 1);
         _jitDoValueNumber = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoValueNumber"u8))), 1);
-        _jitOptRepeatRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptRepeatRange"u8))));
+#endif
+        if (Configuration.DEBUG)
+        {
+            _jitOptRepeatRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptRepeatRange"u8))));
+        }
+#if OPT_CONFIG
         _jitDoIfConversion = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoIfConversion"u8))), 1);
         _jitDoOptimizeMaskConversions = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDoOptimizeMaskConversions"u8))), 1);
         _jitOptimizeAwait = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptimizeAwait"u8))), 1);
-        _jitAsyncDefaultValueAnalysisRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAsyncDefaultValueAnalysisRange"u8))));
-        _jitAsyncPreservedValueAnalysisRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAsyncPreservedValueAnalysisRange"u8))));
 #endif
         _jitAsyncInlining = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAsyncInlining"u8))), 1);
         _jitEnableOptRepeat = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableOptRepeat"u8))), 1);
@@ -1965,6 +2396,18 @@ public partial struct JitConfigValues
         if (Configuration.DEBUG)
         {
             _jitInlinePolicyFull = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlinePolicyFull"u8))), 0);
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitInlineMethodsWithEHRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInlineMethodsWithEHRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitOptimizeAwaitRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOptimizeAwaitRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitAwaitHashBreak = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAwaitHashBreak"u8))), -1);
         }
         if (Configuration.DEBUG)
         {
@@ -2031,7 +2474,6 @@ public partial struct JitConfigValues
         _jitGuardedDevirtualizationChainLikelihood = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGuardedDevirtualizationChainLikelihood"u8))), 0x4B);
         _jitGuardedDevirtualizationChainStatements = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGuardedDevirtualizationChainStatements"u8))), 1);
 #if DEBUG
-        _jitGuardedDevirtualizationRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGuardedDevirtualizationRange"u8))));
         _jitRandomGuardedDevirtualization = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRandomGuardedDevirtualization"u8))), 0);
 #endif
         _tC_OnStackReplacement = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("TC_OnStackReplacement"u8))), Configuration.FEATURE_ON_STACK_REPLACEMENT ? 1 : 0);
@@ -2044,8 +2486,6 @@ public partial struct JitConfigValues
 #if DEBUG
         _jitRandomOnStackReplacement = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRandomOnStackReplacement"u8))), 0);
         _jitOffsetOnStackReplacement = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitOffsetOnStackReplacement"u8))), -1);
-        _jitEnableOsrRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableOsrRange"u8))));
-        _jitEnablePatchpointRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePatchpointRange"u8))));
 #endif
         _jitInterlockedProfiling = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInterlockedProfiling"u8))), 0);
         _jitScalableProfiling = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitScalableProfiling"u8))), 1);
@@ -2060,14 +2500,17 @@ public partial struct JitConfigValues
         _jitVTableProfiling = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitVTableProfiling"u8))), 0);
         _jitEdgeProfiling = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEdgeProfiling"u8))), 1);
         _jitCollect64BitCounts = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCollect64BitCounts"u8))), 0);
-#if DEBUG
-        _jitInstrumentIfOptimizing = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInstrumentIfOptimizing"u8))), 0);
-        _jitInstrumentIfOptimizingRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInstrumentIfOptimizingRange"u8))));
-#endif
+        if (Configuration.DEBUG)
+        {
+            _jitInstrumentIfOptimizing = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInstrumentIfOptimizing"u8))), 0);
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitInstrumentIfOptimizingRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInstrumentIfOptimizingRange"u8))));
+        }
         _jitInstrumentInlinees = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitInstrumentInlinees"u8))), 1);
         _jitDisablePGO = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisablePGO"u8))), 0);
 #if DEBUG
-        _jitEnablePGORange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePGORange"u8))));
         _jitRandomEdgeCounts = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRandomEdgeCounts"u8))), 0);
         _jitCrossCheckDevirtualizationAndPGO = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitCrossCheckDevirtualizationAndPGO"u8))), 0);
         _jitNoteFailedExactDevirtualization = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitNoteFailedExactDevirtualization"u8))), 0);
@@ -2109,12 +2552,36 @@ public partial struct JitConfigValues
         }
         if (Configuration.TARGET_WASM)
         {
-#if DEBUG
-            _jitR2RUnsupportedRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitR2RUnsupportedRange"u8))));
-#endif
+            if (Configuration.DEBUG)
+            {
+                _jitR2RUnsupportedRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitR2RUnsupportedRange"u8))));
+            }
             _jitWasmFunclets = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 1);
         }
         _jitEnregStructLocals = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnregStructLocals"u8))), 1);
         _isInitialized = true;
     }
-}
+}        if (Configuration.DEBUG)
+        {
+            _jitEnablePGORange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePGORange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnableOsrRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableOsrRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitEnablePatchpointRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnablePatchpointRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitGuardedDevirtualizationRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGuardedDevirtualizationRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitAsyncDefaultValueAnalysisRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAsyncDefaultValueAnalysisRange"u8))));
+        }
+        if (Configuration.DEBUG)
+        {
+            _jitAsyncPreservedValueAnalysisRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAsyncPreservedValueAnalysisRange"u8))));
+        }

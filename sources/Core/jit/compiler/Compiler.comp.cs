@@ -104,11 +104,11 @@ public partial class Compiler
 
     // NOTE: These values are only reliable after the importing is completely finished.
 
+    public bool compAllowStress = true;
+
 #if DEBUG
     // State information - which phases have completed?
     // These are kept together for easy discoverability
-
-    public bool compAllowStress = true;
 
     public bool compCodeGenDone;
 
@@ -587,9 +587,7 @@ public partial class Compiler
     }
 #endif
 
-#if DEBUG
     private static ConfigMethodRange s_jitInstrumentIfOptimizingRange;
-#endif
 
     private static bool s_checkedForJitTimeLog;
 
@@ -1004,14 +1002,13 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG
-        if (!compIsForInlining)
+        if (Configuration.DEBUG && !compIsForInlining)
         {
             JitTls.LogEnv.Compiler = this;
         }
 
         // Have we been told to be more selective in our Jitting?
-        if (SkipMethod())
+        if (Configuration.DEBUG && SkipMethod())
         {
             methodCodePtr = null;
             methodCodeSize = 0;
@@ -1022,7 +1019,6 @@ public partial class Compiler
             }
             return CORJIT_SKIPPED;
         }
-#endif
 
         var result = CORJIT_INTERNALERROR;
 
@@ -1043,9 +1039,7 @@ public partial class Compiler
         return result;
     }
 
-#if DEBUG
     private static ConfigMethodRange s_jitEnableOsrRange;
-#endif
 
     /// <summary>Returns true if the jit supports having patchpoints in this method.</summary>
     public bool compCanHavePatchpoints() => compCanHavePatchpoints(out _);
@@ -1357,8 +1351,7 @@ public partial class Compiler
             {
                 var canEscapeViaOSR = compCanHavePatchpoints(out reason);
 
-#if DEBUG
-                if (canEscapeViaOSR)
+                if (Configuration.DEBUG && canEscapeViaOSR)
                 {
                     // Optionally disable OSR by method hash.
                     // This will force any method that might otherwise get trapped in Tier0 to be optimized.
@@ -1370,7 +1363,6 @@ public partial class Compiler
                         reason = "OSR disabled by JitEnableOsrRange";
                     }
                 }
-#endif
 
                 if (canEscapeViaOSR)
                 {
@@ -1397,8 +1389,7 @@ public partial class Compiler
 
         compSetOptimizationLevel();
 
-#if DEBUG
-        if ((JitConfig.JitInstrumentIfOptimizing != 0) && opts.OptimizationEnabled && !IsReadyToRun)
+        if (Configuration.DEBUG && (JitConfig.JitInstrumentIfOptimizing != 0) && opts.OptimizationEnabled && !IsReadyToRun)
         {
             // Optionally disable by range
             s_jitInstrumentIfOptimizingRange.EnsureInit(JitConfig.JitInstrumentIfOptimizingRange);
@@ -1409,7 +1400,6 @@ public partial class Compiler
                 opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
             }
         }
-#endif
 
         if ((JitConfig.JitDisasmOnlyOptimized != 0) && (!opts.OptimizationEnabled))
         {
@@ -1607,11 +1597,9 @@ public partial class Compiler
         return lookup;
     }
 
-#if DEBUG
     private static ConfigMethodRange s_jitEnablePgoRange;
     private static ConfigMethodRange s_jitInlineMethodsWithEHRange;
     private static ConfigMethodRange s_jitOptRepeatRange;
-#endif
 
     public unsafe void compInitOptions(JitFlags* jitFlags)
     {
@@ -1966,8 +1954,7 @@ public partial class Compiler
                 fgPgoDisabled = true;
                 fgPgoDynamic = false;
             }
-#if DEBUG
-            else
+            else if (Configuration.DEBUG)
             {
                 // Optionally, enable use of profile data for only some methods.
                 s_jitEnablePgoRange.EnsureInit(JitConfig.JitEnablePGORange);
@@ -1982,7 +1969,6 @@ public partial class Compiler
                     fgPgoDisabled = true;
                 }
             }
-#endif
 
             // A successful result implies a non-null fgPgoSchema
             if (SUCCEEDED(fgPgoQueryResult))
@@ -2018,12 +2004,13 @@ public partial class Compiler
 
         var enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH > 0;
 
-#if DEBUG
-        s_jitInlineMethodsWithEHRange.EnsureInit(JitConfig.JitInlineMethodsWithEHRange);
+        if (Configuration.DEBUG)
+        {
+            s_jitInlineMethodsWithEHRange.EnsureInit(JitConfig.JitInlineMethodsWithEHRange);
 
-        var inRange = s_jitInlineMethodsWithEHRange.Contains(impInlineRoot.info.compMethodHash());
-        enableInliningMethodsWithEH &= inRange;
-#endif
+            var inRange = s_jitInlineMethodsWithEHRange.Contains(impInlineRoot.info.compMethodHash());
+            enableInliningMethodsWithEH &= inRange;
+        }
 
         opts.compInlineMethodsWithEH = enableInliningMethodsWithEH;
 
@@ -2270,31 +2257,32 @@ public partial class Compiler
         }
         else if (JitConfig.JitEnableOptRepeat != 0)
         {
-#if DEBUG
-            // Opt-in to JitOptRepeat based on method hash ranges.
-            // The default is no JitOptRepeat.
-            s_jitOptRepeatRange.EnsureInit(JitConfig.JitOptRepeatRange);
-            assert(!s_jitOptRepeatRange.Error);
-
-            if (!s_jitOptRepeatRange.IsEmpty && s_jitOptRepeatRange.Contains(info.compMethodHash()))
+            if (Configuration.DEBUG)
             {
-                opts.optRepeat = true;
-                opts.optRepeatCount = JitConfig.JitOptRepeatCount;
+                // Opt-in to JitOptRepeat based on method hash ranges.
+                // The default is no JitOptRepeat.
+                s_jitOptRepeatRange.EnsureInit(JitConfig.JitOptRepeatRange);
+                assert(!s_jitOptRepeatRange.Error);
 
-                JITDUMP($"\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: {opts.optRepeatCount}\n\n");
+                if (!s_jitOptRepeatRange.IsEmpty && s_jitOptRepeatRange.Contains(info.compMethodHash()))
+                {
+                    opts.optRepeat = true;
+                    opts.optRepeatCount = JitConfig.JitOptRepeatCount;
+
+                    JITDUMP($"\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: {opts.optRepeatCount}\n\n");
+                }
+
+                if (!opts.optRepeat && compStressCompile(STRESS_OPT_REPEAT, 10))
+                {
+                    // Turn on optRepeat as part of JitStress.
+                    // In this case, decide how many iterations to do, from 2 to 5, based on a random number seeded by the method hash.
+
+                    opts.optRepeat = true;
+                    opts.optRepeatCount = new Random(info.compMethodHash()).Next(4) + 2; // generates [2..5]
+
+                    JITDUMP($"\n*************** JitOptRepeat for stress; repetition count: {opts.optRepeatCount}\n\n");
+                }
             }
-
-            if (!opts.optRepeat && compStressCompile(STRESS_OPT_REPEAT, 10))
-            {
-                // Turn on optRepeat as part of JitStress.
-                // In this case, decide how many iterations to do, from 2 to 5, based on a random number seeded by the method hash.
-
-                opts.optRepeat = true;
-                opts.optRepeatCount = new Random(info.compMethodHash()).Next(4) + 2; // generates [2..5]
-
-                JITDUMP($"\n*************** JitOptRepeat for stress; repetition count: {opts.optRepeatCount}\n\n");
-            }
-#endif
         }
 
 #if DEBUG
@@ -3121,9 +3109,7 @@ public partial class Compiler
     public bool compStressCompile(compStressArea stressArea, int weightPercentage) => false;
 #endif
 
-#if OPT_CONFIG
     private static ConfigMethodRange s_onlyOptimizeRange;
-#endif
 
     protected void compInitDebuggingInfo()
     {
@@ -4111,15 +4097,16 @@ public partial class Compiler
             }
         }
 
-#if OPT_CONFIG
-        s_onlyOptimizeRange.EnsureInit(JitConfig.JitOnlyOptimizeRange);
-
-        if (!theMinOptsValue && !s_onlyOptimizeRange.IsEmpty)
+        if (Configuration.DEBUG)
         {
-            var methHash = info.compMethodHash();
-            theMinOptsValue = !s_onlyOptimizeRange.Contains(methHash);
+            s_onlyOptimizeRange.EnsureInit(JitConfig.JitOnlyOptimizeRange);
+
+            if (!theMinOptsValue && !s_onlyOptimizeRange.IsEmpty)
+            {
+                var methHash = info.compMethodHash();
+                theMinOptsValue = !s_onlyOptimizeRange.Contains(methHash);
+            }
         }
-#endif
 
         if (compStressCompile(STRESS_MIN_OPTS, 5))
         {

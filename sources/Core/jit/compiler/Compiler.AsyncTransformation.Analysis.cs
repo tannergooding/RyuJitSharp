@@ -117,27 +117,27 @@ public partial class Compiler
 
     internal sealed class AsyncDefaultValueAnalysis(Compiler compiler)
     {
-#if DEBUG
         private static ConfigMethodRange s_range;
-#endif
         private VARSET_TP[]? _mutatedVarsIn;
 
         public unsafe void Run()
         {
-#if DEBUG
-            s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange);
-            if (!s_range.Contains(compiler.info.compMethodHash()))
+            if (Configuration.DEBUG)
             {
-                JITDUMP("Default value analysis disabled because of method range\n");
-                _mutatedVarsIn = CreateSets(compiler);
-                foreach (var block in compiler.Blocks)
+                s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange);
+                if (!s_range.Contains(compiler.info.compMethodHash()))
                 {
-                    VarSetOps.AssignNoCopy(compiler, ref _mutatedVarsIn[block.bbNum], VarSetOps.MakeFull(compiler));
-                }
+                    JITDUMP("Default value analysis disabled because of method range\n");
+                    _mutatedVarsIn = CreateSets(compiler);
+                    foreach (var block in compiler.Blocks)
+                    {
+                        VarSetOps.AssignNoCopy(compiler, ref _mutatedVarsIn[block.bbNum], VarSetOps.MakeFull(compiler));
+                    }
 
-                return;
+                    return;
+                }
             }
-#endif
+
             var mutatedVars = CreateSets(compiler);
             foreach (var block in compiler.Blocks)
             {
@@ -197,31 +197,31 @@ public partial class Compiler
 
     internal sealed class AsyncPreservedValueAnalysis(Compiler compiler)
     {
-#if DEBUG
         private static ConfigMethodRange s_range;
-#endif
         private HashSet<int> _awaitBlocks = [];
         private HashSet<int> _resumeReachableBlocks = [];
         private VARSET_TP[]? _mutatedVarsIn;
 
         public unsafe void Run(IReadOnlyList<BasicBlock> awaitBlocks)
         {
-#if DEBUG
-            s_range.EnsureInit(JitConfig.JitAsyncPreservedValueAnalysisRange);
-            if (!s_range.Contains(compiler.info.compMethodHash()))
+            if (Configuration.DEBUG)
             {
-                JITDUMP("Preserved value analysis disabled because of method range\n");
-                _mutatedVarsIn = CreateSets(compiler);
-                foreach (var block in compiler.Blocks)
+                s_range.EnsureInit(JitConfig.JitAsyncPreservedValueAnalysisRange);
+                if (!s_range.Contains(compiler.info.compMethodHash()))
                 {
-                    VarSetOps.AssignNoCopy(compiler, ref _mutatedVarsIn[block.bbNum], VarSetOps.MakeFull(compiler));
-                    _ = _awaitBlocks.Add(block.bbNum);
-                    _ = _resumeReachableBlocks.Add(block.bbNum);
-                }
+                    JITDUMP("Preserved value analysis disabled because of method range\n");
+                    _mutatedVarsIn = CreateSets(compiler);
+                    foreach (var block in compiler.Blocks)
+                    {
+                        VarSetOps.AssignNoCopy(compiler, ref _mutatedVarsIn[block.bbNum], VarSetOps.MakeFull(compiler));
+                        _ = _awaitBlocks.Add(block.bbNum);
+                        _ = _resumeReachableBlocks.Add(block.bbNum);
+                    }
 
-                return;
+                    return;
+                }
             }
-#endif
+
             var worklist = new Stack<BasicBlock>();
             foreach (var block in awaitBlocks)
             {

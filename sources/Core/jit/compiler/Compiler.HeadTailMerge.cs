@@ -13,9 +13,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private static ConfigMethodRange s_jitEnableHeadTailMergeRange;
-#endif
 
     private readonly record struct HeadTailMergePredInfo(BasicBlock Block, Statement Stmt);
 
@@ -30,14 +28,15 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        s_jitEnableHeadTailMergeRange.EnsureInit(JitConfig.JitEnableHeadTailMergeRange);
-        if (!s_jitEnableHeadTailMergeRange.Contains(info.compMethodHash()))
+        if (Configuration.DEBUG)
         {
-            JITDUMP("Tail merge disabled by JitEnableHeadTailMergeRange\n");
-            return PhaseStatus.MODIFIED_NOTHING;
+            s_jitEnableHeadTailMergeRange.EnsureInit(JitConfig.JitEnableHeadTailMergeRange);
+            if (!s_jitEnableHeadTailMergeRange.Contains(info.compMethodHash()))
+            {
+                JITDUMP("Tail merge disabled by JitEnableHeadTailMergeRange\n");
+                return PhaseStatus.MODIFIED_NOTHING;
+            }
         }
-#endif
 
         var predInfo = new List<HeadTailMergePredInfo>();
         var matchedPredInfo = new List<HeadTailMergePredInfo>();

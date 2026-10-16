@@ -307,11 +307,11 @@ internal static unsafe class ValueNumMathTargetCompletionTests
                 (Left: firstNaN, Right: secondNaN, Expected: firstNaN),
             };
             var intrinsic = maximum ? NI_System_Math_MaxNative : NI_System_Math_MinNative;
-            foreach (var item in cases)
+            foreach (var (left, right, expected) in cases)
             {
-                var result = store.EvalMathFuncBinary(type, intrinsic, item.Left, item.Right);
+                var result = store.EvalMathFuncBinary(type, intrinsic, left, right);
 
-                Assert.That(result, Is.EqualTo(item.Expected));
+                Assert.That(result, Is.EqualTo(expected));
             }
         }, aot: true);
     }

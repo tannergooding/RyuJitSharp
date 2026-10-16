@@ -7,9 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private static ConfigMethodRange s_jitEnableEarlyLivenessRange;
-#endif
 
     public unsafe PhaseStatus fgEarlyLiveness()
     {
@@ -18,13 +16,14 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        s_jitEnableEarlyLivenessRange.EnsureInit(JitConfig.JitEnableEarlyLivenessRange);
-        if (!s_jitEnableEarlyLivenessRange.Contains(info.compMethodHash()))
+        if (Configuration.DEBUG)
         {
-            return PhaseStatus.MODIFIED_NOTHING;
+            s_jitEnableEarlyLivenessRange.EnsureInit(JitConfig.JitEnableEarlyLivenessRange);
+            if (!s_jitEnableEarlyLivenessRange.Contains(info.compMethodHash()))
+            {
+                return PhaseStatus.MODIFIED_NOTHING;
+            }
         }
-#endif
 
         new Liveness<EarlyLiveness>(this).RunEarly();
         fgDidEarlyLiveness = true;

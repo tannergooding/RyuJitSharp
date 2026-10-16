@@ -66,6 +66,8 @@ public static class JitTls
     [ThreadStatic]
     private static Compiler? t_compiler;
 
+    public static ref LogEnv LogEnv => throw new InvalidOperationException("JitTls.LogEnv is only available in Debug builds.");
+
     public static Compiler? Compiler
     {
         get

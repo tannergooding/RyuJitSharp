@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -36,19 +36,48 @@ public partial struct ConfigMethodRange
     private int _badChar;
 
     /// <summary>index + 1 of any bad character in range string</summary>
-    public readonly int BadCharIndex => _badChar - 1;
+    public readonly int BadCharIndex
+    {
+        get
+        {
+            ThrowIfNotDebug();
+            return _badChar - 1;
+        }
+    }
 
-    public readonly bool Error => _badChar != 0;
+    public readonly bool Error
+    {
+        get
+        {
+            ThrowIfNotDebug();
+            return _badChar != 0;
+        }
+    }
 
-    public readonly bool IsEmpty => _rangeCount == 0;
+    public readonly bool IsEmpty
+    {
+        get
+        {
+            ThrowIfNotDebug();
+            return _rangeCount == 0;
+        }
+    }
 
-    public readonly bool IsInit => _ranges is not null;
+    public readonly bool IsInit
+    {
+        get
+        {
+            ThrowIfNotDebug();
+            return _ranges is not null;
+        }
+    }
 
     /// <summary>check if the range includes a particular hash</summary>
     /// <param name="hash">hash value to check</param>
     /// <returns></returns>
     public readonly bool Contains(int hash)
     {
+        ThrowIfNotDebug();
         assert(_ranges is not null);
         var unsignedHash = unchecked((uint)hash);
 
@@ -73,6 +102,8 @@ public partial struct ConfigMethodRange
     [MemberNotNull(nameof(_ranges))]
     public unsafe void EnsureInit(byte* rangeStr, int capacity = DEFAULT_CAPACITY)
     {
+        ThrowIfNotDebug();
+
         if (_ranges is null)
         {
             InitRanges(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(rangeStr), capacity);
@@ -81,8 +112,11 @@ public partial struct ConfigMethodRange
     }
 
     /// <summary>dump hash ranges to stdout</summary>
+    [Conditional("DEBUG")]
     public readonly void Dump()
     {
+        ThrowIfNotDebug();
+
         if (_ranges is null)
         {
             jitprintf("<uninitialized method range>\n");
@@ -110,6 +144,14 @@ public partial struct ConfigMethodRange
             {
                 jitprintf($"{i} [0x{range.Low:x8}-0x{range.High:x8}]\n");
             }
+        }
+    }
+
+    private static void ThrowIfNotDebug()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("ConfigMethodRange is only available in Debug builds.");
         }
     }
 
@@ -239,4 +281,3 @@ public partial struct ConfigMethodRange
         _ranges = ranges;
     }
 }
-#endif

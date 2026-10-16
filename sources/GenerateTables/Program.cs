@@ -4539,7 +4539,8 @@ namespace RyuJitSharp;
             var flags = GetFlagsForPrefix(prefix);
             var kind = flags & FLAG_KIND_MASK;
             var configName = parts[0].AsSpan().Trim();
-            if ((kind == FLAG_INTEGER) && IsUniversalInlineConfig(configName))
+            var isUniversalDebugConfig = IsUniversalDebugConfig(configName);
+            if (isUniversalDebugConfig)
             {
                 flags &= ~FLAG_DEFINE_MASK;
             }
@@ -4547,6 +4548,12 @@ namespace RyuJitSharp;
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
             var name = GetFieldName(configName);
+            var needsDebugCleanup = isUniversalDebugConfig && (kind != FLAG_INTEGER);
+            if (needsDebugCleanup)
+            {
+                _ = builder.AppendLine("        if (Configuration.DEBUG)");
+                _ = builder.AppendLine("        {");
+            }
 
             if (kind == FLAG_INTEGER)
             {
@@ -4554,13 +4561,21 @@ namespace RyuJitSharp;
             }
             else if (kind == FLAG_STRING)
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        jitHost->freeStringConfigValue(_{name});");
+                var indent = needsDebugCleanup ? "            " : "        ";
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}jitHost->freeStringConfigValue(_{name});");
             }
             else
             {
                 Debug.Assert(kind == FLAG_METHODSET);
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        _{name}.destroy(jitHost);");
+                var indent = needsDebugCleanup ? "            " : "        ";
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name}.destroy(jitHost);");
             }
+
+            if (needsDebugCleanup)
+            {
+                _ = builder.AppendLine("        }");
+            }
+
             lastFlags = flags;
         });
 
@@ -4787,11 +4802,38 @@ public partial struct JitConfigValues
         static bool IsUniversalDebugConfig(ReadOnlySpan<char> name)
         {
             return IsUniversalInlineConfig(name) ||
+                   name.Equals("JitExclude", StringComparison.Ordinal) ||
+                   name.Equals("JitInclude", StringComparison.Ordinal) ||
+                   name.Equals("JitRange", StringComparison.Ordinal) ||
+                   name.Equals("JitStressOnly", StringComparison.Ordinal) ||
+                   name.Equals("JitStressRange", StringComparison.Ordinal) ||
                    name.Equals("JitStress", StringComparison.Ordinal) ||
                    name.Equals("JitInlinePolicyRandom", StringComparison.Ordinal) ||
                    name.Equals("JitStressAsyncInlining", StringComparison.Ordinal) ||
                    name.Equals("JitStressAsyncInliningMaxDepth", StringComparison.Ordinal) ||
-                   name.Equals("JitStressAsyncInliningPct", StringComparison.Ordinal);
+                   name.Equals("JitStressAsyncInliningPct", StringComparison.Ordinal) ||
+                   name.Equals("JitAwaitHashBreak", StringComparison.Ordinal) ||
+                   name.Equals("JitR2RUnsupportedRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableRboRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableHeadTailMergeRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableVNBasedDeadStoreRemovalRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableEarlyLivenessRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableLocalAddrPropagationRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnablePatchpointRange", StringComparison.Ordinal) ||
+                   name.Equals("JitOnlyOptimizeRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnablePhysicalPromotionRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableCrossBlockLocalAssertionPropRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableInductionVariableOptsRange", StringComparison.Ordinal) ||
+                   name.Equals("JitOptRepeatRange", StringComparison.Ordinal) ||
+                   name.Equals("JitOptimizeAwaitRange", StringComparison.Ordinal) ||
+                   name.Equals("JitGuardedDevirtualizationRange", StringComparison.Ordinal) ||
+                   name.Equals("JitAsyncDefaultValueAnalysisRange", StringComparison.Ordinal) ||
+                   name.Equals("JitAsyncPreservedValueAnalysisRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnableOsrRange", StringComparison.Ordinal) ||
+                   name.Equals("JitEnablePGORange", StringComparison.Ordinal) ||
+                   name.Equals("JitInlineMethodsWithEHRange", StringComparison.Ordinal) ||
+                   name.Equals("JitInstrumentIfOptimizing", StringComparison.Ordinal) ||
+                   name.Equals("JitInstrumentIfOptimizingRange", StringComparison.Ordinal);
         }
 
         static string GetTypeForFlags(int flags)

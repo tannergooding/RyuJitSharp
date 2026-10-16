@@ -271,7 +271,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
         });
     }
 
-    private static GenTree AssertWasmReduction(Compiler compiler, GenTree source, var_types baseType)
+    private static GenTreeHWIntrinsic AssertWasmReduction(Compiler compiler, GenTree source, var_types baseType)
     {
         var result = compiler.gtNewSimdSumNode(baseType.ActualType, source, baseType, 16).AsHWIntrinsic();
         Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_Vector_ToScalar));
