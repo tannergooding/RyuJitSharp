@@ -66,10 +66,12 @@ public partial class Compiler
             dsc.lvIsRegArg = numRegisters > 0;
             dsc.lvIsMultiRegArg = numRegisters > 1;
 
-#if DEBUG
             // Extra query to facilitate wasm replay of native collections.
             // TODO-WASM: delete once we can get a wasm collection.
-            if ((JitConfig.EnableExtraSuperPmiQueries != 0) && IsReadyToRun && (structLayout is not null))
+            if (Configuration.DEBUG &&
+                (JitConfig.EnableExtraSuperPmiQueries != 0) &&
+                IsReadyToRun &&
+                (structLayout is not null))
             {
                 var clsHnd = structLayout.ClassHandle;
 
@@ -78,7 +80,6 @@ public partial class Compiler
                     eeRunExtraSuperPmiQueries(() => info.compCompHnd->getWasmLowering(clsHnd));
                 }
             }
-#endif
         }
 
         lvaParameterStackSize = classifier.StackSize;

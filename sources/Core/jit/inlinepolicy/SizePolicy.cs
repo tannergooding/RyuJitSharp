@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public sealed class SizePolicy : DiscretionaryPolicy
@@ -11,6 +10,10 @@ public sealed class SizePolicy : DiscretionaryPolicy
     public SizePolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Size inline policy is only available in Debug builds.");
+        }
     }
 
     public override string Name => nameof(SizePolicy);
@@ -44,4 +47,3 @@ public sealed class SizePolicy : DiscretionaryPolicy
         }
     }
 }
-#endif

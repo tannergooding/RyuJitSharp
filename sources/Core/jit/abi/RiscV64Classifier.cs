@@ -58,22 +58,22 @@ public ref struct RiscV64Classifier
                 if (!lowering.byIntegerCallConv)
                 {
                     assert(lowering.numLoweredElements is 1 or 2);
-#if DEBUG
                     uint debugIntFields = 0;
-#endif
                     for (nint i = 0; i < lowering.numLoweredElements; i++)
                     {
                         var fieldType = lowering.loweredElements[(int)i].VarType;
                         floatFields += varTypeIsFloating(fieldType) ? 1u : 0u;
-#if DEBUG
-                        debugIntFields += varTypeIsIntegralOrI(fieldType) ? 1u : 0u;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            debugIntFields += varTypeIsIntegralOrI(fieldType) ? 1u : 0u;
+                        }
                     }
 
                     intFields = (uint)lowering.numLoweredElements - floatFields;
-#if DEBUG
-                    assert(debugIntFields == intFields);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(debugIntFields == intFields);
+                    }
                 }
             }
         }

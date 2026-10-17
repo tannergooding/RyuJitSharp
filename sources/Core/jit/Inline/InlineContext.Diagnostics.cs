@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -11,7 +12,7 @@ namespace RyuJitSharp;
 
 public sealed partial class InlineContext
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     internal unsafe void DumpData(uint indent = 0)
     {
         _sibling?.DumpData(indent);
@@ -40,6 +41,7 @@ public sealed partial class InlineContext
         _child?.DumpData(unchecked(indent + 2));
     }
 
+    [Conditional("DEBUG")]
     internal unsafe void DumpXml(StreamWriter file, int indent)
     {
         _sibling?.DumpXml(file, indent);
@@ -117,6 +119,7 @@ public sealed partial class InlineContext
         }
     }
 
+    [Conditional("DEBUG")]
     internal static void WriteEscapedName(StreamWriter file, string name)
     {
         // Native strncpy copies at most 1023 UTF-8 bytes, even if this splits a code point.
@@ -144,5 +147,4 @@ public sealed partial class InlineContext
             file.BaseStream.Write(bytes.AsSpan(0, length));
         }
     }
-#endif
 }

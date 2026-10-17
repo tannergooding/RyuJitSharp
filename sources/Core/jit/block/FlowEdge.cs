@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 
 namespace RyuJitSharp;
@@ -32,9 +33,7 @@ public sealed partial class FlowEdge
     private bool _heuristicBasedLikelihood;
 
     // True if likelihood has been set
-#if DEBUG
     private bool _likelihoodSet;
-#endif
 
     public FlowEdge(BasicBlock sourceBlock, BasicBlock destBlock, FlowEdge? rest)
     {
@@ -72,9 +71,18 @@ public sealed partial class FlowEdge
         }
     }
 
-#if DEBUG
-    public bool hasLikelihood => _likelihoodSet;
-#endif
+    public bool hasLikelihood
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Edge likelihood tracking is only available in Debug builds.");
+            }
+
+            return _likelihoodSet;
+        }
+    }
 
     public bool isHeuristicBased
     {
@@ -93,9 +101,7 @@ public sealed partial class FlowEdge
     {
         get
         {
-#if DEBUG
             assert(Debugger.IsAttached || _likelihoodSet);
-#endif
             return _likelihood;
         }
 
@@ -104,18 +110,19 @@ public sealed partial class FlowEdge
             assert(value >= 0.0);
             assert(value <= 1.0);
 
-#if DEBUG
-            if (_likelihoodSet)
+            if (Configuration.DEBUG)
             {
-                JITDUMP($"setting likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} from {FMT_WT(_likelihood)} to {FMT_WT(value)}\n");
-            }
-            else
-            {
-                JITDUMP($"setting likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} to {FMT_WT(value)}\n");
-            }
+                if (_likelihoodSet)
+                {
+                    JITDUMP($"setting likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} from {FMT_WT(_likelihood)} to {FMT_WT(value)}\n");
+                }
+                else
+                {
+                    JITDUMP($"setting likelihood of {FMT_BB(_sourceBlock.bbNum)} -> {FMT_BB(_destBlock.bbNum)} to {FMT_WT(value)}\n");
+                }
 
-            _likelihoodSet = true;
-#endif
+                _likelihoodSet = true;
+            }
 
             _likelihood = value;
         }
@@ -125,9 +132,7 @@ public sealed partial class FlowEdge
     {
         get
         {
-#if DEBUG
             assert(_likelihoodSet);
-#endif
             return _likelihood * _sourceBlock.bbWeight;
         }
     }
@@ -166,9 +171,7 @@ public sealed partial class FlowEdge
     /// <param name="addedLikelihood">value in range [-likelihood, 1.0 - likelihood] to add to current likelihood.</param>
     public void AddLikelihood(weight_t addedLikelihood)
     {
-#if DEBUG
         assert(_likelihoodSet);
-#endif
 
         var newLikelihood = _likelihood + addedLikelihood;
 
@@ -201,9 +204,10 @@ public sealed partial class FlowEdge
     {
         _likelihood = 0;
         _heuristicBasedLikelihood = false;
-#if DEBUG
-        _likelihoodSet = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _likelihoodSet = false;
+        }
     }
 
     public void incrementDupCount(int dupCount = 1)

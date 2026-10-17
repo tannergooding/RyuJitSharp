@@ -67,6 +67,12 @@ internal static partial class TestConfiguration
         SafeBasicBlockCreation(compiler) = true;
     }
 
+    [Conditional("DEBUG")]
+    public static void DisableSafeBasicBlockCreation(Compiler compiler)
+    {
+        SafeBasicBlockCreation(compiler) = false;
+    }
+
     public static void SetCompilerFullName(Compiler compiler, string name)
     {
         if (IsDebug)

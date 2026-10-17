@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using RyuJitSharp;
@@ -98,7 +99,6 @@ internal static class ArrayStackTests
         Assert.That(stack.Data().IsEmpty, Is.True);
     }
 
-#if DEBUG
     [TestCase(true)]
     [TestCase(false)]
     public static void EnumeratorsDetectMutations(bool bottomUp)
@@ -108,28 +108,45 @@ internal static class ArrayStackTests
 
         if (bottomUp)
         {
-            Assert.That(
-                () =>
-                {
-                    var enumerator = stack.BottomUpOrder().GetEnumerator();
-                    Assert.That(enumerator.MoveNext(), Is.True);
-                    stack.Push(2);
-                    enumerator.Dispose();
-                },
-                Throws.Exception.With.Message.Contains("ArrayStack was modified during BottomUpOrder iteration"));
+            void IterateAndMutate()
+            {
+                var enumerator = stack.BottomUpOrder().GetEnumerator();
+                Assert.That(enumerator.MoveNext(), Is.True);
+                stack.Push(2);
+                enumerator.Dispose();
+            }
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(
+                    (Action)IterateAndMutate,
+                    Throws.Exception.With.Message.Contains("ArrayStack was modified during BottomUpOrder iteration"));
+            }
+            else
+            {
+                Assert.That((Action)IterateAndMutate, Throws.Nothing);
+            }
         }
         else
         {
-            Assert.That(
-                () =>
-                {
-                    var enumerator = stack.TopDownOrder().GetEnumerator();
-                    Assert.That(enumerator.MoveNext(), Is.True);
-                    stack.Push(2);
-                    enumerator.Dispose();
-                },
-                Throws.Exception.With.Message.Contains("ArrayStack was modified during TopDownOrder iteration"));
+            void IterateAndMutate()
+            {
+                var enumerator = stack.TopDownOrder().GetEnumerator();
+                Assert.That(enumerator.MoveNext(), Is.True);
+                stack.Push(2);
+                enumerator.Dispose();
+            }
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(
+                    (Action)IterateAndMutate,
+                    Throws.Exception.With.Message.Contains("ArrayStack was modified during TopDownOrder iteration"));
+            }
+            else
+            {
+                Assert.That((Action)IterateAndMutate, Throws.Nothing);
+            }
         }
     }
-#endif
 }

@@ -160,26 +160,18 @@ internal sealed class ArrayStack<T>
     {
         private readonly ArrayStack<T> _stack;
         private readonly int _count;
-#if DEBUG
         private readonly uint _version;
-#endif
 
         internal BottomUpView(ArrayStack<T> stack, int count, uint version)
         {
             _stack = stack;
             _count = count;
-#if DEBUG
-            _version = version;
-#endif
+            _version = Configuration.DEBUG ? version : 0;
         }
 
         public BottomUpEnumerator GetEnumerator()
         {
-#if DEBUG
             return new BottomUpEnumerator(_stack, _count, _version);
-#else
-            return new BottomUpEnumerator(_stack, _count, 0);
-#endif
         }
     }
 
@@ -187,9 +179,7 @@ internal sealed class ArrayStack<T>
     {
         private readonly ArrayStack<T> _stack;
         private readonly int _count;
-#if DEBUG
         private readonly uint _version;
-#endif
 
         private int _nextIndex;
         private int _currentIndex;
@@ -198,9 +188,7 @@ internal sealed class ArrayStack<T>
         {
             _stack = stack;
             _count = count;
-#if DEBUG
-            _version = version;
-#endif
+            _version = Configuration.DEBUG ? version : 0;
             _nextIndex = 0;
             _currentIndex = -1;
         }
@@ -219,38 +207,29 @@ internal sealed class ArrayStack<T>
             return true;
         }
 
-#if DEBUG
+        [Conditional("DEBUG")]
         public readonly void Dispose()
         {
             Debug.Assert(_stack.GetVersion() == _version, "ArrayStack was modified during BottomUpOrder iteration");
         }
-#endif
     }
 
     internal readonly ref struct TopDownView
     {
         private readonly ArrayStack<T> _stack;
         private readonly int _count;
-#if DEBUG
         private readonly uint _version;
-#endif
 
         internal TopDownView(ArrayStack<T> stack, int count, uint version)
         {
             _stack = stack;
             _count = count;
-#if DEBUG
-            _version = version;
-#endif
+            _version = Configuration.DEBUG ? version : 0;
         }
 
         public ReverseIterator GetEnumerator()
         {
-#if DEBUG
             return new ReverseIterator(_stack, _count, 0, _version);
-#else
-            return new ReverseIterator(_stack, _count, 0, 0);
-#endif
         }
     }
 
@@ -258,9 +237,7 @@ internal sealed class ArrayStack<T>
     {
         private readonly ArrayStack<T> _stack;
         private readonly int _endIndex;
-#if DEBUG
         private readonly uint _version;
-#endif
 
         private int _nextIndex;
         private int _currentIndex;
@@ -269,9 +246,7 @@ internal sealed class ArrayStack<T>
         {
             _stack = stack;
             _endIndex = endIndex;
-#if DEBUG
-            _version = version;
-#endif
+            _version = Configuration.DEBUG ? version : 0;
             _nextIndex = index;
             _currentIndex = -1;
         }
@@ -290,11 +265,10 @@ internal sealed class ArrayStack<T>
             return true;
         }
 
-#if DEBUG
+        [Conditional("DEBUG")]
         public readonly void Dispose()
         {
             Debug.Assert(_stack.GetVersion() == _version, "ArrayStack was modified during TopDownOrder iteration");
         }
-#endif
     }
 }

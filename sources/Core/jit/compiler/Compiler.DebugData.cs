@@ -14,6 +14,9 @@ public partial class Compiler
     private sealed class DebugData
     {
         internal bool AsciiTrees;
+        internal long CompCyclesAtEndOfInlining;
+        internal long CompCycles;
+        internal int InlineMethodXmlFilePosition;
         internal Dictionary<int, LocalDebugData>? LocalVariables;
     }
 
@@ -86,5 +89,47 @@ public partial class Compiler
         }
 
         return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+    }
+
+    internal long InlineDiagnosticCompCycles
+    {
+        get
+        {
+            return GetDebugData().CompCycles;
+        }
+
+        set
+        {
+            GetDebugData().CompCycles = value;
+        }
+    }
+
+    internal int InlineMethodXmlFilePosition
+    {
+        get
+        {
+            return GetDebugData().InlineMethodXmlFilePosition;
+        }
+
+        set
+        {
+            GetDebugData().InlineMethodXmlFilePosition = value;
+        }
+    }
+
+    // The upstream counter is already in microseconds, but inline diagnostics scale it again.
+    internal uint InlineDiagnosticJitTimeMicroseconds
+    {
+        get
+        {
+            var compCycles = InlineDiagnosticCompCycles;
+            if (compCycles <= 0)
+            {
+                return 0;
+            }
+
+            var microseconds = ((double)compCycles / Stopwatch.Frequency) * 1_000_000;
+            return unchecked((uint)microseconds);
+        }
     }
 }

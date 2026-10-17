@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -14,6 +13,18 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ReplayPolicyTests
 {
+    [Test]
+    public static void ReplayPolicyRejectsReleaseConstruction()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("This test verifies the Release-only replay guard.");
+        }
+
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        _ = Assert.Throws<InvalidOperationException>(() => new ReplayPolicy(compiler, false));
+    }
+
     [TestCase(7, 7, true)]
     [TestCase(7, 8, false)]
     [TestCase(-1, -1, true)]
@@ -190,6 +201,11 @@ internal static unsafe class ReplayPolicyTests
 
     private static void WithReplay(Action<Compiler, string> action)
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Replay policy behavior is available only in Debug builds.");
+        }
+
         var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.xml");
         var pathBytes = Encoding.UTF8.GetBytes(path + '\0');
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -210,7 +226,7 @@ internal static unsafe class ReplayPolicyTests
         var previousFile = ReplayFile(null);
         var previousBanner = WroteReplayBanner(null);
         var previousEof = EndOfFile(null);
-        using var tls = new JitTls(null);
+        using var tls = TestConfiguration.CreateJitTls();
         fixed (byte* pointer = pathBytes)
         {
             JitConfigValues config = new();
@@ -272,4 +288,3 @@ internal static unsafe class ReplayPolicyTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ScanUnsigned")]
     private static extern bool ScanUnsigned(ReplayPolicy? policy, ReadOnlySpan<byte> line, ReadOnlySpan<byte> prefix, uint radix, int width, out uint value);
 }
-#endif

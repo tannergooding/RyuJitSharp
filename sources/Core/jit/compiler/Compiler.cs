@@ -3125,17 +3125,19 @@ public partial class Compiler
     /// <remarks>Assumes being called at the end of compilation.</remarks>
     private void RecordStateAtEndOfCompilation()
     {
-#if DEBUG
-        _compCycles = 0;
-
-        var cycles = Stopwatch.GetTimestamp();
-        if (cycles > _compCyclesAtEndOfInlining)
+        if (Configuration.DEBUG)
         {
-            _compCycles = cycles - _compCyclesAtEndOfInlining;
-            _compCycles = unchecked(_compCycles * 1000000);
-            _compCycles /= Stopwatch.Frequency;
+            var debugData = GetDebugData();
+            debugData.CompCycles = 0;
+
+            var cycles = Stopwatch.GetTimestamp();
+            if (cycles > debugData.CompCyclesAtEndOfInlining)
+            {
+                debugData.CompCycles = cycles - debugData.CompCyclesAtEndOfInlining;
+                debugData.CompCycles = unchecked(debugData.CompCycles * 1000000);
+                debugData.CompCycles /= Stopwatch.Frequency;
+            }
         }
-#endif
     }
 
     /// <summary>Records the SQM-relevant (cycles and tick count)</summary>
@@ -3145,9 +3147,10 @@ public partial class Compiler
     /// </remarks>
     private void RecordStateAtEndOfInlining()
     {
-#if DEBUG
-        _compCyclesAtEndOfInlining = Stopwatch.GetTimestamp();
-#endif
+        if (Configuration.DEBUG)
+        {
+            GetDebugData().CompCyclesAtEndOfInlining = Stopwatch.GetTimestamp();
+        }
     }
 
     public bool doesMethodHaveNoReturnCalls() => optNoReturnCallCount > 0;

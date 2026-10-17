@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 global using static RyuJitSharp.GenTreeCallDebugFlags;
 using System;
 
@@ -32,4 +31,3 @@ public enum GenTreeCallDebugFlags
     /// <summary>this runtime lookup helper is expanded</summary>
     GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED = 1 << 5,
 }
-#endif

@@ -103,7 +103,6 @@ internal static unsafe class AsyncContextSaveTests
         });
     }
 
-#if DEBUG
     [TestCase(ContinuationMemberType.CustomAwaiterOfLayout, "CustomAwaiter<Awaiter>")]
     [TestCase(ContinuationMemberType.InlineFrameExecutionContext, "ExecutionContext for inline depth 2")]
     [TestCase(ContinuationMemberType.InlineFrameContinuationContext, "Continuation context for inline depth 2")]
@@ -136,10 +135,10 @@ internal static unsafe class AsyncContextSaveTests
                 Globals.s_jitstdout = previousWriter;
             }
 
-            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($" index=0 {expected}"));
+            var expectedOutput = TestConfiguration.IsDebug ? $" index=0 {expected}" : string.Empty;
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expectedOutput));
         });
     }
-#endif
 
     [Test]
     public static void FrameTransitionAwaitHasOnlyItsContinuationPseudoArgument()
@@ -235,10 +234,8 @@ internal static unsafe class AsyncContextSaveTests
                     inlinee.fgPredsComputed = true;
                     inlinee.opts.jitFlags = compiler.opts.jitFlags;
                     inlinee.opts.SetMinOpts(false);
-#if DEBUG
-                    inlinee.fgSafeBasicBlockCreation = true;
-                    inlinee.fgSafeFlowEdgeCreation = true;
-#endif
+                    TestConfiguration.EnableSafeBasicBlockCreation(inlinee);
+                    TestConfiguration.EnableSafeFlowEdgeCreation(inlinee);
                     var entry = NewBlock(inlinee, BBJ_ALWAYS, 0);
                     var exit = NewBlock(inlinee, BBJ_RETURN, 1);
                     entry.bbRefs = 1;

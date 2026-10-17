@@ -291,16 +291,6 @@ public partial class Compiler
 
     private WrapICorJitInfo? _wrapICorJitInfo;
 
-#if DEBUG
-    // These variables are associated with maintaining SQM data about compile time.
-
-    /// <summary>Raw timer count at the end of the inlining phase in the current compilation.</summary>
-    private long _compCyclesAtEndOfInlining;
-
-    /// <summary>Wall clock elapsed time for current compilation (microseconds)</summary>
-    private long _compCycles;
-#endif
-
 #if FUNC_INFO_LOGGING
     /// <summary>If a log file for per-function information is required, this is the filename to write it to.</summary>
     public static nint compJitFuncInfoFilename;

@@ -9,18 +9,16 @@ using static RyuJitSharp.BBKinds;
 
 namespace RyuJitSharp.UnitTests;
 
-#if DEBUG
 [NonParallelizable]
 internal static class BlockDisplayTests
 {
     [Test]
     public static unsafe void NewBlockVerboseDumpUsesStableDisplay()
     {
-        using var tls = new JitTls(null);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        JitTls.Compiler = compiler;
         compiler.compHndBBtab = [];
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
@@ -30,7 +28,11 @@ internal static class BlockDisplayTests
         var output = CodeGenLifeTransitionTests.Capture(
             () => BasicBlock.New(compiler, BBJ_RETURN));
 
-        Assert.That(output, Does.Contain("New Basic Block BB01 [0000] created."));
+        Assert.That(
+            output,
+            TestConfiguration.IsDebug
+                ? Does.Contain("New Basic Block BB01 [0000] created.")
+                : Is.Empty);
     }
 
     [TestCase(false, -2, 2)]
@@ -41,11 +43,10 @@ internal static class BlockDisplayTests
     [TestCase(true, 2, 2)]
     public static unsafe void TargetPaddingPreservesSignedPrintfWidth(bool conditional, int delta, int padding)
     {
-        using var tls = new JitTls(null);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        JitTls.Compiler = compiler;
         compiler.compHndBBtab = [];
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
@@ -61,16 +62,27 @@ internal static class BlockDisplayTests
             var first = BasicBlock.New(compiler, BBJ_RETURN);
             var second = BasicBlock.New(compiler, BBJ_RETURN);
             block.SetCond(compiler.fgAddRefPred(first, block), compiler.fgAddRefPred(second, block));
-            block.TrueEdge.Likelihood = 0.03125;
-            block.FalseEdge.Likelihood = 0.96875;
+            if (TestConfiguration.IsDebug)
+            {
+                block.TrueEdge.Likelihood = 0.03125;
+                block.FalseEdge.Likelihood = 0.96875;
+            }
+
             targetText = "-> BB02(0.0312),BB03(0.969)";
             kindText = " ( cond )";
             printedWidth = targetText.Length + kindText.Length;
         }
 
-        var range = CodeGenLifeTransitionTests.Capture(block.dspBlockILRange);
+        var range = CodeGenLifeTransitionTests.Capture(() => block.dspBlockILRange());
         var output = CodeGenLifeTransitionTests.Capture(
             () => compiler.fgTableDispBasicBlock(block, blockTargetFieldWidth: printedWidth + delta));
+
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.That(range, Is.Empty);
+            Assert.That(output, Is.Empty);
+            return;
+        }
 
         Assert.That(output, Does.Contain(range + targetText + new string(' ', padding) + kindText));
     }
@@ -100,7 +112,9 @@ internal static class BlockDisplayTests
             Globals.s_jitstdout = previousWriter;
         }
 
-        Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+        Assert.That(
+            Encoding.UTF8.GetString(stream.ToArray()),
+            Is.EqualTo(TestConfiguration.IsDebug ? expected : string.Empty));
     }
 
     [TestCase(0UL, "00000000.00000000")]
@@ -116,8 +130,11 @@ internal static class BlockDisplayTests
         var output = CodeGenLifeTransitionTests.Capture(
             () => block.dspBlockHeader(showKind: false, showFlags: true, showPreds: false));
 
-        Assert.That(output, Does.Contain($" flags=0x{expected}: "));
+        Assert.That(
+            output,
+            TestConfiguration.IsDebug
+                ? Does.Contain($" flags=0x{expected}: ")
+                : Is.Empty);
         Assert.That(block.FlagsRaw, Is.EqualTo(unchecked((BasicBlockFlags)bits)));
     }
 }
-#endif

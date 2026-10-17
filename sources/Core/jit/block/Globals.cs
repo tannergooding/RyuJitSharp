@@ -43,9 +43,13 @@ public partial class Globals
 
     public const ushort MAX_XCPTN_INDEX = ushort.MaxValue - 1;
 
-#if DEBUG
     public static FlowEdge? ShuffleHelper(uint hash, FlowEdge? res)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Predecessor shuffling is only available in Debug builds.");
+        }
+
         var head = res;
 
         for (FlowEdge? prev = null; res is not null; prev = res, res = res.NextPredEdge)
@@ -70,6 +74,11 @@ public partial class Globals
 
     public static uint SsaStressHashHelper()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("SSA stress hashing is only available in Debug builds.");
+        }
+
         var hash = unchecked((uint)JitConfig.JitSsaStress);
 
         if (hash == 0)
@@ -86,5 +95,4 @@ public partial class Globals
 
         return (hash >> 16) == 0 ? (hash << 16) | hash : hash;
     }
-#endif
 }

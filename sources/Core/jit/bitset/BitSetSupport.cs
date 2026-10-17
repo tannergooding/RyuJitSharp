@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public static partial class BitSetSupport
 {
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void TestSuite(Compiler compiler)
     {
         // The native storage specializations share the managed nint[] representation.
@@ -72,5 +72,4 @@ public static partial class BitSetSupport
         });
         assert(count == 2);
     }
-#endif
 }

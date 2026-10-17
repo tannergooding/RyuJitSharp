@@ -43,10 +43,15 @@ internal static unsafe class CodeGenLabelTests
             Assert.That(label.HasFlag(BBF_COLD), Is.EqualTo(cold));
             Assert.That(compiler.fgFirstBB, Is.SameAs(block));
             Assert.That(compiler.fgLastBB, Is.SameAs(block));
-#if DEBUG
-            Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
-            Assert.That(label.bbTgtStkDepth, Is.EqualTo(stackLevel / sizeof(int)));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
+                Assert.That(label.bbTgtStkDepth, Is.EqualTo(stackLevel / sizeof(int)));
+            }
+            else
+            {
+                Assert.That(label.bbTgtStkDepth, Is.Zero);
+            }
         });
     }
 
@@ -206,9 +211,7 @@ internal static unsafe class CodeGenLabelTests
         }
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = false;
-#endif
+        TestConfiguration.DisableSafeBasicBlockCreation(compiler);
 
         return blocks;
     }

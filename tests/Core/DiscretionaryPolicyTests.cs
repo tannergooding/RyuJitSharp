@@ -195,11 +195,12 @@ internal static class DiscretionaryPolicyTests
         Assert.That(policy.Observation, Is.EqualTo(expected));
     }
 
-#if DEBUG
     [TestCase(-500, 100, InlineObservation.CALLEE_IS_SIZE_DECREASING_INLINE)]
     [TestCase(100, 100, InlineObservation.CALLEE_NOT_PROFITABLE_INLINE)]
     public static void SizePolicyComparesScaledRootEstimates(int currentSize, int initialSize, InlineObservation expected)
     {
+        RequireDebugPolicyBehavior();
+
         var compiler = CreateCompiler();
         var strategy = CreateStrategy(compiler);
         SetField(typeof(InlineStrategy), strategy, "_currentSizeEstimate", currentSize);
@@ -213,6 +214,8 @@ internal static class DiscretionaryPolicyTests
     [Test]
     public static void BenefitMultiplierDiagnosticUsesNativeGeneralPrecision()
     {
+        RequireDebugPolicyBehavior();
+
         var compiler = CreateCompiler();
         TestConfiguration.EnableVerbose(compiler);
         JitTls.Compiler = compiler;
@@ -246,6 +249,8 @@ internal static class DiscretionaryPolicyTests
     [TestCase(typeof(SizePolicy), "SizePolicy")]
     public static void DebugPolicyNamesMatchNative(Type policyType, string name)
     {
+        RequireDebugPolicyBehavior();
+
         var compiler = CreateCompiler();
         var strategy = CreateStrategy(compiler);
         SetField(typeof(InlineStrategy), strategy, "_random", new CLRRandom(1));
@@ -266,6 +271,8 @@ internal static class DiscretionaryPolicyTests
     [TestCase(1, 101, InlineObservation.CALLEE_TOO_MUCH_IL)]
     public static void FullPolicyChecksLimits(int depth, int size, InlineObservation expected)
     {
+        RequireDebugPolicyBehavior();
+
         var compiler = CreateCompiler();
         var strategy = CreateStrategy(compiler);
         SetField(typeof(InlineStrategy), strategy, "_maxInlineDepth", 1);
@@ -290,6 +297,8 @@ internal static class DiscretionaryPolicyTests
     [TestCase(201, 1)]
     public static void RandomPolicyUsesNativeThresholds(int size, int threshold)
     {
+        RequireDebugPolicyBehavior();
+
         var compiler = CreateCompiler();
         var strategy = CreateStrategy(compiler);
         var random = new CLRRandom(1);
@@ -315,6 +324,8 @@ internal static class DiscretionaryPolicyTests
     [TestCase(OPCODE.CEE_THROW, "ThrowCount")]
     public static void OpcodeBinsAppearInNativeData(OPCODE opcode, string column)
     {
+        RequireDebugPolicyBehavior();
+
         var policy = new ProbePolicy(CreateCompiler());
         policy.NoteInt(InlineObservation.CALLEE_OPCODE, (int)opcode);
         var (schema, data) = GetCsv(policy);
@@ -335,6 +346,8 @@ internal static class DiscretionaryPolicyTests
     [Test]
     public static void CsvPreservesNativeHeaderAndDataOrder()
     {
+        RequireDebugPolicyBehavior();
+
         var policy = new ProbePolicy(CreateCompiler());
         policy.NoteBool(InlineObservation.CALLEE_IS_FORCE_INLINE, false);
         policy.NoteInt(InlineObservation.CALLEE_IL_CODE_SIZE, 32);
@@ -381,8 +394,6 @@ internal static class DiscretionaryPolicyTests
         return (System.Text.Encoding.UTF8.GetString(schemaStream.ToArray()).Split(','),
             System.Text.Encoding.UTF8.GetString(dataStream.ToArray()).Split(','));
     }
-#endif
-
     private static CORINFO_METHOD_INFO VoidMethod()
     {
         var info = new CORINFO_METHOD_INFO();
@@ -417,6 +428,14 @@ internal static class DiscretionaryPolicyTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTable = [];
         return compiler;
+    }
+
+    private static void RequireDebugPolicyBehavior()
+    {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("This test exercises Debug-only inline policy behavior.");
+        }
     }
 
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,

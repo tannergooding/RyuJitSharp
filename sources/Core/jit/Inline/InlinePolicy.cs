@@ -60,48 +60,49 @@ public abstract class InlinePolicy
             return new AsyncStressPolicy(compiler, isPrejitRoot);
         }
 
-#if DEBUG
-        var useRandomPolicyForStress = compiler.compRandomInlineStress();
-        var useRandomPolicy = JitConfig.JitInlinePolicyRandom is not 0;
-
-        // Optionally install the RandomPolicy.
-        if (useRandomPolicyForStress || useRandomPolicy)
+        if (Configuration.DEBUG)
         {
-            return new RandomPolicy(compiler, isPrejitRoot);
+            var useRandomPolicyForStress = compiler.compRandomInlineStress();
+            var useRandomPolicy = JitConfig.JitInlinePolicyRandom is not 0;
+
+            // Optionally install the RandomPolicy.
+            if (useRandomPolicyForStress || useRandomPolicy)
+            {
+                return new RandomPolicy(compiler, isPrejitRoot);
+            }
+
+            // Optionally install the ReplayPolicy.
+            var useReplayPolicy = JitConfig.JitInlinePolicyReplay is not 0;
+
+            if (useReplayPolicy)
+            {
+                return new ReplayPolicy(compiler, isPrejitRoot);
+            }
+
+            // Optionally install the SizePolicy.
+            var useSizePolicy = JitConfig.JitInlinePolicySize is not 0;
+
+            if (useSizePolicy)
+            {
+                return new SizePolicy(compiler, isPrejitRoot);
+            }
+
+            // Optionally install the FullPolicy.
+            var useFullPolicy = JitConfig.JitInlinePolicyFull is not 0;
+
+            if (useFullPolicy)
+            {
+                return new FullPolicy(compiler, isPrejitRoot);
+            }
+
+            // Optionally install the DiscretionaryPolicy.
+            var useDiscretionaryPolicy = JitConfig.JitInlinePolicyDiscretionary is not 0;
+
+            if (useDiscretionaryPolicy)
+            {
+                return new DiscretionaryPolicy(compiler, isPrejitRoot);
+            }
         }
-
-        // Optionally install the ReplayPolicy.
-        var useReplayPolicy = JitConfig.JitInlinePolicyReplay is not 0;
-
-        if (useReplayPolicy)
-        {
-            return new ReplayPolicy(compiler, isPrejitRoot);
-        }
-
-        // Optionally install the SizePolicy.
-        var useSizePolicy = JitConfig.JitInlinePolicySize is not 0;
-
-        if (useSizePolicy)
-        {
-            return new SizePolicy(compiler, isPrejitRoot);
-        }
-
-        // Optionally install the FullPolicy.
-        var useFullPolicy = JitConfig.JitInlinePolicyFull is not 0;
-
-        if (useFullPolicy)
-        {
-            return new FullPolicy(compiler, isPrejitRoot);
-        }
-
-        // Optionally install the DiscretionaryPolicy.
-        var useDiscretionaryPolicy = JitConfig.JitInlinePolicyDiscretionary is not 0;
-
-        if (useDiscretionaryPolicy)
-        {
-            return new DiscretionaryPolicy(compiler, isPrejitRoot);
-        }
-#endif
 
         // Optionally install the ModelPolicy.
         var useModelPolicy = JitConfig.JitInlinePolicyModel is not 0;

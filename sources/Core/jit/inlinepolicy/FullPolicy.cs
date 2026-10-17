@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public sealed class FullPolicy : DiscretionaryPolicy
@@ -11,6 +10,10 @@ public sealed class FullPolicy : DiscretionaryPolicy
     public FullPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Full inline policy is only available in Debug builds.");
+        }
     }
 
     public override string Name => nameof(FullPolicy);
@@ -42,4 +45,3 @@ public sealed class FullPolicy : DiscretionaryPolicy
             : InlineObservation.CALLSITE_IS_PROFITABLE_INLINE);
     }
 }
-#endif

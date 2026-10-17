@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -41,10 +42,10 @@ internal sealed class AsyncContinuationLayout
     public List<int> ContinuationMemberOffsets { get; } = [];
     public unsafe CORINFO_CLASS_HANDLE ClassHnd { get; set; }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Dump(Compiler compiler, int indent)
     {
-        if (!compiler.verbose)
+        if (!Configuration.DEBUG || !compiler.verbose)
         {
             return;
         }
@@ -100,7 +101,6 @@ internal sealed class AsyncContinuationLayout
             JITDUMP($"{prefix}  +{ret.Offset:D3} {ret.Size} bytes for {type} return\n");
         }
     }
-#endif
 
     public unsafe AsyncReturnInfo FindReturn(Compiler compiler, GenTreeCall call)
     {
@@ -391,9 +391,7 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
         }
 
         layout.Size = roundUp(layout.Size, Configuration.TARGET_POINTER_SIZE);
-#if DEBUG
         layout.Dump(_compiler, 2);
-#endif
         var gcSlots = new bool[layout.Size / Configuration.TARGET_POINTER_SIZE];
         void SetReference(int offset)
         {

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 /// <summary>Visitor to ensure that a tree node that is not an inline candidate is noted as a failed inline.</summary>
@@ -43,4 +42,3 @@ public struct FindNonInlineCandidateVisitor : IGenTreeVisitor<FindNonInlineCandi
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
         => IGenTreeVisitor<FindNonInlineCandidateVisitor>.WalkTree(ref this, ref use, user, _ancestors);
 }
-#endif

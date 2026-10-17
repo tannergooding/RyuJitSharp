@@ -166,4 +166,18 @@ internal static unsafe class LirRangeEnumerationTests
             JitTls.Compiler = previous;
         }
     }
+
+    [Test]
+    public static void ReadOnlyRangeContainsAvoidsDebugConfigurationInRelease()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            return;
+        }
+
+        var range = new LIR.ReadOnlyRange(null, null);
+        var node = new GenTree(GT_NOP, TYP_VOID);
+
+        Assert.That(range.Contains(node), Is.True);
+    }
 }

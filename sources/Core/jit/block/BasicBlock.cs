@@ -464,27 +464,19 @@ public sealed partial class BasicBlock : LIR.Range
 
     public insGroup? bbEmitCookie;
 
-#if MEASURE_BLOCK_SIZE
     public static nint s_Size;
 
     public static nint s_Count;
-#endif
 
-#if DEBUG
     /// <summary>Native stack depth on entry (for throw-blocks)</summary>
     public int bbTgtStkDepth;
-#else
-    public int bbTgtStkDepth => 0;
-#endif
 
-#if DEBUG
     /// <summary>The max # of tree nodes in any BB</summary>
     public static int s_nMaxTrees;
 
     /// <summary>This is used in integrity checks.</summary>
     /// <remarks>We semi-randomly pick a traversal stamp, label all blocks in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are still in the BB list by whether they have the same stamp (with high probability).</remarks>
     public int bbTraversalStamp;
-#endif
 
     /// <summary>bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.</summary>
     public int bbID;
@@ -493,14 +485,15 @@ public sealed partial class BasicBlock : LIR.Range
 
     public override int GetHashCode()
     {
-#if DEBUG
-        var hash = SsaStressHashHelper();
-        if (hash != 0)
+        if (Configuration.DEBUG)
         {
-            var blockId = unchecked((uint)bbID);
-            return unchecked((int)(hash ^ (blockId << 16) ^ blockId));
+            var hash = SsaStressHashHelper();
+            if (hash != 0)
+            {
+                var blockId = unchecked((uint)bbID);
+                return unchecked((int)(hash ^ (blockId << 16) ^ blockId));
+            }
         }
-#endif
         return bbID;
     }
 
@@ -1119,9 +1112,13 @@ public sealed partial class BasicBlock : LIR.Range
         return (bbFlags & flag) != 0;
     }
 
-#if DEBUG
     public new bool Contains(GenTree node)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Basic block LIR membership checks are only available in Debug builds.");
+        }
+
         assert(IsLIR);
 
         foreach (var candidate in this)
@@ -1131,10 +1128,8 @@ public sealed partial class BasicBlock : LIR.Range
                 return true;
             }
         }
-
         return false;
     }
-#endif
 
     public void MakeLir(GenTree? firstNode, GenTree? lastNode)
     {
@@ -1381,15 +1376,10 @@ public sealed partial class BasicBlock : LIR.Range
             bbID = compiler.compBasicBlockID++
         };
 
-#if MEASURE_BLOCK_SIZE
-        s_Count += 1;
-        s_Size += unchecked((nint)NativeBasicBlockSize);
-#endif
+        MeasureBasicBlockSize();
 
-#if DEBUG
         // fgLookupBB() is invalid until fgInitBBLookup() is called again.
         compiler.fgInvalidateBBLookup();
-#endif
 
         // Give the block a number, set the ancestor count and weight
 
@@ -1431,6 +1421,13 @@ public sealed partial class BasicBlock : LIR.Range
         }
 
         return block;
+    }
+
+    [Conditional("MEASURE_BLOCK_SIZE")]
+    private static void MeasureBasicBlockSize()
+    {
+        s_Count += 1;
+        throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
     }
 
     public static BasicBlock New(Compiler compiler, BBKinds kind)
@@ -1827,12 +1824,8 @@ public sealed partial class BasicBlock : LIR.Range
     [System.Diagnostics.Conditional("DEBUG")]
     public void dspBlockHeader(bool showKind = true, bool showFlags = false, bool showPreds = true)
     {
-        if (!Configuration.DEBUG)
-        {
-            throw new InvalidOperationException("Basic block dumps are only available in Debug builds.");
-        }
+        EnsureDebugDiagnosticsAreAvailable();
 
-#if DEBUG
         jitprintf($"{dspToString()} ");
         dspBlockILRange();
 
@@ -1858,12 +1851,21 @@ public sealed partial class BasicBlock : LIR.Range
             dspFlags();
         }
         jitprintf("\n");
-#endif
     }
 
-#if DEBUG
+    private static void EnsureDebugDiagnosticsAreAvailable()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Basic block dumps are only available in Debug builds.");
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dspBlockILRange()
     {
+        EnsureDebugDiagnosticsAreAvailable();
+
         if (bbCodeOffs != BAD_IL_OFFSET)
         {
             jitprintf($"[{bbCodeOffs:X3}..");
@@ -1884,8 +1886,11 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>Print the flags</summary>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dspFlags()
     {
+        EnsureDebugDiagnosticsAreAvailable();
+
         var first = true;
         dspFlag(this, BBF_IMPORTED, "i");
         dspFlag(this, BBF_IS_LIR, "LIR");
@@ -1946,6 +1951,8 @@ public sealed partial class BasicBlock : LIR.Range
     /// <summary>Print the predecessors (bbPreds)</summary>
     public int dspPreds()
     {
+        EnsureDebugDiagnosticsAreAvailable();
+
         var count = 0;
 
         foreach (var pred in PredEdges)
@@ -1982,8 +1989,11 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>Print the successors.</summary>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dspSuccs()
     {
+        EnsureDebugDiagnosticsAreAvailable();
+
         var sep = "";
         foreach (var succ in Succs)
         {
@@ -1993,8 +2003,11 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     /// <summary>Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).</summary>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dspKind()
     {
+        EnsureDebugDiagnosticsAreAvailable();
+
         switch (_kind)
         {
             case BBJ_EHFINALLYRET:
@@ -2135,8 +2148,6 @@ public sealed partial class BasicBlock : LIR.Range
             return result;
         }
     }
-
-#endif
 
     public string dspToString(int blockNumPadding = 0)
         => $"{FMT_BB(bbNum)}{new string(' ', blockNumPadding)} [{bbID:D4}]";

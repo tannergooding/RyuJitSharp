@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -86,8 +85,17 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     {
         WithStrategy((strategy, compiler) => {
             Assert.That(compiler.InlineDiagnosticJitTimeMicroseconds, Is.Zero);
-            SetField(typeof(Compiler), compiler, "_compCycles", Stopwatch.Frequency);
+            compiler.InlineDiagnosticCompCycles = Stopwatch.Frequency;
             Assert.That(compiler.InlineDiagnosticJitTimeMicroseconds, Is.EqualTo(1_000_000u));
+        });
+    }
+
+    [Test]
+    public static void ReplayMethodPositionUsesCompilerDebugData()
+    {
+        WithStrategy((strategy, compiler) => {
+            strategy.MethodXmlFilePosition = 42;
+            Assert.That(strategy.MethodXmlFilePosition, Is.EqualTo(42));
         });
     }
 
@@ -98,7 +106,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     {
         WithStrategy((strategy, compiler) => {
             strategy.DumpData();
-            Assert.That(GetStaticField<bool>(typeof(InlineStrategy), "s_HasDumpedDataHeader"), Is.False);
+            Assert.That(GetStaticField<bool>(GetXmlDumpStateType(), "HasDumpedDataHeader"), Is.False);
         }, dumpData, dumpXml, limit);
     }
 
@@ -109,7 +117,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
             SetField(typeof(InlineStrategy), strategy, "_inlineCount", -1);
             SetField(typeof(InlineStrategy), strategy, "_lastSuccessfulPolicy", new DefaultPolicy(compiler, false));
             strategy.DumpData();
-            Assert.That(GetStaticField<bool>(typeof(InlineStrategy), "s_HasDumpedDataHeader"), Is.True);
+            Assert.That(GetStaticField<bool>(GetXmlDumpStateType(), "HasDumpedDataHeader"), Is.True);
         }, dumpData: 1, limit: 1);
     }
 
@@ -284,7 +292,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
         using var file = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true);
         InlineContext.WriteEscapedName(file, name);
         file.Flush();
-        Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+        Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(TestConfiguration.IsDebug ? expected : string.Empty));
     }
 
     [Test]
@@ -296,8 +304,12 @@ internal static unsafe class InlineStrategyDiagnosticsTests
         file.Flush();
         var bytes = stream.ToArray();
 
-        Assert.That(bytes, Has.Length.EqualTo(1023));
-        Assert.That(bytes[1022], Is.EqualTo(0xc3));
+        Assert.That(bytes, Has.Length.EqualTo(TestConfiguration.IsDebug ? 1023 : 0));
+
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(bytes[1022], Is.EqualTo(0xc3));
+        }
     }
 
     [Test]
@@ -318,6 +330,11 @@ internal static unsafe class InlineStrategyDiagnosticsTests
 
     private static void WithStrategy(Action<InlineStrategy, Compiler> action, int dumpData = 0, int dumpXml = 0, int limit = -1)
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Inline diagnostic formatting is available only in Debug builds.");
+        }
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getMethodDefFromMethod = &GetMethodToken;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
@@ -351,8 +368,8 @@ internal static unsafe class InlineStrategyDiagnosticsTests
         using var jitTls = TestConfiguration.CreateJitTls();
         JitConfig = (JitConfigValues)config;
         JitTls.Compiler = compiler;
-        SetField(typeof(InlineStrategy), null, "s_HasDumpedDataHeader", false);
-        SetField(typeof(InlineStrategy), null, "s_HasDumpedXmlHeader", false);
+        SetField(GetXmlDumpStateType(), null, "HasDumpedDataHeader", false);
+        SetField(GetXmlDumpStateType(), null, "HasDumpedXmlHeader", false);
 
         try
         {
@@ -365,13 +382,18 @@ internal static unsafe class InlineStrategyDiagnosticsTests
         {
             JitConfig = previousConfig;
             JitTls.Compiler = previousCompiler;
-            SetField(typeof(InlineStrategy), null, "s_HasDumpedDataHeader", false);
-            SetField(typeof(InlineStrategy), null, "s_HasDumpedXmlHeader", false);
+            SetField(GetXmlDumpStateType(), null, "HasDumpedDataHeader", false);
+            SetField(GetXmlDumpStateType(), null, "HasDumpedXmlHeader", false);
         }
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetMethodToken(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method) => 0x06000042;
+
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+    private static Type GetXmlDumpStateType()
+        => typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Missing XML dump state");
 
     private static T GetStaticField<T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, string name)
     {
@@ -388,4 +410,3 @@ internal static unsafe class InlineStrategyDiagnosticsTests
         field.SetValue(target, value);
     }
 }
-#endif

@@ -70,8 +70,7 @@ public sealed partial class CodeGen
         }
         genBeginFnProlog();
 
-#if DEBUG
-        if (_compiler.compJitHaltMethod())
+        if (Configuration.DEBUG && _compiler.compJitHaltMethod())
         {
             // Debuggers may replace the first instruction with INT3.
             instGen(INS_nop);
@@ -81,7 +80,6 @@ public sealed partial class CodeGen
                 _compiler.unwindPadding();
             }
         }
-#endif
         var untrLclLo = int.MaxValue;
         var untrLclHi = -int.MaxValue;
         var hasUntrLcl = false;

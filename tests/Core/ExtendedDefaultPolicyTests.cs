@@ -708,7 +708,6 @@ internal static class ExtendedDefaultPolicyTests
         public override int CodeSizeEstimate() => 30;
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static unsafe void NonInlineCandidateVisitorPreservesPriorFailure(bool priorFailure)
@@ -723,11 +722,24 @@ internal static class ExtendedDefaultPolicyTests
         var call = new GenTreeCall(var_types.TYP_INT) {
             _callType = gtCallTypes.CT_USER_FUNC,
             _inlineContext = root,
-            _inlineObservation = priorFailure ? InlineObservation.CALLEE_TOO_MUCH_IL : default,
         };
+
+        if (TestConfiguration.IsDebug)
+        {
+            call._inlineObservation = priorFailure ? InlineObservation.CALLEE_TOO_MUCH_IL : default;
+        }
+
         var stmt = new Statement(call, 1);
         var visitor = new FindNonInlineCandidateVisitor(compiler, stmt);
         _ = visitor.WalkTree(ref stmt.RootNodeRef, null);
+
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.That(root.Child, Is.Null);
+            Assert.That(strategy.InlineCount, Is.Zero);
+            return;
+        }
+
         var context = root.Child ?? throw new InvalidOperationException("Missing failed inline context.");
         Assert.That(context.IsSuccess, Is.False);
         Assert.That(context.Observation, Is.EqualTo(priorFailure
@@ -762,10 +774,14 @@ internal static class ExtendedDefaultPolicyTests
         var context = new InlineContext(strategy) {
             _parent = new InlineContext(strategy),
             _flags = asyncCall ? InlineContext.Flags.AsyncCall : InlineContext.Flags.None,
-            _treeId = 12,
-            _actualCallOffset = 9,
         };
-        SetField(typeof(InlineContext), context, "_observation", InlineObservation.CALLEE_IS_NOINLINE);
+
+        if (TestConfiguration.IsDebug)
+        {
+            context._treeId = 12;
+            context._actualCallOffset = 9;
+            SetField(typeof(InlineContext), context, "_observation", InlineObservation.CALLEE_IS_NOINLINE);
+        }
 
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
@@ -782,17 +798,23 @@ internal static class ExtendedDefaultPolicyTests
             Globals.s_jitstdout = previous;
         }
 
+        var output = System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.That(output, Is.Empty);
+            return;
+        }
+
         var asyncness = asyncCaller ? (asyncCall ? " ASYNC" : " SYNC") : "";
         var reason = InlineObservation.CALLEE_IS_NOINLINE.String;
         var expected = verbose
             ? $"  [{Globals.FMT_INL_CTX(0)} IL=0009 TR=000012 06000042] [FAILED: callee: {reason}{asyncness}] <unknown>\r\n"
             : $"  [FAILED: {reason}{asyncness}] <unknown>\r\n";
-        Assert.That(System.Text.Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+        Assert.That(output, Is.EqualTo(expected));
     }
 
     [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static unsafe int GetMethodToken(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method) => 0x06000042;
-#endif
 
     private static void SetField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)] Type type, object target, string name, object value)
     {

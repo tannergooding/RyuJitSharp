@@ -229,32 +229,24 @@ public struct BitSetUint64<TEnv, TBitSetTraits>
     where TBitSetTraits : IBitSetTraits<TEnv>
 {
     private ulong _bits;
-#if DEBUG
     private uint _epoch;
-#endif
 
     public BitSetUint64()
     {
         _bits = 0;
-#if DEBUG
         _epoch = 0;
-#endif
     }
 
     public BitSetUint64(TEnv env, bool full = false)
     {
         _bits = full ? BitSetUInt64Ops<TEnv, TBitSetTraits>.MakeFull(env) : 0;
-#if DEBUG
-        _epoch = GetEpoch(env);
-#endif
+        _epoch = Configuration.DEBUG ? GetEpoch(env) : 0;
     }
 
     public BitSetUint64(TEnv env, uint bitNum)
     {
         _bits = BitSetUInt64Ops<TEnv, TBitSetTraits>.MakeSingleton(env, bitNum);
-#if DEBUG
-        _epoch = GetEpoch(env);
-#endif
+        _epoch = Configuration.DEBUG ? GetEpoch(env) : 0;
     }
 
     internal ulong Bits
@@ -272,37 +264,42 @@ public struct BitSetUint64<TEnv, TBitSetTraits>
     // Default struct storage is zero; offset epochs so it represents the native UINT32_MAX uninitialized marker.
     private static uint GetEpoch(TEnv env) => unchecked((uint)TBitSetTraits.GetEpoch(env) + 1);
 
+    [System.Diagnostics.Conditional("DEBUG")]
     internal readonly void CheckEpoch(TEnv env)
     {
-#if DEBUG
-        assert(_epoch == GetEpoch(env));
-#endif
+        assert(!Configuration.DEBUG || (_epoch == GetEpoch(env)));
     }
 
-#if DEBUG
-    internal readonly bool HasCurrentEpoch(TEnv env) => _epoch == GetEpoch(env);
+    internal readonly bool HasCurrentEpoch(TEnv env)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Epoch validation is only available in Debug.");
+        }
+
+        return _epoch == GetEpoch(env);
+    }
 
     public override readonly string ToString()
     {
-        return BitSetUInt64Ops<TEnv, TBitSetTraits>.Format(_bits);
+        return Configuration.DEBUG
+            ? BitSetUInt64Ops<TEnv, TBitSetTraits>.Format(_bits)
+            : base.ToString()!;
     }
-#endif
 
     internal readonly bool IsEqualTo(in BitSetUint64<TEnv, TBitSetTraits> other)
     {
-        return (_bits == other._bits)
-#if DEBUG
-            && (_epoch == other._epoch)
-#endif
-            ;
+        return (_bits == other._bits) &&
+            (!Configuration.DEBUG || (_epoch == other._epoch));
     }
 
     internal void Assign(in BitSetUint64<TEnv, TBitSetTraits> other)
     {
         _bits = other._bits;
-#if DEBUG
-        _epoch = other._epoch;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _epoch = other._epoch;
+        }
     }
 }
 
@@ -373,9 +370,7 @@ public static class BitSetUint64Ops<TEnv, TBitSetTraits>
 
     public static void ClearD(TEnv env, ref BitSetUint64<TEnv, TBitSetTraits> bitSet)
     {
-#if DEBUG
         assert(bitSet.HasCurrentEpoch(env));
-#endif
         var bits = bitSet.Bits;
         BitSetUInt64Ops<TEnv, TBitSetTraits>.ClearD(env, ref bits);
         bitSet.Bits = bits;

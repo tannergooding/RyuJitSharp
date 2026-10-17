@@ -1836,7 +1836,7 @@ public partial class Compiler
         return false;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public unsafe void fgNoteNonInlineCandidate(Statement stmt, GenTreeCall call)
     {
         if (call.IsInlineCandidate || call.IsGuardedDevirtualizationCandidate || call.WasInlineCandidate)
@@ -1864,7 +1864,6 @@ public partial class Compiler
             _inlineStrategy.NewContext(call._inlineContext, stmt, call).SetFailed(inlineResult);
         }
     }
-#endif
 
     public Statement fgNewStmtNearEnd(BasicBlock block, GenTree tree, in DebugInfo di = default)
     {
@@ -3409,12 +3408,12 @@ public partial class Compiler
         JITDUMP($"New init {FMT_BB(block.bbNum)}\n");
     }
 
-#if DEBUG
     /// <summary>Check that the block list bbNum are in increasing order in the bbNext traversal</summary>
     /// <remarks>
     ///   <para>Given a block B1 and its bbNext successor B2, this means `B1->bbNum &lt; B2-&gt;bbNum`, but not that `B1->bbNum + 1 == B2-&gt;bbNum`.</para>
     ///   <para>This can be used as a precondition to a phase that expects this ordering to compare block numbers (say, to look for backwards branches).</para>
     /// </remarks>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDebugCheckBBNumIncreasing()
     {
         foreach (var block in Blocks)
@@ -3423,6 +3422,7 @@ public partial class Compiler
         }
     }
 
+#if DEBUG
     public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE)
     {
         var configEnabled = (JitConfig.JitProfileChecks >= 0) && fgHaveProfileWeights && fgPredsComputed;
@@ -7595,14 +7595,18 @@ public partial class Compiler
     public bool fgIsBigOffset(nint offset)
         => unchecked((nuint)offset) > unchecked((nuint)compMaxUncheckedOffsetForNullObject);
 
-#if DEBUG
     /// <summary>In non-Release builds, set fgBBs to empty.</summary>
     /// <remarks>After calling this, fgInitBBLookup must be called before using fgBBs again.</remarks>
+    [Conditional("DEBUG")]
     public void fgInvalidateBBLookup()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Basic block lookup invalidation is only available in Debug builds.");
+        }
+
         fgBBs = [];
     }
-#endif
 
     /// <summary>Return the last basic block in the main part of the function. With funclets, it is the block immediately before the first funclet.</summary>
     /// <returns></returns>
@@ -7630,17 +7634,18 @@ public partial class Compiler
         // Create the basic block lookup tables
         fgInitBBLookup();
 
-#if DEBUG
-        // Verify blocks are in increasing bbNum order and all pred list info is in initial state.
-        fgDebugCheckBBNumIncreasing();
-
-        foreach (var block in Blocks)
+        if (Configuration.DEBUG)
         {
-            assert(block.bbPreds is null);
-            assert(block.bbLastPred is null);
-            assert(block.bbRefs is 0);
+            // Verify blocks are in increasing bbNum order and all pred list info is in initial state.
+            fgDebugCheckBBNumIncreasing();
+
+            foreach (var block in Blocks)
+            {
+                assert(block.bbPreds is null);
+                assert(block.bbLastPred is null);
+                assert(block.bbRefs is 0);
+            }
         }
-#endif
 
         // First block is always reachable
         assert(fgFirstBB is not null);
@@ -11720,9 +11725,14 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgTableDispBasicBlock(BasicBlock block, BasicBlock? nextBlock = null, bool printEdgeLikelihoods = true, int blockTargetFieldWidth = 21, int ibcColWidth = 0)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Basic block table display is only available in Debug builds.");
+        }
+
         var flags = block.FlagsRaw;
         var bbNumMax = fgBBNumMax;
 
@@ -12213,7 +12223,6 @@ public partial class Compiler
             return stringBuilder.ToString();
         }
     }
-#endif
 
     /// <summary>try to add new EH table entries</summary>
     /// <param name="XTnum">new entries will be added before this entry (use compHndBBtabCount to add at end)</param>
@@ -13716,10 +13725,11 @@ public partial class Compiler
                     stmt.RootNode = expr.AsOp().Op1;
                 }
 
-#if DEBUG
-                var findNonInlineCandidate = new FindNonInlineCandidateVisitor(this, stmt);
-                _ = findNonInlineCandidate.WalkTree(ref stmt.RootNodeRef, null);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    var findNonInlineCandidate = new FindNonInlineCandidateVisitor(this, stmt);
+                    _ = findNonInlineCandidate.WalkTree(ref stmt.RootNodeRef, null);
+                }
                 stmt = stmt.NextStmt;
             }
 

@@ -1089,9 +1089,9 @@ public partial class Compiler
         public Exception? Failure { get; set; }
     }
 
-#if DEBUG
     /// <summary>Records optional SuperPMI data without allowing EE query failures to change compilation.</summary>
     /// <remarks>Only EE queries may run inside this trap; it also absorbs JIT-origin failures.</remarks>
+    [Conditional("DEBUG")]
     private void eeRunExtraSuperPmiQueries(Action query)
     {
         _ = eeRunFunctorWithErrorTrap(query);
@@ -1103,9 +1103,13 @@ public partial class Compiler
     /// <remarks>This is only allowed for JitDump output.</remarks>
     public unsafe int eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Class size fallback is only available in Debug builds.");
+        }
+
         var classSize = -1;
         _ = eeRunFunctorWithSpmiErrorTrap(() => classSize = info.compCompHnd->getClassSize(clsHnd));
         return classSize;
     }
-#endif
 }

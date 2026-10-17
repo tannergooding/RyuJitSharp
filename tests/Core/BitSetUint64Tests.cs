@@ -39,11 +39,7 @@ internal static class BitSetUint64Tests
     {
         var env = new BitSetUint64TestEnvironment(64);
         var empty = (TestBitSet)TestOps.MakeEmpty(env);
-#if DEBUG
-        Assert.That(TestOps.MayBeUninit(empty), Is.False);
-#else
-        Assert.That(TestOps.MayBeUninit(empty), Is.True);
-#endif
+        Assert.That(TestOps.MayBeUninit(empty), Is.EqualTo(!TestConfiguration.IsDebug));
         Assert.That(TestOps.MayBeUninit(TestOps.UninitVal()), Is.True);
 
         var first = (TestBitSet)TestOps.MakeEmpty(env);
@@ -107,6 +103,25 @@ internal static class BitSetUint64Tests
 
         TestOps.ClearD(env, ref liveness);
         Assert.That(TestOps.IsEmpty(env, liveness), Is.True);
+    }
+
+    [Test]
+    public static void EpochValidationPreservesDebugAndReleaseContracts()
+    {
+        var env = new BitSetUint64TestEnvironment(64);
+        var bitSet = (TestBitSet)TestOps.MakeEmpty(env);
+
+        if (!TestConfiguration.IsDebug)
+        {
+            _ = Assert.Throws<System.InvalidOperationException>(() => bitSet.HasCurrentEpoch(env));
+            return;
+        }
+
+        Assert.That(bitSet.HasCurrentEpoch(env), Is.True);
+
+        env.Epoch++;
+
+        Assert.That(bitSet.HasCurrentEpoch(env), Is.False);
     }
 
     [Test]
@@ -251,13 +266,15 @@ internal sealed class BitSetUint64TestEnvironment
     }
 
     public int Size { get; }
+
+    public int Epoch { get; set; }
 }
 
 internal readonly struct BitSetUint64TestTraits : IBitSetTraits<BitSetUint64TestEnvironment>
 {
     public static int GetArrSize(BitSetUint64TestEnvironment env) => 1;
 
-    public static int GetEpoch(BitSetUint64TestEnvironment env) => 0;
+    public static int GetEpoch(BitSetUint64TestEnvironment env) => env.Epoch;
 
     public static int GetSize(BitSetUint64TestEnvironment env) => env.Size;
 }

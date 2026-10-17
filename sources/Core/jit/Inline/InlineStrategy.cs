@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
@@ -28,12 +29,6 @@ public sealed partial class InlineStrategy
     // such callee can otherwise consume the budget for trivial helpers
     // (e.g., Span.Slice, property getters) that follow.
     public const long SIMD_BUDGET_BOOST_MULTIPLIER = 5;
-
-#if DEBUG
-    private static bool s_HasDumpedDataHeader;
-    private static bool s_HasDumpedXmlHeader;
-    private static readonly Lock s_XmlWriterLock = new();
-#endif
 
     private Compiler _compiler;
     private InlineContext? _rootContext;
@@ -62,11 +57,19 @@ public sealed partial class InlineStrategy
     private bool _hasForceViaDiscretionary;
     private bool _hasHardwareIntrinsicCheck;
 
-#if DEBUG
-    private int _methodXmlFilePosition;
-#endif
-
     private CLRRandom? _random;
+
+    private static class XmlDumpState
+    {
+        internal static bool HasDumpedDataHeader;
+        internal static bool HasDumpedXmlHeader;
+        internal static readonly Lock WriterLock = new();
+    }
+
+    private static class InlineRangeState
+    {
+        internal static ConfigMethodRange DisabledRange;
+    }
 
     public InlineStrategy(Compiler compiler)
     {
@@ -130,20 +133,18 @@ public sealed partial class InlineStrategy
 
     public Compiler Compiler => _compiler;
 
-#if DEBUG
     public int MethodXmlFilePosition
     {
         get
         {
-            return _methodXmlFilePosition;
+            return _compiler.InlineMethodXmlFilePosition;
         }
 
         set
         {
-            _methodXmlFilePosition = value;
+            _compiler.InlineMethodXmlFilePosition = value;
         }
     }
-#endif
 
     /// <summary>Return the current code size estimate for this method</summary>
     public int CurrentSizeEstimate => _currentSizeEstimate;
@@ -202,9 +203,9 @@ public sealed partial class InlineStrategy
         return result;
     }
 
-#if DEBUG
     /// <summary>dump description of inline behavior</summary>
     /// <param name="verbose">print more details such as final budget values and IL offsets</param>
+    [Conditional("DEBUG")]
     public void Dump(bool verbose)
     {
         assert(_rootContext is not null);
@@ -234,7 +235,6 @@ public sealed partial class InlineStrategy
 
         jitprintf($"Budget: initialSize={_initialSizeEstimate}, finalSize={_currentSizeEstimate}\n");
     }
-#endif
 
     // Dump csv header for inline stats to indicated file.
     public static void DumpCsvHeader(StreamWriter streamWriter)
@@ -297,10 +297,6 @@ public sealed partial class InlineStrategy
         return random;
     }
 
-#if DEBUG
-    private static ConfigMethodRange s_inlingDisabledRange;
-#endif
-
     /// <summary>allow strategy to disable inlining in the method being jitted</summary>
     /// <returns></returns>
     /// <remarks>
@@ -309,7 +305,11 @@ public sealed partial class InlineStrategy
     /// </remarks>
     public unsafe bool IsInliningDisabled()
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return false;
+        }
+
         var pNoInlineRangeUtf8 = JitConfig.JitNoInlineRange;
 
         if (pNoInlineRangeUtf8 is null)
@@ -317,7 +317,7 @@ public sealed partial class InlineStrategy
             return false;
         }
 
-        if (!s_inlingDisabledRange.IsInit)
+        if (!InlineRangeState.DisabledRange.IsInit)
         {
             // If we have a config string we have at least one entry.  Count
             // number of spaces in our config string to see if there are
@@ -332,13 +332,10 @@ public sealed partial class InlineStrategy
                 }
             }
 
-            s_inlingDisabledRange.EnsureInit(pNoInlineRangeUtf8, 2 * entryCount);
-            assert(!s_inlingDisabledRange.Error);
+            InlineRangeState.DisabledRange.EnsureInit(pNoInlineRangeUtf8, 2 * entryCount);
+            assert(!InlineRangeState.DisabledRange.Error);
         }
-        return s_inlingDisabledRange.Contains(_compiler.info.compMethodHash());
-#else
-        return false;
-#endif
+        return InlineRangeState.DisabledRange.Contains(_compiler.info.compMethodHash());
     }
 
     // Create context for the specified inline candidate contained in the specified statement.
@@ -375,10 +372,10 @@ public sealed partial class InlineStrategy
         }
         else
         {
-#if DEBUG
-            // Should only get here in debug builds
-            context._actualCallOffset = call._rawILOffset;
-#endif
+            if (Configuration.DEBUG)
+            {
+                context._actualCallOffset = call._rawILOffset;
+            }
         }
 
         // We currently store both the statement location (used when reporting
@@ -392,13 +389,14 @@ public sealed partial class InlineStrategy
         context._location = stmt.DebugInfo.Location;
         context._callee = call._callMethHnd;
 
-#if DEBUG
-        context._flags |= call.IsDevirtualized ? InlineContext.Flags.Devirtualized : InlineContext.Flags.None;
-        context._flags |= call.IsGuarded ? InlineContext.Flags.Guarded : InlineContext.Flags.None;
-        context._flags |= call.IsUnboxed ? InlineContext.Flags.Unboxed : InlineContext.Flags.None;
-        context._flags |= call.IsAsync ? InlineContext.Flags.AsyncCall : InlineContext.Flags.None;
-        context._treeId = call.TreeId;
-#endif
+        if (Configuration.DEBUG)
+        {
+            context._flags |= call.IsDevirtualized ? InlineContext.Flags.Devirtualized : InlineContext.Flags.None;
+            context._flags |= call.IsGuarded ? InlineContext.Flags.Guarded : InlineContext.Flags.None;
+            context._flags |= call.IsUnboxed ? InlineContext.Flags.Unboxed : InlineContext.Flags.None;
+            context._flags |= call.IsAsync ? InlineContext.Flags.AsyncCall : InlineContext.Flags.None;
+            context._treeId = call.TreeId;
+        }
 
         return context;
     }

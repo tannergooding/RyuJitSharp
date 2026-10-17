@@ -18,9 +18,10 @@ public sealed partial class BasicBlock
         to.bbStkTempsOut = from.bbStkTempsOut;
         to.bbCodeOffs = from.bbCodeOffs;
         to.bbCodeOffsEnd = from.bbCodeOffsEnd;
-#if DEBUG
-        to.bbTgtStkDepth = from.bbTgtStkDepth;
-#endif
+        if (Configuration.DEBUG)
+        {
+            to.bbTgtStkDepth = from.bbTgtStkDepth;
+        }
 
         foreach (var statement in from.Statements)
         {

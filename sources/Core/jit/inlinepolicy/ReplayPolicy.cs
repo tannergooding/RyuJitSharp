@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -27,6 +26,11 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
     public ReplayPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Replay inline policy is only available in Debug builds.");
+        }
+
         if ((s_replayFile is null) && !s_wroteReplayBanner)
         {
             var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(JitConfig.JitInlineReplayFile));
@@ -55,6 +59,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
 
     public override bool IsDataCollectionTarget => _isDataCollectionTarget;
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void FinalizeXml()
     {
         s_replayFile?.Dispose();
@@ -437,4 +442,3 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
 
     private static bool IsSpace(byte value) => value is (byte)' ' or (byte)'\t' or (byte)'\n' or (byte)'\r' or (byte)'\v' or (byte)'\f';
 }
-#endif

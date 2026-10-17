@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public sealed class RandomPolicy : DiscretionaryPolicy
@@ -13,6 +12,11 @@ public sealed class RandomPolicy : DiscretionaryPolicy
     public RandomPolicy(Compiler compiler, bool isPrejitRoot)
         : base(compiler, isPrejitRoot)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Random inline policy is only available in Debug builds.");
+        }
+
         var strategy = compiler._inlineStrategy;
         assert(strategy is not null);
         _random = strategy.GetRandom();
@@ -89,4 +93,3 @@ public sealed class RandomPolicy : DiscretionaryPolicy
         }
     }
 }
-#endif

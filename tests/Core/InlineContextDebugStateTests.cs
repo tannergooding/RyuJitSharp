@@ -81,4 +81,54 @@ internal static class InlineContextDebugStateTests
             _ = Assert.Throws<InvalidOperationException>(() => context._ilInstsSet = new BitArray(11, true));
         }
     }
+
+    [Test]
+    public static void InlineCallDiagnosticStateIsDebugOnly()
+    {
+        var call = (GenTreeCall)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeCall));
+
+        if (TestConfiguration.IsDebug)
+        {
+            var expectedFlags = GenTreeCallDebugFlags.GTF_CALL_MD_DEVIRTUALIZED
+                | GenTreeCallDebugFlags.GTF_CALL_MD_UNBOXED;
+            call._callDebugFlags = expectedFlags;
+            call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+            call._rawILOffset = 42;
+            Assert.That(call._callDebugFlags, Is.EqualTo(expectedFlags));
+            Assert.That(call._inlineObservation, Is.EqualTo(InlineObservation.CALLSITE_IS_CALL_TO_HELPER));
+            Assert.That(call._rawILOffset, Is.EqualTo(42));
+            Assert.That(call.IsDevirtualized, Is.True);
+            Assert.That(call.IsUnboxed, Is.True);
+            Assert.That(call.IsGuarded, Is.False);
+            Assert.That(call.IsStressTailCall, Is.False);
+            Assert.That(call.WasInlineCandidate, Is.False);
+
+            call.IsGuarded = true;
+            Assert.That(call.IsGuarded, Is.True);
+
+            call._callDebugFlags |= GenTreeCallDebugFlags.GTF_CALL_MD_STRESS_TAILCALL;
+            Assert.That(call.IsStressTailCall, Is.True);
+
+            call.WasInlineCandidate = true;
+            Assert.That(call.WasInlineCandidate, Is.True);
+        }
+        else
+        {
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call._callDebugFlags);
+            _ = Assert.Throws<InvalidOperationException>(
+                () => call._callDebugFlags = GenTreeCallDebugFlags.GTF_CALL_MD_EMPTY);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call._inlineObservation);
+            _ = Assert.Throws<InvalidOperationException>(
+                () => call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call._rawILOffset);
+            _ = Assert.Throws<InvalidOperationException>(() => call._rawILOffset = 42);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call.IsDevirtualized);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call.IsUnboxed);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call.IsGuarded);
+            _ = Assert.Throws<InvalidOperationException>(() => call.IsGuarded = true);
+            Assert.That(call.IsStressTailCall, Is.False);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = call.WasInlineCandidate);
+            _ = Assert.Throws<InvalidOperationException>(() => call.WasInlineCandidate = true);
+        }
+    }
 }

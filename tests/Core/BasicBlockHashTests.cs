@@ -27,6 +27,23 @@ internal static class BasicBlockHashTests
     }
 
     [Test]
+    public static void DebugOnlyBlockHelpersRejectReleaseCalls()
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            return;
+        }
+
+        var block = new BasicBlock(null, null);
+        var node = new GenTree(genTreeOps.GT_NOP, var_types.TYP_VOID);
+
+        _ = Assert.Throws<System.InvalidOperationException>(() => block.Contains(node));
+        Assert.DoesNotThrow(() => block.dspBlockILRange());
+        _ = Assert.Throws<System.InvalidOperationException>(() => _ = Globals.ShuffleHelper(1, null));
+        _ = Assert.Throws<System.InvalidOperationException>(() => _ = Globals.SsaStressHashHelper());
+    }
+
+    [Test]
     public static void EqualityUsesReferenceIdentity()
     {
         var block = new BasicBlock(null, null) {

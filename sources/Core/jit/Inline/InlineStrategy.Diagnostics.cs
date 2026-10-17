@@ -12,7 +12,7 @@ namespace RyuJitSharp;
 
 public sealed partial class InlineStrategy
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public void DumpData()
     {
         if ((JitConfig.JitInlineDumpData == 0) || (JitConfig.JitInlineDumpXml != 0))
@@ -33,10 +33,10 @@ public sealed partial class InlineStrategy
             AutoFlush = true
         };
 
-        if (!s_HasDumpedDataHeader)
+        if (!XmlDumpState.HasDumpedDataHeader)
         {
             DumpDataHeader(file);
-            s_HasDumpedDataHeader = true;
+            XmlDumpState.HasDumpedDataHeader = true;
         }
 
         DumpDataContents(file);
@@ -57,6 +57,7 @@ public sealed partial class InlineStrategy
         }
     }
 
+    [Conditional("DEBUG")]
     internal void DumpDataHeader(StreamWriter file)
     {
         DumpDataEnsurePolicyIsSet();
@@ -65,6 +66,7 @@ public sealed partial class InlineStrategy
         file.Write('\n');
     }
 
+    [Conditional("DEBUG")]
     internal void DumpDataSchema(StreamWriter file)
     {
         DumpDataEnsurePolicyIsSet();
@@ -72,6 +74,7 @@ public sealed partial class InlineStrategy
         _lastSuccessfulPolicy.DumpSchema(file);
     }
 
+    [Conditional("DEBUG")]
     internal unsafe void DumpDataContents(StreamWriter file)
     {
         DumpDataEnsurePolicyIsSet();
@@ -85,6 +88,7 @@ public sealed partial class InlineStrategy
         _lastSuccessfulPolicy.DumpData(file);
     }
 
+    [Conditional("DEBUG")]
     public unsafe void DumpXml(StreamWriter? file = null, int indent = 0)
     {
         if (JitConfig.JitInlineDumpXml == 0)
@@ -94,9 +98,9 @@ public sealed partial class InlineStrategy
 
         file ??= jitstdout();
 
-        lock (s_XmlWriterLock)
+        lock (XmlDumpState.WriterLock)
         {
-            if (!s_HasDumpedXmlHeader)
+            if (!XmlDumpState.HasDumpedXmlHeader)
             {
                 DumpDataEnsurePolicyIsSet();
                 var dumpDataSetting = JitConfig.JitInlineDumpData;
@@ -120,7 +124,7 @@ public sealed partial class InlineStrategy
                 }
 
                 file.Write("<Methods>\n");
-                s_HasDumpedXmlHeader = true;
+                XmlDumpState.HasDumpedXmlHeader = true;
             }
 
             if ((_inlineCount == 0) && (JitConfig.JitInlineDumpXml >= 2))
@@ -166,41 +170,24 @@ public sealed partial class InlineStrategy
         }
     }
 
+    [Conditional("DEBUG")]
     public static void FinalizeXml(StreamWriter? file = null)
     {
         file ??= jitstdout();
-        lock (s_XmlWriterLock)
+        lock (XmlDumpState.WriterLock)
         {
-            if (s_HasDumpedXmlHeader)
+            if (XmlDumpState.HasDumpedXmlHeader)
             {
                 file.Write("</Methods>\n");
                 file.Write("</InlineForest>\n");
                 file.Flush();
-                s_HasDumpedXmlHeader = false;
+                XmlDumpState.HasDumpedXmlHeader = false;
             }
         }
 
-        ReplayPolicy.FinalizeXml();
-    }
-#endif
-}
-
-#if DEBUG
-public partial class Compiler
-{
-    // The upstream counter is already in microseconds, but inline diagnostics scale it again.
-    internal uint InlineDiagnosticJitTimeMicroseconds
-    {
-        get
+        if (Configuration.DEBUG)
         {
-            if (_compCycles <= 0)
-            {
-                return 0;
-            }
-
-            var microseconds = ((double)_compCycles / Stopwatch.Frequency) * 1_000_000;
-            return unchecked((uint)microseconds);
+            ReplayPolicy.FinalizeXml();
         }
     }
 }
-#endif

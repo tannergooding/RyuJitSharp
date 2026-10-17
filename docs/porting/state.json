@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Reconcile the next already-transformed open inventory row, sources\\Core\\inc\\stdmacros\\Globals.cs:10 (HOST_64BIT), against current source and commit evidence, then continue ordered family bucketing under the no-#if/no-conditional-include policy. Keep CORINFO_AsyncResumeInfo/B209 deferred until its target-width table/emitter closure is tested, preserve CFG-0001 as the sole approved exception, and maintain zero Retained.",
+    "nextAction": "Continue immediately with the 21 open inventory rows whose condition includes MEASURE_MEM_ALLOC, excluding already-closed CCB-0744 and the independent DEBUG-only CCB-0088. Port and validate their complete source/test/generator dependency closure, using table-regeneration for generated tables. Keep ABI-0001 and B209 genAsyncResumeInfo deferred until the target-width table/emitter closure is tested; preserve CFG-0001 as the sole approved exception and maintain zero Retained.",
     "activeBatch": null,
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",

@@ -9,9 +9,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     public unsafe uint compMethodHash(CORINFO_METHOD_HANDLE method)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("The compiler method hash is only available in Debug builds.");
+        }
+
         if (method == info.compMethodHnd)
         {
             return unchecked((uint)info.compMethodHash());
@@ -39,6 +43,11 @@ public partial class Compiler
 
     public unsafe bool compJitHaltMethod()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("JIT method halting is only available in Debug builds.");
+        }
+
         if (JitConfig.JitHalt.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             return true;
@@ -47,5 +56,4 @@ public partial class Compiler
         var hash = unchecked((uint)JitConfig.JitHashHalt);
         return (hash != uint.MaxValue) && (hash == info.compMethodHash());
     }
-#endif
 }

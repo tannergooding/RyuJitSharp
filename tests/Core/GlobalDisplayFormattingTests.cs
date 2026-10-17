@@ -11,29 +11,35 @@ internal static unsafe class GlobalDisplayFormattingTests
     [Test]
     public static void DisplayHelpersPreserveNativeZeroAndReleaseIdentityBehavior()
     {
-#if DEBUG
-        using var tls = new JitTls(null);
-#else
         var previousCompiler = JitTls.Compiler;
-        JitTls.Compiler = null;
+        using var tls = TestConfiguration.CreateJitTls();
+
+        if (!TestConfiguration.IsDebug)
+        {
+            JitTls.Compiler = null;
+        }
+
         try
         {
-#endif
             Assert.That(JitTls.Compiler, Is.Null);
             Assert.That(Globals.dspOffset(0), Is.EqualTo((nint)0));
             Assert.That(Globals.dspPtr(null), Is.EqualTo((nint)0));
 
-#if !DEBUG
-            var offset = (nint)0x1234;
-            var pointer = (void*)0x1234;
-            Assert.That(Globals.dspOffset(offset), Is.EqualTo(offset));
-            Assert.That(Globals.dspPtr(pointer), Is.EqualTo((nint)pointer));
+            if (!TestConfiguration.IsDebug)
+            {
+                var offset = (nint)0x1234;
+                var pointer = (void*)0x1234;
+                Assert.That(Globals.dspOffset(offset), Is.EqualTo(offset));
+                Assert.That(Globals.dspPtr(pointer), Is.EqualTo((nint)pointer));
+            }
         }
         finally
         {
-            JitTls.Compiler = previousCompiler;
+            if (!TestConfiguration.IsDebug)
+            {
+                JitTls.Compiler = previousCompiler;
+            }
         }
-#endif
     }
 
     [Test]

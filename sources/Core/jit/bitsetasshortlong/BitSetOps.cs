@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -419,9 +420,7 @@ public struct BitSetOps<TEnv, TBitSetTraits>
 
         public bool NextElem(ref uint element)
         {
-#if BITSET_TRACK_OPCOUNTS
             RecordNextBit();
-#endif
             while (true)
             {
                 if (_bits != 0)
@@ -443,11 +442,10 @@ public struct BitSetOps<TEnv, TBitSetTraits>
             }
         }
 
-#if BITSET_TRACK_OPCOUNTS
+        [Conditional("BITSET_TRACK_OPCOUNTS")]
         private static void RecordNextBit()
         {
             throw new NotImplementedException("BITSET_TRACK_OPCOUNTS is not ported.");
         }
-#endif
     }
 }

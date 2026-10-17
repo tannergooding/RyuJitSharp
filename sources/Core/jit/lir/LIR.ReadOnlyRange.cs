@@ -50,11 +50,8 @@ public partial class LIR
             if (Configuration.DEBUG)
             {
                 assert((firstNode is null) == (lastNode is null));
+                assert((firstNode == lastNode) || (Contains(lastNode!)));
             }
-
-#if DEBUG
-            assert((firstNode == lastNode) || (Contains(lastNode!)));
-#endif
         }
 
         /// <summary>Returns the first node in the range.</summary>
@@ -78,7 +75,6 @@ public partial class LIR
 
         public ReverseEnumerator GetReverseEnumerator() => new ReverseEnumerator(_lastNode, _firstNode?.Prev);
 
-#if DEBUG
         /// <summary>Indicates whether or not this range contains a given node.</summary>
         /// <param name="node">The node to find.</param>
         /// <returns>True if this range contains the given node; false otherwise.</returns>
@@ -87,7 +83,7 @@ public partial class LIR
             // TODO-LIR: derive this from the # of nodes in the function as well as
             // the debug level. Checking small functions is pretty cheap; checking
             // large functions is not.
-            if (JitConfig.JitExpensiveDebugCheckLevel < 2)
+            if (!Configuration.DEBUG || (JitConfig.JitExpensiveDebugCheckLevel < 2))
             {
                 return true;
             }
@@ -102,10 +98,8 @@ public partial class LIR
                     break;
                 }
             }
-
             return found;
         }
-#endif
 
         IEnumerator<GenTree> IEnumerable<GenTree>.GetEnumerator() => GetEnumerator();
 

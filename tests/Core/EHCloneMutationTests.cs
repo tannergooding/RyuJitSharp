@@ -32,9 +32,10 @@ internal static class EHCloneMutationTests
             source.bbStkTempsOut = 3;
             source.bbCodeOffs = 5;
             source.bbCodeOffsEnd = 11;
-#if DEBUG
-            source.bbTgtStkDepth = 4;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                source.bbTgtStkDepth = 4;
+            }
             compiler.fgInsertStmtAtEnd(source, compiler.fgNewStmtFromTree(compiler.gtNewIconNode(TYP_INT, 7)));
             var original = source.FirstStmt!;
 
@@ -48,9 +49,7 @@ internal static class EHCloneMutationTests
             Assert.That(clone.bbStkTempsOut, Is.EqualTo(3));
             Assert.That(clone.bbCodeOffs, Is.EqualTo(5));
             Assert.That(clone.bbCodeOffsEnd, Is.EqualTo(11));
-#if DEBUG
-            Assert.That(clone.bbTgtStkDepth, Is.EqualTo(4));
-#endif
+            Assert.That(clone.bbTgtStkDepth, Is.EqualTo(TestConfiguration.IsDebug ? 4 : 0));
             Assert.That(clone.FirstStmt, Is.Not.SameAs(original));
             Assert.That(clone.FirstStmt!.RootNode, Is.Not.SameAs(original.RootNode));
             Assert.That(clone.FirstStmt.RootNode.AsIntCon().IconValue, Is.EqualTo((nint)7));

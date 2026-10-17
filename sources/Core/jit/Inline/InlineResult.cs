@@ -91,11 +91,8 @@ public sealed class InlineResult : IDisposable
             _inlineContext = stmt.DebugInfo.InlineContext;
             _policy.NoteContext(_inlineContext);
 
-#if DEBUG
-            _policy.NoteOffset(call._rawILOffset);
-#else
-            _policy.NoteOffset(stmt.DebugInfo.Location.Offset);
-#endif
+            var offset = Configuration.DEBUG ? call._rawILOffset : stmt.DebugInfo.Location.Offset;
+            _policy.NoteOffset(offset);
         }
 
         // Get method handle for caller. Note we use the
