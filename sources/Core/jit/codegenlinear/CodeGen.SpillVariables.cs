@@ -43,11 +43,7 @@ public sealed partial class CodeGen
             }
 
             assert((tree.Flags & GTF_SPILLED) == 0);
-            genUpdateRegLife(in varDsc, isBorn: false, isDying: true
-#if DEBUG
-                , tree
-#endif
-                );
+            genUpdateRegLife(in varDsc, isBorn: false, isDying: true, tree);
             _gcInfo.gcMarkRegSetNpt(genGetRegMask(in varDsc));
 
             if (VarSetOps.IsMember(_compiler, _gcInfo.gcTrkStkPtrLcls, varDsc._varIndex))

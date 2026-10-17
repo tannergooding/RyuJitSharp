@@ -69,19 +69,11 @@ public sealed partial class CodeGen
                 ref var varDsc = ref _compiler.lvaGetDesc(lcl.LclNum);
                 if (varDsc.RegNum != REG_STK)
                 {
-                    genUpdateRegLife(in varDsc, isBorn: false, isDying: true
-#if DEBUG
-                        , op1
-#endif
-                        );
+                    genUpdateRegLife(in varDsc, isBorn: false, isDying: true, op1);
                     _gcInfo.gcMarkRegSetNpt(op1.RegMask);
                     genUpdateVarReg(ref varDsc, treeNode);
                     getVariableLiveKeeper().siUpdateVariableLiveRange(in varDsc, lcl.LclNum);
-                    genUpdateRegLife(in varDsc, isBorn: true, isDying: false
-#if DEBUG
-                        , treeNode
-#endif
-                        );
+                    genUpdateRegLife(in varDsc, isBorn: true, isDying: false, treeNode);
                 }
             }
         }
@@ -120,19 +112,11 @@ public sealed partial class CodeGen
 
                 if (!op1.AsLclVar().IsLastUse(multiRegIndex) && (fieldVarDsc.RegNum != REG_STK))
                 {
-                    genUpdateRegLife(in fieldVarDsc, isBorn: false, isDying: true
-#if DEBUG
-                        , op1
-#endif
-                        );
+                    genUpdateRegLife(in fieldVarDsc, isBorn: false, isDying: true, op1);
                     _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(sourceReg, sourceReg.SingleTypeMask));
                     genUpdateVarReg(ref fieldVarDsc, treeNode);
                     getVariableLiveKeeper().siUpdateVariableLiveRange(in fieldVarDsc, fieldVarNum);
-                    genUpdateRegLife(in fieldVarDsc, isBorn: true, isDying: false
-#if DEBUG
-                        , treeNode
-#endif
-                        );
+                    genUpdateRegLife(in fieldVarDsc, isBorn: true, isDying: false, treeNode);
                 }
             }
             else

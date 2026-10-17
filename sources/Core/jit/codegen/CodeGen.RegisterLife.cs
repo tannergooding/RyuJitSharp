@@ -63,17 +63,12 @@ public sealed partial class CodeGen
         return mask;
     }
 
-    public void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
-#if DEBUG
-        , GenTree? tree
-#endif
-    )
+    public void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying, GenTree? tree)
     {
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             var mask = genGetRegMask(in local);
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf($"\t\t\t\t\t\t\tV{_compiler.lvaGetLclNum(in local):D2} in reg ");
                 local.PrintVarReg();
@@ -81,7 +76,6 @@ public sealed partial class CodeGen
                 Compiler.printTreeId(tree);
                 jitprintf("\n");
             }
-#endif
 
             // A minopts dead store may be born and dying at the same node.
             if (isDying)

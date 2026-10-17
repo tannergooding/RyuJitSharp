@@ -134,11 +134,7 @@ public interface ICodeGen
 
     regMaskTP genGetRegMask(GenTree tree);
 
-    void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
-#if DEBUG
-        , GenTree? tree
-#endif
-    );
+    void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying, GenTree? tree);
 
     bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm);
 

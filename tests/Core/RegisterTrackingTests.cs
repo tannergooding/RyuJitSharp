@@ -30,16 +30,10 @@ internal static unsafe class RegisterTrackingTests
             compiler.lvaTable = [new() { Type = TYP_INT, lvTracked = true, lvLRACandidate = true, RegNum = REG_X64_RAX }];
             compiler.lvaCount = 1;
             compiler.lvaTrackedCount = 1;
-#if DEBUG
-            var tree = compiler.gtNewLclvNode(TYP_INT, 0);
-#endif
+            GenTree? tree = TestConfiguration.IsDebug ? compiler.gtNewLclvNode(TYP_INT, 0) : null;
             codeGen.RegSet.SetMaskVars(dying ? RBM_RAX | RBM_RBX : RBM_RBX);
 
-            codeGen.genUpdateRegLife(in compiler.lvaTable[0], born, dying
-#if DEBUG
-                , tree
-#endif
-            );
+            codeGen.genUpdateRegLife(in compiler.lvaTable[0], born, dying, tree);
 
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(dying ? RBM_RBX : RBM_RAX | RBM_RBX));
         });
@@ -54,16 +48,10 @@ internal static unsafe class RegisterTrackingTests
             ];
             compiler.lvaCount = 1;
             compiler.lvaTrackedCount = 1;
-#if DEBUG
-            var tree = compiler.gtNewLclvNode(TYP_REF, 0);
-#endif
+            GenTree? tree = TestConfiguration.IsDebug ? compiler.gtNewLclvNode(TYP_REF, 0) : null;
             codeGen.RegSet.SetMaskVars(RBM_RAX);
 
-            codeGen.genUpdateRegLife(in compiler.lvaTable[0], true, false
-#if DEBUG
-                , tree
-#endif
-            );
+            codeGen.genUpdateRegLife(in compiler.lvaTable[0], true, false, tree);
 
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(RBM_RAX));
         });

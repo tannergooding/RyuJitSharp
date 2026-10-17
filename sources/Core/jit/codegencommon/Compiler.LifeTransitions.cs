@@ -70,11 +70,7 @@ public partial class Compiler
                     codeGen.GCInfo.gcRegByrefSetCur &= ~regMask;
                 }
 
-                codeGen.genUpdateRegLife(in varDsc, isBorn: false, isDying: true
-#if DEBUG
-                    , null
-#endif
-                    );
+                codeGen.genUpdateRegLife(in varDsc, isBorn: false, isDying: true, null);
             }
             if (isInMemory && (isGCRef || isByRef))
             {
@@ -113,11 +109,7 @@ public partial class Compiler
                         VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
                     }
 
-                    codeGen.genUpdateRegLife(in varDsc, isBorn: true, isDying: false
-#if DEBUG
-                        , null
-#endif
-                        );
+                    codeGen.genUpdateRegLife(in varDsc, isBorn: true, isDying: false, null);
                     var regMask = codeGen.genGetRegMask(in varDsc);
                     if (isGCRef)
                     {

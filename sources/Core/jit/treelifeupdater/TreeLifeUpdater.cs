@@ -61,11 +61,7 @@ public sealed class TreeLifeUpdater
                         _compiler.codeGen.genUpdateVarReg(ref fldVarDsc, lclNode, multiRegIndex);
                     }
 
-                    _compiler.codeGen.genUpdateRegLife(in fldVarDsc, isBorn, isDying
-#if DEBUG
-                        , lclNode
-#endif
-                        );
+                    _compiler.codeGen.genUpdateRegLife(in fldVarDsc, isBorn, isDying, lclNode);
                 }
 
                 if (isInMemory &&
@@ -145,11 +141,7 @@ public sealed class TreeLifeUpdater
 
                     if (isInReg)
                     {
-                        _compiler.codeGen.genUpdateRegLife(in varDsc, isBorn, isDying
-#if DEBUG
-                            , tree
-#endif
-                            );
+                        _compiler.codeGen.genUpdateRegLife(in varDsc, isBorn, isDying, tree);
                     }
 
                     if (isInMemory &&
@@ -234,11 +226,7 @@ public sealed class TreeLifeUpdater
                             _compiler.codeGen.genUpdateVarReg(ref fldVarDsc, tree, i);
                         }
 
-                        _compiler.codeGen.genUpdateRegLife(in fldVarDsc, isBorn, isDying
-#if DEBUG
-                            , tree
-#endif
-                            );
+                        _compiler.codeGen.genUpdateRegLife(in fldVarDsc, isBorn, isDying, tree);
 
                         if (Configuration.DEBUG)
                         {
