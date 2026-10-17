@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT).
 // See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,8 @@ internal static unsafe class WasmCodeGenMemoryTests
     [Test]
     public static void WellKnownGlobalsAreCachedPerCompilerAndReturnedByReference()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
@@ -41,6 +42,8 @@ internal static unsafe class WasmCodeGenMemoryTests
     [Test]
     public static void InternalRegistersTrackWasmLocals()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var node = (GenTree)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeIntCon));
         var first = regNumberExtensions.MakeWasmReg(3, TYP_INT);
         var second = regNumberExtensions.MakeWasmReg(7, TYP_SIMD16);
@@ -77,6 +80,8 @@ internal static unsafe class WasmCodeGenMemoryTests
     [Test]
     public static void CallerStackPointerToInitialStackPointerDeltaIsUnreached()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -95,6 +100,8 @@ internal static unsafe class WasmCodeGenMemoryTests
 
     private static nint GetMemargOffset(int offset, bool isContained)
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -136,4 +143,3 @@ internal static unsafe class WasmCodeGenMemoryTests
         s_wellKnownGlobalsQueries++;
     }
 }
-#endif

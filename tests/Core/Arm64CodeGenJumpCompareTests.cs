@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Linq;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -19,6 +18,8 @@ internal static class Arm64CodeGenJumpCompareTests
     [TestCase(GenCondition.CodeKind.NE)]
     public static void CompareJumpRecordsAConditionalRegisterBranch(GenCondition.CodeKind condition)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = CreateJump(compiler, GT_JCMP, condition, 0);
@@ -41,6 +42,8 @@ internal static class Arm64CodeGenJumpCompareTests
     public static void BitTestJumpRecordsTheSelectedBitAndImmediateBranch(
         GenCondition.CodeKind condition, long mask, instruction expectedInstruction, int expectedBitIndex)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = CreateJump(compiler, GT_JTEST, condition, (nint)mask);
@@ -78,4 +81,3 @@ internal static class Arm64CodeGenJumpCompareTests
         return new GenTreeOpCC(oper, TYP_VOID, new GenCondition(condition), value, constant);
     }
 }
-#endif

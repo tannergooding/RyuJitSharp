@@ -37,11 +37,12 @@ public partial class Emitter
             assert(IsX86ByteRegister(ireg));
         }
         id.idCodeSize(sz);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo!.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
     }
@@ -60,11 +61,12 @@ public partial class Emitter
         id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_SRD_RRD_CNS));
         id.idReg1(reg);
         id.idAddr().iiaInitLclVarAddr(varNum, unchecked((uint)offs));
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo!.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
         var sz = emitInsSizeSV(id, insCodeMR(ins), varNum, offs, ival);
         id.idCodeSize(sz);
 

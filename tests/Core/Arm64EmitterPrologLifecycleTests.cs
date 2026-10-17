@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,8 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
     [Test]
     public static void BeginningAndEndingThePrologReusesThePreallocatedGroup()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var (compiler, emitter) = CreateEmitter();
         var prolog = FirstGroup(emitter) ?? throw new AssertionException("Missing prolog group.");
         Assert.That(emitter.emitCurIG, Is.Not.SameAs(prolog));
@@ -34,6 +35,8 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
     [TestCase(IGPT_EPILOG)]
     public static void ReservingAndGeneratingPlaceholdersPreservesTheirLifecycle(insGroupPlaceholderType kind)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var (compiler, emitter) = CreateEmitter();
         compiler.fgFuncletsCreated = true;
         compiler.compFuncInfos = [new() { funKind = FuncKind.FUNC_ROOT }];
@@ -74,6 +77,8 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
     [Test]
     public static void EachReservationIncrementsTheNativePlaceholderCounter()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         if (!Configuration.EMITTER_STATS)
         {
             Assert.Ignore("Emitter statistics are disabled in this build.");
@@ -107,11 +112,7 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
         var emitter = new Emitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, chkAlign: TestConfiguration.IsDebug);
         return (compiler, emitter);
     }
 
@@ -127,4 +128,3 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurCodeOffset")]
     private static extern ref int CodeOffset(Emitter emitter);
 }
-#endif

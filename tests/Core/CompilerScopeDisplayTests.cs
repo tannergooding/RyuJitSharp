@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -13,6 +12,8 @@ internal static class CompilerScopeDisplayTests
     [Test]
     public static void EmptyScopeListsPrintBothTitlesWithoutTheColumnHeader()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 
         var output = CodeGenLifeTransitionTests.Capture(compiler.compDispScopeLists);
@@ -34,6 +35,8 @@ internal static class CompilerScopeDisplayTests
     public static void PopulatedListsPreserveNativeWidthsOrderAndCursorMarkers(
         int nextEnter, int nextExit, string name, string paddedName)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compVarScopes =
         [
@@ -97,4 +100,3 @@ internal static class CompilerScopeDisplayTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compExitScopeIndices")]
     private static extern ref int[] ExitIndices(Compiler compiler);
 }
-#endif

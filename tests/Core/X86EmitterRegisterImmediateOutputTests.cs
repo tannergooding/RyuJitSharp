@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86
 using System;
 using System.Reflection;
 using NUnit.Framework;
@@ -23,9 +22,7 @@ internal static unsafe class X86EmitterRegisterImmediateOutputTests
         {
             var id = NewDescriptor(ins, size, ins == INS_inc ? IF_XARCH_RRW : IF_XARCH_RRD, reg);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            X86EmitterStaticOutputTests.SetEmitIssuing(emitter);
             var end = emitter.emitOutputR(buffer, id);
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString(expected)));
@@ -42,9 +39,7 @@ internal static unsafe class X86EmitterRegisterImmediateOutputTests
         {
             var id = NewDescriptor(ins, size, IF_XARCH_CNS, constant: immediate);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            X86EmitterStaticOutputTests.SetEmitIssuing(emitter);
             var end = emitter.emitOutputIV(buffer, id);
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString(expected)));
@@ -90,4 +85,3 @@ internal static unsafe class X86EmitterRegisterImmediateOutputTests
         return id;
     }
 }
-#endif

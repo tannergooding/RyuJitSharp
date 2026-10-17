@@ -67,19 +67,17 @@ public partial class Compiler
     public unsafe void eeSetLIdone()
     {
         assert(opts.compDbgInfo);
-#if DEBUG
-        if (verbose || opts.dspDebugInfo)
+        if (Configuration.DEBUG && (verbose || opts.dspDebugInfo))
         {
             eeDispLineInfos();
         }
-#endif
         assert(sizeof(ICorDebugInfo.OffsetMapping) == 12);
 
         info.compCompHnd->setBoundaries(info.compMethodHnd, eeBoundariesCount, eeBoundaries);
         eeBoundaries = null;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public unsafe void eeDispLineInfos()
     {
         jitprintf($"IP mapping count : {eeBoundariesCount}\n");
@@ -90,6 +88,7 @@ public partial class Compiler
         jitprintf("\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static unsafe void eeDispLineInfo(ICorDebugInfo.OffsetMapping* line)
     {
         jitprintf("IL offs ");
@@ -145,5 +144,4 @@ public partial class Compiler
         jitprintf("\n");
         assert((line->source & ~(ICorDebugInfo.STACK_EMPTY | ICorDebugInfo.CALL_INSTRUCTION | ICorDebugInfo.ASYNC)) == 0);
     }
-#endif
 }

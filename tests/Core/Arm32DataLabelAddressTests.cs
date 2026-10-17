@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -22,6 +21,8 @@ internal static class Arm32DataLabelAddressTests
     [TestCase(0x12345678u, false)]
     public static void DataLabelAddressesRecordTheirNativeFormatAndOffset(uint offs, bool isSmallDescriptor)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var descriptor = RecordAddress(codeGen.Emitter, INS_movw, EA_HANDLE_CNS_RELOC, offs, REG_R4);
@@ -39,6 +40,8 @@ internal static class Arm32DataLabelAddressTests
     [TestCase(true)]
     public static void DataLabelRelocationFlagsFollowCompilerRelocationPolicy(bool compReloc)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.compReloc = compReloc;
@@ -51,15 +54,13 @@ internal static class Arm32DataLabelAddressTests
     [Test]
     public static void RelocatableDataLabelCodeGenUsesTheDataAddressEmitter()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
             RecordArm32Instruction(() => codeGen.genMov32RelocatableDataLabel(42, REG_R4));
-#if DEBUG
-            var expectedInstruction = INS_movw;
-#else
-            var expectedInstruction = INS_movt;
-#endif
+            var expectedInstruction = TestConfiguration.IsDebug ? INS_movw : INS_movt;
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No data-label instruction was recorded.");
 
@@ -79,20 +80,22 @@ internal static class Arm32DataLabelAddressTests
 
     private static void RecordArm32Instruction(TestDelegate action)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                action();
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             action();
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        action();
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
 }
-#endif

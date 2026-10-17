@@ -38,16 +38,19 @@ internal static class CodeGenInstructionFrontendTests
         Assert.That(CodeGen.genSizeStr(attr), Is.EqualTo(expected));
     }
 
-#if TARGET_XARCH
-#if TARGET_X86
     [TestCase(INS_fld, true)]
     [TestCase(INS_fstp, true)]
-#endif
     [TestCase(INS_mov, false)]
     [TestCase(INS_addss, false)]
     [TestCase(INS_add, false)]
     public static void XarchFloatingInstructionMetadataMatchesTheTable(instruction ins, bool expected)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+        if (ins is INS_fld or INS_fstp)
+        {
+            Assume.That(Configuration.TARGET_X86);
+        }
+
         Assert.That(CodeGen.instIsFP(ins), Is.EqualTo(expected));
     }
 
@@ -56,14 +59,17 @@ internal static class CodeGenInstructionFrontendTests
     [TestCase(INS_mov, false)]
     public static void PseudoNameFlagMatchesTheNativeInstructionTable(instruction ins, bool expected)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         Assert.That(CodeGen.instHasPseudoName(ins), Is.EqualTo(expected));
     }
 
-#if TARGET_AMD64
     [TestCase(0u)]
     [TestCase(16u)]
     public static void ReturnSelectionKeepsTheImmediateOnlyForCalleePoppedArguments(uint stackArgumentSize)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.instGen_Return(stackArgumentSize);
@@ -78,34 +84,32 @@ internal static class CodeGenInstructionFrontendTests
             }
         });
     }
-#endif
-#endif
 
-#if TARGET_ARM
     [TestCase(INS_vldr, true)]
     [TestCase(INS_ldr, false)]
     public static void ArmFloatingInstructionMetadataMatchesTheTable(instruction ins, bool expected)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         Assert.That(CodeGen.instIsFP(ins), Is.EqualTo(expected));
     }
-#endif
 
-#if TARGET_ARM64
     [Test]
     public static void Arm64SveInstructionNameKeepsTheNativeMnemonic()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         Assert.That(new CodeGen(compiler).genInsName(INS_sve_mov).ToString(), Is.EqualTo("mov"));
     }
-#endif
 
-#if TARGET_WASM
     [TestCase(INS_i8x16_extract_lane_s, 1)]
     [TestCase(INS_i32x4_extract_lane, 4)]
     [TestCase(INS_i64x2_extract_lane, 8)]
     public static void WasmSimdElementWidthUsesTheTableUpperBits(instruction ins, byte expected)
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         Assert.That(CodeGen.instSimdElemSize(ins), Is.EqualTo(expected));
     }
-#endif
 }

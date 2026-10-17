@@ -75,12 +75,10 @@ public partial class Emitter
             assert(_compiler.compCurBB is not null);
             id.idjKeepLong = _compiler.fgIsBlockCold(_compiler.compCurBB);
         }
-#if DEBUG
-        if (_compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && _compiler!.opts.compLongAddress)
         {
             id.idjKeepLong = true;
         }
-#endif
 
         if (!id.idjKeepLong)
         {

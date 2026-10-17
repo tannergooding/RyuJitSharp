@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARMARCH
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -13,6 +12,8 @@ internal static unsafe class Arm64EmitterFragmentTests
     [Test]
     public static void FunctionEndRecognizesFragmentAndFuncletBoundaries()
     {
+        Assume.That(Configuration.TARGET_ARMARCH);
+
         var (compiler, emitter) = CreateEmitter();
         var first = Group();
         var ordinary = Group();
@@ -44,6 +45,8 @@ internal static unsafe class Arm64EmitterFragmentTests
     [Test]
     public static void SplittingDefersAdjacentPrologsAndSkipsAnEmptyFinalGroup()
     {
+        Assume.That(Configuration.TARGET_ARMARCH);
+
         var (compiler, emitter) = CreateEmitter();
         insGroup[] groups =
         [
@@ -77,6 +80,8 @@ internal static unsafe class Arm64EmitterFragmentTests
     [Test]
     public static void SplittingHonorsTheRequestedStartAndEndGroups()
     {
+        Assume.That(Configuration.TARGET_ARMARCH);
+
         var (compiler, emitter) = CreateEmitter();
         insGroup[] groups = [Group(40), Group(40), Group(40), Group(40)];
         Link(groups);
@@ -108,11 +113,7 @@ internal static unsafe class Arm64EmitterFragmentTests
         var emitter = new Emitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, chkAlign: TestConfiguration.IsDebug);
 
         return (compiler, emitter);
     }
@@ -120,9 +121,10 @@ internal static unsafe class Arm64EmitterFragmentTests
     private static insGroup Group(InsGroupFlags flags = InsGroupFlags.None, ushort size = 0)
     {
         var group = new insGroup { igFlags = flags, igSize = size };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
         return group;
     }
 
@@ -142,4 +144,3 @@ internal static unsafe class Arm64EmitterFragmentTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
-#endif

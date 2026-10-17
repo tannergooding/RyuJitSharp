@@ -3,12 +3,12 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
 
-#if DEBUG
 [NonParallelizable]
 internal static class ILDisplayTests
 {
@@ -24,6 +24,7 @@ internal static class ILDisplayTests
     [TestCase(7.5, 9, "7.50000000")]
     public static void GeneralFloatingFormatRetainsNativeSignificantZeroes(double value, int precision, string expected)
     {
+        RequireDebug();
         Assert.That(Globals.formatFloatWithTrailingZeros(value, precision), Is.EqualTo(expected));
     }
 
@@ -34,6 +35,7 @@ internal static class ILDisplayTests
     [TestCase(127, "7F")]
     public static void ShortInlineIntegerUsesNativeHexWidth(int operand, string expectedHex)
     {
+        RequireDebug();
         var text = DumpInstruction([0x1F, unchecked((byte)operand)]);
         Assert.That(text, Does.EndWith($" 0x{expectedHex}{Environment.NewLine}"));
     }
@@ -58,6 +60,7 @@ internal static class ILDisplayTests
     [TestCase("23010000000000F8FF", "-nan")]
     public static void NumericOperandsMatchNativeFormatting(string instructionHex, string expectedOperand)
     {
+        RequireDebug();
         var previousCulture = CultureInfo.CurrentCulture;
 
         try
@@ -78,6 +81,7 @@ internal static class ILDisplayTests
     [TestCase("23010000000000F0FF", "-nan(snan)", "-nan")]
     public static void NaNOperandsUseHostSpelling(string instructionHex, string windowsOperand, string unixOperand)
     {
+        RequireDebug();
         var expectedOperand = OperatingSystem.IsWindows() ? windowsOperand : unixOperand;
         var text = DumpInstruction(Convert.FromHexString(instructionHex));
         Assert.That(text, Does.EndWith($" {expectedOperand}{Environment.NewLine}"));
@@ -87,12 +91,15 @@ internal static class ILDisplayTests
     [TestCase("450200000001000000FEFFFFFF", " 45 02 00 00 00 01 00 00 00 fe ff ff ff switch      ")]
     public static void SwitchDisplaysTheEntireTable(string instructionHex, string expectedText)
     {
+        RequireDebug();
         var text = DumpInstruction(Convert.FromHexString(instructionHex));
         Assert.That(text, Is.EqualTo(expectedText + Environment.NewLine));
     }
 
     private static unsafe string DumpInstruction(ReadOnlySpan<byte> instruction)
     {
+        RequireDebug();
+
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         writer.AutoFlush = true;
@@ -102,9 +109,16 @@ internal static class ILDisplayTests
         {
             Globals.s_jitstdout = writer;
 
+            var dumpSingleInstr = typeof(Globals).GetMethod(
+                "dumpSingleInstr", BindingFlags.Public | BindingFlags.Static)
+                ?? throw new AssertionException("Missing Debug IL disassembler.");
+            var dumpSingleInstrFunction = (delegate* managed<byte*, int, string, int>)
+                dumpSingleInstr.MethodHandle.GetFunctionPointer();
+
             fixed (byte* code = instruction)
             {
-                Assert.That(Globals.dumpSingleInstr(code, 0), Is.EqualTo(instruction.Length));
+                var bytesDumped = dumpSingleInstrFunction(code, 0, "");
+                Assert.That(bytesDumped, Is.EqualTo(instruction.Length));
             }
         }
         finally
@@ -114,5 +128,6 @@ internal static class ILDisplayTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
+
+    private static void RequireDebug() => Assume.That(TestConfiguration.IsDebug);
 }
-#endif

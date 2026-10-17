@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,6 +61,8 @@ internal static class Arm32FuncletPrologEpilogTests
     private static void WithFunclet(
         int outgoingArgSpaceSize, Action<Compiler, CodeGen, BasicBlock> action)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
@@ -93,4 +94,3 @@ internal static class Arm32FuncletPrologEpilogTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

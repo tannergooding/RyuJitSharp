@@ -79,14 +79,12 @@ public sealed partial class LinearScan
             _doDoubleAlign = shouldDoubleAlign(0, 0, 0, 0, 0);
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf("\nFP callee save candidate vars: None\n\n");
             var singleExit = (_compiler.fgReturnBlocks is null) || (_compiler.fgReturnBlocks.Next is null);
             jitprintf($"floatVarCount = 0; hasLoops = {dspBool(_compiler.fgHasLoops)}, singleExit = {dspBool(singleExit)}\n");
         }
-#endif
 
         if (Configuration.DEBUG && Configuration.TARGET_ARM)
         {
@@ -117,33 +115,34 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG)
         {
-            JITDUMP("EH Vars: ");
-            dumpConvertedVarSet(_compiler, _exceptVars);
-            JITDUMP("\nFinally Vars: ");
-            dumpConvertedVarSet(_compiler, _finallyVars);
-            JITDUMP("\n\n");
-        }
-
-        for (var localNumber = 0; localNumber < _compiler.lvaCount; localNumber++)
-        {
-            ref var local = ref _compiler.lvaGetDesc(localNumber);
-            if (!local.lvTracked || !VarSetOps.IsMember(_compiler, _exceptVars, local._varIndex))
+            if (VERBOSE)
             {
-                continue;
+                JITDUMP("EH Vars: ");
+                dumpConvertedVarSet(_compiler, _exceptVars);
+                JITDUMP("\nFinally Vars: ");
+                dumpConvertedVarSet(_compiler, _finallyVars);
+                JITDUMP("\n\n");
             }
 
-            assert(local.IsLiveInOutOfHandler);
-            if (varTypeIsGC(local.Type) &&
-                VarSetOps.IsMember(_compiler, _finallyVars, local._varIndex) &&
-                !local.lvIsParam &&
-                !local.lvIsParamRegTarget)
+            for (var localNumber = 0; localNumber < _compiler.lvaCount; localNumber++)
             {
-                assert(local.lvMustInit);
+                ref var local = ref _compiler.lvaGetDesc(localNumber);
+                if (!local.lvTracked || !VarSetOps.IsMember(_compiler, _exceptVars, local._varIndex))
+                {
+                    continue;
+                }
+
+                assert(local.IsLiveInOutOfHandler);
+                if (varTypeIsGC(local.Type) &&
+                    VarSetOps.IsMember(_compiler, _finallyVars, local._varIndex) &&
+                    !local.lvIsParam &&
+                    !local.lvIsParamRegTarget)
+                {
+                    assert(local.lvMustInit);
+                }
             }
         }
-#endif
     }
 }

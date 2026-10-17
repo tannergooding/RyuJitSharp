@@ -53,13 +53,16 @@ internal static unsafe class OptimizedStoreLoweringTests
 
             var lowering = new Lowering(compiler, new LinearScan(compiler));
             LoweringBlock(lowering) = block;
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            _ = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(LowerNode(lowering, original), Is.SameAs(successor)));
-#else
-            Assert.That(LowerNode(lowering, original), Is.SameAs(successor));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                _ = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(LowerNode(lowering, original), Is.SameAs(successor)));
+            }
+            else
+            {
+                Assert.That(LowerNode(lowering, original), Is.SameAs(successor));
+            }
             var lowered = successor?.Prev ?? block.LastNode;
             Assert.That(lowered, Is.TypeOf<GenTreeStoreInd>());
             Assert.That(lowered!.Oper, Is.EqualTo(GT_STOREIND));

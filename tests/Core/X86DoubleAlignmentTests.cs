@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 using System.Reflection;
 
 using NUnit.Framework;
@@ -13,15 +12,17 @@ namespace RyuJitSharp.UnitTests;
 internal static class X86DoubleAlignmentTests
 {
     [TestCase(Compiler.BLENDED_CODE, 0u, 0u, 0.0, 0u, 0.0, false)]
-    [TestCase(Compiler.BLENDED_CODE, 0u, 0u, 0.0, 0u, BB_UNITY_WEIGHT * 7.0 / 4.0, true)]
+    [TestCase(Compiler.BLENDED_CODE, 0u, 0u, 0.0, 0u, Globals.BB_UNITY_WEIGHT * 7.0 / 4.0, true)]
     [TestCase(Compiler.BLENDED_CODE, 0u, 0u, 20001.0, 0u, 10000.0, false)]
     [TestCase(Compiler.SMALL_CODE, 0u, 0u, 0.0, 0u, 10000.0, false)]
     [TestCase(Compiler.FAST_CODE, 0u, 0u, 0.0, 0u, 10000.0, true)]
-    [TestCase(Compiler.BLENDED_CODE, uint.MaxValue, 1u, 0.0, 0u, BB_UNITY_WEIGHT * 8.0, true)]
+    [TestCase(Compiler.BLENDED_CODE, uint.MaxValue, 1u, 0.0, 0u, Globals.BB_UNITY_WEIGHT * 8.0, true)]
     public static void ShouldDoubleAlignPreservesNativeCostHeuristic(Compiler.codeOptimize optimization,
         uint refCntStk, uint refCntEBP, double refCntWtdEBP, uint refCntStkParam, double refCntWtdStkDbl,
         bool expected)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
         {
             compiler.opts.compCodeOpt = optimization;
@@ -40,22 +41,23 @@ internal static class X86DoubleAlignmentTests
     [TestCase(true)]
     public static void CodeGenAndCompilerShareDoubleAlignmentState(bool framePointer)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
         {
             var codeGen = compiler.codeGen as CodeGen
                 ?? throw new AssertionException("Missing x86 code generator.");
-            ICodeGen contract = codeGen;
             codeGen.IsFramePointerUsed = framePointer;
 
-            Assert.That(contract.IsDoubleAligned, Is.False);
+            Assert.That(((ICodeGen)codeGen).IsDoubleAligned, Is.False);
             Assert.That(compiler.genDoubleAlign, Is.False);
 
-            contract.IsDoubleAligned = true;
+            ((ICodeGen)codeGen).IsDoubleAligned = true;
             Assert.That(codeGen.IsDoubleAligned, Is.True);
             Assert.That(compiler.genDoubleAlign, Is.True);
             Assert.That(codeGen.IsFramePointerUsed, Is.EqualTo(framePointer));
 
-            contract.IsDoubleAligned = false;
+            ((ICodeGen)codeGen).IsDoubleAligned = false;
             Assert.That(codeGen.IsDoubleAligned, Is.False);
             Assert.That(compiler.genDoubleAlign, Is.False);
         });
@@ -64,6 +66,8 @@ internal static class X86DoubleAlignmentTests
     [Test]
     public static void EmptyFloatingSavesAndUnneededAvxClearingDoNotRequireAmd64Recording()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -82,4 +86,3 @@ internal static class X86DoubleAlignmentTests
         });
     }
 }
-#endif

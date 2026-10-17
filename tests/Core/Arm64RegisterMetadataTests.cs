@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
@@ -13,6 +12,8 @@ internal static class Arm64RegisterMetadataTests
     [Test]
     public static void RegisterClassBoundsAndSizesMatchNative()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Assert.Multiple(() => {
             Assert.That(REG_INT_FIRST, Is.EqualTo(REG_ARM64_R0));
             Assert.That(REG_INT_LAST_ARM64, Is.EqualTo(REG_ARM64_ZR));
@@ -35,6 +36,8 @@ internal static class Arm64RegisterMetadataTests
     [Test]
     public static void RegisterMasksRetainSeparatePredicateBank()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Assert.Multiple(() => {
             Assert.That(SRBM_INT_CALLEE_SAVED & SRBM_ARM64_R19, Is.EqualTo(SRBM_ARM64_R19));
             Assert.That(SRBM_INT_CALLEE_SAVED & SRBM_ARM64_R18, Is.EqualTo(SRBM_NONE));
@@ -54,6 +57,8 @@ internal static class Arm64RegisterMetadataTests
     [Test]
     public static void RegisterAllocationOrderAndCallingConventionMatchNative()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Assert.Multiple(() => {
             Assert.That(REG_VAR_ORDER.Length, Is.EqualTo(29));
             Assert.That(REG_VAR_ORDER[0], Is.EqualTo(REG_ARM64_R0));
@@ -74,4 +79,3 @@ internal static class Arm64RegisterMetadataTests
         });
     }
 }
-#endif

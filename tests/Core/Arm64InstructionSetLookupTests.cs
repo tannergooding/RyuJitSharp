@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -20,7 +19,7 @@ internal static class Arm64InstructionSetLookupTests
     [TestCase("Vector128WithSuffix", ManagedInstructionSet.InstructionSet_Vector128)]
     public static void VectorClassNamesFollowNativePrefixDispatch(string name, ManagedInstructionSet expected)
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var compiler = NewCompiler();
         var className = Encoding.UTF8.GetBytes(name);
 
         Assert.That(LookupInstructionSet(compiler, className), Is.EqualTo(expected));
@@ -37,7 +36,7 @@ internal static class Arm64InstructionSetLookupTests
     [TestCase("NotVector64")]
     public static void UnrecognizedVectorClassNamesRemainIllegal(string name)
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var compiler = NewCompiler();
         var className = Encoding.UTF8.GetBytes(name);
 
         Assert.That(
@@ -48,7 +47,7 @@ internal static class Arm64InstructionSetLookupTests
     [Test]
     public static void NonVectorInstructionSetLookupIsUnchanged()
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var compiler = NewCompiler();
 
         Assert.That(
             LookupInstructionSet(compiler, "AdvSimd"u8),
@@ -73,7 +72,7 @@ internal static class Arm64InstructionSetLookupTests
     public static void NestedArm64ClassNamesMapEverySupportedInstructionSet(
         string enclosingClassName, ManagedInstructionSet expected)
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var compiler = NewCompiler();
 
         Assert.That(
             LookupIsa(compiler, "Arm64"u8, Encoding.UTF8.GetBytes(enclosingClassName), default),
@@ -84,7 +83,7 @@ internal static class Arm64InstructionSetLookupTests
     [TestCase("Vector128")]
     public static void NestedArm64ClassNamesWithoutSpecificVariantsReturnNone(string enclosingClassName)
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var compiler = NewCompiler();
 
         Assert.That(
             LookupIsa(compiler, "Arm64"u8, Encoding.UTF8.GetBytes(enclosingClassName), default),
@@ -97,5 +96,10 @@ internal static class Arm64InstructionSetLookupTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupIsa")]
     private static extern ManagedInstructionSet LookupIsa(Compiler compiler, ReadOnlySpan<byte> className,
         ReadOnlySpan<byte> innerEnclosingClassName, ReadOnlySpan<byte> outerEnclosingClassName);
+
+    private static Compiler NewCompiler()
+    {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_HW_INTRINSICS);
+        return (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+    }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -50,6 +49,8 @@ internal static unsafe class LoongArch64CodeGenRegisterTransferTests
 
     private static void WithCodeGen(Action<CodeGen> action)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -74,11 +75,7 @@ internal static unsafe class LoongArch64CodeGenRegisterTransferTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(codeGen);
         }
         finally
@@ -90,4 +87,3 @@ internal static unsafe class LoongArch64CodeGenRegisterTransferTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
-#endif

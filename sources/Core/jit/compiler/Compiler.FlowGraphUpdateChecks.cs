@@ -3,7 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
+
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
@@ -12,6 +13,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    [Conditional("DEBUG")]
     public void optCheckPreds()
     {
         foreach (var block in Blocks)
@@ -59,6 +61,7 @@ public partial class Compiler
     }
 
     /// <summary>Check that flow graph updating removed unreachable, unimported, and compactable blocks.</summary>
+    [Conditional("DEBUG")]
     public void fgDebugCheckUpdate()
     {
         for (var block = fgFirstBB; block is not null; block = block.Next)
@@ -123,4 +126,3 @@ public partial class Compiler
         }
     }
 }
-#endif

@@ -19,12 +19,10 @@ public partial class Compiler
         var codes = CollectionsMarshal.AsSpan(func.cfiCodes);
         var unwindCodeBytes = unchecked(codes.Length * 8);
 
-#if DEBUG
-        if (opts.dspUnwind)
+        if (Configuration.DEBUG && opts.dspUnwind)
         {
             DumpCfiInfo(true, startOffset, endOffset, codes);
         }
-#endif
 
         assert(endOffset <= info.compTotalHotCodeSize);
         fixed (CFI_CODE* pCodes = codes)
@@ -39,12 +37,10 @@ public partial class Compiler
             startOffset = func.coldStartLoc?.CodeOffset(emitter) ?? 0;
             endOffset = func.coldEndLoc?.CodeOffset(emitter) ?? unchecked((uint)info.compNativeCodeSize);
 
-#if DEBUG
-            if (opts.dspUnwind)
+            if (Configuration.DEBUG && opts.dspUnwind)
             {
                 DumpCfiInfo(false, startOffset, endOffset, default);
             }
-#endif
 
             assert(startOffset >= info.compTotalHotCodeSize);
             startOffset = unchecked(startOffset - (uint)info.compTotalHotCodeSize);
@@ -69,7 +65,7 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void DumpCfiInfo(bool isHotCode, uint startOffset, uint endOffset, ReadOnlySpan<CFI_CODE> codes)
     {
         jitprintf($"Cfi Info{(isHotCode ? "" : " COLD")}:\n");
@@ -113,5 +109,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }

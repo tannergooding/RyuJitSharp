@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if !TARGET_WASM
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -31,11 +31,12 @@ internal static class LinearScanLifetimeSpillKillClosureTests
         Assert.That(GetRegisterType(allocator, interval, reference), Is.EqualTo(type));
     }
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
     public static void FloatingArgumentsCanUseIntegerCandidates(var_types type)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+
         var allocator = CreateAllocator();
         var interval = new Interval(type, AvailableFloatRegs(allocator));
         var reference = new RefPosition(0, 1, null, RefType.RefTypeUse);
@@ -44,19 +45,8 @@ internal static class LinearScanLifetimeSpillKillClosureTests
 
         Assert.That(GetRegisterType(allocator, interval, reference), Is.EqualTo(TYP_I_IMPL));
     }
-#endif
 
-    [TestCase(7, 7, TYP_INT, TYP_UINT, true)]
-    [TestCase(-7, -7, TYP_INT, TYP_INT, true)]
-    [TestCase(0, 0, TYP_INT, TYP_REF, true)]
-    [TestCase(7, 7, TYP_INT, TYP_REF, false)]
-    [TestCase(-7, -7, TYP_INT, TYP_REF, false)]
-    [TestCase(7, 8, TYP_INT, TYP_INT, false)]
-#if TARGET_64BIT
-    [TestCase(-7, -7, TYP_INT, TYP_UINT, false)]
-#else
-    [TestCase(-7, -7, TYP_INT, TYP_UINT, true)]
-#endif
+    [TestCaseSource(nameof(IntegerConstantMatchingCases))]
     public static unsafe void IntegerConstantMatchingPreservesTargetWidthAndGcRules(
         int previousValue, int value, var_types previousType, var_types type, bool expected)
     {
@@ -81,8 +71,21 @@ internal static class LinearScanLifetimeSpillKillClosureTests
         Assert.That(IsMatchingConstant(allocator, register, reference), Is.EqualTo(expected));
     }
 
+    private static IEnumerable<TestCaseData> IntegerConstantMatchingCases()
+    {
+        yield return new TestCaseData(7, 7, TYP_INT, TYP_UINT, true);
+        yield return new TestCaseData(-7, -7, TYP_INT, TYP_INT, true);
+        yield return new TestCaseData(0, 0, TYP_INT, TYP_REF, true);
+        yield return new TestCaseData(7, 7, TYP_INT, TYP_REF, false);
+        yield return new TestCaseData(-7, -7, TYP_INT, TYP_REF, false);
+        yield return new TestCaseData(7, 8, TYP_INT, TYP_INT, false);
+        yield return new TestCaseData(-7, -7, TYP_INT, TYP_UINT, !Configuration.TARGET_64BIT);
+    }
+
     private static LinearScan CreateAllocator()
     {
+        Assume.That(!Configuration.TARGET_WASM);
+
         var allocator = (LinearScan)RuntimeHelpers.GetUninitializedObject(typeof(LinearScan));
         AvailableIntRegs(allocator) = genSingleTypeRegMask(REG_INT_FIRST);
         AvailableFloatRegs(allocator) = genSingleTypeRegMask(REG_FP_FIRST);
@@ -108,4 +111,3 @@ internal static class LinearScanLifetimeSpillKillClosureTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registersWithConstants")]
     private static extern ref regMaskTP RegistersWithConstants(LinearScan allocator);
 }
-#endif

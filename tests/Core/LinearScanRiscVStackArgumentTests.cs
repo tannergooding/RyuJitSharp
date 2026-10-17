@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -85,6 +84,8 @@ internal static unsafe class LinearScanRiscVStackArgumentTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
+        Assume.That(Configuration.TARGET_RISCV64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -110,4 +111,3 @@ internal static unsafe class LinearScanRiscVStackArgumentTests
         }
     }
 }
-#endif

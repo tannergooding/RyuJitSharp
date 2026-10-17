@@ -1,9 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+extern alias RyuJitSharpCore;
+
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.insFlags;
-using TargetDefinition = global::RyuJitSharp.Target;
+using TargetDefinition = RyuJitSharpCore::RyuJitSharp.Target;
 using static RyuJitSharp.insOpts;
 
 namespace RyuJitSharp.UnitTests;

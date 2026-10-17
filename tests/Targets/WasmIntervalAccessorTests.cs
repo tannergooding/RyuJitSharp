@@ -1,4 +1,3 @@
-#if TARGET_WASM
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -13,6 +12,8 @@ internal static unsafe class WasmIntervalAccessorTests
     [Test]
     public static void IntervalAccessorsExposeBoundaryAndKindMetadata()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var block = new WasmInterval(2, 8, WasmInterval.Kind.Block);
         var loop = new WasmInterval(3, 7, WasmInterval.Kind.Loop);
         var tryInterval = new WasmInterval(4, 6, WasmInterval.Kind.Try);
@@ -32,6 +33,8 @@ internal static unsafe class WasmIntervalAccessorTests
     [Test]
     public static void ExceptionWrapperFactoryCreatesABlockInterval()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var start = new BasicBlock(null, null) { bbPreorderNum = 3 };
         var end = new BasicBlock(null, null) { bbPreorderNum = 9 };
         var wrapper = WasmInterval.NewExnRefWrapper(start, end);
@@ -45,6 +48,8 @@ internal static unsafe class WasmIntervalAccessorTests
     [Test]
     public static void ChainedIntervalsPropagateTheFarthestEndAndCompress()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var first = new WasmInterval(3, 5, WasmInterval.Kind.Block);
         var second = new WasmInterval(4, 8, WasmInterval.Kind.Loop);
         var root = new WasmInterval(1, 12, WasmInterval.Kind.Try);
@@ -61,6 +66,8 @@ internal static unsafe class WasmIntervalAccessorTests
     [TestCase(BBJ_CALLFINALLYRET)]
     public static void JumpElisionPreservesWasmIntervalBoundaries(BBKinds kind)
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         WithCompiler(compiler => {
             var jump = NewBlock(compiler, kind);
             var target = NewBlock(compiler, BBJ_RETURN);
@@ -107,10 +114,8 @@ internal static unsafe class WasmIntervalAccessorTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.fgPredsComputed = true;
         compiler.fgWasmIntervals = [];
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
 
         try
@@ -123,4 +128,3 @@ internal static unsafe class WasmIntervalAccessorTests
         }
     }
 }
-#endif

@@ -1,32 +1,27 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if !TARGET_WASM
-using NUnit.Framework;
-#if !TARGET_AMD64
-using System.Runtime.CompilerServices;
-#endif
-using static RyuJitSharp.Globals;
-#if TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-using static RyuJitSharp.regNumber;
-#endif
-#if TARGET_AMD64
 using System.Linq;
+using NUnit.Framework;
+using System.Runtime.CompilerServices;
+using static RyuJitSharp.Globals;
+using static RyuJitSharp.regNumber;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.UnitTests.CodeGenShiftTests;
 using static RyuJitSharp.var_types;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenFramePolicyClosureTests
 {
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void FirstStackArgumentUsesTheNativeParameterAbiScan(int firstStack)
     {
+        Assume.That(!Configuration.TARGET_WASM &&
+            (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64));
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compArgsCount = 3;
         compiler.lvaCount = 3;
@@ -49,15 +44,15 @@ internal static unsafe class CodeGenFramePolicyClosureTests
         var codeGen = new CodeGen(compiler);
         Assert.That(codeGen.getFirstArgWithStackSlot(), Is.EqualTo(firstStack));
     }
-#endif
 
-#if !TARGET_AMD64
     [TestCase(true, false, true)]
     [TestCase(false, true, true)]
     [TestCase(false, false, false)]
     public static void SkippedPoisonLocalsDoNotInvokeUnsupportedRecording(
         bool parameter, bool initialized, bool exposed)
     {
+        Assume.That(!Configuration.TARGET_WASM && !Configuration.TARGET_AMD64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -72,12 +67,12 @@ internal static unsafe class CodeGenFramePolicyClosureTests
         Assert.DoesNotThrow(() => codeGen.genPoisonFrame(RBM_NONE));
         Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
     }
-#endif
 
-#if TARGET_AMD64
     [Test]
     public static void PoisonImmediateSurvivesSmallRepStosdAndSmallLocals()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.compDbgCode = true;
@@ -113,6 +108,4 @@ internal static unsafe class CodeGenFramePolicyClosureTests
             Assert.That(descriptors.Count, Is.EqualTo(7));
         });
     }
-#endif
 }
-#endif

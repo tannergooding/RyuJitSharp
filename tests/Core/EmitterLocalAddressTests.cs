@@ -74,11 +74,7 @@ internal static unsafe class EmitterLocalAddressTests
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false, false);
         var allocator = typeof(Emitter).GetMethod("emitNewInstr", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var descriptor = (Emitter.instrDesc)allocator.Invoke(emitter, [EA_8BYTE])!;
         descriptor.idIns(INS_mov);

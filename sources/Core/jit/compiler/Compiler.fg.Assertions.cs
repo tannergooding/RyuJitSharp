@@ -12,23 +12,12 @@ public partial class Compiler
         assert(optLocalAssertionProp);
         assert(apTraits is not null);
         var traits = apTraits;
-#if DEBUG
         var oldAssertionCount = optAssertionCount;
-#endif
         optAssertionGen(tree);
 
         void Announce(AssertionIndex index, string condition)
         {
-#if DEBUG
-            if (verbose && (oldAssertionCount == optAssertionCount) && !BitVecOps.IsMember(traits, apLocal, index - 1))
-            {
-                jitprintf($"GenTreeNode creates {condition}assertion:\n");
-                gtDispTree(tree, topOnly: true);
-                assert(compCurBB is not null);
-                jitprintf($"In {FMT_BB(compCurBB.bbNum)} New Local ");
-                optPrintAssertion(optGetAssertion(index), index);
-            }
-#endif
+            AnnounceAssertion(tree, traits, index, condition, oldAssertionCount);
         }
 
         void AddImpliedAssertions(AssertionIndex index, ASSERT_TP? assertions)
@@ -96,6 +85,21 @@ public partial class Compiler
             Announce(index, "");
             BitVecOps.AddElemD(traits, apLocal, index - 1);
             AddImpliedAssertions(index, apLocal);
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void AnnounceAssertion(GenTree tree, BitVecTraits traits, AssertionIndex index, string condition,
+        AssertionIndex oldAssertionCount)
+    {
+        if (verbose && (oldAssertionCount == optAssertionCount) &&
+            !BitVecOps.IsMember(traits, apLocal, index - 1))
+        {
+            jitprintf($"GenTreeNode creates {condition}assertion:\n");
+            gtDispTree(tree, topOnly: true);
+            assert(compCurBB is not null);
+            jitprintf($"In {FMT_BB(compCurBB.bbNum)} New Local ");
+            optPrintAssertion(optGetAssertion(index), index);
         }
     }
 

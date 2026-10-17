@@ -41,12 +41,10 @@ internal static unsafe class LinearScanBuildIntervalsTests
                 {
                     Assert.That(record.registerType, Is.EqualTo(TYP_FLOAT));
                 }
-#if FEATURE_MASKED_HW_INTRINSICS
-                else
+                else if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
                 {
                     Assert.That(record.registerType, Is.EqualTo(TYP_MASK));
                 }
-#endif
 
                 Assert.That(
                     record.isCalleeSave,

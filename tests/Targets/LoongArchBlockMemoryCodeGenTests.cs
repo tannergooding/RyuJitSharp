@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -85,6 +84,8 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -108,11 +109,7 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
             codeGen.GCInfo.gcVarPtrSetInit();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(compiler, codeGen);
         }
         finally
@@ -127,4 +124,3 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
     private static extern ref int CurrentGroupInstructionCount(Emitter emitter);
 }
-#endif

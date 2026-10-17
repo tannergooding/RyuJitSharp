@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 && UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -22,9 +21,7 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
             new Span<byte>(buffer, 16).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 16;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            X86EmitterStaticOutputTests.SetEmitIssuing(emitter);
             var end = emitter.emitOutputLJ(group, buffer, descriptor);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -59,6 +56,8 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
 
     private static void WithEmitter(Action<Compiler, Emitter> test)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.UNIX_AMD64_ABI);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -72,11 +71,7 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
+            emitter.emitBegFN(true, false);
             test(compiler, emitter);
         }
         finally
@@ -112,4 +107,3 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
         }
     }
 }
-#endif

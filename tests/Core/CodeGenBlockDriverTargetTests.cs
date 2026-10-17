@@ -14,10 +14,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenBlockDriverTargetTests
 {
-#if TARGET_ARM64
     [Test]
     public static void DriverInitializesBeforeBlockEndEmission()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithDriver((compiler, codeGen, block) =>
         {
             codeGen.genCodeForBBlist();
@@ -33,23 +34,23 @@ internal static unsafe class CodeGenBlockDriverTargetTests
             }
         });
     }
-#endif
 
-#if TARGET_WASM
     [Test]
     public static void DriverMarksLabelsForAnEmptyWasmFunction()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         WithDriver((compiler, codeGen, block) =>
         {
             codeGen.genCodeForBBlist();
-#if DEBUG
-            Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
+            }
             Assert.That(block.HasFlag(BBF_HAS_LABEL), Is.True);
             Assert.That(VarSetOps.IsEmpty(compiler, compiler.compCurLife), Is.True);
         });
     }
-#endif
 
     private static void WithDriver(Action<Compiler, CodeGen, BasicBlock> action)
     {
@@ -77,9 +78,10 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         compiler.fgLastBB = block;
         compiler.fgBBcount = 1;
         compiler.fgBBNumMax = 1;
-#if TARGET_WASM
-        compiler.fgWasmIntervals = [];
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            compiler.fgWasmIntervals = [];
+        }
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.compHndBBtab = [];
         compiler.fgFuncletsCreated = true;
@@ -91,33 +93,33 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         compiler.compRetTypeDesc.InitializeReturnType(compiler, TYP_VOID, null, compiler.info.compCallConv);
         JitTls.Compiler = compiler;
 
-#if DEBUG
-        var previousEmitterTests = EmitterTests(ref JitConfig);
-        EmitterTests(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
-#endif
+        JitConfigValues.MethodSet? previousEmitterTests = null;
+        if (TestConfiguration.IsDebug)
+        {
+            previousEmitterTests = EmitterTests(ref JitConfig);
+            EmitterTests(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
+        }
         try
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
-#if HAS_FIXED_REGISTER_SET
-            compiler.lvaTable[0].RegNum = REG_ARM64_STK;
-#endif
+            codeGen.Emitter.emitBegFN(true, false);
+            if (Configuration.HAS_FIXED_REGISTER_SET)
+            {
+                compiler.lvaTable[0].RegNum = REG_ARM64_STK;
+            }
             Allocator(compiler) = new LinearScan(compiler);
             codeGen.RegSet.rsClearRegsModified();
             action(compiler, codeGen, block);
         }
         finally
         {
-#if DEBUG
-            EmitterTests(ref JitConfig) = previousEmitterTests;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                EmitterTests(ref JitConfig) = previousEmitterTests!;
+            }
             JitTls.Compiler = previous;
         }
     }
@@ -125,8 +127,6 @@ internal static unsafe class CodeGenBlockDriverTargetTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? Allocator(Compiler compiler);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
     private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
-#endif
 }

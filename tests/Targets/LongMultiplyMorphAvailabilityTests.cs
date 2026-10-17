@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if !TARGET_64BIT && !TARGET_WASM
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -16,6 +15,8 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
     [TestCase("fgRecognizeAndMorphLongMul")]
     public static void Shared32BitMorphMethodsArePresentWithNativeSignatures(string methodName)
     {
+        Assume.That(!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM);
+
         var method = typeof(Compiler).GetMethod(
             methodName,
             BindingFlags.Instance | BindingFlags.NonPublic)
@@ -81,7 +82,6 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
         });
     }
 
-#if DEBUG
     [TestCase(false, false, false)]
     [TestCase(true, false, false)]
     [TestCase(false, true, true)]
@@ -91,6 +91,8 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
         bool constantSecondOperand,
         bool negativeConstant)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(_ =>
         {
             var firstValue = new GenTreeIntCon(TYP_INT, 1);
@@ -104,10 +106,11 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
             Assert.DoesNotThrow(() => multiply.DebugCheckLongMul());
         });
     }
-#endif
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -132,4 +135,3 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
         }
     }
 }
-#endif

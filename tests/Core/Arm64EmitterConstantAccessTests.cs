@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -25,6 +24,8 @@ internal static unsafe class Arm64EmitterConstantAccessTests
     [TestCase(long.MaxValue, true)]
     public static void ConstantAccessPreservesSmallAndLargeValues(long value, bool large)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var descriptor = AccessEmitter.Constant((nint)value, large);
         Assert.That(ReadConstant(null, descriptor), Is.EqualTo((nint)value));
     }
@@ -35,6 +36,8 @@ internal static unsafe class Arm64EmitterConstantAccessTests
     [TestCase(true, true)]
     public static void RelocationAccessCombinesBothFlags(bool displacement, bool constant)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var descriptor = AccessEmitter.Constant(0, false);
         descriptor.idSetIsDspReloc(displacement);
         if (constant)
@@ -48,6 +51,8 @@ internal static unsafe class Arm64EmitterConstantAccessTests
     [Test]
     public static void LocalAndTlsFlagsPreserveConstantAndRegisterState()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var descriptor = AccessEmitter.Constant(31, false);
         descriptor.idReg1(REG_ARM64_R19);
         descriptor.idReg2(REG_ARM64_R28);
@@ -65,12 +70,14 @@ internal static unsafe class Arm64EmitterConstantAccessTests
         Assert.That(ReadConstant(null, descriptor), Is.EqualTo((nint)31));
     }
 
-#if DEBUG
     [TestCase(IF_ARM64_BI_1B, 63)]
     [TestCase(IF_ARM64_LS_2B, 4095)]
     [TestCase(IF_ARM64_LS_2C, -256)]
     public static void SanityChecksReadCompactAndExtendedImmediates(Emitter.insFormat format, int value)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+        Assume.That(TestConfiguration.IsDebug);
+
         var descriptor = AccessEmitter.Constant(value, !Emitter.instrDesc.fitsInSmallCns(value));
         descriptor.idInsFmt(format);
         descriptor.idOpSize(EA_8BYTE);
@@ -84,7 +91,6 @@ internal static unsafe class Arm64EmitterConstantAccessTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsSanityCheck")]
     private static extern void CheckSanity(Emitter emitter, Emitter.instrDesc descriptor);
-#endif
 
     private abstract class AccessEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
@@ -125,4 +131,3 @@ internal static unsafe class Arm64EmitterConstantAccessTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "idSetTlsGD")]
     private static extern void SetTls(Emitter.instrDesc descriptor);
 }
-#endif

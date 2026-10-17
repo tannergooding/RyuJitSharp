@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private struct TailCallIRValidatorVisitor(Compiler compiler, GenTreeCall tailCall) : IGenTreeVisitor<TailCallIRValidatorVisitor>
     {
         private readonly Compiler _compiler = compiler;
@@ -118,5 +117,4 @@ public partial class Compiler
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
             => IGenTreeVisitor<TailCallIRValidatorVisitor>.WalkTree(ref this, ref use, user, _ancestors);
     }
-#endif
 }

@@ -1,10 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
 using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;

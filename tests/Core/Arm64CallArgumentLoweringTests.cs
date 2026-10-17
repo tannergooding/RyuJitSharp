@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.regNumber;
@@ -15,6 +14,8 @@ internal static unsafe class Arm64CallArgumentLoweringTests
     [TestCase(true)]
     public static void SplitFieldListKeepsStackBeforeRegistersAndPreservesArgumentOwners(bool late)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -100,4 +101,3 @@ internal static unsafe class Arm64CallArgumentLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SplitArgumentBetweenRegistersAndStack")]
     private static extern void SplitArgumentBetweenRegistersAndStack(Lowering lowering, GenTreeCall call, CallArg argument);
 }
-#endif

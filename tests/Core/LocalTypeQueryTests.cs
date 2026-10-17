@@ -43,11 +43,14 @@ internal static class LocalTypeQueryTests
     [TestCase(TYP_REF, TYP_REF)]
     [TestCase(TYP_BYREF, TYP_BYREF)]
     [TestCase(TYP_STRUCT, TYP_STRUCT)]
-#if FEATURE_SIMD
     [TestCase(TYP_SIMD16, TYP_SIMD16)]
-#endif
     public static void ActualTypeNormalizesWithoutChangingDeclaredType(var_types type, var_types expected)
     {
+        if (type is TYP_SIMD16)
+        {
+            Assume.That(Configuration.FEATURE_SIMD);
+        }
+
         var compiler = NewCompiler();
         compiler.lvaTable[0].Type = type;
         compiler.lvaTable[1].Type = type;
@@ -79,23 +82,28 @@ internal static class LocalTypeQueryTests
         var compiler = NewCompiler();
         compiler.info.compIsVarArgs = varArgs;
         var expected = type;
-#if TARGET_ARMARCH
-        var softFP = compiler.opts.compUseSoftFP;
-        if (softFP || (TargetOS.IsWindows && varArgs))
+        if (Configuration.TARGET_ARMARCH)
         {
-            expected = type switch {
-                TYP_FLOAT => TYP_INT,
-                TYP_DOUBLE => TYP_LONG,
-#if FEATURE_SIMD
-                TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 => TYP_STRUCT,
-#if TARGET_ARM64
-                TYP_SIMD_ARM64 => TYP_STRUCT,
-#endif
-#endif
-                _ => type,
-            };
+            var softFP = compiler.opts.compUseSoftFP;
+            if (softFP || (TargetOS.IsWindows && varArgs))
+            {
+                expected = type switch {
+                    TYP_FLOAT => TYP_INT,
+                    TYP_DOUBLE => TYP_LONG,
+                    _ => type,
+                };
+                if (Configuration.FEATURE_SIMD &&
+                    (type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16))
+                {
+                    expected = TYP_STRUCT;
+                }
+                if (Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64 &&
+                    type is TYP_SIMD_ARM64)
+                {
+                    expected = TYP_STRUCT;
+                }
+            }
         }
-#endif
         Assert.That(compiler.mangleVarArgsType(type), Is.EqualTo(expected));
         Assert.That(compiler.info.compIsVarArgs, Is.EqualTo(varArgs));
     }

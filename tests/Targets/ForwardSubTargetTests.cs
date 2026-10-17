@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if !TARGET_64BIT
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -26,6 +25,8 @@ internal static unsafe class ForwardSubTargetTests
     public static void MultiUseNativeIntCopyPreservesSmallLocalNormalization(
         var_types type, bool substitutes)
     {
+        Assume.That(!Configuration.TARGET_64BIT);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
@@ -35,10 +36,8 @@ internal static unsafe class ForwardSubTargetTests
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compIsStatic = true;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
-#if DEBUG
-        compiler.info.compFullName = nameof(ForwardSubTargetTests);
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ForwardSubTargetTests));
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.compHndBBtab = [];
         compiler.lvaArg0Var = BAD_VAR_NUM;
         compiler.lvaCount = 3;
@@ -99,4 +98,3 @@ internal static unsafe class ForwardSubTargetTests
         }
     }
 }
-#endif

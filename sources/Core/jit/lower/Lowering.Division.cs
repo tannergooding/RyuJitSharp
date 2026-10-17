@@ -80,38 +80,27 @@ public sealed partial class Lowering
             var exceptions = divMod.Exceptions(CompilerInstance);
             if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
             {
-                SetMultiplyUsed(divMod.Op1
-#if DEBUG
-                    , "LowerDivOrMod op1 (arithmetic exception)"
-#endif
-                );
-                SetMultiplyUsed(divMod.Op2
-#if DEBUG
-                    , "LowerDivOrMod op2 (arithmetic exception)"
-#endif
-                );
+                JITDUMP($"Setting [{divMod.Op1.TreeId:D6}] as multiply-used: LowerDivOrMod op1 (arithmetic exception)\n");
+                SetMultiplyUsed(divMod.Op1);
+                JITDUMP($"Setting [{divMod.Op2.TreeId:D6}] as multiply-used: LowerDivOrMod op2 (arithmetic exception)\n");
+                SetMultiplyUsed(divMod.Op2);
             }
             else if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
             {
-                SetMultiplyUsed(divMod.Op2
-#if DEBUG
-                    , "LowerDivOrMod op2 (divide by zero exception)"
-#endif
-                );
+                JITDUMP($"Setting [{divMod.Op2.TreeId:D6}] as multiply-used: LowerDivOrMod op2 (divide by zero exception)\n");
+                SetMultiplyUsed(divMod.Op2);
             }
         }
         ContainCheckDivOrMod(divMod);
     }
 
-    private static void SetMultiplyUsed(GenTree node
-#if DEBUG
-        , string reason
-#endif
-    )
+    private static void SetMultiplyUsed(GenTree node, string? reason = null)
     {
-#if DEBUG
-        JITDUMP($"Setting [{node.TreeId:D6}] as multiply-used: {reason}\n");
-#endif
+        if (Configuration.DEBUG && (reason is not null))
+        {
+            JITDUMP($"Setting [{node.TreeId:D6}] as multiply-used: {reason}\n");
+        }
+
         assert(varTypeIsEnregisterable(node.Type));
         assert(!node.IsContained);
         node._lirFlags |= LIR.Flags.MultiplyUsed;

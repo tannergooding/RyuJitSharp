@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,14 +17,14 @@ internal static unsafe class XarchStaticOutputTests
     [TestCase(true, "65488B052510000000")]
     public static void SegmentStaticLoadsRetainNativePrefixesAndDisplacements(bool gs, string hex)
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
+
         SysVX64EmitterCallTests.WithEmitter((_, emitter) =>
         {
             emitter.emitIns_R_C(INS_mov, EA_8BYTE, REG_RAX, gs ? FLD_GLOBAL_GS : FLD_GLOBAL_FS, 16);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No static load was recorded.");
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            X86EmitterStaticOutputTests.SetEmitIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCodeRM(INS_mov) | 0x0500, null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -38,15 +37,15 @@ internal static unsafe class XarchStaticOutputTests
     [TestCase(128, "4881051000000080000000")]
     public static void StaticImmediatesRetainSignedByteAndFullWidthForms(int immediate, string hex)
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
+
         SysVX64EmitterCallTests.WithEmitter((_, emitter) =>
         {
             emitter.emitIns_C_I(INS_add, EA_8BYTE, FLD_GLOBAL_DS, 16, immediate);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No static immediate was recorded.");
             var constant = new Emitter.CnsVal { cnsVal = immediate };
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            X86EmitterStaticOutputTests.SetEmitIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCodeMI(INS_add) | 0x0500, &constant);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -58,6 +57,8 @@ internal static unsafe class XarchStaticOutputTests
     [Test]
     public static void StaticDataLoadsRetainRipRelativeRelocationTargetAndWidth()
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
+
         SysVX64EmitterCallTests.WithEmitter((_, emitter) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -78,9 +79,7 @@ internal static unsafe class XarchStaticOutputTests
 
             var id = LastInstruction(emitter) ?? throw new AssertionException("No static data load was recorded.");
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            X86EmitterStaticOutputTests.SetEmitIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCodeRM(INS_mov) | 0x0500, null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -119,4 +118,3 @@ internal static unsafe class XarchStaticOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
 }
-#endif

@@ -14,12 +14,13 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenStructPutArgTests
 {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
     [TestCase(8, new[] { 8 })]
     [TestCase(15, new[] { 8, 4, 2, 1 })]
     [TestCase(24, new[] { 16, 8 })]
     public static void UnrolledCopyPreservesChunkOrderAndRegisterBanks(int size, int[] widths)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.lvaTable = [
@@ -92,5 +93,4 @@ internal static class CodeGenStructPutArgTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_stkArgOffset")]
     private static extern ref int StackArgOffset(CodeGen codeGen);
-#endif
 }

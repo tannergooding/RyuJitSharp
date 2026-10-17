@@ -76,9 +76,10 @@ public partial class Emitter
         emitGCrFrameOffsMin = 0;
         emitGCrFrameOffsMax = 0;
         emitGCrFrameOffsCnt = 0;
-#if DEBUG
-        emitGCrFrameLiveTab = null;
-#endif
+        if (Configuration.DEBUG)
+        {
+            emitGCrFrameLiveTab = null;
+        }
         emitIGlist = null;
         emitIGlast = null;
         emitCurCodeOffset = 0;

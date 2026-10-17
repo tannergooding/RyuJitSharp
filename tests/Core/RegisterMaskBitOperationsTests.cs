@@ -1,10 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 
@@ -19,14 +17,17 @@ internal static unsafe class RegisterMaskBitOperationsTests
     [TestCase(0xFFFFFFFFUL, 32U)]
     [TestCase(0xAAAAAAAAUL, 16U)]
     [TestCase(0x80000001UL, 2U)]
-#if REGMASK_BITS_64
     [TestCase(0x8000000000000000UL, 1U)]
     [TestCase(ulong.MaxValue, 64U)]
     [TestCase(0xAAAAAAAAAAAAAAAAUL, 32U)]
     [TestCase(0x8000000080000001UL, 3U)]
-#endif
     public static void ScalarPopulationCountReinterpretsTheCompleteNativeUnsignedMask(ulong bits, uint expected)
     {
+        if (bits > uint.MaxValue)
+        {
+            Assume.That(Configuration.REGMASK_BITS_64);
+        }
+
         var mask = unchecked((regMask)bits);
 
         Assert.That(PopCount(mask), Is.EqualTo(expected));
@@ -38,13 +39,16 @@ internal static unsafe class RegisterMaskBitOperationsTests
     [TestCase(0x80000000UL, 31U)]
     [TestCase(0x80000010UL, 4U)]
     [TestCase(0xFFFFFFFFUL, 0U)]
-#if REGMASK_BITS_64
     [TestCase(0x8000000000000000UL, 63U)]
     [TestCase(0x8000000100000000UL, 32U)]
     [TestCase(0xFFFFFFFF00000000UL, 32U)]
-#endif
     public static void ScalarScanFindsTheLeastSignificantSetBitWithoutSignedConversion(ulong bits, uint expected)
     {
+        if (bits > uint.MaxValue)
+        {
+            Assume.That(Configuration.REGMASK_BITS_64);
+        }
+
         var mask = unchecked((regMask)bits);
 
         Assert.That(BitScanForward(mask), Is.EqualTo(expected));
@@ -55,16 +59,11 @@ internal static unsafe class RegisterMaskBitOperationsTests
     public static void AllBitsUseTheTargetBankWidth()
     {
         var mask = (regMask)(-1);
-#if REGMASK_BITS_32
-        const uint ExpectedCount = 32;
-#else
-        const uint ExpectedCount = 64;
-#endif
-        Assert.That(PopCount(mask), Is.EqualTo(ExpectedCount));
+        var expectedCount = Configuration.REGMASK_BITS_32 ? 32U : 64U;
+        Assert.That(PopCount(mask), Is.EqualTo(expectedCount));
         Assert.That(BitScanForward(mask), Is.Zero);
     }
 
-#if HAS_MORE_THAN_64_REGISTERS
     [TestCase(0UL, 0UL, 0U)]
     [TestCase(1UL, 1UL, 2U)]
     [TestCase(ulong.MaxValue, 0UL, 64U)]
@@ -75,6 +74,8 @@ internal static unsafe class RegisterMaskBitOperationsTests
     public static void PopulationCountIncludesBothBanksEvenWhenTheirBitPositionsOverlap(
         ulong lower, ulong upper, uint expected)
     {
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS);
+
         var mask = new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
 
         Assert.That(PopCount(mask), Is.EqualTo(expected));
@@ -90,12 +91,12 @@ internal static unsafe class RegisterMaskBitOperationsTests
     public static void ScanPrefersTheLowerBankAndOffsetsAnUpperOnlyResultBy64(
         ulong lower, ulong upper, uint expected)
     {
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS);
+
         var mask = new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
 
         Assert.That(BitScanForward(mask), Is.EqualTo(expected));
     }
-#endif
-
 #if DEBUG
     private static int s_assertions;
     private static string? s_lastAssertion;

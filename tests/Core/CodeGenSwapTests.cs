@@ -56,15 +56,16 @@ internal static class CodeGenSwapTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsSwapsAndTransfersGcRoots()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = PrepareSwap(compiler, TYP_REF, TYP_LONG);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForSwap(tree));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RCX));
@@ -72,7 +73,6 @@ internal static class CodeGenSwapTests
             Assert.That(diagnostic, Does.Contain("xchg"));
         });
     }
-#endif
 
     private static GenTreeOp PrepareSwap(Compiler compiler, var_types firstType, var_types secondType)
     {

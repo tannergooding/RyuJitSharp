@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 || UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -18,32 +17,48 @@ internal static unsafe class Arm64AndUnixEmitterNoGCCallMaskTests
     [Test]
     public static void NoGcHelpersRetainTargetWriteBarrierAndProfilerMasks()
     {
+        Assume.That(Configuration.TARGET_ARM64 || Configuration.UNIX_AMD64_ABI);
+
         WithEmitter((compiler, emitter) =>
         {
-#if TARGET_ARM64
-            var allInt = new regMaskTP(SRBM_ALLINT);
-            var writeBarrier = new regMaskTP(SRBM_CALLEE_GCTRASH_WRITEBARRIER_ARM64);
-            var profilerEnter = SRBM_CALLEE_TRASH_ARM64 & ~new regMaskTP(
-                SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_ARM64_FP);
-            var profilerLeave = profilerEnter;
-            var defaultKill = new regMaskTP(SRBM_CALLEE_TRASH_NOGC_ARM64);
-            var interfaceTrash = SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
-            var normalSaved = new regMaskTP(SRBM_CALLEE_SAVED);
-            var validateTrash = new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64);
-#else
-            var allInt = new regMaskTP(compiler.SRBM_ALLINT);
-            var writeBarrier = new regMaskTP(SRBM_INT_CALLEE_TRASH_INIT);
-            var scratch = new regMaskTP(
-                compiler.SRBM_INT_CALLEE_TRASH | compiler.SRBM_FLT_CALLEE_TRASH, compiler.SRBM_MSK_CALLEE_TRASH);
-            var profilerEnter = scratch & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
-            var profilerLeave = scratch & ~new regMaskTP(
-                SRBM_FLOATRET | SRBM_INTRET | SRBM_FLOATRET_1_AMD64 | SRBM_INTRET_1_AMD64);
-            var defaultKill = scratch;
-            var interfaceTrash = profilerEnter;
-            var normalSaved = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED,
-                SRBM_MSK_CALLEE_SAVED);
-            var validateTrash = new regMaskTP(compiler.SRBM_INT_CALLEE_TRASH & ~(SRBM_R10 | SRBM_RCX));
-#endif
+            regMaskTP allInt;
+            regMaskTP writeBarrier;
+            regMaskTP profilerEnter;
+            regMaskTP profilerLeave;
+            regMaskTP defaultKill;
+            regMaskTP interfaceTrash;
+            regMaskTP normalSaved;
+            regMaskTP validateTrash;
+
+            if (Configuration.TARGET_ARM64)
+            {
+                allInt = new regMaskTP(SRBM_ALLINT);
+                writeBarrier = new regMaskTP(SRBM_CALLEE_GCTRASH_WRITEBARRIER_ARM64);
+                profilerEnter = SRBM_CALLEE_TRASH_ARM64 & ~new regMaskTP(
+                    SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_ARM64_FP);
+                profilerLeave = profilerEnter;
+                defaultKill = new regMaskTP(SRBM_CALLEE_TRASH_NOGC_ARM64);
+                interfaceTrash = SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
+                normalSaved = new regMaskTP(SRBM_CALLEE_SAVED);
+                validateTrash = new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64);
+            }
+            else
+            {
+                allInt = new regMaskTP(compiler.SRBM_ALLINT);
+                writeBarrier = new regMaskTP(SRBM_INT_CALLEE_TRASH_INIT);
+                var scratch = new regMaskTP(
+                    compiler.SRBM_INT_CALLEE_TRASH | compiler.SRBM_FLT_CALLEE_TRASH,
+                    compiler.SRBM_MSK_CALLEE_TRASH);
+                profilerEnter = scratch & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
+                profilerLeave = scratch & ~new regMaskTP(
+                    SRBM_FLOATRET | SRBM_INTRET | SRBM_FLOATRET_1_AMD64 | SRBM_INTRET_1_AMD64);
+                defaultKill = scratch;
+                interfaceTrash = profilerEnter;
+                normalSaved = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED,
+                    SRBM_MSK_CALLEE_SAVED);
+                validateTrash = new regMaskTP(compiler.SRBM_INT_CALLEE_TRASH & ~(SRBM_R10 | SRBM_RCX));
+            }
+
             Assert.That(emitter.emitGetGCRegsKilledByNoGCCall(CORINFO_HELP_ASSIGN_REF),
                 Is.EqualTo(writeBarrier));
             Assert.That(emitter.emitGetGCRegsKilledByNoGCCall(CORINFO_HELP_PROF_FCN_ENTER),
@@ -70,12 +85,13 @@ internal static unsafe class Arm64AndUnixEmitterNoGCCallMaskTests
     private static void WithEmitter(Action<Compiler, Emitter> test)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if UNIX_AMD64_ABI
-        AllInt(compiler) = SRBM_ALLINT_INIT;
-        IntTrash(compiler) = SRBM_INT_CALLEE_TRASH_INIT;
-        FloatTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
-        MaskTrash(compiler) = SRBM_MSK_CALLEE_TRASH_EVEX;
-#endif
+        if (Configuration.UNIX_AMD64_ABI)
+        {
+            AllInt(compiler) = SRBM_ALLINT_INIT;
+            IntTrash(compiler) = SRBM_INT_CALLEE_TRASH_INIT;
+            FloatTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
+            MaskTrash(compiler) = SRBM_MSK_CALLEE_TRASH_EVEX;
+        }
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;
         var emitter = new TestEmitter(codeGen);
@@ -87,7 +103,6 @@ internal static unsafe class Arm64AndUnixEmitterNoGCCallMaskTests
     {
     }
 
-#if UNIX_AMD64_ABI
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask AllInt(Compiler compiler);
 
@@ -99,6 +114,4 @@ internal static unsafe class Arm64AndUnixEmitterNoGCCallMaskTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmMskCalleeTrash")]
     private static extern ref regMask MaskTrash(Compiler compiler);
-#endif
 }
-#endif

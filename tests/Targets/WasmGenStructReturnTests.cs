@@ -1,4 +1,3 @@
-#if TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -72,6 +71,8 @@ internal static unsafe class WasmGenStructReturnTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getClassSize = &GetClassSize;
         vtable.Base.Base.getWasmLowering = &GetWasmLowering;
@@ -104,4 +105,3 @@ internal static unsafe class WasmGenStructReturnTests
         return CORINFO_WASM_TYPE_I32;
     }
 }
-#endif

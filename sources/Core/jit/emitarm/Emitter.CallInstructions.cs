@@ -99,15 +99,13 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose && id.idIsLargeCall())
+        if (Configuration.DEBUG && _compiler.verbose && id.idIsLargeCall())
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
-            jitprintf($"[{debugInfo.idNum:D2}] Rec call GC vars = " +
+            jitprintf($"[{debugInfo!.idNum:D2}] Rec call GC vars = " +
                 $"{VarSetOps.ToString(_compiler, ((instrDescCGCA)id).idcGCvars)}\n");
         }
-#endif
 
         if (_debugInfoSize > 0)
         {

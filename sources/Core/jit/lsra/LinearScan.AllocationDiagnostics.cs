@@ -78,7 +78,6 @@ public sealed partial class LinearScan
     private static int s_allocationDumpEmptyColumnWidth;
 
     private bool _allocationDumpFormatInitialized;
-    private regMaskTP _allocationDumpRegisters;
     private regMaskTP _lastAllocationDumpRegisters;
     private RefPosition? _lastAllocationDumpRefPosition;
     private int _allocationDumpLastUsedRegNumIndex;

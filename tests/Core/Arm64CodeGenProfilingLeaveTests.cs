@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && PROFILING_SUPPORTED
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -65,6 +64,8 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
 
     private static void WithLeave(Action<Compiler, CodeGen> action)
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.PROFILING_SUPPORTED);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
@@ -85,4 +86,3 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 }
-#endif

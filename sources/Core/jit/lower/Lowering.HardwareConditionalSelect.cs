@@ -62,9 +62,10 @@ public sealed partial class Lowering
             {
                 if (varTypeIsFloating(simdBaseType))
                 {
-#if DEBUG
-                    assert(compiler.compIsaSupportedDebugOnly(InstructionSet_AVX));
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(compiler.compIsaSupportedDebugOnly(InstructionSet_AVX));
+                    }
                     blendId = NI_AVX_BlendVariable;
                 }
                 else if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))

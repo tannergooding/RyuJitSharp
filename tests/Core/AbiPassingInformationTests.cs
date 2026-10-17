@@ -125,10 +125,8 @@ internal static class AbiPassingInformationTests
 
     private static regNumber IntArgumentRegister(int index)
     {
-#if TARGET_WASM
-        return regNumberExtensions.MakeWasmReg(unchecked((uint)index), var_types.TYP_INT);
-#else
-        return Globals.IntArgRegs[index];
-#endif
+        return Configuration.TARGET_WASM
+            ? regNumberExtensions.MakeWasmReg(unchecked((uint)index), var_types.TYP_INT)
+            : Globals.IntArgRegs[index];
     }
 }

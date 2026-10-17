@@ -103,7 +103,6 @@ public readonly struct DebugInfo
     [Conditional("DEBUG")]
     public void Validate()
     {
-#if DEBUG
         var di = this;
 
         do
@@ -126,6 +125,5 @@ public readonly struct DebugInfo
             }
         }
         while (di.GetParent(out di));
-#endif
     }
 }

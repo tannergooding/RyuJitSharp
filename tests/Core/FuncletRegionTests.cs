@@ -2,10 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.EHHandlerType;
 

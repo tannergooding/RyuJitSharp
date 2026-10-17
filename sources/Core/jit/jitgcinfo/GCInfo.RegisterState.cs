@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial struct GCInfo
@@ -19,54 +21,36 @@ public partial struct GCInfo
         VarSetOps.AssignNoCopy(Compiler, ref gcVarPtrSetCur, VarSetOps.MakeEmpty(Compiler));
     }
 
-    public void gcMarkRegSetGCref(regMaskTP mask
-#if DEBUG
-        , bool forceOutput = false
-#endif
-    )
+    public void gcMarkRegSetGCref(regMaskTP mask, bool forceOutput = false)
     {
         assert((gcRegByrefSetCur & mask).IsEmpty);
         var byrefSet = gcRegByrefSetCur & ~mask;
         var gcrefSet = gcRegGCrefSetCur | mask;
-#if DEBUG
         gcDspGCrefSetChanges(gcrefSet, forceOutput);
         gcDspByrefSetChanges(byrefSet);
-#endif
         gcRegByrefSetCur = byrefSet;
         gcRegGCrefSetCur = gcrefSet;
     }
 
-    public void gcMarkRegSetByref(regMaskTP mask
-#if DEBUG
-        , bool forceOutput = false
-#endif
-    )
+    public void gcMarkRegSetByref(regMaskTP mask, bool forceOutput = false)
     {
         var byrefSet = gcRegByrefSetCur | mask;
         var gcrefSet = gcRegGCrefSetCur & ~mask;
-#if DEBUG
         gcDspGCrefSetChanges(gcrefSet);
         gcDspByrefSetChanges(byrefSet, forceOutput);
-#endif
         gcRegByrefSetCur = byrefSet;
         gcRegGCrefSetCur = gcrefSet;
     }
 
-    public void gcMarkRegSetNpt(regMaskTP mask
-#if DEBUG
-        , bool forceOutput = false
-#endif
-    )
+    public void gcMarkRegSetNpt(regMaskTP mask, bool forceOutput = false)
     {
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             // Live register variables retain their pointer classification.
             var byrefSet = gcRegByrefSetCur & ~(mask & ~RegSet.GetMaskVars());
             var gcrefSet = gcRegGCrefSetCur & ~(mask & ~RegSet.GetMaskVars());
-#if DEBUG
             gcDspGCrefSetChanges(gcrefSet, forceOutput);
             gcDspByrefSetChanges(byrefSet, forceOutput);
-#endif
             gcRegByrefSetCur = byrefSet;
             gcRegGCrefSetCur = gcrefSet;
         }
@@ -79,7 +63,6 @@ public partial struct GCInfo
 
     public void gcMarkRegPtrVal(regNumber reg, var_types type)
     {
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             var mask = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
@@ -104,10 +87,9 @@ public partial struct GCInfo
                 }
             }
         }
-#endif
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void gcDspGCrefSetChanges(regMaskTP newSet, bool forceOutput = false)
     {
         if (Compiler.verbose && (forceOutput || (gcRegGCrefSetCur != newSet)))
@@ -129,6 +111,7 @@ public partial struct GCInfo
         }
     }
 
+    [Conditional("DEBUG")]
     public readonly void gcDspByrefSetChanges(regMaskTP newSet, bool forceOutput = false)
     {
         if (Compiler.verbose && (forceOutput || (gcRegByrefSetCur != newSet)))
@@ -149,5 +132,4 @@ public partial struct GCInfo
             jitprintf("\n");
         }
     }
-#endif
 }

@@ -69,12 +69,10 @@ public partial class Emitter
         {
             id.idjShort = false;
             id.idjKeepLong = (ins == INS_bl) || _compiler.fgInDifferentRegions(_compiler.compCurBB, dst);
-#if DEBUG
-            if (_compiler.opts.compLongAddress)
+            if (Configuration.DEBUG && _compiler.opts.compLongAddress)
             {
                 id.idjKeepLong = true;
             }
-#endif
         }
 
         if (Configuration.DEBUG && (ins == INS_bl) && (_compiler.compCurBB.Kind == BBJ_CALLFINALLY))

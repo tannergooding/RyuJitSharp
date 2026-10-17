@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -23,8 +22,8 @@ internal static unsafe class LoongArchRiscVCodeGenScalarArithmeticTests
         {
             var operandReg = SaturatingIncrementOperandReg;
             var targetReg = SaturatingIncrementTargetReg;
-            var operand = new GenTreePhysReg(operandReg, TYP_I_IMPL) { RegNum = operandReg };
-            var tree = new GenTreeUnOp(GT_INC_SATURATE, TYP_I_IMPL, operand) { RegNum = targetReg };
+            var operand = new GenTreePhysReg(operandReg, Globals.TYP_I_IMPL) { RegNum = operandReg };
+            var tree = new GenTreeUnOp(GT_INC_SATURATE, Globals.TYP_I_IMPL, operand) { RegNum = targetReg };
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIncSaturate(tree));
 
@@ -37,13 +36,10 @@ internal static unsafe class LoongArchRiscVCodeGenScalarArithmeticTests
     {
         WithCodeGen(codeGen =>
         {
-#if TARGET_LOONGARCH64
-            var operand1 = new GenTreePhysReg(REG_S0, TYP_I_IMPL) { RegNum = REG_S0 };
-#else
-            var operand1 = new GenTreePhysReg(REG_FP, TYP_I_IMPL) { RegNum = REG_FP };
-#endif
-            var operand2 = new GenTreePhysReg(REG_S1, TYP_I_IMPL) { RegNum = REG_S1 };
-            var tree = new GenTreeOp(GT_MULHI, TYP_I_IMPL, operand1, operand2) { RegNum = REG_S2 };
+            var operand1Reg = Configuration.TARGET_LOONGARCH64 ? Globals.REG_S0 : Globals.REG_FP;
+            var operand1 = new GenTreePhysReg(operand1Reg, Globals.TYP_I_IMPL) { RegNum = operand1Reg };
+            var operand2 = new GenTreePhysReg(Globals.REG_S1, Globals.TYP_I_IMPL) { RegNum = Globals.REG_S1 };
+            var tree = new GenTreeOp(GT_MULHI, Globals.TYP_I_IMPL, operand1, operand2) { RegNum = Globals.REG_S2 };
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForMulHi(tree));
 
@@ -52,31 +48,15 @@ internal static unsafe class LoongArchRiscVCodeGenScalarArithmeticTests
     }
 
     private static regNumber SaturatingIncrementOperandReg
-    {
-        get
-        {
-#if TARGET_LOONGARCH64
-            return REG_S0;
-#else
-            return REG_S1;
-#endif
-        }
-    }
+        => Configuration.TARGET_LOONGARCH64 ? Globals.REG_S0 : Globals.REG_S1;
 
     private static regNumber SaturatingIncrementTargetReg
-    {
-        get
-        {
-#if TARGET_LOONGARCH64
-            return REG_S1;
-#else
-            return REG_S2;
-#endif
-        }
-    }
+        => Configuration.TARGET_LOONGARCH64 ? Globals.REG_S1 : Globals.REG_S2;
 
     private static void WithCodeGen(Action<CodeGen> action)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -97,11 +77,7 @@ internal static unsafe class LoongArchRiscVCodeGenScalarArithmeticTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(codeGen);
         }
         finally
@@ -110,4 +86,3 @@ internal static unsafe class LoongArchRiscVCodeGenScalarArithmeticTests
         }
     }
 }
-#endif

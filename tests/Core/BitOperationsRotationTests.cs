@@ -7,7 +7,6 @@ using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
 
-#if WINDOWS_AMD64_ABI
 internal static class BitOperationsRotationTests
 {
     private static readonly uint[] s_offsets =
@@ -61,6 +60,8 @@ internal static class BitOperationsRotationTests
     [TestCaseSource(nameof(UInt32Cases))]
     public static void UInt32RotateLeft(uint value, uint offset)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
+
         var expected = (uint)PermuteBits(value, offset, 32, left: true);
         var count = unchecked((int)offset);
 
@@ -72,6 +73,8 @@ internal static class BitOperationsRotationTests
     [TestCaseSource(nameof(UInt32Cases))]
     public static void UInt32RotateRight(uint value, uint offset)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
+
         var expected = (uint)PermuteBits(value, offset, 32, left: false);
         var count = unchecked((int)offset);
 
@@ -83,6 +86,8 @@ internal static class BitOperationsRotationTests
     [TestCaseSource(nameof(UInt64Cases))]
     public static void UInt64RotateLeft(ulong value, uint offset)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
+
         var expected = PermuteBits(value, offset, 64, left: true);
         var count = unchecked((int)offset);
 
@@ -96,6 +101,8 @@ internal static class BitOperationsRotationTests
     [TestCaseSource(nameof(UInt64Cases))]
     public static void UInt64RotateRight(ulong value, uint offset)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
+
         var expected = PermuteBits(value, offset, 64, left: false);
         var count = unchecked((int)offset);
 
@@ -127,4 +134,3 @@ internal static class BitOperationsRotationTests
         return result;
     }
 }
-#endif

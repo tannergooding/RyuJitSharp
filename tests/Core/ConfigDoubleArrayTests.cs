@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Globalization;
 using System.IO;
@@ -26,6 +25,8 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase(" ,\t", new double[0])]
     public static void ParsesNumbersAndSeparators(string? text, double[] expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var array = Parse(text);
         Assert.That(array.GetLength(), Is.EqualTo(expected.Length));
         Assert.That(array.GetData().ToArray(), Is.EqualTo(expected));
@@ -38,6 +39,8 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("-INFINITY", 0xFFF0000000000000UL)]
     public static void PreservesNativeSpecialValueBits(string text, ulong expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         Assert.That(BitConverter.DoubleToUInt64Bits(Parse(text).GetData()[0]), Is.EqualTo(expected));
     }
 
@@ -50,6 +53,8 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("nan(snan)")]
     public static void InvalidValuesFailExplicitly(string text)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         _ = Assert.Throws<FormatException>(() => _ = Parse(text));
     }
 
@@ -58,12 +63,16 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("-NaN")]
     public static void ParsesNaNWithoutPreservingCrtPayloads(string text)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         Assert.That(double.IsNaN(Parse(text).GetData()[0]), Is.True);
     }
 
     [Test]
     public static void ParsingUsesInvariantCulture()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var previous = CultureInfo.CurrentCulture;
 
         try
@@ -83,6 +92,8 @@ internal static unsafe class ConfigDoubleArrayTests
     [TestCase("-0,1.25,inf", "-0.000000 ,1.250000 ,inf ")]
     public static void DumpPreservesNativeLayout(string? text, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         using var tls = new JitTls(null);
         var array = text is null ? default : Parse(text);
         using var stream = new MemoryStream();
@@ -117,4 +128,3 @@ internal static unsafe class ConfigDoubleArrayTests
         }
     }
 }
-#endif

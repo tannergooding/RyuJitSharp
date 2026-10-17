@@ -20,11 +20,12 @@ public sealed partial class ObjectAllocator
         var enableArrays = true;
         reason = "[ok]";
 
-#if DEBUG
-        enableBoxedValueClasses = JitConfig.JitObjectStackAllocationBoxedValueClass != 0;
-        enableRefClasses = JitConfig.JitObjectStackAllocationRefClass != 0;
-        enableArrays = JitConfig.JitObjectStackAllocationArray != 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            enableBoxedValueClasses = JitConfig.JitObjectStackAllocationBoxedValueClass != 0;
+            enableRefClasses = JitConfig.JitObjectStackAllocationRefClass != 0;
+            enableArrays = JitConfig.JitObjectStackAllocationArray != 0;
+        }
         uint classSize;
 
         if (allocType is ObjectAllocationType.OAT_NEWOBJ_HEAP)

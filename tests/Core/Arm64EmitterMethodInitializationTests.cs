@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 
@@ -59,6 +58,8 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
 
     private static TestEmitter CreateEmitter()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
@@ -87,11 +88,7 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
 
     private static void Begin(Emitter emitter, bool hasFramePointer)
     {
-        emitter.emitBegFN(hasFramePointer
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(hasFramePointer, TestConfiguration.IsDebug);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
@@ -112,4 +109,3 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
     private static extern ref int InstructionsInGroup(Emitter emitter);
 }
-#endif

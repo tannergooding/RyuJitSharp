@@ -61,7 +61,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
 
             if ((targetChoice == 2) && (kind is not BBJ_RETURN))
             {
-                var exception = Assert.Throws<FatalJitException>(compiler.optCheckPreds);
+                var exception = Assert.Throws<FatalJitException>(() => compiler.optCheckPreds());
                 Assert.That(exception, Has.Property(nameof(FatalJitException.Result))
                     .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
                 Assert.That(s_assertions, Has.Count.EqualTo(1));
@@ -83,7 +83,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
             Link(compiler, target);
             source.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(target, source));
 
-            var exception = Assert.Throws<FatalJitException>(compiler.optCheckPreds);
+            var exception = Assert.Throws<FatalJitException>(() => compiler.optCheckPreds());
 
             Assert.That(exception, Has.Property(nameof(FatalJitException.Result))
                 .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
@@ -152,7 +152,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
 
             var flags = block.FlagsRaw;
             var count = compiler.fgBBcount;
-            var exception = Assert.Throws<FatalJitException>(compiler.fgDebugCheckUpdate);
+            var exception = Assert.Throws<FatalJitException>(() => compiler.fgDebugCheckUpdate());
 
             Assert.That(exception, Has.Property(nameof(FatalJitException.Result))
                 .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));

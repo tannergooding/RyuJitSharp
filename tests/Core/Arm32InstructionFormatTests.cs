@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -19,6 +18,8 @@ internal static class Arm32InstructionFormatTests
     [TestCase(INS_ldr, IF_ARM32_EN8)]
     public static void InstructionFormatsMatchTheNativeTable(instruction ins, Emitter.insFormat expectedFormat)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
             Assert.That(Format(codeGen.Emitter, ins), Is.EqualTo(expectedFormat)));
     }
@@ -26,6 +27,8 @@ internal static class Arm32InstructionFormatTests
     [Test]
     public static void EveryArmInstructionHasAFormat()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var formats = InstructionFormats(null);
@@ -51,6 +54,8 @@ internal static class Arm32InstructionFormatTests
     public static void InstructionSizesMatchNativeFormatRanges(
         Emitter.insFormat format, Emitter.insSize expectedSize)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         Assert.That(InstructionSize(null, format), Is.EqualTo(expectedSize));
     }
 
@@ -59,16 +64,17 @@ internal static class Arm32InstructionFormatTests
     public static void ZeroOperandInstructionsUseTheirNativeFormatAndSize(
         instruction ins, Emitter.insFormat expectedFormat, Emitter.insSize expectedSize, uint expectedCodeSize)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var emitter = codeGen.Emitter;
-#if !DEBUG
-            var initialGroupSize = InstructionGroupSize(emitter);
-#endif
+            var initialGroupSize = TestConfiguration.IsDebug ? 0 : InstructionGroupSize(emitter);
             emitter.emitIns(ins);
-#if !DEBUG
-            Assert.That(InstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + (int)expectedCodeSize));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(InstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + (int)expectedCodeSize));
+            }
 
             var descriptor = LastInstruction(emitter)
                 ?? throw new AssertionException("No zero-operand instruction was recorded.");
@@ -93,4 +99,3 @@ internal static class Arm32InstructionFormatTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_s_instructionFormats")]
     private static extern ReadOnlySpan<Emitter.insFormat> InstructionFormats(Emitter? emitter);
 }
-#endif

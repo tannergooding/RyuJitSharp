@@ -50,7 +50,7 @@ internal static unsafe class Arm32ProfilingLeaveTests
             CORINFO_METHOD_INFO methodInfo = default;
             PrepareLeave(compiler, codeGen, &methodInfo, TYP_REF, indirect);
             codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_R0);
-            using var callbacks = new Arm32HelperCallTests.HelperCallbacks(
+            using var callbacks = new Arm32HelperCallbacks(
                 compiler, IAT_VALUE, ARM32_THUMB_BRANCH24, (void*)0x1234);
 
             codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
@@ -61,8 +61,8 @@ internal static unsafe class Arm32ProfilingLeaveTests
                 : (instruction[])[INS_mov, INS_movw, INS_movt, INS_bl, INS_mov];
             Assert.That(descriptors.Select(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
             Assert.That(compiler.info.compProfilerCallback, Is.True);
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_LEAVE));
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Assertions, Is.Zero);
+            Assert.That(Arm32HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_LEAVE));
+            Assert.That(Arm32HelperCallbacks.Assertions, Is.Zero);
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R0));
             Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0));
@@ -84,7 +84,7 @@ internal static unsafe class Arm32ProfilingLeaveTests
         {
             CORINFO_METHOD_INFO methodInfo = default;
             PrepareLeave(compiler, codeGen, &methodInfo, TYP_REF, indirect: false);
-            using var callbacks = new Arm32HelperCallTests.HelperCallbacks(
+            using var callbacks = new Arm32HelperCallbacks(
                 compiler, IAT_VALUE, ARM32_THUMB_BRANCH24, (void*)0x1234);
 
             codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
@@ -93,7 +93,7 @@ internal static unsafe class Arm32ProfilingLeaveTests
             Assert.That(descriptors.Select(static descriptor => descriptor.idIns()),
                 Is.EqualTo((instruction[])[INS_movw, INS_movt, INS_bl]));
             Assert.That(compiler.info.compProfilerCallback, Is.True);
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_TAILCALL));
+            Assert.That(Arm32HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_TAILCALL));
             Assert.That(descriptors.Any(static descriptor =>
                 descriptor.idIns() == INS_mov && descriptor.idReg1() == REG_R2), Is.False);
         }, captureAssertions: true, minOpts: false);
@@ -112,7 +112,7 @@ internal static unsafe class Arm32ProfilingLeaveTests
         {
             CORINFO_METHOD_INFO methodInfo = default;
             PrepareLeave(compiler, codeGen, &methodInfo, returnType, indirect: false, isVarArgs: isVarArgs);
-            using var callbacks = new Arm32HelperCallTests.HelperCallbacks(
+            using var callbacks = new Arm32HelperCallbacks(
                 compiler, IAT_VALUE, ARM32_THUMB_BRANCH24, (void*)0x1234);
             compiler.opts.compUseSoftFP = useSoftFp;
             var softFp = compiler.opts.compUseSoftFP;
@@ -126,8 +126,8 @@ internal static unsafe class Arm32ProfilingLeaveTests
                 : (instruction[])[INS_movw, INS_movt, INS_bl];
             Assert.That(descriptors.Select(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
             Assert.That(compiler.info.compProfilerCallback, Is.True);
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_LEAVE));
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Assertions, Is.Zero);
+            Assert.That(Arm32HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_LEAVE));
+            Assert.That(Arm32HelperCallbacks.Assertions, Is.Zero);
         }, captureAssertions: true, minOpts: false);
     }
 

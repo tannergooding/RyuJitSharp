@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
@@ -15,6 +14,8 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
     [Test]
     public static void LoadStoreOptimizationReturnsFalseWithoutMatchingPreviousInstruction()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var (_, emitter) = CreateEmitter();
 
         Assert.That(TryOptimizeLdrStr(emitter), Is.False);
@@ -31,6 +32,8 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
     [TestCase(true)]
     public static void RemovingTheLastInstructionUpdatesCurrentOrSavedStorage(bool saveBeforeRemoval)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var (compiler, emitter) = CreateEmitter();
         emitter.emitIns(INS_nop);
         var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
@@ -81,11 +84,7 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
         var emitter = new Emitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, chkAlign: TestConfiguration.IsDebug);
 
         return (compiler, emitter);
     }
@@ -128,4 +127,3 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastInsIG")]
     private static extern ref insGroup? LastInstructionGroup(Emitter emitter);
 }
-#endif

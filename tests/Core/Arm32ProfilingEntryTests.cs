@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +25,8 @@ internal static unsafe class Arm32ProfilingEntryTests
     [Test]
     public static void UnhookedEntryDoesNotEmitInstructionsOrClearScratchState()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             BeginProlog(compiler, codeGen);
@@ -40,14 +41,14 @@ internal static unsafe class Arm32ProfilingEntryTests
 
     private static IEnumerable<TestCaseData> HookedEntryCases()
     {
-        yield return new TestCaseData(false, REG_R0, false);
-        yield return new TestCaseData(false, REG_R4, true);
+        yield return new TestCaseData(false, regNumber.REG_ARM32_R0, false);
+        yield return new TestCaseData(false, regNumber.REG_ARM32_R4, true);
 
         // ARM32 relocatable-instruction recording is skipped by the debug descriptor path.
         if (!TestConfiguration.IsDebug)
         {
-            yield return new TestCaseData(true, REG_R0, false);
-            yield return new TestCaseData(true, REG_R4, true);
+            yield return new TestCaseData(true, regNumber.REG_ARM32_R0, false);
+            yield return new TestCaseData(true, regNumber.REG_ARM32_R4, true);
         }
     }
 
@@ -55,6 +56,8 @@ internal static unsafe class Arm32ProfilingEntryTests
     public static void HookedEntryLoadsTheMethodHandleAndCallsTheProfiler(
         bool indirect, regNumber initReg, bool expectedInitRegZeroed)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             BeginProlog(compiler, codeGen);
@@ -65,15 +68,15 @@ internal static unsafe class Arm32ProfilingEntryTests
             compiler.opts.compReloc = true;
             codeGen.RegSet.rsMaskPreSpillRegArg = new regMaskTP(SRBM_R0);
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
-            using var callbacks = new Arm32HelperCallTests.HelperCallbacks(
+            using var callbacks = new Arm32HelperCallbacks(
                 compiler, IAT_VALUE, ARM32_THUMB_BRANCH24, (void*)0x1234);
             var initRegZeroed = true;
 
             codeGen.genProfilingEnterCallback(initReg, ref initRegZeroed);
 
             var descriptors = Descriptors(codeGen.Emitter);
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_ENTER));
-            Assert.That(Arm32HelperCallTests.HelperCallbacks.Assertions, Is.Zero);
+            Assert.That(Arm32HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_ENTER));
+            Assert.That(Arm32HelperCallbacks.Assertions, Is.Zero);
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_bl));
             Assert.That((nint)descriptors[^1].idAddr().iiaAddr, Is.EqualTo((nint)0x1234));
             if (indirect)
@@ -112,4 +115,3 @@ internal static unsafe class Arm32ProfilingEntryTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 }
-#endif

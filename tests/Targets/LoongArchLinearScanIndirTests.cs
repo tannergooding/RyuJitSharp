@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -57,10 +56,11 @@ internal static unsafe class LoongArchLinearScanIndirTests
         });
     }
 
-#if FEATURE_SIMD
     [Test]
     public static void Simd12IndirectionReservesAnInternalRegister()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
@@ -75,7 +75,6 @@ internal static unsafe class LoongArchLinearScanIndirTests
                 reference.getInterval().isInternal), Has.Count.EqualTo(1));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildIndir")]
     private static extern int BuildIndir(LinearScan allocator, GenTreeIndir indirection);
@@ -91,6 +90,8 @@ internal static unsafe class LoongArchLinearScanIndirTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -117,4 +118,3 @@ internal static unsafe class LoongArchLinearScanIndirTests
         }
     }
 }
-#endif

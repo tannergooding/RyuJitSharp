@@ -2,9 +2,7 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 
-#if DEBUG
 using System.Diagnostics;
-#endif
 
 namespace RyuJitSharp;
 

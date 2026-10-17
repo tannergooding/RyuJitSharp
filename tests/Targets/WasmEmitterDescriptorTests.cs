@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT).
 // See License.md in the repository root.
 
-#if TARGET_WASM
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -35,6 +34,8 @@ internal static class WasmEmitterDescriptorTests
     [Test]
     public static void DebugInfoSizeIncludesWasmLocalMetadata()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var expectedSize = IntPtr.Size == 8 ? 72 : 48;
         var firstLocalOffset = IntPtr.Size == 8 ? 56 : 36;
         Assert.That(Unsafe.SizeOf<NativeDebugInfoLayout>(), Is.EqualTo(expectedSize));
@@ -46,13 +47,15 @@ internal static class WasmEmitterDescriptorTests
             Is.EqualTo((nint)(firstLocalOffset + 8)));
 
         var sizes = typeof(Emitter).GetNestedType("DescriptorSizes", BindingFlags.NonPublic)!;
-        var debugInfoSize = sizes.GetField("DebugInfo", BindingFlags.Static | BindingFlags.NonPublic)!;
-        Assert.That(debugInfoSize.GetRawConstantValue(), Is.EqualTo(expectedSize));
+        var debugInfoSize = sizes.GetProperty("DebugInfo", BindingFlags.Static | BindingFlags.NonPublic)!;
+        Assert.That(debugInfoSize.GetValue(null), Is.EqualTo(expectedSize));
     }
 
     [Test]
     public static void SpecialDescriptorKindsPreserveTheirPayloads()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var localDeclaration = TestEmitter.CreateLocalDeclaration(3, WasmValueType.I64);
         Assert.That(localDeclaration.IsLocalDeclaration, Is.True);
         Assert.That(localDeclaration.Count, Is.EqualTo(3u));
@@ -118,4 +121,3 @@ internal static class WasmEmitterDescriptorTests
         }
     }
 }
-#endif

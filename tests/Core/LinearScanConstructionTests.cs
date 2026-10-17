@@ -30,10 +30,11 @@ internal static unsafe class LinearScanConstructionTests
             Assert.That(allocator.intervals, Has.Count.EqualTo(2));
             Assert.That(allocator.intervals[0], Is.SameAs(integerInterval));
             Assert.That(allocator.intervals[1], Is.SameAs(floatingInterval));
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(integerInterval.intervalIndex, Is.EqualTo(0u));
                 Assert.That(floatingInterval.intervalIndex, Is.EqualTo(1u));
-#endif
+            }
         });
     }
 

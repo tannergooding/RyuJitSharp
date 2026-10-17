@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86 && PROFILING_SUPPORTED
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
@@ -18,6 +17,8 @@ internal static class X86ProfilingCallbackTests
     [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL)]
     public static void UnhookedCallbacksPreserveStackAndDoNotEmitInstructions(CorInfoHelpFunc helper)
     {
+        Assume.That(Configuration.TARGET_X86 && Configuration.PROFILING_SUPPORTED);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -27,7 +28,7 @@ internal static class X86ProfilingCallbackTests
             StackLevel(codeGen) = 24;
             var zeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_EAX, ref zeroed);
+            codeGen.genProfilingEnterCallback(REG_X86_EAX, ref zeroed);
             codeGen.genProfilingLeaveCallback(helper);
 
             Assert.That(emitter.emitCurIG, Is.SameAs(group));
@@ -41,6 +42,8 @@ internal static class X86ProfilingCallbackTests
     [Test]
     public static void SinglePushAndStackAdjustmentUseUnsignedNativeWidths()
     {
+        Assume.That(Configuration.TARGET_X86 && Configuration.PROFILING_SUPPORTED);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -56,10 +59,12 @@ internal static class X86ProfilingCallbackTests
         });
     }
 
-#if UNIX_X86_ABI
     [Test]
     public static void NestedAlignmentTracksCurrentAndHighWaterMarkIndependently()
     {
+        Assume.That(Configuration.TARGET_X86 && Configuration.PROFILING_SUPPORTED);
+        Assume.That(Configuration.UNIX_X86_ABI);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -77,7 +82,6 @@ internal static class X86ProfilingCallbackTests
             Assert.That(MaxNestedAlignment(codeGen), Is.EqualTo(16u));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "genStackLevel")]
     private static extern ref uint StackLevel(CodeGen codeGen);
@@ -91,7 +95,6 @@ internal static class X86ProfilingCallbackTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddStackLevel")]
     private static extern void AddStackLevel(CodeGen codeGen, uint adjustment);
 
-#if UNIX_X86_ABI
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<curNestedAlignment>k__BackingField")]
     private static extern ref uint NestedAlignment(CodeGen codeGen);
 
@@ -103,6 +106,4 @@ internal static class X86ProfilingCallbackTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SubtractNestedAlignment")]
     private static extern void SubtractNestedAlignment(CodeGen codeGen, uint adjustment);
-#endif
 }
-#endif

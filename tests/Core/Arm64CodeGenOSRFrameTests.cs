@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Linq;
 using NUnit.Framework;
@@ -20,6 +19,8 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
     public static void Tier0CalleeSavesAreRestoredBeforeTheFrameAndUseTheCorrectStackBase(
         bool isVarArgs, bool hasFrameRegisters)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithOSRFrame(isVarArgs, hasFrameRegisters, (compiler, codeGen) =>
         {
             codeGen.genOSRHandleTier0CalleeSavedRegistersAndFrame();
@@ -91,4 +92,3 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
         });
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -103,7 +102,8 @@ internal static class Arm64CodeGenEHTransferTargetTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-        Arm64HardwareIntrinsicCodegenTests.WithCodeGen(action);
+        Assume.That(Configuration.TARGET_ARM64);
+        Arm64CodeGenLocalVariableTests.WithCodeGen(action);
     }
 
     private static void AssertUnsupportedRecording(Action action)
@@ -114,4 +114,3 @@ internal static class Arm64CodeGenEHTransferTargetTests
         Assert.That(failure.Message, Is.EqualTo("Instruction recording outside AMD64 is not ported."));
     }
 }
-#endif

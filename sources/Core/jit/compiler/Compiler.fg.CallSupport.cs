@@ -23,9 +23,10 @@ public partial class Compiler
         {
             assert(call.IsVirtualStubRelativeIndir);
             address = gtNewIconHandleNode((nint)call.StubCallStubAddr, GTF_ICON_FTN_ADDR);
-#if DEBUG
-            address.AsIntCon().TargetHandle = (nint)call._callMethHnd;
-#endif
+            if (Configuration.DEBUG)
+            {
+                address.AsIntCon().TargetHandle = (nint)call._callMethHnd;
+            }
         }
 
         assert(address is not null);

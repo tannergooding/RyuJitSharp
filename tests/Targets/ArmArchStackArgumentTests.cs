@@ -1,14 +1,18 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_ARMARCH
+extern alias RyuJitSharpCore;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 #if TARGET_ARM64
 using System.Runtime.InteropServices;
 #endif
+
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using TargetDefinition = RyuJitSharpCore::RyuJitSharp.Target;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -65,7 +69,7 @@ internal static unsafe class ArmArchStackArgumentTests
                 new() { Type = TYP_I_IMPL, lvIsParam = true, lvOnFrame = true, RegNum = REG_STK },
             ];
             compiler.info.compArgsCount = 1;
-            compiler.info.compArgOrder = Target.ArgOrder.ARG_ORDER_R2L;
+            compiler.info.compArgOrder = TargetDefinition.ArgOrder.ARG_ORDER_R2L;
             compiler.lvaParameterPassingInfo =
             [
                 AbiPassingInformation.FromSegment(compiler, false,

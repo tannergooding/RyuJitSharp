@@ -3,10 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if NODEBASH_STATS
-using System.IO;
-#endif
-
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -68,7 +64,7 @@ public partial class GenTree
     }
 
 #if NODEBASH_STATS
-    internal static void ReportOperBashing(StreamWriter output)
+    internal static void ReportOperBashing(System.IO.StreamWriter output)
     {
         uint total = 0;
 

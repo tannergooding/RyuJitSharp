@@ -1,25 +1,22 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_SIMD && (TARGET_ARM64 || TARGET_AMD64)
 using System;
 using NUnit.Framework;
-#if TARGET_AMD64
 using static RyuJitSharp.ManagedInstructionSet;
-#endif
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64SimdTypeSizeUtilityTests
 {
-#if TARGET_ARM64
     [Test]
     public static void SimdAliasUsesArm64MaximumVectorWidth()
     {
+        Assume.That(Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64);
+
         var getterReturnType = typeof(GenTreeVecCon).GetProperty(nameof(GenTreeVecCon.SimdVal))?.GetMethod?.ReturnType;
         Assert.That(getterReturnType, Is.EqualTo(typeof(simd32_t).MakeByRefType()));
     }
-#endif
 
     [TestCase(TYP_BYTE, TYP_UBYTE)]
     [TestCase(TYP_UBYTE, TYP_UBYTE)]
@@ -33,6 +30,7 @@ internal static class Arm64SimdTypeSizeUtilityTests
     [TestCase(TYP_DOUBLE, TYP_ULONG)]
     public static void SimdElementTypesPreserveNativeUnsignedMapping(var_types input, var_types expected)
     {
+        RequireSimdTarget();
         Assert.That(Compiler.getUnsignedSimdBaseType(input), Is.EqualTo(expected));
     }
 
@@ -48,6 +46,7 @@ internal static class Arm64SimdTypeSizeUtilityTests
     [TestCase(-1, 8)]
     public static void GprSizesRoundToNativeRegisterWidth(int size, int expected)
     {
+        RequireSimdTarget();
         Assert.That(Compiler.roundUpGprSize(size), Is.EqualTo(expected));
     }
 
@@ -58,12 +57,14 @@ internal static class Arm64SimdTypeSizeUtilityTests
     [TestCase(-1, TYP_LONG)]
     public static void GprTypesUseNativeZeroExtendableKinds(int size, var_types expected)
     {
+        RequireSimdTarget();
         Assert.That(Compiler.roundUpGprType(size), Is.EqualTo(expected));
     }
 
     [Test]
     public static void ZeroGprSizeDoesNotReturnAnUndefinedType()
     {
+        RequireSimdTarget();
         _ = Assert.Throws<FatalJitException>(() => Compiler.roundUpGprType(0));
     }
 
@@ -79,17 +80,20 @@ internal static class Arm64SimdTypeSizeUtilityTests
     [TestCase(uint.MaxValue, TYP_SIMD16)]
     public static void RoundDownMaxTypePreservesUnsignedSizeAndRegisterFloor(uint size, var_types expected)
     {
+        RequireSimdTarget();
         WithFixedVectorWidth(compiler => {
             Assert.That(compiler.roundDownMaxType(size), Is.EqualTo(expected));
             Assert.That(compiler.roundDownMaxType(unchecked((int)size)), Is.EqualTo(expected));
         });
     }
 
-#if TARGET_AMD64
     [TestCase(false, TYP_SIMD16)]
     [TestCase(true, TYP_SIMD32)]
     public static void ConservativeRoundingRequiresAvx2ForSimd32(bool avx2, var_types expected)
     {
+        RequireSimdTarget();
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithFixedVectorWidth(compiler => {
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX);
             compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX);
@@ -105,28 +109,33 @@ internal static class Arm64SimdTypeSizeUtilityTests
             Assert.That(compiler.roundDownMaxType(32, true), Is.EqualTo(expected));
         });
     }
-#endif
 
-#if !DEBUG
     [Test]
     public static void ZeroSizeKeepsNativeReleaseLog2Fallback()
     {
+        RequireSimdTarget();
+        Assume.That(!TestConfiguration.IsDebug);
+
         WithFixedVectorWidth(compiler => {
             Assert.That(compiler.roundDownMaxType(0u), Is.EqualTo(TYP_UBYTE));
             Assert.That(compiler.roundDownMaxType(0u, true), Is.EqualTo(TYP_UBYTE));
         });
     }
-#endif
 
     private static void WithFixedVectorWidth(Action<Compiler> action)
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
-#if TARGET_AMD64
-            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX);
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX);
+            }
             action(compiler);
         });
     }
+
+    private static void RequireSimdTarget()
+    {
+        Assume.That(Configuration.FEATURE_SIMD && (Configuration.TARGET_ARM64 || Configuration.TARGET_AMD64));
+    }
 }
-#endif

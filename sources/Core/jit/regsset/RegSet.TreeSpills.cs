@@ -83,8 +83,7 @@ public partial struct RegSet
         tempType = temp.tdTempType;
         spill.spillTree = tree;
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf($"\t\t\t\t\t\t\tThe register {Compiler.compRegVarName(reg)} spilled with ");
             RyuJitSharp.Compiler.printTreeId(tree);
@@ -93,7 +92,6 @@ public partial struct RegSet
                 jitprintf($"[{regIndex}]");
             }
         }
-#endif
 
         spill.spillNext = _rsSpillDesc[(int)reg];
         _rsSpillDesc[(int)reg] = spill;
@@ -152,8 +150,7 @@ public partial struct RegSet
             tree.Flags &= ~GTF_SPILLED;
         }
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf("\t\t\t\t\t\t\tTree-Node marked unspilled from ");
             RyuJitSharp.Compiler.printTreeId(tree);
@@ -163,7 +160,6 @@ public partial struct RegSet
             }
             jitprintf("\n");
         }
-#endif
 
         return temp;
     }

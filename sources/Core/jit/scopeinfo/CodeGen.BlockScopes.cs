@@ -24,14 +24,12 @@ public sealed partial class CodeGen
             return;
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"\nScope info: begin block {FMT_BB(block.bbNum)}, IL range ");
             block.dspBlockILRange();
             jitprintf("\n");
         }
-#endif
         if (block.bbCodeOffs == BAD_IL_OFFSET)
         {
             JITDUMP("Scope info: ignoring block beginning\n");

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -24,6 +23,8 @@ internal static unsafe class Arm64CodeGenHelperCallTests
     [Test]
     public static void DirectCallNodesRecordTheArchitectureCall()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -51,6 +52,8 @@ internal static unsafe class Arm64CodeGenHelperCallTests
     [Test]
     public static void DirectHelperLookupRecordsTheCall()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -69,6 +72,8 @@ internal static unsafe class Arm64CodeGenHelperCallTests
     [Test]
     public static void RelocatableHelperLookupForwardsDebugMetadata()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -109,6 +114,8 @@ internal static unsafe class Arm64CodeGenHelperCallTests
     [Test]
     public static void ReturnTrapEmitsTheConditionalSkipBeforeTheHelperCall()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -120,9 +127,7 @@ internal static unsafe class Arm64CodeGenHelperCallTests
             compiler.fgFirstBB = currentBlock;
             compiler.fgLastBB = currentBlock;
             compiler.compCurBB = currentBlock;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = false;
-#endif
+            TestConfiguration.DisableSafeBasicBlockCreation(compiler);
 
             var data = compiler.gtNewIconNode(TYP_INT, 1);
             data.RegNum = REG_ARM64_R3;
@@ -156,4 +161,3 @@ internal static unsafe class Arm64CodeGenHelperCallTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static uint GetAddressAlignment(ICorJitInfo* self, void* address) => 1;
 }
-#endif

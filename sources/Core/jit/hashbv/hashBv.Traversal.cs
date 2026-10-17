@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 
 using elemType = ulong;
 using indexType = ulong;
@@ -12,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class hashBv
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public void dump()
     {
         var first = true;
@@ -31,6 +32,7 @@ public sealed partial class hashBv
         jitprintf("}\n");
     }
 
+    [Conditional("DEBUG")]
     public void dumpFancy()
     {
         var lastOne = Globals.NormalizeIndex(ulong.MaxValue);
@@ -69,7 +71,6 @@ public sealed partial class hashBv
 
         jitprintf("}\n");
     }
-#endif
 }
 
 public sealed class hashBvIterator

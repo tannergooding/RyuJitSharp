@@ -96,13 +96,11 @@ public partial class Liveness<TLiveness>
             assert(descriptor.lvTracked);
             descriptor._varIndex = unchecked((ushort)variableIndex);
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 _compiler.gtDispLclVar(trackedCandidates[variableIndex]);
             }
             JITDUMP($" [{descriptor.Type.Name,6}]: refCnt = {descriptor.lvRefCnt(_compiler.lvaRefCountState),4}, refCntWtd = {refCntWtd2str(descriptor.lvRefCntWtd(_compiler.lvaRefCountState), true),6}\n");
-#endif
         }
 
         JITDUMP("\n");

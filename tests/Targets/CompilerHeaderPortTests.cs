@@ -1,29 +1,24 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG || TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
-#if DEBUG
 using System;
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 using static RyuJitSharp.instruction;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static class CompilerHeaderPortTests
 {
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
     [TestCaseSource(nameof(InstructionAliasCases))]
     public static void InstructionAliasesPreservePinnedTargetOpcodes(instruction alias, instruction opcode)
     {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+            Configuration.TARGET_LOONGARCH64);
         Assert.That(alias, Is.EqualTo(opcode));
     }
-#endif
 
     private static TestCaseData[] InstructionAliasCases()
     {
@@ -92,16 +87,17 @@ internal static class CompilerHeaderPortTests
             ];
         }
 
-        throw new FatalJitException("Instruction alias tests are unavailable for this target.");
+        return [];
     }
 
-#if DEBUG
     [TestCase(false, -1)]
     [TestCase(false, 17)]
     [TestCase(true, -1)]
     [TestCase(true, 17)]
     public static unsafe void ShadowParameterPrintPreservesPointerAndSignedLocalFormat(bool hasGroup, int shadowCopy)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var info = new Compiler.ShadowParamVarInfo {
             AssignGroup = hasGroup ? [1, 2] : null,
             ShadowCopy = shadowCopy,
@@ -130,6 +126,4 @@ internal static class CompilerHeaderPortTests
         Assert.That(info.ShadowCopy, Is.EqualTo(shadowCopy));
         Assert.That(info.AssignGroup, hasGroup ? Is.EqualTo(new nint[] { 1, 2 }) : Is.Null);
     }
-#endif
 }
-#endif

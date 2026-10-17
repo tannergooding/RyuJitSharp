@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86 || UNIX_AMD64_ABI
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,51 +14,62 @@ internal static class XarchArgumentPlacementTests
     [TestCase(true)]
     public static void EmptyLateArgumentsDoNotRequireInstructionRecording(bool varargs)
     {
+        Assume.That(Configuration.TARGET_X86 || Configuration.UNIX_AMD64_ABI);
+
         void Check(CodeGen codeGen)
         {
             var call = new GenTreeCall(var_types.TYP_VOID);
             call.Args.IsVarArgs = varargs;
             codeGen.genCallPlaceRegArgs(call);
-#if TARGET_X86
-            Assert.That(DescriptorBuffer(codeGen.Emitter)?.Count ?? 0, Is.Zero);
-#else
-            Assert.That(Descriptors(codeGen), Is.Empty);
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                Assert.That(DescriptorBuffer(codeGen.Emitter)?.Count ?? 0, Is.Zero);
+            }
+            else
+            {
+                Assert.That(Descriptors(codeGen), Is.Empty);
+            }
         }
 
-#if TARGET_X86
-        X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
+        if (Configuration.TARGET_X86)
         {
-            var codeGen = compiler.codeGen as CodeGen ??
-                throw new AssertionException("Expected an x86 code generator.");
-            Check(codeGen);
-        });
-#else
-        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) => Check(codeGen));
-#endif
+            X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
+            {
+                var codeGen = compiler.codeGen as CodeGen ??
+                    throw new AssertionException("Expected an x86 code generator.");
+                Check(codeGen);
+            });
+        }
+        else
+        {
+            EmitterCallInstructionTests.WithEmitter((compiler, codeGen) => Check(codeGen));
+        }
     }
 
-#if TARGET_X86
     [Test]
     public static void ArgumentMasksExcludeFrameAndStackRegisters()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen ??
                 throw new AssertionException("Expected an x86 code generator.");
             Assert.That(codeGen.SRBM_ALLINT,
-                Is.EqualTo(regMask.SRBM_EBX | regMask.SRBM_ESI | regMask.SRBM_EDI |
-                    regMask.SRBM_EAX | regMask.SRBM_ECX | regMask.SRBM_EDX));
+                Is.EqualTo(regMask.SRBM_X86_EBX | regMask.SRBM_X86_ESI | regMask.SRBM_X86_EDI |
+                    regMask.SRBM_X86_EAX | regMask.SRBM_X86_ECX | regMask.SRBM_X86_EDX));
             Assert.That(codeGen.SRBM_ALLFLOAT,
-                Is.EqualTo(regMask.SRBM_XMM0 | regMask.SRBM_XMM1 | regMask.SRBM_XMM2 |
-                    regMask.SRBM_XMM3 | regMask.SRBM_XMM4 | regMask.SRBM_XMM5 |
-                    regMask.SRBM_XMM6 | regMask.SRBM_XMM7));
+                Is.EqualTo(regMask.SRBM_X86_XMM0 | regMask.SRBM_X86_XMM1 | regMask.SRBM_X86_XMM2 |
+                    regMask.SRBM_X86_XMM3 | regMask.SRBM_X86_XMM4 | regMask.SRBM_X86_XMM5 |
+                    regMask.SRBM_X86_XMM6 | regMask.SRBM_X86_XMM7));
         });
     }
 
     [Test]
     public static void FieldListPushesLeaveStackAdjustmentToTheIndividualPushes()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen ??
@@ -89,14 +99,14 @@ internal static class XarchArgumentPlacementTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? DescriptorBuffer(Emitter emitter);
-#endif
 
-#if UNIX_AMD64_ABI
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void FirstIncomingStackArgumentUsesParameterAbiSegments(int firstStackArgument)
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.info.compArgsCount = 3;
@@ -111,7 +121,7 @@ internal static class XarchArgumentPlacementTests
             for (var index = 0; index < compiler.info.compArgsCount; index++)
             {
                 var segment = index < firstStackArgument
-                    ? AbiPassingSegment.InRegister(regNumber.REG_RDI, 0, 8)
+                    ? AbiPassingSegment.InRegister(regNumber.REG_X64_RDI, 0, 8)
                     : AbiPassingSegment.OnStack((index - firstStackArgument) * 8, 0, 8);
                 compiler.lvaParameterPassingInfo[index] =
                     AbiPassingInformation.FromSegment(compiler, false, segment);
@@ -121,6 +131,4 @@ internal static class XarchArgumentPlacementTests
             Assert.That(Descriptors(codeGen), Is.Empty);
         });
     }
-#endif
 }
-#endif

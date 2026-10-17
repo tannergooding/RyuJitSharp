@@ -44,12 +44,10 @@ public partial class Emitter
         }
 
         id.idjKeepLong = compiler.fgInDifferentRegions(compiler.compCurBB, dst);
-#if DEBUG
-        if (compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && compiler.opts.compLongAddress)
         {
             id.idjKeepLong = true;
         }
-#endif
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;
@@ -84,12 +82,10 @@ public partial class Emitter
         {
             assert(_compiler is not null);
         }
-#if DEBUG
-        if (_compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && _compiler!.opts.compLongAddress)
         {
             id.idjKeepLong = true;
         }
-#endif
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;

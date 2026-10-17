@@ -35,21 +35,22 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        var compiler = _compiler ?? throw new FatalJitException("GC call output requires an active compiler.");
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"; Call at {unchecked(offs - callInstrSize):X4} [stk={unchecked((uint)emitCurStackLvl)}], GCvars=");
-            emitDispVarSet();
-            jitprintf(", gcrefRegs=");
-            printRegMaskInt(new regMaskTP(emitThisGCrefRegs));
-            emitDispRegSet(new regMaskTP(emitThisGCrefRegs));
-            jitprintf(", byrefRegs=");
-            printRegMaskInt(new regMaskTP(emitThisByrefRegs));
-            emitDispRegSet(new regMaskTP(emitThisByrefRegs));
-            jitprintf("\n");
+            var compiler = _compiler ?? throw new FatalJitException("GC call output requires an active compiler.");
+            if (compiler.verbose)
+            {
+                jitprintf($"; Call at {unchecked(offs - callInstrSize):X4} [stk={unchecked((uint)emitCurStackLvl)}], GCvars=");
+                emitDispVarSet();
+                jitprintf(", gcrefRegs=");
+                printRegMaskInt(new regMaskTP(emitThisGCrefRegs));
+                emitDispRegSet(new regMaskTP(emitThisGCrefRegs));
+                jitprintf(", byrefRegs=");
+                printRegMaskInt(new regMaskTP(emitThisByrefRegs));
+                emitDispRegSet(new regMaskTP(emitThisByrefRegs));
+                jitprintf("\n");
+            }
         }
-#endif
 
         if (Configuration.EMIT_TRACK_STACK_DEPTH && !Configuration.UNIX_AMD64_ABI)
         {
@@ -90,7 +91,6 @@ public partial class Emitter
         assert(gcArgs == argCount);
     }
 
-#if DEBUG
     private string emitGetFrameReg()
     {
         return emitHasFramePtr
@@ -134,5 +134,4 @@ public partial class Emitter
             jitprintf("none");
         }
     }
-#endif
 }

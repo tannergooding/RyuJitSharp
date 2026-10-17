@@ -131,11 +131,12 @@ public partial class Globals
             depth++;
         }
 
-#if DEBUG
-        for (var index = 0; index < values.Length - 1; index++)
+        if (Configuration.DEBUG)
         {
-            assert(!less.Less(values[1], values[0]));
+            for (var index = 0; index < values.Length - 1; index++)
+            {
+                assert(!less.Less(values[1], values[0]));
+            }
         }
-#endif
     }
 }

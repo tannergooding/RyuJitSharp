@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
+    <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj">
+      <Aliases>global,RyuJitSharpCore</Aliases>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

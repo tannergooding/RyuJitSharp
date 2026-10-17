@@ -19,9 +19,10 @@ public sealed partial class LinearScan
             assert(parameterRegister < REG_COUNT);
             mask = genSingleTypeRegMask(parameterRegister);
             assignPhysReg(getRegisterRecord(parameterRegister), interval);
-#if DEBUG
-            _allocationDumpRegisters |= regMaskTP.CreateFromRegNum(parameterRegister, mask);
-#endif
+            if (Configuration.DEBUG)
+            {
+                _allocationDumpRegisters |= regMaskTP.CreateFromRegNum(parameterRegister, mask);
+            }
         }
 
         var position = newRefPosition(interval, MinLocation, RefType.RefTypeParamDef, null, mask);

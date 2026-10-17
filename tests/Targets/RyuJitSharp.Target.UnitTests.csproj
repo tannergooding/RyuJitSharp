@@ -14,8 +14,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
+    <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj">
+      <Aliases>global,RyuJitSharpCore</Aliases>
+    </ProjectReference>
     <Compile Include="..\Core\TestConfiguration.cs" Link="TestConfiguration.cs" />
+    <Compile Include="..\Core\X86EmitterStaticOutputTests.cs" Link="X86EmitterStaticOutputTests.cs" />
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArithmeticMorphTests.cs" Link="ArithmeticMorphTests.cs" />
@@ -113,6 +116,7 @@
     <Compile Include="..\Core\Arm32InstructionFormatTests.cs" Link="Arm32InstructionFormatTests.cs" />
     <Compile Include="..\Core\Arm32InstructionCodeTests.cs" Link="Arm32InstructionCodeTests.cs" />
     <Compile Include="..\Core\Arm32CallInstructionTests.cs" Link="Arm32CallInstructionTests.cs" />
+    <Compile Include="..\Core\Arm32HelperCallbacks.cs" Link="Arm32HelperCallbacks.cs" />
     <Compile Include="..\Core\Arm32HelperCallTests.cs" Link="Arm32HelperCallTests.cs" />
     <Compile Include="..\Core\Arm32ProfilingEntryTests.cs" Link="Arm32ProfilingEntryTests.cs" />
     <Compile Include="..\Core\Arm32ProfilingLeaveTests.cs" Link="Arm32ProfilingLeaveTests.cs" />
@@ -151,7 +155,6 @@
     <Compile Include="..\Core\NarrowingTests.cs" Link="NarrowingTests.cs" />
     <Compile Include="..\Core\X86UnwindNoOpTests.cs" Link="X86UnwindNoOpTests.cs" />
     <Compile Include="..\Core\X86EmitterStaticFieldDependencyTests.cs" Link="X86EmitterStaticFieldDependencyTests.cs" />
-    <Compile Include="..\Core\X86EmitterStaticOutputTests.cs" Link="X86EmitterStaticOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterAddressStackOutputTests.cs" Link="X86EmitterAddressStackOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterRegisterImmediateOutputTests.cs" Link="X86EmitterRegisterImmediateOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterInstructionDispatchTests.cs" Link="X86EmitterInstructionDispatchTests.cs" />

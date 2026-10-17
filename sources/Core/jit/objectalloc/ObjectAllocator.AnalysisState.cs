@@ -37,11 +37,7 @@ public sealed partial class ObjectAllocator
 
     private bool CanHavePseudos() => _maxPseudos > 0;
 
-#if DEBUG
-    private static int TreeIdForDump(GenTree tree) => tree.TreeId;
-#else
-    private static int TreeIdForDump(GenTree tree) => 0;
-#endif
+    private static int TreeIdForDump(GenTree tree) => Configuration.DEBUG ? tree.TreeId : 0;
 
     private bool IsTrackedType(var_types type)
     {

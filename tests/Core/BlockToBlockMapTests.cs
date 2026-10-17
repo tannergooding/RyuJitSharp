@@ -25,10 +25,11 @@ internal static class BlockToBlockMapTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void StressHashChangesNativeBlockMapOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler =>
         {
             var originalConfig = JitConfig;
@@ -61,7 +62,6 @@ internal static class BlockToBlockMapTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSsaStress")]
     private static extern ref int SsaStress(ref JitConfigValues config);
-#endif
 
     private static BasicBlock[] CreateBlocks(Compiler compiler)
     {
