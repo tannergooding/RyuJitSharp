@@ -210,11 +210,10 @@ public sealed partial class CodeGen
             }
         }
         _compiler.lvaAssignFrameOffsets(Compiler.FINAL_FRAME_LAYOUT);
-#if DEBUG
-        if (_compiler.opts.dspCode || _compiler.opts.disAsm || _compiler.opts.disAsm2 || _verbose)
+        if (Configuration.DEBUG &&
+            (_compiler.opts.dspCode || _compiler.opts.disAsm || _compiler.opts.disAsm2 || _verbose))
         {
             _compiler.lvaTableDump();
         }
-#endif
     }
 }

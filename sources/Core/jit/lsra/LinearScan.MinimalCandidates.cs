@@ -88,8 +88,7 @@ public sealed partial class LinearScan
         }
 #endif
 
-#if DEBUG
-        if (Configuration.TARGET_ARM)
+        if (Configuration.DEBUG && Configuration.TARGET_ARM)
         {
             if (VERBOSE)
             {
@@ -97,7 +96,6 @@ public sealed partial class LinearScan
                 _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
             }
         }
-#endif
     }
 
     private void identifyCandidatesExceptionDataflow()

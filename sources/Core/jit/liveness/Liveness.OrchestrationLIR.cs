@@ -17,13 +17,11 @@ public partial class Liveness<TLiveness>
     public unsafe void RunLIR()
     {
         RequireLIRPolicy();
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("*************** In Liveness::Run()\n");
             _compiler.lvaTableDump();
         }
-#endif
 
         Init();
         _compiler.EndPhase(PHASE_LCLVARLIVENESS_INIT);

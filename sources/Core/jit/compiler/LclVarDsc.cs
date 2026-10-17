@@ -1060,6 +1060,19 @@ public partial struct LclVarDsc
             _singleDefDisqualifyReason = (byte)(value ^ 'H');
         }
     }
+#else
+    public byte lvSingleDefDisqualifyReason
+    {
+        readonly get
+        {
+            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+        }
+    }
 #endif
 
 #if !DEBUG

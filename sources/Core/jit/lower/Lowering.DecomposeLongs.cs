@@ -489,13 +489,11 @@ public sealed partial class Lowering
                 TryPromoteLongVar(lclNum);
             }
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("\nlvaTable after PromoteLongVars\n");
                 _compiler.lvaTableDump();
             }
-#endif
         }
 
         private void TryPromoteLongVar(int lclNum)

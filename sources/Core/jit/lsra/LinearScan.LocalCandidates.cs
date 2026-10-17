@@ -276,8 +276,7 @@ public sealed partial class LinearScan
         {
             VarSetOps.IntersectionD(_compiler, _exceptVars, _registerCandidateVars);
         }
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             if (Configuration.TARGET_ARM)
             {
@@ -285,7 +284,6 @@ public sealed partial class LinearScan
                 _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
             }
         }
-#endif
     }
 
     private CanDoubleAlign getCanDoubleAlign()

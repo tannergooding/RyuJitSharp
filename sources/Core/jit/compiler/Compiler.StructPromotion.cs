@@ -33,13 +33,11 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\nlvaTable before fgPromoteStructs\n");
             lvaTableDump();
         }
-#endif
 
         // Promotion allocates field locals; visit only the original table entries.
         var startLvaCount = lvaCount;
@@ -80,13 +78,11 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose && madeChanges)
+        if (Configuration.DEBUG && verbose && madeChanges)
         {
             jitprintf("\nlvaTable after fgPromoteStructs\n");
             lvaTableDump();
         }
-#endif
 
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }

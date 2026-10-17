@@ -10,7 +10,6 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if DEBUG
 [NonParallelizable]
 internal static unsafe class CompilerLocalDumpTests
 {
@@ -35,7 +34,7 @@ internal static unsafe class CompilerLocalDumpTests
                 lvClassHnd = update ? classHandle : null,
                 lvSingleDef = true,
             };
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
             s_classNameRequests = 0;
 
             var output = CodeGenLifeTransitionTests.Capture(() =>
@@ -50,14 +49,15 @@ internal static unsafe class CompilerLocalDumpTests
                 }
             });
 
-            Assert.That(s_classNameRequests, Is.EqualTo(verbose ? (update ? 2 : 1) : 0));
+            var shouldDisplay = TestConfiguration.IsDebug && verbose;
+            Assert.That(s_classNameRequests, Is.EqualTo(shouldDisplay ? (update ? 2 : 1) : 0));
             Assert.That((nint)compiler.lvaTable[0].lvClassHnd, Is.EqualTo((nint)classHandle));
             Assert.That(compiler.lvaTable[0].lvClassIsExact, Is.True);
             var pointer = FMT_DSP_PTR(classHandle);
             var expected = update
                 ? $"{Environment.NewLine}lvaUpdateClass: Updating class for V00 from ({pointer}) <unknown class> to ({pointer}) <unknown class> [exact]{Environment.NewLine}"
                 : $"{Environment.NewLine}lvaSetClass: setting class for V00 to ({pointer}) <unknown class>  [exact]{Environment.NewLine}";
-            Assert.That(output, Is.EqualTo(verbose ? expected : ""));
+            Assert.That(output, Is.EqualTo(shouldDisplay ? expected : ""));
         });
     }
 
@@ -80,8 +80,15 @@ internal static unsafe class CompilerLocalDumpTests
 
             var output = CodeGenLifeTransitionTests.Capture(() => compiler.gtDispTree(tree, topOnly: true));
 
-            Assert.That(output, Does.Contain($"byref {name}[]"));
-            Assert.That(output, Does.Not.Contain($"byref  {name}[]"));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain($"byref {name}[]"));
+                Assert.That(output, Does.Not.Contain($"byref  {name}[]"));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -110,8 +117,14 @@ internal static unsafe class CompilerLocalDumpTests
             var output = CodeGenLifeTransitionTests.Capture(
                 () => compiler.lvaDumpEntry(1, Compiler.FINAL_FRAME_LAYOUT, 0));
 
-            Assert.That(output, Does.Contain(expected));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain(expected));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 }
-#endif

@@ -543,7 +543,7 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public unsafe void lvaDumpEntry(int lclNum, FrameLayoutState curState, int refCntWtdWidth)
     {
         ref var varDsc = ref lvaGetDesc(lclNum);
@@ -852,6 +852,7 @@ public partial class Compiler
     /// <summary>Dump the register a local is in right now. It is only the current location, since the location changes and it is updated throughout code generation based on LSRA register assignments.</summary>
     /// <param name="lclNum"></param>
 
+    [Conditional("DEBUG")]
     public void lvaDumpRegLocation(int lclNum)
     {
         ref var varDsc = ref lvaGetDesc(lclNum);
@@ -870,6 +871,7 @@ public partial class Compiler
     /// <summary>Dump the frame location assigned to a local. It's the home location, even though the variable doesn't always live in its home location.</summary>
     /// <param name="lclNum"></param>
     /// <param name="minLength"></param>
+    [Conditional("DEBUG")]
     public void lvaDumpFrameLocation(int lclNum, int minLength)
     {
         string message;
@@ -905,8 +907,6 @@ public partial class Compiler
             jitprintf($"{message}{new string(' ', int.Max(0, minLength - message.Length))}");
         }
     }
-#endif
-
     /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
     /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
     /// <param name="mustBeFPBased">True if the base register must be FP. After FINAL_FRAME_LAYOUT, if false, it also requires SP base register.</param>
@@ -1212,7 +1212,7 @@ public partial class Compiler
         return !lvaIsFieldOfDependentlyPromotedStruct(in varDsc);
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT)
     {
         if (curState == NO_FRAME_LAYOUT)
@@ -1303,8 +1303,6 @@ public partial class Compiler
             jitprintf($"; Lcl frame size = {compLclFrameSize}\n");
         }
     }
-#endif
-
     public int lvaTrackedIndexToLclNum(int trackedIndex)
     {
         assert((uint)trackedIndex < (uint)lvaTrackedCount);
@@ -2149,12 +2147,10 @@ public partial class Compiler
             lvaAllocWasmStackPtr();
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             lvaTableDump(INITIAL_FRAME_LAYOUT);
         }
-#endif
     }
 
     /// <summary>Initialize local var descriptions for incoming user arguments</summary>

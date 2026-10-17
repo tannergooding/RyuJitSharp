@@ -168,12 +168,10 @@ public sealed partial class CodeGen
 #endif
             );
         genCodeForBBlist();
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             _compiler.lvaTableDump();
         }
-#endif
         genGeneratePrologsAndEpilogs();
         Emitter.emitRemoveJumpToNextInst();
         if (!Configuration.TARGET_WASM)
