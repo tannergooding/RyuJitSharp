@@ -1059,9 +1059,11 @@ public sealed partial class CodeGen : ICodeGen
             _compiler.fgDispBasicBlocks(_compiler.verboseTrees);
         }
 
-#if DEBUG
-        _genWriteBarrierUsed = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _genWriteBarrierUsed = false;
+        }
+
         void* generatedCode = null;
         var generatedSize = 0;
         _codePtr = &generatedCode;
@@ -1072,15 +1074,15 @@ public sealed partial class CodeGen : ICodeGen
             DoPhase(_compiler, PHASE_EMIT_CODE, genEmitMachineCode);
             DoPhase(_compiler, PHASE_EMIT_GCEH, genEmitUnwindDebugGCandEH);
 
-#if DEBUG
-            if (_genWriteBarrierUsed && (JitConfig.EnableExtraSuperPmiQueries != 0) && !_compiler.IsAot)
+            if (Configuration.DEBUG && _genWriteBarrierUsed &&
+                (JitConfig.EnableExtraSuperPmiQueries != 0) && !_compiler.IsAot)
             {
                 for (var helper = CORINFO_HELP_ASSIGN_REF; helper <= CORINFO_HELP_BULK_WRITEBARRIER_SMALL; helper++)
                 {
                     _ = _compiler.compGetHelperFtn(helper);
                 }
             }
-#endif
+
             if (Configuration.DEBUG && Configuration.TARGET_WASM)
             {
                 genCheckWasmR2RRange();

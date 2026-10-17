@@ -49,12 +49,13 @@ internal static unsafe class CodeGenIndirectStoreTests
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(data.RegNum));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
-#if DEBUG
-            Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-            Assert.That(data._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+                Assert.That(data._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+            }
         });
     }
 
@@ -118,6 +119,25 @@ internal static unsafe class CodeGenIndirectStoreTests
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(codeGen.genWriteBarrierUsed, Is.False);
+            }
+        });
+    }
+
+    [Test]
+    public static void WriteBarrierUsageDiagnosticIsDebugOnly()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            _ = compiler;
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.genWriteBarrierUsed, Is.False);
+            }
+            else
+            {
+                _ = Assert.Throws<System.InvalidOperationException>(
+                    () => Assert.That(codeGen.genWriteBarrierUsed, Is.False));
             }
         });
     }
@@ -222,9 +242,11 @@ internal static unsafe class CodeGenIndirectStoreTests
             vtable.getRelocTypeHint = &GetRelocTypeHint;
             var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CompEnablePCRelAddr(ref compiler.opts) = true;
+            }
+
             codeGen.Emitter.UseVexEncodings = vex;
             codeGen.Emitter.UseEvexEncodings = vex;
             GenTree address = addressKind switch
@@ -353,12 +375,13 @@ internal static unsafe class CodeGenIndirectStoreTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_REF)]
     [TestCase(TYP_SIMD12)]
     [TestCase(TYP_SIMD16)]
     public static void DspCodeRecordsIndirectStoresAndWriteBarriers(var_types type)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var address = Register(compiler, TYP_BYREF, REG_RAX);
@@ -372,9 +395,9 @@ internal static unsafe class CodeGenIndirectStoreTests
                     new GenTreeVecCon(TYP_SIMD32) { RegNum = REG_XMM1 }, immediate) { IsContained = true },
             };
             var store = new GenTreeStoreInd(type, address, data);
-            compiler.opts.dspCode = true;
+            DspCode(ref compiler.opts) = true;
 
-            var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForStoreInd(store));
+            var diagnostic = TestConfiguration.CaptureDebugOutput(() => codeGen.genCodeForStoreInd(store));
             Assert.That(store.Addr, Is.Not.Null);
             Assert.That(immediate.IconValue, Is.EqualTo(type == TYP_SIMD16 ? (nint)(-1) : 255));
             Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
@@ -390,7 +413,12 @@ internal static unsafe class CodeGenIndirectStoreTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
+    private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspCode")]
+    private static extern ref bool DspCode(ref Compiler.Options options);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,

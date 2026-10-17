@@ -9,14 +9,20 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if DEBUG
     private bool _genWriteBarrierUsed;
 
-    internal bool genWriteBarrierUsed => _genWriteBarrierUsed;
-#else
     internal bool genWriteBarrierUsed
-        => throw new System.InvalidOperationException("Write-barrier diagnostic state is only available in Debug builds.");
-#endif
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Write-barrier diagnostic state is only available in Debug builds.");
+            }
+
+            return _genWriteBarrierUsed;
+        }
+    }
 
     public bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm)
     {
@@ -25,9 +31,11 @@ public sealed partial class CodeGen
 
     public CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo.WriteBarrierForm writeBarrierForm)
     {
-#if DEBUG
-        _genWriteBarrierUsed = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _genWriteBarrierUsed = true;
+        }
+
         return writeBarrierForm switch
         {
             GCInfo.WriteBarrierForm.WBF_BarrierChecked => CORINFO_HELP_CHECKED_ASSIGN_REF,
