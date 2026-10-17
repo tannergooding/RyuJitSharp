@@ -1,13 +1,15 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using NUnit.Framework;
-#if COUNT_AST_OPERS
 using static RyuJitSharp.genTreeOps;
-#endif
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
@@ -15,30 +17,39 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class CompilerShutdownFamilyTests
 {
-#if COUNT_AST_OPERS
     [Test]
     public static void OperatorCountStorageIncludesSentinelAndSupportsWrites()
     {
-        var previousCount = GenTree.GetNodeCount((uint)GT_ADD);
+        if (!Configuration.COUNT_AST_OPERS)
+        {
+            Assert.Ignore("Operator-count storage is disabled for this build.");
+        }
+
+        var nodeCounts = GetNodeCounts();
+        var previousCount = nodeCounts[(int)GT_ADD];
         var updatedCount = unchecked(previousCount + 1);
 
         try
         {
-            GenTree.GetNodeCount((uint)GT_ADD) = updatedCount;
-            Assert.That(GenTree.GetNodeCount((uint)GT_ADD), Is.EqualTo(updatedCount));
+            nodeCounts[(int)GT_ADD] = updatedCount;
+            Assert.That(nodeCounts[(int)GT_ADD], Is.EqualTo(updatedCount));
         }
         finally
         {
-            GenTree.GetNodeCount((uint)GT_ADD) = previousCount;
+            nodeCounts[(int)GT_ADD] = previousCount;
         }
 
-        Assert.That(GenTree.GetNodeCount((uint)GT_COUNT), Is.Zero);
+        Assert.That(nodeCounts[(int)GT_COUNT], Is.Zero);
     }
 
-#if MEASURE_BLOCK_SIZE
     [Test]
     public static void FlowNodeStatisticsStorageSupportsReadsAndWrites()
     {
+        if (!Configuration.MEASURE_BLOCK_SIZE)
+        {
+            Assert.Ignore("Flow-node statistics are disabled for this build.");
+        }
+
         var previousCount = genFlowNodeCnt;
         var previousSize = genFlowNodeSize;
         var updatedCount = unchecked(previousCount + 1);
@@ -58,12 +69,11 @@ internal static class CompilerShutdownFamilyTests
             genFlowNodeSize = previousSize;
         }
     }
-#endif
 
     [Test]
     public static void MeasurementStructureNamesRemainAvailableWithoutDebug()
     {
-        if (!Configuration.DEBUG && !Configuration.MEASURE_NODE_SIZE)
+        if (!TestConfiguration.IsDebug && !Configuration.MEASURE_NODE_SIZE)
         {
             var exception = Assert.Throws<InvalidOperationException>(() => _ = genTreeOps.GT_ADD.StructName);
             Assert.That(exception?.Message,
@@ -109,7 +119,7 @@ internal static class CompilerShutdownFamilyTests
     [Test]
     public static void ZeroMethodGuardPrecedesEveryOptionalStatisticsDependency()
     {
-        if (!Configuration.DEBUG &&
+        if (!TestConfiguration.IsDebug &&
             !Configuration.MEASURE_NODE_SIZE &&
             !Configuration.MEASURE_BLOCK_SIZE &&
             !Configuration.DISPLAY_SIZES &&
@@ -121,9 +131,11 @@ internal static class CompilerShutdownFamilyTests
         WithShutdownState(() => {
             Compiler.genMethodCnt = 0;
             AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
-#if DEBUG
-            DumpAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                SetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList",
+                    (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2)));
+            }
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
             using var csvOutput = new MemoryStream();
@@ -135,9 +147,10 @@ internal static class CompilerShutdownFamilyTests
             writer.Flush();
 
             Assert.That(AltAssemblies(null), Is.Null);
-#if DEBUG
-            Assert.That(DumpAssemblies(null), Is.Null);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(GetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList"), Is.Null);
+            }
             Assert.That(CsvFile(null), Is.SameAs(csv));
             Assert.That(csvOutput.CanWrite, Is.True);
             Assert.That(Encoding.UTF8.GetString(output.ToArray()), Is.Empty);
@@ -173,48 +186,104 @@ internal static class CompilerShutdownFamilyTests
             CsvFile(null) = csv;
             Compiler.s_dspMemStats = JitConfig.DisplayMemStats != 0;
             FatalJitException? exception = null;
-#if MEASURE_BLOCK_SIZE
-            BasicBlock.s_Count = 9;
-            BasicBlock.s_Size = -1;
-            Compiler.genMethodCnt = 3;
-#endif
-#if NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
-            Compiler.compShutdown();
-#elif EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64) && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
-            Compiler.compShutdown();
-#elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
-            Compiler.argTotalCalls = 0;
-            Compiler.compShutdown();
-#elif COUNT_AST_OPERS && !NODEBASH_STATS && !CALL_ARG_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
-            var previousCount = GenTree.GetNodeCount((uint)GT_ADD);
-            try
+            if (Configuration.MEASURE_BLOCK_SIZE)
             {
-                GenTree.GetNodeCount((uint)GT_ADD) = unchecked(previousCount + 1);
+                BasicBlock.s_Count = 9;
+                BasicBlock.s_Size = -1;
+                Compiler.genMethodCnt = 3;
+            }
+
+            var onlyNodeBash =
+                Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_AST_OPERS &&
+                !Configuration.CALL_ARG_STATS &&
+                !Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.MEASURE_PTRTAB_SIZE &&
+                !Configuration.EMITTER_STATS;
+            var onlyEmitterStats =
+                Configuration.EMITTER_STATS &&
+                (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_ARM) &&
+                !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_AST_OPERS &&
+                !Configuration.CALL_ARG_STATS &&
+                !Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.MEASURE_PTRTAB_SIZE;
+            var onlyCallArgumentStats =
+                Configuration.CALL_ARG_STATS &&
+                !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_AST_OPERS &&
+                !Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.MEASURE_PTRTAB_SIZE &&
+                !Configuration.EMITTER_STATS;
+            var onlyOperatorCounts =
+                Configuration.COUNT_AST_OPERS &&
+                !Configuration.NODEBASH_STATS &&
+                !Configuration.CALL_ARG_STATS &&
+                !Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.MEASURE_PTRTAB_SIZE &&
+                !Configuration.EMITTER_STATS;
+            var onlyBlockSize =
+                Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_AST_OPERS &&
+                !Configuration.CALL_ARG_STATS &&
+                !Configuration.MEASURE_PTRTAB_SIZE &&
+                !Configuration.EMITTER_STATS;
+            var onlyPointerTableStats =
+                Configuration.MEASURE_PTRTAB_SIZE &&
+                !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_AST_OPERS &&
+                !Configuration.CALL_ARG_STATS &&
+                !Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.EMITTER_STATS;
+
+            if (onlyNodeBash || onlyEmitterStats || onlyBlockSize || onlyPointerTableStats)
+            {
+                Compiler.compShutdown();
+            }
+            else if (onlyCallArgumentStats)
+            {
+                SetRequiredStaticField(typeof(Compiler), "argTotalCalls", 0U);
+                Compiler.compShutdown();
+            }
+            else if (onlyOperatorCounts)
+            {
+                var nodeCounts = GetNodeCounts();
+                var previousCount = nodeCounts[(int)GT_ADD];
+
+                try
+                {
+                    nodeCounts[(int)GT_ADD] = unchecked(previousCount + 1);
+                    exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
+                    Assert.That(exception?.Message,
+                        Is.EqualTo("GenTree::s_gtTrueSizes native logical sizes are not ported."));
+                }
+                finally
+                {
+                    nodeCounts[(int)GT_ADD] = previousCount;
+                }
+            }
+            else
+            {
                 exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
-                Assert.That(exception?.Message,
-                    Is.EqualTo("GenTree::s_gtTrueSizes native logical sizes are not ported."));
+                Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
             }
-            finally
-            {
-                GenTree.GetNodeCount((uint)GT_ADD) = previousCount;
-            }
-#elif MEASURE_BLOCK_SIZE && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
-            Compiler.compShutdown();
-#else
-            exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
-            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-#endif
+
             writer.Flush();
             var text = Encoding.UTF8.GetString(output.ToArray());
 
-#if NODEBASH_STATS
-            Assert.That(text, Does.Contain("Bashed gtOper stats:\n"));
-            Assert.That(text, Does.Contain("Total bashings: 0\n"));
-            Assert.That(csvOutput.CanWrite, Is.True);
-#endif
-#if !NODEBASH_STATS
-            Assert.That(CsvFile(null), Is.Null);
-#endif
+            if (Configuration.NODEBASH_STATS)
+            {
+                Assert.That(text, Does.Contain("Bashed gtOper stats:\n"));
+                Assert.That(text, Does.Contain("Total bashings: 0\n"));
+                Assert.That(csvOutput.CanWrite, Is.True);
+            }
+
+            if (!Configuration.NODEBASH_STATS)
+            {
+                Assert.That(CsvFile(null), Is.Null);
+            }
+
             if (Configuration.MEASURE_NODE_SIZE)
             {
                 Assert.That(exception?.Message, Is.EqualTo("genNodeSizeStats collection is not ported."));
@@ -225,40 +294,54 @@ internal static class CompilerShutdownFamilyTests
             }
             else
             {
-#if COUNT_AST_OPERS
-                Assert.That(text, Does.Not.Contain("GenTree operator counts"));
-#elif CALL_ARG_STATS && !NODEBASH_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
-                Assert.That(text, Does.Not.Contain("Call stats"));
-                Assert.That(text, Does.Not.Contain("Basic block count frequency table"));
-#elif MEASURE_BLOCK_SIZE
-                var average = unchecked((uint)(nuint.MaxValue / 3));
-                Assert.That(text, Does.EndWith(
-                    "\n---------------------------------------------------\n" +
-                    "BasicBlock and FlowEdge/BasicBlockList allocation stats\n" +
-                    "---------------------------------------------------\n" +
-                    $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n" +
-                    "Allocated      0 flow nodes (      0 bytes total, avg    0 bytes per method)\n\n" +
-                    "A total of      3 methods compiled.\n"));
-#elif MEASURE_PTRTAB_SIZE
-                Assert.That(exception?.Message, Is.EqualTo("GCInfo::s_gcRegPtrDscSize collection is not ported."));
-                Assert.That(text, Does.EndWith(
-                    "\n---------------------------------------------------\n" +
-                    "GC pointer table stats\n" +
-                    "---------------------------------------------------\n"));
-#elif EMITTER_STATS
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_ARM
-                Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
-                Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
-                Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
-#else
-                Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch and arm64 is not ported."));
-#endif
-#endif
+                if (Configuration.COUNT_AST_OPERS)
+                {
+                    Assert.That(text, Does.Not.Contain("GenTree operator counts"));
+                }
+                else if (Configuration.CALL_ARG_STATS &&
+                    !Configuration.NODEBASH_STATS &&
+                    !Configuration.MEASURE_BLOCK_SIZE &&
+                    !Configuration.MEASURE_PTRTAB_SIZE &&
+                    !Configuration.EMITTER_STATS)
+                {
+                    Assert.That(text, Does.Not.Contain("Call stats"));
+                    Assert.That(text, Does.Not.Contain("Basic block count frequency table"));
+                }
+                else if (Configuration.MEASURE_BLOCK_SIZE)
+                {
+                    var average = unchecked((uint)(nuint.MaxValue / 3));
+                    Assert.That(text, Does.EndWith(
+                        "\n---------------------------------------------------\n" +
+                        "BasicBlock and FlowEdge/BasicBlockList allocation stats\n" +
+                        "---------------------------------------------------\n" +
+                        $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n" +
+                        "Allocated      0 flow nodes (      0 bytes total, avg    0 bytes per method)\n\n" +
+                        "A total of      3 methods compiled.\n"));
+                }
+                else if (Configuration.MEASURE_PTRTAB_SIZE)
+                {
+                    Assert.That(text, Does.Contain("\nGC pointer table stats\n"));
+                    Assert.That(text, Does.Contain("Reg pointer descriptor size (internal):        0 (avg    0 per method)\n"));
+                    Assert.That(text, Does.Contain("Total pointer table size:        0 (avg    0 per method)\n"));
+                }
+                else if (Configuration.EMITTER_STATS)
+                {
+                    if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_ARM)
+                    {
+                        Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
+                        Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
+                        Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
+                    }
+                    else
+                    {
+                        Assert.That(exception?.Message,
+                            Is.EqualTo("emitterStats outside xarch, arm, and arm64 is not ported."));
+                    }
+                }
             }
             Assert.That(text, Does.Not.Contain("Fatal errors stats"));
         });
     }
-#endif
 
     [Test]
     public static void ManagedAllocationStatsAggregateConcurrentCompilationsAndTrackTheMaximum()
@@ -305,34 +388,51 @@ internal static class CompilerShutdownFamilyTests
         });
     }
 
-#if NODEBASH_STATS
-    [TestCase("OperBashing")]
-#endif
-#if COUNT_AST_OPERS
-    [TestCase("SmallNodeSize")]
-#endif
-    [TestCase("TrueNodeSize")]
-#if CALL_ARG_STATS
-    [TestCase("CallArguments")]
-#endif
-    [TestCase("NodeStatistics")]
-    [TestCase("PerMethodNodeStatistics")]
-    [TestCase("NodeStatisticsInit")]
-    [TestCase("NodeCountHistogram")]
-    [TestCase("NodeSizeHistogram")]
-    [TestCase("NodeSizeDump")]
-    [TestCase("StaticNodeSizeReport")]
-#if MEASURE_BLOCK_SIZE
-    [TestCase("BasicBlockSize")]
-    [TestCase("FlowEdgeSize")]
-#endif
-#if MEASURE_PTRTAB_SIZE
-    [TestCase("RegisterPointerSize")]
-    [TestCase("TotalPointerSize")]
-#endif
-#if EMITTER_STATS
-    [TestCase("EmitterStatistics")]
-#endif
+    public static IEnumerable<TestCaseData> StatisticsDependencyCases()
+    {
+        if (Configuration.NODEBASH_STATS)
+        {
+            yield return new TestCaseData("OperBashing");
+        }
+
+        if (Configuration.COUNT_AST_OPERS)
+        {
+            yield return new TestCaseData("SmallNodeSize");
+        }
+
+        yield return new TestCaseData("TrueNodeSize");
+        yield return new TestCaseData("NodeStatistics");
+        yield return new TestCaseData("PerMethodNodeStatistics");
+        yield return new TestCaseData("NodeStatisticsInit");
+        yield return new TestCaseData("NodeCountHistogram");
+        yield return new TestCaseData("NodeSizeHistogram");
+        yield return new TestCaseData("NodeSizeDump");
+        yield return new TestCaseData("StaticNodeSizeReport");
+
+        if (Configuration.CALL_ARG_STATS)
+        {
+            yield return new TestCaseData("CallArguments");
+        }
+
+        if (Configuration.MEASURE_BLOCK_SIZE)
+        {
+            yield return new TestCaseData("BasicBlockSize");
+            yield return new TestCaseData("FlowEdgeSize");
+        }
+
+        if (Configuration.MEASURE_PTRTAB_SIZE)
+        {
+            yield return new TestCaseData("RegisterPointerSize");
+            yield return new TestCaseData("TotalPointerSize");
+        }
+
+        if (Configuration.EMITTER_STATS)
+        {
+            yield return new TestCaseData("EmitterStatistics");
+        }
+    }
+
+    [TestCaseSource(nameof(StatisticsDependencyCases))]
     public static void StatisticsDependenciesTerminateOrReportWithoutInventingData(string dependency)
     {
         if (Configuration.MEASURE_NODE_SIZE &&
@@ -349,8 +449,7 @@ internal static class CompilerShutdownFamilyTests
         using var output = new MemoryStream();
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
 
-#if NODEBASH_STATS
-        if (dependency == "OperBashing")
+        if (Configuration.NODEBASH_STATS && dependency == "OperBashing")
         {
             AccessDependency(dependency, writer);
             writer.Flush();
@@ -366,8 +465,6 @@ internal static class CompilerShutdownFamilyTests
                 "\n"));
             return;
         }
-#endif
-
         if (dependency == "NodeStatisticsInit")
         {
             NodeSizeStats statistics = default;
@@ -409,11 +506,10 @@ internal static class CompilerShutdownFamilyTests
             return;
         }
 
-#if CALL_ARG_STATS
-        if (dependency == "CallArguments")
+        if (Configuration.CALL_ARG_STATS && dependency == "CallArguments")
         {
-            var totalCalls = Compiler.argTotalCalls;
-            Compiler.argTotalCalls = 0;
+            var totalCalls = GetRequiredStaticField(typeof(Compiler), "argTotalCalls");
+            SetRequiredStaticField(typeof(Compiler), "argTotalCalls", 0U);
 
             try
             {
@@ -423,57 +519,62 @@ internal static class CompilerShutdownFamilyTests
             }
             finally
             {
-                Compiler.argTotalCalls = totalCalls;
+                SetRequiredStaticField(typeof(Compiler), "argTotalCalls", totalCalls);
             }
 
             return;
         }
-#endif
 
-#if EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64)
-        AccessDependency(dependency, writer);
-        writer.Flush();
-        var text = Encoding.UTF8.GetString(output.ToArray());
-        Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
-        Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
-#else
+        if (Configuration.MEASURE_PTRTAB_SIZE &&
+            (dependency == "RegisterPointerSize" || dependency == "TotalPointerSize"))
+        {
+            AccessDependency(dependency, writer);
+            writer.Flush();
+            Assert.That(output.Length, Is.Zero);
+            return;
+        }
+
+        if (Configuration.EMITTER_STATS && dependency == "EmitterStatistics" &&
+            (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_ARM))
+        {
+            AccessDependency(dependency, writer);
+            writer.Flush();
+            var text = Encoding.UTF8.GetString(output.ToArray());
+            Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
+            Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
+            return;
+        }
+
         var exception = Assert.Throws<FatalJitException>(() => AccessDependency(dependency, writer));
         Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         writer.Flush();
         Assert.That(output.Length, Is.Zero);
-#endif
     }
 
     private static void AccessDependency(string dependency, StreamWriter writer)
     {
         switch (dependency)
         {
-#if NODEBASH_STATS
             case "OperBashing":
             {
-                GenTree.ReportOperBashing(writer);
+                _ = InvokeStaticMethod(typeof(GenTree), "ReportOperBashing", writer);
                 break;
             }
-#endif
-#if COUNT_AST_OPERS
             case "SmallNodeSize":
             {
                 _ = TREE_NODE_SZ_SMALL;
                 break;
             }
-#endif
             case "TrueNodeSize":
             {
                 _ = GenTree.GetTrueSize(0);
                 break;
             }
-#if CALL_ARG_STATS
             case "CallArguments":
             {
-                Compiler.compDispCallArgStats(writer);
+                _ = InvokeStaticMethod(typeof(Compiler), "compDispCallArgStats", writer);
                 break;
             }
-#endif
             case "NodeStatistics":
             {
                 _ = genNodeSizeStats.genTreeNodeCnt;
@@ -507,10 +608,9 @@ internal static class CompilerShutdownFamilyTests
             }
             case "StaticNodeSizeReport":
             {
-                Compiler.compDisplayStaticSizes();
+                _ = InvokeStaticMethod(typeof(Compiler), "compDisplayStaticSizes");
                 break;
             }
-#if MEASURE_BLOCK_SIZE
             case "BasicBlockSize":
             {
                 _ = NativeBasicBlockSize;
@@ -521,26 +621,21 @@ internal static class CompilerShutdownFamilyTests
                 _ = NativeFlowEdgeSize;
                 break;
             }
-#endif
-#if MEASURE_PTRTAB_SIZE
             case "RegisterPointerSize":
             {
-                _ = GCInfo.s_gcRegPtrDscSize;
+                _ = GetRequiredStaticField(typeof(GCInfo), "s_gcRegPtrDscSize");
                 break;
             }
             case "TotalPointerSize":
             {
-                _ = GCInfo.s_gcTotalPtrTabSize;
+                _ = GetRequiredStaticField(typeof(GCInfo), "s_gcTotalPtrTabSize");
                 break;
             }
-#endif
-#if EMITTER_STATS
             case "EmitterStatistics":
             {
-                emitterStats(writer);
+                _ = InvokeStaticMethod(typeof(Emitter), "emitterStats", writer);
                 break;
             }
-#endif
             default:
             {
                 throw new ArgumentOutOfRangeException(nameof(dependency));
@@ -548,7 +643,6 @@ internal static class CompilerShutdownFamilyTests
         }
     }
 
-#if COUNT_AST_OPERS
     [TestCase(0U, 0U, true)]
     [TestCase(1U, 0U, true)]
     [TestCase(0U, 1U, false)]
@@ -580,10 +674,14 @@ internal static class CompilerShutdownFamilyTests
         }
     }
 
-#if !DEBUG
     [Test]
     public static void OperatorSortReversesEqualCountsInNativeInsertionSort()
     {
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Native insertion-sort tie ordering is only exercised in Release.");
+        }
+
         Span<Compiler.OperInfo> operators = stackalloc Compiler.OperInfo[8];
         for (var index = 0; index < operators.Length; index++)
         {
@@ -597,8 +695,74 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(operators[index].Oper, Is.EqualTo((genTreeOps)(operators.Length - index - 1)));
         }
     }
-#endif
-#endif
+
+    private const BindingFlags StaticMemberBindingFlags =
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+    private static uint[] GetNodeCounts()
+    {
+        return GetRequiredStaticField(typeof(GenTree), "s_gtNodeCounts") as uint[] ??
+            throw new InvalidOperationException("GenTree node-count storage is not available.");
+    }
+
+    private static object? GetOptionalStaticField(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+        Type declaringType,
+        string fieldName)
+    {
+        return declaringType.GetField(fieldName, StaticMemberBindingFlags)?.GetValue(null);
+    }
+
+    private static object GetRequiredStaticField(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+        Type declaringType,
+        string fieldName)
+    {
+        var field = declaringType.GetField(fieldName, StaticMemberBindingFlags) ??
+            throw new InvalidOperationException($"{declaringType.FullName}.{fieldName} is not available.");
+        return field.GetValue(null) ??
+            throw new InvalidOperationException($"{declaringType.FullName}.{fieldName} has no value.");
+    }
+
+    private static void SetOptionalStaticField(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+        Type declaringType,
+        string fieldName,
+        object? value)
+    {
+        declaringType.GetField(fieldName, StaticMemberBindingFlags)?.SetValue(null, value);
+    }
+
+    private static void SetRequiredStaticField(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+        Type declaringType,
+        string fieldName,
+        object value)
+    {
+        var field = declaringType.GetField(fieldName, StaticMemberBindingFlags) ??
+            throw new InvalidOperationException($"{declaringType.FullName}.{fieldName} is not available.");
+        field.SetValue(null, value);
+    }
+
+    private static object? InvokeStaticMethod(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+        Type declaringType,
+        string methodName,
+        params object?[] arguments)
+    {
+        var method = declaringType.GetMethod(methodName, StaticMemberBindingFlags) ??
+            throw new InvalidOperationException($"{declaringType.FullName}.{methodName} is not available.");
+
+        try
+        {
+            return method.Invoke(null, arguments);
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+            throw;
+        }
+    }
 
     private static void WithShutdownState(Action action)
     {
@@ -608,22 +772,18 @@ internal static class CompilerShutdownFamilyTests
         var timeFile = TimeLogFile(null);
         var summary = CompTimeSummaryInfo.s_compTimeSummary;
         var alt = AltAssemblies(null);
-#if MEASURE_NOWAY
-        var noway = NowayMap(null);
-        NowayMap(null) = null;
-#endif
-#if DEBUG
-        var dump = DumpAssemblies(null);
-#endif
+        var noway = GetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap");
+        SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", null);
+        var dump = GetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList");
         var methods = Compiler.genMethodCnt;
         Compiler.genMethodCnt = 1;
-#if DISPLAY_SIZES
-        var sizes = (grossVMsize, grossNCsize, totalNCsize);
-        grossVMsize = grossNCsize = totalNCsize = 0;
-#endif
-#if MEASURE_BLOCK_SIZE
+        var grossVmSize = GetOptionalStaticField(typeof(Globals), "grossVMsize");
+        var grossNativeCodeSize = GetOptionalStaticField(typeof(Globals), "grossNCsize");
+        var totalNativeCodeSize = GetOptionalStaticField(typeof(Globals), "totalNCsize");
+        SetOptionalStaticField(typeof(Globals), "grossVMsize", (nuint)0);
+        SetOptionalStaticField(typeof(Globals), "grossNCsize", (nuint)0);
+        SetOptionalStaticField(typeof(Globals), "totalNCsize", (nuint)0);
         var blocks = (BasicBlock.s_Count, BasicBlock.s_Size);
-#endif
         var displayMemory = Compiler.s_dspMemStats;
         JitConfig = new JitConfigValues();
         CsvFile(null) = null;
@@ -641,19 +801,13 @@ internal static class CompilerShutdownFamilyTests
             TimeLogFile(null) = timeFile;
             CompTimeSummaryInfo.s_compTimeSummary = summary;
             AltAssemblies(null) = alt;
-#if MEASURE_NOWAY
-            NowayMap(null) = noway;
-#endif
-#if DEBUG
-            DumpAssemblies(null) = dump;
-#endif
+            SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", noway);
+            SetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList", dump);
             Compiler.genMethodCnt = methods;
-#if DISPLAY_SIZES
-            (grossVMsize, grossNCsize, totalNCsize) = sizes;
-#endif
-#if MEASURE_BLOCK_SIZE
+            SetOptionalStaticField(typeof(Globals), "grossVMsize", grossVmSize);
+            SetOptionalStaticField(typeof(Globals), "grossNCsize", grossNativeCodeSize);
+            SetOptionalStaticField(typeof(Globals), "totalNCsize", totalNativeCodeSize);
             (BasicBlock.s_Count, BasicBlock.s_Size) = blocks;
-#endif
             Compiler.s_dspMemStats = displayMemory;
         }
     }
@@ -667,13 +821,4 @@ internal static class CompilerShutdownFamilyTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pAltJitExcludeAssembliesList")]
     private static extern ref AssemblyNamesList2? AltAssemblies(Compiler? compiler);
 
-#if MEASURE_NOWAY
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_nowayAssertMap")]
-    private static extern ref Compiler.NowayAssertMap? NowayMap(Compiler? compiler);
-#endif
-
-#if DEBUG
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pJitDisasmIncludeAssembliesList")]
-    private static extern ref AssemblyNamesList2? DumpAssemblies(Compiler? compiler);
-#endif
 }

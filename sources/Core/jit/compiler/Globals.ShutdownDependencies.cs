@@ -21,7 +21,6 @@ public partial class Globals
 
     internal static Histogram genTreeNsizHist => throw new FatalJitException(CORJIT_SKIPPED, "genTreeNsizHist collection is not ported.");
 
-#if MEASURE_BLOCK_SIZE
     private static nuint s_genFlowNodeCnt;
 
     private static nuint s_genFlowNodeSize;
@@ -33,7 +32,6 @@ public partial class Globals
     internal static nuint NativeBasicBlockSize => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
 
     internal static nuint NativeFlowEdgeSize => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(FlowEdge) is not ported.");
-#endif
 
     private static class MemAllocHistogram
     {

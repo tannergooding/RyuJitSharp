@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if COUNT_AST_OPERS
     internal readonly record struct OperInfo(uint Count, uint Size, genTreeOps Oper);
 
     internal readonly struct OperInfoLess : INativeLess<OperInfo>
@@ -18,5 +17,4 @@ public partial class Compiler
             return first.Count >= second.Count;
         }
     }
-#endif
 }

@@ -2605,13 +2605,14 @@ public partial class Compiler
                 assert(fgSafeFlowEdgeCreation || block.HasFlag(BBF_CAN_ADD_PRED));
             }
 
-#if MEASURE_BLOCK_SIZE
-            unchecked
+            if (Configuration.MEASURE_BLOCK_SIZE)
             {
-                genFlowNodeCnt += 1;
-                genFlowNodeSize += NativeFlowEdgeSize;
+                unchecked
+                {
+                    genFlowNodeCnt += 1;
+                    genFlowNodeSize += NativeFlowEdgeSize;
+                }
             }
-#endif
 
             // Any changes to the flow graph invalidate the dominator sets.
             fgModified = true;
