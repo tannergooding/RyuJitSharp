@@ -92,7 +92,7 @@ public sealed partial class RangeCheck
                 }
 
                 return right.Oper is GT_CNS_INT && (right.AsIntCon().IconValue >= 0) &&
-                    IsMonotonicallyIncreasing(left, false);
+                    IsMonotonicallyIncreasing(left, rejectNegativeConstant);
             }
 
             if (tree.Oper is GT_PHI)

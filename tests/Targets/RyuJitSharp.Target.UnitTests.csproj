@@ -22,6 +22,7 @@
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArithmeticMorphTests.cs" Link="ArithmeticMorphTests.cs" />
+    <Compile Include="..\Core\ComparisonMorphTests.cs" Link="ComparisonMorphTests.cs" />
     <Compile Include="..\Core\AsyncResumeCodeGenTestSupport.cs" Link="AsyncResumeCodeGenTestSupport.cs" />
     <Compile Include="..\Core\AsyncResumeTableTargetTests.cs" Link="AsyncResumeTableTargetTests.cs" />
     <Compile Include="..\Core\ArmCalleeSavedRegisterTests.cs" Link="ArmCalleeSavedRegisterTests.cs" />
@@ -43,8 +44,10 @@
     <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />
     <Compile Include="..\Core\ImporterCallTests.cs" Link="ImporterCallTests.cs" />
     <Compile Include="..\Core\LocalReferenceAccountingTargetTests.cs" Link="LocalReferenceAccountingTargetTests.cs" />
+    <Compile Include="..\Core\MethodNameFormattingTests.cs" Link="MethodNameFormattingTests.cs" />
     <Compile Include="..\Core\LateDisassemblyBackendTests.cs" Link="LateDisassemblyBackendTests.cs" />
     <Compile Include="..\Core\QmarkExpansionTests.cs" Link="QmarkExpansionTests.cs" />
+    <Compile Include="..\Core\RangeAnalysisTests.cs" Link="RangeAnalysisTests.cs" />
     <Compile Include="..\Core\SideEffectSetTests.cs" Link="SideEffectSetTests.cs" />
     <Compile Include="..\Core\SwiftAbiTests.cs" Link="SwiftAbiTests.cs" />
     <Compile Include="..\Core\SysVX64ClassifierTests.cs" Link="SysVX64ClassifierTests.cs" />

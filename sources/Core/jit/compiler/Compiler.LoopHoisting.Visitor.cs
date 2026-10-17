@@ -323,8 +323,15 @@ public partial class Compiler
                 }
                 else if (tree.RequiresAsgFlag)
                 {
-                    var visible = !tree.Oper.IsLocalStore ||
-                        _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum).IsAddressExposed;
+                    var visible = true;
+                    if (tree.Oper.IsLocalStore)
+                    {
+                        var descriptor = _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum);
+                        visible = descriptor.IsAddressExposed ||
+                            (_currentBlock!.HasPotentialEHSuccs(_compiler) &&
+                             (!descriptor.lvTracked || descriptor.IsLiveInOutOfHandler));
+                    }
+
                     if (visible)
                     {
                         failReason = "store to globally visible memory";

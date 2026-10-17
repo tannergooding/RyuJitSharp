@@ -374,7 +374,8 @@ public partial class Compiler
 
         var success = eeRunFunctorWithSpmiErrorTrap(() => {
             classHandle = info.compCompHnd->getMethodClass(methodHandle);
-            eeGetMethodSig(methodHandle, out var sigInfo);
+            var sigInfo = default(CORINFO_SIG_INFO);
+            info.compCompHnd->getMethodSig(methodHandle, &sigInfo);
             _ = eePrintMethod(
                 stringBuilder,
                 classHandle,

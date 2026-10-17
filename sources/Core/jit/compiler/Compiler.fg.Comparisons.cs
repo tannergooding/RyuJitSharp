@@ -89,7 +89,7 @@ public partial class Compiler
     public GenTree fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp comparison)
     {
         assert(comparison.Oper.IsCmpCompare);
-        if (gtTreeHasSideEffects(comparison, GTF_SIDE_EFFECT))
+        if (gtTreeHasSideEffects(comparison, GTF_OBS_EFFECT))
         {
             return comparison;
         }

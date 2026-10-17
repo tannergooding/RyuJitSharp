@@ -27,6 +27,10 @@ internal static unsafe class RangeAnalysisTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Widen")]
     private static extern void Widen(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsMonotonicallyIncreasing")]
+    private static extern bool IsMonotonicallyIncreasing(
+        RangeCheck analysis, GenTree tree, bool rejectNegativeConstant);
+
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
     private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
@@ -382,6 +386,35 @@ internal static unsafe class RangeAnalysisTests
 
             Assert.That(range.LowerLimit.Constant, Is.EqualTo(5));
             Assert.That(range.UpperLimit.Constant, Is.EqualTo(10));
+        });
+    }
+
+    [Test]
+    public static void MonotonicityPropagatesNegativeConstantRejectionThroughSsaAdds()
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+
+            var negative = compiler.gtNewIconNode(TYP_INT, -1);
+            negative._vnPair.SetBoth(store.VNForIntCon(-1));
+            var definition = compiler.gtNewStoreLclVarNode(0, negative);
+            ref var descriptor = ref compiler.lvaTable[0];
+            var ssaNumber = descriptor.lvPerSsaData.AllocSsaNum();
+            definition.SsaNum = ssaNumber;
+            descriptor.GetPerSsaData(ssaNumber) = new LclSsaVarDsc(block, definition);
+
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            local.SsaNum = ssaNumber;
+            local._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var positive = compiler.gtNewIconNode(TYP_INT, 1);
+            positive._vnPair.SetBoth(store.VNForIntCon(1));
+            var addition = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, TYP_INT, local, positive);
+
+            var analysis = compiler.GetRangeCheck();
+            Assert.That(IsMonotonicallyIncreasing(analysis, addition, rejectNegativeConstant: true), Is.False);
+            Assert.That(IsMonotonicallyIncreasing(analysis, addition, rejectNegativeConstant: false), Is.True);
         });
     }
 
