@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -16,6 +15,7 @@ internal static unsafe class JitTlsTests
     [TestCase(true)]
     public static void NestedScopesRestoreEachThreadsCompilerAndLog(bool throwFromInnerScope)
     {
+        Assume.That(TestConfiguration.IsDebug);
         const int workerCount = 4;
         using var start = new Barrier(workerCount);
         var workers = new Task[workerCount];
@@ -75,6 +75,7 @@ internal static unsafe class JitTlsTests
     [Test]
     public static void AbandonedScopeDoesNotInstallCompilerOnFinalizerThread()
     {
+        Assume.That(TestConfiguration.IsDebug);
         _ = CurrentScope(null);
         JitTls? previousScope = null;
         Compiler? previousCompiler = null;
@@ -152,4 +153,3 @@ internal static unsafe class JitTlsTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "t_jitTls")]
     private static extern ref JitTls? CurrentScope(JitTls? type);
 }
-#endif

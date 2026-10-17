@@ -11,11 +11,17 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verbose")]
     private static extern ref bool Verbose(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verboseSsa")]
+    private static extern ref bool VerboseSsa(Compiler compiler);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspMetrics")]
     private static extern ref bool DspMetrics(ref Compiler.Options options);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspCode")]
     private static extern ref bool DspCode(ref Compiler.Options options);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "minRegCandidateCount")]
+    private static extern ref uint MinRegCandidateCount(RefPosition reference);
 
     public static bool IsDebug => Configuration.DEBUG;
 
@@ -107,6 +113,14 @@ internal static partial class TestConfiguration
         }
     }
 
+    public static void SetMinimumRegisterCandidateCount(RefPosition reference, uint count)
+    {
+        if (IsDebug)
+        {
+            MinRegCandidateCount(reference) = count;
+        }
+    }
+
     [Conditional("DEBUG")]
     public static void EnableSafeFlowEdgeCreation(Compiler compiler)
     {
@@ -123,6 +137,14 @@ internal static partial class TestConfiguration
         if (IsDebug)
         {
             Verbose(compiler) = enabled;
+        }
+    }
+
+    public static void SetVerboseSsa(Compiler compiler, bool enabled)
+    {
+        if (IsDebug)
+        {
+            VerboseSsa(compiler) = enabled;
         }
     }
 }

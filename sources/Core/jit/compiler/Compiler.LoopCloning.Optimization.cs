@@ -42,8 +42,7 @@ public partial class Compiler
                     for (var dim = 0; dim <= array.Dim; dim++)
                     {
                         var comma = array.ArrIndex.BndsChks[dim];
-#if DEBUG
-                        if (verbose)
+                        if (Configuration.DEBUG && verbose)
                         {
                             jitprintf($"Remove bounds check [{comma.AsOp().Op1.TreeId:D6}] " +
                                 $"for {FMT_STMT(array.Stmt.Id)}, dim {dim}, ");
@@ -52,7 +51,6 @@ public partial class Compiler
                             array.ArrIndex.PrintBoundsCheckNodes();
                             jitprintf("\n");
                         }
-#endif
                         if (comma.AsOp().Op1.Oper is GT_BOUNDS_CHECK)
                         {
                             _ = optRemoveRangeCheck(comma.AsOp().Op1.AsBoundsChk(), comma, array.Stmt);
@@ -78,8 +76,7 @@ public partial class Compiler
                     var comma = span.SpanIndex.BndsChk
                         ?? throw new FatalJitException("Span candidate has no bounds check.");
                     compCurBB = block;
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"Remove bounds check [{comma.AsOp().Op1.TreeId:D6}] " +
                             $"for {FMT_STMT(span.Stmt.Id)}, ");
@@ -88,7 +85,6 @@ public partial class Compiler
                         span.SpanIndex.PrintBoundsCheckNode();
                         jitprintf("\n");
                     }
-#endif
                     if (comma.AsOp().Op1.Oper is GT_BOUNDS_CHECK)
                     {
                         _ = optRemoveRangeCheck(comma.AsOp().Op1.AsBoundsChk(), comma, span.Stmt);

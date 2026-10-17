@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
@@ -9,6 +8,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64ImmediatePredicateTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(-257L, false)]
     [TestCase(-256L, true)]
     [TestCase(0L, true)]
@@ -166,4 +171,3 @@ internal static class Arm64ImmediatePredicateTests
         }
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,6 +13,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64HWIntrinsicLayoutTests
 {
+    [SetUp]
+    public static void RequireArm64HardwareIntrinsics()
+    {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_HW_INTRINSICS,
+            "This fixture requires ARM64 hardware intrinsics.");
+    }
+
     [TestCase(NI_AdvSimd_Arm64_LoadPairScalarVector64, 16)]
     [TestCase(NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal, 16)]
     [TestCase(NI_AdvSimd_Arm64_LoadPairVector64, 16)]
@@ -97,7 +103,7 @@ internal static unsafe class Arm64HWIntrinsicLayoutTests
                 ByteLength = byteLength,
             };
             compiler.info.compCompHnd = &state.Info;
-            Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
+            TestConfiguration.SetScalableVectorConfiguration(true);
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT);
             compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT);
             var node = NewIntrinsic(intrinsic);
@@ -131,6 +137,7 @@ internal static unsafe class Arm64HWIntrinsicLayoutTests
         state->ClassSizeRequests++;
         return cls == (CORINFO_CLASS_STRUCT_*)0x1234 ? state->ByteLength : 0;
     }
+
     private static GenTreeHWIntrinsic NewIntrinsic(NamedIntrinsic intrinsic)
     {
         var operands = new GenTree[HWIntrinsicInfo.lookupNumArgs(intrinsic)];
@@ -138,8 +145,6 @@ internal static unsafe class Arm64HWIntrinsicLayoutTests
         {
             operands[index] = new GenTreeLclVar(TYP_INT, index);
         }
-
         return new GenTreeHWIntrinsic(TYP_STRUCT, intrinsic, TYP_INT, 0, operands);
     }
 }
-#endif

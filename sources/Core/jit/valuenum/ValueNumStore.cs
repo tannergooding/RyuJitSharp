@@ -141,7 +141,7 @@ public sealed partial class ValueNumStore
 #endif
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     internal static void SetValidationAttributes(Span<VNFOpAttrib> attributes, VNFunc func,
         int arity, bool commute, bool knownNonNull)
     {
@@ -158,5 +158,4 @@ public sealed partial class ValueNumStore
             attributes[(int)func] |= (VNFOpAttrib)((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
         }
     }
-#endif
 }

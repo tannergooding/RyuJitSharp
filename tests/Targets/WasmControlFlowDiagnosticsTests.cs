@@ -1,11 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM && DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
+using RyuJitSharp.UnitTests;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
 
@@ -18,7 +18,7 @@ internal static unsafe class WasmControlFlowDiagnosticsTests
     public static void QuietDumpDoesNotRequireIntervals()
     {
         WithCompiler(compiler => {
-            compiler.verbose = false;
+            TestConfiguration.SetVerbose(compiler, false);
             compiler.fgWasmIntervals = null;
 
             Assert.That(CaptureDump(compiler), Is.Empty);
@@ -147,10 +147,11 @@ internal static unsafe class WasmControlFlowDiagnosticsTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.TARGET_WASM && TestConfiguration.IsDebug);
         using var tls = new JitTls(null);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        compiler.verbose = true;
+        TestConfiguration.EnableVerbose(compiler);
         compiler.fgPredsComputed = true;
         compiler.fgSafeBasicBlockCreation = true;
         compiler.fgSafeFlowEdgeCreation = true;
@@ -167,4 +168,3 @@ internal static unsafe class WasmControlFlowDiagnosticsTests
         }
     }
 }
-#endif

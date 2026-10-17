@@ -1,21 +1,26 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && (TARGET_ARM64 || TARGET_WASM)
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class SimdAlignedMemoryCompletionTests
 {
+    [SetUp]
+    public static void RequireSimdTarget()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS &&
+            (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM),
+            "This fixture requires ARM64 or WebAssembly hardware intrinsics.");
+    }
+
 #if DEBUG
     private static int s_assertions;
 #endif
@@ -152,4 +157,3 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
         }
     }
 }
-#endif

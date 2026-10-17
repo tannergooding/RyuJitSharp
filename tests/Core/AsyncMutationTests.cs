@@ -129,12 +129,14 @@ internal static unsafe class AsyncMutationTests
         compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
         compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
         compiler.lvaRetAddrVar = BAD_VAR_NUM;
-#if FEATURE_FIXED_OUT_ARGS
-        compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
-#endif
-#if TARGET_ARM64
-        compiler.lvaFfrRegister = BAD_VAR_NUM;
-#endif
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        }
+        if (Configuration.TARGET_ARM64)
+        {
+            compiler.lvaFfrRegister = BAD_VAR_NUM;
+        }
         compiler.lvaCount = 3;
         compiler.lvaTrackedCount = 3;
         compiler.lvaTrackedCountInSizeTUnits = 1;

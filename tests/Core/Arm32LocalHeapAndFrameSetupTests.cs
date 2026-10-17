@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm32LocalHeapAndFrameSetupTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [Test]
     public static void FramePointerSetupUsesAddAndRecordsUnwindPadding()
     {
@@ -162,4 +167,3 @@ internal static class Arm32LocalHeapAndFrameSetupTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
     private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
 }
-#endif

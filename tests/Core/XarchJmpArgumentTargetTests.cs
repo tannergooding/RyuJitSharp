@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -16,10 +15,16 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class XarchJmpArgumentTargetTests
 {
-#if TARGET_X86
+    [SetUp]
+    public static void RequireXarchTarget()
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This fixture requires an x86-family target.");
+    }
+
     [Test]
     public static void X86VarargsRequireNoRegisterPlacement()
     {
+        Assume.That(Configuration.TARGET_X86, "This case requires the x86 target.");
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen ??
@@ -38,12 +43,13 @@ internal static class XarchJmpArgumentTargetTests
     public static void X86RegisterParametersUseTheirNativeStackTypes(
         var_types parameterType, int segmentSize, var_types expected)
     {
+        Assume.That(Configuration.TARGET_X86, "This case requires the x86 target.");
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen ??
                 throw new AssertionException("Expected an x86 code generator.");
             var descriptor = new LclVarDsc { Type = parameterType };
-            var segment = AbiPassingSegment.InRegister(regNumber.REG_ECX, 0, segmentSize);
+            var segment = AbiPassingSegment.InRegister(regNumber.REG_X86_ECX, 0, segmentSize);
 
             Assert.That(codeGen.genParamStackType(in descriptor, in segment), Is.EqualTo(expected));
             Assert.That(DescriptorBuffer(emitter)?.Count ?? 0, Is.Zero);
@@ -53,6 +59,7 @@ internal static class XarchJmpArgumentTargetTests
     [Test]
     public static void X86EmptyJumpStillInvokesTheNativePlacementOrder()
     {
+        Assume.That(Configuration.TARGET_X86, "This case requires the x86 target.");
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen ??
@@ -68,12 +75,11 @@ internal static class XarchJmpArgumentTargetTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? DescriptorBuffer(Emitter emitter);
-#endif
 
-#if TARGET_AMD64
     [Test]
     public static void FloatingHomeSpillAndReloadPreserveTheIntegerRegisterBank()
     {
+        Assume.That(Configuration.TARGET_AMD64, "This case requires the AMD64 target.");
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.compJmpOpUsed = true;
@@ -144,12 +150,11 @@ internal static class XarchJmpArgumentTargetTests
     }
 
     private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
-#endif
 
-#if UNIX_AMD64_ABI
     [Test]
     public static void UnixEmptyJumpDoesNotInventRegisterOrStackArguments()
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI, "This case requires the Unix AMD64 ABI.");
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.compJmpOpUsed = true;
@@ -160,6 +165,4 @@ internal static class XarchJmpArgumentTargetTests
             Assert.That(Descriptors(codeGen), Is.Empty);
         });
     }
-#endif
 }
-#endif

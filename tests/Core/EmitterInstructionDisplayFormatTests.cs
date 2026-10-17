@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -20,6 +19,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionDisplayFormatTests
 {
+    [SetUp]
+    public static void RequireAmd64Target()
+    {
+        Assume.That(Configuration.TARGET_AMD64, "This fixture requires the AMD64 target.");
+    }
+
     [Test]
     public static void StackRegisterConstantKeepsNativeOperandText()
     {
@@ -59,17 +64,17 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
             "       bextr    eax, ecx, dword ptr [V00], 7\n"));
     }
 
-#if DEBUG
     [TestCase(INS_pmovmskb, EA_16BYTE, REG_X64_EAX, REG_X64_XMM0)]
     [TestCase(INS_cvtsi2ss32, EA_4BYTE, REG_X64_XMM0, REG_X64_EAX)]
     [TestCase(INS_cvttsd2si32, EA_4BYTE, REG_X64_EAX, REG_X64_XMM0)]
     public static void RegisterPairRejectsUnexpectedEvexMask(
         instruction ins, emitAttr size, regNumber destination, regNumber source)
     {
+        Assume.That(TestConfiguration.IsDebug);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-        using var tls = new JitTls(&context.JitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(ins);
@@ -90,10 +95,11 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
     [TestCase(INS_pmovsxbq)]
     public static void RegisterPairTupleInputSizeMatchesMaskRatio(instruction ins)
     {
+        Assume.That(TestConfiguration.IsDebug);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-        using var tls = new JitTls(&context.JitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(ins);
@@ -114,10 +120,11 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
     public static void SpecializedFormatsKeepTheirNativeInstructionAssertions(
         Emitter.insFormat format, instruction ins)
     {
+        Assume.That(TestConfiguration.IsDebug);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-        using var tls = new JitTls(&context.JitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(ins);
@@ -149,7 +156,6 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         ((AssertionContext*)self)->Assertions++;
         return 0;
     }
-#endif
 
     private static Emitter CreateEmitter()
     {
@@ -182,4 +188,3 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

@@ -60,12 +60,15 @@ internal static class LirTerminatorInsertionTests
             Assert.That(lastInserted.Prev, Is.SameAs(firstInserted));
             Assert.That(lastInserted.Next, Is.SameAs(hasTerminator ? last : null));
             Assert.That(last.Prev, Is.SameAs(hasTerminator ? lastInserted : prefix));
-#if DEBUG
-            Assert.That(range.IsEmpty, Is.True);
-#else
-            Assert.That(range.FirstNode, Is.SameAs(firstInserted));
-            Assert.That(range.LastNode, Is.SameAs(lastInserted));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(range.IsEmpty, Is.True);
+            }
+            else
+            {
+                Assert.That(range.FirstNode, Is.SameAs(firstInserted));
+                Assert.That(range.LastNode, Is.SameAs(lastInserted));
+            }
         });
     }
 
@@ -85,12 +88,15 @@ internal static class LirTerminatorInsertionTests
             Assert.That(block.LastNode, Is.SameAs(node));
             Assert.That(node.Prev, Is.Null);
             Assert.That(node.Next, Is.Null);
-#if DEBUG
-            Assert.That(range.IsEmpty, Is.True);
-#else
-            Assert.That(range.FirstNode, Is.SameAs(node));
-            Assert.That(range.LastNode, Is.SameAs(node));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(range.IsEmpty, Is.True);
+            }
+            else
+            {
+                Assert.That(range.FirstNode, Is.SameAs(node));
+                Assert.That(range.LastNode, Is.SameAs(node));
+            }
         });
     }
 
@@ -120,11 +126,14 @@ internal static class LirTerminatorInsertionTests
                 s_jitstdout = previous;
             }
 
-#if DEBUG
-            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
-#else
-            Assert.That(stream.Length, Is.Zero);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+            }
+            else
+            {
+                Assert.That(stream.Length, Is.Zero);
+            }
         });
     }
 

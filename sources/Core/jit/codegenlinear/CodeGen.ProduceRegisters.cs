@@ -94,7 +94,6 @@ public sealed partial class CodeGen
 
         genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO
         if (tree.HasReg(_compiler) && (!genIsRegCandidateLocal(tree) || ((tree.Flags & GTF_VAR_DEATH) == 0)))
         {
             if (tree.IsMultiRegCall)
@@ -148,7 +147,6 @@ public sealed partial class CodeGen
                 _gcInfo.gcMarkRegPtrVal(tree.RegNum, tree.Type);
             }
         }
-#endif
     }
 
     public void genTransferRegGCState(regNumber dst, regNumber src)

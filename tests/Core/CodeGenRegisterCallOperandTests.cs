@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if !TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,6 +17,12 @@ internal static unsafe class CodeGenRegisterCallOperandTests
 {
     private static int s_assertions;
     private static string? s_lastAssertion;
+
+    [SetUp]
+    public static void RequireNonWasmTarget()
+    {
+        Assume.That(!Configuration.TARGET_WASM, "This fixture is not supported on WebAssembly.");
+    }
 
     [Test]
     public static void CallWithoutAnIndirectionCellReturnsNoRegister()
@@ -60,9 +65,10 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         {
             var call = new GenTreeCall(TYP_VOID);
             call._entryPoint.accessType = InfoAccessType.IAT_PVALUE;
-#if TARGET_XARCH
-            call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_TAILCALL;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_TAILCALL;
+            }
             var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(new GenTree(GT_NOP, TYP_I_IMPL))
                 .WithWellKnownArg(WellKnownArg.R2RIndirectionCell));
             argument.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
@@ -73,12 +79,16 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         });
     }
 
-#if TARGET_AMD64 && SWIFT_SUPPORT
     [TestCase(TYP_LONG)]
     [TestCase(TYP_REF)]
     [TestCase(TYP_BYREF)]
     public static void SwiftErrorRegisterPreservesGcStateAndSkipsTheIdentityMove(var_types type)
     {
+        if (!Configuration.TARGET_AMD64 || !Configuration.SWIFT_SUPPORT)
+        {
+            Assert.Ignore("Swift error registers require AMD64 Swift support.");
+        }
+
         EmitterCallInstructionTests.WithEmitter((_, codeGen) =>
         {
             var tree = new GenTree(GT_SWIFT_ERROR, type) { RegNum = REG_SWIFT_ERROR_AMD64 };
@@ -96,7 +106,6 @@ internal static unsafe class CodeGenRegisterCallOperandTests
             }
         });
     }
-#endif
 
     [TestCase(4, 0)]
     [TestCase(8, 1)]
@@ -160,4 +169,3 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         return 0;
     }
 }
-#endif

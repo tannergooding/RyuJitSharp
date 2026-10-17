@@ -60,18 +60,15 @@ internal static unsafe class CodeGenReturnTrapTests
             var label = EmitterJumpInstructionTests.JumpView.Target(saved[1]);
             Assert.That(label?.bbEmitCookie, Is.SameAs(codeGen.Emitter.emitCurIG));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
-#if DEBUG
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_XMM5));
-#else
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_R11 | RBM_XMM5));
-#endif
+            Assert.That(codeGen.InternalRegisters.GetAll(tree),
+                Is.EqualTo(TestConfiguration.IsDebug ? RBM_XMM5 : RBM_R11 | RBM_XMM5));
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsReturnTrapsAndConsumesAssignedTemporary()
     {
+        Assume.That(TestConfiguration.IsDebug);
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, Register(compiler, TYP_INT, REG_RAX));
@@ -82,7 +79,7 @@ internal static unsafe class CodeGenReturnTrapTests
             var context = new HelperContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
             compiler.info.compCompHnd = &context.JitInfo;
             compiler.info.compMatchedVM = true;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var first = codeGen.Emitter.emitCurIG;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForReturnTrap(tree));
@@ -91,7 +88,6 @@ internal static unsafe class CodeGenReturnTrapTests
             Assert.That(diagnostic, Does.Contain("call"));
         });
     }
-#endif
 
     private struct HelperContext
     {

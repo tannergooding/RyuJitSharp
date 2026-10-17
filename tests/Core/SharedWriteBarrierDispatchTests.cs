@@ -1,9 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System.Runtime.CompilerServices;
-#if TARGET_AMD64
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.CorJitResult;
@@ -22,19 +20,16 @@ internal static class SharedWriteBarrierDispatchTests
     public static void OptimizedPolicyDoesNotDependOnTheForm(GCInfo.WriteBarrierForm form)
     {
         var codeGen = Create();
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
-        Assert.That(codeGen.genUseOptimizedWriteBarriers(form), Is.True);
-#else
-        Assert.That(codeGen.genUseOptimizedWriteBarriers(form), Is.False);
-#endif
+        Assert.That(codeGen.genUseOptimizedWriteBarriers(form),
+            Is.EqualTo(Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS));
     }
 
-#if TARGET_AMD64
     [TestCase(WBF_BarrierChecked, CORINFO_HELP_CHECKED_ASSIGN_REF)]
     [TestCase(WBF_BarrierUnchecked, CORINFO_HELP_ASSIGN_REF)]
     public static unsafe void WindowsDispatchRecordsTheSelectedHelperCall(
         GCInfo.WriteBarrierForm form, CorInfoHelpFunc expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.getHelperFtn = &GetHelperFtn;
@@ -68,7 +63,6 @@ internal static class SharedWriteBarrierDispatchTests
         lookup->addr = (void*)0x1234;
 
     }
-#endif
 
     [TestCase(WBF_BarrierChecked, CORINFO_HELP_CHECKED_ASSIGN_REF)]
     [TestCase(WBF_BarrierUnchecked, CORINFO_HELP_ASSIGN_REF)]
@@ -98,11 +92,11 @@ internal static class SharedWriteBarrierDispatchTests
         }
     }
 
-#if !TARGET_XARCH
     [TestCase(WBF_BarrierChecked)]
     [TestCase(WBF_BarrierUnchecked)]
     public static void SharedDispatchReachesTheGenuineHelperCallBoundary(GCInfo.WriteBarrierForm form)
     {
+        Assume.That(!Configuration.TARGET_XARCH);
         var codeGen = Create();
         var error = Assert.Throws<FatalJitException>(() => codeGen.genGCWriteBarrier(form));
 
@@ -119,6 +113,7 @@ internal static class SharedWriteBarrierDispatchTests
     [TestCase((GCInfo.WriteBarrierForm)255)]
     public static void SharedDispatchRejectsInvalidFormsBeforeCallingTheHelper(GCInfo.WriteBarrierForm form)
     {
+        Assume.That(!Configuration.TARGET_XARCH);
         var codeGen = Create();
         var error = Assert.Throws<FatalJitException>(() => codeGen.genGCWriteBarrier(form));
 
@@ -129,7 +124,6 @@ internal static class SharedWriteBarrierDispatchTests
             Assert.That(codeGen.genWriteBarrierUsed, Is.True);
         }
     }
-#endif
 
     private static CodeGen Create()
     {

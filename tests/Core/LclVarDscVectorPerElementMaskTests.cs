@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
 using System.Globalization;
 using System.Reflection;
@@ -38,6 +37,7 @@ internal static class LclVarDscVectorPerElementMaskTests
     [TestCase(TYP_DOUBLE, 3)]
     public static void MaskCompatibilityUsesTheNativeElementWidthAndPreservesOtherFlags(var_types storedType, int sizeLog2)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
         LclVarDsc descriptor = new() { Type = TYP_STRUCT, IsSpan = true, lvTracked = true, lvSingleDef = true };
         var originalFlags = GetFlags(descriptor);
         foreach (var (type, _) in s_elementTypes)
@@ -64,6 +64,7 @@ internal static class LclVarDscVectorPerElementMaskTests
     [TestCase(TYP_DOUBLE, TYP_UINT, 3)]
     public static void RepeatedAnnotationsRetainTheMonotonicTwoBitMaximum(var_types largerType, var_types smallerType, int sizeLog2)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
         LclVarDsc descriptor = default;
         descriptor.SetIsVectorPerElementMask(smallerType);
         descriptor.SetIsVectorPerElementMask(largerType);
@@ -85,22 +86,28 @@ internal static class LclVarDscVectorPerElementMaskTests
     [TestCase(TYP_STRUCT)]
     [TestCase(TYP_UNKNOWN)]
     [TestCase(TYP_SIMD_ARM64)]
-#if FEATURE_SIMD
     [TestCase(TYP_SIMD8)]
     [TestCase(TYP_SIMD12)]
     [TestCase(TYP_SIMD16)]
-#if TARGET_XARCH
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
-#elif TARGET_ARM64
-    [TestCase(TYP_SIMD_ARM64)]
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK)]
-#endif
-#endif
     public static void InvalidBaseTypesShortCircuitOnlyWithoutTheMarkerAndOtherwiseUseUnreached(var_types invalidType)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
+        if (invalidType is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64)
+        {
+            Assume.That(Configuration.FEATURE_SIMD);
+        }
+        if (invalidType is TYP_SIMD32 or TYP_SIMD64)
+        {
+            Assume.That(Configuration.TARGET_XARCH);
+        }
+        if (invalidType is TYP_MASK)
+        {
+            Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS);
+        }
+
         var config = JitConfig;
 #if MEASURE_FATAL
         var fatalCount = s_fatalNoWayAssertBodyCount;
@@ -150,4 +157,3 @@ internal static class LclVarDscVectorPerElementMaskTests
         return Convert.ToInt64(s_flags.GetValue(descriptor), CultureInfo.InvariantCulture);
     }
 }
-#endif

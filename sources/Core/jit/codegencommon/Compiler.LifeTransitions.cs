@@ -53,7 +53,6 @@ public partial class Compiler
         {
             var varNum = lvaTrackedIndexToLclNum(deadVarIndex);
             ref var varDsc = ref lvaGetDesc(varNum);
-#if EMIT_GENERATE_GCINFO
             var isGCRef = varDsc.Type == TYP_REF;
             var isByRef = varDsc.Type == TYP_BYREF;
             var isInReg = varDsc.lvIsInReg;
@@ -80,7 +79,6 @@ public partial class Compiler
                     jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming dead\n");
                 }
             }
-#endif
             codeGen.getVariableLiveKeeper().siEndVariableLiveRange(varNum);
 
             return true;
@@ -90,7 +88,6 @@ public partial class Compiler
         {
             var varNum = lvaTrackedIndexToLclNum(bornVarIndex);
             ref var varDsc = ref lvaGetDesc(varNum);
-#if EMIT_GENERATE_GCINFO
             var isGCRef = varDsc.Type == TYP_REF;
             var isByRef = varDsc.Type == TYP_BYREF;
 
@@ -129,7 +126,6 @@ public partial class Compiler
                     jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} becoming live\n");
                 }
             }
-#endif
             codeGen.getVariableLiveKeeper().siStartVariableLiveRange(in varDsc, varNum);
 
             return true;

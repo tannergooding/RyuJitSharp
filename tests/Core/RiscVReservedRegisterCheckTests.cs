@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -17,6 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RiscVReservedRegisterCheckTests
 {
+    [SetUp]
+    public static void RequireRiscV64Target()
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This fixture requires the RISC-V 64-bit target.");
+    }
+
     [TestCase(new byte[] { 0xE1, 0xAA }, new byte[] { 0xAA }, 1)]
     [TestCase(new byte[] { 0xE2, 0x01, 0x02, 0xAA }, new byte[] { 0xAA }, 3)]
     [TestCase(new byte[] { 0xAA }, new byte[] { 0xAA }, 0)]
@@ -141,4 +146,3 @@ internal static unsafe class RiscVReservedRegisterCheckTests
         }
     }
 }
-#endif

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using static RyuJitSharp.Globals;
 
@@ -79,24 +80,20 @@ public sealed class SsaRenameState
         var top = _stacks[lclNum].Top;
         noway_assert(top is not null);
 
-#if DEBUG
-        if (_compiler.verboseSsa)
+        if (Configuration.DEBUG && _compiler.verboseSsa)
         {
             logf($"[SsaRenameState::Top] {FMT_BB(top.Block.bbNum)}, V{lclNum:D2}, ssaNum = {top.SsaNum}\n");
         }
-#endif
 
         return top.SsaNum;
     }
 
     public void Push(BasicBlock block, int lclNum, int ssaNum)
     {
-#if DEBUG
-        if (_compiler.verboseSsa)
+        if (Configuration.DEBUG && _compiler.verboseSsa)
         {
             logf($"[SsaRenameState::Push] {FMT_BB(block.bbNum)}, V{lclNum:D2}, ssaNum = {ssaNum}\n");
         }
-#endif
 
         EnsureStacks();
         Push(_stacks[lclNum], block, ssaNum);
@@ -104,12 +101,10 @@ public sealed class SsaRenameState
 
     public void PopBlockStacks(BasicBlock block)
     {
-#if DEBUG
-        if (_compiler.verboseSsa)
+        if (Configuration.DEBUG && _compiler.verboseSsa)
         {
             logf($"[SsaRenameState::PopBlockStacks] {FMT_BB(block.bbNum)}\n");
         }
-#endif
 
         while (_stackListTail is Stack stack)
         {
@@ -119,10 +114,8 @@ public sealed class SsaRenameState
                 break;
             }
 
-            stack.Pop();
-#if DEBUG
+            _ = stack.Pop();
             DumpStack(stack);
-#endif
             _stackListTail = top.ListPrev;
             _freeStack.Push(top);
         }
@@ -196,12 +189,10 @@ public sealed class SsaRenameState
             top.SsaNum = ssaNum;
         }
 
-#if DEBUG
         DumpStack(stack);
-#endif
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     private void DumpStack(Stack stack)
     {
         if (!_compiler.verboseSsa)
@@ -229,5 +220,4 @@ public sealed class SsaRenameState
         }
         jitprintf("\n");
     }
-#endif
 }

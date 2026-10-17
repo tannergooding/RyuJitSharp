@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -11,6 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    [System.Diagnostics.Conditional("DEBUG")]
     private void emitCheckIGList()
     {
 #if EMIT_BACKWARDS_NAVIGATION
@@ -123,4 +123,3 @@ public partial class Emitter
         }
     }
 }
-#endif

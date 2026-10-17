@@ -89,10 +89,14 @@ internal static class CodeGenIPMappingTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void MappingDiagnosticsPreserveFlagsLocationsAndDuplicateMessages()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("IP mapping diagnostics are only available in Debug builds.");
+        }
+
         WithMappings((compiler, codeGen) =>
         {
             TestConfiguration.EnableVerbose(compiler);
@@ -116,7 +120,6 @@ internal static class CodeGenIPMappingTests
                 $"1: 0x0004 STACK_EMPTY CALL_INSTRUCTION ASYNC {nativeLocation} label{Environment.NewLine}"));
         });
     }
-#endif
 
     private static DebugInfo Info(int offset, ICorDebugInfo.SourceTypes sourceTypes)
     {

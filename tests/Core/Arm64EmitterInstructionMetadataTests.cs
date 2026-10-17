@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.insOpts;
@@ -14,6 +13,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [Test]
     public static void InstructionClassificationsMatchNativeMetadata()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         for (var index = 0; index < CodeGen.instInfo.Length; index++)
         {
             var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(index);
@@ -31,6 +31,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [TestCase(4096)]
     public static void InstructionsBeyondMetadataHaveNoClassification(int offset)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         var ins = (instruction)(CodeGen.instInfo.Length + offset);
 
         AssertNoClassification(ins);
@@ -39,6 +40,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [Test]
     public static void MaximumInstructionValueHasNoClassification()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         AssertNoClassification(unchecked((instruction)uint.MaxValue));
     }
 
@@ -51,6 +53,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     public static void LoadAndStoreSizesMatchInstructionSemantics(
         instruction ins, emitAttr opSize, emitAttr expectedTarget, emitAttr expectedAccess)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         var descriptor = new TestDescriptor();
         descriptor.idIns(ins);
         descriptor.idOpSize(opSize);
@@ -69,6 +72,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [TestCase(INS_OPTS_2D, EA_16BYTE)]
     public static void ArrangementDataSizeMatchesNativeVectorWidth(insOpts arrangement, emitAttr expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Assert.That(GetDatasize(null, arrangement), Is.EqualTo(expected));
     }
 
@@ -77,6 +81,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [TestCase(EA_4BYTE, EA_8BYTE)]
     public static void WidenedDataSizeDoublesTheElementWidth(emitAttr size, emitAttr expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Assert.That(WidenDatasize(null, size), Is.EqualTo(expected));
     }
 
@@ -118,4 +123,3 @@ internal static class Arm64EmitterInstructionMetadataTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "widenDatasize")]
     private static extern emitAttr WidenDatasize(Emitter? emitter, emitAttr size);
 }
-#endif

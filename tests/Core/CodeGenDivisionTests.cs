@@ -114,10 +114,10 @@ internal static class CodeGenDivisionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsDivisionWithoutConsumingOperandsTwice()
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeOp(GT_DIV, TYP_INT,
@@ -125,11 +125,10 @@ internal static class CodeGenDivisionTests
             {
                 RegNum = REG_RAX,
             };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForDivMod(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
             Assert.That(diagnostic, Does.Contain("idiv"));
         });
     }
-#endif
 }

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -11,6 +10,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class WasmRegAllocTests
 {
+    [SetUp]
+    public static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM, "This fixture requires the WebAssembly target.");
+    }
+
     [Test]
     public static void NonFixedRegisterStateAndIterationPreserveFuncletAndNodeAssociations()
     {
@@ -160,4 +165,3 @@ internal static unsafe class WasmRegAllocTests
         }
     }
 }
-#endif

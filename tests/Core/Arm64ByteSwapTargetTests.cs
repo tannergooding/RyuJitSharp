@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -88,6 +87,7 @@ internal static unsafe class Arm64ByteSwapTargetTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action, bool minopts = true)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -103,11 +103,7 @@ internal static unsafe class Arm64ByteSwapTargetTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, chkAlign: TestConfiguration.IsDebug);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
             action(compiler, codeGen);
@@ -127,4 +123,3 @@ internal static unsafe class Arm64ByteSwapTargetTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
-#endif

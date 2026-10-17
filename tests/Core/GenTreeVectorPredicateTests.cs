@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_SIMD
+using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
@@ -12,39 +12,45 @@ namespace RyuJitSharp.UnitTests;
 internal static class GenTreeVectorPredicateTests
 {
     private static Compiler? s_previousCompiler;
-#if DEBUG
-    private static JitTls? s_jitTls;
-#endif
+    private static IDisposable? s_jitTls;
+    private static bool s_tlsInitialized;
 
     [SetUp]
     public static unsafe void SetUp()
     {
+        Assume.That(Configuration.FEATURE_SIMD, "This fixture requires SIMD support.");
         s_previousCompiler = JitTls.Compiler;
-#if DEBUG
-        s_jitTls = new JitTls(null);
-#endif
+        s_jitTls = TestConfiguration.CreateJitTls();
+        s_tlsInitialized = true;
         JitTls.Compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
     }
 
     [TearDown]
     public static void TearDown()
     {
+        if (!s_tlsInitialized)
+        {
+            return;
+        }
+
         JitTls.Compiler = s_previousCompiler;
-#if DEBUG
         s_jitTls?.Dispose();
         s_jitTls = null;
-#endif
+        s_tlsInitialized = false;
     }
 
     [TestCase(TYP_SIMD8)]
     [TestCase(TYP_SIMD12)]
     [TestCase(TYP_SIMD16)]
-#if TARGET_XARCH
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
-#endif
     public static void FixedPredicatesIgnoreInactiveBytes(var_types type)
     {
+        if (type is TYP_SIMD32 or TYP_SIMD64)
+        {
+            Assume.That(Configuration.TARGET_XARCH, "The vector width requires an x86-family target.");
+        }
+
         var node = new GenTreeVecCon(type);
         node.SimdVal.AsSpan<byte>().Fill(byte.MaxValue);
         node.SimdVal.AsSpan<byte>()[..type.Size].Clear();
@@ -162,10 +168,10 @@ internal static class GenTreeVectorPredicateTests
         Assert.That(allBitsSetFailure?.Result, Is.EqualTo(CORJIT_IMPLLIMITATION));
     }
 
-#if TARGET_ARM64
     [Test]
     public static void ScalablePredicatesReadScalableStorage()
     {
+        Assume.That(Configuration.TARGET_ARM64, "This case requires the ARM64 target.");
         var node = new GenTreeVecCon(TYP_SIMD_ARM64);
 
         Assert.That(node.IsZero, Is.True);
@@ -176,6 +182,4 @@ internal static class GenTreeVectorPredicateTests
         Assert.That(node.IsZero, Is.False);
         Assert.That(node.IsAllBitsSet, Is.True);
     }
-#endif
 }
-#endif

@@ -124,12 +124,10 @@ public sealed partial class ValueNumStore
                 (indSize.IsExact && (indType.Size == indSize.ExactSize)));
             value = VNForBitCast(value, indType, indSize);
             JITDUMP("    VNForLoadStoreBitcast returns ");
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 _compiler.vnPrint(value, 1);
             }
-#endif
             JITDUMP("\n");
         }
 

@@ -182,12 +182,10 @@ public partial class Globals
 
         jitstdout().Flush();
 
-#if FUNC_INFO_LOGGING
         if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
         {
             compJitFuncInfoFile.WriteLine($"{((compiler is null) ? "UNKNOWN" : compiler.info.compFullName)} - Assertion failed ({filePath}:{lineNumber} - {reason}) during {phaseName}");
         }
-#endif // FUNC_INFO_LOGGING
 
         using (var utf8FilePath = new MarshaledUtf8String(filePath))
         using (var utf8Message = new MarshaledUtf8String(message))

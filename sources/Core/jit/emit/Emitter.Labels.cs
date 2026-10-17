@@ -157,12 +157,10 @@ public partial class Emitter
         var id = emitNewInstr(EA_8BYTE);
         id.idIns(ins);
         var code = emitInsCodeLoongArch64(ins);
-#if DEBUG
-        if (ins == INS_break)
+        if (Configuration.DEBUG && ins == INS_break)
         {
             code |= 0x5;
         }
-#endif
         id.idAddr().iiaSetInstrEncode(code);
         id.idCodeSize(4);
         appendToCurIG(id);

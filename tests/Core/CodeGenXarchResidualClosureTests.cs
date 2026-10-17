@@ -1,18 +1,13 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH
-#if TARGET_X86
 using System.Linq;
 using System.Runtime.CompilerServices;
-#endif
 using NUnit.Framework;
-#if TARGET_X86
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
-#endif
 using static RyuJitSharp.GCInfo.WriteBarrierForm;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -22,12 +17,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenXarchResidualClosureTests
 {
-#if TARGET_AMD64
     [TestCase(WBF_BarrierUnknown)]
     [TestCase(WBF_BarrierChecked)]
     [TestCase(WBF_BarrierUnchecked)]
     public static void OptimizedX86BarrierFormsDoNotReplaceAmd64Stores(GCInfo.WriteBarrierForm form)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = Register(compiler, TYP_BYREF, REG_X64_RAX);
@@ -38,37 +33,34 @@ internal static class CodeGenXarchResidualClosureTests
             Assert.That(codeGen.Emitter.emitCurIG, Is.SameAs(before));
         });
     }
-#endif
 
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
-    [TestCase(WBF_BarrierUnchecked, REG_EAX, CORINFO_HELP_ASSIGN_REF_EAX)]
-    [TestCase(WBF_BarrierUnchecked, REG_ECX, CORINFO_HELP_ASSIGN_REF_ECX)]
-    [TestCase(WBF_BarrierUnchecked, REG_EBX, CORINFO_HELP_ASSIGN_REF_EBX)]
-    [TestCase(WBF_BarrierUnchecked, REG_EBP, CORINFO_HELP_ASSIGN_REF_EBP)]
-    [TestCase(WBF_BarrierUnchecked, REG_ESI, CORINFO_HELP_ASSIGN_REF_ESI)]
-    [TestCase(WBF_BarrierUnchecked, REG_EDI, CORINFO_HELP_ASSIGN_REF_EDI)]
-    [TestCase(WBF_BarrierChecked, REG_EAX, CORINFO_HELP_CHECKED_ASSIGN_REF_EAX)]
-    [TestCase(WBF_BarrierChecked, REG_ECX, CORINFO_HELP_CHECKED_ASSIGN_REF_ECX)]
-    [TestCase(WBF_BarrierChecked, REG_EBX, CORINFO_HELP_CHECKED_ASSIGN_REF_EBX)]
-    [TestCase(WBF_BarrierChecked, REG_EBP, CORINFO_HELP_CHECKED_ASSIGN_REF_EBP)]
-    [TestCase(WBF_BarrierChecked, REG_ESI, CORINFO_HELP_CHECKED_ASSIGN_REF_ESI)]
-    [TestCase(WBF_BarrierChecked, REG_EDI, CORINFO_HELP_CHECKED_ASSIGN_REF_EDI)]
+    [TestCase(WBF_BarrierUnchecked, REG_X86_EAX, CORINFO_HELP_ASSIGN_REF_EAX)]
+    [TestCase(WBF_BarrierUnchecked, REG_X86_ECX, CORINFO_HELP_ASSIGN_REF_ECX)]
+    [TestCase(WBF_BarrierUnchecked, REG_X86_EBX, CORINFO_HELP_ASSIGN_REF_EBX)]
+    [TestCase(WBF_BarrierUnchecked, REG_X86_EBP, CORINFO_HELP_ASSIGN_REF_EBP)]
+    [TestCase(WBF_BarrierUnchecked, REG_X86_ESI, CORINFO_HELP_ASSIGN_REF_ESI)]
+    [TestCase(WBF_BarrierUnchecked, REG_X86_EDI, CORINFO_HELP_ASSIGN_REF_EDI)]
+    [TestCase(WBF_BarrierChecked, REG_X86_EAX, CORINFO_HELP_CHECKED_ASSIGN_REF_EAX)]
+    [TestCase(WBF_BarrierChecked, REG_X86_ECX, CORINFO_HELP_CHECKED_ASSIGN_REF_ECX)]
+    [TestCase(WBF_BarrierChecked, REG_X86_EBX, CORINFO_HELP_CHECKED_ASSIGN_REF_EBX)]
+    [TestCase(WBF_BarrierChecked, REG_X86_EBP, CORINFO_HELP_CHECKED_ASSIGN_REF_EBP)]
+    [TestCase(WBF_BarrierChecked, REG_X86_ESI, CORINFO_HELP_CHECKED_ASSIGN_REF_ESI)]
+    [TestCase(WBF_BarrierChecked, REG_X86_EDI, CORINFO_HELP_CHECKED_ASSIGN_REF_EDI)]
     public static void X86OptimizedBarriersSelectTheValueRegisterHelper(
         GCInfo.WriteBarrierForm form, regNumber sourceReg, CorInfoHelpFunc expected)
     {
+        Assume.That(Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS);
         var helpers = OptimizedBarrierHelpers(null);
         var row = form is WBF_BarrierUnchecked ? 0 : 1;
 
-        Assert.That(helpers[row, (int)sourceReg], Is.EqualTo(expected));
-        Assert.That(helpers[row, (int)REG_X64_EDX], Is.EqualTo((CorInfoHelpFunc)(-1)));
-        Assert.That(helpers[row, (int)REG_ESP], Is.EqualTo((CorInfoHelpFunc)(-1)));
+        Assert.That(helpers[row][(int)sourceReg], Is.EqualTo(expected));
+        Assert.That(helpers[row][(int)REG_X86_EDX], Is.EqualTo((CorInfoHelpFunc)(-1)));
+        Assert.That(helpers[row][(int)REG_X86_ESP], Is.EqualTo((CorInfoHelpFunc)(-1)));
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_optimizedWriteBarrierHelpers")]
-    private static extern ref CorInfoHelpFunc[,] OptimizedBarrierHelpers(CodeGen? codeGen);
-#endif
+    private static extern ref CorInfoHelpFunc[][] OptimizedBarrierHelpers(CodeGen? codeGen);
 
-#if TARGET_X86
     [TestCase(false, TYP_INT, true)]
     [TestCase(true, TYP_INT, true)]
     [TestCase(false, TYP_UINT, true)]
@@ -78,10 +70,11 @@ internal static class CodeGenXarchResidualClosureTests
     public static void X86LongToIntCastsCheckTheNativeHighBitsBeforeMovingTheLowWord(
         bool sourceUnsigned, var_types destination, bool overflow)
     {
+        Assume.That(Configuration.TARGET_X86);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var low = Register(compiler, TYP_INT, REG_EAX);
-            var high = Register(compiler, TYP_INT, REG_ECX);
+            var low = Register(compiler, TYP_INT, REG_X86_EAX);
+            var high = Register(compiler, TYP_INT, REG_X86_ECX);
             var pair = new GenTreeOp(GT_LONG, var_types.TYP_LONG, low, high);
             var cast = new GenTreeCast(TYP_INT, pair, sourceUnsigned, destination) { RegNum = REG_X64_EDX };
             if (overflow)
@@ -105,7 +98,7 @@ internal static class CodeGenXarchResidualClosureTests
                 };
             Assert.That(descriptors.Select(static descriptor => descriptor.idIns()), Is.EqualTo(expected));
             Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_X64_EDX));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_EAX));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_X86_EAX));
             Assert.That(descriptors[^1].idOpSize(), Is.EqualTo(EA_4BYTE));
             if (!sourceUnsigned && (destination is TYP_INT) && overflow)
             {
@@ -113,6 +106,4 @@ internal static class CodeGenXarchResidualClosureTests
             }
         });
     }
-#endif
 }
-#endif

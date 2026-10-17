@@ -89,32 +89,14 @@ public sealed partial class Lowering
         }
 
         JITDUMP("  They are close. Trying to move the following range (where * are nodes part of the data flow):\n\n");
-#if DEBUG
-        var startDumpNode = BlockRange().GetTreeRange(prevIndir, out _).FirstNode;
-        var endDumpNode = store.Next;
-        void DumpWithMarks()
-        {
-            if (!CompilerInstance.verbose)
-            {
-                return;
-            }
-
-            for (var node = startDumpNode; node != endDumpNode; node = node.Next)
-            {
-                assert(node is not null);
-                var prefix = node == prevIndir ? "1. " :
-                    node == store ? "2. " : (node._lirFlags & LIR.Flags.Mark) != 0 ? "*  " : "   ";
-                CompilerInstance.gtDispLIRNode(node, prefix);
-            }
-        }
-#endif
+        GenTree? startDumpNode = null;
+        GenTree? endDumpNode = null;
+        captureMovedNodesWithMarks(prevIndir, store, ref startDumpNode, ref endDumpNode);
 
         try
         {
             MarkTree(store);
-#if DEBUG
-            DumpWithMarks();
-#endif
+            dumpMovedNodesWithMarks(startDumpNode!, endDumpNode, prevIndir, store);
             JITDUMP("\n");
             assert((prevIndir._lirFlags & LIR.Flags.Mark) == 0);
             _scratchSideEffects.Clear();
@@ -163,15 +145,39 @@ public sealed partial class Lowering
             }
 
             JITDUMP("Result:\n\n");
-#if DEBUG
-            DumpWithMarks();
-#endif
+            dumpMovedNodesWithMarks(startDumpNode!, endDumpNode, prevIndir, store);
             JITDUMP("\n");
             return true;
         }
         finally
         {
             UnmarkTree(store);
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void captureMovedNodesWithMarks(
+        GenTreeIndir prevIndir, GenTreeLclVarCommon store, ref GenTree? startDumpNode, ref GenTree? endDumpNode)
+    {
+        startDumpNode = BlockRange().GetTreeRange(prevIndir, out _).FirstNode;
+        endDumpNode = store.Next;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void dumpMovedNodesWithMarks(
+        GenTree startDumpNode, GenTree? endDumpNode, GenTreeIndir prevIndir, GenTreeLclVarCommon store)
+    {
+        if (!CompilerInstance.verbose)
+        {
+            return;
+        }
+
+        for (var node = startDumpNode; node != endDumpNode; node = node.Next)
+        {
+            assert(node is not null);
+            var prefix = node == prevIndir ? "1. " :
+                node == store ? "2. " : (node._lirFlags & LIR.Flags.Mark) != 0 ? "*  " : "   ";
+            CompilerInstance.gtDispLIRNode(node, prefix);
         }
     }
 }

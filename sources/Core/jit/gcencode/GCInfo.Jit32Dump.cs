@@ -24,11 +24,14 @@ public partial struct GCInfo
     {
         EnsureJit32GCDump();
         var gcDump = new Jit32GCDump(GCINFO_VERSION);
-#if DEBUG
-        gcDump.gcPrintf = gcDump_logf;
-#else
-        gcDump.gcPrintf = Console.Write;
-#endif
+        if (Configuration.DEBUG)
+        {
+            gcDump.gcPrintf = gcDump_logf;
+        }
+        else
+        {
+            gcDump.gcPrintf = Console.Write;
+        }
 
 #pragma warning disable CA1303 // Native GC dump banners are a fixed, nonlocalized output format.
         Console.Write("Method info block:\n");
@@ -54,11 +57,14 @@ public partial struct GCInfo
         }
 
         var gcDump = new Jit32GCDump(GCINFO_VERSION);
-#if DEBUG
-        gcDump.gcPrintf = gcDump_logf;
-#else
-        gcDump.gcPrintf = Console.Write;
-#endif
+        if (Configuration.DEBUG)
+        {
+            gcDump.gcPrintf = gcDump_logf;
+        }
+        else
+        {
+            gcDump.gcPrintf = Console.Write;
+        }
 
         return gcDump.DumpGCTable(table, in header, methodSize, verifyGCTables);
     }
@@ -67,11 +73,14 @@ public partial struct GCInfo
     {
         EnsureJit32GCDump();
         var gcDump = new Jit32GCDump(GCINFO_VERSION);
-#if DEBUG
-        gcDump.gcPrintf = gcDump_logf;
-#else
-        gcDump.gcPrintf = Console.Write;
-#endif
+        if (Configuration.DEBUG)
+        {
+            gcDump.gcPrintf = gcDump_logf;
+        }
+        else
+        {
+            gcDump.gcPrintf = Console.Write;
+        }
 
         gcDump.DumpPtrsInFrame((byte*)infoBlock, (byte*)codeBlock, offs, verifyGCTables);
     }

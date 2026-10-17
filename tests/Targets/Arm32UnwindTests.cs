@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -31,6 +30,7 @@ internal static unsafe class Arm32UnwindTests
     [TestCase(0xFC, 4u)]
     public static void DiagnosticInstructionSizesMatchThumbEncoding(byte header, uint expectedSize)
     {
+        Assume.That(Configuration.TARGET_ARM);
         var codes = CreateCodes(header);
         fixed (byte* pointer = codes)
         {
@@ -46,6 +46,7 @@ internal static unsafe class Arm32UnwindTests
     [TestCase(0xFF, false, 0u)]
     public static void EpilogEndCodesCountTheirThumbPadding(byte endCode, bool isProlog, uint expectedSize)
     {
+        Assume.That(Configuration.TARGET_ARM);
         byte[] codes = [endCode];
         fixed (byte* pointer = codes)
         {
@@ -96,10 +97,10 @@ internal static unsafe class Arm32UnwindTests
         });
     }
 
-#if FEATURE_CFI_SUPPORT
     [Test]
     public static void CfiFloatMaskUsesArmDwarfRegisterNumbers()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT);
         WithProlog((compiler, _) =>
         {
             Assert.That(compiler.generateCFIUnwindCodes(), Is.True);
@@ -115,7 +116,6 @@ internal static unsafe class Arm32UnwindTests
             Assert.That(codes[1].DwarfReg, Is.EqualTo(271));
         }, nativeAot: true);
     }
-#endif
 
 #if DEBUG
     private static byte[] CreateCodes(byte header)
@@ -138,6 +138,7 @@ internal static unsafe class Arm32UnwindTests
 
     private static void WithProlog(Action<Compiler, Emitter> action, bool nativeAot = false)
     {
+        Assume.That(Configuration.TARGET_ARM);
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = nativeAot
@@ -164,4 +165,3 @@ internal static unsafe class Arm32UnwindTests
         });
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -116,6 +115,7 @@ internal static class Arm64ScalableAssertionTests
 
     private static void WithCompiler(Action<Compiler> action, bool local = true)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD_ARM64 }];
             compiler.lvaCount = 1;
@@ -124,4 +124,3 @@ internal static class Arm64ScalableAssertionTests
         });
     }
 }
-#endif

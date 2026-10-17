@@ -3,14 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    [Conditional("DEBUG")]
     private void DumpUnwindInfo(bool isHotCode, uint startOffset, uint endOffset, byte[]? storage, uint slot)
     {
         jitprintf($"Unwind Info{(isHotCode ? "" : " COLD")}:\n");
@@ -157,4 +158,3 @@ public partial class Compiler
         }
     }
 }
-#endif

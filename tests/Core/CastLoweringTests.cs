@@ -69,11 +69,11 @@ internal static unsafe class CastLoweringTests
         });
     }
 
-#if TARGET_X86
     [TestCase(var_types.TYP_FLOAT)]
     [TestCase(var_types.TYP_DOUBLE)]
     public static void UnsignedIntToFloatingUsesDoubleFixup(var_types destination)
     {
+        Assume.That(Configuration.TARGET_X86, "This case requires the x86 target.");
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = var_types.TYP_INT;
             var value = compiler.gtNewLclvNode(var_types.TYP_INT, 0);
@@ -93,6 +93,7 @@ internal static unsafe class CastLoweringTests
     [TestCase(var_types.TYP_DOUBLE, true)]
     public static void FloatingToUnsignedIntUsesX86VectorWrap(var_types sourceType, bool roundBeforeWrapping)
     {
+        Assume.That(Configuration.TARGET_X86, "This case requires the x86 target.");
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = sourceType;
             var value = compiler.gtNewLclvNode(sourceType, 0);
@@ -123,7 +124,6 @@ internal static unsafe class CastLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCast")]
     private static extern void LowerCast(Lowering lowering, GenTreeCast cast);
-#endif
 
     private static Lowering CreateLowering(Compiler compiler, GenTree source, GenTreeCast cast)
     {

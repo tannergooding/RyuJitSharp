@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -22,6 +21,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm32HelperCallTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [Test]
     public static void InRangeHelperAddressesUseDirectThumbCalls()
     {
@@ -139,4 +144,3 @@ internal static unsafe class Arm32HelperCallTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 }
-#endif

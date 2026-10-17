@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -14,6 +13,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareContainmentPrerequisiteTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH,
+            "This fixture requires xarch hardware intrinsics.");
+    }
+
     [TestCase(8u, false, true)]
     [TestCase(16u, true, false)]
     public static void LocalAddressesRespectAccessExtent(uint accessSize, bool addressExposed, bool contained)
@@ -151,4 +157,3 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
         }
     }
 }
-#endif

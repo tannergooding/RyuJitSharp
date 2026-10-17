@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Buffers.Binary;
 using System.IO;
@@ -17,6 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class ArmUnwindPortTests
 {
+    [SetUp]
+    public static void RequireArmTarget()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [Test]
     public static void UnimplementedRegisterSaveRemainsAnUnreachableBoundary()
     {
@@ -165,4 +170,3 @@ internal static unsafe class ArmUnwindPortTests
     }
 #endif
 }
-#endif

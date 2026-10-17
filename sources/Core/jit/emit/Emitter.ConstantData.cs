@@ -104,11 +104,8 @@ public partial class Emitter
         if (Configuration.DEBUG)
         {
             assert(emitDataSecCur is not null);
+            emitDataSecCur = null;
         }
-
-#if DEBUG
-        emitDataSecCur = null;
-#endif
     }
 
     public uint emitDataGenFind(ReadOnlySpan<byte> data, uint alignment, var_types dataType)

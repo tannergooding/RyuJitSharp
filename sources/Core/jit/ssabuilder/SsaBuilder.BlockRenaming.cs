@@ -21,12 +21,10 @@ public sealed partial class SsaBuilder
             {
                 var ssaNum = _compiler.AllocMemorySsaNum();
                 _renameStack.PushMemory(kind, block, ssaNum);
-#if DEBUG
-                if (_compiler.verboseSsa)
+                if (Configuration.DEBUG && _compiler.verboseSsa)
                 {
                     logf($"Ssa # for {kind} phi on entry to {FMT_BB(block.bbNum)} is {ssaNum}.\n");
                 }
-#endif
                 block.bbMemorySsaNumIn[(int)kind] = ssaNum;
             }
             else
@@ -76,12 +74,10 @@ public sealed partial class SsaBuilder
                 block.bbMemorySsaNumOut[(int)kind] = _renameStack.TopMemory(kind);
             }
 
-#if DEBUG
-            if (_compiler.verboseSsa)
+            if (Configuration.DEBUG && _compiler.verboseSsa)
             {
                 logf($"Ssa # for {kind} on entry to {FMT_BB(block.bbNum)} is {block.bbMemorySsaNumIn[(int)kind]}; on exit is {block.bbMemorySsaNumOut[(int)kind]}.\n");
             }
-#endif
         }
     }
 

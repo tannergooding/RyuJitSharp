@@ -128,14 +128,14 @@ internal static class SsaRenameStateTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void VerboseSsaDiagnosticsTrackLocalAndMemoryStacks()
     {
+        Assume.That(TestConfiguration.IsDebug);
         SsaLivenessTests.WithCompiler(1, compiler => {
             var block = BasicBlock.New(compiler, BBJ_RETURN);
             var state = new SsaRenameState(compiler);
-            compiler.verboseSsa = true;
+            TestConfiguration.SetVerboseSsa(compiler, true);
 
             var output = CodeGenLifeTransitionTests.Capture(() => {
                 state.Push(block, 0, 7);
@@ -153,5 +153,4 @@ internal static class SsaRenameStateTests
             Assert.That(output, Does.Contain("[SsaRenameState::PopBlockStacks]"));
         });
     }
-#endif
 }

@@ -97,15 +97,13 @@ public partial class Emitter
             assert(emitGetInsAmdAny(id) == indir.Offset);
         }
 
-#if DEBUG
-        if ((memBase is not null) && memBase.IsIconHandle() && memBase.IsContained)
+        if (Configuration.DEBUG && (memBase is not null) && memBase.IsIconHandle() && memBase.IsContained)
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             debugInfo.idFlags = memBase.Flags;
             debugInfo.idMemCookie = memBase.AsIntCon().TargetHandle;
         }
-#endif
     }
 
     public insFormat emitMapFmtForIns(insFormat fmt, instruction ins)

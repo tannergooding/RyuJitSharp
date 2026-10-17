@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -20,6 +19,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64CodeGenMemoryBarrierTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(BARRIER_FULL, INS_BARRIER_ISH)]
     [TestCase(BARRIER_LOAD_ONLY, INS_BARRIER_ISHLD)]
     [TestCase(BARRIER_STORE_ONLY, INS_BARRIER_ISH)]
@@ -147,4 +152,3 @@ internal static unsafe class Arm64CodeGenMemoryBarrierTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
-#endif

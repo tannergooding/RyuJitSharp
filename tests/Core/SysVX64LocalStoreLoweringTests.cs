@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -13,6 +12,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64LocalStoreLoweringTests
 {
+    [SetUp]
+    public static void RequireUnixAmd64Abi()
+    {
+        Assume.That(Configuration.UNIX_AMD64_ABI, "This fixture requires the Unix AMD64 ABI.");
+    }
+
     [Test]
     public static void SmallConstantLocalStoreWidensToInt()
     {
@@ -148,4 +153,3 @@ internal static unsafe class SysVX64LocalStoreLoweringTests
         }
     }
 }
-#endif

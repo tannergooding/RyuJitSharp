@@ -7,18 +7,14 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if DEBUG
     // lsra.h's selection and lifetime stress fields can be combined.
-    private bool doReverseCallerCallee() => (_lsraStressMask & 0x08) != 0;
+    private bool doReverseCallerCallee() => Configuration.DEBUG && ((_lsraStressMask & 0x08) != 0);
 
-    private bool extendLifetimes() => (_lsraStressMask & 0x80) != 0;
+    private bool extendLifetimes() => Configuration.DEBUG && ((_lsraStressMask & 0x80) != 0);
 
     internal Compiler ReferenceDiagnosticCompiler => _compiler;
 
     internal weight_t GetReferenceDiagnosticWeight(RefPosition reference) => getWeight(reference);
-#else
-    private static bool extendLifetimes() => false;
-#endif
 
     private void applyCalleeSaveHeuristics(RefPosition rp)
     {
@@ -28,9 +24,7 @@ public sealed partial class LinearScan
             return;
         }
         var interval = rp.getInterval();
-#if DEBUG
-        if (!doReverseCallerCallee())
-#endif
+        if (!Configuration.DEBUG || !doReverseCallerCallee())
         {
             interval.mergeRegisterPreferences(rp.registerAssignment);
         }
@@ -150,12 +144,10 @@ public sealed partial class LinearScan
             assert(refType is RefType.RefTypeBB or RefType.RefTypeKillGCRefs or RefType.RefTypeKill);
         }
 
-#if DEBUG
-        if ((interval is not null) && (regType(interval.registerType) is TYP_FLOAT))
+        if (Configuration.DEBUG && (interval is not null) && (regType(interval.registerType) is TYP_FLOAT))
         {
             assert(_compiler.compFloatingPointUsed || ((mask & TargetRuntimeMetadata.FloatingCalleeSavedMask) == SRBM_NONE));
         }
-#endif
 
         var isFixedRegister = isSingleRegister(mask);
         var insertFixedRef = false;

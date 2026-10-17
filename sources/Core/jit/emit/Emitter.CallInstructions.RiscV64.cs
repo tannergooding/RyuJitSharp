@@ -125,15 +125,13 @@ public partial class Emitter
             id.idSetIsDspReloc();
         }
 
-#if DEBUG
-        if (compiler.verbose && id.idIsLargeCall())
+        if (Configuration.DEBUG && compiler.verbose && id.idIsLargeCall())
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             jitprintf($"[{debugInfo.idNum:D2}] Rec call GC vars = " +
                 $"{VarSetOps.ToString(compiler, ((instrDescCGCA)id).idcGCvars)}\n");
         }
-#endif
 
         if (_debugInfoSize > 0)
         {

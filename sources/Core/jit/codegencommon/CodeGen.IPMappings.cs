@@ -59,13 +59,11 @@ public sealed partial class CodeGen
         };
         assert((kind == IPmappingDscKind.Normal) == mapping.ipmdLoc.IsValid);
         _ = _compiler.genIPmappings.AddLast(mapping);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("Added IP mapping: ");
             genIPmappingDisp(uint.MaxValue, in mapping);
         }
-#endif
     }
 
     public void genIPmappingAddToFront(IPmappingDscKind kind, in DebugInfo di, bool isLabel)
@@ -85,13 +83,11 @@ public sealed partial class CodeGen
             ipmdIsLabel = isLabel,
         };
         _ = _compiler.genIPmappings.AddFirst(mapping);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("Added IP mapping to front: ");
             genIPmappingDisp(uint.MaxValue, in mapping);
         }
-#endif
     }
 
     public void genEnsureCodeEmitted(in DebugInfo di)
@@ -113,7 +109,7 @@ public sealed partial class CodeGen
         }
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void genIPmappingDisp(uint mappingNum, in IPmappingDsc mapping)
     {
         if (mappingNum != uint.MaxValue)
@@ -179,5 +175,4 @@ public sealed partial class CodeGen
             mappingNum = unchecked(mappingNum + 1);
         }
     }
-#endif
 }

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG && TARGET_AMD64 && WINDOWS_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -22,6 +21,8 @@ internal static class GcInfoFilterDiagnosticsTests
     public static void FilterSplitsAndPinningDumpNativeOldAndNewDescriptors(
         uint begin, uint end, bool byref)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64 &&
+            Configuration.WINDOWS_AMD64_ABI);
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             TestConfiguration.EnableVerbose(compiler);
@@ -76,6 +77,8 @@ internal static class GcInfoFilterDiagnosticsTests
     [Test]
     public static void FilterSplittingPreservesDescriptorRangesAndListOrder()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64 &&
+            Configuration.WINDOWS_AMD64_ABI);
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             var filterGroup = new insGroup { igOffs = 4 };
@@ -132,4 +135,3 @@ internal static class GcInfoFilterDiagnosticsTests
         => $"[00000000D1FFAB1E] {(byref ? "byr" : "gcr")}{(pinned ? "pinned-ptr" : "")} " +
             $"var at [rbp-0x10] live from {begin:X4} to {end:X4}{Environment.NewLine}";
 }
-#endif

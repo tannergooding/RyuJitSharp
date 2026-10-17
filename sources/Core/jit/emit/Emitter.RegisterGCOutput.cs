@@ -71,7 +71,6 @@ public partial class Emitter
         {
             assert(emitIssuing);
         }
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             if (emitIGisInEpilog(emitCurIG))
@@ -98,7 +97,6 @@ public partial class Emitter
                 emitThisByrefRegs &= ~mask;
             }
         }
-#endif
     }
 
     private unsafe void emitGCregDeadUpdMask(regMaskTP regs, byte* addr)
@@ -112,7 +110,6 @@ public partial class Emitter
             return;
         }
 
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             var gcrefRegs = new regMaskTP(emitThisGCrefRegs) & regs;
@@ -140,7 +137,6 @@ public partial class Emitter
                 emitThisByrefRegs &= ~(regMask)byrefRegs;
             }
         }
-#endif
     }
 
     private unsafe void emitGCregLiveUpd(GCInfo.GCtype gcType, regNumber reg, byte* dst)
@@ -149,7 +145,6 @@ public partial class Emitter
         {
             assert(emitIssuing);
         }
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             if (emitIGisInEpilog(emitCurIG))
@@ -182,6 +177,5 @@ public partial class Emitter
             }
             assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
         }
-#endif
     }
 }

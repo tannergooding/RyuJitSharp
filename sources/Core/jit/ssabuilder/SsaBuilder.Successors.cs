@@ -66,12 +66,10 @@ public sealed partial class SsaBuilder
                     }
                 }
 
-#if DEBUG
-                if (_compiler.verboseSsa)
+                if (Configuration.DEBUG && _compiler.verboseSsa)
                 {
                     logf($"  Added phi arg for {kind} u:{ssaNum} from {FMT_BB(block.bbNum)} in {FMT_BB(succ.bbNum)}.\n");
                 }
-#endif
             }
 
             if (_compiler.bbIsTryBeg(succ))
@@ -167,12 +165,10 @@ public sealed partial class SsaBuilder
                 ? new BasicBlock.MemoryPhiArg(ssaNum)
                 : new BasicBlock.MemoryPhiArg(ssaNum, handlerMemoryPhi);
 
-#if DEBUG
-            if (_compiler.verboseSsa)
+            if (Configuration.DEBUG && _compiler.verboseSsa)
             {
                 logf($"  Added phi arg for {kind} u:{ssaNum} from {FMT_BB(predEnterBlock.bbNum)} in {FMT_BB(handlerStart.bbNum)}.\n");
             }
-#endif
         }
     }
 }

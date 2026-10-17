@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 #if DEBUG && !REGMASK_BITS_32
 using System;
@@ -13,18 +14,7 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class RegisterMaskNumericOperationsTests
 {
-    [TestCase(0UL, 0UL, false)]
-    [TestCase(1UL, 0UL, true)]
-    [TestCase(0x80000000UL, 0UL, true)]
-#if REGMASK_BITS_64
-    [TestCase(0x8000000000000000UL, 0UL, true)]
-    [TestCase(ulong.MaxValue, 0UL, true)]
-#endif
-#if HAS_MORE_THAN_64_REGISTERS
-    [TestCase(0UL, 1UL, true)]
-    [TestCase(0UL, 0x8000000000000000UL, true)]
-    [TestCase(0x8000000000000000UL, 0x8000000000000000UL, true)]
-#endif
+    [TestCaseSource(nameof(BooleanConversionCases))]
     public static void BooleanConversionInspectsBothCompleteBanks(ulong lower, ulong upper, bool expected)
     {
         var mask = CreateMask(lower, upper);
@@ -33,34 +23,24 @@ internal static unsafe class RegisterMaskNumericOperationsTests
         Assert.That(mask.IsEmpty, Is.EqualTo(!expected));
     }
 
-#if !REGMASK_BITS_32
-    [TestCase(0UL, 0UL, 0U)]
-    [TestCase(0UL, ulong.MaxValue, 0U)]
-    [TestCase(0x80000000UL, 1UL, 0x80000000U)]
-    [TestCase(0x8000000000000000UL, ulong.MaxValue, 0U)]
-    [TestCase(0xAAAAAAAA55555555UL, ulong.MaxValue, 0x55555555U)]
-    [TestCase(ulong.MaxValue, ulong.MaxValue, uint.MaxValue)]
+    [TestCaseSource(nameof(UnsignedIntConversionCases))]
     public static void UnsignedIntConversionTruncatesTheLowBankWithoutAsserting(ulong lower, ulong upper, uint expected)
     {
+        if (Configuration.REGMASK_BITS_32)
+        {
+            Assert.Ignore("Unsigned register-mask conversion cases require a register mask wider than 32 bits.");
+        }
+
         var mask = CreateMask(lower, upper);
-#if DEBUG
+#if DEBUG && !REGMASK_BITS_32
         WithAssertionRecorder(() => Assert.That(checked((uint)mask), Is.EqualTo(expected)));
         Assert.That(s_assertions, Is.Zero);
 #else
         Assert.That(checked((uint)mask), Is.EqualTo(expected));
 #endif
     }
-#endif
 
-    [TestCase(0UL)]
-    [TestCase(0x80000000UL)]
-    [TestCase(0xAAAAAAAAUL)]
-    [TestCase(0xFFFFFFFFUL)]
-#if REGMASK_BITS_64
-    [TestCase(0x8000000000000000UL)]
-    [TestCase(0xAAAAAAAAAAAAAAAAUL)]
-    [TestCase(ulong.MaxValue)]
-#endif
+    [TestCaseSource(nameof(IntegerFactoryCases))]
     public static void IntegerFactoryPreservesTheRawBankAndClearsTheUpperBank(ulong bits)
     {
         var lower = unchecked((regMask)bits);
@@ -68,29 +48,13 @@ internal static unsafe class RegisterMaskNumericOperationsTests
 
         Assert.That(mask.Lower, Is.EqualTo(lower));
         Assert.That(mask.IntRegSet, Is.EqualTo(lower));
-#if HAS_MORE_THAN_64_REGISTERS
-        Assert.That(mask.Upper, Is.EqualTo(SRBM_NONE));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            Assert.That(mask.Upper, Is.EqualTo(SRBM_NONE));
+        }
     }
 
-    [TestCase(0UL, 0UL, 0, 0UL)]
-    [TestCase(1UL, 0UL, 0, 1UL)]
-    [TestCase(1UL, 0UL, 1, 0UL)]
-    [TestCase(0x80000000UL, 0UL, 1, 0x40000000UL)]
-    [TestCase(0xFFFFFFFFUL, 0UL, 31, 1UL)]
-    [TestCase(0x80000001UL, 0UL, 31, 1UL)]
-#if REGMASK_BITS_64
-    [TestCase(0x8000000000000000UL, 0UL, 0, 0x8000000000000000UL)]
-    [TestCase(0x8000000000000000UL, 0UL, 1, 0x4000000000000000UL)]
-    [TestCase(ulong.MaxValue, 0UL, 32, 0xFFFFFFFFUL)]
-    [TestCase(0x8000000000000000UL, 0UL, 63, 1UL)]
-    [TestCase(ulong.MaxValue, 0UL, 63, 1UL)]
-#endif
-#if HAS_MORE_THAN_64_REGISTERS
-    [TestCase(0UL, ulong.MaxValue, 0, 0UL)]
-    [TestCase(0x8000000000000001UL, ulong.MaxValue, 0, 0x8000000000000001UL)]
-    [TestCase(0x8000000000000001UL, 0x8000000000000000UL, 63, 1UL)]
-#endif
+    [TestCaseSource(nameof(RightShiftCases))]
     public static void RightShiftIsLogicalAndOnlyReconstructsTheLowBank(
         ulong lower, ulong upper, int count, ulong expected)
     {
@@ -100,17 +64,13 @@ internal static unsafe class RegisterMaskNumericOperationsTests
 
         Assert.That(result, Is.EqualTo(new regMaskTP(unchecked((regMask)expected))));
         Assert.That(mask, Is.EqualTo(original));
-#if HAS_MORE_THAN_64_REGISTERS
-        Assert.That(result.Upper, Is.EqualTo(SRBM_NONE));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            Assert.That(result.Upper, Is.EqualTo(SRBM_NONE));
+        }
     }
 
-    [TestCase(0)]
-    [TestCase(1)]
-    [TestCase(31)]
-#if REGMASK_BITS_64
-    [TestCase(63)]
-#endif
+    [TestCaseSource(nameof(RightShiftCounts))]
     public static void ShiftRightAssignReturnsAnAliasToTheUpdatedOwner(int count)
     {
         var destination = CreateMask(ulong.MaxValue, ulong.MaxValue);
@@ -128,12 +88,7 @@ internal static unsafe class RegisterMaskNumericOperationsTests
         Assert.That(alias, Is.EqualTo(new regMaskTP((regMask)0xAA)));
     }
 
-    [TestCase(0)]
-    [TestCase(1)]
-    [TestCase(31)]
-#if REGMASK_BITS_64
-    [TestCase(63)]
-#endif
+    [TestCaseSource(nameof(RightShiftCounts))]
     public static void CompoundRightShiftAssignsTheOrdinaryReadonlyValue(int count)
     {
         var destination = CreateMask(ulong.MaxValue, ulong.MaxValue);
@@ -144,9 +99,93 @@ internal static unsafe class RegisterMaskNumericOperationsTests
 
         Assert.That(destination, Is.EqualTo(expected));
         Assert.That(original, Is.EqualTo(CreateMask(ulong.MaxValue, ulong.MaxValue)));
-#if HAS_MORE_THAN_64_REGISTERS
-        Assert.That(destination.Upper, Is.EqualTo(SRBM_NONE));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            Assert.That(destination.Upper, Is.EqualTo(SRBM_NONE));
+        }
+    }
+
+    private static IEnumerable<TestCaseData> BooleanConversionCases()
+    {
+        yield return new TestCaseData(0UL, 0UL, false);
+        yield return new TestCaseData(1UL, 0UL, true);
+        yield return new TestCaseData(0x80000000UL, 0UL, true);
+
+        if (Configuration.REGMASK_BITS_64)
+        {
+            yield return new TestCaseData(0x8000000000000000UL, 0UL, true);
+            yield return new TestCaseData(ulong.MaxValue, 0UL, true);
+        }
+
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            yield return new TestCaseData(0UL, 1UL, true);
+            yield return new TestCaseData(0UL, 0x8000000000000000UL, true);
+            yield return new TestCaseData(0x8000000000000000UL, 0x8000000000000000UL, true);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> IntegerFactoryCases()
+    {
+        yield return new TestCaseData(0UL);
+        yield return new TestCaseData(0x80000000UL);
+        yield return new TestCaseData(0xAAAAAAAAUL);
+        yield return new TestCaseData(0xFFFFFFFFUL);
+
+        if (Configuration.REGMASK_BITS_64)
+        {
+            yield return new TestCaseData(0x8000000000000000UL);
+            yield return new TestCaseData(0xAAAAAAAAAAAAAAAAUL);
+            yield return new TestCaseData(ulong.MaxValue);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> UnsignedIntConversionCases()
+    {
+        yield return new TestCaseData(0UL, 0UL, 0U);
+        yield return new TestCaseData(0UL, ulong.MaxValue, 0U);
+        yield return new TestCaseData(0x80000000UL, 1UL, 0x80000000U);
+        yield return new TestCaseData(0x8000000000000000UL, ulong.MaxValue, 0U);
+        yield return new TestCaseData(0xAAAAAAAA55555555UL, ulong.MaxValue, 0x55555555U);
+        yield return new TestCaseData(ulong.MaxValue, ulong.MaxValue, uint.MaxValue);
+    }
+
+    private static IEnumerable<TestCaseData> RightShiftCases()
+    {
+        yield return new TestCaseData(0UL, 0UL, 0, 0UL);
+        yield return new TestCaseData(1UL, 0UL, 0, 1UL);
+        yield return new TestCaseData(1UL, 0UL, 1, 0UL);
+        yield return new TestCaseData(0x80000000UL, 0UL, 1, 0x40000000UL);
+        yield return new TestCaseData(0xFFFFFFFFUL, 0UL, 31, 1UL);
+        yield return new TestCaseData(0x80000001UL, 0UL, 31, 1UL);
+
+        if (Configuration.REGMASK_BITS_64)
+        {
+            yield return new TestCaseData(0x8000000000000000UL, 0UL, 0, 0x8000000000000000UL);
+            yield return new TestCaseData(0x8000000000000000UL, 0UL, 1, 0x4000000000000000UL);
+            yield return new TestCaseData(ulong.MaxValue, 0UL, 32, 0xFFFFFFFFUL);
+            yield return new TestCaseData(0x8000000000000000UL, 0UL, 63, 1UL);
+            yield return new TestCaseData(ulong.MaxValue, 0UL, 63, 1UL);
+        }
+
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            yield return new TestCaseData(0UL, ulong.MaxValue, 0, 0UL);
+            yield return new TestCaseData(0x8000000000000001UL, ulong.MaxValue, 0, 0x8000000000000001UL);
+            yield return new TestCaseData(0x8000000000000001UL, 0x8000000000000000UL, 63, 1UL);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> RightShiftCounts()
+    {
+        yield return new TestCaseData(0);
+        yield return new TestCaseData(1);
+        yield return new TestCaseData(31);
+
+        if (Configuration.REGMASK_BITS_64)
+        {
+            yield return new TestCaseData(63);
+        }
     }
 
     private static regMaskTP CreateMask(ulong lower, ulong upper)

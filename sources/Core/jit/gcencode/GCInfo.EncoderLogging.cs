@@ -15,13 +15,21 @@ internal sealed class GcInfoEncoderWithLogging
     public GcInfoEncoderWithLogging(GcInfoEncoder encoder, Compiler compiler)
     {
         _encoder = encoder;
-#if DEBUG
-        _log = compiler.verbose || compiler.opts.dspGCtbls || (JitConfig.JitGCInfoLogging != 0);
-#elif DUMP_GC_TABLES
-        _log = compiler.opts.dspGCtbls;
-#else
-        _log = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _log = compiler.verbose || compiler.opts.dspGCtbls || (JitConfig.JitGCInfoLogging != 0);
+        }
+        else
+        {
+            if (Configuration.DUMP_GC_TABLES)
+            {
+                _log = compiler.opts.dspGCtbls;
+            }
+            else
+            {
+                _log = false;
+            }
+        }
     }
 
     private static string GetStackBaseName(GcStackSlotBase stackBase) => stackBase switch

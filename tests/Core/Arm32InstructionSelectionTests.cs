@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -18,6 +17,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm32InstructionSelectionTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [TestCase(12, INS_add)]
     [TestCase(-12, INS_sub)]
     public static void ConstantInstructionNormalizesNegativeImmediates(int immediate, instruction expectedInstruction)
@@ -135,4 +140,3 @@ internal static class Arm32InstructionSelectionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genStackPointerAdjustment")]
     private static extern bool StackPointerAdjustment(CodeGen codeGen, nint spDelta, regNumber tmpReg);
 }
-#endif

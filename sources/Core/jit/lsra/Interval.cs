@@ -14,9 +14,10 @@ public sealed partial class Interval : Referenceable
         registerAversion = SRBM_NONE;
         physReg = REG_COUNT;
 
-#if DEBUG
-        intervalIndex = 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            intervalIndex = 0;
+        }
     }
 
     public SingleTypeRegSet registerPreferences;

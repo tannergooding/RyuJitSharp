@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -23,6 +22,7 @@ internal static unsafe class ValueNumValidationTests
     [TestCase(VNFunc.VNF_PtrToLoc, 32)]
     public static void StaticValidationDetectsAttributeCorruption(VNFunc func, byte mask)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(_ =>
         {
             var field = typeof(VNFuncExtensions).GetField("s_attribs", BindingFlags.Static | BindingFlags.NonPublic)
@@ -56,6 +56,7 @@ internal static unsafe class ValueNumValidationTests
     [TestCase(TYP_SIMD16, 1)]
     public static void ScalarOneRejectsSimdTypes(var_types type, int expectedAssertions)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler =>
         {
             var store = new ValueNumStore(compiler);
@@ -68,6 +69,7 @@ internal static unsafe class ValueNumValidationTests
     [Test]
     public static void ComponentTestsKeepNativeAssertionAndRunOnceWhenEnabled()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler =>
         {
             var store = new ValueNumStore(compiler);
@@ -141,4 +143,3 @@ internal static unsafe class ValueNumValidationTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_didComponentUnitTests")]
     private static extern ref bool DidComponentUnitTests(Compiler compiler);
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -17,6 +16,7 @@ internal static unsafe class LinearScanAllocationEventTests
     [Test]
     public static void ConflictingDefUseEventsPreserveNativeOrderAndText()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler((compiler, codeGen) => {
             var allocator = CreateAllocator(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
@@ -46,12 +46,13 @@ internal static unsafe class LinearScanAllocationEventTests
     [Test]
     public static void AllocationEventsRemainGatedByVerboseConfiguration()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler((compiler, codeGen) => {
             var allocator = CreateAllocator(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var interval = NewInterval(allocator, TYP_INT);
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
-            compiler.verbose = false;
+            TestConfiguration.SetVerbose(compiler, false);
 
             var output = Capture(() => _ = allocator.selectMinimal(interval, definition));
 
@@ -63,6 +64,11 @@ internal static unsafe class LinearScanAllocationEventTests
     {
         var allocator = new LinearScan(compiler);
         BlockInfo(allocator) = [new LsraBlockInfo()];
+        if (Configuration.TRACK_LSRA_STATS)
+        {
+            BlockStats(allocator) = [new uint[(int)LsraStat.COUNT]];
+        }
+
         for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             var register = allocator.physRegs[index];
@@ -78,6 +84,9 @@ internal static unsafe class LinearScanAllocationEventTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "updateNextFixedRef")]
     private static extern void UpdateNextFixedRef(
@@ -146,4 +155,3 @@ internal static unsafe class LinearScanAllocationEventTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
     private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
 }
-#endif

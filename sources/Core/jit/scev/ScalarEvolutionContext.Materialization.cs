@@ -138,18 +138,27 @@ public sealed partial class ScalarEvolutionContext
 
     public GenTree? Materialize(Scev scev)
     {
-#if DEBUG
-        var previousTreeId = _compiler.compGenTreeID;
-#endif
+        var previousTreeId = 0;
+        savePreviousTreeId(ref previousTreeId);
         if (Materialize(scev, true, out var result, out _))
         {
             return result;
         }
 
-#if DEBUG
-        _compiler.compGenTreeID = previousTreeId;
-#endif
+        restorePreviousTreeId(previousTreeId);
         return null;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void savePreviousTreeId(ref int previousTreeId)
+    {
+        previousTreeId = _compiler.compGenTreeID;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void restorePreviousTreeId(int previousTreeId)
+    {
+        _compiler.compGenTreeID = previousTreeId;
     }
 
     public ValueNumPair MaterializeVN(Scev scev)

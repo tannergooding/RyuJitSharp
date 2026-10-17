@@ -38,11 +38,15 @@ internal sealed unsafe class Arm64EmitterGroupTransitionTests
         var capacity = Capacity(emitter);
         Assert.That(emitter.emitCurIGnonEmpty(), Is.False);
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        var expectedCapacity = 200 * (16 + DebugPrefix(emitter));
-#else
-        var expectedCapacity = (14 * (8 + DebugPrefix(emitter))) + (50 * (16 + DebugPrefix(emitter)));
-#endif
+        int expectedCapacity;
+        if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            expectedCapacity = 200 * (16 + DebugPrefix(emitter));
+        }
+        else
+        {
+            expectedCapacity = (14 * (8 + DebugPrefix(emitter))) + (50 * (16 + DebugPrefix(emitter)));
+        }
         Assert.That(capacity, Is.EqualTo((nuint)expectedCapacity));
 
         Count(emitter) = 12;

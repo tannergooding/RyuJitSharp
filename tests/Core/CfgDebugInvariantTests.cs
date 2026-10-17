@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class CfgDebugInvariantTests
 {
     private static int s_assertions;
+
+    [SetUp]
+    public static void RequireDebugBuild()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture validates Debug-only invariants.");
+    }
 
     [TestCase(false, false)]
     [TestCase(false, true)]
@@ -156,7 +161,7 @@ internal static unsafe class CfgDebugInvariantTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
+        using var tls = TestConfiguration.CreateJitTls(&ee);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -189,4 +194,3 @@ internal static unsafe class CfgDebugInvariantTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_next")]
     private static extern ref BasicBlock? NextBlock(BasicBlock block);
 }
-#endif

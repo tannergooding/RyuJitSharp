@@ -26,12 +26,10 @@ public sealed partial class LinearScan
             return;
         }
 
-#if DEBUG
-        if (tree.Oper is GT_CALL)
+        if (Configuration.DEBUG && tree.Oper is GT_CALL)
         {
             assert(!tree.AsCall().IsNoReturn);
         }
-#endif
         ref var local = ref _compiler.lvaGetDesc(checked((int)localInterval.varNum));
         assert(LsraConfiguration.VarTypeNeedsPartialCalleeSave(local.GetRegisterType()));
         var spillReg = reference.assignedReg();

@@ -102,14 +102,17 @@ internal static class Arm64SveExecutionCharacteristicsTests
             Assert.That(score.insLatency, Is.EqualTo(1.0f));
             Assert.That(score.insThroughput, Is.EqualTo(1.0f));
             Assert.That(score.insMemoryAccessKind, Is.EqualTo(Emitter.PerfScoreMemoryAccessKind.Write));
-#if DEBUG
-            Assert.That(output, Does.StartWith("PerfScore: unhandled instruction: "));
-            Assert.That(output, Does.EndWith($", format {Emitter.emitIfName(format)}"));
-            Assert.That(assertions, Is.EqualTo<string[]>(["PerfScore: unhandled instruction"]));
-#else
-            Assert.That(output, Is.Empty);
-            Assert.That(assertions, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.StartWith("PerfScore: unhandled instruction: "));
+                Assert.That(output, Does.EndWith($", format {Emitter.emitIfName(format)}"));
+                Assert.That(assertions, Is.EqualTo<string[]>(["PerfScore: unhandled instruction"]));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+                Assert.That(assertions, Is.Empty);
+            }
         });
     }
 

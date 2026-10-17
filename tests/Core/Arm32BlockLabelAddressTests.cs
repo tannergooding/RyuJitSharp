@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -20,6 +19,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm32BlockLabelAddressTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [TestCase(INS_adr, IF_ARM32_T2_M1, false, true)]
     [TestCase(INS_movt, IF_ARM32_T2_N1, true, false)]
     [TestCase(INS_movw, IF_ARM32_T2_N1, true, false)]
@@ -53,9 +58,10 @@ internal static class Arm32BlockLabelAddressTests
                 Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(Emitter.DescriptorSizes.Label));
                 Assert.That(descriptor.idReg2(), Is.EqualTo(REG_PC));
             }
-#if !DEBUG
-            Assert.That(GroupSize(emitter), Is.EqualTo(4));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(emitter), Is.EqualTo(4));
+            }
         });
     }
 
@@ -95,13 +101,17 @@ internal static class Arm32BlockLabelAddressTests
         });
     }
 
-#if DEBUG
     [Test]
     [TestCase(INS_adr)]
     [TestCase(INS_movt)]
     [TestCase(INS_movw)]
     public static void CatchReturnLabelAddressSetsItsDebugMarker(instruction ins)
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("The catch-return marker is only recorded in Debug builds.");
+        }
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = compiler.compCurBB = new BasicBlock(null, null);
@@ -115,22 +125,25 @@ internal static class Arm32BlockLabelAddressTests
             Assert.That(debugInfo.idCatchRet, Is.True);
         });
     }
-#endif
 
     private static Emitter.instrDescJmp RecordAddress(
         Emitter emitter, instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                emitter.emitIns_R_L(ins, attr, target, reg);
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             emitter.emitIns_R_L(ins, attr, target, reg);
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        emitter.emitIns_R_L(ins, attr, target, reg);
-#endif
+
         return LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No label-address descriptor was recorded.");
     }
@@ -152,4 +165,3 @@ internal static class Arm32BlockLabelAddressTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGjmpList")]
     private static extern ref Emitter.instrDescJmp? PendingJump(Emitter emitter);
 }
-#endif

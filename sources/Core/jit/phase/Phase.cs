@@ -40,9 +40,10 @@ public abstract partial class Phase
         compiler.EndPhase(_phase);
 
 #if DEBUG
-#if DUMP_FLOWGRAPHS
-        _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
-#endif
+        if (Configuration.DUMP_FLOWGRAPHS)
+        {
+            _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
+        }
 
         // Don't dump or check post phase unless the phase made changes.
         var doPostPhase = status != PhaseStatus.MODIFIED_NOTHING;
@@ -137,8 +138,7 @@ public abstract partial class Phase
         var compiler = _compiler;
         compiler.BeginPhase(_phase);
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             if (compiler.compIsForInlining)
             {
@@ -157,10 +157,12 @@ public abstract partial class Phase
                 }
             }
         }
-#endif
 
 #if DUMP_FLOWGRAPHS
-        compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PrePhase);
+        if (Configuration.DUMP_FLOWGRAPHS)
+        {
+            _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PrePhase);
+        }
 #endif
     }
 }

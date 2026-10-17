@@ -16,7 +16,7 @@ public sealed partial class LinearScan
         var codeGen = _compiler.codeGen;
         assert(codeGen is not null);
 
-        var frameType = FT_NOT_SET;
+        FrameType frameType;
         if (Configuration.DOUBLE_ALIGN)
         {
             setDoubleAlign(false);
@@ -37,15 +37,9 @@ public sealed partial class LinearScan
             if (!_compiler.rpMustCreateEBPCalled)
             {
                 _compiler.rpMustCreateEBPCalled = true;
-#if DEBUG
                 if (_compiler.rpMustCreateEBPFrame(out var reason))
-#else
-                if (_compiler.rpMustCreateEBPFrame(out _))
-#endif
                 {
-#if DEBUG
                     JITDUMP($"; Decided to create an EBP based frame for ETW stackwalking ({reason})\n");
-#endif
                     codeGen.IsFrameRequired = true;
                 }
             }

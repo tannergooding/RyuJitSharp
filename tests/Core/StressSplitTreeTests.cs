@@ -69,7 +69,6 @@ internal static unsafe class StressSplitTreeTests
         });
     }
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
     private static extern ref byte* StressNames(ref JitConfigValues config);
 
@@ -82,6 +81,7 @@ internal static unsafe class StressSplitTreeTests
     [Test]
     public static void CommaStressDispatchesTheCompleteTransformation()
     {
+        Assume.That(TestConfiguration.IsDebug);
         SsaLivenessTests.WithCompiler(1, compiler => {
             compiler.compAllowStress = true;
             compiler.info.compMethodName = nameof(CommaStressDispatchesTheCompleteTransformation);
@@ -106,6 +106,7 @@ internal static unsafe class StressSplitTreeTests
     [TestCase(1, true)]
     public static void RandomStressHonorsLimitsAndTakesPrecedence(int limit, bool bothModes)
     {
+        Assume.That(TestConfiguration.IsDebug);
         SsaLivenessTests.WithCompiler(1, compiler => {
             compiler.compAllowStress = true;
             compiler.info.compMethodName = nameof(RandomStressHonorsLimitsAndTakesPrecedence);
@@ -148,7 +149,6 @@ internal static unsafe class StressSplitTreeTests
             }
         });
     }
-#endif
 
     private static BasicBlock NewBlock(Compiler compiler)
     {

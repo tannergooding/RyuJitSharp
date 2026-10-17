@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -100,6 +99,7 @@ internal static unsafe class HardwareMaskInversionTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -126,4 +126,3 @@ internal static unsafe class HardwareMaskInversionTests
         }
     }
 }
-#endif

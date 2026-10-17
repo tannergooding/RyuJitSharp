@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -16,10 +15,10 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class RiscVLoweringPortTests
 {
-#if FEATURE_SIMD
     [Test]
     public static void UnportedSimdLoweringDependenciesTerminateAfterTheNyiDiagnosticReturns()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
         WithAltJit(() =>
         {
             var lowering = CreateUninitializedLowering();
@@ -31,21 +30,21 @@ internal static unsafe class RiscVLoweringPortTests
     [Test]
     public static void SimdIndirectionContainmentContinuesAfterTheNyiDiagnosticReturns()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
         WithAltJitLowering((compiler, lowering) =>
         {
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 4096);
+            var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 4096);
             var indirection = new GenTreeIndir(GT_IND, TYP_SIMD16, address);
 
             Assert.DoesNotThrow(() => ContainCheckIndir(lowering, indirection));
             Assert.That(address.IsContained, Is.True);
         });
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS
     [Test]
     public static void UnportedHardwareIntrinsicLoweringDependenciesTerminateAfterTheNyiDiagnosticReturns()
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
         WithAltJit(() =>
         {
             var lowering = CreateUninitializedLowering();
@@ -57,7 +56,6 @@ internal static unsafe class RiscVLoweringPortTests
             AssertSkipped(() => ContainCheckHWIntrinsic(lowering, null!));
         });
     }
-#endif
 
     private static void AssertSkipped(Action action)
     {
@@ -69,6 +67,7 @@ internal static unsafe class RiscVLoweringPortTests
 
     private static void WithAltJitLowering(Action<Compiler, Lowering> action)
     {
+        Assume.That(Configuration.TARGET_RISCV64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -98,6 +97,7 @@ internal static unsafe class RiscVLoweringPortTests
 
     private static void WithAltJit(Action action)
     {
+        Assume.That(Configuration.TARGET_RISCV64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -116,21 +116,18 @@ internal static unsafe class RiscVLoweringPortTests
         }
     }
 
-#if FEATURE_SIMD
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerSIMD")]
-    private static extern void LowerSIMD(Lowering lowering, GenTreeSIMD node);
+    private static extern void LowerSIMD(Lowering lowering, GenTree node);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckSIMD")]
-    private static extern void ContainCheckSIMD(Lowering lowering, GenTreeSIMD node);
+    private static extern void ContainCheckSIMD(Lowering lowering, GenTree node);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckIndir")]
     private static extern void ContainCheckIndir(Lowering lowering, GenTreeIndir node);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
 
-#if FEATURE_HW_INTRINSICS
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsic")]
     private static extern GenTree? LowerHWIntrinsic(Lowering lowering, GenTreeHWIntrinsic node);
 
@@ -151,6 +148,4 @@ internal static unsafe class RiscVLoweringPortTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckHWIntrinsic")]
     private static extern void ContainCheckHWIntrinsic(Lowering lowering, GenTreeHWIntrinsic node);
-#endif
 }
-#endif

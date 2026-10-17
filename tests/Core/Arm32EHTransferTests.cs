@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -24,6 +23,7 @@ internal static class Arm32EHTransferTests
     public static void RetlessFinallyCallsKeepTheReturnAddressInsideTheirEHRegion(
         bool hasNextBlock, bool differentRegion, int expectedInstructionCount)
     {
+        Assume.That(Configuration.TARGET_ARM);
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var target = Label();
@@ -58,6 +58,7 @@ internal static class Arm32EHTransferTests
     public static void ReturningFinallyCallsSelectTheNativeContinuationForm(
         bool adjacent, bool crossesColdBoundary, instruction continuationInstruction)
     {
+        Assume.That(Configuration.TARGET_ARM);
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var handler = Label();
@@ -91,6 +92,7 @@ internal static class Arm32EHTransferTests
     [Test]
     public static void CatchReturnsLoadTheirRelocatableAddressIntoTheIntegerReturnRegister()
     {
+        Assume.That(Configuration.TARGET_ARM);
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var target = Label();
@@ -130,4 +132,3 @@ internal static class Arm32EHTransferTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

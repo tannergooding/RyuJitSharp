@@ -1,10 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System.Numerics;
-#if DEBUG
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 
@@ -77,7 +75,6 @@ internal static class ScalarQueryTests
         Assert.That(signum(UInt64BitsToDouble(bits | 0x8000000000000000UL)), Is.EqualTo(-expected));
     }
 
-#if DEBUG
     [TestCase(2U, 32U)]
     [TestCase(3U, 21U)]
     [TestCase(4U, 16U)]
@@ -95,6 +92,7 @@ internal static class ScalarQueryTests
     [TestCase(16U, 8U)]
     public static void UnsignedDigitsCoverEveryBaseAndPowerBoundary(uint radix, uint maximumDigits)
     {
+        Assume.That(TestConfiguration.IsDebug);
         Assert.That(CountDigits(0U, radix), Is.EqualTo(1U));
         Assert.That(CountDigits(uint.MaxValue, radix), Is.EqualTo(maximumDigits));
         var digits = 1U;
@@ -115,6 +113,7 @@ internal static class ScalarQueryTests
     [TestCase(uint.MaxValue, 10U)]
     public static void DefaultUnsignedDigitsUseDecimal(uint value, uint expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         Assert.That(CountDigits(value), Is.EqualTo(expected));
     }
 
@@ -123,6 +122,7 @@ internal static class ScalarQueryTests
     [NonParallelizable]
     public static unsafe void InvalidBaseRetainsNativeAssertionWithSafeZeroContinuation(uint radix)
     {
+        Assume.That(TestConfiguration.IsDebug);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
@@ -145,5 +145,4 @@ internal static class ScalarQueryTests
         s_assertion = Marshal.PtrToStringUTF8((nint)expression);
         return 0;
     }
-#endif
 }

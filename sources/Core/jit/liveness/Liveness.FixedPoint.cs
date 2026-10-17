@@ -64,13 +64,11 @@ public partial class Liveness<TLiveness>
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("\nBB liveness after DoLiveVarAnalysis():\n\n");
             _compiler.fgDispBBLiveness();
         }
-#endif
     }
 
     private bool PerBlockAnalysis(BasicBlock block, bool keepAliveThis)

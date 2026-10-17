@@ -63,11 +63,7 @@ public sealed partial class ObjectAllocator
     {
         assert(_analysisDone);
         var compiler = CompilerInstance;
-#if DEBUG
-        var reason = $"stack allocated {layout.ShortClassName}";
-#else
-        var reason = "stack allocated object";
-#endif
+        var reason = Configuration.DEBUG ? $"stack allocated {layout.ShortClassName}" : "stack allocated object";
         var local = compiler.lvaGrabTemp(shortLifetime: false, reason);
         compiler.lvaSetStruct(local, layout, unsafeValueClsCheck: false);
         ref var descriptor = ref compiler.lvaGetDesc(local);
@@ -115,7 +111,7 @@ public sealed partial class ObjectAllocator
             controllingStmt.RootNode = branch.AsUnOp().Op1;
             assert(removedBlock.bbRefs == 0);
             assert(removedBlock.Kind is BBJ_ALWAYS);
-            compiler.fgRemoveBlock(removedBlock, unreachable: true);
+            _ = compiler.fgRemoveBlock(removedBlock, unreachable: true);
         }
         else
         {
@@ -136,9 +132,10 @@ public sealed partial class ObjectAllocator
         var builder = new ClassLayoutBuilder(compiler, checked((uint)(pointerSize + layout.Size)));
         builder.CopyPaddingFrom(pointerSize, layout);
         builder.CopyGCInfoFrom(pointerSize, layout);
-#if DEBUG
-        builder.CopyNameFrom(layout, "[boxed] ");
-#endif
+        if (Configuration.DEBUG)
+        {
+            builder.CopyNameFrom(layout, "[boxed] ");
+        }
         return compiler.typGetCustomLayout(builder);
     }
 }

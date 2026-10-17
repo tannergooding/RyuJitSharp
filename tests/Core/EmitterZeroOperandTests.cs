@@ -100,15 +100,15 @@ internal static class EmitterZeroOperandTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void InstructionDisplayRecordsZeroOperandInstructions(int entrypoint)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var emitter = codeGen.Emitter;
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -140,7 +140,6 @@ internal static class EmitterZeroOperandTests
             Assert.That(diagnostic, Does.Contain(entrypoint == 1 ? "cqo" : "nop"));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);

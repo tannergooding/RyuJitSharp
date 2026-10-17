@@ -62,9 +62,7 @@ public partial class Compiler
 
         if (fgFirstColdBlock is not null)
         {
-#if DEBUG
-            if (JitConfig.JitFakeProcedureSplitting == 0)
-#endif
+            if (!Configuration.DEBUG || JitConfig.JitFakeProcedureSplitting == 0)
             {
                 unwindReserveFuncHelperX86(in func, false);
             }
@@ -97,9 +95,7 @@ public partial class Compiler
 
         if (pColdCode != null)
         {
-#if DEBUG
-            if (JitConfig.JitFakeProcedureSplitting == 0)
-#endif
+            if (!Configuration.DEBUG || JitConfig.JitFakeProcedureSplitting == 0)
             {
                 unwindEmitFuncHelperX86(in func, pHotCode, pColdCode, false);
             }
@@ -134,13 +130,12 @@ public partial class Compiler
 
         if (isHotCode)
         {
-#if DEBUG
-            if ((JitConfig.JitFakeProcedureSplitting != 0) && (fgFirstColdBlock is not null))
+            if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) &&
+                (fgFirstColdBlock is not null))
             {
                 assert(endOffset <= unchecked((uint)info.compNativeCodeSize));
             }
             else
-#endif
             {
                 assert(endOffset <= unchecked((uint)info.compTotalHotCodeSize));
             }

@@ -12,15 +12,13 @@ public sealed partial class RangeCheck
         var store = _compiler.vnStore;
         assert(store is not null);
         var upperVN = store.VNNormalValue(upper._vnPair.Conservative);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"{range} BetweenBounds <0, [{upper.TreeId:D6}]>\n");
             jitprintf($"${upperVN:x} upper bound is: ");
             store.vnDump(_compiler, upperVN);
             jitprintf("\n");
         }
-#endif
         if ((arraySize <= 0) && !store.IsVNCheckedBound(upperVN))
         {
             return false;

@@ -7,9 +7,15 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD
 internal static unsafe class HWIntrinsicLookupRangeTests
 {
+    [SetUp]
+    public static void RequireHardwareIntrinsicsAndSimd()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.FEATURE_SIMD,
+            "This fixture requires hardware intrinsics and SIMD support.");
+    }
+
     [Test]
     public static void LookupUsesGeneratedIsaRangesAndVectorAliases()
     {
@@ -19,15 +25,22 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, "op_Addition"u8), Is.EqualTo(NI_Vector_op_Addition));
         Assert.That(HWIntrinsicInfo.lookupName(NI_Vector_op_Addition), Is.EqualTo("op_Addition"));
 
-#if TARGET_XARCH
-        Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_AVX2, "Add"u8), Is.EqualTo(NI_AVX2_Add));
-#elif TARGET_ARM64
-        Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_AdvSimd, "Add"u8), Is.EqualTo(NI_AdvSimd_Add));
-#elif TARGET_WASM
-        Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_PackedSimd, "Add"u8), Is.EqualTo(NI_PackedSimd_Add));
-#else
-#error Unsupported target with hardware-intrinsic and SIMD support.
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_AVX2, "Add"u8), Is.EqualTo(NI_AVX2_Add));
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_AdvSimd, "Add"u8), Is.EqualTo(NI_AdvSimd_Add));
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            Assert.That(HWIntrinsicInfo.LookupId(&sig, InstructionSet_PackedSimd, "Add"u8), Is.EqualTo(NI_PackedSimd_Add));
+        }
+        else
+        {
+            Assert.Fail("Unsupported target with hardware-intrinsic and SIMD support.");
+        }
     }
 
     [Test]
@@ -76,29 +89,38 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         if (Configuration.TARGET_XARCH)
         {
             expectedCount = 836;
-#if DEBUG
-            expectedHash = Configuration.TARGET_64BIT ? 0x3E4B226FF246FC63UL : 0x12753D926736CD8EUL;
-#else
-            expectedHash = Configuration.TARGET_64BIT ? 0x72D2520BCDBCF9B3UL : 0xDCA5B3763809FDE6UL;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                expectedHash = Configuration.TARGET_64BIT ? 0x3E4B226FF246FC63UL : 0x12753D926736CD8EUL;
+            }
+            else
+            {
+                expectedHash = Configuration.TARGET_64BIT ? 0x72D2520BCDBCF9B3UL : 0xDCA5B3763809FDE6UL;
+            }
         }
         else if (Configuration.TARGET_ARM64)
         {
             expectedCount = 1209;
-#if DEBUG
-            expectedHash = 0xFE294BA4C807E11BUL;
-#else
-            expectedHash = 0x4ADC8167113A6932UL;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                expectedHash = 0xFE294BA4C807E11BUL;
+            }
+            else
+            {
+                expectedHash = 0x4ADC8167113A6932UL;
+            }
         }
         else if (Configuration.TARGET_WASM)
         {
             expectedCount = 208;
-#if DEBUG
-            expectedHash = 0x2631CE8A5AACB2F1UL;
-#else
-            expectedHash = 0xFF4D09D72ECED4A5UL;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                expectedHash = 0x2631CE8A5AACB2F1UL;
+            }
+            else
+            {
+                expectedHash = 0xFF4D09D72ECED4A5UL;
+            }
         }
         else
         {
@@ -122,14 +144,15 @@ internal static unsafe class HWIntrinsicLookupRangeTests
                 hash = AppendHash(hash, simdSize);
             }
 
-#if DEBUG
-            var name = HWIntrinsicInfo.lookupName(id);
-            hash = AppendHash(hash, (uint)name.Length);
-            foreach (var character in name)
+            if (TestConfiguration.IsDebug)
             {
-                hash = AppendHash(hash, character);
+                var name = HWIntrinsicInfo.lookupName(id);
+                hash = AppendHash(hash, (uint)name.Length);
+                foreach (var character in name)
+                {
+                    hash = AppendHash(hash, character);
+                }
             }
-#endif
 
             for (var typeValue = (int)TYP_BYTE; typeValue <= (int)TYP_DOUBLE; typeValue++)
             {
@@ -158,4 +181,3 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         return hash;
     }
 }
-#endif

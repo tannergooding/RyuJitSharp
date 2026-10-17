@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -19,6 +18,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64CodeGenDivisionTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void UnsignedDivisionNodesDispatchToTheArm64Generator()
     {
@@ -157,11 +162,11 @@ internal static class Arm64CodeGenDivisionTests
         var descriptor = compiler.fgGetExcptnTarget(kind, compiler.compCurBB);
         descriptor.acdUsed = true;
         descriptor.acdDstBlk = target;
-#if !FEATURE_FIXED_OUT_ARGS
-        descriptor.acdStkLvlInit = true;
-#endif
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            descriptor.acdStkLvlInit = true;
+        }
 
         return target;
     }
 }
-#endif

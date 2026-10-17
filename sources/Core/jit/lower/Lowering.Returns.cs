@@ -32,8 +32,7 @@ public sealed partial class Lowering
             {
                 _ = CheckMultiRegLclVar(value.AsLclVar(), compiler.compRetTypeDesc.ReturnRegCount);
             }
-#if DEBUG
-            if (varTypeIsStruct(ret.Type) != varTypeIsStruct(value.Type))
+            if (Configuration.DEBUG && (varTypeIsStruct(ret.Type) != varTypeIsStruct(value.Type)))
             {
                 if (varTypeIsStruct(ret.Type))
                 {
@@ -43,7 +42,6 @@ public sealed partial class Lowering
                     assert((returnType == valueType) || value.IsCnsInitVal || (returnType.Size <= valueType.Size));
                 }
             }
-#endif
             if (value.Oper is GT_FIELD_LIST)
             {
                 LowerRetFieldList(ret, value.AsFieldList());

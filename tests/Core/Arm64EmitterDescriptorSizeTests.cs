@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Globalization;
 using System.Reflection;
@@ -15,6 +14,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64EmitterDescriptorSizeTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void OperandCategoriesMatchEveryPinnedFormat()
     {
@@ -41,11 +46,14 @@ internal static class Arm64EmitterDescriptorSizeTests
     [TestCase("instrDescLclVarPair", 24)]
     [TestCase("instrDescLclVarPairCns", 32)]
     [TestCase("instrDescJmp", 48)]
-#if TARGET_WINDOWS
     [TestCase("instrDescCGCA", 80)]
-#endif
     public static void ManagedDescriptorStorageMatchesNativeLayouts(string name, int expected)
     {
+        if ((name is "instrDescCGCA") && !Configuration.TARGET_WINDOWS)
+        {
+            Assert.Ignore("The large-call descriptor uses the Windows ARM64 layout.");
+        }
+
         var type = typeof(Emitter).GetNestedType(name, BindingFlags.NonPublic)
             ?? throw new AssertionException($"Missing descriptor type {name}.");
         if (RuntimeHelpers.GetUninitializedObject(type) is not Emitter.instrDesc descriptor)
@@ -106,11 +114,14 @@ internal static class Arm64EmitterDescriptorSizeTests
     }
 
     [TestCase(false, 16)]
-#if TARGET_WINDOWS
     [TestCase(true, 80)]
-#endif
     public static void CallsUseTheirNativePayloadSize(bool large, int expected)
     {
+        if (large && !Configuration.TARGET_WINDOWS)
+        {
+            Assert.Ignore("The large-call descriptor uses the Windows ARM64 layout.");
+        }
+
         var descriptor = Descriptor(INS_blr, IF_ARM64_BR_1B);
         if (large)
         {
@@ -120,16 +131,19 @@ internal static class Arm64EmitterDescriptorSizeTests
         Assert.That(Size(CreateEmitter(), descriptor), Is.EqualTo(expected));
     }
 
-#if !TARGET_WINDOWS
     [Test]
     public static void FatCallLayoutRemainsAnExplicitDependency()
     {
+        if (Configuration.TARGET_WINDOWS)
+        {
+            Assert.Ignore("The non-Windows ARM64 target has no native large-call descriptor.");
+        }
+
         var descriptor = Descriptor(INS_blr, IF_ARM64_BR_1B);
         descriptor.idSetIsLargeCall();
 
         _ = Assert.Throws<PlatformNotSupportedException>(() => Size(CreateEmitter(), descriptor));
     }
-#endif
 
     [TestCase(IF_ARM64_LABEL)]
     [TestCase(IF_ARM64_LARGEJMP)]
@@ -147,11 +161,7 @@ internal static class Arm64EmitterDescriptorSizeTests
     }
 
     private static int ExpectedAlignDescriptorSize =>
-#if DEBUG
-        48;
-#else
-        Configuration.LATE_DISASM ? 48 : 40;
-#endif
+        Configuration.DEBUG || Configuration.LATE_DISASM ? 48 : 40;
 
     private static FlagDescriptor Descriptor(instruction instruction, Emitter.insFormat format)
     {
@@ -181,4 +191,3 @@ internal static class Arm64EmitterDescriptorSizeTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_emitFmtToOps")]
     private static extern ReadOnlySpan<byte> OperandCategories(Emitter? emitter);
 }
-#endif
