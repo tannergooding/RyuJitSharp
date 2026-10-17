@@ -98,6 +98,64 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
+    public static void RelocatableHelperLookupForwardsDebugMetadata()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetHelperFtn;
+            var context = new HelperContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                Address = (void*)0x1234,
+            };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.info.compMatchedVM = true;
+            compiler.opts.compReloc = true;
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcRegGCrefSetCur = default;
+            codeGen.GCInfo.gcRegByrefSetCur = default;
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genEmitHelperCallLoongArch64(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN));
+            Assert.That(failure?.Message, Does.Contain("No-GC call register mask RBM_CALLEE_SAVED"));
+
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing helper instructions.");
+            var relocation = descriptors[0];
+            Assert.That(relocation.idIns(), Is.EqualTo(INS_bl));
+            var debugInfo = relocation.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredDebugInfo = debugInfo ?? throw new AssertionException("Missing helper metadata.");
+                Assert.That(requiredDebugInfo.idMemCookie,
+                    Is.EqualTo((nint)Compiler.eeFindHelper(CORINFO_HELP_STOP_FOR_GC)));
+                Assert.That(requiredDebugInfo.idFlags, Is.EqualTo(GTF_ICON_METHOD_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
+        });
+    }
+
+    private struct HelperContext
+    {
+        public ICorJitInfo JitInfo;
+        public void* Address;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+        CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
+    {
+        var context = (HelperContext*)self;
+        lookup->accessType = IAT_PVALUE;
+        lookup->addr = context->Address;
+    }
+
+    [Test]
     public static void RelocatedImmediateMaterializationReachesTheLoongArchEmitterBoundary()
     {
         WithCodeGen((compiler, codeGen) =>

@@ -35,9 +35,8 @@ public sealed partial class CodeGen
             if (_compiler.opts.compReloc)
             {
                 Emitter.emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTargetReg, unchecked((nint)address)
-#if DEBUG
-                    , unchecked((nuint)Compiler.eeFindHelper(helper)), GTF_ICON_METHOD_HDL
-#endif
+                    , Configuration.DEBUG ? unchecked((nuint)Compiler.eeFindHelper(helper)) : 0,
+                    Configuration.DEBUG ? GTF_ICON_METHOD_HDL : GTF_EMPTY
                 );
             }
             else

@@ -2,9 +2,13 @@
 
 #if TARGET_ARM64
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.InfoAccessType;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.gtCallTypes;
@@ -63,6 +67,46 @@ internal static unsafe class Arm64CodeGenHelperCallTests
     }
 
     [Test]
+    public static void RelocatableHelperLookupForwardsDebugMetadata()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetHelperFtn;
+            vtable.Base.Base.getAddressAlignment = &GetAddressAlignment;
+            var context = new HelperContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                Address = (void*)0x1234,
+            };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.info.compMatchedVM = true;
+            compiler.opts.compReloc = true;
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcRegGCrefSetCur = default;
+            codeGen.GCInfo.gcRegByrefSetCur = default;
+
+            codeGen.genEmitHelperCallArm64(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
+            var relocation = descriptors.First(descriptor => descriptor.idIns() == INS_adrp);
+            var debugInfo = relocation.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredDebugInfo = debugInfo ?? throw new AssertionException("Missing helper metadata.");
+                Assert.That(requiredDebugInfo.idMemCookie,
+                    Is.EqualTo((nint)Compiler.eeFindHelper(CORINFO_HELP_STOP_FOR_GC)));
+                Assert.That(requiredDebugInfo.idFlags, Is.EqualTo(GTF_ICON_METHOD_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
+        });
+    }
+
+    [Test]
     public static void ReturnTrapEmitsTheConditionalSkipBeforeTheHelperCall()
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
@@ -93,5 +137,23 @@ internal static unsafe class Arm64CodeGenHelperCallTests
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
         });
     }
+
+    private struct HelperContext
+    {
+        public ICorJitInfo JitInfo;
+        public void* Address;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+        CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
+    {
+        var context = (HelperContext*)self;
+        lookup->accessType = IAT_PVALUE;
+        lookup->addr = context->Address;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static uint GetAddressAlignment(ICorJitInfo* self, void* address) => 1;
 }
 #endif

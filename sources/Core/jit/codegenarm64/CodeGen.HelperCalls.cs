@@ -37,9 +37,8 @@ public sealed partial class CodeGen
                 // The relocatable lookup is a cell address: materialize it with ADRP/ADD,
                 // then load the helper target.
                 Emitter.emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTargetReg, unchecked((nint)address)
-#if DEBUG
-                    , unchecked((nuint)Compiler.eeFindHelper(helper)), GTF_ICON_METHOD_HDL
-#endif
+                    , Configuration.DEBUG ? unchecked((nuint)Compiler.eeFindHelper(helper)) : 0,
+                    Configuration.DEBUG ? GTF_ICON_METHOD_HDL : GTF_EMPTY
                 );
             }
             else
