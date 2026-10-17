@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +15,15 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SysVX64FrameCodeGenTests
 {
+    [SetUp]
+    public static void SetUp()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("System V AMD64 frame-codegen tests require a Unix AMD64 target.");
+        }
+    }
+
     [Test]
     public static unsafe void NativeAotCfiUnwindUsesRecordingAndPublicationLifecycle()
     {
@@ -23,11 +31,11 @@ internal static class SysVX64FrameCodeGenTests
         {
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
             compiler.unwindBegProlog();
-            compiler.unwindPush(REG_RBX);
-            compiler.unwindPush2(REG_R12, REG_R13);
+            compiler.unwindPush(REG_X64_RBX);
+            compiler.unwindPush2(REG_X64_R12, REG_X64_R13);
             compiler.unwindAllocStack(16);
-            compiler.unwindSetFrameReg(REG_RBP, 0);
-            compiler.unwindSaveReg(REG_RBX, 0);
+            compiler.unwindSetFrameReg(REG_X64_RBP, 0);
+            compiler.unwindSaveReg(REG_X64_RBX, 0);
             compiler.unwindEndProlog();
 
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
@@ -61,7 +69,7 @@ internal static class SysVX64FrameCodeGenTests
             var func = compiler.funCurrentFunc();
             var codes = func.unwindCodes ?? throw new AssertionException("Missing unwind codes.");
             var recorded = codes.AsSpan((int)func.unwindCodeSlot);
-            Assert.That(func.unwindHeader.FrameRegister, Is.EqualTo((byte)REG_RBP));
+            Assert.That(func.unwindHeader.FrameRegister, Is.EqualTo((byte)REG_X64_RBP));
             Assert.That(func.unwindHeader.FrameOffset, Is.EqualTo(extended ? 15 : 0));
             Assert.That(recorded[1] & 0x0f, Is.EqualTo(extended ? 11 : 3));
             if (extended)
@@ -92,7 +100,7 @@ internal static class SysVX64FrameCodeGenTests
             var header = codes.AsSpan((int)func.unwindCodeSlot, 4);
             Assert.That(header[0] & 7, Is.EqualTo(1));
             Assert.That(header[2], Is.EqualTo(3));
-            Assert.That(header[3] & 15, Is.EqualTo((byte)REG_RBP));
+            Assert.That(header[3] & 15, Is.EqualTo((byte)REG_X64_RBP));
             Assert.That(header[3] >> 4, Is.EqualTo(15));
             Assert.That(codes[func.unwindCodeSlot + 5] & 15, Is.EqualTo(11));
         });
@@ -104,25 +112,25 @@ internal static class SysVX64FrameCodeGenTests
         WithProlog((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = false;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12 | RBM_RDI);
+            codeGen.RegSet.rsSetRegsModified(RBM_X64_RBX | RBM_X64_R12 | RBM_X64_RDI);
             compiler.compCalleeRegsPushed = 2;
             Assert.That(codeGen.RegSet.rsGetModifiedIntCalleeSavedRegsMask(),
-                Is.EqualTo(new regMaskTP(SRBM_RBX | SRBM_R12)));
+                Is.EqualTo(new regMaskTP(SRBM_X64_RBX | SRBM_X64_R12)));
             compiler.unwindBegProlog();
             var zeroed = false;
-            codeGen.genPushCalleeSavedRegisters(REG_RAX, ref zeroed);
+            codeGen.genPushCalleeSavedRegisters(REG_X64_RAX, ref zeroed);
             compiler.unwindEndProlog();
 
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             group.igFlags &= ~InsGroupFlags.Prolog;
             group.igFlags |= InsGroupFlags.Epilog;
-            codeGen.genPopCalleeSavedRegisters();
+            codeGen.genPopCalleeSavedRegistersXarch();
 
             var ids = Descriptors(codeGen);
             Assert.That(ids.Select(id => id.idIns()),
                 Is.EqualTo((instruction[])[INS_push, INS_push, INS_pop, INS_pop]));
             Assert.That(ids.Select(id => id.idReg1()),
-                Is.EqualTo((regNumber[])[REG_R12, REG_RBX, REG_RBX, REG_R12]));
+                Is.EqualTo((regNumber[])[REG_X64_R12, REG_X64_RBX, REG_X64_RBX, REG_X64_R12]));
             Assert.That(compiler.funCurrentFunc().unwindCodes, Is.Not.Null);
         });
     }
@@ -139,7 +147,7 @@ internal static class SysVX64FrameCodeGenTests
             compiler.eeInfo.osPageSize = 4096;
             compiler.unwindBegProlog();
             var zeroed = false;
-            codeGen.genAllocLclFrame(size, REG_RAX, ref zeroed, default);
+            codeGen.genAllocLclFrame(size, REG_X64_RAX, ref zeroed, default);
             compiler.unwindEndProlog();
 
             var ids = Descriptors(codeGen);
@@ -159,7 +167,7 @@ internal static class SysVX64FrameCodeGenTests
             compiler.unwindBegProlog();
             var zeroed = true;
 
-            codeGen.genAllocLclFrame(4096, REG_RAX, ref zeroed, default);
+            codeGen.genAllocLclFrame(4096, REG_X64_RAX, ref zeroed, default);
             compiler.unwindEndProlog();
 
             Assert.That(SysVX64HelperCodeGenTests.HelperCallbacks.Assertions, Is.Zero);
@@ -191,10 +199,10 @@ internal static class SysVX64FrameCodeGenTests
             group.igFlags |= InsGroupFlags.Prolog;
             var zeroed = false;
 
-            codeGen.genZeroInitFrame(-16, -32, REG_RAX, ref zeroed);
+            codeGen.genZeroInitFrame(-16, -32, REG_X64_RAX, ref zeroed);
 
             var xor = Descriptors(codeGen).Single(id => id.idIns() == INS_xorps);
-            Assert.That(xor.idReg1(), Is.EqualTo(REG_XMM8));
+            Assert.That(xor.idReg1(), Is.EqualTo(REG_X64_XMM8));
         });
     }
 
@@ -216,7 +224,7 @@ internal static class SysVX64FrameCodeGenTests
             group.igFlags |= InsGroupFlags.Prolog;
             var zeroed = false;
 
-            codeGen.genZeroInitFrame(-24, -32, REG_RAX, ref zeroed);
+            codeGen.genZeroInitFrame(-24, -32, REG_X64_RAX, ref zeroed);
 
             Assert.That(Descriptors(codeGen).Select(id => id.idIns()),
                 Is.EqualTo((instruction[])[INS_xor, INS_mov]));
@@ -234,7 +242,7 @@ internal static class SysVX64FrameCodeGenTests
             compiler.compCalleeFPRegsSavedMask = 0;
             Assert.That(new regMaskTP(compiler.compCalleeFPRegsSavedMask).IsEmpty, Is.True);
             compiler.compCalleeRegsPushed = 2;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12);
+            codeGen.RegSet.rsSetRegsModified(RBM_X64_RBX | RBM_X64_R12);
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             group.igFlags &= ~InsGroupFlags.Prolog;
             group.igFlags |= InsGroupFlags.Epilog;
@@ -244,7 +252,7 @@ internal static class SysVX64FrameCodeGenTests
             Assert.That(Descriptors(codeGen).Select(id => id.idIns()),
                 Is.EqualTo((instruction[])[INS_add, INS_pop, INS_pop, INS_pop, INS_ret]));
             Assert.That(Descriptors(codeGen).Where(id => id.idIns() == INS_pop).Select(id => id.idReg1()),
-                Is.EqualTo((regNumber[])[REG_RBX, REG_R12, REG_RBP]));
+                Is.EqualTo((regNumber[])[REG_X64_RBX, REG_X64_R12, REG_X64_RBP]));
         });
     }
 
@@ -256,14 +264,14 @@ internal static class SysVX64FrameCodeGenTests
             var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
             var patchpoint = (PatchpointInfo*)storage;
             patchpoint->Initialize(1, 96);
-            patchpoint->CalleeSaveRegisters = (long)(SRBM_RBX | SRBM_RBP);
+            patchpoint->CalleeSaveRegisters = (long)(SRBM_X64_RBX | SRBM_X64_RBP);
             compiler.info.compPatchpointInfo = patchpoint;
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
             compiler.compLclFrameSize = 32;
             compiler.compCalleeFPRegsSavedMask = 0;
             compiler.compCalleeRegsPushed = 0;
             codeGen.IsFramePointerUsed = true;
-            codeGen.RegSet.rsSetRegsModified(RBM_RBX | RBM_R12);
+            codeGen.RegSet.rsSetRegsModified(RBM_X64_RBX | RBM_X64_R12);
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             group.igFlags &= ~InsGroupFlags.Prolog;
             group.igFlags |= InsGroupFlags.Epilog;
@@ -274,7 +282,7 @@ internal static class SysVX64FrameCodeGenTests
             Assert.That(ids.Select(id => id.idIns()),
                 Is.EqualTo((instruction[])[INS_add, INS_pop, INS_pop, INS_pop, INS_ret]));
             Assert.That(ids.Where(id => id.idIns() == INS_pop).Select(id => id.idReg1()),
-                Is.EqualTo((regNumber[])[REG_R12, REG_RBX, REG_RBP]));
+                Is.EqualTo((regNumber[])[REG_X64_R12, REG_X64_RBX, REG_X64_RBP]));
         });
     }
 
@@ -338,7 +346,7 @@ internal static class SysVX64FrameCodeGenTests
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
             var codeGen = compiler.codeGen as CodeGen ?? throw new AssertionException("Missing code generator.");
-            LastIntRegister(compiler) = REG_R15;
+            LastIntRegister(compiler) = REG_X64_R15;
             codeGen.CopyRegisterInfo();
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             group.igFlags |= InsGroupFlags.Prolog | InsGroupFlags.OutOfOrderHead;
@@ -360,4 +368,3 @@ internal static class SysVX64FrameCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCns")]
     private static extern nint InstructionConstant(Emitter emitter, Emitter.instrDesc descriptor);
 }
-#endif

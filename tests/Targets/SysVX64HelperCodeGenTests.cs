@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +21,15 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64HelperCodeGenTests
 {
+    [SetUp]
+    public static void SetUp()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("System V AMD64 helper codegen tests require a Unix AMD64 target.");
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ReturnTrapBranchesAroundHelperWithAssignedTarget(bool indirect)
@@ -31,9 +39,9 @@ internal static unsafe class SysVX64HelperCodeGenTests
             using var callbacks = new HelperCallbacks(compiler, indirect);
             var codeGen = ActiveCodeGen(compiler);
             var data = compiler.gtNewIconNode(TYP_INT, 1);
-            data.RegNum = REG_RAX;
+            data.RegNum = REG_X64_RAX;
             var trap = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
-            codeGen.InternalRegisters.Add(trap, RBM_R11);
+            codeGen.InternalRegisters.Add(trap, RBM_X64_R11);
 
             codeGen.genCodeForReturnTrap(trap);
 
@@ -84,28 +92,28 @@ internal static unsafe class SysVX64HelperCodeGenTests
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
             var codeGen = ActiveCodeGen(compiler);
             codeGen.IsFramePointerUsed = true;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RDX, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RDX, TYP_BYREF);
 
             codeGen.genProfilingLeaveCallback(helper);
 
             Assert.That(HelperCallbacks.Assertions, Is.Zero);
             Assert.That(HelperCallbacks.Helper, Is.EqualTo(helper));
             Assert.That(Instructions(emitter), Is.EqualTo((instruction[])[INS_mov, INS_lea, INS_call]));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(new regMaskTP(SRBM_RAX)));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(new regMaskTP(SRBM_RDX)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(new regMaskTP(SRBM_X64_RAX)));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(new regMaskTP(SRBM_X64_RDX)));
             Assert.That(compiler.info.compProfilerCallback, Is.True);
         });
     }
 
-    [TestCase(REG_RAX, false)]
-    [TestCase(REG_RDI, true)]
-    [TestCase(REG_RSI, true)]
-    [TestCase(REG_R11, false)]
-    [TestCase(REG_R14, false)]
-    [TestCase(REG_R15, false)]
-    [TestCase(REG_RDX, true)]
-    [TestCase(REG_RBX, true)]
+    [TestCase(REG_X64_RAX, false)]
+    [TestCase(REG_X64_RDI, true)]
+    [TestCase(REG_X64_RSI, true)]
+    [TestCase(REG_X64_R11, false)]
+    [TestCase(REG_X64_R14, false)]
+    [TestCase(REG_X64_R15, false)]
+    [TestCase(REG_X64_RDX, true)]
+    [TestCase(REG_X64_RBX, true)]
     public static void EnterCallbackPreservesSysVArgumentsWithoutWindowsHoming(
         regNumber initReg, bool remainsZero)
     {
@@ -130,8 +138,8 @@ internal static unsafe class SysVX64HelperCodeGenTests
             Assert.That(HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_ENTER));
             Assert.That(Instructions(emitter), Is.EqualTo((instruction[])[INS_mov, INS_lea, INS_call]));
             var descriptors = CurrentDescriptors(emitter) ?? throw new AssertionException("Missing instructions.");
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R14));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R15));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_R14));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_X64_R15));
             Assert.That(zeroed, Is.EqualTo(remainsZero));
         });
     }
@@ -155,14 +163,14 @@ internal static unsafe class SysVX64HelperCodeGenTests
             group.igFlags |= InsGroupFlags.Prolog;
             var zeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_RDI, ref zeroed);
+            codeGen.genProfilingEnterCallback(REG_X64_RDI, ref zeroed);
 
             Assert.That(HelperCallbacks.Assertions, Is.Zero);
             Assert.That(HelperCallbacks.Helper, Is.EqualTo(CORINFO_HELP_PROF_FCN_ENTER));
             Assert.That(Instructions(emitter), Is.EqualTo((instruction[])[INS_mov, INS_lea, INS_call]));
             var descriptors = CurrentDescriptors(emitter) ?? throw new AssertionException("Missing instructions.");
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R14));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R15));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_R14));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_X64_R15));
             Assert.That(zeroed, Is.True);
         });
     }
@@ -245,4 +253,3 @@ internal static unsafe class SysVX64HelperCodeGenTests
         return 0;
     }
 }
-#endif

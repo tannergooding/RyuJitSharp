@@ -579,7 +579,7 @@ public sealed partial class CodeGen
             }
         }
 #if DEBUG
-        if (Configuration.TARGET_XARCH && _compiler.opts.compStackCheckOnRet)
+        if (Configuration.TARGET_XARCH && _compiler.compStackCheckOnRet)
         {
             assert(_compiler.lvaReturnSpCheck != BAD_VAR_NUM);
             assert(_compiler.lvaGetDesc(_compiler.lvaReturnSpCheck).lvDoNotEnregister);

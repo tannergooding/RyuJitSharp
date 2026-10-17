@@ -99,7 +99,7 @@ public sealed partial class CodeGen
         }
 
 #if DEBUG
-        if (Configuration.TARGET_X86 && _compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
+        if (Configuration.TARGET_X86 && _compiler.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
         {
             assert(_compiler.lvaCallSpCheck != BAD_VAR_NUM);
             ref var local = ref _compiler.lvaGetDesc(_compiler.lvaCallSpCheck);
@@ -195,13 +195,11 @@ public sealed partial class CodeGen
             GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_X86_EAX));
         }
 
-#if DEBUG
         if (Configuration.TARGET_X86)
         {
-            genStackPointerCheck(_compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
+            genStackPointerCheck(_compiler.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
                 _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes, REG_ARG_0_X86);
         }
-#endif
         var stackAdjustBias = 0u;
         if (Configuration.TARGET_X86)
         {

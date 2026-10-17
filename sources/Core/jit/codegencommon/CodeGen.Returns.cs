@@ -126,17 +126,16 @@ public sealed partial class CodeGen
                 GCInfo.gcMarkRegPtrVal(TargetRuntimeMetadata.AsyncContinuationReturnRegister, TYP_REF);
             }
         }
-#if DEBUG
-        if (Configuration.TARGET_XARCH)
+        if (Configuration.DEBUG && Configuration.TARGET_XARCH)
         {
-            var checkStackPointer = _compiler.opts.compStackCheckOnRet;
+            var checkStackPointer = _compiler.compStackCheckOnRet;
             if (_compiler.funCurrentFunc().funKind != FuncKind.FUNC_ROOT)
             {
                 checkStackPointer = false;
             }
+
             genStackPointerCheck(checkStackPointer, _compiler.lvaReturnSpCheck);
         }
-#endif
     }
 
     public void genMarkReturnGCInfo()
@@ -496,12 +495,13 @@ public sealed partial class CodeGen
         genReturn(tree);
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void genStackPointerCheck(bool doStackPointerCheck, int stackPointerVar, nint offset = 0)
     {
         genStackPointerCheck(doStackPointerCheck, stackPointerVar, offset, REG_NA);
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void genStackPointerCheck(bool doStackPointerCheck, int stackPointerVar,
         nint offset, regNumber tempReg)
     {
@@ -535,5 +535,4 @@ public sealed partial class CodeGen
             genDefineTempLabel(label);
         }
     }
-#endif
 }

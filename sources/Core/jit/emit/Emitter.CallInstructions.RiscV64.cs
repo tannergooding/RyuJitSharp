@@ -139,9 +139,10 @@ public partial class Emitter
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
-#if DEBUG
-            debugInfo.idCallSig = parameters.sigInfo;
-#endif
+            if (Configuration.DEBUG)
+            {
+                debugInfo.idCallSig = parameters.sigInfo;
+            }
             debugInfo.idMemCookie = (nint)parameters.methHnd;
         }
 

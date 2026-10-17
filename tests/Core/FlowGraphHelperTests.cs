@@ -102,7 +102,7 @@ internal static unsafe class FlowGraphHelperTests
     {
         WithClassInitializationCompiler((compiler, ee) => {
             PrepareMorphInitialization(compiler);
-            compiler.opts.compStackCheckOnRet = true;
+            compiler.compStackCheckOnRet = true;
             Assert.That(compiler.fgMorphInit(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.lvaReturnSpCheck, Is.EqualTo(2));
             var local = compiler.lvaGetDesc(compiler.lvaReturnSpCheck);

@@ -51,11 +51,12 @@ internal static unsafe class CodeGenCallInstructionTests
                 SRBM_X64_RBX | ((!unused && type == TYP_REF) ? SRBM_X64_RAX : 0)));
             Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(
                 SRBM_R12 | ((!unused && type == TYP_BYREF) ? SRBM_X64_RAX : 0)));
-#if DEBUG
-            var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing call diagnostics.");
-            Assert.That(debugInfo.idMemCookie, Is.EqualTo((nint)call._callMethHnd));
-            Assert.That(debugInfo.idCallSig?.Value.numArgs, Is.EqualTo(3));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing call diagnostics.");
+                Assert.That(debugInfo.idMemCookie, Is.EqualTo((nint)call._callMethHnd));
+                Assert.That(debugInfo.idCallSig?.Value.numArgs, Is.EqualTo(3));
+            }
         });
     }
 
@@ -78,9 +79,10 @@ internal static unsafe class CodeGenCallInstructionTests
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_l_jmp));
             Assert.That(id.idIsNoGC(), Is.True);
-#if DEBUG
-            Assert.That(id.idDebugOnlyInfo()?.idCallSig is null, Is.EqualTo(helper));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(id.idDebugOnlyInfo()?.idCallSig is null, Is.EqualTo(helper));
+            }
         });
     }
 
@@ -107,12 +109,13 @@ internal static unsafe class CodeGenCallInstructionTests
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(tailCall ? INS_tail_i_jmp : INS_call));
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R11));
-#if DEBUG
-            Assert.That(target._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(id.idDebugOnlyInfo()?.idMemCookie,
-                Is.EqualTo(indirect ? (nint)0 : (nint)call._callMethHnd));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(target._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(id.idDebugOnlyInfo()?.idMemCookie,
+                    Is.EqualTo(indirect ? (nint)0 : (nint)call._callMethHnd));
+            }
         });
     }
 
@@ -147,10 +150,11 @@ internal static unsafe class CodeGenCallInstructionTests
             Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_R11));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(2));
             Assert.That(id.idAddr().iiaAddrMode.amDisp, Is.EqualTo(-48));
-#if DEBUG
-            Assert.That(index._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(index._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            }
         });
     }
 
@@ -160,9 +164,10 @@ internal static unsafe class CodeGenCallInstructionTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CompEnablePCRelAddr(ref compiler.opts) = true;
+            }
             var address = new GenTreeIntCon(TYP_LONG, 0x1234) { IsContained = true };
             var call = DirectCall(TYP_VOID);
             call._callType = CT_INDIRECT;
@@ -231,9 +236,10 @@ internal static unsafe class CodeGenCallInstructionTests
                 (instruction[])[INS_data16, INS_data16, INS_call]));
             Assert.That((nint)ids[^1].idAddr().iiaAddr, Is.EqualTo((nint)0x3456));
             Assert.That(ids[^1].idIsNoGC(), Is.True);
-#if DEBUG
-            Assert.That(ids[^1].idDebugOnlyInfo()?.idMemCookie, Is.EqualTo((nint)1));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(ids[^1].idDebugOnlyInfo()?.idMemCookie, Is.EqualTo((nint)1));
+            }
         });
     }
 
@@ -260,7 +266,6 @@ internal static unsafe class CodeGenCallInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(false, true, false, REG_X64_RBX)]
     [TestCase(true, false, false, REG_X64_R10)]
     [TestCase(true, true, false, REG_X64_R11)]
@@ -269,6 +274,11 @@ internal static unsafe class CodeGenCallInstructionTests
     public static void EpilogChecksRetainTheCookieAndSecretArgumentRegisterChoices(
         bool tailCall, bool cookie, bool secret, regNumber reg)
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Tailcall epilog checks require a Debug build.");
+        }
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = DirectCall(TYP_VOID);
@@ -297,6 +307,11 @@ internal static unsafe class CodeGenCallInstructionTests
     [Test]
     public static void DisassemblyRecordsIndirectCallsAndConsumesTarget()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Call disassembly diagnostics require a Debug build.");
+        }
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = DirectCall(TYP_VOID);
@@ -306,7 +321,7 @@ internal static unsafe class CodeGenCallInstructionTests
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCallInstruction(call));
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
@@ -316,7 +331,6 @@ internal static unsafe class CodeGenCallInstructionTests
             Assert.That(diagnostic, Does.Contain("<unknown method>"));
         });
     }
-#endif
 
     private static GenTreeCall DirectCall(var_types type)
     {
@@ -327,10 +341,11 @@ internal static unsafe class CodeGenCallInstructionTests
             _directCallAddress = (void*)0x1234,
             _returnType = type,
         };
-#if DEBUG
-        call._callSig = new StrongBox<CORINFO_SIG_INFO>();
-        call._callSig.Value.numArgs = 3;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            call._callSig = new StrongBox<CORINFO_SIG_INFO>();
+            call._callSig.Value.numArgs = 3;
+        }
         return call;
     }
 
@@ -342,4 +357,7 @@ internal static unsafe class CodeGenCallInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
     private static extern ref regMask ThisByrefs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
+    private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
 }

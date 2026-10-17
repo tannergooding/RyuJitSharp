@@ -217,16 +217,6 @@ public partial class Compiler
         public bool compGcChecks;
 #endif
 
-#if DEBUG
-        /// <summary>Check stack pointer on return to ensure it is correct.</summary>
-        public bool compStackCheckOnRet;
-#endif
-
-#if DEBUG
-        /// <summary>Check stack pointer after call to ensure it is correct. Only for x86.</summary>
-        public bool compStackCheckOnCall;
-#endif
-
         /// <summary>Generate relocs for pointers in code, true for all AOT codegen</summary>
         public bool compReloc;
 

@@ -12,14 +12,14 @@ public sealed partial class CodeGen
 #if DEBUG
         _genInterruptibleUsed = true;
         _compiler.fgSafeBasicBlockCreation = false;
-        if (Configuration.TARGET_X86 && Interruptible && _compiler.opts.compStackCheckOnCall)
+        if (Configuration.TARGET_X86 && Interruptible && _compiler.compStackCheckOnCall)
         {
-            _compiler.opts.compStackCheckOnCall = false;
+            _compiler.compStackCheckOnCall = false;
         }
         if (Configuration.TARGET_XARCH && (Interruptible || _compiler.compTailCallUsed) &&
-            _compiler.opts.compStackCheckOnRet)
+            _compiler.compStackCheckOnRet)
         {
-            _compiler.opts.compStackCheckOnRet = false;
+            _compiler.compStackCheckOnRet = false;
         }
 #endif
         genMarkLabelsForCodegen();

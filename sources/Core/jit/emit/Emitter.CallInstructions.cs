@@ -189,9 +189,10 @@ public partial class Emitter
             {
                 var debugInfo = id.idDebugOnlyInfo();
                 assert(debugInfo is not null);
-#if DEBUG
-                debugInfo.idCallSig = parameters.sigInfo;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    debugInfo.idCallSig = parameters.sigInfo;
+                }
                 debugInfo.idMemCookie = (nint)parameters.methHnd;
             }
 
@@ -248,9 +249,10 @@ public partial class Emitter
 
             if ((_debugInfoSize > 0) && (id.idDebugOnlyInfo() is { } debugInfo))
             {
-#if DEBUG
-                debugInfo.idCallSig = parameters.sigInfo;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    debugInfo.idCallSig = parameters.sigInfo;
+                }
                 debugInfo.idMemCookie = unchecked((nint)parameters.methHnd);
                 debugInfo.idFlags = GTF_ICON_METHOD_HDL;
             }

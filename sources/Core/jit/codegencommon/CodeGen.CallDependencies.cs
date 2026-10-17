@@ -9,6 +9,11 @@ public sealed partial class CodeGen
 {
     public void genCall(GenTreeCall call)
     {
+        if (Configuration.UNIX_AMD64_ABI && call.Args.IsVarArgs)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unix AMD64 varargs are unsupported.");
+        }
+
         if (Configuration.TARGET_XARCH)
         {
             genCallXarch(call);

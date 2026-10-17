@@ -18,6 +18,10 @@ public partial class Compiler
         internal long CompCycles;
         internal int InlineMethodXmlFilePosition;
         internal Dictionary<int, LocalDebugData>? LocalVariables;
+        internal bool StackCheckOnRet;
+        internal bool StackCheckOnCall;
+        internal int ReturnSpCheck = BAD_VAR_NUM;
+        internal int CallSpCheck = BAD_VAR_NUM;
     }
 
     private struct LocalDebugData
@@ -89,6 +93,96 @@ public partial class Compiler
         }
 
         return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+    }
+
+    private DebugData? GetExistingDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Compiler debug data is only available in Debug builds.");
+        }
+
+        return DebugDataStorage.Table.TryGetValue(this, out var data) ? data : null;
+    }
+
+    internal bool compStackCheckOnRet
+    {
+        get
+        {
+            return GetExistingDebugData()?.StackCheckOnRet ?? false;
+        }
+
+        set
+        {
+            if (value)
+            {
+                GetDebugData().StackCheckOnRet = true;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.StackCheckOnRet = false;
+            }
+        }
+    }
+
+    internal bool compStackCheckOnCall
+    {
+        get
+        {
+            return GetExistingDebugData()?.StackCheckOnCall ?? false;
+        }
+
+        set
+        {
+            if (value)
+            {
+                GetDebugData().StackCheckOnCall = true;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.StackCheckOnCall = false;
+            }
+        }
+    }
+
+    internal int lvaReturnSpCheck
+    {
+        get
+        {
+            return GetExistingDebugData()?.ReturnSpCheck ?? BAD_VAR_NUM;
+        }
+
+        set
+        {
+            if (value != BAD_VAR_NUM)
+            {
+                GetDebugData().ReturnSpCheck = value;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.ReturnSpCheck = BAD_VAR_NUM;
+            }
+        }
+    }
+
+    internal int lvaCallSpCheck
+    {
+        get
+        {
+            return GetExistingDebugData()?.CallSpCheck ?? BAD_VAR_NUM;
+        }
+
+        set
+        {
+            if (value != BAD_VAR_NUM)
+            {
+                GetDebugData().CallSpCheck = value;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.CallSpCheck = BAD_VAR_NUM;
+            }
+        }
     }
 
     internal long InlineDiagnosticCompCycles

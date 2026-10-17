@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,10 +21,19 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64CallOrchestrationTests
 {
-    [TestCase(TYP_REF, REG_RAX, REG_RAX)]
-    [TestCase(TYP_REF, REG_RCX, REG_RAX)]
-    [TestCase(TYP_BYREF, REG_RDX, REG_RAX)]
-    [TestCase(TYP_DOUBLE, REG_XMM2, REG_XMM0)]
+    [SetUp]
+    public static void SetUp()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("System V AMD64 call orchestration tests require a Unix AMD64 target.");
+        }
+    }
+
+    [TestCase(TYP_REF, REG_X64_RAX, REG_X64_RAX)]
+    [TestCase(TYP_REF, REG_X64_RCX, REG_X64_RAX)]
+    [TestCase(TYP_BYREF, REG_X64_RDX, REG_X64_RAX)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM2, REG_X64_XMM0)]
     public static void CallsTransferAbiResultsAndPreserveAllocatedGcRoots(
         var_types type, regNumber allocated, regNumber abi)
     {
@@ -64,8 +72,8 @@ internal static unsafe class SysVX64CallOrchestrationTests
             var call = DirectCall(TYP_STRUCT);
             CallReturnDescriptor(call) = descriptor;
             call.ClearOtherRegs();
-            call.SetRegNumByIdx(REG_RCX, 0);
-            call.SetRegNumByIdx(REG_XMM2, 1);
+            call.SetRegNumByIdx(REG_X64_RCX, 0);
+            call.SetRegNumByIdx(REG_X64_XMM2, 1);
 
             codeGen.genCall(call);
 
@@ -73,9 +81,9 @@ internal static unsafe class SysVX64CallOrchestrationTests
             Assert.That(ids.Select(id => id.idIns()),
                 Is.EqualTo((instruction[])[INS_call, INS_mov, INS_movaps]));
             Assert.That(ids.Skip(1).Select(id => id.idReg1()),
-                Is.EqualTo((regNumber[])[REG_RCX, REG_XMM2]));
+                Is.EqualTo((regNumber[])[REG_X64_RCX, REG_X64_XMM2]));
             Assert.That(ids.Skip(1).Select(id => id.idReg2()),
-                Is.EqualTo((regNumber[])[REG_RAX, REG_XMM0]));
+                Is.EqualTo((regNumber[])[REG_X64_RAX, REG_X64_XMM0]));
         });
     }
 
@@ -94,8 +102,8 @@ internal static unsafe class SysVX64CallOrchestrationTests
             call.Flags |= GTF_CALL_UNMANAGED;
             CallReturnDescriptor(call) = descriptor;
             call.ClearOtherRegs();
-            call.SetRegNumByIdx(moveResults ? REG_XMM2 : REG_XMM0, 0);
-            call.SetRegNumByIdx(moveResults ? REG_XMM3 : REG_XMM1, 1);
+            call.SetRegNumByIdx(moveResults ? REG_X64_XMM2 : REG_X64_XMM0, 0);
+            call.SetRegNumByIdx(moveResults ? REG_X64_XMM3 : REG_X64_XMM1, 1);
 
             codeGen.genCall(call);
 
@@ -104,13 +112,13 @@ internal static unsafe class SysVX64CallOrchestrationTests
             Assert.That(ids, Has.Count.EqualTo(moveResults ? 4 : 2));
             if (moveResults)
             {
-                Assert.That(ids[1].idReg1(), Is.EqualTo(REG_XMM2));
-                Assert.That(ids[1].idReg2(), Is.EqualTo(REG_XMM0));
-                Assert.That(ids[2].idReg1(), Is.EqualTo(REG_XMM3));
-                Assert.That(ids[2].idReg2(), Is.EqualTo(REG_XMM1));
+                Assert.That(ids[1].idReg1(), Is.EqualTo(REG_X64_XMM2));
+                Assert.That(ids[1].idReg2(), Is.EqualTo(REG_X64_XMM0));
+                Assert.That(ids[2].idReg1(), Is.EqualTo(REG_X64_XMM3));
+                Assert.That(ids[2].idReg2(), Is.EqualTo(REG_X64_XMM1));
             }
             Assert.That(ids.Last().idIns(), Is.EqualTo(INS_insertps));
-            Assert.That(ids.Last().idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(ids.Last().idReg1(), Is.EqualTo(REG_X64_XMM1));
         });
     }
 
@@ -126,17 +134,17 @@ internal static unsafe class SysVX64CallOrchestrationTests
             {
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             }
-            AddLateArgument(compiler, call, PutArg(TYP_REF, REG_R10), REG_RDI);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_REF);
+            AddLateArgument(compiler, call, PutArg(TYP_REF, REG_X64_R10), REG_X64_RDI);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
 
             codeGen.genCall(call);
 
             var ids = Descriptors(codeGen);
             instruction[] expected = tail ? [INS_mov, INS_cmp] : [INS_mov, INS_cmp, INS_call];
             Assert.That(ids.Select(id => id.idIns()), Is.EqualTo(expected));
-            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_RDI));
-            Assert.That(ids[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RDI));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(tail ? Mask(REG_RDI) : RBM_NONE));
+            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_RDI));
+            Assert.That(ids[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RDI));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(tail ? Mask(REG_X64_RDI) : RBM_NONE));
         });
     }
 
@@ -152,27 +160,27 @@ internal static unsafe class SysVX64CallOrchestrationTests
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             }
 
-            var first = PutArg(TYP_REF, REG_R10);
-            var second = PutArg(TYP_DOUBLE, REG_XMM2);
+            var first = PutArg(TYP_REF, REG_X64_R10);
+            var second = PutArg(TYP_DOUBLE, REG_X64_XMM2);
             var fields = new GenTreeFieldList();
             fields.AddField(compiler, first, 0, TYP_REF);
             fields.AddField(compiler, second, 8, TYP_DOUBLE);
             var arg = call.Args.PushBack(NewCallArg.CreateForStruct(fields, TYP_STRUCT, new ClassLayout(16)));
-            var firstSeg = AbiPassingSegment.InRegister(REG_RDI, 0, 8);
-            var secondSeg = AbiPassingSegment.InRegister(REG_XMM0, 8, 8);
+            var firstSeg = AbiPassingSegment.InRegister(REG_X64_RDI, 0, 8);
+            var secondSeg = AbiPassingSegment.InRegister(REG_X64_XMM0, 8, 8);
             arg.AbiInfo = AbiPassingInformation.FromSegments(compiler, in firstSeg, in secondSeg);
             arg.EarlyNode = null;
             arg.LateNode = fields;
             call.Args.PushLateBack(arg);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
 
             codeGen.genCallPlaceRegArgs(call);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids.Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_mov, INS_movaps]));
-            Assert.That(ids.Select(id => id.idReg1()), Is.EqualTo((regNumber[])[REG_RDI, REG_XMM0]));
+            Assert.That(ids.Select(id => id.idReg1()), Is.EqualTo((regNumber[])[REG_X64_RDI, REG_X64_XMM0]));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
-                Is.EqualTo(tail ? Mask(REG_RDI) : RBM_NONE));
+                Is.EqualTo(tail ? Mask(REG_X64_RDI) : RBM_NONE));
         });
     }
 
@@ -185,8 +193,8 @@ internal static unsafe class SysVX64CallOrchestrationTests
             var call = DirectCall(TYP_VOID);
             var fields = new GenTreeFieldList();
             var fieldType = registerFirst ? TYP_REF : TYP_DOUBLE;
-            var register = registerFirst ? REG_RDI : REG_XMM0;
-            fields.AddField(compiler, PutArg(fieldType, registerFirst ? REG_R10 : REG_XMM2),
+            var register = registerFirst ? REG_X64_RDI : REG_X64_XMM0;
+            fields.AddField(compiler, PutArg(fieldType, registerFirst ? REG_X64_R10 : REG_X64_XMM2),
                 (ushort)(registerFirst ? 0 : 8), fieldType);
             var arg = call.Args.PushBack(NewCallArg.CreateForStruct(fields, TYP_STRUCT, new ClassLayout(16)));
             var regSegment = AbiPassingSegment.InRegister(register, registerFirst ? 0 : 8, 8);
@@ -212,22 +220,22 @@ internal static unsafe class SysVX64CallOrchestrationTests
         WithCall((compiler, codeGen) =>
         {
             var call = DirectCall(TYP_VOID);
-            var early = call.Args.PushBack(NewCallArg.CreateForPrimitive(Physical(TYP_INT, REG_RSI)));
+            var early = call.Args.PushBack(NewCallArg.CreateForPrimitive(Physical(TYP_INT, REG_X64_RSI)));
             early.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
-                AbiPassingSegment.InRegister(REG_RDI, 0, 8));
-            var stack = call.Args.PushBack(NewCallArg.CreateForPrimitive(Physical(TYP_INT, REG_R10)));
+                AbiPassingSegment.InRegister(REG_X64_RDI, 0, 8));
+            var stack = call.Args.PushBack(NewCallArg.CreateForPrimitive(Physical(TYP_INT, REG_X64_R10)));
             stack.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
                 AbiPassingSegment.OnStack(0, 0, 8));
             stack.EarlyNode = null;
-            stack.LateNode = Physical(TYP_INT, REG_R10);
+            stack.LateNode = Physical(TYP_INT, REG_X64_R10);
             call.Args.PushLateBack(stack);
-            AddLateArgument(compiler, call, PutArg(TYP_INT, REG_R11), REG_RDX);
+            AddLateArgument(compiler, call, PutArg(TYP_INT, REG_X64_R11), REG_X64_RDX);
 
             codeGen.genCallPlaceRegArgs(call);
 
             var id = Descriptors(codeGen).Single();
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RDX));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_R11));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RDX));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_R11));
         });
     }
 
@@ -236,16 +244,16 @@ internal static unsafe class SysVX64CallOrchestrationTests
     {
         WithCall((compiler, codeGen) =>
         {
-            var argument = PutArg(TYP_REF, REG_R10, REG_RDI);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_REF);
+            var argument = PutArg(TYP_REF, REG_X64_R10, REG_X64_RDI);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
 
             codeGen.genPutArgReg(argument);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_mov));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RDI));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_R10));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_RDI)));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RDI));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_R10));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_X64_RDI)));
         });
     }
 
@@ -258,8 +266,8 @@ internal static unsafe class SysVX64CallOrchestrationTests
             var call = DirectCall(TYP_VOID);
             call._callType = CT_INDIRECT;
             call._callMoreFlags |= GTF_CALL_M_TAILCALL;
-            var baseNode = Physical(memory ? TYP_REF : TYP_I_IMPL, REG_R10);
-            var index = Physical(TYP_BYREF, REG_R11);
+            var baseNode = Physical(memory ? TYP_REF : TYP_I_IMPL, REG_X64_R10);
+            var index = Physical(TYP_BYREF, REG_X64_R11);
             call.ControlExpr = memory
                 ? new GenTreeIndir(GT_IND, TYP_I_IMPL,
                     new GenTreeAddrMode(TYP_BYREF, baseNode, index, 1, 8) { IsContained = true })
@@ -267,20 +275,21 @@ internal static unsafe class SysVX64CallOrchestrationTests
                 : baseNode;
             if (memory)
             {
-                codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_REF);
-                codeGen.GCInfo.gcMarkRegPtrVal(REG_R11, TYP_BYREF);
-#if DEBUG
-                index.UseNum = 1;
-#endif
+                codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
+                codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R11, TYP_BYREF);
+                if (TestConfiguration.IsDebug)
+                {
+                    index.UseNum = 1;
+                }
             }
 
             codeGen.genCall(call);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
-                Is.EqualTo(memory ? Mask(REG_R10) : RBM_NONE));
+                Is.EqualTo(memory ? Mask(REG_X64_R10) : RBM_NONE));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
-                Is.EqualTo(memory ? Mask(REG_R11) : RBM_NONE));
+                Is.EqualTo(memory ? Mask(REG_X64_R11) : RBM_NONE));
             codeGen.genCallInstruction(call);
             Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(INS_tail_i_jmp));
         });
@@ -326,19 +335,20 @@ internal static unsafe class SysVX64CallOrchestrationTests
         {
             var call = DirectCall(TYP_VOID);
             call.Args.IsVarArgs = true;
-            var argument = PutArg(TYP_REF, REG_R10);
-            AddLateArgument(compiler, call, argument, REG_RDI);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_REF);
+            var argument = PutArg(TYP_REF, REG_X64_R10);
+            AddLateArgument(compiler, call, argument, REG_X64_RDI);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
 
             var error = Assert.Throws<FatalJitException>(() => codeGen.genCall(call));
 
             Assert.That(error?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
             Assert.That(Descriptors(codeGen), Is.Empty);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_R10)));
-#if DEBUG
-            Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-#endif
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_X64_R10)));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+            }
         });
     }
 
@@ -376,7 +386,7 @@ internal static unsafe class SysVX64CallOrchestrationTests
             PendingLabel(codeGen) = label;
             var before = codeGen.Emitter.emitCurIG;
 
-            codeGen.genCall(DirectCall(TYP_INT, REG_RCX));
+            codeGen.genCall(DirectCall(TYP_INT, REG_X64_RCX));
 
             Assert.That(PendingLabel(codeGen), Is.Null);
             Assert.That(before?.igData?.Single().idIns(), Is.EqualTo(INS_call));
@@ -391,7 +401,7 @@ internal static unsafe class SysVX64CallOrchestrationTests
         WithCall((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
-            var before = emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), Mask(REG_RAX), RBM_NONE);
+            var before = emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), Mask(REG_X64_RAX), RBM_NONE);
             emitter.emitIns(INS_nop);
             var call = DirectCall(TYP_VOID);
             call.Flags |= GTF_CALL_UNMANAGED;
@@ -405,22 +415,25 @@ internal static unsafe class SysVX64CallOrchestrationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void TailcallEpilogCheckKeepsSysVArgumentRegistersOutsideSavedAndCookieMasks()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Tailcall epilog checks require a Debug build.");
+        }
+
         WithCall((compiler, codeGen) =>
         {
             var call = DirectCall(TYP_VOID);
             call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             compiler.NeedsGSSecurityCookie = true;
-            AddLateArgument(compiler, call, PutArg(TYP_REF, REG_RDI), REG_RDI);
-            AddLateArgument(compiler, call, PutArg(TYP_DOUBLE, REG_XMM0), REG_XMM0);
+            AddLateArgument(compiler, call, PutArg(TYP_REF, REG_X64_RDI), REG_X64_RDI);
+            AddLateArgument(compiler, call, PutArg(TYP_DOUBLE, REG_X64_XMM0), REG_X64_XMM0);
 
             codeGen.genCheckTailCallEpilogRegisters(call);
         });
     }
-#endif
 
     private static void WithCall(Action<Compiler, CodeGen> action)
     {
@@ -432,7 +445,7 @@ internal static unsafe class SysVX64CallOrchestrationTests
         });
     }
 
-    private static GenTreeCall DirectCall(var_types type, regNumber register = REG_NA) => new(type)
+    private static GenTreeCall DirectCall(var_types type, regNumber register = REG_X64_NA) => new(type)
     {
         _callType = CT_USER_FUNC,
         _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x4000,
@@ -476,4 +489,3 @@ internal static unsafe class SysVX64CallOrchestrationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_returnTypeDesc")]
     private static extern ref ReturnTypeDesc CallReturnDescriptor(GenTreeCall call);
 }
-#endif

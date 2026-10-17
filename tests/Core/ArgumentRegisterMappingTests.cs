@@ -242,7 +242,7 @@ internal static unsafe class ArgumentRegisterMappingTests
 #else
         const uint expectedIndex = 4;
 #endif
-        const regNumber expectedReg = REG_RAX;
+        const regNumber expectedReg = REG_X64_RAX;
 #else
         const bool expectedFixed = false;
 #endif

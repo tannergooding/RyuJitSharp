@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,6 +14,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class SysVX64ClassifierTests
 {
+    [SetUp]
+    public static void SetUp()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("System V AMD64 classifier tests require a Unix AMD64 target.");
+        }
+    }
+
     [TestCase(SystemVClassificationTypeInteger, 0, TYP_INT)]
     [TestCase(SystemVClassificationTypeInteger, 1, TYP_INT)]
     [TestCase(SystemVClassificationTypeInteger, 4, TYP_INT)]
@@ -111,7 +119,7 @@ internal static unsafe class SysVX64ClassifierTests
             Assert.That(call.HasMultiRegRetVal, Is.True);
             Assert.That(call.ReturnTypeDesc.ReturnRegCount, Is.EqualTo(2));
             Assert.That(call.ReturnTypeDesc.GetAbiReturnRegs(CorInfoCallConvExtension.Managed),
-                Is.EqualTo(RBM_RAX | RBM_XMM0));
+                Is.EqualTo(RBM_X64_RAX | RBM_X64_XMM0));
             Assert.That(call.GetMultiRegCount(compiler), Is.EqualTo(2));
             Assert.That(metadata.QueryCount, Is.GreaterThan(0));
         });
@@ -127,28 +135,28 @@ internal static unsafe class SysVX64ClassifierTests
             var call = new GenTreeCall(TYP_STRUCT);
             call.InitializeStructReturnType(compiler, layout.ClassHandle, CorInfoCallConvExtension.Managed);
             call.ClearOtherRegs();
-            call.SetRegNumByIdx(regNumber.REG_RAX, 0);
-            call.SetRegNumByIdx(regNumber.REG_XMM0, 1);
+            call.SetRegNumByIdx(regNumber.REG_X64_RAX, 0);
+            call.SetRegNumByIdx(regNumber.REG_X64_XMM0, 1);
 
-            Assert.That(call.RegMask, Is.EqualTo(RBM_RAX | RBM_XMM0));
-            Assert.That(call.GetOtherRegMask(), Is.EqualTo(RBM_XMM0));
+            Assert.That(call.RegMask, Is.EqualTo(RBM_X64_RAX | RBM_X64_XMM0));
+            Assert.That(call.GetOtherRegMask(), Is.EqualTo(RBM_X64_XMM0));
 
             var copy = new GenTreeCopyOrReload(oper, TYP_STRUCT, call);
-            copy.SetRegNumByIdx(first ? regNumber.REG_RCX : regNumber.REG_NA, 0);
-            copy.SetRegNumByIdx(second ? regNumber.REG_XMM1 : regNumber.REG_NA, 1);
-            var expected = (first ? RBM_RCX : RBM_NONE) | (second ? RBM_XMM1 : RBM_NONE);
+            copy.SetRegNumByIdx(first ? regNumber.REG_X64_RCX : regNumber.REG_X64_NA, 0);
+            copy.SetRegNumByIdx(second ? regNumber.REG_X64_XMM1 : regNumber.REG_X64_NA, 1);
+            var expected = (first ? RBM_X64_RCX : RBM_NONE) | (second ? RBM_X64_XMM1 : RBM_NONE);
             Assert.That(copy.RegMask, Is.EqualTo(expected));
 
-            call.SetRegNumByIdx(regNumber.REG_NA, 1);
-            call.SetRegNumByIdx(regNumber.REG_RDX, 2);
+            call.SetRegNumByIdx(regNumber.REG_X64_NA, 1);
+            call.SetRegNumByIdx(regNumber.REG_X64_RDX, 2);
             Assert.That(call.GetOtherRegMask(), Is.EqualTo(RBM_NONE));
         });
     }
 
-    [TestCase(TYP_INT, 6, regNumber.REG_EDI, 4)]
-    [TestCase(TYP_DOUBLE, 8, regNumber.REG_XMM0, 8)]
-    [TestCase(TYP_REF, 6, regNumber.REG_EDI, 8)]
-    [TestCase(TYP_BYREF, 6, regNumber.REG_EDI, 8)]
+    [TestCase(TYP_INT, 6, regNumber.REG_X64_EDI, 4)]
+    [TestCase(TYP_DOUBLE, 8, regNumber.REG_X64_XMM0, 8)]
+    [TestCase(TYP_REF, 6, regNumber.REG_X64_EDI, 8)]
+    [TestCase(TYP_BYREF, 6, regNumber.REG_X64_EDI, 8)]
     public static void ScalarRegistersExhaustOnlyTheirOwnBank(
         var_types type, int capacity, regNumber firstRegister, int size)
     {
@@ -173,7 +181,7 @@ internal static unsafe class SysVX64ClassifierTests
             Assert.That(classifier.StackSize, Is.EqualTo(TARGET_POINTER_SIZE));
 
             var otherType = type is TYP_DOUBLE ? TYP_INT : TYP_DOUBLE;
-            var otherRegister = type is TYP_DOUBLE ? regNumber.REG_EDI : regNumber.REG_XMM0;
+            var otherRegister = type is TYP_DOUBLE ? regNumber.REG_X64_EDI : regNumber.REG_X64_XMM0;
             var other = classifier.Classify(compiler, otherType, null, WellKnownArg.None);
             Assert.That(other.Segments[0].Register, Is.EqualTo(otherRegister));
             Assert.That(classifier.StackSize, Is.EqualTo(TARGET_POINTER_SIZE));
@@ -181,9 +189,9 @@ internal static unsafe class SysVX64ClassifierTests
         });
     }
 
-    [TestCase(SystemVClassificationTypeInteger, SystemVClassificationTypeSSE, regNumber.REG_EDI, regNumber.REG_XMM0)]
-    [TestCase(SystemVClassificationTypeSSE, SystemVClassificationTypeInteger, regNumber.REG_XMM0, regNumber.REG_EDI)]
-    [TestCase(SystemVClassificationTypeIntegerReference, SystemVClassificationTypeIntegerByRef, regNumber.REG_EDI, regNumber.REG_ESI)]
+    [TestCase(SystemVClassificationTypeInteger, SystemVClassificationTypeSSE, regNumber.REG_X64_EDI, regNumber.REG_X64_XMM0)]
+    [TestCase(SystemVClassificationTypeSSE, SystemVClassificationTypeInteger, regNumber.REG_X64_XMM0, regNumber.REG_X64_EDI)]
+    [TestCase(SystemVClassificationTypeIntegerReference, SystemVClassificationTypeIntegerByRef, regNumber.REG_X64_EDI, regNumber.REG_X64_ESI)]
     public static void StructEightbytesRetainDescriptorOffsetsSizesAndBankOrder(
         SystemVClassificationType first, SystemVClassificationType second, regNumber firstReg, regNumber secondReg)
     {
@@ -207,8 +215,8 @@ internal static unsafe class SysVX64ClassifierTests
         });
     }
 
-    [TestCase(SystemVClassificationTypeInteger, TYP_INT, 5, regNumber.REG_R9)]
-    [TestCase(SystemVClassificationTypeSSE, TYP_DOUBLE, 7, regNumber.REG_XMM7)]
+    [TestCase(SystemVClassificationTypeInteger, TYP_INT, 5, regNumber.REG_X64_R9)]
+    [TestCase(SystemVClassificationTypeSSE, TYP_DOUBLE, 7, regNumber.REG_X64_XMM7)]
     public static void InsufficientBankCapacitySpillsEntireStructWithoutConsumingLastRegister(
         SystemVClassificationType classification, var_types scalar, int consumed, regNumber remaining)
     {
@@ -229,8 +237,8 @@ internal static unsafe class SysVX64ClassifierTests
         });
     }
 
-    [TestCase(TYP_INT, 6, TYP_DOUBLE, regNumber.REG_XMM0)]
-    [TestCase(TYP_DOUBLE, 8, TYP_INT, regNumber.REG_EDI)]
+    [TestCase(TYP_INT, 6, TYP_DOUBLE, regNumber.REG_X64_XMM0)]
+    [TestCase(TYP_DOUBLE, 8, TYP_INT, regNumber.REG_X64_EDI)]
     public static void MixedAggregateNeedsBothBanksWithoutConsumingTheOther(
         var_types exhaustedType, int consumed, var_types otherType, regNumber remaining)
     {
@@ -279,7 +287,7 @@ internal static unsafe class SysVX64ClassifierTests
             AssertStack(classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None), stackSize, size);
             Assert.That(classifier.StackSize, Is.EqualTo(stackSize * 2));
             Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].Register,
-                Is.EqualTo(regNumber.REG_EDI));
+                Is.EqualTo(regNumber.REG_X64_EDI));
             Assert.That(metadata.QueryCount, Is.EqualTo(2));
         });
     }
@@ -294,7 +302,7 @@ internal static unsafe class SysVX64ClassifierTests
             Assert.That(secret.Segments[0].Register, Is.EqualTo(REG_SECRET_STUB_PARAM));
             Assert.That(secret.Segments[0].Size, Is.EqualTo(TARGET_POINTER_SIZE));
             Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].Register,
-                Is.EqualTo(regNumber.REG_EDI));
+                Is.EqualTo(regNumber.REG_X64_EDI));
             Assert.That(classifier.StackSize, Is.Zero);
             Assert.That(metadata.QueryCount, Is.Zero);
         });
@@ -350,7 +358,7 @@ internal static unsafe class SysVX64ClassifierTests
             compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
             compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.lvaParameterPassingInfo = [AbiPassingInformation.FromSegments(compiler,
-                AbiPassingSegment.InRegister(REG_RDI, 0, 8), AbiPassingSegment.InRegister(REG_XMM0, 8, 8))];
+                AbiPassingSegment.InRegister(REG_X64_RDI, 0, 8), AbiPassingSegment.InRegister(REG_X64_XMM0, 8, 8))];
             compiler.info.compVarScopes = [
                 new() { vsdVarNum = 0, vsdLVnum = 0, vsdLifeBeg = 0, vsdLifeEnd = 10 },
             ];
@@ -361,11 +369,7 @@ internal static unsafe class SysVX64ClassifierTests
             codeGen.initializeVariableLiveKeeper();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             codeGen.Emitter.emitBegProlog();
 
             codeGen.psiBegProlog();
@@ -373,9 +377,9 @@ internal static unsafe class SysVX64ClassifierTests
             var range = codeGen.getVariableLiveKeeper().getLiveRangesForVarForProlog(0)[0];
             Assert.That(range.m_VarLocation.vlType, Is.EqualTo(ICorDebugInfo.VarLocType.VLT_REG_REG));
             Assert.That(range.m_VarLocation.vlRegReg.vlrrReg1,
-                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_RDI)));
+                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_X64_RDI)));
             Assert.That(range.m_VarLocation.vlRegReg.vlrrReg2,
-                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_XMM0)));
+                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_X64_XMM0)));
         });
     }
 
@@ -482,4 +486,3 @@ internal static unsafe class SysVX64ClassifierTests
         return 1;
     }
 }
-#endif

@@ -191,16 +191,6 @@ public partial class Compiler
     /// <summary>Variable representing async continuation argument passed.</summary>
     public int lvaAsyncContinuationArg = BAD_VAR_NUM;
 
-#if DEBUG
-    /// <summary>Stores SP to confirm it is not corrupted on return.</summary>
-    public int lvaReturnSpCheck = BAD_VAR_NUM;
-#endif
-
-#if DEBUG
-    /// <summary>Stores SP to confirm it is not corrupted after every call.</summary>
-    public int lvaCallSpCheck = BAD_VAR_NUM;
-#endif
-
     public bool lvaGenericsContextInUse;
 
     public unsafe bool lvaKeepAliveAndReportThis()

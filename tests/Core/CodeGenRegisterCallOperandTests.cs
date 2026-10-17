@@ -3,9 +3,7 @@
 #if !TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -92,18 +90,23 @@ internal static unsafe class CodeGenRegisterCallOperandTests
             Assert.That(CodeGenShiftTests.Descriptors(codeGen), Is.Empty);
             Assert.That((codeGen.GCInfo.gcRegGCrefSetCur & mask).IsNonEmpty, Is.EqualTo(type == TYP_REF));
             Assert.That((codeGen.GCInfo.gcRegByrefSetCur & mask).IsNonEmpty, Is.EqualTo(type == TYP_BYREF));
-#if DEBUG
-            Assert.That((tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED) != 0, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That((tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED) != 0, Is.True);
+            }
         });
     }
 #endif
 
-#if DEBUG && TARGET_ARM
     [TestCase(4, 0)]
     [TestCase(8, 1)]
     public static void TailcallEpilogChecksIncludeTheSecondArmDoubleRegister(int size, int expectedAssertions)
     {
+        if (!Configuration.TARGET_ARM || !TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Tailcall epilog checks require an ARM Debug build.");
+        }
+
         WithCompiler((compiler, codeGen) =>
         {
             var call = new GenTreeCall(TYP_VOID);
@@ -118,16 +121,18 @@ internal static unsafe class CodeGenRegisterCallOperandTests
             Assert.That(s_assertions, Is.EqualTo(expectedAssertions), s_lastAssertion);
         });
     }
-#endif
 
     private static void WithCompiler(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-#endif
+        ICorJitInfo ee = default;
+        if (TestConfiguration.IsDebug)
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ee = new ICorJitInfo { lpVtbl = &vtable };
+        }
+        using var tls = TestConfiguration.CreateJitTls(TestConfiguration.IsDebug ? &ee : null);
+
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -147,7 +152,6 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         }
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
     {
@@ -155,6 +159,5 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         s_lastAssertion = Marshal.PtrToStringUTF8((nint)expression);
         return 0;
     }
-#endif
 }
 #endif

@@ -56,13 +56,17 @@ public sealed partial class CodeGen
         parameters.isJump = call.IsFastTailCall;
         parameters.hasAsyncRet = call.IsAsync;
         parameters.returnValueCall = call;
-#if DEBUG
-        if (!call.IsHelperCall())
+        if (Configuration.DEBUG)
         {
-            parameters.sigInfo = new System.Runtime.CompilerServices.StrongBox<CORINFO_SIG_INFO>(call.CallSigInfo.Value);
+            if (!call.IsHelperCall())
+            {
+                parameters.sigInfo = new System.Runtime.CompilerServices.StrongBox<CORINFO_SIG_INFO>(
+                    call.CallSigInfo.Value);
+            }
         }
+
         genCheckTailCallEpilogRegisters(call);
-#endif
+
         var target = getCallTarget(call, out parameters.methHnd);
         if (target is not null)
         {

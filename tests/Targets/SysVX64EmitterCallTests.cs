@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -16,6 +16,15 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64EmitterCallTests
 {
+    [SetUp]
+    public static void SetUp()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("System V AMD64 call tests require a Unix AMD64 target.");
+        }
+    }
+
     [TestCase(EmitCallType.EC_FUNC_TOKEN, EA_64BIT_GCREF, GCT_GCREF)]
     [TestCase(EmitCallType.EC_FUNC_TOKEN, EA_64BIT_BYREF, GCT_BYREF)]
     [TestCase(EmitCallType.EC_INDIR_R, EA_64BIT_GCREF, GCT_GCREF)]
@@ -30,7 +39,7 @@ internal static unsafe class SysVX64EmitterCallTests
             if (type == EmitCallType.EC_INDIR_R)
             {
                 parameters.addr = null;
-                parameters.ireg = REG_R11;
+                parameters.ireg = REG_X64_R11;
             }
             parameters.retSize = EA_GCREF;
             parameters.secondRetSize = secondReturn;
@@ -40,8 +49,8 @@ internal static unsafe class SysVX64EmitterCallTests
             Assert.That(id.idIsLargeCall(), Is.True);
             Assert.That(id.NativeLogicalSize, Is.EqualTo(72));
             Assert.That(CallView.SecondReturn(id), Is.EqualTo(gcType));
-            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_RAX | (gcType == GCT_GCREF ? SRBM_RDX : 0)));
-            Assert.That(ThisByrefs(emitter), Is.EqualTo(gcType == GCT_BYREF ? SRBM_RDX : 0));
+            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_X64_RAX | (gcType == GCT_GCREF ? SRBM_X64_RDX : 0)));
+            Assert.That(ThisByrefs(emitter), Is.EqualTo(gcType == GCT_BYREF ? SRBM_X64_RDX : 0));
         });
     }
 
@@ -54,13 +63,14 @@ internal static unsafe class SysVX64EmitterCallTests
             var parameters = Parameters(compiler);
             parameters.callType = EmitCallType.EC_INDIR_R;
             parameters.addr = null;
-            parameters.ireg = REG_R11;
+            parameters.ireg = REG_X64_R11;
             parameters.retSize = EA_GCREF;
             parameters.secondRetSize = secondReturn;
             parameters.noSafePoint = true;
-#if DEBUG
-            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>();
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>();
+            }
             emitter.emitIns_Call(parameters);
             var id = Last(emitter);
             var buffer = stackalloc byte[32];
@@ -69,9 +79,10 @@ internal static unsafe class SysVX64EmitterCallTests
             emitter.emitSimpleStkUsed = true;
             ThisRefs(emitter) = SRBM_NONE;
             ThisByrefs(emitter) = SRBM_NONE;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                EmitIssuing(emitter) = true;
+            }
             SyncThisRegister(emitter) = REG_NA;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.recordCallSite = &RecordCallSite;
@@ -83,8 +94,8 @@ internal static unsafe class SysVX64EmitterCallTests
 
             Assert.That(size, Is.EqualTo((nuint)72));
             Assert.That(end - buffer, Is.EqualTo(3));
-            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_RAX | (gcType == GCT_GCREF ? SRBM_RDX : 0)));
-            Assert.That(ThisByrefs(emitter), Is.EqualTo(gcType == GCT_BYREF ? SRBM_RDX : 0));
+            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_X64_RAX | (gcType == GCT_GCREF ? SRBM_X64_RDX : 0)));
+            Assert.That(ThisByrefs(emitter), Is.EqualTo(gcType == GCT_BYREF ? SRBM_X64_RDX : 0));
         });
     }
 
@@ -120,8 +131,8 @@ internal static unsafe class SysVX64EmitterCallTests
                 throw new AssertionException("Missing active code generator.");
             }
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
-            codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_RBX);
-            codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_R12);
+            codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_X64_RBX);
+            codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_X64_R12);
             var parameters = Parameters(compiler);
             parameters.retSize = EA_GCREF;
             parameters.secondRetSize = EA_BYREF;
@@ -130,18 +141,14 @@ internal static unsafe class SysVX64EmitterCallTests
 
             var id = Last(emitter);
             Assert.That(id.idIsLargeCall(), Is.True);
-            Assert.That(CallView.Refs(id), Is.EqualTo(new regMaskTP(SRBM_RBX)));
-            Assert.That(CallView.Byrefs(id), Is.EqualTo(new regMaskTP(SRBM_R12)));
-            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_RBX | SRBM_RAX));
-            Assert.That(ThisByrefs(emitter), Is.EqualTo(SRBM_R12 | SRBM_RDX));
+            Assert.That(CallView.Refs(id), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
+            Assert.That(CallView.Byrefs(id), Is.EqualTo(new regMaskTP(SRBM_X64_R12)));
+            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_X64_RBX | SRBM_X64_RAX));
+            Assert.That(ThisByrefs(emitter), Is.EqualTo(SRBM_X64_R12 | SRBM_X64_RDX));
         });
     }
 
-    [TestCase(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_ENTER, SRBM_RDI, true)]
-    [TestCase(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_ENTER, SRBM_RAX, false)]
-    [TestCase(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_LEAVE, SRBM_RDX, true)]
-    [TestCase(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_LEAVE, SRBM_RAX, true)]
-    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF, SRBM_RDI, false)]
+    [TestCaseSource(nameof(HelperCallsPreserveSysVArgumentAndReturnRegistersCases))]
     public static void HelperCallsPreserveSysVArgumentAndReturnRegisters(
         CorInfoHelpFunc helper, regMask register, bool survives)
     {
@@ -155,6 +162,20 @@ internal static unsafe class SysVX64EmitterCallTests
             Assert.That(ThisRefs(emitter), Is.EqualTo(survives ? register : SRBM_NONE));
             Assert.That(Last(emitter).idIsLargeCall(), Is.EqualTo(survives));
         });
+    }
+
+    private static IEnumerable<TestCaseData> HelperCallsPreserveSysVArgumentAndReturnRegistersCases()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_ENTER, SRBM_X64_RDI, true);
+        yield return new TestCaseData(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_ENTER, SRBM_X64_RAX, false);
+        yield return new TestCaseData(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_LEAVE, SRBM_X64_RDX, true);
+        yield return new TestCaseData(CorInfoHelpFunc.CORINFO_HELP_PROF_FCN_LEAVE, SRBM_X64_RAX, true);
+        yield return new TestCaseData(CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF, SRBM_X64_RDI, false);
     }
 
     private static EmitCallParams Parameters(Compiler compiler) => new()
@@ -202,6 +223,9 @@ internal static unsafe class SysVX64EmitterCallTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
     private static extern ref regNumber SyncThisRegister(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
+    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [System.Runtime.InteropServices.UnmanagedCallersOnly(
         CallConvs = [typeof(System.Runtime.CompilerServices.CallConvMemberFunction)])]
@@ -254,11 +278,7 @@ internal static unsafe class SysVX64EmitterCallTests
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
+            codeGen.Emitter.emitBegFN(true);
             AllInt(compiler) = SRBM_ALLINT_ALL;
             IntTrash(compiler) = SRBM_INT_CALLEE_TRASH_ALL;
             FloatTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
@@ -276,4 +296,3 @@ internal static unsafe class SysVX64EmitterCallTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
-#endif

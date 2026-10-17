@@ -37,7 +37,7 @@ internal static unsafe class Arm64AndUnixEmitterNoGCCallMaskTests
                 compiler.SRBM_INT_CALLEE_TRASH | compiler.SRBM_FLT_CALLEE_TRASH, compiler.SRBM_MSK_CALLEE_TRASH);
             var profilerEnter = scratch & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
             var profilerLeave = scratch & ~new regMaskTP(
-                SRBM_FLOATRET | SRBM_INTRET | SRBM_FLOATRET_1 | SRBM_INTRET_1);
+                SRBM_FLOATRET | SRBM_INTRET | SRBM_FLOATRET_1_AMD64 | SRBM_INTRET_1_AMD64);
             var defaultKill = scratch;
             var interfaceTrash = profilerEnter;
             var normalSaved = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED,

@@ -37,9 +37,10 @@ internal static unsafe class EmitterCallInstructionTests
         Assert.That(parameters.disp, Is.EqualTo((nint)0));
         Assert.That(parameters.isJump || parameters.noSafePoint, Is.False);
         Assert.That(parameters.returnValueCall, Is.Null);
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             Assert.That(parameters.sigInfo, Is.Null);
-#endif
+        }
     }
 
     [TestCase(EC_FUNC_TOKEN, false, IF_XARCH_METHOD, INS_call, 5u)]
@@ -393,21 +394,24 @@ internal static unsafe class EmitterCallInstructionTests
             parameters.noSafePoint = true;
             parameters.byrefRegs = new(SRBM_X64_RBX);
             parameters.retSize = EA_GCREF;
-#if DEBUG
-            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>();
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>();
+            }
             codeGen.Emitter.emitIns_Call(parameters);
             var id = Last(codeGen.Emitter);
             Assert.That(id.idIsNoGC(), Is.True);
             Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(SRBM_X64_RAX));
             Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(SRBM_X64_RBX));
-#if DEBUG
-            var info = id.idDebugOnlyInfo();
-            assert(info is not null);
-            Assert.That(info.idMemCookie, Is.EqualTo((nint)parameters.methHnd));
-            Assert.That(info.idCallSig, Is.SameAs(parameters.sigInfo));
-            Assert.That(info.idSize, Is.EqualTo((nuint)72));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var info = id.idDebugOnlyInfo();
+                assert(info is not null);
+                var debugInfo = info!;
+                Assert.That(debugInfo.idMemCookie, Is.EqualTo((nint)parameters.methHnd));
+                Assert.That(debugInfo.idCallSig, Is.SameAs(parameters.sigInfo));
+                Assert.That(debugInfo.idSize, Is.EqualTo((nuint)72));
+            }
         });
     }
 
@@ -478,10 +482,14 @@ internal static unsafe class EmitterCallInstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsCallsAndGcState()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Call diagnostic output requires a Debug build.");
+        }
+
         WithEmitter((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
@@ -497,7 +505,7 @@ internal static unsafe class EmitterCallInstructionTests
             {
                 compiler.opts.doLateDisasm = true;
             }
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
@@ -521,7 +529,6 @@ internal static unsafe class EmitterCallInstructionTests
             }
         });
     }
-#endif
 
     private static EmitCallParams Parameters(Compiler compiler, EmitCallType type) => new()
     {

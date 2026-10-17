@@ -155,9 +155,7 @@ public sealed partial class CodeGen
         BasicBlock? endLabel = null;
         nint lastTouchDelta = -1;
 
-#if DEBUG
-        genStackPointerCheck(_compiler.opts.compStackCheckOnRet, _compiler.lvaReturnSpCheck);
-#endif
+        genStackPointerCheck(_compiler.compStackCheckOnRet, _compiler.lvaReturnSpCheck);
         noway_assert(IsFramePointerUsed);
         noway_assert(genStackLevel == 0);
         nuint stackAdjustment = 0;
@@ -292,7 +290,7 @@ public sealed partial class CodeGen
         }
 
 #if DEBUG
-        if (_compiler.opts.compStackCheckOnRet)
+        if (_compiler.compStackCheckOnRet)
         {
             assert(_compiler.lvaReturnSpCheck != BAD_VAR_NUM);
             assert(_compiler.lvaGetDesc(_compiler.lvaReturnSpCheck).lvDoNotEnregister);

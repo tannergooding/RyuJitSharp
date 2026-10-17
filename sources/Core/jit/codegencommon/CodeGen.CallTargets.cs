@@ -60,7 +60,7 @@ public sealed partial class CodeGen
         return result;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void genCheckTailCallEpilogRegisters(GenTreeCall call)
     {
         if (Configuration.TARGET_WASM)
@@ -108,5 +108,4 @@ public sealed partial class CodeGen
             }
         }
     }
-#endif
 }

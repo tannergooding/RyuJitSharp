@@ -13835,7 +13835,7 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-        if (Configuration.TARGET_XARCH && opts.compStackCheckOnRet)
+        if (Configuration.TARGET_XARCH && compStackCheckOnRet)
         {
             lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false, "ReturnSpCheck");
             lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason.ReturnSpCheck);
@@ -13845,7 +13845,7 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-        if (Configuration.TARGET_X86 && opts.compStackCheckOnCall)
+        if (Configuration.TARGET_X86 && compStackCheckOnCall)
         {
             lvaCallSpCheck = lvaGrabTempWithImplicitUse(false, "CallSpCheck");
             lvaSetVarDoNotEnregister(lvaCallSpCheck, DoNotEnregisterReason.CallSpCheck);

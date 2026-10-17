@@ -21,7 +21,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenCallTests
 {
-#if DEBUG
     [TestCase(REG_X64_RCX, true, false, 0)]
     [TestCase(REG_X64_RBX, true, false, 1)]
     [TestCase(REG_X64_XMM0, true, false, 0)]
@@ -35,6 +34,11 @@ internal static unsafe class CodeGenCallTests
     public static void TailCallEpilogChecksUseNativeRegisterPositions(
         regNumber reg, bool tailCall, bool cookie, int expectedAssertions)
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Tailcall epilog checks require a Debug build.");
+        }
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             if (cookie)
@@ -58,7 +62,7 @@ internal static unsafe class CodeGenCallTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.doAssert = &RecordEpilogAssertion;
             var context = new EpilogAssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-            using var tls = new JitTls(&context.JitInfo);
+            using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
 
             codeGen.genCheckTailCallEpilogRegisters(call);
 
@@ -81,7 +85,6 @@ internal static unsafe class CodeGenCallTests
         context->LastExpression = expression;
         return 0;
     }
-#endif
 
     [TestCase(TYP_INT, REG_X64_RAX, REG_X64_RAX)]
     [TestCase(TYP_INT, REG_X64_RCX, REG_X64_RAX)]
@@ -113,10 +116,11 @@ internal static unsafe class CodeGenCallTests
                 Is.EqualTo(type == TYP_REF ? Mask(allocated) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(type == TYP_BYREF ? Mask(allocated) : default));
-#if DEBUG
-            Assert.That(call._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(call._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+            }
         });
     }
 
@@ -218,10 +222,11 @@ internal static unsafe class CodeGenCallTests
             Assert.That(label.bbEmitCookie, Is.Null);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(memory ? Mask(REG_X64_R10) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(memory ? Mask(REG_X64_R11) : default));
-#if DEBUG
-            Assert.That(baseNode._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(baseNode._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            }
             codeGen.genCallInstruction(call);
             Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(INS_tail_i_jmp));
         });
@@ -248,7 +253,6 @@ internal static unsafe class CodeGenCallTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_REF, REG_X64_RBX, true, 1)]
     [TestCase(TYP_BYREF, REG_X64_RBX, true, 1)]
     [TestCase(TYP_LONG, REG_X64_RBX, true, 0)]
@@ -259,6 +263,11 @@ internal static unsafe class CodeGenCallTests
     public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
         var_types type, regNumber reg, bool unmanaged, int expectedAssertions)
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("P/Invoke epilog assertions require a Debug build.");
+        }
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = Call(TYP_VOID);
@@ -272,7 +281,7 @@ internal static unsafe class CodeGenCallTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.doAssert = &RecordEpilogAssertion;
             var context = new EpilogAssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-            using var tls = new JitTls(&context.JitInfo);
+            using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
             JitTls.Compiler = compiler;
 
             codeGen.genCall(call);
@@ -282,7 +291,6 @@ internal static unsafe class CodeGenCallTests
                     Marshal.PtrToStringUTF8((nint)context.LastExpression));
         });
     }
-#endif
 
     [TestCase(false, false)]
     [TestCase(false, true)]
@@ -373,10 +381,14 @@ internal static unsafe class CodeGenCallTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsCallAndUpdatesCallState()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Call disassembly diagnostics require a Debug build.");
+        }
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = Call(TYP_REF, REG_X64_RAX);
@@ -386,7 +398,7 @@ internal static unsafe class CodeGenCallTests
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var first = codeGen.Emitter.emitCurIG;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCall(call));
@@ -395,7 +407,6 @@ internal static unsafe class CodeGenCallTests
             Assert.That(diagnostic, Does.Contain("<unknown method>"));
         });
     }
-#endif
 
     private static GenTreeCall Call(var_types type, regNumber reg = REG_X64_NA) => new(type)
     {

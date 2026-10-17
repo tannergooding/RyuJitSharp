@@ -117,30 +117,29 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (compiler.verbose && id.idIsLargeCall())
+        if (Configuration.DEBUG)
         {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            jitprintf($"[{debugInfo.idNum:D2}] Rec call GC vars = " +
-                $"{VarSetOps.ToString(compiler, ((instrDescCGCA)id).idcGCvars)}\n");
-        }
+            if (compiler.verbose && id.idIsLargeCall())
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                jitprintf($"[{debugInfo.idNum:D2}] Rec call GC vars = " +
+                    $"{VarSetOps.ToString(compiler, ((instrDescCGCA)id).idcGCvars)}\n");
+            }
 
-        if (_debugInfoSize > 0)
-        {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-#if DEBUG
-            debugInfo.idCallSig = parameters.sigInfo;
-#endif
-            debugInfo.idMemCookie = unchecked((nint)parameters.methHnd);
-        }
+            if (_debugInfoSize > 0)
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                debugInfo.idCallSig = parameters.sigInfo;
+                debugInfo.idMemCookie = unchecked((nint)parameters.methHnd);
+            }
 
-        if (Configuration.LATE_DISASM && (parameters.addr != null))
-        {
-            codeGen.Disassembler.disSetMethod((nuint)parameters.addr, parameters.methHnd);
+            if (Configuration.LATE_DISASM && (parameters.addr != null))
+            {
+                codeGen.Disassembler.disSetMethod((nuint)parameters.addr, parameters.methHnd);
+            }
         }
-#endif
 
         appendToCurIG(id);
     }

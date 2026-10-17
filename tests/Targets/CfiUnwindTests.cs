@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -14,15 +13,16 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CfiUnwindTests
 {
-    [TestCase(REG_RAX, 0)]
-    [TestCase(REG_RCX, 2)]
-    [TestCase(REG_RDX, 1)]
-    [TestCase(REG_RBX, 3)]
-    [TestCase(REG_RSP, 7)]
-    [TestCase(REG_RBP, 6)]
-    [TestCase(REG_RSI, 4)]
-    [TestCase(REG_RDI, 5)]
-    [TestCaseSource(nameof(HighIntegerRegisters))]
+    [SetUp]
+    public static void SetUp()
+    {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("CFI unwind tests require a Unix AMD64 target.");
+        }
+    }
+
+    [TestCaseSource(nameof(FrameRegisterCases))]
     public static void FrameRegisterUsesDwarfNumber(regNumber reg, int dwarfReg)
     {
         WithCfiProlog((compiler, codeGen) =>
@@ -33,8 +33,22 @@ internal static unsafe class CfiUnwindTests
         });
     }
 
-    private static IEnumerable<TestCaseData> HighIntegerRegisters()
+    private static IEnumerable<TestCaseData> FrameRegisterCases()
     {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(REG_X64_RAX, 0);
+        yield return new TestCaseData(REG_X64_RCX, 2);
+        yield return new TestCaseData(REG_X64_RDX, 1);
+        yield return new TestCaseData(REG_X64_RBX, 3);
+        yield return new TestCaseData(REG_X64_RSP, 7);
+        yield return new TestCaseData(REG_X64_RBP, 6);
+        yield return new TestCaseData(REG_X64_RSI, 4);
+        yield return new TestCaseData(REG_X64_RDI, 5);
+
         for (var index = 8; index <= 31; index++)
         {
             yield return new TestCaseData((regNumber)index, index);
@@ -47,9 +61,9 @@ internal static unsafe class CfiUnwindTests
         WithCfiProlog((compiler, codeGen) =>
         {
             CurrentSize(codeGen.Emitter) = 5;
-            compiler.unwindPush2(REG_RBX, REG_R12);
+            compiler.unwindPush2(REG_X64_RBX, REG_X64_R12);
             CurrentSize(codeGen.Emitter) = 9;
-            compiler.unwindPush(REG_RAX);
+            compiler.unwindPush(REG_X64_RAX);
             AssertCodes(compiler,
                 new CFI_CODE(5, 0, -1, 8),
                 new CFI_CODE(5, 2, 3, 0),
@@ -67,7 +81,7 @@ internal static unsafe class CfiUnwindTests
     {
         WithCfiProlog((compiler, _) =>
         {
-            compiler.unwindSetFrameReg(REG_RBP, offset);
+            compiler.unwindSetFrameReg(REG_X64_RBP, offset);
             var codes = compiler.funCurrentFunc().cfiCodes ?? throw new AssertionException("Missing CFI codes.");
             Assert.That(codes.Count, Is.EqualTo(offset == 0 ? 1 : 2));
             Assert.That(codes[0].CfiOpCode, Is.EqualTo(1));
@@ -100,8 +114,8 @@ internal static unsafe class CfiUnwindTests
         WithCfiProlog((compiler, codeGen) =>
         {
             CurrentSize(codeGen.Emitter) = 11;
-            compiler.unwindSaveReg(REG_RDI, 64);
-            compiler.unwindSaveReg(REG_RBX, uint.MaxValue);
+            compiler.unwindSaveReg(REG_X64_RDI, 64);
+            compiler.unwindSaveReg(REG_X64_RBX, uint.MaxValue);
             AssertCodes(compiler, new CFI_CODE(11, 2, 3, -1));
         });
     }
@@ -111,7 +125,7 @@ internal static unsafe class CfiUnwindTests
     {
         WithCfiProlog((compiler, _) =>
         {
-            PushMask(compiler, genRegMask(REG_RBX) | genRegMask(REG_R12), false);
+            PushMask(compiler, genRegMask(REG_X64_RBX) | genRegMask(REG_X64_R12), false);
             AssertCodes(compiler,
                 new CFI_CODE(0, 0, -1, 8),
                 new CFI_CODE(0, 2, 12, 0),
@@ -126,7 +140,7 @@ internal static unsafe class CfiUnwindTests
     {
         WithCfiProlog((compiler, _) =>
         {
-            PushMask(compiler, empty ? default : genRegMask(REG_RAX), false);
+            PushMask(compiler, empty ? default : genRegMask(REG_X64_RAX), false);
             if (empty)
             {
                 AssertCodes(compiler);
@@ -143,7 +157,7 @@ internal static unsafe class CfiUnwindTests
     {
         WithCfiProlog((compiler, codeGen) =>
         {
-            compiler.unwindPush(REG_RBX);
+            compiler.unwindPush(REG_X64_RBX);
             var oldCodes = compiler.funCurrentFunc().cfiCodes;
             compiler.unwindEndProlog();
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing group.");
@@ -160,7 +174,7 @@ internal static unsafe class CfiUnwindTests
             Assert.That(func.cfiCodes, Is.Not.SameAs(oldCodes));
             Assert.That(func.startLoc?.GetIG(), Is.SameAs(group));
             Assert.That(func.endLoc, Is.Null);
-            compiler.unwindPush(REG_RBX);
+            compiler.unwindPush(REG_X64_RBX);
             AssertCodes(compiler, new CFI_CODE(0, 0, -1, 8), new CFI_CODE(0, 2, 3, 0));
         });
     }
@@ -174,7 +188,7 @@ internal static unsafe class CfiUnwindTests
             if (!empty)
             {
                 CurrentSize(codeGen.Emitter) = 7;
-                compiler.unwindSaveReg(REG_RBX, 32);
+                compiler.unwindSaveReg(REG_X64_RBX, 32);
             }
 
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -216,12 +230,13 @@ internal static unsafe class CfiUnwindTests
     {
         WithCfiProlog((compiler, _) =>
         {
-            compiler.unwindSaveReg(REG_RBX, 32);
+            compiler.unwindSaveReg(REG_X64_RBX, 32);
             ref var func = ref compiler.funCurrentFunc();
             var hotEnd = new insGroup { igOffs = 32 };
-#if DEBUG
-            hotEnd.igSelf = hotEnd;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                InstructionGroupSelf(hotEnd) = hotEnd;
+            }
             func.endLoc = new emitLocation(hotEnd);
             func.coldStartLoc = new emitLocation(hotEnd);
             compiler.fgFirstColdBlock = new BasicBlock(null, null);
@@ -267,6 +282,9 @@ internal static unsafe class CfiUnwindTests
         Assert.That(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(actual)).ToArray(),
             Is.EqualTo(MemoryMarshal.AsBytes(expected.AsSpan()).ToArray()));
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "igSelf")]
+    private static extern ref insGroup? InstructionGroupSelf(insGroup group);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int CurrentSize(Emitter emitter);
@@ -327,4 +345,3 @@ internal static unsafe class CfiUnwindTests
         }
     }
 }
-#endif

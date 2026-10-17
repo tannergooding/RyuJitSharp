@@ -344,7 +344,7 @@ internal static unsafe class CodeGenReturnTests
     {
         WithReturn(TYP_VOID, (compiler, codeGen) =>
         {
-            compiler.opts.compStackCheckOnRet = true;
+            compiler.compStackCheckOnRet = true;
             compiler.lvaReturnSpCheck = 0;
             compiler.lvaSetVarDoNotEnregister(0, DoNotEnregisterReason.ReturnSpCheck);
             compiler.lvaTable[0].Type = TYP_I_IMPL;

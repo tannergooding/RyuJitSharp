@@ -1237,12 +1237,14 @@ public sealed partial class CodeGen
             returnValueCall = call,
         };
 
-#if DEBUG
-        if (!call.IsHelperCall())
+        if (Configuration.DEBUG)
         {
-            parameters.sigInfo = new System.Runtime.CompilerServices.StrongBox<CORINFO_SIG_INFO>(call.CallSigInfo.Value);
+            if (!call.IsHelperCall())
+            {
+                parameters.sigInfo = new System.Runtime.CompilerServices.StrongBox<CORINFO_SIG_INFO>(
+                    call.CallSigInfo.Value);
+            }
         }
-#endif
 
         var target = getCallTarget(call, out parameters.methHnd);
         var typeStack = new ArrayStack<CorInfoWasmType>();
@@ -1344,7 +1346,7 @@ public sealed partial class CodeGen
         if (target is not null)
         {
             // Wasm targets are table indices and must be consumed for call_indirect.
-            genConsumeReg(target);
+            _ = genConsumeReg(target);
 
             parameters.callType = EC_INDIR_R;
             genEmitWasmCallWithCurrentGC(call, wasmSignature, ref parameters);

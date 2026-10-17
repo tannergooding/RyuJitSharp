@@ -2312,11 +2312,11 @@ public partial class Compiler
             {
                 dwJitStackChecks = STACK_CHECK_ALL;
             }
-            opts.compStackCheckOnRet = (dwJitStackChecks & STACK_CHECK_ON_RETURN) != 0;
+            compStackCheckOnRet = (dwJitStackChecks & STACK_CHECK_ON_RETURN) != 0;
 
             if (Configuration.TARGET_X86)
             {
-                opts.compStackCheckOnCall = (dwJitStackChecks & STACK_CHECK_ON_CALL) != 0;
+                compStackCheckOnCall = (dwJitStackChecks & STACK_CHECK_ON_CALL) != 0;
             }
         }
 #endif

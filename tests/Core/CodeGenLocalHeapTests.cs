@@ -217,7 +217,7 @@ internal static class CodeGenLocalHeapTests
     {
         WithHeap(0, false, (compiler, codeGen) =>
         {
-            compiler.opts.compStackCheckOnRet = true;
+            compiler.compStackCheckOnRet = true;
             compiler.lvaReturnSpCheck = 0;
             compiler.lvaTable[0].lvDoNotEnregister = true;
             var first = codeGen.Emitter.emitCurIG;

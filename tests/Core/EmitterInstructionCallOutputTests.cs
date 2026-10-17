@@ -201,9 +201,7 @@ internal static unsafe class EmitterInstructionCallOutputTests
                 retSize = retSize,
                 hasAsyncRet = asyncReturn,
                 noSafePoint = noSafePoint,
-#if DEBUG
-                sigInfo = new StrongBox<CORINFO_SIG_INFO>(),
-#endif
+                sigInfo = TestConfiguration.IsDebug ? new StrongBox<CORINFO_SIG_INFO>() : null,
             };
             emitter.emitIns_Call(parameters);
             var id = LastInstruction(emitter) ?? throw new AssertionException("Missing recorded call.");
@@ -214,9 +212,10 @@ internal static unsafe class EmitterInstructionCallOutputTests
             emitter.writeableOffset = 0;
             emitter.emitSimpleStkUsed = true;
             emitter.emitCurStackLvl = 0;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                EmitIssuing(emitter) = true;
+            }
             GCrefRegs(emitter) = SRBM_RBX;
             ByrefRegs(emitter) = large ? SRBM_R12 : SRBM_NONE;
 
@@ -235,14 +234,17 @@ internal static unsafe class EmitterInstructionCallOutputTests
 
     private static void AssertCallSite(CallbackContext* callbacks, int offset, nint methodHandle)
     {
-#if DEBUG
-        Assert.That(callbacks->CallSites, Is.EqualTo(1));
-        Assert.That(callbacks->CallOffset, Is.EqualTo(offset));
-        Assert.That(callbacks->CallMethod, Is.EqualTo(methodHandle));
-        Assert.That(callbacks->HadSignature, Is.True);
-#else
-        Assert.That(callbacks->CallSites, Is.Zero);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(callbacks->CallSites, Is.EqualTo(1));
+            Assert.That(callbacks->CallOffset, Is.EqualTo(offset));
+            Assert.That(callbacks->CallMethod, Is.EqualTo(methodHandle));
+            Assert.That(callbacks->HadSignature, Is.True);
+        }
+        else
+        {
+            Assert.That(callbacks->CallSites, Is.Zero);
+        }
     }
 
     private static void AssertRegisterBirth(GCInfo.regPtrDsc record, GCInfo.GCtype type,
@@ -292,6 +294,9 @@ internal static unsafe class EmitterInstructionCallOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
     private static extern ref regNumber SyncThisRegister(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
+    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask GCrefRegs(Emitter emitter);
