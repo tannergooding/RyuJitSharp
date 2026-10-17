@@ -98,8 +98,8 @@ public sealed partial class CodeGen
                     ? SRBM_INT_CALLEE_SAVED_AMD64 : SRBM_INT_CALLEE_SAVED_X86)).IsEmpty);
         }
 
-#if DEBUG
-        if (Configuration.TARGET_X86 && _compiler.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
+        if (Configuration.DEBUG && Configuration.TARGET_X86 &&
+            _compiler.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
         {
             assert(_compiler.lvaCallSpCheck != BAD_VAR_NUM);
             ref var local = ref _compiler.lvaGetDesc(_compiler.lvaCallSpCheck);
@@ -107,7 +107,6 @@ public sealed partial class CodeGen
             assert(local.lvOnFrame);
             Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_X86_ESP, _compiler.lvaCallSpCheck, 0);
         }
-#endif
         if (Emitter.Contains256BitOrMoreAvxInstruction && call.NeedsVzeroupper(_compiler))
         {
             // A single prolog vzeroupper is insufficient when this method also uses wide vectors.
@@ -195,7 +194,7 @@ public sealed partial class CodeGen
             GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_X86_EAX));
         }
 
-        if (Configuration.TARGET_X86)
+        if (Configuration.DEBUG && Configuration.TARGET_X86)
         {
             genStackPointerCheck(_compiler.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
                 _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes, REG_ARG_0_X86);

@@ -3,15 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if DEBUG
-    private GenTree? lastConsumedNode;
-
     public void genNumberOperandUse(GenTree operand, ref int useNum)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
+        }
+
         assert(operand.UseNum == -1);
 
         if (!operand.IsContained && !operand.Oper.IsCopyOrReload)
@@ -28,8 +32,20 @@ public sealed partial class CodeGen
         }
     }
 
+    [Conditional("DEBUG")]
+    private void genPrepareNodeConsumption(GenTree node)
+    {
+        _compiler.SetLastConsumedNode(null);
+        if (_compiler.verbose)
+        {
+            _compiler.gtDispLIRNode(node, "Generating: ");
+        }
+    }
+
+    [Conditional("DEBUG")]
     private void genCheckConsumeNode(GenTree node)
     {
+        var lastConsumedNode = _compiler.LastConsumedNode;
         if (_verbose)
         {
             if (node.UseNum == -1)
@@ -52,12 +68,8 @@ public sealed partial class CodeGen
         assert((node._debugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0);
         assert((lastConsumedNode is null) || (node.UseNum == -1) || (node.UseNum > lastConsumedNode.UseNum));
         node._debugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
-        lastConsumedNode = node;
+        _compiler.SetLastConsumedNode(node);
     }
-#else
-    public void genNumberOperandUse(GenTree operand, ref int useNum)
-        => throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
-#endif
 
     public void genCopyRegIfNeeded(GenTree node, regNumber needReg)
     {
@@ -220,9 +232,7 @@ public sealed partial class CodeGen
         }
 #endif
 
-#if DEBUG
         genCheckConsumeNode(tree);
-#endif
         return tree.RegNum;
     }
 

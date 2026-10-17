@@ -42,10 +42,11 @@ public partial class Compiler
         }
         else
         {
-#if DEBUG
-            fgSafeBasicBlockCreation = false;
-            fgSafeFlowEdgeCreation = false;
-#endif
+            if (Configuration.DEBUG)
+            {
+                fgSafeBasicBlockCreation = false;
+                fgSafeFlowEdgeCreation = false;
+            }
             var unreachableInfo = new MorphUnreachableInfo(this);
             genReturnBB?.SetFlags(BBF_CAN_ADD_PRED);
             BasicBlock? firstILBlock = null;
@@ -64,10 +65,11 @@ public partial class Compiler
             }
             assert(maximumBlockNumber == fgBBNumMax);
 
-#if DEBUG
-            fgSafeBasicBlockCreation = true;
-            fgSafeFlowEdgeCreation = true;
-#endif
+            if (Configuration.DEBUG)
+            {
+                fgSafeBasicBlockCreation = true;
+                fgSafeFlowEdgeCreation = true;
+            }
             genReturnBB?.RemoveFlags(BBF_CAN_ADD_PRED);
             firstILBlock?.RemoveFlags(BBF_CAN_ADD_PRED);
         }

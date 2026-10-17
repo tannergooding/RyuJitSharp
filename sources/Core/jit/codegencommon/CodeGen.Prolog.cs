@@ -578,15 +578,13 @@ public sealed partial class CodeGen
                 }
             }
         }
-#if DEBUG
-        if (Configuration.TARGET_XARCH && _compiler.compStackCheckOnRet)
+        if (Configuration.DEBUG && Configuration.TARGET_XARCH && _compiler.compStackCheckOnRet)
         {
             assert(_compiler.lvaReturnSpCheck != BAD_VAR_NUM);
             assert(_compiler.lvaGetDesc(_compiler.lvaReturnSpCheck).lvDoNotEnregister);
             assert(_compiler.lvaGetDesc(_compiler.lvaReturnSpCheck).lvOnFrame);
             Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, _compiler.lvaReturnSpCheck, 0);
         }
-#endif
         Emitter.emitEndProlog();
     }
 

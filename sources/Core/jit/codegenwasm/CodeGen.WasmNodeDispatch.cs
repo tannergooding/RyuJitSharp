@@ -39,13 +39,7 @@ public sealed partial class CodeGen
 
     private unsafe void genCodeForTreeNodeWasm(GenTree treeNode)
     {
-#if DEBUG
-        lastConsumedNode = null;
-        if (_compiler.verbose)
-        {
-            _compiler.gtDispLIRNode(treeNode, "Generating: ");
-        }
-#endif
+        genPrepareNodeConsumption(treeNode);
 
         assert(!treeNode.IsReuseRegVal);
         if (treeNode.IsContained)

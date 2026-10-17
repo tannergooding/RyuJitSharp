@@ -11,13 +11,15 @@ public sealed partial class CodeGen
 
     public BasicBlock genCreateTempLabel()
     {
-#if DEBUG
-        _compiler.fgSafeBasicBlockCreation = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _compiler.fgSafeBasicBlockCreation = true;
+        }
         var block = BasicBlock.New(_compiler);
-#if DEBUG
-        _compiler.fgSafeBasicBlockCreation = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _compiler.fgSafeBasicBlockCreation = false;
+        }
         if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"Mark {FMT_BB(block.bbNum)} as label: codegen temp block\n");
@@ -25,17 +27,17 @@ public sealed partial class CodeGen
         block.SetFlags(BBF_HAS_LABEL);
         assert(_compiler.compCurBB is not null);
         block.CopyFlags(_compiler.compCurBB, BBF_COLD);
-#if DEBUG
-        if (Configuration.UNIX_X86_ABI)
+        if (Configuration.DEBUG)
         {
-            block.bbTgtStkDepth = unchecked((int)((genStackLevel - curNestedAlignment) / sizeof(int)));
+            if (Configuration.UNIX_X86_ABI)
+            {
+                block.bbTgtStkDepth = unchecked((int)((genStackLevel - curNestedAlignment) / sizeof(int)));
+            }
+            else
+            {
+                block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
+            }
         }
-        else
-        {
-            block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
-        }
-#endif
-
         return block;
     }
 

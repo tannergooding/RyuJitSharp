@@ -21,14 +21,16 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         WithDriver((compiler, codeGen, block) =>
         {
             codeGen.genCodeForBBlist();
-#if DEBUG
-            Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
+            }
             Assert.That(block.HasFlag(BBF_HAS_LABEL), Is.True);
             Assert.That(VarSetOps.IsEmpty(compiler, compiler.compCurLife), Is.True);
-#if DEBUG
-            Assert.That(codeGen.IsGcTypeFixed, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.IsGcTypeFixed, Is.True);
+            }
         });
     }
 #endif

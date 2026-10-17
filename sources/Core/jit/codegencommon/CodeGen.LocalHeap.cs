@@ -155,7 +155,10 @@ public sealed partial class CodeGen
         BasicBlock? endLabel = null;
         nint lastTouchDelta = -1;
 
-        genStackPointerCheck(_compiler.compStackCheckOnRet, _compiler.lvaReturnSpCheck);
+        if (Configuration.DEBUG)
+        {
+            genStackPointerCheck(_compiler.compStackCheckOnRet, _compiler.lvaReturnSpCheck);
+        }
         noway_assert(IsFramePointerUsed);
         noway_assert(genStackLevel == 0);
         nuint stackAdjustment = 0;
@@ -289,15 +292,13 @@ public sealed partial class CodeGen
             Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, _compiler.lvaLocAllocSPvar, 0);
         }
 
-#if DEBUG
-        if (_compiler.compStackCheckOnRet)
+        if (Configuration.DEBUG && _compiler.compStackCheckOnRet)
         {
             assert(_compiler.lvaReturnSpCheck != BAD_VAR_NUM);
             assert(_compiler.lvaGetDesc(_compiler.lvaReturnSpCheck).lvDoNotEnregister);
             assert(_compiler.lvaGetDesc(_compiler.lvaReturnSpCheck).lvOnFrame);
             Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, _compiler.lvaReturnSpCheck, 0);
         }
-#endif
         genProduceReg(tree);
     }
 }

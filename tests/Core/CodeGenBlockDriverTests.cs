@@ -47,14 +47,15 @@ internal static unsafe class CodeGenBlockDriverTests
             Assert.That(VarSetOps.IsEmpty(compiler, compiler.compCurLife), Is.True);
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
             Assert.That(LastPlaceholder(codeGen.Emitter)?.igFlags & InsGroupFlags.Epilog, Is.EqualTo(InsGroupFlags.Epilog));
-#if DEBUG
-            Assert.That(constant._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(negation._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(codeGen.IsGcTypeFixed, Is.True);
-            Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(constant._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(negation._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(codeGen.IsGcTypeFixed, Is.True);
+                Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
+            }
         });
     }
 

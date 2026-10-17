@@ -43,9 +43,15 @@ internal static class UnknownSizeFrameConfigurationTests
             Assert.That(compiler.compLocallocUsed, Is.True);
             Assert.That(compiler.unkSizeFrame.nVector, Is.EqualTo(supported ? 0u : 3u));
             Assert.That(compiler.unkSizeFrame.nMask, Is.EqualTo(supported ? 0u : 9u));
-#if DEBUG
-            Assert.That(compiler.unkSizeFrame.isFinalized, Is.EqualTo(!supported));
-#endif
+            Assert.That(compiler.unkSizeFrame.isFinalized, Is.EqualTo(TestConfiguration.IsDebug && !supported));
+            Assert.That(compiler.fgSafeBasicBlockCreation, Is.True);
+            Assert.That(compiler.fgSafeFlowEdgeCreation, Is.True);
+
+            if (!TestConfiguration.IsDebug)
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.fgSafeBasicBlockCreation = false);
+                _ = Assert.Throws<InvalidOperationException>(() => compiler.fgSafeFlowEdgeCreation = false);
+            }
         });
     }
 
@@ -111,6 +117,12 @@ internal static class UnknownSizeFrameConfigurationTests
         {
             Assert.That(frame.GetOffset(maskCount - 1, isMask: true), Is.EqualTo(-unchecked((int)maskCount)));
         }
+    }
+
+    [Test]
+    public static void FrameFinalizationStateHasTheExpectedManagedSize()
+    {
+        Assert.That(Unsafe.SizeOf<Compiler.UnknownSizeFrame>(), Is.EqualTo(12));
     }
 
     [TestCase(16u)]

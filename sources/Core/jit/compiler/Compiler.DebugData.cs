@@ -18,6 +18,9 @@ public partial class Compiler
         internal long CompCycles;
         internal int InlineMethodXmlFilePosition;
         internal Dictionary<int, LocalDebugData>? LocalVariables;
+        internal GenTree? LastConsumedNode;
+        internal bool SafeBasicBlockCreation = true;
+        internal bool SafeFlowEdgeCreation = true;
         internal bool StackCheckOnRet;
         internal bool StackCheckOnCall;
         internal int ReturnSpCheck = BAD_VAR_NUM;
@@ -71,6 +74,82 @@ public partial class Compiler
 
         localData.TrackedWithoutIndex = value;
         SetLocalDebugData(data, localNumber, localData);
+    }
+
+    internal GenTree? LastConsumedNode => GetExistingDebugData()?.LastConsumedNode;
+
+    [Conditional("DEBUG")]
+    internal void SetLastConsumedNode(GenTree? node)
+    {
+        if (node is null)
+        {
+            if (GetExistingDebugData() is { } data)
+            {
+                data.LastConsumedNode = null;
+            }
+        }
+        else
+        {
+            GetDebugData().LastConsumedNode = node;
+        }
+    }
+
+    /// <summary>When false, assert when creating a new basic block.</summary>
+    public bool fgSafeBasicBlockCreation
+    {
+        get
+        {
+            return !Configuration.DEBUG || (GetExistingDebugData()?.SafeBasicBlockCreation ?? true);
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Basic-block creation state is only available in Debug builds.");
+            }
+
+            if (value)
+            {
+                if (GetExistingDebugData() is { } data)
+                {
+                    data.SafeBasicBlockCreation = true;
+                }
+            }
+            else
+            {
+                GetDebugData().SafeBasicBlockCreation = false;
+            }
+        }
+    }
+
+    /// <summary>When false, assert when creating a new flow edge.</summary>
+    public bool fgSafeFlowEdgeCreation
+    {
+        get
+        {
+            return !Configuration.DEBUG || (GetExistingDebugData()?.SafeFlowEdgeCreation ?? true);
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Flow-edge creation state is only available in Debug builds.");
+            }
+
+            if (value)
+            {
+                if (GetExistingDebugData() is { } data)
+                {
+                    data.SafeFlowEdgeCreation = true;
+                }
+            }
+            else
+            {
+                GetDebugData().SafeFlowEdgeCreation = false;
+            }
+        }
     }
 
     private static void SetLocalDebugData(DebugData data, int localNumber, LocalDebugData localData)

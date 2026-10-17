@@ -15,12 +15,6 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspCode")]
     private static extern ref bool DspCode(ref Compiler.Options options);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgSafeBasicBlockCreation")]
-    private static extern ref bool SafeBasicBlockCreation(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgSafeFlowEdgeCreation")]
-    private static extern ref bool SafeFlowEdgeCreation(Compiler compiler);
-
     public static bool IsDebug => Configuration.DEBUG;
 
     public static unsafe IDisposable? CreateJitTls()
@@ -67,13 +61,13 @@ internal static partial class TestConfiguration
     [Conditional("DEBUG")]
     public static void EnableSafeBasicBlockCreation(Compiler compiler)
     {
-        SafeBasicBlockCreation(compiler) = true;
+        compiler.fgSafeBasicBlockCreation = true;
     }
 
     [Conditional("DEBUG")]
     public static void DisableSafeBasicBlockCreation(Compiler compiler)
     {
-        SafeBasicBlockCreation(compiler) = false;
+        compiler.fgSafeBasicBlockCreation = false;
     }
 
     public static void SetCompilerFullName(Compiler compiler, string name)
@@ -103,7 +97,7 @@ internal static partial class TestConfiguration
     [Conditional("DEBUG")]
     public static void EnableSafeFlowEdgeCreation(Compiler compiler)
     {
-        SafeFlowEdgeCreation(compiler) = true;
+        compiler.fgSafeFlowEdgeCreation = true;
     }
 
     public static void EnableVerbose(Compiler compiler)

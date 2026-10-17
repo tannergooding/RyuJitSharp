@@ -1991,17 +1991,6 @@ public partial class Compiler
 
     public bool fgNeedToSortEHTable;
 
-#if DEBUG
-    /// <summary>When false, assert when creating a new basic block.</summary>
-    public bool fgSafeBasicBlockCreation = true;
-
-    /// <summary>When false, assert when creating a new flow edge</summary>
-    public bool fgSafeFlowEdgeCreation = true;
-#else
-    public bool fgSafeBasicBlockCreation => true;
-    public bool fgSafeFlowEdgeCreation => true;
-#endif
-
     /// <summary>Set to TRUE to turn off struct promotion for this method.</summary>
     public bool fgNoStructPromotion;
 

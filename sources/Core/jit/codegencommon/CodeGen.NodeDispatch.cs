@@ -25,13 +25,7 @@ public sealed partial class CodeGen
         var targetTypeNonXarch = tree.Type;
         var emit = GetEmitter();
 
-#if DEBUG
-        lastConsumedNode = null;
-        if (_compiler.verbose)
-        {
-            _compiler.gtDispLIRNode(tree, "Generating: ");
-        }
-#endif
+        genPrepareNodeConsumption(tree);
 
         if (tree.IsReuseRegVal)
         {
@@ -545,7 +539,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    genConsumeReg(operand);
+                    _ = genConsumeReg(operand);
                 }
                 break;
             }
@@ -712,21 +706,24 @@ public sealed partial class CodeGen
 
             default:
             {
-#if DEBUG
-                var message = Configuration.TARGET_RISCV64
-                    ? $"NYI: Unimplemented node type {tree.Oper}"
-                    : $"NYI: Unimplemented node type {tree.Oper}\n";
-                NYIRAW(message);
-#else
-                if (Configuration.TARGET_RISCV64)
+                if (Configuration.DEBUG)
                 {
-                    NYI_RISCV64("some node type in genCodeForTreeNode-----unimplemented/unused on RISCV64 yet----");
+                    var message = Configuration.TARGET_RISCV64
+                        ? $"NYI: Unimplemented node type {tree.Oper}"
+                        : $"NYI: Unimplemented node type {tree.Oper}\n";
+                    NYIRAW(message);
                 }
                 else
                 {
-                    NYI("unimplemented node");
+                    if (Configuration.TARGET_RISCV64)
+                    {
+                        NYI_RISCV64("some node type in genCodeForTreeNode-----unimplemented/unused on RISCV64 yet----");
+                    }
+                    else
+                    {
+                        NYI("unimplemented node");
+                    }
                 }
-#endif
                 if (Configuration.TARGET_RISCV64)
                 {
                     throw new FatalJitException(CORJIT_SKIPPED, "Unimplemented node type in code generation.");
@@ -739,14 +736,8 @@ public sealed partial class CodeGen
 
         var targetReg = !Configuration.TARGET_64BIT && tree.Type == TYP_LONG ? REG_NA : tree.RegNum;
         var targetType = tree.Type;
-#if DEBUG
         // Operand-use ordering is local to each generated node.
-        lastConsumedNode = null;
-        if (_compiler.verbose)
-        {
-            _compiler.gtDispLIRNode(tree, "Generating: ");
-        }
-#endif
+        genPrepareNodeConsumption(tree);
         if (tree.IsReuseRegVal)
         {
             genCodeForReuseVal(tree);
@@ -1301,10 +1292,11 @@ public sealed partial class CodeGen
 
             default:
             {
-#if DEBUG
-                // Native OpName formats the complete GT_ operator name.
-                NYIRAW($"NYI: Unimplemented node type {tree.Oper}\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    // Native OpName formats the complete GT_ operator name.
+                    NYIRAW($"NYI: Unimplemented node type {tree.Oper}\n");
+                }
                 assert(false, "!\"Unknown node in codegen\"");
                 break;
             }

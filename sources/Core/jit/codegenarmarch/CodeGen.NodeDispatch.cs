@@ -19,13 +19,7 @@ public sealed partial class CodeGen
         var targetReg = treeNode.RegNum;
         var targetType = treeNode.Type;
 
-#if DEBUG
-        lastConsumedNode = null;
-        if (_compiler.verbose)
-        {
-            _compiler.gtDispLIRNode(treeNode, "Generating: ");
-        }
-#endif
+        genPrepareNodeConsumption(treeNode);
 
         if (treeNode.IsReuseRegVal)
         {
@@ -591,7 +585,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    genConsumeReg(operand);
+                    _ = genConsumeReg(operand);
                 }
                 break;
             }

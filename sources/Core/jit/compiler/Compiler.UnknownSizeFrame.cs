@@ -29,9 +29,7 @@ public partial class Compiler
         public uint nVector;
         public uint nMask;
 
-#if DEBUG
         public bool isFinalized;
-#endif
 
         public readonly uint MaskBlockSizeInVectors()
         {
@@ -45,9 +43,7 @@ public partial class Compiler
 
         public uint AllocMask()
         {
-#if DEBUG
             assert(!isFinalized);
-#endif
             var index = nMask;
             nMask = unchecked(nMask + 1);
             return index;
@@ -55,9 +51,7 @@ public partial class Compiler
 
         public uint AllocVector()
         {
-#if DEBUG
             assert(!isFinalized);
-#endif
             var index = nVector;
             nVector = unchecked(nVector + 1);
             return index;
@@ -65,9 +59,7 @@ public partial class Compiler
 
         public readonly int GetOffset(uint index, bool isMask = false)
         {
-#if DEBUG
             assert(isFinalized);
-#endif
             uint offset;
             if (isMask)
             {
@@ -107,12 +99,13 @@ public partial class Compiler
         }
 
         [SuppressMessage("Style", "IDE0251:Make member readonly",
-            Justification = "Finalization mutates native debug-only state.")]
+            Justification = "Finalization mutates diagnostic state only in Debug builds.")]
         public void FinalizeLayout()
         {
-#if DEBUG
-            isFinalized = true;
-#endif
+            if (Configuration.DEBUG)
+            {
+                isFinalized = true;
+            }
         }
     }
 
@@ -124,9 +117,10 @@ public partial class Compiler
         }
 
         compUsesUnknownSizeFrame = false;
-#if DEBUG
-        unkSizeFrame.isFinalized = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            unkSizeFrame.isFinalized = false;
+        }
         unkSizeFrame.nMask = 0;
         unkSizeFrame.nVector = 0;
     }

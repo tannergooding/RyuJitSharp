@@ -21,9 +21,7 @@ public sealed partial class CodeGen
         }
 
         assert(_compiler.compLocallocUsed && _compiler.compUsesUnknownSizeFrame);
-#if DEBUG
         assert(_compiler.unkSizeFrame.isFinalized);
-#endif
         var totalVectorCount = _compiler.unkSizeFrame.FrameSizeInVectors();
 
         // SVE local offsets are based at the top of the UnknownSizeFrame.
