@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if COUNT_AST_OPERS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_MEM_ALLOC || EMITTER_STATS
 using System.IO;
 
 namespace RyuJitSharp;
@@ -42,9 +41,12 @@ public partial class Globals
     internal static nuint NativeFlowEdgeSize => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(FlowEdge) is not ported.");
 #endif
 
-#if MEASURE_MEM_ALLOC
-    internal static readonly Histogram memAllocHist = new([64, 128, 192, 256, 512, 1024, 4096, 8192, 0]);
-#endif
+    private static class MemAllocHistogram
+    {
+        internal static readonly Histogram Instance = new([64, 128, 192, 256, 512, 1024, 4096, 8192, 0]);
+    }
+
+    internal static Histogram memAllocHist => MemAllocHistogram.Instance;
 
 #if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
@@ -53,4 +55,3 @@ public partial class Globals
     }
 #endif
 }
-#endif

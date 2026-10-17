@@ -260,7 +260,6 @@ public partial class Compiler
         }
 #endif
 
-#if MEASURE_MEM_ALLOC
         if (s_dspMemStats)
         {
             jitprintf("\nAll allocations:\n");
@@ -278,7 +277,6 @@ public partial class Compiler
             jitprintf("---------------------------------------------------\n");
             jitprintf("Native arena memory used per method is unavailable for managed allocations.\n");
         }
-#endif
 
 #if LOOP_HOIST_STATS
 #if DEBUG
@@ -346,9 +344,7 @@ public partial class Compiler
         jitprintf($"   NYI:                 {s_fatalNyiCount}\n");
 #endif
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
         DumpOnShutdown.DumpAll();
-#endif
     }
 
     internal static FileStream? OpenJitOutputFile(string path)

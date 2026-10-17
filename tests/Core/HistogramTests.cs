@@ -107,7 +107,6 @@ internal static class HistogramTests
         Assert.That(Capture(histogram), Is.EqualTo("  (no data recorded)\n"));
     }
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
     [TestCase(0L, "0\n")]
     [TestCase(-1L, "-1\n")]
     [TestCase(long.MinValue, "-9223372036854775808\n")]
@@ -138,11 +137,17 @@ internal static class HistogramTests
         counts.record(genTreeOps.GT_MUL);
         NodeStorage(counts)[(int)genTreeOps.GT_SUB] = int.MinValue;
 
+        var useShortNames = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0;
+        var subName = useShortNames ? "SUB" : "GT_SUB";
+        var addName = useShortNames ? "ADD" : "GT_ADD";
+        var mulName = useShortNames ? "MUL" : "GT_MUL";
+        var cnsIntName = useShortNames ? "CNS_INT" : "GT_CNS_INT";
+
         Assert.That(Capture(counts), Is.EqualTo(
-            "SUB".PadRight(20) + " : 2147483648\n" +
-            "ADD".PadRight(20) + " :       2\n" +
-            "MUL".PadRight(20) + " :       2\n" +
-            "CNS_INT".PadRight(20) + " :       1\n"));
+            subName.PadRight(20) + " : 2147483648\n" +
+            addName.PadRight(20) + " :       2\n" +
+            mulName.PadRight(20) + " :       2\n" +
+            cnsIntName.PadRight(20) + " :       1\n"));
     }
 
     [Test]
@@ -156,7 +161,8 @@ internal static class HistogramTests
             }
         });
 
-        Assert.That(Capture(counts), Is.EqualTo("ADD".PadRight(20) + " :    4096\n"));
+        var addName = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0 ? "ADD" : "GT_ADD";
+        Assert.That(Capture(counts), Is.EqualTo(addName.PadRight(20) + " :    4096\n"));
     }
 
     [TestCase(int.MaxValue, 0x80000000U)]
@@ -168,12 +174,12 @@ internal static class HistogramTests
         counts.record(genTreeOps.GT_ADD);
 
         Assert.That(unchecked((uint)NodeStorage(counts)[(int)genTreeOps.GT_ADD]), Is.EqualTo(expected));
-        Assert.That(Capture(counts), Is.EqualTo(expected == 0 ? "" : "ADD".PadRight(20) + $" : {expected,7}\n"));
+        var addName = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0 ? "ADD" : "GT_ADD";
+        Assert.That(Capture(counts), Is.EqualTo(expected == 0 ? "" : addName.PadRight(20) + $" : {expected,7}\n"));
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_counts")]
     private static extern ref int[] NodeStorage(NodeCounts counts);
-#endif
 
     internal static string Capture(Dumpable dumpable)
     {

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 using System;
 using System.IO;
 using System.Threading;
@@ -60,4 +59,3 @@ public sealed class NodeCounts : Dumpable
         }
     }
 }
-#endif

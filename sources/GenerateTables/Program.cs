@@ -842,7 +842,7 @@ public enum genTreeOps : byte
             }
 
             var name = parts[0].Trim();
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        \"{name}\", // GT_{name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            \"{name}\", // GT_{name}");
         });
 
         var structTypesBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
@@ -956,10 +956,11 @@ public static partial class genTreeOpsExtensions
         }
     }
 
-#if DEBUG || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
-    private static readonly string[] s_names = [
-{{namesBuilder}}    ];
-#endif
+    private static class NameTable
+    {
+        internal static readonly string[] s_names = [
+{{namesBuilder}}        ];
+    }
 
 #if DEBUG || MEASURE_NODE_SIZE
     private static readonly Type[] s_structTypes = [

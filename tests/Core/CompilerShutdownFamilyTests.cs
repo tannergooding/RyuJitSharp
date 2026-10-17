@@ -82,9 +82,7 @@ internal static class CompilerShutdownFamilyTests
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-#if MEASURE_MEM_ALLOC
             Compiler.s_dspMemStats = false;
-#endif
 
             Compiler.compShutdown();
             writer.Flush();
@@ -142,9 +140,7 @@ internal static class CompilerShutdownFamilyTests
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-#if MEASURE_MEM_ALLOC
             Compiler.s_dspMemStats = true;
-#endif
 #if MEASURE_BLOCK_SIZE
             BasicBlock.s_Count = 9;
             BasicBlock.s_Size = -1;
@@ -227,7 +223,6 @@ internal static class CompilerShutdownFamilyTests
     }
 #endif
 
-#if MEASURE_MEM_ALLOC
     [Test]
     public static void ManagedAllocationStatsAggregateConcurrentCompilationsAndTrackTheMaximum()
     {
@@ -267,7 +262,6 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(text, Does.Contain("Native arena memory used per method is unavailable for managed allocations."));
         });
     }
-#endif
 
 #if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || EMITTER_STATS
 #if NODEBASH_STATS
@@ -583,9 +577,7 @@ internal static class CompilerShutdownFamilyTests
 #if MEASURE_BLOCK_SIZE
         var blocks = (BasicBlock.s_Count, BasicBlock.s_Size);
 #endif
-#if MEASURE_MEM_ALLOC
         var displayMemory = Compiler.s_dspMemStats;
-#endif
         JitConfig = new JitConfigValues();
         CsvFile(null) = null;
         TimeLogFile(null) = 0;
@@ -617,9 +609,7 @@ internal static class CompilerShutdownFamilyTests
 #if MEASURE_BLOCK_SIZE
             (BasicBlock.s_Count, BasicBlock.s_Size) = blocks;
 #endif
-#if MEASURE_MEM_ALLOC
             Compiler.s_dspMemStats = displayMemory;
-#endif
         }
     }
 

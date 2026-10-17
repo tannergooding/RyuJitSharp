@@ -3,22 +3,31 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+using System.Threading;
+
 namespace RyuJitSharp;
 
 public sealed class DumpOnShutdown
 {
-    private static readonly (string? Name, Dumpable? Dumpable)[] s_entries = new (string?, Dumpable?)[16];
+    private static bool s_hasEntries;
+
+    private static class EntryTable
+    {
+        internal static readonly (string? Name, Dumpable? Dumpable)[] Entries = new (string?, Dumpable?)[16];
+    }
 
     public DumpOnShutdown(string? name, Dumpable? dumpable)
     {
-        for (var i = 0; i < s_entries.Length; i++)
+        var entries = EntryTable.Entries;
+
+        for (var i = 0; i < entries.Length; i++)
         {
-            ref var entry = ref s_entries[i];
+            ref var entry = ref entries[i];
 
             if ((entry.Name is null) && (entry.Dumpable is null))
             {
                 entry = (name, dumpable);
+                Volatile.Write(ref s_hasEntries, true);
                 return;
             }
         }
@@ -28,7 +37,12 @@ public sealed class DumpOnShutdown
 
     public static void DumpAll()
     {
-        foreach (var entry in s_entries)
+        if (!Volatile.Read(ref s_hasEntries))
+        {
+            return;
+        }
+
+        foreach (var entry in EntryTable.Entries)
         {
             if (entry.Name is not null)
             {
@@ -43,4 +57,3 @@ public sealed class DumpOnShutdown
         }
     }
 }
-#endif

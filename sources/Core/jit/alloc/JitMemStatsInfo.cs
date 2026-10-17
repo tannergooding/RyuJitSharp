@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_MEM_ALLOC
 using System.IO;
 using System.Threading;
 
@@ -99,4 +98,3 @@ internal static class JitMemStatsInfo
         ManagedAllocationStats.dumpMethodMemStats(output, managedBytesAllocated);
     }
 }
-#endif

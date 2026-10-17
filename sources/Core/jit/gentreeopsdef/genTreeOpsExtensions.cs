@@ -375,18 +375,19 @@ public static partial class genTreeOpsExtensions
             }
         }
 
-#if DEBUG || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
         public string Name
         {
             get
             {
-                assert(s_names.Length == (int)(GT_COUNT));
-                return s_names[(int)(oper)];
+                if (Configuration.DEBUG || (JitConfig.DisplayMemStats != 0))
+                {
+                    assert(NameTable.s_names.Length == (int)(GT_COUNT));
+                    return NameTable.s_names[(int)(oper)];
+                }
+
+                return oper.ToString();
             }
         }
-#else
-        public string Name => oper.ToString();
-#endif
 
         public genTreeOps ReverseRelop
         {

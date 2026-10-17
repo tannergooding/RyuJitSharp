@@ -27,22 +27,20 @@ public partial class Compiler
         genMethodCnt = unchecked(genMethodCnt + 1);
 #endif
 
-#if MEASURE_MEM_ALLOC
-        var managedBytesAllocated = ManagedBytesAllocated;
-        JitMemStatsInfo.finishMemStats(managedBytesAllocated);
+        if (s_dspMemStats)
+        {
+            var managedBytesAllocated = ManagedBytesAllocated;
+            JitMemStatsInfo.finishMemStats(managedBytesAllocated);
 
-        var managedBytes = unchecked((ulong)managedBytesAllocated);
-        memAllocHist.record(unchecked((uint)((managedBytes + 1023) / 1024)));
+            var managedBytes = unchecked((ulong)managedBytesAllocated);
+            memAllocHist.record(unchecked((uint)((managedBytes + 1023) / 1024)));
 
 #if DEBUG
-        if (s_dspMemStats || verbose)
-        {
             jitprintf($"\nAllocations for {eeGetMethodFullName(info.compMethodHnd)} " +
                 $"(MethodHash={unchecked((uint)info.compMethodHash()):x8})\n");
             JitMemStatsInfo.dumpMethodMemStats(jitstdout(), managedBytesAllocated);
+#endif
         }
-#endif
-#endif
 
         if (JitConfig.JitReportMetrics != 0)
         {

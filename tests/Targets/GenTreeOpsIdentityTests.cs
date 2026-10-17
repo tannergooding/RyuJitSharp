@@ -25,11 +25,8 @@ internal static class GenTreeOpsIdentityTests
             }
 
             var name = oper.ToString();
-#if DEBUG || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
-            Assert.That(oper.Name, Is.EqualTo(name[3..]), name);
-#else
-            Assert.That(oper.Name, Is.EqualTo(name), name);
-#endif
+            var useShortName = TestConfiguration.IsDebug || Globals.JitConfig.DisplayMemStats != 0;
+            Assert.That(oper.Name, Is.EqualTo(useShortName ? name[3..] : name), name);
             _ = oper.Kind;
             Assert.That(Enum.TryParse<VNFunc>($"VNF_{name[3..]}", out var func), Is.True, name);
             Assert.That((int)func, Is.EqualTo((int)oper), name);

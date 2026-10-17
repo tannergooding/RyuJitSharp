@@ -2320,9 +2320,7 @@ public partial class Compiler
         }
 #endif
 
-#if MEASURE_MEM_ALLOC
         s_dspMemStats = JitConfig.DisplayMemStats != 0;
-#endif
 
         if (Configuration.PROFILING_SUPPORTED)
         {

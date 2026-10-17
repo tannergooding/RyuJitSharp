@@ -272,10 +272,8 @@ public partial class Compiler
     /// <summary>the currently active phase dumps</summary>
     public PhaseDumps activePhaseDumps = PhaseDumps.DUMP_ALL;
 
-#if MEASURE_MEM_ALLOC
     /// <summary>Display per-phase memory statistics for every function</summary>
     public static bool s_dspMemStats;
-#endif
 
 #if LOOP_HOIST_STATS
     public int _loopsConsidered;
@@ -409,16 +407,10 @@ public partial class Compiler
 
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
-        if (inlineInfo is null)
+        if (inlineInfo is null &&
+            ((JitConfig.DisplayMemStats != 0) || (JitConfig.JitReportMetrics != 0) || (JitConfig.JitTimeLogCsv is not null)))
         {
-#if MEASURE_MEM_ALLOC
             _allocatedBytesAtStart = GC.GetAllocatedBytesForCurrentThread();
-#else
-            if ((JitConfig.JitReportMetrics != 0) || (JitConfig.JitTimeLogCsv is not null))
-            {
-                _allocatedBytesAtStart = GC.GetAllocatedBytesForCurrentThread();
-            }
-#endif
         }
 
         impInlineInfo = inlineInfo;

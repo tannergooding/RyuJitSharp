@@ -31,7 +31,7 @@ column reads the same root-thread delta at its own reporting point; native uses
 arena allocation rather than arena usage for that column. The exclusion applies
 only to allocation values; neighboring semantic metrics still must compare.
 
-When optional `MEASURE_MEM_ALLOC` reporting is enabled, the managed port aggregates
+When `JitMemStats` reporting is enabled, the managed port aggregates
 that same per-root-compilation GC-allocation delta and records its rounded-up KB
 histogram. It does not synthesize native allocation-call counts, per-kind totals,
 or arena capacity/used bytes; shutdown states explicitly that arena usage is not
