@@ -271,6 +271,36 @@ internal static unsafe class CodeGenConstantTests
         });
     }
 
+    [Test]
+    public static void IntegerHandleConstantForwardsDebugMetadata()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            var tree = compiler.gtNewIconHandleNode((nint)0x1234, GTF_ICON_CLASS_HDL);
+            var constant = tree.AsIntCon();
+            if (TestConfiguration.IsDebug)
+            {
+                constant.TargetHandle = (nint)0x4321;
+            }
+
+            codeGen.genSetRegToConst(REG_X64_RCX, TYP_I_IMPL, tree);
+
+            var debugInfo = Last(codeGen).idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredInfo = debugInfo ?? throw new AssertionException("Missing handle metadata.");
+                Assert.That(requiredInfo.idMemCookie, Is.EqualTo((nint)0x4321));
+                Assert.That(requiredInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
+        });
+    }
+
     [TestCase(GTF_ICON_SECREL_OFFSET, false)]
     [TestCase(GTF_ICON_TLSGD_OFFSET, true)]
     public static void NativeAotOffsetsKeepSectionTagsAndEagerTlsGcDeath(GenTreeFlags flag, bool tls)

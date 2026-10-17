@@ -219,11 +219,9 @@ public sealed partial class CodeGen
                     }
                 }
 
-                instGen_Set_Reg_To_ImmXarch(attr, targetReg, value, INS_FLAGS_DONT_CARE
-#if DEBUG
-                    , unchecked((nuint)constant.TargetHandle), constant.Flags
-#endif
-                    );
+                instGen_Set_Reg_To_ImmXarch(attr, targetReg, value, INS_FLAGS_DONT_CARE,
+                    targetHandle: Configuration.DEBUG ? unchecked((nuint)constant.TargetHandle) : 0,
+                    gtFlags: Configuration.DEBUG ? constant.Flags : GTF_EMPTY);
                 _regSet.verifyRegUsed(targetReg);
                 break;
             }

@@ -241,6 +241,45 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 Does.Contain("Target two-register-immediate instruction recording is not implemented."));
         });
     }
+
+    [Test]
+    public static void ConstantNodeIntegerHandleForwardsDebugMetadata()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            var tree = new GenTreeIntCon(TYP_I_IMPL, 0x1234) {
+                Flags = GTF_ICON_CLASS_HDL,
+                RegNum = REG_S0,
+            };
+            Assert.That(tree.ImmedValNeedsReloc(compiler), Is.True);
+            if (TestConfiguration.IsDebug)
+            {
+                tree.TargetHandle = (nint)0x4321;
+                Assert.That(tree.TargetHandle, Is.EqualTo((nint)0x4321));
+            }
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var instructions = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(instructions, Has.Count.EqualTo(1));
+            var relocation = instructions[0];
+            Assert.That(relocation.idIns(), Is.EqualTo(INS_bl));
+            var debugInfo = relocation.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredInfo = debugInfo ?? throw new AssertionException("Missing handle metadata.");
+                Assert.That(requiredInfo.idMemCookie, Is.EqualTo((nint)0x4321));
+                Assert.That(requiredInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
+        });
+    }
 #endif
 
 #if TARGET_RISCV64
@@ -666,25 +705,79 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
 #if TARGET_LOONGARCH64
-    [TestCase(0, "LoongArch64 conditional-branch instruction recording is not ported.")]
-    [TestCase(1, "Target two-register-immediate instruction recording is not implemented.")]
-    public static void JumpCompareDispatchPreservesImmediateAndBranchBoundaries(
-        long immediate, string expectedBoundary)
+    [TestCase(0, INS_beqz)]
+    [TestCase(1, INS_beq)]
+    public static void JumpCompareDispatchSelectsBranchForImmediate(
+        long immediate, instruction expectedBranch)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var trueTarget = new BasicBlock(null, null);
+            trueTarget.SetFlags(BBF_HAS_LABEL);
             var falseTarget = new BasicBlock(null, null);
+            falseTarget.SetFlags(BBF_HAS_LABEL);
             var block = new BasicBlock(null, null);
             block.SetCond(new FlowEdge(block, trueTarget, null), new FlowEdge(block, falseTarget, null));
+            block.Next = falseTarget;
             compiler.compCurBB = block;
             var value = Register(compiler, TYP_LONG, REG_S0);
             var constant = new GenTreeIntCon(TYP_LONG, unchecked((nint)immediate)) { IsContained = true };
             var tree = new GenTreeOpCC(GT_JCMP, TYP_VOID, new GenCondition(GenCondition.CodeKind.EQ),
                 value, constant);
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+            codeGen.genCodeForTreeNode(tree);
 
-            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+            var instructions = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(instructions[^1].idIns(), Is.EqualTo(expectedBranch));
+        });
+    }
+
+    [Test]
+    public static void JumpCompareIntegerHandleForwardsDebugMetadata()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            var trueTarget = new BasicBlock(null, null);
+            trueTarget.SetFlags(BBF_HAS_LABEL);
+            var falseTarget = new BasicBlock(null, null);
+            falseTarget.SetFlags(BBF_HAS_LABEL);
+            var block = new BasicBlock(null, null);
+            block.SetCond(new FlowEdge(block, trueTarget, null), new FlowEdge(block, falseTarget, null));
+            block.Next = falseTarget;
+            compiler.compCurBB = block;
+            var value = Register(compiler, TYP_LONG, REG_S0);
+            var constant = new GenTreeIntCon(TYP_LONG, 0x1234) {
+                Flags = GTF_ICON_CLASS_HDL,
+                IsContained = true,
+            };
+            var expectedFlags = constant.Flags;
+            Assert.That(constant.ImmedValNeedsReloc(compiler), Is.True);
+            if (TestConfiguration.IsDebug)
+            {
+                constant.TargetHandle = (nint)0x4321;
+                Assert.That(constant.TargetHandle, Is.EqualTo((nint)0x4321));
+            }
+
+            var tree = new GenTreeOpCC(GT_JCMP, TYP_VOID, new GenCondition(GenCondition.CodeKind.EQ),
+                value, constant);
+            codeGen.genCodeForTreeNode(tree);
+
+            var instructions = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_bl));
+            var debugInfo = instructions[0].idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredInfo = debugInfo ?? throw new AssertionException("Missing handle metadata.");
+                Assert.That(requiredInfo.idMemCookie, Is.EqualTo((nint)0x4321));
+                Assert.That(requiredInfo.idFlags, Is.EqualTo(expectedFlags));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
         });
     }
 #endif

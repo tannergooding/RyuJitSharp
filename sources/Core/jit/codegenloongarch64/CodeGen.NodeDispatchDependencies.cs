@@ -37,12 +37,9 @@ public sealed partial class CodeGen
                     attr = EA_SET_FLG(attr, EA_BYREF_FLG);
                 }
 
-#if DEBUG
                 instGen_Set_Reg_To_Imm(attr, targetReg, value, INS_FLAGS_DONT_CARE,
-                    targetHandle: unchecked((nuint)constant.TargetHandle), gtFlags: constant.Flags);
-#else
-                instGen_Set_Reg_To_Imm(attr, targetReg, value);
-#endif
+                    targetHandle: Configuration.DEBUG ? unchecked((nuint)constant.TargetHandle) : 0,
+                    gtFlags: Configuration.DEBUG ? constant.Flags : GTF_EMPTY);
                 _regSet.verifyRegUsed(targetReg);
                 break;
             }

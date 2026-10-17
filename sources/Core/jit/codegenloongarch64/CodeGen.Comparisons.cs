@@ -493,12 +493,9 @@ public sealed partial class CodeGen
                     attr = EA_SET_FLG(attr, EA_BYREF_FLG);
                 }
 
-#if DEBUG
-                instGen_Set_Reg_To_Imm(attr, REG_LOONGARCH64_RA, imm, targetHandle: unchecked((nuint)con.TargetHandle),
-                    gtFlags: con.Flags);
-#else
-                instGen_Set_Reg_To_Imm(attr, REG_LOONGARCH64_RA, imm);
-#endif
+                instGen_Set_Reg_To_Imm(attr, REG_LOONGARCH64_RA, imm,
+                    targetHandle: Configuration.DEBUG ? unchecked((nuint)con.TargetHandle) : 0,
+                    gtFlags: Configuration.DEBUG ? con.Flags : GTF_EMPTY);
                 _regSet.verifyRegUsed(REG_LOONGARCH64_RA);
                 regs = (int)REG_LOONGARCH64_RA << 5;
             }

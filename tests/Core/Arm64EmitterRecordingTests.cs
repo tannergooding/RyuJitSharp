@@ -2529,6 +2529,44 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That((codeGen.RegSet.rsGetModifiedRegsMask() & new regMaskTP(REG_ARM64_R4.SingleTypeMask)) != RBM_NONE, Is.True);
     }
 
+    [Test]
+    public static void ConstantNodeIntegerHandleForwardsDebugMetadata()
+    {
+        using var tls = TestConfiguration.CreateJitTls();
+        var emitter = CreateConstantEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.opts.compReloc = true;
+        var tree = new GenTreeIntCon(TYP_I_IMPL, 0x1234) {
+            Flags = GTF_ICON_CLASS_HDL,
+        };
+        Assert.That(tree.ImmedValNeedsReloc(compiler), Is.True);
+        if (TestConfiguration.IsDebug)
+        {
+            tree.TargetHandle = (nint)0x4321;
+            Assert.That(tree.TargetHandle, Is.EqualTo((nint)0x4321));
+        }
+
+        RecordConstantNode(EmitterCodeGen(emitter), REG_ARM64_R4, TYP_I_IMPL, tree);
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(2));
+        var relocation = instructions[0];
+        Assert.That(relocation.idIsDspReloc(), Is.True);
+        Assert.That(instructions[1].idIsCnsReloc(), Is.True);
+        var debugInfo = relocation.idDebugOnlyInfo();
+        if (TestConfiguration.IsDebug)
+        {
+            var requiredInfo = debugInfo ?? throw new AssertionException("Missing handle metadata.");
+            Assert.That(requiredInfo.idMemCookie, Is.EqualTo((nint)0x4321));
+            Assert.That(requiredInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+        }
+        else if (debugInfo is not null)
+        {
+            Assert.That(debugInfo.idMemCookie, Is.Zero);
+            Assert.That(debugInfo.idFlags, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ConstantNodeTlsDeferralRequiresRelocation(bool reloc)

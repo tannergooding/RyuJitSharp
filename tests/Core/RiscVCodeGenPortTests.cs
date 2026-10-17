@@ -334,6 +334,35 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
+    public static void IntegerHandleConstantDoesNotRequireReleaseDebugData()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            var constant = new GenTreeIntCon(TYP_I_IMPL, 0x1234) {
+                Flags = GTF_ICON_CLASS_HDL,
+                RegNum = REG_A0,
+            };
+            Assert.That(constant.ImmedValNeedsReloc(compiler), Is.True);
+            if (TestConfiguration.IsDebug)
+            {
+                constant.TargetHandle = (nint)0x4321;
+            }
+
+            codeGen.genCodeForTreeNode(constant);
+
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_A0));
+            Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_RISCV64_RELOC));
+            Assert.That(descriptors[0].idCodeSize(), Is.EqualTo(8u));
+        });
+    }
+
+    [Test]
     public static void GenCallRecordsDirectRiscVCall()
     {
         WithCodeGen((compiler, codeGen) =>
