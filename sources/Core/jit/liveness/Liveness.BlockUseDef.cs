@@ -134,8 +134,7 @@ public partial class Liveness<TLiveness>
         }
 
         noway_assert(livenessVarEpoch == _compiler.CurLVEpoch);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             foreach (var block in _compiler.Blocks)
             {
@@ -177,7 +176,6 @@ public partial class Liveness<TLiveness>
                 jitprintf($"** Memory liveness computed, GcHeap states and ByrefExposed states {(_compiler.byrefStatesMatchGcHeapStates ? "match" : "diverge")}\n");
             }
         }
-#endif
     }
 
     private void MarkFrameRootUse()

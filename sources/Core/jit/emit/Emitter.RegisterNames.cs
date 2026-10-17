@@ -177,11 +177,12 @@ public partial class Emitter
 
         if (Configuration.TARGET_RISCV64)
         {
-#if DEBUG
-            return emitRegNameRiscV64(reg, attr, varName);
-#else
+            if (Configuration.DEBUG)
+            {
+                return emitRegNameRiscV64(reg, attr, varName);
+            }
+
             throw new FatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
-#endif
         }
 
         if (Configuration.TARGET_LOONGARCH64)

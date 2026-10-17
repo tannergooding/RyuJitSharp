@@ -19,9 +19,10 @@ public partial class Emitter
 
         if (Configuration.TARGET_ARMARCH)
         {
-#if DEBUG
-            emitDispFrameRefArm(variable, displacement, ilOffset);
-#endif
+            if (Configuration.DEBUG)
+            {
+                emitDispFrameRefArm(variable, displacement, ilOffset);
+            }
             return;
         }
 
@@ -87,8 +88,8 @@ public partial class Emitter
         }
         jitprintf("]");
 
-#if DEBUG
-        if (variable >= 0 && compiler.opts.varNames && ilOffset != unchecked((uint)BAD_IL_OFFSET))
+        if (Configuration.DEBUG && variable >= 0 && compiler.opts.varNames
+            && ilOffset != unchecked((uint)BAD_IL_OFFSET))
         {
             for (var i = 0; i < compiler.info.compVarScopesCount; i++)
             {
@@ -109,10 +110,8 @@ public partial class Emitter
                 }
             }
         }
-#endif
     }
 
-#if DEBUG
     private void emitDispFrameRefArm(int variable, int displacement, uint ilOffset)
     {
         var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
@@ -139,7 +138,8 @@ public partial class Emitter
 
         jitprintf("]");
 
-        if (variable >= 0 && compiler.opts.varNames && ilOffset != unchecked((uint)BAD_IL_OFFSET))
+        if (Configuration.DEBUG && variable >= 0 && compiler.opts.varNames
+            && ilOffset != unchecked((uint)BAD_IL_OFFSET))
         {
             var variableName = compiler.compLocalVarName(variable, unchecked((int)ilOffset));
             if (variableName is not null)
@@ -157,7 +157,6 @@ public partial class Emitter
             }
         }
     }
-#endif
 
     private unsafe void emitDispClsVar(CORINFO_FIELD_HANDLE field, nint offset, bool reloc)
     {
@@ -211,11 +210,9 @@ public partial class Emitter
             jitprintf($"{offset:+0;-0}");
         }
         jitprintf("]");
-#if DEBUG
-        if (compiler.opts.varNames && offset < 0)
+        if (Configuration.DEBUG && compiler.opts.varNames && offset < 0)
         {
             jitprintf($"'{compiler.eeGetFieldName(field, true)}{(offset == 0 ? "" : offset.ToString("+0;-0", CultureInfo.InvariantCulture))}'");
         }
-#endif
     }
 }

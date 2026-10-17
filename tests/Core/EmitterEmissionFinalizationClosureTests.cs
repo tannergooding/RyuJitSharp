@@ -1,12 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
-using System;
-using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -27,19 +25,17 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
         Assert.That(compiler.fgProfileRunsCount(), Is.EqualTo(expected));
     }
 
-#if !DEBUG
     [TestCase(0)]
     [TestCase(-1)]
     public static void WithoutProfileWeightsTheRunCountReturnsUnity(int storedRuns)
     {
+        Assume.That(!TestConfiguration.IsDebug);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.fgNumProfileRuns = storedRuns;
 
         Assert.That(compiler.fgProfileRunsCount(), Is.EqualTo(BB_UNITY_WEIGHT_UNSIGNED));
     }
-#endif
 
-#if !TARGET_AMD64
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
@@ -47,6 +43,7 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
     public static void FinalizationInitializesTargetGcAndEpilogPolicyBeforeAnUnportedDependency(
         bool framePointer, bool fullPointerMap)
     {
+        Assume.That(!Configuration.TARGET_AMD64);
         using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new View(compiler) { emitHasFramePtr = framePointer };
@@ -57,18 +54,13 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
         void* hotRW = null;
         void* cold = null;
         void* coldRW = null;
-#if DEBUG
-        var instructions = uint.MaxValue;
-#endif
+        uint instructions = 0;
         FatalJitException? failure = null;
         try
         {
             _ = emitter.emitEndCodeGen(compiler, false, true, fullPointerMap, 0,
-                &prolog, &epilog, &hot, &hotRW, &cold, &coldRW
-#if DEBUG
-                , &instructions
-#endif
-                );
+                &prolog, &epilog, &hot, &hotRW, &cold, &coldRW,
+                TestConfiguration.IsDebug ? &instructions : null);
         }
         catch (FatalJitException exception)
         {
@@ -79,16 +71,9 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
         Assert.That(failure, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
         Assert.That(emitter.emitFullyInt, Is.True);
         Assert.That(emitter.emitFullGCinfo, Is.EqualTo(fullPointerMap));
-#if TARGET_X86
-        Assert.That(emitter.emitFullArgInfo, Is.EqualTo(fullPointerMap));
-#else
-        Assert.That(emitter.emitFullArgInfo, Is.EqualTo(!framePointer));
-#endif
-#if TARGET_XARCH
-        Assert.That(epilog, Is.EqualTo(10u));
-#else
-        Assert.That(epilog, Is.EqualTo(7u));
-#endif
+        Assert.That(emitter.emitFullArgInfo,
+            Is.EqualTo(Configuration.TARGET_X86 ? fullPointerMap : !framePointer));
+        Assert.That(epilog, Is.EqualTo(Configuration.TARGET_XARCH ? 10u : 7u));
         Assert.That(prolog, Is.EqualTo(uint.MaxValue));
     }
 
@@ -103,14 +88,13 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
         {
             emitEpilogCnt = 1;
             emitEpilogSize = 7;
-#if TARGET_XARCH
-            emitExitSeqSize = 3;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                emitExitSeqSize = 3;
+            }
         }
     }
-#endif
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
     [TestCase(16, 0, 1)]
     [TestCase(17, 0, 32)]
     [TestCase(int.MinValue, 0, 32)]
@@ -118,6 +102,7 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
     public static void AllocationUsesUnsignedCodeWidthsForLoopAlignmentAndColdPresence(
         int hotAllocationSize, int coldAllocationSize, int expectedHotAlignment)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
         CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_X64_RAX,
             (compiler, codeGen, tree) =>
             {
@@ -171,15 +156,10 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
                 void* hotRW = null;
                 void* cold = null;
                 void* coldRW = null;
-#if DEBUG
-                var instructions = uint.MaxValue;
-#endif
+                uint instructions = 0;
                 var actual = emitter.emitEndCodeGen(compiler, false, false, false, 0,
-                    &prolog, &epilog, &hot, &hotRW, &cold, &coldRW
-#if DEBUG
-                    , &instructions
-#endif
-                    );
+                    &prolog, &epilog, &hot, &hotRW, &cold, &coldRW,
+                    TestConfiguration.IsDebug ? &instructions : null);
 
                 Assert.That(context.Calls, Is.EqualTo(1));
                 Assert.That(context.Chunks, Is.EqualTo(hasCold ? 2 : 1));
@@ -229,5 +209,4 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
             args->chunks[1].blockRW = context->Storage + 80;
         }
     }
-#endif
 }

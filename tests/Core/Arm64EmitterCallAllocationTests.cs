@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64EmitterCallAllocationTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void CallsCaptureCurrentGcStateBeforeRecordingTheirDescriptor(bool jump)
@@ -180,11 +185,7 @@ internal static unsafe class Arm64EmitterCallAllocationTests
         var emitter = new CallEmitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, TestConfiguration.IsDebug);
         return emitter;
     }
 
@@ -215,4 +216,3 @@ internal static unsafe class Arm64EmitterCallAllocationTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitDecodeCallGCregs")]
     private static extern uint DecodeRegisters(Emitter? emitter, Emitter.instrDesc descriptor);
 }
-#endif

@@ -13,7 +13,8 @@ public partial class Emitter
     {
         RequireArm64Target();
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_instructionFormats_ARM64.Length);
-        assert(s_instructionFormats_ARM64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE);
+        assert(s_instructionFormats_ARM64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE,
+            "s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE");
         return s_instructionFormats_ARM64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 

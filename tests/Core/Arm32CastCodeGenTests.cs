@@ -1,4 +1,3 @@
-#if TARGET_ARM
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
@@ -24,6 +23,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm32CastCodeGenTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires ARM32 target semantics.");
+    }
+
     [TestCase(TYP_INT, false, TYP_FLOAT, INS_vcvt_i2f)]
     [TestCase(TYP_INT, true, TYP_FLOAT, INS_vcvt_u2f)]
     [TestCase(TYP_INT, false, TYP_DOUBLE, INS_vcvt_i2d)]
@@ -107,6 +112,11 @@ internal static unsafe class Arm32CastCodeGenTests
 
     private static IEnumerable<TestCaseData> CheckedLongToIntCastCases()
     {
+        if (!TestConfiguration.IsArm32)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(false, TYP_INT, REG_R1,
             new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_b, INS_cmp, INS_bne, INS_mov });
         yield return new TestCaseData(true, TYP_INT, REG_R1,
@@ -191,17 +201,20 @@ internal static unsafe class Arm32CastCodeGenTests
 
     private static void RecordArm32Instructions(TestDelegate action)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                action();
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             action();
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        action();
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
@@ -210,4 +223,3 @@ internal static unsafe class Arm32CastCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
-#endif

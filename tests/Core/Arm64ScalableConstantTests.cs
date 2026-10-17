@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.SimdScalableKind;
 using static RyuJitSharp.var_types;
@@ -9,6 +8,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64ScalableConstantTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(TYP_BYTE, 0xFFUL, -1L, ulong.MaxValue)]
     [TestCase(TYP_SHORT, 0xFFFFUL, -1L, ulong.MaxValue)]
     [TestCase(TYP_INT, 0xFFFF_FFFFUL, -1L, ulong.MaxValue)]
@@ -190,4 +195,3 @@ internal static class Arm64ScalableConstantTests
         return value;
     }
 }
-#endif

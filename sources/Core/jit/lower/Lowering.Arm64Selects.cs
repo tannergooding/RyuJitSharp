@@ -94,9 +94,7 @@ public sealed partial class Lowering
         JITDUMP("Converted to ");
         if (Configuration.DEBUG && CompilerInstance.verbose)
         {
-#if DEBUG
             CompilerInstance.gtDispNodeName(select);
-#endif
         }
         JITDUMP(":\n");
         DISPTREERANGE(BlockRange(), select);

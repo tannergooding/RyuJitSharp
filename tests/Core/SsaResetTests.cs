@@ -118,12 +118,16 @@ internal static class SsaResetTests
             compiler.fgSsaValid = true;
             compiler.fgStmtRemoved = false;
 
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var text = CodeGenLifeTransitionTests.Capture(() => compiler.fgResetForSsa(deepClean));
-#else
-            compiler.fgResetForSsa(deepClean);
-#endif
+            var text = string.Empty;
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                text = CodeGenLifeTransitionTests.Capture(() => compiler.fgResetForSsa(deepClean));
+            }
+            else
+            {
+                compiler.fgResetForSsa(deepClean);
+            }
 
             Assert.That(block.FirstStmt, Is.SameAs(bodyCount == 0 ? null : body[0]));
             Assert.That(block.LastStmt, Is.SameAs(bodyCount == 0 ? null : body[^1]));
@@ -169,9 +173,10 @@ internal static class SsaResetTests
             Assert.That(compiler.fgSsaPassesCompleted, Is.EqualTo(3));
             Assert.That(compiler.fgSsaValid, Is.True);
             Assert.That(compiler.fgStmtRemoved, Is.False);
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(text, Is.EqualTo($"Removing {(deepClean ? "all SSA artifacts" : "PHI functions")}{Environment.NewLine}"));
-#endif
+            }
         });
     }
 

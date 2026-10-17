@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -12,6 +11,7 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    [System.Diagnostics.Conditional("DEBUG")]
     private static unsafe void DumpLoongArch64UnwindInfo(
         Compiler comp, bool isHotCode, uint startOffset, uint endOffset, byte* pHeader, uint unwindBlockSize)
     {
@@ -211,4 +211,3 @@ public static partial class Globals
         jitprintf("\n");
     }
 }
-#endif

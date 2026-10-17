@@ -56,11 +56,14 @@ internal static unsafe class CompilerRegallocFrameTests
             var requiresFrame = compiler.rpMustCreateEBPFrame(out var reason);
 
             Assert.That(requiresFrame, Is.True);
-#if DEBUG
-            Assert.That(reason, Is.EqualTo("Uses PInvoke"));
-#else
-            Assert.That(reason, Is.Null);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(reason, Is.EqualTo("Uses PInvoke"));
+            }
+            else
+            {
+                Assert.That(reason, Is.Null);
+            }
         });
     }
 
@@ -72,16 +75,19 @@ internal static unsafe class CompilerRegallocFrameTests
 
             var requiresFrame = compiler.rpMustCreateEBPFrame(out var reason);
 
-#if ETW_EBP_FRAMED
-            Assert.That(requiresFrame, Is.True);
-            if (TestConfiguration.IsDebug)
+            if (Configuration.ETW_EBP_FRAMED)
             {
-                Assert.That(reason, Is.EqualTo("Debug Code"));
+                Assert.That(requiresFrame, Is.True);
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(reason, Is.EqualTo("Debug Code"));
+                }
             }
-#else
-            Assert.That(requiresFrame, Is.False);
-            Assert.That(reason, Is.Null);
-#endif
+            else
+            {
+                Assert.That(requiresFrame, Is.False);
+                Assert.That(reason, Is.Null);
+            }
         });
     }
 
@@ -143,14 +149,18 @@ internal static unsafe class CompilerRegallocFrameTests
 
             SetFrameType(allocator);
 
-#if ETW_EBP_FRAMED
-            Assert.That(RpFrameType(compiler), Is.EqualTo(FrameType.FT_EBP_FRAME));
-            Assert.That(codeGen.IsFramePointerUsed, Is.True);
-#else
-            Assert.That(RpFrameType(compiler), Is.EqualTo(FrameType.FT_ESP_FRAME));
-            Assert.That(codeGen.IsFramePointerUsed, Is.False);
-            Assert.That(AvailableIntRegs(allocator) & SRBM_FPBASE, Is.Not.EqualTo(SRBM_NONE));
-#endif
+            if (Configuration.ETW_EBP_FRAMED)
+            {
+                Assert.That(RpFrameType(compiler), Is.EqualTo(FrameType.FT_EBP_FRAME));
+                Assert.That(codeGen.IsFramePointerUsed, Is.True);
+            }
+            else
+            {
+                Assert.That(RpFrameType(compiler), Is.EqualTo(FrameType.FT_ESP_FRAME));
+                Assert.That(codeGen.IsFramePointerUsed, Is.False);
+                Assert.That(AvailableIntRegs(allocator) & SRBM_FPBASE, Is.Not.EqualTo(SRBM_NONE));
+            }
+
             Assert.That(FrameCheckWasCalled(compiler), Is.True);
         });
     }

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
@@ -23,6 +22,8 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     public static void EncodedImmediateWidthsIgnoreTheUnusedOperandSize(
         ulong value, bool halfword, bool logical)
     {
+        RequireArm64();
+
         Assert.That(IsValidImmHWVal(null, (nuint)value, EA_4BYTE), Is.EqualTo(halfword));
         Assert.That(IsValidImmHWVal(null, (nuint)value, EA_8BYTE), Is.EqualTo(halfword));
         Assert.That(IsValidImmNRS(null, (nuint)value, EA_4BYTE), Is.EqualTo(logical));
@@ -45,6 +46,8 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     public static void ConditionalEncodingsCheckWidthAndLowConditionNibble(
         long value, bool condition, bool flags, bool flagsAndImm5)
     {
+        RequireArm64();
+
         Assert.That(IsValidImmCond(null, (nint)value), Is.EqualTo(condition));
         Assert.That(IsValidImmCondFlags(null, (nint)value), Is.EqualTo(flags));
         Assert.That(IsValidImmCondFlagsImm5(null, (nint)value), Is.EqualTo(flagsAndImm5));
@@ -53,6 +56,8 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     [Test]
     public static void VectorArrangementsPreserveLaneWidthsAndDatasizes()
     {
+        RequireArm64();
+
         var options = new[]
         {
             (INS_OPTS_8B, EA_8BYTE, EA_1BYTE),
@@ -98,6 +103,8 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     public static void ConversionOptionsRetainBothOperandWidths(
         insOpts option, emitAttr destination, emitAttr source)
     {
+        RequireArm64();
+
         Assert.That(OptGetDstsize(null, option), Is.EqualTo(destination));
         Assert.That(OptGetSrcsize(null, option), Is.EqualTo(source));
     }
@@ -105,6 +112,8 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     [Test]
     public static void VectorIndicesUseTheNativeSignedBoundsForEveryLaneSize()
     {
+        RequireArm64();
+
         foreach (var dataSize in new[] { EA_8BYTE, EA_16BYTE })
         {
             foreach (var elementSize in new[] { EA_1BYTE, EA_2BYTE, EA_4BYTE, EA_8BYTE })
@@ -124,8 +133,15 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     [TestCase(INS_lea, false)]
     public static void VectorRightShiftChecksFlagTableAndSyntheticBoundary(instruction ins, bool expected)
     {
+        RequireArm64();
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         Assert.That(IsVectorRightShift(emitter, ins), Is.EqualTo(expected));
+    }
+
+    private static void RequireArm64()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidImmHWVal")]
@@ -161,4 +177,3 @@ internal static class Arm64EmitterOptionImmediateValidationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsVectorRightShift")]
     private static extern bool IsVectorRightShift(Emitter emitter, instruction ins);
 }
-#endif

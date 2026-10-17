@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public static partial class Globals
@@ -25,6 +24,7 @@ public static partial class Globals
         return unchecked((regNumber)((uint)first + offset));
     }
 
+#if DEBUG
     public static uint GetUnwindSizeFromUnwindHeader(byte header)
     {
         if (Configuration.TARGET_ARM64)
@@ -69,5 +69,5 @@ public static partial class Globals
             throw new FatalJitException(CORJIT_SKIPPED, "Unwind diagnostic decoding for this target is not ported.");
         }
     }
-}
 #endif
+}

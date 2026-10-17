@@ -110,16 +110,17 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
         return IsRegNumInMask(reg);
     }
 
-    internal static void AddGprRegs(ref regMaskTP destination, SingleTypeRegSet gprRegs
-#if DEBUG
-        , regMaskTP availableIntRegs
-#endif
-    )
+    internal static void AddGprRegs(
+        ref regMaskTP destination,
+        SingleTypeRegSet gprRegs,
+        regMaskTP availableIntRegs = default)
     {
-#if DEBUG
-        assert((gprRegs == SRBM_NONE) || ((gprRegs & availableIntRegs._lower) != SRBM_NONE),
-            "(gprRegs == RBM_NONE) || ((gprRegs & availableIntRegs) != RBM_NONE)");
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((gprRegs == SRBM_NONE) || ((gprRegs & availableIntRegs._lower) != SRBM_NONE),
+                "(gprRegs == RBM_NONE) || ((gprRegs & availableIntRegs) != RBM_NONE)");
+        }
+
         destination |= new regMaskTP(gprRegs);
     }
 

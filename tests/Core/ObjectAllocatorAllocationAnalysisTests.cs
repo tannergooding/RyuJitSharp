@@ -115,10 +115,8 @@ internal static unsafe class ObjectAllocatorAllocationAnalysisTests
         field.SetValue(config, trackFields ? 1 : 0);
         JitConfig = (JitConfigValues)config;
 
-#if DEBUG
         ICorJitInfo jitInfo = default;
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         TestConfiguration.SetCompilerFullName(compiler, nameof(ObjectAllocatorAllocationAnalysisTests));

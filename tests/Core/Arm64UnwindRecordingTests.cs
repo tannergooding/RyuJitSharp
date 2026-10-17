@@ -3,10 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
-#if FEATURE_CFI_SUPPORT
 using System.Linq;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.instruction;
@@ -16,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64UnwindRecordingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(REG_ARM64_R0)]
     [TestCase(REG_ARM64_LR)]
     [TestCase(REG_ARM64_V31)]
@@ -115,10 +118,11 @@ internal static class Arm64UnwindRecordingTests
         });
     }
 
-#if FEATURE_CFI_SUPPORT
     [Test]
     public static void DwarfMappingIncludesEveryIntegerAndVectorRegister()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "CFI unwind support is not enabled.");
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         for (var index = 0; index < 31; index++)
         {
@@ -141,6 +145,8 @@ internal static class Arm64UnwindRecordingTests
     public static void CfiPairSavesPreserveAdjustmentAndRegisterRecordOrder(
         bool preindexed, regNumber first, regNumber second, int offset)
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "CFI unwind support is not enabled.");
+
         Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
@@ -176,6 +182,8 @@ internal static class Arm64UnwindRecordingTests
     public static void CfiSingleSavesPreserveAdjustmentAndRelativeOffset(
         bool preindexed, regNumber reg, int offset)
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "CFI unwind support is not enabled.");
+
         Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
@@ -203,6 +211,8 @@ internal static class Arm64UnwindRecordingTests
     [Test]
     public static void CfiEpilogSkipsArm64SaveStackAndFrameRecords()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "CFI unwind support is not enabled.");
+
         Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
@@ -223,9 +233,7 @@ internal static class Arm64UnwindRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
     private static extern ref insGroup? CurrentGroup(Emitter emitter);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int CurrentSize(Emitter emitter);
 }
-#endif

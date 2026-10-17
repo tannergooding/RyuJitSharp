@@ -11,11 +11,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private uint getLoopSize(insGroup loopHeader, uint maxLoopSize
-#if DEBUG
-        , bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG
-#endif
-        )
+    private uint getLoopSize(
+        insGroup loopHeader, uint maxLoopSize, bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG)
     {
         var compiler = _compiler ?? throw new FatalJitException("Loop-size calculation requires an active compiler.");
         uint loopSize = 0;
@@ -133,11 +130,8 @@ public partial class Emitter
         return loopSize;
     }
 
-    private uint emitCalculatePaddingForLoopAlignment(insGroup loopHeadIG, nuint offset
-#if DEBUG
-        , bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG
-#endif
-        )
+    private uint emitCalculatePaddingForLoopAlignment(
+        insGroup loopHeadIG, nuint offset, bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG)
     {
         var compiler = _compiler ?? throw new FatalJitException("Loop-alignment padding requires an active compiler.");
         uint alignmentBoundary = compiler.opts.compJitAlignLoopBoundary;
@@ -161,11 +155,7 @@ public partial class Emitter
             maxLoopSize = compiler.opts.compJitAlignLoopMaxCodeSize;
         }
 
-        var loopSize = getLoopSize(loopHeadIG, maxLoopSize
-#if DEBUG
-            , isAlignAdjusted, containingIG, loopHeadPredIG
-#endif
-            );
+        var loopSize = getLoopSize(loopHeadIG, maxLoopSize, isAlignAdjusted, containingIG, loopHeadPredIG);
         if (loopSize > maxLoopSize)
         {
             JITDUMP($";; Skip alignment: 'Loop at {emitLabelString(loopHeadIG)} is big. " +

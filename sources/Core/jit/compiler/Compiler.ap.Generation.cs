@@ -15,9 +15,7 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
-        optAssertionPropCurrentTree = tree;
-#endif
+        SetOptAssertionPropCurrentTree(tree);
         AssertionInfo assertionInfo = default;
         switch (tree.Oper)
         {

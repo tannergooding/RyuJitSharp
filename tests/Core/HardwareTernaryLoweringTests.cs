@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -14,6 +13,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareTernaryLoweringTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH,
+            "This fixture requires xarch hardware intrinsics.");
+    }
+
     [TestCase(0x00, 0)]
     [TestCase(0xFF, -1)]
     public static void ConstantControlsReplaceTheWholeIntrinsic(byte control, int expectedBits)
@@ -197,4 +203,3 @@ internal static unsafe class HardwareTernaryLoweringTests
         }
     }
 }
-#endif

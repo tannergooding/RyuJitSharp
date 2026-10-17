@@ -62,9 +62,10 @@ internal static class CodeGenEHTransferTests
             Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
             Assert.That(codeGen.Emitter.emitCurIG!.igFlags & InsGroupFlags.NoGCInterrupt,
                 Is.EqualTo(InsGroupFlags.None));
-#if DEBUG
-            Assert.That(ids[0].idDebugOnlyInfo()!.idFinallyCall, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(ids[0].idDebugOnlyInfo()!.idFinallyCall, Is.True);
+            }
         });
     }
 
@@ -166,17 +167,19 @@ internal static class CodeGenEHTransferTests
             Assert.That(JumpView.KeepLong(id), Is.True);
             Assert.That(JumpView.IsShort(id), Is.False);
             Assert.That(NoGcRequests(codeGen.Emitter), Is.Zero);
-#if DEBUG
-            Assert.That(id.idDebugOnlyInfo()!.idCatchRet, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(id.idDebugOnlyInfo()!.idCatchRet, Is.True);
+            }
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DspCodeRecordsEhTransfersAndGcState(bool catchReturn)
     {
+        Assume.That(TestConfiguration.IsDebug, "Emitter diagnostics are only available in Debug builds.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var target = Label();
@@ -186,7 +189,7 @@ internal static class CodeGenEHTransferTests
                 block.SetFlags(BBF_RETLESS_CALL);
             }
             compiler.compCurBB = block;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -205,7 +208,6 @@ internal static class CodeGenEHTransferTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static BasicBlock Label()
     {

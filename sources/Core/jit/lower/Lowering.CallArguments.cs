@@ -215,11 +215,8 @@ public sealed partial class Lowering
         {
             var thisArg = call.Args.ThisArg;
             assert(thisArg is not null);
-            SetMultiplyUsed(thisArg.Node
-#if DEBUG
-                , "AfterLowerArgsForCall thisArg (null check)"
-#endif
-            );
+            SetMultiplyUsed(thisArg.Node,
+                Configuration.DEBUG ? "AfterLowerArgsForCall thisArg (null check)" : null);
         }
         // Native has no post-processing on non-Wasm targets.
     }

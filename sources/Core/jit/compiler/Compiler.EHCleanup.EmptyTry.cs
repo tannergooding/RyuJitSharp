@@ -19,11 +19,7 @@ public partial class Compiler
         assert(!fgFuncletsCreated);
         assert(fgPredsComputed);
 
-        var enabled = true;
-#if DEBUG
-        enabled = JitConfig.JitEnableRemoveEmptyTry == 1;
-#endif
-        if (!enabled)
+        if (Configuration.DEBUG && (JitConfig.JitEnableRemoveEmptyTry != 1))
         {
             JITDUMP("Empty try removal disabled.\n");
             return PhaseStatus.MODIFIED_NOTHING;

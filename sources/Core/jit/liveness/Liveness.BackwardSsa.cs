@@ -11,11 +11,7 @@ namespace RyuJitSharp;
 public partial class Liveness<TLiveness>
     where TLiveness : ILivenessPolicy
 {
-    private bool ComputeLifeSsa(nint[] life, nint[] keepAliveVars
-#if DEBUG
-        , ref bool treeModified
-#endif
-    )
+    private bool ComputeLifeSsa(nint[] life, nint[] keepAliveVars, ref bool treeModified)
     {
         var statement = _compiler.compCurStmt;
         assert(statement is not null);
@@ -50,11 +46,7 @@ public partial class Liveness<TLiveness>
                         var local = tree.AsLclVarCommon();
                         localNumber = local.LclNum;
                         if (RemoveDeadStoreSsa(ref tree, life, ref repeat, ref statementInfoDirty,
-                            out storeRemoved
-#if DEBUG
-                            , ref treeModified
-#endif
-                        ))
+                            out storeRemoved, ref treeModified))
                         {
                             return statementInfoDirty;
                         }
@@ -93,11 +85,7 @@ public partial class Liveness<TLiveness>
     }
 
     private bool RemoveDeadStoreSsa(ref GenTree tree, nint[] life, ref bool repeat,
-        ref bool statementInfoDirty, out bool storeRemoved
-#if DEBUG
-        , ref bool treeModified
-#endif
-    )
+        ref bool statementInfoDirty, out bool storeRemoved, ref bool treeModified)
     {
         ref var descriptor = ref _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum);
         noway_assert(!descriptor.IsAddressExposed);
@@ -113,15 +101,14 @@ public partial class Liveness<TLiveness>
         var value = store.Data;
         if ((value.Flags & GTF_SIDE_EFFECT) != 0)
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 assert(_compiler.compCurBB is not null);
                 jitprintf($"{FMT_BB(_compiler.compCurBB.bbNum)} - Dead store has side effects...\n");
                 _compiler.gtDispTree(store);
                 jitprintf("\n");
             }
-#endif
+
             _compiler.gtExtractSideEffList(value, ref sideEffects);
         }
 
@@ -140,19 +127,20 @@ public partial class Liveness<TLiveness>
             }
 
             noway_assert((sideEffects.Flags & GTF_SIDE_EFFECT) != 0);
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("Extracted side effects list...\n");
                 _compiler.gtDispTree(sideEffects);
                 jitprintf("\n");
             }
-#endif
+
             statement.RootNode = sideEffects;
             tree = sideEffects;
-#if DEBUG
-            treeModified = true;
-#endif
+            if (Configuration.DEBUG)
+            {
+                treeModified = true;
+            }
+
             _compiler.gtSetStmtInfo(statement);
             _compiler.fgSetStmtSeq(statement);
             statementInfoDirty = false;
@@ -178,8 +166,7 @@ public partial class Liveness<TLiveness>
         GenTree replacement;
         if (sideEffects is null)
         {
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 assert(_compiler.compCurBB is not null);
                 jitprintf("\nRemoving tree ");
@@ -188,21 +175,20 @@ public partial class Liveness<TLiveness>
                 _compiler.gtDispTree(store);
                 jitprintf("\n");
             }
-#endif
+
             store.BashToNOP();
             replacement = store;
         }
         else
         {
             noway_assert((sideEffects.Flags & GTF_SIDE_EFFECT) != 0);
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("Extracted side effects list from condition...\n");
                 _compiler.gtDispTree(sideEffects);
                 jitprintf("\n");
             }
-#endif
+
             replacement = sideEffects.Oper is GT_COMMA
                 ? new GenTreeOp(GT_COMMA, TYP_VOID, sideEffects.AsOp().Op1, sideEffects.AsOp().Op2,
                     store, NodeThreading.AllTrees)
@@ -224,9 +210,11 @@ public partial class Liveness<TLiveness>
             while (!Unsafe.IsNullRef(ref link.result));
         }
 
-#if DEBUG
-        treeModified = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            treeModified = true;
+        }
+
         statementInfoDirty = true;
         _compiler.fgSetStmtSeq(statement);
         tree = replacement;

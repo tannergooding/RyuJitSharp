@@ -25,6 +25,8 @@ internal static partial class TestConfiguration
 
     public static bool IsDebug => Configuration.DEBUG;
 
+    public static bool IsArm32 => Configuration.TARGET_ARM;
+
     public static void SetScalableVectorConfiguration(bool enabled)
     {
         object config = JitConfig;

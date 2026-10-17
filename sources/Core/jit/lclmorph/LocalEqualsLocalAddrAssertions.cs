@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT license.
 
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -10,9 +11,8 @@ namespace RyuJitSharp;
 
 internal readonly record struct LocalEqualsLocalAddrAssertion(int DestLclNum, int AddressLclNum, uint AddressOffset)
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     internal void Print() => jitprintf($"V{DestLclNum:D2} = &V{AddressLclNum:D2}[+{AddressOffset:D3}]");
-#endif
 }
 
 internal sealed class LocalEqualsLocalAddrAssertions
@@ -125,8 +125,7 @@ internal sealed class LocalEqualsLocalAddrAssertions
             JITDUMP("\n");
         }
 
-#if DEBUG
-        if (CurrentAssertions is not 0)
+        if (Configuration.DEBUG && (CurrentAssertions is not 0))
         {
             JITDUMP($"{FMT_BB(block.bbNum)} incoming assertions:\n");
             var assertions = CurrentAssertions;
@@ -146,7 +145,6 @@ internal sealed class LocalEqualsLocalAddrAssertions
             }
             while (assertions is not 0);
         }
-#endif
     }
 
     internal void EndBlock(BasicBlock block)
@@ -171,12 +169,10 @@ internal sealed class LocalEqualsLocalAddrAssertions
             if (!_map.TryGetValue(assertion, out index))
             {
                 JITDUMP("Out of assertion space; dropping assertion ");
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     assertion.Print();
                 }
-#endif
                 JITDUMP("\n");
                 return;
             }
@@ -196,12 +192,10 @@ internal sealed class LocalEqualsLocalAddrAssertions
                 JITDUMP($"Adding existing assertion A{index:D2} ");
             }
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 assertion.Print();
             }
-#endif
             JITDUMP("\n");
         }
 

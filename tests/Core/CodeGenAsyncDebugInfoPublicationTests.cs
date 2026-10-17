@@ -1,15 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
-#if DEBUG
 using System;
-#endif
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if DEBUG
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 
@@ -18,6 +13,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
 {
+    [SetUp]
+    public static void RequireWindowsAmd64Abi()
+    {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI,
+            "This fixture requires the Windows AMD64 ABI.");
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
@@ -72,14 +74,18 @@ internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
             {
                 _ = codeGen.genEmitAsyncResumeInfoTable(out var table);
                 var group = new insGroup { igOffs = 0xFFFFFFF0 };
-#if DEBUG
-                group.igSelf = group;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    group.igSelf = group;
+                }
+
                 table.Locations[0] = new emitLocation(group);
             }
-#if DEBUG
-            Verbose(codeGen) = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Verbose(codeGen) = true;
+            }
+
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
             var previous = s_jitstdout;
@@ -107,21 +113,25 @@ internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
             Assert.That(context->FirstVar.Offset, Is.EqualTo(0x1234));
             Assert.That(context->SecondVar.VarNumber, Is.EqualTo(2));
             Assert.That(context->SecondVar.Offset, Is.EqualTo(-16));
-#if DEBUG
-            var expected = "Reported async suspension points:\n  [0] NumAsyncVars = 1\n  [1] NumAsyncVars = 1\n" +
-                "Reported async vars:\n  [0] VarNumber = 4294967295, Offset = 1234\n  [1] VarNumber = 2, Offset = fffffff0\n";
-            Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
-                Is.EqualTo(expected.Replace("\n", "\r\n", StringComparison.Ordinal)));
-#else
-            Assert.That(stream.Length, Is.Zero);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var expected = "Reported async suspension points:\n  [0] NumAsyncVars = 1\n  [1] NumAsyncVars = 1\n" +
+                    "Reported async vars:\n  [0] VarNumber = 4294967295, Offset = 1234\n  [1] VarNumber = 2, Offset = fffffff0\n";
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+                    Is.EqualTo(expected.Replace("\n", "\r\n", StringComparison.Ordinal)));
+            }
+            else
+            {
+                Assert.That(stream.Length, Is.Zero);
+            }
         });
     }
 
-#if DEBUG
     [Test]
     public static void RawHexPreservesByteOrderWithoutSeparatorsOrNewlines()
     {
+        Assume.That(TestConfiguration.IsDebug, "Hex diagnostics are only available in Debug builds.");
+
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         hexDump(writer, null, 0);
@@ -134,7 +144,6 @@ internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_verbose")]
     private static extern ref bool Verbose(CodeGen codeGen);
-#endif
 
     private static void WithPublication(PublicationAction action)
     {
@@ -227,4 +236,3 @@ internal static unsafe class CodeGenAsyncDebugInfoPublicationTests
         NativeMemory.Fill(vars, (nuint)context->VarBytes, 0xCC);
     }
 }
-#endif

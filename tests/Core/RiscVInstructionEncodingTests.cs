@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -17,6 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RiscVInstructionEncodingTests
 {
+    [SetUp]
+    public static void RequireRiscV64Target()
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This fixture requires RISC-V64 target semantics.");
+    }
+
     [Test]
     public static void MapsTheNativeNoOperandInstructionFormat()
     {
@@ -195,4 +200,3 @@ internal static class RiscVInstructionEncodingTests
         return descriptor;
     }
 }
-#endif

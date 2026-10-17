@@ -151,20 +151,24 @@ internal static class MaskConversionTests
     [TestCase("minopts")]
     [TestCase("unused")]
     [TestCase("no-local-conversions")]
-#if DEBUG
     [TestCase("disabled")]
-#endif
     public static void PhaseGatesDoNotRewriteLocals(string reason)
     {
+        if (reason == "disabled")
+        {
+            Assume.That(TestConfiguration.IsDebug, "The optimization-disable configuration is Debug-only.");
+        }
+
         WithCompiler(compiler => {
             var store = compiler.gtNewStoreLclVarNode(0, reason == "no-local-conversions"
                 ? compiler.gtNewLclvNode(TYP_SIMD16, 3)
                 : ToVector(compiler.gtNewLclvNode(TYP_MASK, 1)));
             _ = Append(compiler, store, 1);
             compiler.compMaskConvertUsed = reason != "unused";
-#if DEBUG
-            Config(ref JitConfig) = reason == "disabled" ? 0 : 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Config(ref JitConfig) = reason == "disabled" ? 0 : 1;
+            }
             Assert.That(Optimize(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.lvaTable[0].Type, Is.EqualTo(TYP_SIMD16));
         }, minopts: reason == "minopts");
@@ -200,9 +204,11 @@ internal static class MaskConversionTests
     private static void WithCompiler(Action<Compiler> action, bool minopts = false)
     {
         var previousConfig = JitConfig;
-#if DEBUG
-        Config(ref JitConfig) = 1;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Config(ref JitConfig) = 1;
+        }
+
         try
         {
             FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
@@ -226,8 +232,6 @@ internal static class MaskConversionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgOptimizeMaskConversions")]
     private static extern PhaseStatus Optimize(Compiler compiler);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoOptimizeMaskConversions")]
     private static extern ref int Config(ref JitConfigValues config);
-#endif
 }

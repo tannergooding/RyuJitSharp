@@ -14,6 +14,7 @@ public partial class Compiler
     private sealed class DebugData
     {
         internal bool AsciiTrees;
+        internal GenTree? AssertionPropCurrentTree;
         internal long CompCyclesAtEndOfInlining;
         internal long CompCycles;
         internal int InlineMethodXmlFilePosition;
@@ -77,6 +78,12 @@ public partial class Compiler
     }
 
     internal GenTree? LastConsumedNode => GetExistingDebugData()?.LastConsumedNode;
+
+    [Conditional("DEBUG")]
+    internal void SetOptAssertionPropCurrentTree(GenTree tree)
+    {
+        GetDebugData().AssertionPropCurrentTree = tree;
+    }
 
     [Conditional("DEBUG")]
     internal void SetLastConsumedNode(GenTree? node)

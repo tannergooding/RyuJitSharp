@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -13,6 +12,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64EmitterLocationTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(false, 108u)]
     [TestCase(true, 112u)]
     public static void FinalOffsetsRespectPredictedAndChangedInstructionSizes(bool changed, uint expected)
@@ -137,9 +142,7 @@ internal static unsafe class Arm64EmitterLocationTests
         var previousConfig = Globals.JitConfig;
         var (compiler, emitter) = CreateEmitter();
         compiler.opts.compMinOpts = minOpts;
-#if DEBUG
-        compiler.opts.compMinOptsIsSet = true;
-#endif
+        compiler.opts.compMinOptsIsSet = TestConfiguration.IsDebug;
         JitTls.Compiler = compiler;
         Globals.JitConfig = new JitConfigValues();
 
@@ -168,9 +171,11 @@ internal static unsafe class Arm64EmitterLocationTests
     private static insGroup Group(params Emitter.instrDesc[] descriptors)
     {
         var group = new insGroup { igData = descriptors, igInsCnt = (byte)descriptors.Length };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
+
         return group;
     }
 
@@ -185,11 +190,7 @@ internal static unsafe class Arm64EmitterLocationTests
         CodeGenEmitter(codeGen) = emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, TestConfiguration.IsDebug);
         return (compiler, emitter);
     }
 
@@ -232,4 +233,3 @@ internal static unsafe class Arm64EmitterLocationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
-#endif

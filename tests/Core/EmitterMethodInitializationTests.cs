@@ -143,11 +143,7 @@ internal static unsafe class EmitterMethodInitializationTests
 
     private static void Begin(Emitter emitter, bool hasFramePointer)
     {
-        emitter.emitBegFN(hasFramePointer
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(hasFramePointer, TestConfiguration.IsDebug);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]

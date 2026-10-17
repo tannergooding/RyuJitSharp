@@ -21,27 +21,28 @@ internal static class CodeGenLinearCastClosureTests
         Assert.That((int)COPY, Is.Zero);
         Assert.That((int)ZERO_EXTEND_SMALL_INT, Is.EqualTo(1));
         Assert.That((int)SIGN_EXTEND_SMALL_INT, Is.EqualTo(2));
-
-#if TARGET_64BIT || TARGET_WASM
         Assert.That(Enum.GetValues<CodeGen.GenIntCastDesc.CheckKind>(), Has.Length.EqualTo(6));
         Assert.That(Enum.GetValues<CodeGen.GenIntCastDesc.ExtendKind>(), Has.Length.EqualTo(10));
-        Assert.That((int)CHECK_UINT_RANGE, Is.EqualTo(3));
-        Assert.That((int)CHECK_POSITIVE_INT_RANGE, Is.EqualTo(4));
-        Assert.That((int)CHECK_INT_RANGE, Is.EqualTo(5));
-        Assert.That((int)ZERO_EXTEND_INT, Is.EqualTo(3));
-        Assert.That((int)SIGN_EXTEND_INT, Is.EqualTo(4));
-        Assert.That((int)LOAD_ZERO_EXTEND_SMALL_INT, Is.EqualTo(5));
-        Assert.That((int)LOAD_SIGN_EXTEND_SMALL_INT, Is.EqualTo(6));
-        Assert.That((int)LOAD_ZERO_EXTEND_INT, Is.EqualTo(7));
-        Assert.That((int)LOAD_SIGN_EXTEND_INT, Is.EqualTo(8));
-        Assert.That((int)LOAD_SOURCE, Is.EqualTo(9));
-#else
-        Assert.That(Enum.GetValues<CodeGen.GenIntCastDesc.CheckKind>(), Has.Length.EqualTo(3));
-        Assert.That(Enum.GetValues<CodeGen.GenIntCastDesc.ExtendKind>(), Has.Length.EqualTo(6));
-        Assert.That((int)LOAD_ZERO_EXTEND_SMALL_INT, Is.EqualTo(3));
-        Assert.That((int)LOAD_SIGN_EXTEND_SMALL_INT, Is.EqualTo(4));
-        Assert.That((int)LOAD_SOURCE, Is.EqualTo(5));
-#endif
+
+        if (Configuration.TARGET_64BIT || Configuration.TARGET_WASM)
+        {
+            Assert.That((int)CHECK_UINT_RANGE, Is.EqualTo(3));
+            Assert.That((int)CHECK_POSITIVE_INT_RANGE, Is.EqualTo(4));
+            Assert.That((int)CHECK_INT_RANGE, Is.EqualTo(5));
+            Assert.That((int)ZERO_EXTEND_INT, Is.EqualTo(3));
+            Assert.That((int)SIGN_EXTEND_INT, Is.EqualTo(4));
+            Assert.That((int)LOAD_ZERO_EXTEND_SMALL_INT, Is.EqualTo(5));
+            Assert.That((int)LOAD_SIGN_EXTEND_SMALL_INT, Is.EqualTo(6));
+            Assert.That((int)LOAD_ZERO_EXTEND_INT, Is.EqualTo(7));
+            Assert.That((int)LOAD_SIGN_EXTEND_INT, Is.EqualTo(8));
+            Assert.That((int)LOAD_SOURCE, Is.EqualTo(9));
+        }
+        else
+        {
+            Assert.That((int)LOAD_ZERO_EXTEND_SMALL_INT, Is.EqualTo(3));
+            Assert.That((int)LOAD_SIGN_EXTEND_SMALL_INT, Is.EqualTo(4));
+            Assert.That((int)LOAD_SOURCE, Is.EqualTo(5));
+        }
     }
 
     [TestCase(TYP_INT, false, TYP_BYTE, -128, 127)]
@@ -70,7 +71,6 @@ internal static class CodeGenLinearCastClosureTests
         });
     }
 
-#if TARGET_64BIT
     [TestCase(TYP_INT, false, TYP_ULONG, true, CHECK_POSITIVE, ZERO_EXTEND_INT, 4)]
     [TestCase(TYP_INT, false, TYP_LONG, false, CHECK_NONE, SIGN_EXTEND_INT, 4)]
     [TestCase(TYP_UINT, true, TYP_LONG, false, CHECK_NONE, ZERO_EXTEND_INT, 4)]
@@ -80,6 +80,8 @@ internal static class CodeGenLinearCastClosureTests
         CodeGen.GenIntCastDesc.CheckKind expectedCheck, CodeGen.GenIntCastDesc.ExtendKind expectedExtend,
         int expectedSize)
     {
+        Assume.That(Configuration.TARGET_64BIT, "This test requires a 64-bit target.");
+
         WithCastCompiler(() =>
         {
             var source = new GenTreeLclVar(sourceType, 0);
@@ -100,7 +102,6 @@ internal static class CodeGenLinearCastClosureTests
         });
     }
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
     [TestCase(TYP_LONG, false, TYP_INT, true, CHECK_INT_RANGE)]
     [TestCase(TYP_LONG, true, TYP_INT, true, CHECK_POSITIVE_INT_RANGE)]
     [TestCase(TYP_LONG, false, TYP_UINT, true, CHECK_UINT_RANGE)]
@@ -109,6 +110,10 @@ internal static class CodeGenLinearCastClosureTests
         var_types sourceType, bool sourceUnsigned, var_types castType,
         bool overflow, CodeGen.GenIntCastDesc.CheckKind expectedCheck)
     {
+        Assume.That(
+            Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "This test requires a LoongArch64 or RISC-V64 target.");
+
         WithCastCompiler(() =>
         {
             var source = new GenTreeLclVar(sourceType, 0);
@@ -128,10 +133,7 @@ internal static class CodeGenLinearCastClosureTests
             }
         });
     }
-#endif
-#endif
 
-#if TARGET_WASM
     [TestCase(TYP_INT, false, TYP_LONG, false, CHECK_NONE, SIGN_EXTEND_INT, 4)]
     [TestCase(TYP_UINT, true, TYP_ULONG, false, CHECK_NONE, ZERO_EXTEND_INT, 4)]
     [TestCase(TYP_LONG, false, TYP_INT, true, CHECK_INT_RANGE, COPY, 4)]
@@ -141,6 +143,8 @@ internal static class CodeGenLinearCastClosureTests
         CodeGen.GenIntCastDesc.CheckKind expectedCheck, CodeGen.GenIntCastDesc.ExtendKind expectedExtend,
         int expectedSize)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         WithCastCompiler(() =>
         {
             var source = new GenTreeLclVar(sourceType, 0);
@@ -160,7 +164,6 @@ internal static class CodeGenLinearCastClosureTests
             }
         });
     }
-#endif
 
     private static unsafe void WithCastCompiler(Action action)
     {

@@ -4,17 +4,17 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     private static void emitInsSanityCheckWasm(instrDesc id)
     {
     }
-#endif
 
     public unsafe void emitDispInsWasm(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)

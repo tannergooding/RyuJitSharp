@@ -58,8 +58,7 @@ public sealed partial class CodeGen
                 VarSetOps.RemoveElemD(_compiler, _gcInfo.gcVarPtrSetCur, varDsc._varIndex);
             }
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf($"\t\t\t\t\t\t\tV{varNum:D2} in reg ");
                 varDsc.PrintVarReg();
@@ -67,7 +66,6 @@ public sealed partial class CodeGen
                 Compiler.printTreeId(lclNode);
                 jitprintf("\n");
             }
-#endif
             _regSet.AddMaskVars(genGetRegMask(in varDsc));
         }
 

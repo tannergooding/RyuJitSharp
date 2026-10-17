@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if DEBUG
     private int computeOperandDstCount(GenTree operand)
     {
         if (operand.IsContained)
@@ -52,7 +51,6 @@ public sealed partial class LinearScan
         }
         return count;
     }
-#endif
 
     private void buildRefPositionsForNode(GenTree tree, LsraLocation currentLocation)
     {

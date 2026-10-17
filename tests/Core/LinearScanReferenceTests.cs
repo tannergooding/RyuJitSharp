@@ -124,9 +124,11 @@ internal static unsafe class LinearScanReferenceTests
         WithCompiler(compiler => {
             var allocator = new LinearScan(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-#if DEBUG
-            CurrentBuildNode(allocator) = tree;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CurrentBuildNode(allocator) = tree;
+            }
+
             var definition = allocator.newRefPositionRaw(10, tree, RefType.RefTypeDef);
             var use = allocator.newRefPositionRaw(12, tree, RefType.RefTypeUse);
 
@@ -134,19 +136,21 @@ internal static unsafe class LinearScanReferenceTests
             Assert.That(allocator.refPositions[1], Is.SameAs(use));
             Assert.That(definition.assignedReg(), Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(use.treeNode, Is.SameAs(tree));
-#if DEBUG
-            Assert.That(definition.rpNum, Is.EqualTo(0u));
-            Assert.That(use.rpNum, Is.EqualTo(1u));
-            Assert.That(definition.buildNode, Is.SameAs(tree));
-            Assert.That(use.buildNode, Is.Null);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(ReferenceNumber(definition), Is.EqualTo(0u));
+                Assert.That(ReferenceNumber(use), Is.EqualTo(1u));
+                Assert.That(BuildNode(definition), Is.SameAs(tree));
+                Assert.That(BuildNode(use), Is.Null);
+            }
         });
     }
 
-#if DEBUG
     [Test]
     public static void RelatedIntervalsPreserveNativeDiagnosticText()
     {
+        Assume.That(TestConfiguration.IsDebug, "Linear-scan diagnostic output is only available in Debug builds.");
+
         WithCompiler(compiler => {
             TestConfiguration.EnableVerbose(compiler);
             var local = new Interval(TYP_INT, SRBM_X64_RAX) { isLocalVar = true, varNum = 7, intervalIndex = 2 };
@@ -159,8 +163,8 @@ internal static unsafe class LinearScanReferenceTests
                 s_jitstdout = writer;
                 temporary.assignRelatedInterval(local);
                 Assert.That(temporary.assignRelatedIntervalIfUnassigned(temporary), Is.False);
-                temporary.tinyDump();
-                local.tinyDump();
+                DumpInterval(temporary);
+                DumpInterval(local);
                 writer.Flush();
             }
             finally
@@ -177,7 +181,15 @@ internal static unsafe class LinearScanReferenceTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBuildNode")]
     private static extern ref GenTree? CurrentBuildNode(LinearScan allocator);
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "rpNum")]
+    private static extern ref uint ReferenceNumber(RefPosition reference);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "buildNode")]
+    private static extern ref GenTree? BuildNode(RefPosition reference);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "tinyDump")]
+    private static extern void DumpInterval(Interval interval);
 
     private static void WithCompiler(Action<Compiler> action)
     {

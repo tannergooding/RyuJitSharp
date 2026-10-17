@@ -16,16 +16,17 @@ internal sealed unsafe class Arm64EmitterGroupSaveTests
     [SetUp]
     public void RequireApplicableConfiguration()
     {
-        if (!Configuration.TARGET_ARM64 && !Configuration.EMITTER_STATS)
+        if (!Configuration.TARGET_ARMARCH && !Configuration.EMITTER_STATS)
         {
-            Assert.Ignore("This fixture requires ARM64 semantics or emitter statistics.");
+            Assert.Ignore("This fixture requires ARM architecture semantics or emitter statistics.");
         }
     }
 
-#if TARGET_ARMARCH
     [Test]
     public static void Arm64SaveClearsBarrierWithoutMarkingBranchRemovable()
     {
+        Assume.That(Configuration.TARGET_ARMARCH, "This test requires an ARM architecture target.");
+
         var emitter = CreateEmitter();
         var group = new insGroup();
         var branch = SaveEmitter.Basic(INS_b);
@@ -49,7 +50,6 @@ internal sealed unsafe class Arm64EmitterGroupSaveTests
         Assert.That(group.igLastIns, Is.SameAs(branch));
 #endif
     }
-#endif
 
     [Test]
     public static void SaveAccumulatesNativeWidthCountersAndPrologMaxima()
@@ -170,10 +170,8 @@ internal sealed unsafe class Arm64EmitterGroupSaveTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastInsIG")]
     private static extern ref insGroup? LastInstructionGroup(Emitter emitter);
 
-#if TARGET_ARMARCH
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastMemBarrier")]
     private static extern ref Emitter.instrDesc? LastBarrier(Emitter emitter);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIGptrs")]
     private static extern ref uint TotalPointers(Emitter? emitter);

@@ -36,9 +36,7 @@ public sealed partial class CodeGen
                 // The AOT cookie address must be loaded indirectly.
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE | EA_DSP_RELOC_FLG, initReg,
                     unchecked((nint)_compiler.gsGlobalSecurityCookieAddr), INS_FLAGS_DONT_CARE
-#if DEBUG
-                    , (nuint)THT_SetGSCookie, GTF_EMPTY
-#endif
+                    , Configuration.DEBUG ? (nuint)THT_SetGSCookie : 0, GTF_EMPTY
                     );
                 if (Configuration.TARGET_ARM)
                 {

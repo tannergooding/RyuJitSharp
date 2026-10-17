@@ -29,15 +29,13 @@ public sealed partial class ValueNumStore
         }
 
         var vn = VNForHandle(identity, GTF_ICON_FIELD_SEQ);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             // Match vnDump's symbolic field-sequence branch; identity tokens are never printed.
             jitprintf("     {");
             _compiler.gtDispFieldSeq(fieldSeq, 0);
             jitprintf($" }} is ${vn:x}\n");
         }
-#endif
         return vn;
     }
 

@@ -10,12 +10,7 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionGroupTests
 {
-    private static bool CapturesPerformanceMetrics =>
-#if DEBUG
-        true;
-#else
-        Configuration.LATE_DISASM;
-#endif
+    private static bool CapturesPerformanceMetrics => Configuration.DEBUG || Configuration.LATE_DISASM;
 
     [Test]
     public static void GroupNumberPreservesUnsignedWidth()
@@ -46,9 +41,10 @@ internal static unsafe class EmitterInstructionGroupTests
         Assert.That(group.igSize, Is.Zero);
         Assert.That(group.igGCregs, Is.EqualTo(regMask.SRBM_NONE));
         Assert.That(group.igInsCnt, Is.Zero);
-#if TARGET_XARCH
-        Assert.That(group.igLastIns, Is.Null);
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            Assert.That(group.igLastIns, Is.Null);
+        }
 #if DEBUG
         Assert.That(group.igSelf, Is.SameAs(group));
         Assert.That(group.igBlocks, Is.Empty);
@@ -75,10 +71,11 @@ internal static unsafe class EmitterInstructionGroupTests
 
         Assert.That(head.igNext, Is.SameAs(middle));
         Assert.That(middle.igNext, Is.SameAs(tail));
-#if TARGET_XARCH
-        Assert.That(middle.igPrev, Is.SameAs(head));
-        Assert.That(tail.igPrev, Is.SameAs(middle));
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            Assert.That(middle.igPrev, Is.SameAs(head));
+            Assert.That(tail.igPrev, Is.SameAs(middle));
+        }
         Assert.That(LastGroup(emitter), Is.SameAs(tail));
         Assert.That(emitter.emitCurIG, Is.SameAs(tail));
 
@@ -86,9 +83,10 @@ internal static unsafe class EmitterInstructionGroupTests
         InsertAfter(emitter, tail, final);
         Assert.That(tail.igNext, Is.SameAs(final));
         Assert.That(LastGroup(emitter), Is.SameAs(final));
-#if TARGET_XARCH
-        Assert.That(final.igPrev, Is.SameAs(tail));
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            Assert.That(final.igPrev, Is.SameAs(tail));
+        }
     }
 
     [TestCase(InsGroupFlags.Prolog)]

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -11,6 +10,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64ScalableMaskTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_UBYTE)]
     [TestCase(TYP_SHORT)]
@@ -168,4 +173,3 @@ internal static class Arm64ScalableMaskTests
         return value;
     }
 }
-#endif

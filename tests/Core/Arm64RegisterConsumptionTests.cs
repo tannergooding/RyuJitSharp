@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -187,6 +186,8 @@ internal static unsafe class Arm64RegisterConsumptionTests
 
     private static void WithCompiler(Action<Compiler, CodeGen> action)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -214,4 +215,3 @@ internal static unsafe class Arm64RegisterConsumptionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
     private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
 }
-#endif

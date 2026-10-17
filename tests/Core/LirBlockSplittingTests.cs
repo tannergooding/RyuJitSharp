@@ -153,10 +153,12 @@ internal static unsafe class LirBlockSplittingTests
         var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
         var root = new InlineContext(strategy) { _ilSize = 31 };
         var inlinee = new InlineContext(strategy) { _parent = root, _location = new ILLocation(rootOffset, 0), _ilSize = 101 };
-#if DEBUG
-        root._ilInstsSet = new BitArray(31, true);
-        inlinee._ilInstsSet = new BitArray(101, true);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            root._ilInstsSet = new BitArray(31, true);
+            inlinee._ilInstsSet = new BitArray(101, true);
+        }
+
         return new GenTreeILOffset(new DebugInfo(inlinee, new ILLocation(100, 0)));
     }
 

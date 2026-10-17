@@ -388,15 +388,10 @@ internal static unsafe class EmitterEmissionDriverTests
         void* hotRW = null;
         void* cold = null;
         void* coldRW = null;
-#if DEBUG
         var instructions = uint.MaxValue;
-#endif
         var actual = emitter.emitEndCodeGen(compiler, contiguousPointerLocals, fullyInterruptible, fullPtrMap, exceptions,
-            &prolog, &epilog, &hot, &hotRW, &cold, &coldRW
-#if DEBUG
-            , &instructions
-#endif
-            );
+            &prolog, &epilog, &hot, &hotRW, &cold, &coldRW,
+            TestConfiguration.IsDebug ? &instructions : null);
         return new EndResult(actual, prolog, epilog, hot, hotRW, cold, coldRW
 #if DEBUG
             , instructions

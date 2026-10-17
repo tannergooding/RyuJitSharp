@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -18,7 +18,7 @@ internal static class Arm64ScalableMaskTreeTests
     [Test]
     public static void ScalableOverlayFitsAndRetainsZeroedPadding()
     {
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             var mask = compiler.gtNewMskConNode(TYP_MASK, TYP_LONG, true);
 
             Assert.That(Unsafe.SizeOf<simdmaskscalable_t>(), Is.EqualTo(2));
@@ -37,7 +37,7 @@ internal static class Arm64ScalableMaskTreeTests
     [TestCase(TYP_LONG)]
     public static void FixedFactoriesKeepTheirMaskPatterns(var_types type)
     {
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             if (TestConfiguration.IsDebug)
             {
                 Arm64ScalableMaskValueNumTests.SetScalableConfiguration(false);
@@ -63,7 +63,7 @@ internal static class Arm64ScalableMaskTreeTests
     public static void TrueMaskFactoryUsesTheRequestedElementWidth(var_types type)
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
             var mask = compiler.gtNewSimdTrueMaskNode(type);
 
@@ -83,7 +83,7 @@ internal static class Arm64ScalableMaskTreeTests
         var_types storedType, var_types requestedType, bool trueMask, bool allBits)
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
             var mask = compiler.gtNewMskConNode(TYP_MASK, storedType, true);
 
@@ -96,7 +96,7 @@ internal static class Arm64ScalableMaskTreeTests
     public static void FalseMasksIgnoreBaseTypeButPreserveTheirEncodedBytes()
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
             var first = compiler.gtNewSimdFalseMaskByteNode();
             var second = compiler.gtNewMskConNode(TYP_MASK, TYP_DOUBLE, false);
@@ -112,32 +112,30 @@ internal static class Arm64ScalableMaskTreeTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void CloningAndHashingPreserveTheNativeOpaqueMaskPayload()
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
             var original = compiler.gtNewMskConNode(TYP_MASK, TYP_SHORT, true);
             var clone = compiler.gtCloneExpr(original).AsMskCon();
 
             Assert.That(clone, Is.Not.SameAs(original));
             Assert.That(clone.SimdMaskVal, Is.EqualTo(original.SimdMaskVal));
-            Assert.That(compiler.gtHashValue(clone), Is.EqualTo(compiler.gtHashValue(original)));
+            Assert.That(HashValue(compiler, clone), Is.EqualTo(HashValue(compiler, original)));
             clone.SimdScalableMaskVal.Index = 0;
             Assert.That(original.SimdScalableMaskVal.Index, Is.EqualTo(1));
-            Assert.That(compiler.gtHashValue(clone), Is.Not.EqualTo(compiler.gtHashValue(original)));
+            Assert.That(HashValue(compiler, clone), Is.Not.EqualTo(HashValue(compiler, original)));
         });
     }
-#endif
 
     [TestCase(TYP_BYTE, true, "byte   <0x1, 0x1, 0x1...>")]
     [TestCase(TYP_LONG, false, "long   <0x0, 0x0, 0x0...>")]
     public static void ConstantDumpsPrintTheScalablePattern(var_types type, bool index, string expected)
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
             var mask = compiler.gtNewMskConNode(TYP_MASK, type, index);
             using var stream = new MemoryStream();
@@ -166,7 +164,7 @@ internal static class Arm64ScalableMaskTreeTests
         SimdScalableKind kind, ulong index, var_types requestedType, bool folded)
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
             var vector = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, TYP_LONG, kind, index, 1);
             var intrinsic = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_ConvertVectorToMask, requestedType, 0, vector);
@@ -186,5 +184,13 @@ internal static class Arm64ScalableMaskTreeTests
             Assert.That(vector.SimdScalableVal.Index.u64[0], Is.EqualTo(index));
         });
     }
+
+    private static void WithArm64Compiler(Action<Compiler> action)
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires an ARM64 target.");
+        CSELiveAcrossCallCostTests.WithCompiler(action);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "gtHashValue")]
+    private static extern uint HashValue(Compiler compiler, GenTree tree);
 }
-#endif

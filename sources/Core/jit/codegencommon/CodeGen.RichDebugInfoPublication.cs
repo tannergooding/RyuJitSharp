@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,9 +14,12 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if DEBUG
-    private static readonly Lock s_richDebugInfoFileLock = new();
+    private static class DebugData
+    {
+        internal static readonly Lock RichDebugInfoFileLock = new();
+    }
 
+    [Conditional("DEBUG")]
     public unsafe void genReportRichDebugInfoInlineTreeToFile(TextWriter writer, InlineContext context, ref bool first)
     {
         if (context.Sibling is not null)
@@ -47,6 +51,7 @@ public sealed partial class CodeGen
         }
     }
 
+    [Conditional("DEBUG")]
     public unsafe void genReportRichDebugInfoToFile()
     {
         var pathPointer = JitConfig.WriteRichDebugInfoFile;
@@ -55,7 +60,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        lock (s_richDebugInfoFileLock)
+        lock (DebugData.RichDebugInfoFileLock)
         {
             var path = Marshal.PtrToStringUTF8((nint)pathPointer)
                 ?? throw new FatalJitException(CORJIT_SKIPPED, "Rich debug-info file path is invalid.");
@@ -90,6 +95,7 @@ public sealed partial class CodeGen
         }
     }
 
+    [Conditional("DEBUG")]
     internal unsafe void genWriteRichDebugInfo(TextWriter writer)
     {
         writer.Write($"{{\"MethodID\":{unchecked((long)(nint)_compiler.info.compMethodHnd)},");
@@ -118,7 +124,6 @@ public sealed partial class CodeGen
         writer.Write("]}");
         writer.Write(Environment.NewLine);
     }
-#endif
 
     private static InlineContext? SuccessfulSibling(InlineContext? context)
     {
@@ -158,9 +163,7 @@ public sealed partial class CodeGen
 
     public unsafe void genReportRichDebugInfo()
     {
-#if DEBUG
         genReportRichDebugInfoToFile();
-#endif
         if (JitConfig.RichDebugInfo == 0)
         {
             return;

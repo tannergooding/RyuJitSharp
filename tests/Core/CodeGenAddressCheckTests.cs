@@ -135,12 +135,13 @@ internal static class CodeGenAddressCheckTests
         });
     }
 
-#if DEBUG
     [TestCase(GT_LEA)]
     [TestCase(GT_NULLCHECK)]
     [TestCase(GT_BOUNDS_CHECK)]
     public static void DisassemblyRecordsAddressChecks(genTreeOps oper)
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly recording is only available in Debug builds.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = Register(compiler, TYP_LONG, REG_X64_RAX);
@@ -152,7 +153,7 @@ internal static class CodeGenAddressCheckTests
                 _ => () => codeGen.genRangeCheck(new GenTreeBoundsChk(source,
                     Register(compiler, TYP_LONG, REG_X64_RCX), SCK_RNGCHK_FAIL)),
             };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_RNGCHK_FAIL);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(generate);
@@ -160,5 +161,4 @@ internal static class CodeGenAddressCheckTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 }

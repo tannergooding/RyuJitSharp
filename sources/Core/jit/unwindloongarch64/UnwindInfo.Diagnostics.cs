@@ -4,7 +4,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.Globals;
 
@@ -14,6 +14,7 @@ public sealed partial class UnwindInfo
 {
     private const uint UFI_LOONGARCH64_INITIALIZED_PATTERN = 0x0FACADE0;
 
+    [Conditional("DEBUG")]
     private void DumpLoongArch64(bool isHotCode, int indent)
     {
         var fragmentCount = 0;
@@ -28,7 +29,9 @@ public sealed partial class UnwindInfo
         jitprintf($"{prefix}  {fragmentCount} fragment{(fragmentCount != 1 ? "s" : "")}\n");
         jitprintf($"{prefix}  uwiFragmentLast: {LoongArch64Identity(uwiFragmentLast)}\n");
         jitprintf($"{prefix}  uwiEndLoc: {LoongArch64LocationState(uwiEndLoc)}\n");
+#if DEBUG
         jitprintf($"{prefix}  uwiInitialized: 0x{(uwiInitialized ? UFI_LOONGARCH64_INITIALIZED_PATTERN : 0u):x8}\n");
+#endif
 
         var fragmentNumber = 0;
         for (var fragment = uwiFragmentFirst; fragment is not null; fragment = fragment.ufiNext)
@@ -39,6 +42,7 @@ public sealed partial class UnwindInfo
 
     private sealed partial class UnwindFragmentInfo
     {
+        [Conditional("DEBUG")]
         public void DumpLoongArch64(int fragmentNumber, int indent)
         {
             var prefix = UnwindInfo.LoongArch64Indent(indent);
@@ -64,7 +68,9 @@ public sealed partial class UnwindInfo
             jitprintf($"{prefix}  ufiCodeWords: {ufiCodeWords}\n");
             jitprintf($"{prefix}  ufiEpilogScopes: {ufiEpilogScopes}\n");
             jitprintf($"{prefix}  ufiStartOffset: 0x{ufiStartOffset:x}\n");
+#if DEBUG
             jitprintf($"{prefix}  ufiInProlog: {dspBool(ufiInProlog)}\n");
+#endif
             jitprintf($"{prefix}  ufiInitialized: 0x{UnwindInfo.UFI_LOONGARCH64_INITIALIZED_PATTERN:x8}\n");
 
             ufiPrologCodes.DumpLoongArch64(indent + 2);
@@ -77,6 +83,7 @@ public sealed partial class UnwindInfo
 
     private sealed partial class UnwindPrologCodes
     {
+        [Conditional("DEBUG")]
         public void DumpLoongArch64(int indent)
         {
             var prefix = UnwindInfo.LoongArch64Indent(indent);
@@ -110,6 +117,7 @@ public sealed partial class UnwindInfo
 
     private sealed partial class UnwindEpilogCodes
     {
+        [Conditional("DEBUG")]
         public void DumpLoongArch64(int indent)
         {
             var prefix = UnwindInfo.LoongArch64Indent(indent);
@@ -137,6 +145,7 @@ public sealed partial class UnwindInfo
 
     private sealed partial class UnwindEpilogInfo
     {
+        [Conditional("DEBUG")]
         public void DumpLoongArch64(int indent)
         {
             var prefix = UnwindInfo.LoongArch64Indent(indent);
@@ -167,4 +176,3 @@ public sealed partial class UnwindInfo
         return location.HasValue ? "captured" : "null";
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM && PROFILING_SUPPORTED
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +26,9 @@ internal static unsafe class Arm32ProfilingLeaveTests
     [Test]
     public static void UnhookedLeaveDoesNotEmitInstructionsOrChangeCallbackState()
     {
+        Assume.That(Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED,
+            "This test requires ARM32 profiling support.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
@@ -36,15 +38,15 @@ internal static unsafe class Arm32ProfilingLeaveTests
         });
     }
 
-#if DEBUG
-    // ARM32 relocatable-instruction recording is skipped by the debug descriptor path.
-    [TestCase(false)]
-#else
     [TestCase(false)]
     [TestCase(true)]
-#endif
     public static void HookedReferenceReturnPreservesTheResultAroundTheProfilerCall(bool indirect)
     {
+        Assume.That(Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED,
+            "This test requires ARM32 profiling support.");
+        Assume.That(!Configuration.DEBUG || !indirect,
+            "ARM32 relocatable-instruction recording is skipped by the Debug descriptor path.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             CORINFO_METHOD_INFO methodInfo = default;
@@ -80,6 +82,9 @@ internal static unsafe class Arm32ProfilingLeaveTests
     [Test]
     public static void TailcallLeaveDoesNotPreserveTheIntegerReturnRegister()
     {
+        Assume.That(Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED,
+            "This test requires ARM32 profiling support.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             CORINFO_METHOD_INFO methodInfo = default;
@@ -106,6 +111,8 @@ internal static unsafe class Arm32ProfilingLeaveTests
     public static void VoidAndFloatingReturnsFollowTheArm32RegisterAbi(
         var_types returnType, bool isVarArgs, bool useSoftFp)
     {
+        Assume.That(Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED,
+            "This test requires ARM32 profiling support.");
         Assume.That(Configuration.CONFIGURABLE_ARM_ABI || (useSoftFp == Configuration.ARM_SOFTFP));
 
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
@@ -160,4 +167,3 @@ internal static unsafe class Arm32ProfilingLeaveTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 }
-#endif

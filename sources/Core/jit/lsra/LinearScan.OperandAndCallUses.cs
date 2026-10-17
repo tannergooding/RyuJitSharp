@@ -268,13 +268,14 @@ public sealed partial class LinearScan
             assert(argNode.Oper.IsPutArgStk);
         }
 
-#if DEBUG
-        foreach (var arg in call.Args.EarlyArgs)
+        if (Configuration.DEBUG)
         {
-            assert(arg.EarlyNode?.Oper.IsPutArgStk is true);
-            assert(arg.LateNode is null);
+            foreach (var arg in call.Args.EarlyArgs)
+            {
+                assert(arg.EarlyNode?.Oper.IsPutArgStk is true);
+                assert(arg.LateNode is null);
+            }
         }
-#endif
 
         return srcCount;
     }

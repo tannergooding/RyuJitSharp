@@ -22,9 +22,11 @@ public sealed partial class LinearScan
             type = TYP_SIMD16;
         }
         var source = _compiler.gtNewLclvNode(type, checked((int)localNumber));
-#if DEBUG
-        source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+        }
+
         GenTree destination = source;
         if (fromReg == REG_STK)
         {
@@ -45,19 +47,18 @@ public sealed partial class LinearScan
             destination.Flags &= ~GTF_VAR_DEATH;
             source.RegNum = fromReg;
             destination.RegNum = toReg;
-#if DEBUG
-            destination._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+            if (Configuration.DEBUG)
+            {
+                destination._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+            }
         }
         destination.IsUnusedValue = true;
 
         var treeRange = LIR.SeqTree(_compiler, destination);
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             _compiler.gtDispRange(treeRange);
         }
-#endif
         if (insertionPoint is not null)
         {
             block.InsertBefore(insertionPoint, treeRange);
@@ -80,12 +81,10 @@ public sealed partial class LinearScan
     private void insertSwap(BasicBlock block, GenTree? insertionPoint, uint firstLocal,
         regNumber firstReg, uint secondLocal, regNumber secondReg)
     {
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf($"   {FMT_BB(block.bbNum)} {(insertionPoint is null ? "bottom" : "top")}: swap V{firstLocal:D2} in {firstReg.Name} with V{secondLocal:D2} in {secondReg.Name}\n");
         }
-#endif
         assert(firstReg != REG_STK && firstReg != REG_NA && secondReg != REG_STK && secondReg != REG_NA);
         ref var firstDesc = ref _compiler.lvaGetDesc(checked((int)firstLocal));
         ref var secondDesc = ref _compiler.lvaGetDesc(checked((int)secondLocal));
@@ -94,11 +93,12 @@ public sealed partial class LinearScan
         var second = _compiler.gtNewLclvNode(secondDesc.Type, checked((int)secondLocal));
         second.RegNum = secondReg;
         var swap = new GenTreeOp(GT_SWAP, TYP_VOID, first, second) { RegNum = REG_NA };
-#if DEBUG
-        first._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-        second._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-        swap._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            first._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+            second._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+            swap._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+        }
         var range = LIR.SeqTree(_compiler, swap);
         if (insertionPoint is not null)
         {

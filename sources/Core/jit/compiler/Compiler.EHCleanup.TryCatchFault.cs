@@ -17,11 +17,7 @@ public partial class Compiler
         JITDUMP("\n*************** In fgRemoveEmptyTryCatchOrTryFault()\n");
         assert(!fgFuncletsCreated);
 
-        var enabled = true;
-#if DEBUG
-        enabled = JitConfig.JitEnableRemoveEmptyTryCatchOrTryFault == 1;
-#endif
-        if (!enabled)
+        if (Configuration.DEBUG && (JitConfig.JitEnableRemoveEmptyTryCatchOrTryFault != 1))
         {
             JITDUMP("Empty try/catch/fault removal disabled.\n");
             return PhaseStatus.MODIFIED_NOTHING;

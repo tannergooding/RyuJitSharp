@@ -145,8 +145,7 @@ public sealed unsafe class BlockCountInstrumentor(Compiler compiler) : Instrumen
             or ICorJitInfo.PgoInstrumentationKind.BasicBlockLongCount);
         var counter = profileMemory + entry.Offset;
 
-#if DEBUG
-        if (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0)
+        if (Configuration.DEBUG && JitConfig.JitPropagateSynthesizedCountsToProfileData > 0)
         {
             if (entry.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount)
             {
@@ -159,7 +158,7 @@ public sealed unsafe class BlockCountInstrumentor(Compiler compiler) : Instrumen
 
             return;
         }
-#endif
+
         var countType = entry.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.BasicBlockIntCount
             ? TYP_INT : TYP_LONG;
         var increment = CreateCounterIncrement(Compiler, counter, countType);

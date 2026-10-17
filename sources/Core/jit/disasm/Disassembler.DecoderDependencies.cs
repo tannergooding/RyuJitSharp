@@ -153,9 +153,15 @@ public partial struct Disassembler
     [DllImport("kernel32.dll", EntryPoint = "GetProcAddress", ExactSpelling = true, SetLastError = true)]
     private static extern nint GetProcAddress(nint library, nint symbolName);
 
-#if DEBUG
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000",
+        Justification = "The returned StreamWriter owns the stream; failed ownership transfers are disposed in finally.")]
     internal static unsafe StreamWriter? OpenLateDisassemblyFile(byte* fileName)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Late disassembly output is only available in Debug builds.");
+        }
+
         var path = Marshal.PtrToStringUTF8((nint)fileName);
         if (path is null)
         {
@@ -181,7 +187,6 @@ public partial struct Disassembler
             file?.Dispose();
         }
     }
-#endif
 
     // Decoder callbacks update this struct while emitting the buffer.
 #pragma warning disable IDE0251

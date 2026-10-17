@@ -163,11 +163,11 @@ internal static unsafe class CodeGenUnaryTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_INT)]
     [TestCase(TYP_DOUBLE)]
     public static void DisassemblyRecordsNegationAndConsumesOperand(var_types type)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCodeGen((compiler, codeGen) =>
         {
             GenTree operand = type == TYP_INT
@@ -176,7 +176,7 @@ internal static unsafe class CodeGenUnaryTests
             operand.RegNum = type == TYP_INT ? REG_X64_RAX : REG_X64_XMM0;
             var tree = compiler.gtNewUnaryNode(GT_NEG, type, operand);
             tree.RegNum = operand.RegNum;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.genCodeForNegNot(tree.AsUnOp()));
@@ -184,7 +184,6 @@ internal static unsafe class CodeGenUnaryTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {

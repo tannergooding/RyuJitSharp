@@ -96,10 +96,8 @@ public partial class Emitter
         void** codeAddr,
         void** codeAddrRW,
         void** coldCodeAddr,
-        void** coldCodeAddrRW
-#if DEBUG
-        , uint* instrCount
-#endif
+        void** coldCodeAddrRW,
+        uint* instrCount
         )
     {
         var compiler = _compiler ?? throw new FatalJitException("Final instruction emission requires an active compiler.");
@@ -359,8 +357,12 @@ public partial class Emitter
             var cp = codeChunk.block;
             writeableOffset = unchecked((nint)(codeChunk.blockRW - codeChunk.block));
 
+            if (Configuration.DEBUG)
+            {
+                *instrCount = 0;
+            }
+
 #if DEBUG
-            *instrCount = 0;
             var nextMapping = compiler.genRichIPmappings.First;
 #endif
 #if DEBUG
@@ -603,14 +605,15 @@ public partial class Emitter
                 {
                     jitprintf($"\t\t\t\t\t\t;; size={cp - bp} bbWeight={refCntWtd2str(ig.igWeight)} PerfScore {ig.igPerfScore:F2}");
                 }
-#if DEBUG
-                *instrCount += ig.igInsCnt;
-#else
-                if (compiler.opts.disAsm)
+                if (Configuration.DEBUG)
+                {
+                    *instrCount += ig.igInsCnt;
+                }
+                else if (compiler.opts.disAsm)
                 {
                     jitprintf(" ");
                 }
-#endif
+
                 emitCurIG = null;
                 assert(ig.igSize >= cp - bp);
 

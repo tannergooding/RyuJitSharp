@@ -47,11 +47,7 @@ public partial class Emitter
             // Offsets through the next align group still include the cumulative padding removed so far.
             var loopIGOffset = unchecked(loopHeadIG.igOffs - alignBytesRemoved - estimatedPaddingNeeded);
             var actualPaddingNeeded = containingIG.endsWithAlignInstr()
-                ? emitCalculatePaddingForLoopAlignment(loopHeadIG, loopIGOffset
-#if DEBUG
-                    , false, containingIG, loopHeadPredIG
-#endif
-                    )
+                ? emitCalculatePaddingForLoopAlignment(loopHeadIG, loopIGOffset, false, containingIG, loopHeadPredIG)
                 : 0u;
 
             assert(estimatedPaddingNeeded >= actualPaddingNeeded);
@@ -77,7 +73,7 @@ public partial class Emitter
                 else
                 {
                     var paddingToAdjust = actualPaddingNeeded;
-                    var instructionsToAdjust = 0;
+                    int instructionsToAdjust;
                     if (Configuration.DEBUG)
                     {
                         if (Configuration.TARGET_XARCH)
@@ -166,8 +162,6 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
         emitCheckIGList();
-#endif
     }
 }

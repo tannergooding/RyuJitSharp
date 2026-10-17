@@ -15,12 +15,13 @@ public sealed partial class Lowering
         assert(!call.IsFastTailCall);
         var abiInfo = callArg.AbiInfo;
         assert(abiInfo.IsSplitAcrossRegistersAndStack);
-#if DEBUG
-        for (var i = 0; i < abiInfo.NumSegments; i++)
+        if (Configuration.DEBUG)
         {
-            assert((i < abiInfo.NumSegments - 1) == abiInfo.Segments[i].IsPassedInRegister);
+            for (var i = 0; i < abiInfo.NumSegments; i++)
+            {
+                assert((i < abiInfo.NumSegments - 1) == abiInfo.Segments[i].IsPassedInRegister);
+            }
         }
-#endif
         var compiler = CompilerInstance;
         var numRegisters = abiInfo.NumSegments - 1;
         var stackSegment = abiInfo.Segments[numRegisters];

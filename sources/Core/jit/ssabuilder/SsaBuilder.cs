@@ -52,13 +52,14 @@ public sealed partial class SsaBuilder
         phi.Next = store;
         store.Prev = phi;
 
-#if DEBUG
-        var seqNum = 1;
-        foreach (var node in statement.TreeList)
+        if (Configuration.DEBUG)
         {
-            node._seqNum = seqNum++;
+            var seqNum = 1;
+            foreach (var node in statement.TreeList)
+            {
+                node._seqNum = seqNum++;
+            }
         }
-#endif
 
         compiler.fgInsertStmtAtBeg(block, statement);
         JITDUMP($"Added PHI definition for V{lclNum:D2} at start of {FMT_BB(block.bbNum)}.\n");
@@ -103,17 +104,18 @@ public sealed partial class SsaBuilder
         ref var ssaDesc = ref compiler.lvaGetDesc(lclNum).GetPerSsaData(ssaNum);
         ssaDesc.AddPhiUse(block);
 
-#if DEBUG
-        var seqNum = 1;
-        foreach (var node in statement.TreeList)
+        if (Configuration.DEBUG)
         {
-            node._seqNum = seqNum++;
+            var seqNum = 1;
+            foreach (var node in statement.TreeList)
+            {
+                node._seqNum = seqNum++;
+            }
         }
-        if (compiler.verboseSsa)
+        if (Configuration.DEBUG && compiler.verboseSsa)
         {
             logf($"Added PHI arg u:{ssaNum} for V{lclNum:D2} from {FMT_BB(pred.bbNum)} in {FMT_BB(block.bbNum)}.\n");
         }
-#endif
     }
 
     private void InsertPhiFunctions()
@@ -141,12 +143,10 @@ public sealed partial class SsaBuilder
         for (var i = 0; i < count; i++)
         {
             var block = postOrder[i];
-#if DEBUG
-            if (_compiler.verboseSsa)
+            if (Configuration.DEBUG && _compiler.verboseSsa)
             {
                 logf($"Considering dominance frontier of block {FMT_BB(block.bbNum)}:\n");
             }
-#endif
             blockIDF.Clear();
             _compiler._domFrontiers.ComputeIteratedDominanceFrontier(block, blockIDF);
 
@@ -167,31 +167,25 @@ public sealed partial class SsaBuilder
             _ = VarSetOps.VisitBits(_compiler, block.bbVarDef, varIndex => {
                 assert(_compiler.lvaTrackedToVarNum is not null);
                 var lclNum = _compiler.lvaTrackedToVarNum[varIndex];
-#if DEBUG
-                if (_compiler.verboseSsa)
+                if (Configuration.DEBUG && _compiler.verboseSsa)
                 {
                     logf($"  Considering local var V{lclNum:D2}:\n");
                 }
-#endif
                 if (!_compiler.lvaGetDesc(lclNum).lvInSsa)
                 {
-#if DEBUG
-                    if (_compiler.verboseSsa)
+                    if (Configuration.DEBUG && _compiler.verboseSsa)
                     {
                         logf("  Skipping because it is excluded.\n");
                     }
-#endif
                     return true;
                 }
 
                 foreach (var frontierBlock in blockIDF)
                 {
-#if DEBUG
-                    if (_compiler.verboseSsa)
+                    if (Configuration.DEBUG && _compiler.verboseSsa)
                     {
                         logf($"     Considering {FMT_BB(frontierBlock.bbNum)} in dom frontier of {FMT_BB(block.bbNum)}:\n");
                     }
-#endif
                     if (!VarSetOps.IsMember(_compiler, frontierBlock.bbLiveIn, varIndex))
                     {
                         continue;
@@ -199,7 +193,7 @@ public sealed partial class SsaBuilder
 
                     if (GetPhiNode(frontierBlock, lclNum) is null)
                     {
-                        InsertPhi(_compiler, frontierBlock, lclNum);
+                        _ = InsertPhi(_compiler, frontierBlock, lclNum);
                     }
                 }
                 return true;
@@ -209,12 +203,10 @@ public sealed partial class SsaBuilder
             {
                 foreach (var frontierBlock in blockIDF)
                 {
-#if DEBUG
-                    if (_compiler.verboseSsa)
+                    if (Configuration.DEBUG && _compiler.verboseSsa)
                     {
                         logf($"     Considering {FMT_BB(frontierBlock.bbNum)} in dom frontier of {FMT_BB(block.bbNum)} for Memory phis:\n");
                     }
-#endif
                     foreach (var kind in new AllMemoryKinds())
                     {
                         if ((kind is GcHeap) && _compiler.byrefStatesMatchGcHeapStates)

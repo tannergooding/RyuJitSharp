@@ -33,22 +33,24 @@ public sealed partial class Lowering
             shouldUseDispatcher = false;
         }
 
-#if DEBUG
-        switch (JitConfig.JitCFGUseDispatcher)
+        if (Configuration.DEBUG)
         {
-            case 0:
+            switch (JitConfig.JitCFGUseDispatcher)
             {
-                shouldUseDispatcher = false;
-                break;
-            }
+                case 0:
+                {
+                    shouldUseDispatcher = false;
+                    break;
+                }
 
-            case 1:
-            {
-                shouldUseDispatcher = true;
-                break;
+                case 1:
+                {
+                    shouldUseDispatcher = true;
+                    break;
+                }
             }
         }
-#endif
+
         return mayUseDispatcher && shouldUseDispatcher ? CFGCallKind.Dispatch : CFGCallKind.ValidateAndCall;
     }
 

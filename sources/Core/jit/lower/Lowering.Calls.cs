@@ -75,9 +75,11 @@ public sealed partial class Lowering
                 if (Configuration.TARGET_WASM || call.IndirectionCellArgKind is WellKnownArg.None)
                 {
                     var cellAddress = AddrGen((nint)address);
-#if DEBUG
-                    cellAddress.TargetHandle = (nint)call._callMethHnd;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        cellAddress.TargetHandle = (nint)call._callMethHnd;
+                    }
+
                     result = CompilerInstance.gtNewIndir(TYP_I_IMPL, cellAddress, GTF_IND_NONFAULTING);
                 }
                 break;
@@ -146,9 +148,11 @@ public sealed partial class Lowering
     private void LegalizeArgPlacement(GenTreeCall call)
     {
         var numMarked = MarkCallPutArgAndFieldListNodes(call);
-#if DEBUG
-        var nextPushOffset = uint.MaxValue;
-#endif
+        uint nextPushOffset;
+        if (Configuration.DEBUG)
+        {
+            nextPushOffset = uint.MaxValue;
+        }
         var current = call.Prev;
         while (numMarked > 0)
         {
@@ -157,13 +161,12 @@ public sealed partial class Lowering
             {
                 numMarked--;
                 current._lirFlags &= ~LIR.Flags.Mark;
-#if DEBUG
-                if (!Configuration.FEATURE_FIXED_OUT_ARGS && current.Oper is GT_PUTARG_STK)
+                if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS &&
+                    current.Oper is GT_PUTARG_STK)
                 {
                     assert(nextPushOffset > current.AsPutArgStk().ArgOffset);
                     nextPushOffset = (uint)current.AsPutArgStk().ArgOffset;
                 }
-#endif
             }
 
             if (current.Oper is GT_CALL)

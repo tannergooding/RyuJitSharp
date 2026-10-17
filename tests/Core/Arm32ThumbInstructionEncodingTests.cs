@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -17,6 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm32ThumbInstructionEncodingTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [TestCase(INS_FLAGS_NOT_SET, 0u)]
     [TestCase(INS_FLAGS_SET, 0x00100000u)]
     [TestCase(INS_FLAGS_DONT_CARE, 0u)]
@@ -76,6 +81,11 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
 
     private static IEnumerable<TestCaseData> Thumb2GeneralRegisterEncodingCases()
     {
+        if (!TestConfiguration.IsArm32)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(REG_R0, 0u, 0u, 0u, 0u);
         yield return new TestCaseData(REG_R7, 0x7000u, 0x0700u, 7u, 0x00070000u);
         yield return new TestCaseData(REG_PC, 0xF000u, 0x0F00u, 15u, 0x000F0000u);
@@ -92,6 +102,11 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
 
     private static IEnumerable<TestCaseData> Thumb2FloatRegisterEncodingCases()
     {
+        if (!TestConfiguration.IsArm32)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(REG_F0, (int)EA_4BYTE, false, 0u, 0u);
         yield return new TestCaseData(REG_F31, (int)EA_4BYTE, false, 31u, 31u);
         yield return new TestCaseData(REG_F1, (int)EA_4BYTE, true, 1u, 16u);
@@ -110,6 +125,11 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
 
     private static IEnumerable<TestCaseData> Thumb2VectorRegisterEncodingCases()
     {
+        if (!TestConfiguration.IsArm32)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(REG_F0, (int)EA_4BYTE, false, 0u, 0u, 0u);
         yield return new TestCaseData(REG_F1, (int)EA_4BYTE, true, 0x20u, 0x80u, 0x00400000u);
         yield return new TestCaseData(REG_F17, (int)EA_4BYTE, true, 0x28u, 0x00080080u, 0x00408000u);
@@ -226,4 +246,3 @@ internal static unsafe class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.insEncodePUW_H0(options, imm), Is.EqualTo(expected));
     }
 }
-#endif

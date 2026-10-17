@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -16,6 +15,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicPropertyCompletionTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH,
+            "This fixture requires xarch hardware intrinsic support.");
+    }
+
     [Test]
     public static void TernaryRmwMatchesAllPinnedTruthTableUseFlags()
     {
@@ -219,4 +225,3 @@ internal static unsafe class HardwareIntrinsicPropertyCompletionTests
         }
     }
 }
-#endif

@@ -18,9 +18,7 @@ internal static class DebuggerProxyTests
     private static readonly int[] s_expectedVectorItems = [30, 40];
     private static readonly int[] s_expectedArrayItems = [1, 0, 3];
     private static readonly int[] s_expectedStackItems = [4, 5, 0, 0, 0, 10];
-#if TARGET_XARCH
     private static readonly regNumber[] s_expectedRax = [regNumber.REG_X64_RAX];
-#endif
 
     [Test]
     public static void JitStdCollectionProxiesExposeElementsInOrder()
@@ -296,12 +294,13 @@ internal static class DebuggerProxyTests
             typeof(Range).GetMethod(nameof(object.ToString), declaredInstanceMethod) is not null,
             Is.EqualTo(Configuration.DEBUG));
 
-#if DEBUG
-        Assert.That(new Limit(LimitType.Unknown).ToString(), Is.EqualTo("Unknown"));
-        Assert.That(
-            new Range(new Limit(LimitType.Unknown), new Limit(LimitType.Constant, 3)).ToString(),
-            Is.EqualTo("<Unknown, 3>"));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(new Limit(LimitType.Unknown).ToString(), Is.EqualTo("Unknown"));
+            Assert.That(
+                new Range(new Limit(LimitType.Unknown), new Limit(LimitType.Constant, 3)).ToString(),
+                Is.EqualTo("<Unknown, 3>"));
+        }
     }
 
     private static void AssertDebuggerMetadata<T>(string displayValue, Type proxyType)
@@ -335,10 +334,11 @@ internal static class DebuggerProxyTests
         return (string)displayProperty!.GetValue(value)!;
     }
 
-#if TARGET_XARCH
     [Test]
     public static void RefPositionProxyMapsTheRegisterAssignmentUsingItsReferentType()
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires an xarch target.");
+
         AssertDebuggerDisplay<RefPosition>(
             Configuration.DEBUG ? "[#{rpNum} - {refType}]" : "[{refType}]");
         AssertDebuggerProxy<RefPosition>(typeof(RefPositionDebuggerProxy));
@@ -351,5 +351,4 @@ internal static class DebuggerProxyTests
 
         Assert.That(new RefPositionDebuggerProxy(reference).Registers, Is.EqualTo(s_expectedRax));
     }
-#endif
 }

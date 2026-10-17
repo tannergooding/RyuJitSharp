@@ -18,6 +18,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm64HardwareIntrinsicImmediateTests
 {
+    [SetUp]
+    public static void RequireArm64HardwareIntrinsics()
+    {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_HW_INTRINSICS,
+            "This fixture requires ARM64 hardware intrinsic support.");
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(31)]

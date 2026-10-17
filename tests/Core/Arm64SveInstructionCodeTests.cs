@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -50,6 +49,8 @@ internal static class Arm64SveInstructionCodeTests
     [TestCase(INS_sve_st1q, IF_ARM64_SVE_IY_4A, 0xE4202000u)]
     public static void LookupSelectsTheNativeInstructionColumn(instruction ins, Emitter.insFormat format, uint expected)
     {
+        RequireArm64();
+
         Assert.That(Code(NewEmitter(), ins, format), Is.EqualTo(expected));
     }
 
@@ -68,6 +69,8 @@ internal static class Arm64SveInstructionCodeTests
     [TestCase(13, 2)]
     public static void TablesKeepTheNativeCompactPrefixAndInvalidEntry(int encoding, int length)
     {
+        RequireArm64();
+
         var codes = encoding switch
         {
             1 => Codes1(null),
@@ -92,11 +95,14 @@ internal static class Arm64SveInstructionCodeTests
         Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sve_st1q) - invalidOrdinal, Is.EqualTo(605));
     }
 
-#if DEBUG
+#if DEBUG && TARGET_ARM64
     [TestCase(INS_sve_mov)]
     [TestCase(INS_sve_abs)]
     public static void WrongFormatRetainsNativeAssertionAndBadCodeContinuation(instruction ins)
     {
+        RequireArm64();
+        Assume.That(TestConfiguration.IsDebug, "Assertion capture is only available in Debug builds.");
+
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Code(NewEmitter(), ins, IF_ARM64_EN5A));
         Assert.That(assertions, Is.EqualTo<string[]>(["encoding_found", "(code != BAD_CODE)"]));
@@ -106,6 +112,9 @@ internal static class Arm64SveInstructionCodeTests
     [Test]
     public static void InvalidEntryRetainsFormatAndBadCodeAssertions()
     {
+        RequireArm64();
+        Assume.That(TestConfiguration.IsDebug, "Assertion capture is only available in Debug builds.");
+
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = Code(NewEmitter(), INS_sve_invalid, IF_NONE));
@@ -117,6 +126,11 @@ internal static class Arm64SveInstructionCodeTests
     }
 #endif
 
+    private static void RequireArm64()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+    }
+
     private static Emitter NewEmitter()
     {
         return (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
@@ -125,31 +139,30 @@ internal static class Arm64SveInstructionCodeTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsCodeSve")]
     private static extern uint Code(Emitter emitter, instruction ins, Emitter.insFormat format);
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes1")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes1_ARM64")]
     private static extern ReadOnlySpan<uint> Codes1(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes2")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes2_ARM64")]
     private static extern ReadOnlySpan<uint> Codes2(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes3")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes3_ARM64")]
     private static extern ReadOnlySpan<uint> Codes3(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes4")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes4_ARM64")]
     private static extern ReadOnlySpan<uint> Codes4(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes5")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes5_ARM64")]
     private static extern ReadOnlySpan<uint> Codes5(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes6")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes6_ARM64")]
     private static extern ReadOnlySpan<uint> Codes6(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes7")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes7_ARM64")]
     private static extern ReadOnlySpan<uint> Codes7(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes8")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes8_ARM64")]
     private static extern ReadOnlySpan<uint> Codes8(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes9")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes9_ARM64")]
     private static extern ReadOnlySpan<uint> Codes9(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes10")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes10_ARM64")]
     private static extern ReadOnlySpan<uint> Codes10(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes11")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes11_ARM64")]
     private static extern ReadOnlySpan<uint> Codes11(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes12")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes12_ARM64")]
     private static extern ReadOnlySpan<uint> Codes12(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes13")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_insCodes13_ARM64")]
     private static extern ReadOnlySpan<uint> Codes13(Emitter? emitter);
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -15,6 +14,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm64ScalableValueNumTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [Test]
     public static void ZeroHasScalableConstantStorage()
     {
@@ -201,4 +206,3 @@ internal static class Arm64ScalableValueNumTests
         return value;
     }
 }
-#endif

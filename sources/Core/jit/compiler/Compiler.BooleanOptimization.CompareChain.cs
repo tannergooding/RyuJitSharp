@@ -154,9 +154,7 @@ public partial class Compiler
             {
                 JITDUMP($"\nCombined conditions {FMT_BB(_first.bbNum)} and " +
                     $"{FMT_BB(_second.bbNum)} into {(chainOp is GT_OR ? "OR" : "AND")} chain :\n");
-#if DEBUG
                 _compiler.fgDumpBlock(_first);
-#endif
                 JITDUMP("\n");
             }
 

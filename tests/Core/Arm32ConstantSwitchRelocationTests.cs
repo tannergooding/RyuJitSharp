@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -24,6 +23,8 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
     [Test]
     public static void IntegerConstantsUseTheArm32ImmediateEmitter()
     {
+        RequireArm32();
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = compiler.gtNewIconNode(TYP_INT, 7);
@@ -40,6 +41,8 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
     [Test]
     public static void FloatingConstantsMoveFromAnInternalIntegerRegister()
     {
+        RequireArm32();
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = compiler.gtNewDconNode(TYP_FLOAT, 1.25);
@@ -57,6 +60,8 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
     [Test]
     public static void DoubleConstantsMoveBothWordsFromInternalIntegerRegisters()
     {
+        RequireArm32();
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = compiler.gtNewDconNode(TYP_DOUBLE, 1.0);
@@ -76,6 +81,8 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
     [Test]
     public static void TableSwitchLoadsTheProgramCounterFromTheScaledIndex()
     {
+        RequireArm32();
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -97,6 +104,8 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
     [Test]
     public static void JumpTableEmitsAbsoluteTargetsAndLoadsItsDataLabel()
     {
+        RequireArm32();
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var targets = PrepareSwitch(compiler);
@@ -122,6 +131,8 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
     public static void BlockDisplacementsIncludeTheOptionalRelativeCodeAdjustment(
         bool relativeCodeRelocs, instruction expectedLastInstruction)
     {
+        RequireArm32();
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -167,7 +178,11 @@ internal static unsafe class Arm32ConstantSwitchRelocationTests
         return node;
     }
 
+    private static void RequireArm32()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
 }
-#endif

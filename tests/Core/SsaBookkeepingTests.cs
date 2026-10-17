@@ -29,9 +29,10 @@ internal static unsafe class SsaBookkeepingTests
                     compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1))),
             };
             Assert.That(definition._vnPair, Is.EqualTo(new ValueNumPair()));
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
-#endif
+            }
         });
     }
 
@@ -148,7 +149,6 @@ internal static unsafe class SsaBookkeepingTests
         });
     }
 
-#if DEBUG
     [TestCase(0, 0, false)]
     [TestCase(0, 1, false)]
     [TestCase(0, 2, false)]
@@ -157,6 +157,8 @@ internal static unsafe class SsaBookkeepingTests
     [TestCase(2, 3, true)]
     public static void StressCompactEncodingUsesUnsignedSubtraction(int index, int ssaNum, bool compact)
     {
+        Assume.That(TestConfiguration.IsDebug, "Stress-mode configuration is only available in Debug builds.");
+
         WithPromotedLocal(compiler => {
             compiler.compAllowStress = true;
             compiler.info.compMethodName = nameof(StressCompactEncodingUsesUnsignedSubtraction);
@@ -167,14 +169,16 @@ internal static unsafe class SsaBookkeepingTests
 
                 Assert.That(compiler._outlinedCompositeSsaNums is null, Is.EqualTo(compact));
                 Assert.That(number.GetNum(compiler, index), Is.EqualTo(ssaNum));
-                Assert.That(compiler.compActiveStressModes[(int)Compiler.STRESS_SSA_INFO], Is.EqualTo(1));
+                Assert.That(ActiveStressModes(compiler)[(int)Compiler.STRESS_SSA_INFO], Is.EqualTo(1));
             }
         });
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
     private static extern ref byte* StressNames(ref JitConfigValues config);
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compActiveStressModes")]
+    private static extern ref InlineArrayCompilerStressCount<byte> ActiveStressModes(Compiler compiler);
 
     private static void WithPromotedLocal(Action<Compiler> action)
     {

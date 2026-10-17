@@ -10,9 +10,7 @@ public sealed partial class ObjectAllocator : Phase
     private bool _isObjectStackAllocationEnabled;
     private readonly bool _isR2R;
 
-#if DEBUG
     private static ConfigMethodRange s_jitObjectStackAllocationRange;
-#endif
 
     private enum ObjectAllocationType
     {
@@ -57,14 +55,12 @@ public sealed partial class ObjectAllocator : Phase
         var enabled = _isObjectStackAllocationEnabled;
         var disableReason = ": global config";
 
-#if DEBUG
-        if (enabled)
+        if (Configuration.DEBUG && enabled)
         {
             s_jitObjectStackAllocationRange.EnsureInit(JitConfig.JitObjectStackAllocationRange);
             enabled &= s_jitObjectStackAllocationRange.Contains(compiler.info.compMethodHash());
             disableReason = ": range config";
         }
-#endif
         if (enabled)
         {
             JITDUMP("enabled, analyzing...\n");

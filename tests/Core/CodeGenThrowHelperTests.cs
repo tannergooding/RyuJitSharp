@@ -146,14 +146,14 @@ internal static unsafe class CodeGenThrowHelperTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsInlineThrowAndContinuation()
     {
+        Assume.That(TestConfiguration.IsDebug);
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.opts.compDbgCode = true;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.getHelperFtn = &GetHelperFtn;
             var context = new HelperContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
@@ -167,7 +167,6 @@ internal static unsafe class CodeGenThrowHelperTests
             Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen).Exists(id => id.idIns() == INS_call), Is.True);
         });
     }
-#endif
 
     internal static BasicBlock AssertInlineThrow(insGroup? group, instruction reverseJump, int count)
     {

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 || TARGET_AMD64
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,6 +13,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64EmitterBookkeepingTests
 {
+    [SetUp]
+    public static void RequireArm64OrAmd64()
+    {
+        Assume.That(Configuration.TARGET_ARM64 || Configuration.TARGET_AMD64,
+            "This fixture requires ARM64 or AMD64 target semantics.");
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void NestedNoGcRequestsPreserveThePendingGroupBoundary(bool nonempty)
@@ -46,29 +52,36 @@ internal static unsafe class Arm64EmitterBookkeepingTests
     {
         var (compiler, emitter) = CreateEmitter();
         emitter.emitBegProlog();
-#if DEBUG
-        var previous = Globals.s_jitstdout;
-        using var stream = new MemoryStream();
-        using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
-        try
+        if (TestConfiguration.IsDebug)
         {
-            Globals.s_jitstdout = writer;
-            TestConfiguration.EnableVerbose(compiler);
-#endif
+            var previous = Globals.s_jitstdout;
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            try
+            {
+                Globals.s_jitstdout = writer;
+                TestConfiguration.EnableVerbose(compiler);
+                emitter.emitSetFrameRangeGCRs(-16, -8);
+                var text = Encoding.UTF8.GetString(stream.ToArray());
+                if (Configuration.TARGET_AMD64)
+                {
+                    Assert.That(text, Does.Contain("-0010 ... FFFFFFF8"));
+                }
+                else
+                {
+                    Assert.That(text, Does.Contain("-0010 ... -0008"));
+                }
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        }
+        else
+        {
             emitter.emitSetFrameRangeGCRs(-16, -8);
-#if DEBUG
-            var text = Encoding.UTF8.GetString(stream.ToArray());
-#if TARGET_AMD64
-            Assert.That(text, Does.Contain("-0010 ... FFFFFFF8"));
-#else
-            Assert.That(text, Does.Contain("-0010 ... -0008"));
-#endif
         }
-        finally
-        {
-            Globals.s_jitstdout = previous;
-        }
-#endif
+
         var predicate = typeof(Emitter).GetMethod("emitIsWithinFrameRangeGCRs")
             ?? throw new AssertionException("Missing native range predicate.");
         Assert.That(predicate.Invoke(emitter, [-16]), Is.EqualTo(true));
@@ -102,25 +115,20 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         var (_, emitter) = CreateEmitter();
         var prolog = FirstGroup(emitter) ?? throw new AssertionException("Missing prolog group.");
         var body = emitter.emitCurIG ?? throw new AssertionException("Missing body group.");
-#if TARGET_ARM64
-        const uint prologSize = 4;
-        const uint bodySize = 4;
-        const uint bodyOffset = 8;
-#else
-        const uint prologSize = 2;
-        const uint bodySize = 3;
-        const uint bodyOffset = 6;
-#endif
+        var prologSize = Configuration.TARGET_ARM64 ? 4u : 2u;
+        var bodySize = Configuration.TARGET_ARM64 ? 4u : 3u;
+        var bodyOffset = Configuration.TARGET_ARM64 ? 8u : 6u;
         Descriptor(emitter, prolog, prologSize);
         Descriptor(emitter, body, bodySize);
-#if TARGET_ARM64
-        foreach (var group in new[] { prolog, body })
+        if (Configuration.TARGET_ARM64)
         {
-            var descriptor = group.igData?[0] ?? throw new AssertionException("Missing NoGC descriptor.");
-            descriptor.idIns(instruction.INS_nop);
-            descriptor.idInsFmt(Emitter.insFormat.IF_ARM64_SN_0A);
+            foreach (var group in new[] { prolog, body })
+            {
+                var descriptor = group.igData?[0] ?? throw new AssertionException("Missing NoGC descriptor.");
+                descriptor.idIns(instruction.INS_nop);
+                descriptor.idInsFmt(Emitter.insFormat.IF_ARM64_SN_0A);
+            }
         }
-#endif
         prolog.igFlags |= InsGroupFlags.NoGCInterrupt;
         body.igFlags |= InsGroupFlags.NoGCInterrupt | InsGroupFlags.FuncletProlog;
         prolog.igOffs = 4;
@@ -151,20 +159,17 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         var emitter = new TestEmitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, TestConfiguration.IsDebug);
         return (compiler, emitter);
     }
 
     private static void Descriptor(TestEmitter emitter, insGroup group, uint size)
     {
         var descriptor = TestEmitter.MakeDescriptor();
-#if TARGET_XARCH
-        descriptor.idCodeSize(size);
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            descriptor.idCodeSize(size);
+        }
         group.igData = [descriptor];
         group.igSize = checked((ushort)size);
         group.igInsCnt = 1;
@@ -188,15 +193,11 @@ internal static unsafe class Arm64EmitterBookkeepingTests
     private sealed class CompilerContext : IDisposable
     {
         private readonly Compiler? _previous;
-#if DEBUG
-        private readonly JitTls _scope;
-#endif
+        private readonly IDisposable? _scope;
 
         public CompilerContext(Compiler compiler)
         {
-#if DEBUG
-            _scope = new JitTls(null);
-#endif
+            _scope = TestConfiguration.CreateJitTls();
             _previous = JitTls.Compiler;
             JitTls.Compiler = compiler;
         }
@@ -204,9 +205,7 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         public void Dispose()
         {
             JitTls.Compiler = _previous;
-#if DEBUG
-            _scope.Dispose();
-#endif
+            _scope?.Dispose();
         }
     }
 
@@ -234,4 +233,3 @@ internal static unsafe class Arm64EmitterBookkeepingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeNext")]
     private static extern ref nuint UsedBytes(Emitter emitter);
 }
-#endif

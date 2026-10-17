@@ -13,10 +13,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenFrameFinalizationTests
 {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
     [Test]
     public static void HomingScratchSelectionPreservesTheFloatingMaskSignBit()
     {
+        Assume.That(Configuration.TARGET_AMD64 && !Configuration.UNIX_AMD64_ABI,
+            "This test requires the Windows AMD64 ABI.");
+
         WithFrame((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = false;
@@ -30,12 +32,12 @@ internal static unsafe class CodeGenFrameFinalizationTests
             Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
         });
     }
-#endif
 
-#if !TARGET_WASM
     [Test]
     public static void EmptyTargetPrologHookDoesNotAccessFrameState()
     {
+        Assume.That(!Configuration.TARGET_WASM, "This test does not apply to WebAssembly.");
+
         var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
 
         BeginProlog(codeGen);
@@ -43,7 +45,6 @@ internal static unsafe class CodeGenFrameFinalizationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genBeginFnProlog")]
     private static extern void BeginProlog(CodeGen codeGen);
-#endif
 
     [TestCase(false)]
     [TestCase(true)]

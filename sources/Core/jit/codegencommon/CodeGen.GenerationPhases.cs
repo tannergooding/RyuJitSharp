@@ -194,6 +194,7 @@ public sealed partial class CodeGen
         assert(_nativeSizeOfCode is not null);
         Emitter.emitComputeCodeSizes();
 
+        uint instrCount = 0;
 #if DEBUG
         if (!_compiler.jitFallbackCompile && (JitConfig.JitNoForceFallback == 0))
         {
@@ -204,7 +205,6 @@ public sealed partial class CodeGen
                 NO_WAY_NOASSERT("Stress failure");
             }
         }
-        uint instrCount;
 #endif
         _compiler.unwindReserve();
         if (Configuration.TARGET_WASM)
@@ -229,11 +229,8 @@ public sealed partial class CodeGen
         fixed (void** codePtrRW = &_codePtrRW, coldCodePtr = &_coldCodePtr, coldCodePtrRW = &_coldCodePtrRW)
         {
             _codeSize = Emitter.emitEndCodeGen(_compiler, trackedStackPtrsContig, Interruptible, IsFullPtrRegMapRequired,
-                _compiler.compHndBBtabCount, prologSize, epilogSize, _codePtr, codePtrRW, coldCodePtr, coldCodePtrRW
-#if DEBUG
-                , &instrCount
-#endif
-                );
+                _compiler.compHndBBtabCount, prologSize, epilogSize, _codePtr, codePtrRW, coldCodePtr, coldCodePtrRW,
+                Configuration.DEBUG ? &instrCount : null);
         }
 #if DEBUG
         assert(!_compiler.compCodeGenDone);
@@ -257,9 +254,7 @@ public sealed partial class CodeGen
                 }
 
                 jitprintf($"; Total bytes of code {_codeSize}, prolog size {_prologSize}, PerfScore {_compiler.Metrics.PerfScore:F2}");
-#if DEBUG
                 jitprintf($", instruction count {instrCount}");
-#endif
                 jitprintf($", allocated bytes for code {Emitter.emitTotalHotCodeSize + Emitter.emitTotalColdCodeSize}");
 
                 if (dspMetrics)

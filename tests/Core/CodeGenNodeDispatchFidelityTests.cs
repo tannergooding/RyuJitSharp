@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -15,18 +14,20 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenNodeDispatchFidelityTests
 {
-#if DEBUG
-    private static readonly List<string?> s_assertions = [];
-    private static readonly string[] s_noAssertions = [];
-    private static readonly string[] s_fieldListAssertion = ["!\"LIST, FIELD_LIST nodes should always be marked contained.\""];
-    private static readonly string[] s_nyiAssertion = ["NYI: Unimplemented node type GT_PHI\n"];
-    private static readonly string[] s_unknownNodeAssertion = ["!\"Unknown node in codegen\""];
-    private static readonly string[] s_nyiAndUnknownAssertions =
-    [
-        "NYI: Unimplemented node type GT_PHI\n",
-        "!\"Unknown node in codegen\"",
-    ];
-#endif
+    private static class DebugData
+    {
+        internal static readonly List<string?> Assertions = [];
+        internal static readonly string[] NoAssertions = [];
+        internal static readonly string[] FieldListAssertion =
+            ["!\"LIST, FIELD_LIST nodes should always be marked contained.\""];
+        internal static readonly string[] NyiAssertion = ["NYI: Unimplemented node type GT_PHI\n"];
+        internal static readonly string[] UnknownNodeAssertion = ["!\"Unknown node in codegen\""];
+        internal static readonly string[] NyiAndUnknownAssertions =
+        [
+            "NYI: Unimplemented node type GT_PHI\n",
+            "!\"Unknown node in codegen\"",
+        ];
+    }
 
     [TestCase(false, false)]
     [TestCase(false, true)]
@@ -36,29 +37,31 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
     {
         WithCodeGen(codeGen =>
         {
-#if DEBUG
-            SkipOnAssert(ref JitConfig) = skipOnAssert ? 1 : 0;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                SkipOnAssert(ref JitConfig) = skipOnAssert ? 1 : 0;
+            }
+
             var tree = new GenTreeFieldList { IsContained = contained };
 
-#if DEBUG
-            if (!contained && skipOnAssert)
+            if (TestConfiguration.IsDebug && !contained && skipOnAssert)
             {
                 var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
                 Assert.That(failure, Has.Property(nameof(FatalJitException.Result))
                     .EqualTo(CorJitResult.CORJIT_SKIPPED));
             }
             else
-#endif
             {
                 codeGen.genCodeForTreeNode(tree);
             }
 
-#if DEBUG
-            Assert.That(s_assertions, Is.EqualTo(contained
-                ? s_noAssertions
-                : s_fieldListAssertion));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(DebugData.Assertions, Is.EqualTo(contained
+                    ? DebugData.NoAssertions
+                    : DebugData.FieldListAssertion));
+            }
+
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
         }, altJit: true);
     }
@@ -83,9 +86,10 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             codeGen.genCodeForTreeNode(tree);
 
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
-#if DEBUG
-            Assert.That(s_assertions, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(DebugData.Assertions, Is.Empty);
+            }
         });
     }
 
@@ -100,29 +104,29 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             NyiPolicy(ref JitConfig) = nyiPolicy;
             var tree = new GenTreePhi(TYP_INT);
 
-#if DEBUG
-            if ((nyiPolicy & 2) == 0)
+            if (TestConfiguration.IsDebug && (nyiPolicy & 2) == 0)
             {
                 var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
                 Assert.That(failure, Has.Property(nameof(FatalJitException.Result))
                     .EqualTo(CorJitResult.CORJIT_SKIPPED));
             }
             else
-#endif
             {
                 codeGen.genCodeForTreeNode(tree);
             }
 
-#if DEBUG
-            var expected = nyiPolicy switch
+            if (TestConfiguration.IsDebug)
             {
-                0 => s_noAssertions,
-                1 => s_nyiAssertion,
-                2 => s_unknownNodeAssertion,
-                _ => s_nyiAndUnknownAssertions,
-            };
-            Assert.That(s_assertions, Is.EqualTo(expected));
-#endif
+                var expected = nyiPolicy switch
+                {
+                    0 => DebugData.NoAssertions,
+                    1 => DebugData.NyiAssertion,
+                    2 => DebugData.UnknownNodeAssertion,
+                    _ => DebugData.NyiAndUnknownAssertions,
+                };
+                Assert.That(DebugData.Assertions, Is.EqualTo(expected));
+            }
+
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
         });
     }
@@ -140,20 +144,25 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             }
             else
             {
-#if DEBUG
-                var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
-                Assert.That(failure, Has.Property(nameof(FatalJitException.Result))
-                    .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
-#else
-                codeGen.genCodeForTreeNode(tree);
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+                    Assert.That(failure, Has.Property(nameof(FatalJitException.Result))
+                        .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+                }
+                else
+                {
+                    codeGen.genCodeForTreeNode(tree);
+                }
             }
 
-#if DEBUG
-            Assert.That(s_assertions, Is.EqualTo(minopts
-                ? s_unknownNodeAssertion
-                : s_noAssertions));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(DebugData.Assertions, Is.EqualTo(minopts
+                    ? DebugData.UnknownNodeAssertion
+                    : DebugData.NoAssertions));
+            }
+
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
         }, altJit: true, minopts: minopts);
     }
@@ -178,13 +187,17 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
 
     private static void WithCodeGen(Action<CodeGen> action, bool altJit = false, bool minopts = true)
     {
-#if DEBUG
+        Assume.That(Configuration.TARGET_XARCH, "This test requires an xarch target.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions.Clear();
-#endif
+        using var tls = TestConfiguration.IsDebug ? TestConfiguration.CreateJitTls(&ee) : null;
+        if (TestConfiguration.IsDebug)
+        {
+            DebugData.Assertions.Clear();
+        }
+
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
 #if FUNC_INFO_LOGGING
@@ -229,17 +242,14 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitAssertOnNYI")]
     private static extern ref int NyiPolicy(ref JitConfigValues config);
 
-#if DEBUG
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
-    private static extern ref int SkipOnAssert(ref JitConfigValues config);
-
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
     {
-        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
+        DebugData.Assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
 
         return 0;
     }
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
+    private static extern ref int SkipOnAssert(ref JitConfigValues config);
 }
-#endif

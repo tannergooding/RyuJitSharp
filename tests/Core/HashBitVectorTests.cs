@@ -1,12 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-#if DEBUG
-using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 
 using indexType = ulong;
@@ -182,11 +180,12 @@ internal static class HashBitVectorTests
         Assert.That(iterator.nextBit(), Is.EqualTo(hashBvIterator.NOMOREBITS));
     }
 
-#if DEBUG
     [Test]
     [NonParallelizable]
     public static void BitDumpPrintsTheNativeIntegerFormat()
     {
+        Assume.That(TestConfiguration.IsDebug, "Bit-vector diagnostics are only available in Debug builds.");
+
         var previousWriter = Globals.s_jitstdout;
         using var stream = new MemoryStream();
         using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
@@ -209,6 +208,8 @@ internal static class HashBitVectorTests
     [NonParallelizable]
     public static void FancyDumpPrintsInclusiveRanges()
     {
+        Assume.That(TestConfiguration.IsDebug, "Bit-vector diagnostics are only available in Debug builds.");
+
         var vector = new hashBv();
         foreach (var index in new indexType[] { 0, 1, 3, 4, 5, 9, 10 })
         {
@@ -233,7 +234,6 @@ internal static class HashBitVectorTests
             Globals.s_jitstdout = previousWriter;
         }
     }
-#endif
 
     private static List<indexType> Read(hashBv vector)
     {

@@ -120,13 +120,11 @@ public sealed partial class RangeCheck
 
     private void Widen(BasicBlock block, GenTree tree, ref Range range)
     {
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"[RangeCheck::Widen] {FMT_BB(block.bbNum)}, \n");
             JITDUMP($"[{tree.TreeId:D6}]\n");
         }
-#endif
 
         if ((range.LowerLimit.IsDependent || range.LowerLimit.IsUnknown) &&
             IsMonotonicallyIncreasing(tree, false))
@@ -153,15 +151,13 @@ public sealed partial class RangeCheck
 
     private void MergeAssertion(BasicBlock block, GenTree tree, ref Range range)
     {
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             var store = _compiler.vnStore;
             assert(store is not null);
             var vn = store.VNNormalValue(tree._vnPair.Conservative);
             JITDUMP($"Merging assertions from pred edges of BB{block.bbNum:D2} for op [{tree.TreeId:D6}] ${vn:x}\n");
         }
-#endif
         if (_compiler.AssertionCount < 1)
         {
             return;
@@ -178,19 +174,20 @@ public sealed partial class RangeCheck
             }
 
             assertions = _compiler.optGetEdgeAssertions(block, predecessor);
-#if DEBUG
-            var traits = _compiler.apTraits;
-            assert(traits is not null);
-
-            // Native short bitsets use nullptr for both empty and uninitialized values.
-            if (!BitVecOps.MaybeUninit(assertions) &&
-                ((BitVecTraits.GetArrSize(traits) > 1) || !BitVecOps.IsEmpty(traits, assertions)))
+            if (Configuration.DEBUG)
             {
-                assert(assertions is not null);
-                JITDUMP($"Merge assertions created by {FMT_BB(predecessor.bbNum)} for {FMT_BB(block.bbNum)}\n");
-                Compiler.optDumpAssertionIndices(assertions, "\n");
+                var traits = _compiler.apTraits;
+                assert(traits is not null);
+
+                // Native short bitsets use nullptr for both empty and uninitialized values.
+                if (!BitVecOps.MaybeUninit(assertions) &&
+                    ((BitVecTraits.GetArrSize(traits) > 1) || !BitVecOps.IsEmpty(traits, assertions)))
+                {
+                    assert(assertions is not null);
+                    JITDUMP($"Merge assertions created by {FMT_BB(predecessor.bbNum)} for {FMT_BB(block.bbNum)}\n");
+                    Compiler.optDumpAssertionIndices(assertions, "\n");
+                }
             }
-#endif
         }
         else if (tree.Oper.IsLocal)
         {

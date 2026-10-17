@@ -101,10 +101,11 @@ internal static class CodeGenLocalLoadTests
             codeGen.genCodeForLclVarXarch(tree);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
-#if DEBUG
-            Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+            }
         });
     }
 
@@ -156,14 +157,15 @@ internal static class CodeGenLocalLoadTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsLocalAndSimdLoadsWithGcState()
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly recording is only available in Debug builds.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_REF, 0, 0) { RegNum = REG_X64_RCX };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 codeGen.genCodeForLclFld(tree);
@@ -175,5 +177,4 @@ internal static class CodeGenLocalLoadTests
             Assert.That(diagnostic, Does.Contain("insertps"));
         });
     }
-#endif
 }

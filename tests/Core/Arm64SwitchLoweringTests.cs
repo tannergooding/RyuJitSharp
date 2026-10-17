@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +19,8 @@ internal static unsafe class Arm64SwitchLoweringTests
     [TestCase(true)]
     public static void SwitchUsesArm64BitTestOrJumpTable(bool bitTest)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         int[] cases = bitTest ? [0, 1, 0, 1] : [0, 1, 2, 0];
         WithSwitch(cases, bitTest ? 2 : 3, false, (compiler, lowering, source, node, targets) => {
             _ = LowerSwitch(lowering, node);
@@ -55,6 +56,8 @@ internal static unsafe class Arm64SwitchLoweringTests
     [Test]
     public static void SixtyFourCaseBitTestRetainsArm64WideTable()
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         var cases = Enumerable.Range(0, 64).Select(index => index % 2).ToArray();
         WithSwitch(cases, 2, false, (compiler, lowering, source, node, targets) => {
             _ = LowerSwitch(lowering, node);
@@ -72,6 +75,8 @@ internal static unsafe class Arm64SwitchLoweringTests
     [Test]
     public static void SingleTargetPreservesIndexEvaluation()
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithSwitch([0, 0, 0], 0, true, (_, lowering, source, node, targets) => {
             var result = LowerSwitch(lowering, node);
             Assert.That(result?.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
@@ -164,4 +169,3 @@ internal static unsafe class Arm64SwitchLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerSwitch")]
     private static extern GenTree? LowerSwitch(Lowering lowering, GenTree node);
 }
-#endif

@@ -156,11 +156,12 @@ public partial class Emitter
             id.idSetIsLclFPBase();
         }
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
 
         dispIns(id);
         appendToCurIG(id);
@@ -212,7 +213,7 @@ public partial class Emitter
             }
         }
 
-        var fmt = IF_NONE;
+        insFormat fmt;
         const insFlags sf = INS_FLAGS_NOT_SET;
         var frameOffset = _compiler.lvaFrameAddress(
             varx,
@@ -278,11 +279,12 @@ public partial class Emitter
             id.idSetIsLclFPBase();
         }
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
 
         dispIns(id);
         appendToCurIG(id);

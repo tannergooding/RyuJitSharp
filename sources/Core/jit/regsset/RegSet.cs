@@ -45,11 +45,7 @@ public partial struct RegSet
         return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
     }
 
-#if DEBUG
     private bool _rsModifiedRegsMaskInitialized;
-#else
-    private readonly bool _rsModifiedRegsMaskInitialized => true;
-#endif
 
     public RegSet(CodeGen codeGen)
     {
@@ -80,9 +76,6 @@ public partial struct RegSet
         rsMaskPreSpillRegArg = RBM_NONE;
         rsMaskPreSpillAlign = RBM_NONE;
 
-#if DEBUG
-        _rsModifiedRegsMaskInitialized = false;
-#endif
     }
 
     public readonly Compiler Compiler => _codeGen.Compiler;

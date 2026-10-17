@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,20 +15,34 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterXarchDiagnosticHelpersTests
 {
-#if TARGET_AMD64
-    [TestCase(regNumber.REG_X64_EAX, emitAttr.EA_1BYTE, "al")]
-    [TestCase(regNumber.REG_X64_EBP, emitAttr.EA_1BYTE, "bpl")]
-    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_1BYTE, "r8b")]
-    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_2BYTE, "r8w")]
-    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_4BYTE, "r8d")]
-    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_8BYTE, "r8")]
-#endif
-    [TestCase(regNumber.REG_X64_XMM0, emitAttr.EA_16BYTE, "xmm0")]
-    [TestCase(regNumber.REG_X64_XMM0, emitAttr.EA_32BYTE, "ymm0")]
-    [TestCase(regNumber.REG_X64_XMM0, emitAttr.EA_64BYTE, "zmm0")]
+    [SetUp]
+    public static void RequireXarchTarget()
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This fixture requires xarch target semantics.");
+    }
+
+    [TestCaseSource(nameof(RegisterNameCases))]
     public static void RegisterNamesUseNativeOperandWidths(regNumber reg, emitAttr attr, string expected)
     {
         Assert.That(CreateEmitter().emitRegName(reg, attr, varName: false), Is.EqualTo(expected));
+    }
+
+    private static IEnumerable<TestCaseData> RegisterNameCases()
+    {
+        if (Configuration.TARGET_AMD64)
+        {
+            yield return new TestCaseData(regNumber.REG_X64_EAX, emitAttr.EA_1BYTE, "al");
+            yield return new TestCaseData(regNumber.REG_X64_EBP, emitAttr.EA_1BYTE, "bpl");
+            yield return new TestCaseData(regNumber.REG_X64_R8, emitAttr.EA_1BYTE, "r8b");
+            yield return new TestCaseData(regNumber.REG_X64_R8, emitAttr.EA_2BYTE, "r8w");
+            yield return new TestCaseData(regNumber.REG_X64_R8, emitAttr.EA_4BYTE, "r8d");
+            yield return new TestCaseData(regNumber.REG_X64_R8, emitAttr.EA_8BYTE, "r8");
+        }
+
+        var vectorRegister = Configuration.TARGET_AMD64 ? regNumber.REG_X64_XMM0 : regNumber.REG_X86_XMM0;
+        yield return new TestCaseData(vectorRegister, emitAttr.EA_16BYTE, "xmm0");
+        yield return new TestCaseData(vectorRegister, emitAttr.EA_32BYTE, "ymm0");
+        yield return new TestCaseData(vectorRegister, emitAttr.EA_64BYTE, "zmm0");
     }
 
     [Test]
@@ -111,11 +125,7 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
         var emitter = CreateEmitter(compiler);
         var bytes = stackalloc byte[] { 0x0F, 0xAB };
         var pointer = (byte*)Unsafe.AsPointer(ref bytes[0]);
-#if TARGET_AMD64
-        const int digits = 10;
-#else
-        const int digits = 6;
-#endif
+        var digits = Configuration.TARGET_AMD64 ? 10 : 6;
         Assert.That(Capture(() => emitter.emitDispInsHex(Descriptor(), pointer, 2)),
             Is.EqualTo(" 0FAB" + new string(' ', (digits - 2) * 2)));
 
@@ -240,4 +250,3 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

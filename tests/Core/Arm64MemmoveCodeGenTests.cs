@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -35,6 +34,8 @@ internal static class Arm64MemmoveCodeGenTests
         int[] expectedWidths,
         int[] expectedOffsets)
     {
+        RequireArm64();
+
         Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -73,6 +74,8 @@ internal static class Arm64MemmoveCodeGenTests
         int[] expectedOffsets,
         int registerCount)
     {
+        RequireArm64();
+
         Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -113,6 +116,11 @@ internal static class Arm64MemmoveCodeGenTests
         {
             _kind = BlkOpKindUnrollMemmove,
         };
+    }
+
+    private static void RequireArm64()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
     }
 
     private static GenTreePhysReg Physical(regNumber reg)
@@ -182,4 +190,3 @@ internal static class Arm64MemmoveCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

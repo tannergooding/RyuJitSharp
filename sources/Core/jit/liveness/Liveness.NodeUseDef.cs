@@ -179,13 +179,12 @@ public partial class Liveness<TLiveness>
         {
             assert(descriptor._varIndex < _compiler.lvaTrackedCount);
             assert(!descriptor.IsAddressExposed || (TLiveness.TrackAddressExposedLocals && !TLiveness.ComputeMemoryLiveness));
-#if DEBUG
-            if (TLiveness.IsLIR && (descriptor.Type is not TYP_STRUCT) && !varTypeIsMultiReg(descriptor.Type))
+            if (Configuration.DEBUG && TLiveness.IsLIR &&
+                (descriptor.Type is not TYP_STRUCT) && !varTypeIsMultiReg(descriptor.Type))
             {
                 assert(descriptor.lvDoNotEnregister || descriptor.IsDefinedViaAddress ||
                     (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR));
             }
-#endif
             if (isUse && !VarSetOps.IsMember(_compiler, _curDefSet, descriptor._varIndex))
             {
                 VarSetOps.AddElemD(_compiler, _curUseSet, descriptor._varIndex);

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -22,6 +21,8 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
     [Test]
     public static void LoopBlockDispatchEmitsReverseZeroingLoop()
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -38,11 +39,7 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
             };
             codeGen.InternalRegisters.Add(block, Mask(REG_R2));
 
-#if DEBUG
             RecordArm32Instructions(() => codeGen.genCodeForStoreBlk(block));
-#else
-            codeGen.genCodeForStoreBlk(block);
-#endif
 
             var emitted = InstructionsSince(codeGen.Emitter, 0);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
@@ -64,6 +61,8 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
     [TestCase(8, new[] { INS_str, INS_str })]
     public static void InitBlockUnrollUsesExactScalarStoreWidths(int size, instruction[] expectedInstructions)
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -75,11 +74,7 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
                 _kind = BlkOpKindUnroll,
             };
 
-#if DEBUG
             RecordArm32Instructions(() => codeGen.genCodeForInitBlkUnroll(block));
-#else
-            codeGen.genCodeForInitBlkUnroll(block);
-#endif
 
             var emitted = InstructionsSince(codeGen.Emitter, 0);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
@@ -98,6 +93,8 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
     [TestCase(8, new[] { INS_ldr, INS_str, INS_ldr, INS_str })]
     public static void CopyBlockUnrollUsesExactScalarLoadAndStoreWidths(int size, instruction[] expectedInstructions)
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -113,11 +110,7 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
             };
             codeGen.InternalRegisters.Add(block, Mask(REG_R3));
 
-#if DEBUG
             RecordArm32Instructions(() => codeGen.genCodeForCpBlkUnroll(block));
-#else
-            codeGen.genCodeForCpBlkUnroll(block);
-#endif
 
             var emitted = InstructionsSince(codeGen.Emitter, 0);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
@@ -156,7 +149,12 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
 
     private static void RecordArm32Instructions(TestDelegate action)
     {
-#if DEBUG
+        if (!TestConfiguration.IsDebug)
+        {
+            action();
+            return;
+        }
+
         try
         {
             action();
@@ -164,9 +162,6 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
         catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
         {
         }
-#else
-        action();
-#endif
     }
 
     private static GenTreePhysReg Physical(regNumber reg, var_types type)
@@ -185,4 +180,3 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
-#endif

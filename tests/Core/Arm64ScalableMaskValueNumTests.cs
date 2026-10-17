@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.IO;
 using System.Reflection;
@@ -20,7 +19,7 @@ internal static class Arm64ScalableMaskValueNumTests
     [TestCase(ulong.MaxValue)]
     public static void FixedMasksRoundTripOnArm64(ulong bits)
     {
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
             simdmask_t value = default;
@@ -46,7 +45,7 @@ internal static class Arm64ScalableMaskValueNumTests
     [TestCase(TYP_DOUBLE)]
     public static void ScalableZeroCanonicalizesWithoutMergingFixedZero(var_types type)
     {
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             var store = new ValueNumStore(compiler);
             var value = new simdmaskscalable_t { BaseType = type };
             var vn = store.VNForSimdMaskScalableCon(value);
@@ -63,7 +62,7 @@ internal static class Arm64ScalableMaskValueNumTests
     [Test]
     public static void BothPayloadKindsShareChunksWithoutLosingBits()
     {
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             var store = new ValueNumStore(compiler);
             var values = new simdmask_t[130];
             for (var index = 0; index < values.Length; index++)
@@ -95,7 +94,7 @@ internal static class Arm64ScalableMaskValueNumTests
     [TestCase(true)]
     public static void TypedAccessorsEnforceTheStoredKind(bool scalable)
     {
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             var store = new ValueNumStore(compiler);
             var vn = scalable
                 ? store.VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet)
@@ -117,7 +116,7 @@ internal static class Arm64ScalableMaskValueNumTests
     public static void AllBitsUsesConfigurationButZeroRemainsFixed(bool scalable)
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             SetScalableConfiguration(scalable);
             var store = new ValueNumStore(compiler);
             var operand = store.VNForExpr(null, TYP_MASK);
@@ -142,7 +141,7 @@ internal static class Arm64ScalableMaskValueNumTests
     public static void ScalableTreeNumberingUsesTheScalablePayload()
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             SetScalableConfiguration(true);
             compiler.vnStore = new ValueNumStore(compiler);
             var tree = compiler.gtNewMskConNode(TYP_MASK, TYP_LONG, true);
@@ -159,7 +158,7 @@ internal static class Arm64ScalableMaskValueNumTests
     public static void DiagnosticsUseStoredTagRatherThanCurrentConfiguration(bool scalable, string expected)
     {
         Assume.That(TestConfiguration.IsDebug);
-        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+        WithArm64Compiler(compiler => {
             SetScalableConfiguration(!scalable);
             var store = new ValueNumStore(compiler);
             simdmask_t fixedMask = default;
@@ -188,5 +187,10 @@ internal static class Arm64ScalableMaskValueNumTests
     {
         TestConfiguration.SetScalableVectorConfiguration(enabled);
     }
+
+    private static void WithArm64Compiler(Action<Compiler> action)
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires an ARM64 target.");
+        CSELiveAcrossCallCostTests.WithCompiler(action);
+    }
 }
-#endif

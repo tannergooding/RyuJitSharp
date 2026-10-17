@@ -19,13 +19,11 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (unchecked((uint)JitConfig.JitNoHoist) > 0)
+        if (Configuration.DEBUG && unchecked((uint)JitConfig.JitNoHoist) > 0)
         {
             JITDUMP("\nJitNoHoist set; no hoisting\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
 
         if (Configuration.DEBUG && verbose)
         {

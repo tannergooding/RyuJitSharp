@@ -99,28 +99,21 @@ public partial class Liveness<TLiveness>
                 assert(statement is not null);
                 _compiler.compCurStmt = statement;
                 var previous = statement.PrevStmt;
-#if DEBUG
                 var treeModified = false;
-#endif
-                var statementInfoDirty = ComputeLifeSsa(life, keepAliveVars
-#if DEBUG
-                    , ref treeModified
-#endif
-                );
+                var statementInfoDirty = ComputeLifeSsa(life, keepAliveVars, ref treeModified);
                 if (statementInfoDirty)
                 {
                     _compiler.gtSetStmtInfo(statement);
                     _compiler.fgSetStmtSeq(statement);
                     _compiler.gtUpdateStmtSideEffects(statement);
                 }
-#if DEBUG
-                if (_compiler.verbose && treeModified)
+                if (Configuration.DEBUG && _compiler.verbose && treeModified)
                 {
                     jitprintf("\nfgComputeLife modified tree:\n");
                     _compiler.gtDispTree(statement.RootNode);
                     jitprintf("\n");
                 }
-#endif
+
                 if (statement == firstStatement)
                 {
                     break;

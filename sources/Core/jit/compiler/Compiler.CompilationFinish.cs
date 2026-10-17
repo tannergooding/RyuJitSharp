@@ -27,9 +27,7 @@ public partial class Compiler
         genNodeSizeStatsPerFunc.Init();
     }
 
-#if DEBUG
     private static bool s_compOrderHeaderPrinted;
-#endif
 
     public unsafe void compCompileFinish()
     {
@@ -50,11 +48,12 @@ public partial class Compiler
             var managedBytes = unchecked((ulong)managedBytesAllocated);
             memAllocHist.record(unchecked((uint)((managedBytes + 1023) / 1024)));
 
-#if DEBUG
-            jitprintf($"\nAllocations for {eeGetMethodFullName(info.compMethodHnd)} " +
-                $"(MethodHash={unchecked((uint)info.compMethodHash()):x8})\n");
-            JitMemStatsInfo.dumpMethodMemStats(jitstdout(), managedBytesAllocated);
-#endif
+            if (Configuration.DEBUG)
+            {
+                jitprintf($"\nAllocations for {eeGetMethodFullName(info.compMethodHnd)} " +
+                    $"(MethodHash={unchecked((uint)info.compMethodHash()):x8})\n");
+                JitMemStatsInfo.dumpMethodMemStats(jitstdout(), managedBytesAllocated);
+            }
         }
 
         if (JitConfig.JitReportMetrics != 0)
@@ -71,63 +70,65 @@ public partial class Compiler
         {
             assert(_inlineStrategy is not null);
         }
-#if DEBUG
-        _inlineStrategy.DumpData();
-        if (JitConfig.JitInlineDumpXmlFile is not null)
+        if (Configuration.DEBUG)
         {
-            var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(JitConfig.JitInlineDumpXmlFile));
-            using var file = OpenJitOutputFile(path);
-            if (file is not null)
+            _inlineStrategy.DumpData();
+            if (JitConfig.JitInlineDumpXmlFile is not null)
             {
-                using var writer = new JitTextWriter(file, leaveOpen: true);
-                _inlineStrategy.DumpXml(writer);
+                var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(JitConfig.JitInlineDumpXmlFile));
+                using var file = OpenJitOutputFile(path);
+                if (file is not null)
+                {
+                    using var writer = new JitTextWriter(file, leaveOpen: true);
+                    _inlineStrategy.DumpXml(writer);
+                }
+                else
+                {
+                    _inlineStrategy.DumpXml();
+                }
             }
             else
             {
                 _inlineStrategy.DumpXml();
             }
-        }
-        else
-        {
-            _inlineStrategy.DumpXml();
-        }
 
-        if (opts.dspOrder)
-        {
-            compDumpOrderSummary();
-        }
+            if (opts.dspOrder)
+            {
+                compDumpOrderSummary();
+            }
 
-        JITDUMP("Final metrics:\n");
-        if (JitConfig.JitReportMetrics != 0)
-        {
-            Metrics.report(this);
-        }
-        if (verbose)
-        {
-            Metrics.dump();
-            jitprintf($"\n****** DONE compiling {info.compFullName}\n");
-            jitstdout().Flush();
-        }
+            JITDUMP("Final metrics:\n");
+            if (JitConfig.JitReportMetrics != 0)
+            {
+                Metrics.report(this);
+            }
+            if (verbose)
+            {
+#if DEBUG
+                Metrics.dump();
+#endif
+                jitprintf($"\n****** DONE compiling {info.compFullName}\n");
+                jitstdout().Flush();
+            }
 
 #if TRACK_ENREG_STATS
-        for (var i = 0; i < lvaCount; i++)
-        {
-            ref readonly var descriptor = ref lvaGetDesc(i);
-            if (descriptor.lvRefCnt() != 0)
+            for (var i = 0; i < lvaCount; i++)
             {
-                s_enregisterStats.RecordLocal(in descriptor);
+                ref readonly var descriptor = ref lvaGetDesc(i);
+                if (descriptor.lvRefCnt() != 0)
+                {
+                    s_enregisterStats.RecordLocal(in descriptor);
+                }
             }
-        }
 #endif
-#else
-        if (JitConfig.JitReportMetrics != 0)
+        }
+        else if (JitConfig.JitReportMetrics != 0)
         {
             Metrics.report(this);
         }
-#endif
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     private unsafe void compDumpOrderSummary()
     {
         var token = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
@@ -215,7 +216,6 @@ public partial class Compiler
         jitprintf($" {eeGetMethodFullName(info.compMethodHnd)}\n");
         jitstdout().Flush();
     }
-#endif
 
 #if LOOP_HOIST_STATS
     internal void AddLoopHoistStats()
