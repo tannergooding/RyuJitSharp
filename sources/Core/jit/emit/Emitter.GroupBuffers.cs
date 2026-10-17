@@ -13,7 +13,6 @@ public partial class Emitter
     private static int SC_IG_BUFFER_NUM_LARGE_DESCS =>
         Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 200 : 50;
 
-#if EMITTER_STATS
     private static nuint emitSizeMethod;
     private static uint emitCurPrologInsCnt;
     private static nuint emitCurPrologIGSize;
@@ -24,7 +23,6 @@ public partial class Emitter
     private static nuint emitTotalIGsize;
     private static uint emitTotalIGExtend;
     private static nuint emitTotMemAlloc;
-#endif
 
     private void emitGenIG(insGroup ig)
     {
@@ -59,9 +57,10 @@ public partial class Emitter
                 + (SC_IG_BUFFER_NUM_LARGE_DESCS * (INSTR_DESC_SIZE + _debugInfoSize)));
             emitCurIGfreeBase = [];
             emitCurIGfreeEndp = emitIGbuffSize;
-#if EMITTER_STATS
-            emitTotMemAlloc = unchecked(emitTotMemAlloc + emitIGbuffSize);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                emitTotMemAlloc = unchecked(emitTotMemAlloc + emitIGbuffSize);
+            }
         }
 
         emitCurIGfreeBase.Clear();
@@ -115,9 +114,10 @@ public partial class Emitter
         if (extend)
         {
             emitCurIG.igFlags |= InsGroupFlags.Extend;
-#if EMITTER_STATS
-            emitTotalIGExtend = unchecked(emitTotalIGExtend + 1);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                emitTotalIGExtend = unchecked(emitTotalIGExtend + 1);
+            }
         }
 
         emitForceNewIG = false;
@@ -145,9 +145,10 @@ public partial class Emitter
             if (emitForceStoreGCState || !VarSetOps.Equal(_compiler, emitPrevGCrefVars, emitInitGCrefVars))
             {
                 ig.igFlags |= InsGroupFlags.GCVars;
-#if EMITTER_STATS
-                emitTotalIGptrs = unchecked(emitTotalIGptrs + 1);
-#endif
+                if (Configuration.EMITTER_STATS)
+                {
+                    emitTotalIGptrs = unchecked(emitTotalIGptrs + 1);
+                }
                 gs += (nuint)nint.Size;
             }
 
@@ -191,26 +192,27 @@ public partial class Emitter
         emitCurCodeOffset = unchecked(emitCurCodeOffset + emitCurIGsize);
         assert(IsCodeAligned(emitCurCodeOffset));
 
-#if EMITTER_STATS
-        emitTotalIGicnt = unchecked(emitTotalIGicnt + (uint)emitCurIGinsCnt);
-        emitTotalIGsize = unchecked(emitTotalIGsize + sz);
-        emitSizeMethod = unchecked(emitSizeMethod + sz);
-
-        if (emitIGisInProlog(ig))
+        if (Configuration.EMITTER_STATS)
         {
-            emitCurPrologInsCnt = unchecked(emitCurPrologInsCnt + (uint)emitCurIGinsCnt);
-            emitCurPrologIGSize = unchecked(emitCurPrologIGSize + sz);
+            emitTotalIGicnt = unchecked(emitTotalIGicnt + (uint)emitCurIGinsCnt);
+            emitTotalIGsize = unchecked(emitTotalIGsize + sz);
+            emitSizeMethod = unchecked(emitSizeMethod + sz);
 
-            if (emitCurPrologInsCnt > emitMaxPrologInsCnt)
+            if (emitIGisInProlog(ig))
             {
-                emitMaxPrologInsCnt = emitCurPrologInsCnt;
-            }
-            if (emitCurPrologIGSize > emitMaxPrologIGSize)
-            {
-                emitMaxPrologIGSize = emitCurPrologIGSize;
+                emitCurPrologInsCnt = unchecked(emitCurPrologInsCnt + (uint)emitCurIGinsCnt);
+                emitCurPrologIGSize = unchecked(emitCurPrologIGSize + sz);
+
+                if (emitCurPrologInsCnt > emitMaxPrologInsCnt)
+                {
+                    emitMaxPrologInsCnt = emitCurPrologInsCnt;
+                }
+                if (emitCurPrologIGSize > emitMaxPrologIGSize)
+                {
+                    emitMaxPrologIGSize = emitCurPrologIGSize;
+                }
             }
         }
-#endif
 
         if ((ig.igFlags & InsGroupFlags.Extend) == 0)
         {

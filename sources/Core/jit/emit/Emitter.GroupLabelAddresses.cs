@@ -73,9 +73,10 @@ public partial class Emitter
                 debugInfo.idCatchRet = true;
             }
         }
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
         id.idSetRelocFlags(attr);
         var size = emitInsSizeAM(id, insCodeRM(ins));
         id.idCodeSize(size);

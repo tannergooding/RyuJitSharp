@@ -34,15 +34,18 @@ internal static unsafe class CodeGenMetadataPhaseTests
         bool useDriver, bool debugInfo, bool displayMetrics)
     {
         var previousConfig = JitConfig;
-#if DISPLAY_SIZES
-        var previousSizes = (grossVMsize, grossNCsize, totalNCsize);
-        var previousCounts = (Compiler.genMethodICnt, Compiler.genMethodNCnt);
-        grossVMsize = nuint.MaxValue - 10;
-        grossNCsize = nuint.MaxValue - 3;
-        totalNCsize = nuint.MaxValue - 7;
-        Compiler.genMethodICnt = 17;
-        Compiler.genMethodNCnt = 23;
-#endif
+        (nuint GrossVMsize, nuint GrossNCsize, nuint TotalNCsize) previousSizes = default;
+        (uint Interruptible, uint NonInterruptible) previousCounts = default;
+        if (Configuration.DISPLAY_SIZES)
+        {
+            previousSizes = (grossVMsize, grossNCsize, totalNCsize);
+            previousCounts = (Compiler.genMethodICnt, Compiler.genMethodNCnt);
+            grossVMsize = nuint.MaxValue - 10;
+            grossNCsize = nuint.MaxValue - 3;
+            totalNCsize = nuint.MaxValue - 7;
+            Compiler.genMethodICnt = 17;
+            Compiler.genMethodNCnt = 23;
+        }
         try
         {
             RichMappings(ref JitConfig) = 0;
@@ -56,9 +59,10 @@ internal static unsafe class CodeGenMetadataPhaseTests
             CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
             {
                 PrepareVoidReturn(compiler, codeGen, debugInfo);
-#if DISPLAY_SIZES
-                compiler.info.compILCodeSize = 37;
-#endif
+                if (Configuration.DISPLAY_SIZES)
+                {
+                    compiler.info.compILCodeSize = 37;
+                }
 
                 var arena = stackalloc byte[1152];
                 var hotExec = (byte*)(((nuint)arena + 15u) & ~(nuint)15);
@@ -183,14 +187,15 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 Assert.That((nuint)compiler.compInfoBlkAddr, Is.EqualTo((nuint)gcBuffer));
                 Assert.That(compiler.compInfoBlkSize, Is.EqualTo(state.GCSize));
                 Assert.That(compiler.Metrics.GCInfoBytes, Is.EqualTo((int)state.GCSize));
-#if DISPLAY_SIZES
-                var emittedSize = (nuint)(uint)size + codeGen.Emitter.emitDataSize();
-                Assert.That(grossVMsize, Is.EqualTo((nuint)26));
-                Assert.That(grossNCsize, Is.EqualTo(unchecked(nuint.MaxValue - 3 + emittedSize)));
-                Assert.That(totalNCsize, Is.EqualTo(unchecked(nuint.MaxValue - 7 + emittedSize + (nuint)state.GCSize)));
-                Assert.That(Compiler.genMethodICnt, Is.EqualTo(codeGen.Interruptible ? 18U : 17U));
-                Assert.That(Compiler.genMethodNCnt, Is.EqualTo(codeGen.Interruptible ? 23U : 24U));
-#endif
+                if (Configuration.DISPLAY_SIZES)
+                {
+                    var emittedSize = (nuint)(uint)size + codeGen.Emitter.emitDataSize();
+                    Assert.That(grossVMsize, Is.EqualTo((nuint)26));
+                    Assert.That(grossNCsize, Is.EqualTo(unchecked(nuint.MaxValue - 3 + emittedSize)));
+                    Assert.That(totalNCsize, Is.EqualTo(unchecked(nuint.MaxValue - 7 + emittedSize + (nuint)state.GCSize)));
+                    Assert.That(Compiler.genMethodICnt, Is.EqualTo(codeGen.Interruptible ? 18U : 17U));
+                    Assert.That(Compiler.genMethodNCnt, Is.EqualTo(codeGen.Interruptible ? 23U : 24U));
+                }
                 Assert.That(codeGen.RegSet.tmpGetAllFree(), Is.True);
                 Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
             });
@@ -198,10 +203,11 @@ internal static unsafe class CodeGenMetadataPhaseTests
         finally
         {
             JitConfig = previousConfig;
-#if DISPLAY_SIZES
-            (grossVMsize, grossNCsize, totalNCsize) = previousSizes;
-            (Compiler.genMethodICnt, Compiler.genMethodNCnt) = previousCounts;
-#endif
+            if (Configuration.DISPLAY_SIZES)
+            {
+                (grossVMsize, grossNCsize, totalNCsize) = previousSizes;
+                (Compiler.genMethodICnt, Compiler.genMethodNCnt) = previousCounts;
+            }
         }
     }
 

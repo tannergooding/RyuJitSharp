@@ -467,9 +467,10 @@ public sealed partial class LinearScan
         }
 #endif
 
-#if TRACK_LSRA_STATS
-        updateLsraStat(LsraStat.STAT_SPILL, fromRefPosition.bbNum);
-#endif
+        if (Configuration.TRACK_LSRA_STATS)
+        {
+            updateLsraStat(LsraStat.STAT_SPILL, fromRefPosition.bbNum);
+        }
 
         interval.isActive = false;
         setIntervalAsSpilled(interval);

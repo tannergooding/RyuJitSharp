@@ -122,11 +122,12 @@ public partial class Emitter
             emitFullyInt = fullyInt;
             emitFullGCinfo = fullPtrMap;
             emitFullArgInfo = Configuration.TARGET_X86 ? fullPtrMap : !emitHasFramePtr;
-#if EMITTER_STATS
-            GCrefsTable.record(unchecked((uint)emitGCrFrameOffsCnt));
-            emitSizeTable.record(unchecked((uint)emitSizeMethod));
-            stkDepthTable.record(unchecked((uint)emitMaxStackDepth));
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                GCrefsTable!.record(unchecked((uint)emitGCrFrameOffsCnt));
+                emitSizeTable!.record(unchecked((uint)emitSizeMethod));
+                stkDepthTable!.record(unchecked((uint)emitMaxStackDepth));
+            }
 
             emitSimpleStkUsed = true;
             u1.emitSimpleStkMask = 0;
@@ -776,10 +777,11 @@ public partial class Emitter
             {
                 assert((uint)emitTotalCodeSize >= actualCodeSize);
             }
-#if EMITTER_STATS
-            totAllocdSize = unchecked(totAllocdSize + (uint)emitTotalCodeSize);
-            totActualSize = unchecked(totActualSize + actualCodeSize);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                totAllocdSize = unchecked(totAllocdSize + (uint)emitTotalCodeSize);
+                totActualSize = unchecked(totActualSize + actualCodeSize);
+            }
             var unusedSize = (uint)emitTotalCodeSize - actualCodeSize;
             JITDUMP($"\n\nAllocated method code size = {emitTotalCodeSize,4} , actual size = {actualCodeSize,4}, unused size = {unusedSize,4}\n");
 

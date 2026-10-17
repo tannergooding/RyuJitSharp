@@ -16,11 +16,6 @@ public partial class Compiler
     internal static uint genMethodICnt;
     internal static uint genMethodNCnt;
 
-    [Conditional("DEBUG")]
-    [Conditional("MEASURE_NODE_SIZE")]
-    [Conditional("MEASURE_BLOCK_SIZE")]
-    [Conditional("DISPLAY_SIZES")]
-    [Conditional("CALL_ARG_STATS")]
     private static void IncrementMethodCount()
     {
         genMethodCnt = unchecked(genMethodCnt + 1);
@@ -38,7 +33,14 @@ public partial class Compiler
 
     public unsafe void compCompileFinish()
     {
-        IncrementMethodCount();
+        if (Configuration.DEBUG ||
+            Configuration.MEASURE_NODE_SIZE ||
+            Configuration.MEASURE_BLOCK_SIZE ||
+            Configuration.DISPLAY_SIZES ||
+            Configuration.CALL_ARG_STATS)
+        {
+            IncrementMethodCount();
+        }
 
         if (s_dspMemStats)
         {

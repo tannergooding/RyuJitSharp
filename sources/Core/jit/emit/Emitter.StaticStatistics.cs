@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private struct NativeLayout
     {
         private int _offset;
@@ -129,8 +128,8 @@ public partial class Emitter
         var (nextOffset, _) = gcPointer.Add(word, word);
         var (offsetOffset, _) = gcPointer.Add(sizeof(uint), sizeof(uint));
         var (unionOffset, _) = gcPointer.Add(regMaskSize, regMaskAlignment);
-        gcPointer.Add(sizeof(byte), sizeof(byte));
-        gcPointer.Add(sizeof(ushort), sizeof(ushort));
+        _ = gcPointer.Add(sizeof(byte), sizeof(byte));
+        _ = gcPointer.Add(sizeof(ushort), sizeof(ushort));
         jitprintf("\nGCInfo::regPtrDsc:\n");
         jitprintf(FormattableString.Invariant($"Offset of rpdNext           = {nextOffset,2}\n"));
         jitprintf(FormattableString.Invariant($"Offset of rpdOffs           = {offsetOffset,2}\n"));
@@ -240,5 +239,4 @@ public partial class Emitter
         var value = divide ? capacity / size : capacity;
         jitprintf(FormattableString.Invariant($"{name} = {value,2}\n"));
     }
-#endif
 }

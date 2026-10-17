@@ -206,7 +206,6 @@ public sealed partial class WasmRegAlloc : IRegAlloc
         return _compiler.compEnregLocals;
     }
 
-#if TRACK_LSRA_STATS
     public void dumpLsraStatsCsv(StreamWriter streamWriter)
     {
     }
@@ -214,7 +213,6 @@ public sealed partial class WasmRegAlloc : IRegAlloc
     public void dumpLsraStatsSummary(StreamWriter streamWriter)
     {
     }
-#endif
 
     public bool IsRegCandidate(in LclVarDsc varDsc)
     {

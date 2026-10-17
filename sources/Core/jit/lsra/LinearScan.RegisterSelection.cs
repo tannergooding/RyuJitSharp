@@ -347,12 +347,10 @@ public sealed partial class LinearScan
                 }
             }
 
-#if DEBUG && TRACK_LSRA_STATS
-            if (_found)
+            if (Configuration.DEBUG && Configuration.TRACK_LSRA_STATS && _found)
             {
                 _linearScan.updateLsraStat(LsraStat.STAT_REG_ORDER, refPosition.bbNum);
             }
-#endif
 
             if (!_found)
             {
@@ -367,12 +365,10 @@ public sealed partial class LinearScan
                 {
                     selectionScore = RegisterScore.REG_NUM;
                 }
-#if DEBUG && TRACK_LSRA_STATS
-                if (_found)
+                if (Configuration.DEBUG && Configuration.TRACK_LSRA_STATS && _found)
                 {
                     _linearScan.updateLsraStat(LsraStat.STAT_REG_NUM, refPosition.bbNum);
                 }
-#endif
             }
 
             assert(_found && isSingleRegister(_candidates));

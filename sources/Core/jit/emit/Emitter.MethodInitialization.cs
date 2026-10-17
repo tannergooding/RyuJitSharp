@@ -7,9 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private static uint emitTotalIGmcnt;
-#endif
 
     public void emitBegFN(bool hasFramePtr, bool chkAlign = false)
     {
@@ -87,12 +85,13 @@ public partial class Emitter
 
         emitCounts_INS_OPTS_J = 0;
 
-#if EMITTER_STATS
-        emitTotalIGmcnt = unchecked(emitTotalIGmcnt + 1);
-        emitSizeMethod = 0;
-        emitCurPrologInsCnt = 0;
-        emitCurPrologIGSize = 0;
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGmcnt = unchecked(emitTotalIGmcnt + 1);
+            emitSizeMethod = 0;
+            emitCurPrologInsCnt = 0;
+            emitCurPrologIGSize = 0;
+        }
 
         emitInsCount = 0;
         emitCurStackLvl = 0;

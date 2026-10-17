@@ -3,12 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TRACK_LSRA_STATS
 using System.Globalization;
 using System.IO;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp;
 
@@ -20,36 +17,42 @@ public sealed partial class LinearScan
         var weightedStats = new double[(int)LsraStat.COUNT];
         var blockInfo = _blockInfo
             ?? throw new FatalJitException("LSRA statistics require initialized block information.");
+        var blockStats = _blockStats
+            ?? throw new FatalJitException("LSRA statistics are not enabled.");
 
         streamWriter.Write("----------\n");
         streamWriter.Write("LSRA Stats");
-#if DEBUG
-        if (!VERBOSE)
+        if (Configuration.DEBUG)
         {
-            streamWriter.Write(" : ");
-            streamWriter.Write(_compiler.info.compFullName);
-            streamWriter.Write('\n');
+            if (!VERBOSE)
+            {
+                streamWriter.Write(" : ");
+                streamWriter.Write(_compiler.info.compFullName);
+                streamWriter.Write('\n');
+            }
+            else
+            {
+                streamWriter.Write('\n');
+            }
         }
         else
         {
+            streamWriter.Write(" : ");
+            streamWriter.Write(_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd));
             streamWriter.Write('\n');
         }
-#else
-        streamWriter.Write(" : ");
-        streamWriter.Write(_compiler.eeGetMethodFullName(_compiler.info.compCompHnd));
-        streamWriter.Write('\n');
-#endif
 
         streamWriter.Write("----------\n");
-#if DEBUG
-        var orderingPointer = JitConfig.JitLsraOrdering;
-        var ordering = orderingPointer is null
-            ? "ABCDEFGHIJKLMNOPQ"
-            : Marshal.PtrToStringAnsi((nint)orderingPointer);
-        streamWriter.Write("Register selection order: ");
-        streamWriter.Write(ordering);
-        streamWriter.Write('\n');
-#endif
+        if (Configuration.DEBUG)
+        {
+            var orderingPointer = JitConfig.JitLsraOrdering;
+            var ordering = orderingPointer is null
+                ? "ABCDEFGHIJKLMNOPQ"
+                : Marshal.PtrToStringAnsi((nint)orderingPointer);
+            streamWriter.Write("Register selection order: ");
+            streamWriter.Write(ordering);
+            streamWriter.Write('\n');
+        }
         streamWriter.Write("Total Tracked Vars:  ");
         streamWriter.Write(_compiler.lvaTrackedCount.ToString(CultureInfo.InvariantCulture));
         streamWriter.Write('\n');
@@ -90,7 +93,7 @@ public sealed partial class LinearScan
                 throw new FatalJitException("LSRA statistics do not cover a pre-resolution block.");
             }
 
-            var stats = blockInfo[blockNumber].stats
+            var stats = blockStats[blockNumber]
                 ?? throw new FatalJitException("A pre-resolution block has no LSRA statistics.");
             var addedBlockHeader = false;
             for (var index = 0; index < (int)LsraStat.COUNT; index++)
@@ -166,4 +169,3 @@ public sealed partial class LinearScan
         jitprintf("\n");
     }
 }
-#endif

@@ -3,14 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    [Conditional("DEBUG")]
     public static void eeDispILOffs(IL_OFFSET offset)
     {
         jitprintf($"0x{offset:X4}");
     }
 }
-#endif

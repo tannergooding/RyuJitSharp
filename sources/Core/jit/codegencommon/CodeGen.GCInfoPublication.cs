@@ -34,18 +34,19 @@ public sealed partial class CodeGen
         nuint argTabOffset = 0;
         var ptrMapSize = _gcInfo.gcPtrTableSize(header, codeSize, ref argTabOffset);
 
-#if DISPLAY_SIZES
-        if (Interruptible)
+        if (Configuration.DISPLAY_SIZES)
         {
-            gcHeaderISize += headerSize;
-            gcPtrMapISize += ptrMapSize;
+            if (Interruptible)
+            {
+                gcHeaderISize += headerSize;
+                gcPtrMapISize += ptrMapSize;
+            }
+            else
+            {
+                gcHeaderNSize += headerSize;
+                gcPtrMapNSize += ptrMapSize;
+            }
         }
-        else
-        {
-            gcHeaderNSize += headerSize;
-            gcPtrMapNSize += ptrMapSize;
-        }
-#endif
 
         _compiler.compInfoBlkSize = unchecked(_compiler.compInfoBlkSize + (nint)ptrMapSize);
         _compiler.compInfoBlkAddr = (byte*)_compiler.info.compCompHnd->allocGCInfo(_compiler.compInfoBlkSize);

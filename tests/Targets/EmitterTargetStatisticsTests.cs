@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if EMITTER_STATS && TARGET_ARM64
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,6 +14,8 @@ internal static unsafe class EmitterTargetStatisticsTests
     [Test]
     public static void LocalVariablePairAllocationAndStatisticsMatchNativeCounters()
     {
+        Assume.That(Configuration.EMITTER_STATS && Configuration.TARGET_ARM64);
+
         var previousMethods = TotalMethods(null);
         var previousGroups = TotalGroups(null);
         var previousGroupBytes = TotalGroupBytes(null);
@@ -86,11 +87,7 @@ internal static unsafe class EmitterTargetStatisticsTests
         var emitter = new Emitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false);
 
         return emitter;
     }
@@ -141,4 +138,3 @@ internal static unsafe class EmitterTargetStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnsCnt")]
     private static extern ref uint TotalConstantDescriptors(Emitter? emitter);
 }
-#endif

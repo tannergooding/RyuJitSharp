@@ -42,6 +42,7 @@ public sealed partial class LinearScan : IRegAlloc
     private RefPosition? _killHead;
     private RefPosition? _killTail;
     private LsraBlockInfo[]? _blockInfo;
+    private uint[]?[]? _blockStats;
     private bool _pendingDelayFree;
     private RefPosition? _targetPreferredUse;
     private readonly LsraLocation[] _nextFixedRef;
@@ -184,6 +185,7 @@ public sealed partial class LinearScan : IRegAlloc
         _currentBlockSequenceNumber = 0;
         _blockSequenceCount = 0;
         _blockInfo = null;
+        _blockStats = null;
         _pendingDelayFree = false;
         _targetPreferredUse = null;
     }
@@ -424,16 +426,11 @@ public sealed partial class LinearScan : IRegAlloc
         _compiler.EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
         assert(_blockSequencingDone);
 
-#if TRACK_LSRA_STATS
-        if ((JitConfig.DisplayLsraStats == 1)
-#if DEBUG
-            || VERBOSE
-#endif
-        )
+        if (Configuration.TRACK_LSRA_STATS &&
+            ((JitConfig.DisplayLsraStats == 1) || (Configuration.DEBUG && VERBOSE)))
         {
             dumpLsraStats(jitstdout());
         }
-#endif
 #if DEBUG
         if (VERBOSE)
         {
@@ -461,7 +458,6 @@ public sealed partial class LinearScan : IRegAlloc
         throw new FatalJitException("Consecutive-register allocation is not implemented.");
     }
 
-#if TRACK_LSRA_STATS
     public void dumpLsraStatsCsv(StreamWriter streamWriter)
     {
         lock (JitTextWriter.GetSyncRoot(streamWriter))
@@ -469,5 +465,4 @@ public sealed partial class LinearScan : IRegAlloc
             dumpLsraStatsCsvCore(streamWriter);
         }
     }
-#endif
 }

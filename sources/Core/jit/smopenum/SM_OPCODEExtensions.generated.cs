@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG || SMGEN_COMPILE
 using System;
 
 namespace RyuJitSharp;
@@ -525,4 +524,3 @@ public static partial class SM_OPCODEExtensions
         "ldloca.s.normed", // SM_LDLOCA_S_NORMED
     ];
 }
-#endif

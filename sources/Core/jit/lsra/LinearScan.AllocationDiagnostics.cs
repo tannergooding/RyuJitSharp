@@ -3,17 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG || TRACK_LSRA_STATS
 using System;
 using System.Globalization;
-#endif
-#if TRACK_LSRA_STATS
 using System.IO;
-#endif
 
 namespace RyuJitSharp;
 
-#if TRACK_LSRA_STATS
 internal enum LsraStat
 {
     STAT_SPILL,
@@ -39,7 +34,6 @@ internal enum LsraStat
     STAT_REG_NUM,
     COUNT,
 }
-#endif
 
 public sealed partial class LinearScan
 {
@@ -779,7 +773,6 @@ public sealed partial class LinearScan
     };
 #endif
 
-#if TRACK_LSRA_STATS
     private static string getStatName(uint stat)
     {
         assert(stat != (uint)LsraStat.COUNT);
@@ -821,16 +814,17 @@ public sealed partial class LinearScan
 
         var blockInfo = _blockInfo
             ?? throw new FatalJitException("LSRA statistics require initialized block information.");
+        var blockStats = _blockStats
+            ?? throw new FatalJitException("LSRA statistics are not enabled.");
         var blockIndex = checked((int)blockNumber);
-        if ((uint)blockIndex >= (uint)blockInfo.Length)
+        if (((uint)blockIndex >= (uint)blockInfo.Length) || ((uint)blockIndex >= (uint)blockStats.Length))
         {
             throw new FatalJitException("LSRA statistic block number is outside the block table.");
         }
 
-        ref var block = ref blockInfo[blockIndex];
-        var blockStats = block.stats ??= new uint[(int)LsraStat.COUNT];
+        var blockValues = blockStats[blockIndex] ??= new uint[(int)LsraStat.COUNT];
         var statIndex = (int)stat;
-        blockStats[statIndex] = unchecked(blockStats[statIndex] + 1);
+        blockValues[statIndex] = unchecked(blockValues[statIndex] + 1);
     }
 
     internal uint getLsraStat(LsraStat stat, uint blockNumber)
@@ -841,22 +835,23 @@ public sealed partial class LinearScan
         }
 
         var blockInfo = _blockInfo;
-        if (blockInfo is null)
+        var blockStats = _blockStats;
+        if ((blockInfo is null) || (blockStats is null))
         {
             return 0;
         }
 
         var blockIndex = checked((int)blockNumber);
-        if ((uint)blockIndex >= (uint)blockInfo.Length)
+        if (((uint)blockIndex >= (uint)blockInfo.Length) || ((uint)blockIndex >= (uint)blockStats.Length))
         {
             throw new FatalJitException("LSRA statistic block number is outside the block table.");
         }
 
-        var blockStats = blockInfo[blockIndex].stats;
-        return blockStats is null ? 0 : blockStats[(int)stat];
+        var blockValues = blockStats[blockIndex];
+        return blockValues is null ? 0 : blockValues[(int)stat];
     }
 
-    private void dumpLsraStatsCsvCore(StreamWriter streamWriter)
+    private unsafe void dumpLsraStatsCsvCore(StreamWriter streamWriter)
     {
         streamWriter.Flush();
         if (streamWriter.BaseStream.CanSeek && (streamWriter.BaseStream.Position == 0))
@@ -873,20 +868,25 @@ public sealed partial class LinearScan
         }
 
         var totalStats = new uint[(int)LsraStat.COUNT];
-        var blockInfo = _blockInfo
-            ?? throw new FatalJitException("LSRA statistics require initialized block information.");
+        if (_blockInfo is null)
+        {
+            throw new FatalJitException("LSRA statistics require initialized block information.");
+        }
+
+        var blockStats = _blockStats
+            ?? throw new FatalJitException("LSRA statistics are not enabled.");
 
         void AddBlockStats(int blockNumber)
         {
-            var blockStats = blockInfo[blockNumber].stats;
-            if (blockStats is null)
+            var blockValues = blockStats[blockNumber];
+            if (blockValues is null)
             {
                 return;
             }
 
             for (var statIndex = 0; statIndex < totalStats.Length; statIndex++)
             {
-                totalStats[statIndex] = unchecked(totalStats[statIndex] + blockStats[statIndex]);
+                totalStats[statIndex] = unchecked(totalStats[statIndex] + blockValues[statIndex]);
             }
         }
 
@@ -902,14 +902,10 @@ public sealed partial class LinearScan
         }
 
         streamWriter.Write('"');
-#if DEBUG || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
-        streamWriter.Write(_compiler.info.compFullName);
-#else
-        var methodName = Configuration.LATE_DISASM
+        var methodName = (Configuration.DEBUG || Configuration.DUMP_FLOWGRAPHS || Configuration.DUMP_GC_TABLES || Configuration.LATE_DISASM)
             ? _compiler.info.compFullName
-            : _compiler.eeGetMethodFullName(_compiler.info.compCompHnd);
+            : _compiler.eeGetMethodFullName(_compiler.info.compMethodHnd);
         streamWriter.Write(methodName);
-#endif
         streamWriter.Write('"');
         foreach (var totalStat in totalStats)
         {
@@ -921,5 +917,4 @@ public sealed partial class LinearScan
         streamWriter.Write(_compiler.Metrics.PerfScore.ToString("F2", CultureInfo.InvariantCulture));
         streamWriter.WriteLine();
     }
-#endif
 }

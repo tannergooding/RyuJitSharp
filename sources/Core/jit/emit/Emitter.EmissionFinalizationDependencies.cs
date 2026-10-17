@@ -7,13 +7,16 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private static uint totAllocdSize;
     private static uint totActualSize;
 
-    private static readonly Histogram emitSizeTable = new(
-        [100, 1024 * 1, 1024 * 2, 1024 * 3, 1024 * 4, 1024 * 5, 1024 * 10, 0]);
-    private static readonly Histogram GCrefsTable = new([0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0]);
-    private static readonly Histogram stkDepthTable = new([0, 1, 2, 5, 10, 16, 32, 128, 1024, 0]);
-#endif
+    private static readonly Histogram? emitSizeTable = Configuration.EMITTER_STATS
+        ? new Histogram([100, 1024 * 1, 1024 * 2, 1024 * 3, 1024 * 4, 1024 * 5, 1024 * 10, 0])
+        : null;
+    private static readonly Histogram? GCrefsTable = Configuration.EMITTER_STATS
+        ? new Histogram([0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0])
+        : null;
+    private static readonly Histogram? stkDepthTable = Configuration.EMITTER_STATS
+        ? new Histogram([0, 1, 2, 5, 10, 16, 32, 128, 1024, 0])
+        : null;
 }

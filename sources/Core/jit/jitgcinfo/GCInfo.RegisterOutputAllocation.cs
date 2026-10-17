@@ -7,9 +7,9 @@ namespace RyuJitSharp;
 
 public partial struct GCInfo
 {
-#if MEASURE_PTRTAB_SIZE
     // Mirrors sizeof(regPtrDsc) in jitgcinfo.h; the managed descriptor is a class.
-    private static readonly nuint s_nativeRegPtrDscSize = getNativeRegPtrDscSize();
+    private static readonly nuint s_nativeRegPtrDscSize =
+        Configuration.MEASURE_PTRTAB_SIZE ? getNativeRegPtrDscSize() : 0;
 
     private static nuint getNativeRegPtrDscSize()
     {
@@ -43,8 +43,6 @@ public partial struct GCInfo
     {
         return unchecked((offset + alignment - 1) & ~(alignment - 1));
     }
-#endif
-
     internal regPtrDsc gcRegPtrAllocDsc()
     {
         assert(Compiler.IsFullPtrRegMapRequired);
@@ -61,12 +59,13 @@ public partial struct GCInfo
             gcRegPtrLast = descriptor;
         }
 
-#if MEASURE_PTRTAB_SIZE
-        unchecked
+        if (Configuration.MEASURE_PTRTAB_SIZE)
         {
-            s_gcRegPtrDscSize += s_nativeRegPtrDscSize;
+            unchecked
+            {
+                s_gcRegPtrDscSize += s_nativeRegPtrDscSize;
+            }
         }
-#endif
 
         return descriptor;
     }

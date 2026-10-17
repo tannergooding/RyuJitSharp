@@ -19,9 +19,7 @@ public interface IRegAlloc
 
     void recordVarLocationsAtStartOfBB(BasicBlock block);
 
-#if TRACK_LSRA_STATS
     void dumpLsraStatsCsv(StreamWriter streamWriter);
 
     void dumpLsraStatsSummary(StreamWriter streamWriter);
-#endif
 }

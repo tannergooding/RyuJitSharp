@@ -56,9 +56,10 @@ public sealed partial class LinearScan
             {
                 block = _compiler.fgSplitEdge(fromBlock,
                     toBlock ?? throw new FatalJitException("Critical resolution requires a successor."));
-#if TRACK_LSRA_STATS
-                updateLsraStat(LsraStat.STAT_SPLIT_EDGE, checked((uint)fromBlock.bbNum));
-#endif
+                if (Configuration.TRACK_LSRA_STATS)
+                {
+                    updateLsraStat(LsraStat.STAT_SPLIT_EDGE, checked((uint)fromBlock.bbNum));
+                }
                 break;
             }
             default:
@@ -345,9 +346,10 @@ public sealed partial class LinearScan
                     insertSwap(block, insertionPoint, swapped.varNum, targetReg, moved.varNum, fromReg);
                     location[(int)sourceReg] = REG_NA;
                     location[(int)source[(int)otherTargetReg]] = fromReg;
-#if TRACK_LSRA_STATS
-                    updateLsraStat(LsraStat.STAT_RESOLUTION_MOV, checked((uint)block.bbNum));
-#endif
+                    if (Configuration.TRACK_LSRA_STATS)
+                    {
+                        updateLsraStat(LsraStat.STAT_RESOLUTION_MOV, checked((uint)block.bbNum));
+                    }
                 }
                 else
                 {

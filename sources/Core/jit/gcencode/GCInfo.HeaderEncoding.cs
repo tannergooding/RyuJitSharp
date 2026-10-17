@@ -86,15 +86,16 @@ public partial struct GCInfo
         }
 
         encoder.SetSizeOfStackOutgoingAndScratchArea(unchecked((uint)compiler.lvaOutgoingArgSpaceSize.Value));
-#if DISPLAY_SIZES
-        if (_codeGen.Interruptible)
+        if (Configuration.DISPLAY_SIZES)
         {
-            Compiler.genMethodICnt = unchecked(Compiler.genMethodICnt + 1);
+            if (_codeGen.Interruptible)
+            {
+                Compiler.genMethodICnt = unchecked(Compiler.genMethodICnt + 1);
+            }
+            else
+            {
+                Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
+            }
         }
-        else
-        {
-            Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
-        }
-#endif
     }
 }

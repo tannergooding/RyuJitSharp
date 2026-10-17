@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 || EMITTER_STATS
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -8,8 +7,17 @@ using NUnit.Framework;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class Arm64EmitterGroupTransitionTests
+internal sealed unsafe class Arm64EmitterGroupTransitionTests
 {
+    [SetUp]
+    public void RequireApplicableConfiguration()
+    {
+        if (!Configuration.TARGET_ARM64 && !Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("This fixture requires ARM64 semantics or emitter statistics.");
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void PreparingAndTransitioningGroupsRetainsTheNativeCapacity(bool extend)
@@ -63,10 +71,14 @@ internal static unsafe class Arm64EmitterGroupTransitionTests
         Assert.That(NextNumber(emitter), Is.EqualTo(2));
     }
 
-#if EMITTER_STATS
     [Test]
     public static void StatisticsCountNativeBufferBytesOnlyOnFirstPreparation()
     {
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+
         var previous = TotalMemory(null);
 
         try
@@ -93,6 +105,11 @@ internal static unsafe class Arm64EmitterGroupTransitionTests
     [Test]
     public static void StatisticsCountOnlyExtensionTransitions()
     {
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+
         var previous = TotalExtensions(null);
 
         try
@@ -126,7 +143,6 @@ internal static unsafe class Arm64EmitterGroupTransitionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotMemAlloc")]
     private static extern ref nuint TotalMemory(Emitter? emitter);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGenIG")]
     private static extern void Prepare(Emitter emitter, insGroup group);
@@ -166,4 +182,3 @@ internal static unsafe class Arm64EmitterGroupTransitionTests
     private static extern ref int LastSize(Emitter emitter);
 #endif
 }
-#endif

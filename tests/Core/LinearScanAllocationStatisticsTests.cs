@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG && TRACK_LSRA_STATS
 using System;
 using System.IO;
 using System.Reflection;
@@ -18,8 +17,17 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class LinearScanAllocationStatisticsTests
+internal sealed unsafe class LinearScanAllocationStatisticsTests
 {
+    [SetUp]
+    public void RequireLsraStatistics()
+    {
+        if (!Configuration.TRACK_LSRA_STATS)
+        {
+            Assert.Ignore("LSRA statistics are disabled in this build.");
+        }
+    }
+
     [Test]
     public static void TextDumpWeightsBlockZeroAndRegularBlocksButSkipsResolutionBlocks()
     {
@@ -29,12 +37,14 @@ internal static unsafe class LinearScanAllocationStatisticsTests
             compiler.lvaTrackedCount = 2;
             _ = StartBlockSequence(allocator);
             var blockInfo = BlockInfo(allocator);
+            var blockStats = BlockStats(allocator)
+                ?? throw new FatalJitException("LSRA statistics are not enabled.");
             blockInfo[0].weight = 1.25;
-            var entryStats = blockInfo[0].stats
+            var entryStats = blockStats[0]
                 ?? throw new FatalJitException("The entry block must have LSRA stats.");
-            var firstBlockStats = blockInfo[blocks[0].bbNum].stats
+            var firstBlockStats = blockStats[blocks[0].bbNum]
                 ?? throw new FatalJitException("Sequenced blocks must have LSRA stats.");
-            var resolutionStats = blockInfo[blocks[1].bbNum].stats
+            var resolutionStats = blockStats[blocks[1].bbNum]
                 ?? throw new FatalJitException("Sequenced blocks must have LSRA stats.");
             entryStats[(int)LsraStat.STAT_SPILL] = 2;
             entryStats[(int)LsraStat.STAT_FREE] = 1;
@@ -157,8 +167,10 @@ internal static unsafe class LinearScanAllocationStatisticsTests
             compiler.info.compFullName = "Stats::Signed";
             _ = StartBlockSequence(allocator);
             var blockInfo = BlockInfo(allocator);
+            var blockStats = BlockStats(allocator)
+                ?? throw new AssertionException("LSRA statistics are not enabled.");
             blockInfo[0].weight = 1;
-            var stats = blockInfo[0].stats
+            var stats = blockStats[0]
                 ?? throw new AssertionException("Missing entry statistics.");
             stats[(int)LsraStat.STAT_SPILL] = count;
             MaxSpill(allocator)[(int)TYP_INT] = count;
@@ -201,15 +213,16 @@ internal static unsafe class LinearScanAllocationStatisticsTests
             compiler.Metrics.PerfScore = 7.25;
             _ = StartBlockSequence(allocator);
             BbNumMaxBeforeResolution(allocator) = (uint)removed.bbNum;
-            var blockInfo = BlockInfo(allocator);
-            var entryStats = blockInfo[0].stats
+            var blockStats = BlockStats(allocator)
+                ?? throw new AssertionException("LSRA statistics are not enabled.");
+            var entryStats = blockStats[0]
                 ?? throw new AssertionException("Missing entry statistics.");
-            var firstStats = blockInfo[blocks[0].bbNum].stats
+            var firstStats = blockStats[blocks[0].bbNum]
                 ?? throw new AssertionException("Missing block statistics.");
-            var resolutionStats = blockInfo[blocks[2].bbNum].stats
+            var resolutionStats = blockStats[blocks[2].bbNum]
                 ?? throw new AssertionException("Missing resolution statistics.");
             var removedStats = new uint[(int)LsraStat.COUNT];
-            blockInfo[removed.bbNum].stats = removedStats;
+            blockStats[removed.bbNum] = removedStats;
             entryStats[(int)LsraStat.STAT_SPILL] = 2;
             firstStats[(int)LsraStat.STAT_SPILL] = 3;
             removedStats[(int)LsraStat.STAT_SPILL] = 101;
@@ -245,13 +258,15 @@ internal static unsafe class LinearScanAllocationStatisticsTests
             _ = StartBlockSequence(allocator);
             BbNumMaxBeforeResolution(allocator) = (uint)blocks[0].bbNum;
             var blockInfo = BlockInfo(allocator);
+            var blockStats = BlockStats(allocator)
+                ?? throw new AssertionException("LSRA statistics are not enabled.");
             blockInfo[0].weight = 1;
             blocks[0].bbWeight = 1;
-            var entryStats = blockInfo[0].stats
+            var entryStats = blockStats[0]
                 ?? throw new AssertionException("Missing entry statistics.");
-            var firstStats = blockInfo[blocks[0].bbNum].stats
+            var firstStats = blockStats[blocks[0].bbNum]
                 ?? throw new AssertionException("Missing block statistics.");
-            var resolutionStats = blockInfo[blocks[1].bbNum].stats
+            var resolutionStats = blockStats[blocks[1].bbNum]
                 ?? throw new AssertionException("Missing resolution statistics.");
             entryStats[(int)LsraStat.STAT_SPILL] = uint.MaxValue;
             entryStats[(int)LsraStat.STAT_COPY_REG] = uint.MaxValue;
@@ -366,6 +381,9 @@ internal static unsafe class LinearScanAllocationStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[] BlockInfo(LinearScan allocator);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint BbNumMaxBeforeResolution(LinearScan allocator);
 
@@ -383,7 +401,7 @@ internal static unsafe class LinearScanAllocationStatisticsTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
-        using var tls = new JitTls(null);
+        using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -411,4 +429,3 @@ internal static unsafe class LinearScanAllocationStatisticsTests
         }
     }
 }
-#endif

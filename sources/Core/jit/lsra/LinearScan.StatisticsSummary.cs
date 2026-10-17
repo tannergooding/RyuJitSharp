@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TRACK_LSRA_STATS
 using System.Globalization;
 using System.IO;
 
@@ -17,10 +16,12 @@ public sealed partial class LinearScan
         var weightedStats = new double[(int)LsraStat.STAT_FREE];
         var blockInfo = _blockInfo
             ?? throw new FatalJitException("LSRA statistics require initialized block information.");
+        var blockStats = _blockStats
+            ?? throw new FatalJitException("LSRA statistics are not enabled.");
 
         for (var index = 0; index < sumStats.Length; index++)
         {
-            var stat = blockInfo[0].stats?[index]
+            var stat = blockStats[0]?[index]
                 ?? throw new FatalJitException("The entry block has no LSRA statistics.");
             sumStats[index] = unchecked(sumStats[index] + stat);
             weightedStats[index] += stat * blockInfo[0].weight;
@@ -33,7 +34,7 @@ public sealed partial class LinearScan
                 continue;
             }
 
-            var stats = blockInfo[block.bbNum].stats
+            var stats = blockStats[block.bbNum]
                 ?? throw new FatalJitException("A pre-resolution block has no LSRA statistics.");
             for (var index = 0; index < sumStats.Length; index++)
             {
@@ -57,4 +58,3 @@ public sealed partial class LinearScan
         }
     }
 }
-#endif

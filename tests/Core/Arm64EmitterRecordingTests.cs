@@ -1888,11 +1888,16 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(12));
     }
 
-#if EMITTER_STATS
     [Test]
     public static void RecordingIncrementsTheInstructionFormatCounter()
     {
-        var counts = FormatCounts(null);
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+
+        var counts = FormatCounts(null)
+            ?? throw new AssertionException("Missing emitter instruction-format statistics.");
         var before = counts[(int)IF_ARM64_SN_0A];
         try
         {
@@ -1906,8 +1911,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitIFcounts")]
-    private static extern ref uint[] FormatCounts(Emitter? emitter);
-#endif
+    private static extern ref uint[]? FormatCounts(Emitter? emitter);
 
     [TestCase(false, INS_ldr, EA_8BYTE, REG_ARM64_R4, 0, 0, false, IF_ARM64_LS_2A, 0)]
     [TestCase(false, INS_ldrb, EA_4BYTE, REG_ARM64_R4, 4094, 1, false, IF_ARM64_LS_2B, 4095)]

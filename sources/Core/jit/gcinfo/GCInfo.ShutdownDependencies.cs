@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_PTRTAB_SIZE
 namespace RyuJitSharp;
 
 public partial struct GCInfo
@@ -12,4 +11,3 @@ public partial struct GCInfo
 
     internal static nuint s_gcTotalPtrTabSize;
 }
-#endif

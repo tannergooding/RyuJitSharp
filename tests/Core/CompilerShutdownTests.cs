@@ -16,13 +16,17 @@ internal static unsafe class CompilerShutdownTests
 {
     private static readonly string[] s_csvConfigurations = ["", "first.csv", "second.csv"];
 
-#if DISPLAY_SIZES
     [TestCase(100UL, 200UL, 280UL, 200U, 280U, 80U, 40U)]
     [TestCase(0x100000064UL, 0x1000000C8UL, 0x100000118UL, 100U, 100U, 0U, 0U)]
     [TestCase(1UL, 0x8000000000000000UL, 0x8000000000000000UL, 0U, 0U, 0U, 0U)]
     public static void CodeSizeReportPreservesNativeWidthsAndPercentageArithmetic(
         ulong ilSize, ulong codeSize, ulong totalSize, uint codePercent, uint totalPercent, uint gcIlPercent, uint gcCodePercent)
     {
+        if (!Configuration.DISPLAY_SIZES)
+        {
+            Assert.Ignore("Display-size statistics are disabled in this build.");
+        }
+
         WithState(() => {
             grossVMsize = (nuint)ilSize;
             grossNCsize = (nuint)codeSize;
@@ -46,6 +50,11 @@ internal static unsafe class CompilerShutdownTests
     [TestCase(100U, 0U)]
     public static void CodeSizeReportRequiresBothInputAndOutput(uint ilSize, uint codeSize)
     {
+        if (!Configuration.DISPLAY_SIZES)
+        {
+            Assert.Ignore("Display-size statistics are disabled in this build.");
+        }
+
         WithState(() => {
             grossVMsize = ilSize;
             grossNCsize = codeSize;
@@ -59,6 +68,11 @@ internal static unsafe class CompilerShutdownTests
     [Test]
     public static void CodeSizeReportPreservesHeaderMapBreakdownAndMethodCounts()
     {
+        if (!Configuration.DISPLAY_SIZES)
+        {
+            Assert.Ignore("Display-size statistics are disabled in this build.");
+        }
+
         WithState(() => {
             grossVMsize = 100;
             grossNCsize = 200;
@@ -83,6 +97,11 @@ internal static unsafe class CompilerShutdownTests
     [Test]
     public static void CodeSizeStartupResetsOnlyNativeCodeTotals()
     {
+        if (!Configuration.DISPLAY_SIZES)
+        {
+            Assert.Ignore("Display-size statistics are disabled in this build.");
+        }
+
         WithState(() => {
             grossVMsize = grossNCsize = totalNCsize = 17;
             gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 19;
@@ -115,8 +134,6 @@ internal static unsafe class CompilerShutdownTests
 
         return Encoding.UTF8.GetString(output.ToArray());
     }
-#endif
-
 #if MEASURE_FATAL
     [Test]
     public static void FatalCountersPreserveResultsAndReportNativeLabels()
@@ -486,12 +503,15 @@ internal static unsafe class CompilerShutdownTests
         var altInitialized = AltInitialized(null);
         var methodCount = Compiler.genMethodCnt;
         Compiler.genMethodCnt = 1;
-#if DISPLAY_SIZES
-        var sizeStatistics = (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
-            gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt);
-        grossVMsize = grossNCsize = totalNCsize = gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 0;
-        Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
-#endif
+        (nuint GrossVMsize, nuint GrossNCsize, nuint TotalNCsize, nuint GCHeaderISize, nuint GCHeaderNSize,
+            nuint GCPtrMapISize, nuint GCPtrMapNSize, uint Interruptible, uint NonInterruptible) sizeStatistics = default;
+        if (Configuration.DISPLAY_SIZES)
+        {
+            sizeStatistics = (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
+                gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt);
+            grossVMsize = grossNCsize = totalNCsize = gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 0;
+            Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
+        }
 #if DEBUG
         var dump = DumpAssemblies(null);
         var dumpInitialized = DumpInitialized(null);
@@ -518,10 +538,11 @@ internal static unsafe class CompilerShutdownTests
             AltAssemblies(null) = alt;
             AltInitialized(null) = altInitialized;
             Compiler.genMethodCnt = methodCount;
-#if DISPLAY_SIZES
-            (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
-                gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt) = sizeStatistics;
-#endif
+            if (Configuration.DISPLAY_SIZES)
+            {
+                (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
+                    gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt) = sizeStatistics;
+            }
 #if DEBUG
             DumpAssemblies(null) = dump;
             DumpInitialized(null) = dumpInitialized;

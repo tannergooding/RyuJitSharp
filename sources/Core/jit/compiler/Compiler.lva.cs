@@ -98,10 +98,8 @@ public partial class Compiler
     /// <summary>reverse map of tracked number to var number</summary>
     public int[]? lvaTrackedToVarNum;
 
-#if DEBUG
     /// <summary># of procs compiled a with double-aligned stack</summary>
     public static int s_lvaDoubleAlignedProcsCount;
-#endif
 
     public bool lvaEnregEHVars;
 

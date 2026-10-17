@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && TARGET_WINDOWS && EMITTER_STATS
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -10,8 +9,18 @@ using NUnit.Framework;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64EmitterStaticStatisticsTests
+internal sealed class Arm64EmitterStaticStatisticsTests
 {
+    [SetUp]
+    public void RequireEmitterStatistics()
+    {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.TARGET_WINDOWS);
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+    }
+
     [Test]
     public static void StaticReportUsesTheWindowsArm64SecondGcReturnLayout()
     {
@@ -19,26 +28,15 @@ internal static class Arm64EmitterStaticStatisticsTests
         using var stream = new MemoryStream();
         using var output = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true) { AutoFlush = true };
 
+        var (groupSize, groupNumberOffset, groupRegisterOffset, groupDataOffset, groupInstructionOffset, alignSize) = TestConfiguration.IsDebug
+            ? (136, 88, 112, 120, 132, 48)
+            : (56, 8, 32, 40, 52, 40);
+
         try
         {
             Globals.s_jitstdout = output;
             StaticReport(null);
 
-#if DEBUG
-            const int groupSize = 136;
-            const int groupNumberOffset = 88;
-            const int groupRegisterOffset = 112;
-            const int groupDataOffset = 120;
-            const int groupInstructionOffset = 132;
-            const int alignSize = 48;
-#else
-            const int groupSize = 56;
-            const int groupNumberOffset = 8;
-            const int groupRegisterOffset = 32;
-            const int groupDataOffset = 40;
-            const int groupInstructionOffset = 52;
-            const int alignSize = 40;
-#endif
             var text = Encoding.UTF8.GetString(stream.ToArray());
             Assert.That(text, Does.Contain("Size of instrDescCGCA          = 80"));
             Assert.That(text, Does.Contain("Size of insPlaceholderGroupData     = 104"));
@@ -72,4 +70,3 @@ internal static class Arm64EmitterStaticStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitterStaticStats")]
     private static extern void StaticReport(Compiler? compiler);
 }
-#endif

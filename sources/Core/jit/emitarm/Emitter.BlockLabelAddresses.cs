@@ -84,9 +84,10 @@ public partial class Emitter
             id.idSetRelocFlags(attr);
         }
 
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
 
         dispIns(id);
         appendToCurIG(id);

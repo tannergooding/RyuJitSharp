@@ -149,9 +149,10 @@ public sealed partial class LinearScan
         insertMove(block, insertionPoint, interval.varNum, fromReg, toReg);
         assert((fromReg == REG_STK || toReg == REG_STK)
             ? interval.isSpilled : interval.isSpilled || interval.isSplit);
-#if TRACK_LSRA_STATS
-        updateLsraStat(LsraStat.STAT_RESOLUTION_MOV, checked((uint)block.bbNum));
-#endif
+        if (Configuration.TRACK_LSRA_STATS)
+        {
+            updateLsraStat(LsraStat.STAT_RESOLUTION_MOV, checked((uint)block.bbNum));
+        }
     }
 
     private void addResolutionForDouble(BasicBlock block, GenTree? insertionPoint,

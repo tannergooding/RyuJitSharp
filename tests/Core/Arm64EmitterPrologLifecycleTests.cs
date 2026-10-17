@@ -71,10 +71,14 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
         Assert.That(NoGcRequests(emitter), Is.Zero);
     }
 
-#if EMITTER_STATS
     [Test]
     public static void EachReservationIncrementsTheNativePlaceholderCounter()
     {
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+
         var counter = typeof(Emitter).GetField("emitTotalPhIGcnt", BindingFlags.NonPublic | BindingFlags.Static);
         var previous = counter?.GetValue(null);
 
@@ -94,7 +98,6 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
             counter?.SetValue(null, previous);
         }
     }
-#endif
 
     private static (Compiler Compiler, Emitter Emitter) CreateEmitter()
     {

@@ -259,10 +259,14 @@ internal static unsafe class CodeGenEmissionPhaseTests
     }
 #endif
 
-#if TRACK_LSRA_STATS && DEBUG
     [Test]
     public static void LsraSummaryIncludesBlockZeroAndWeightedPreResolutionBlocksOnly()
     {
+        if (!Configuration.TRACK_LSRA_STATS)
+        {
+            Assert.Ignore("LSRA statistics are disabled in this build.");
+        }
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compFloatingPointUsed = true;
@@ -286,13 +290,14 @@ internal static unsafe class CodeGenEmissionPhaseTests
             codeGen.CopyRegisterInfo();
             var allocator = new LinearScan(compiler);
             var blockInfo = new LsraBlockInfo[resolution.bbNum + 1];
+            var blockStats = new uint[]?[resolution.bbNum + 1];
             blockInfo[0].weight = 1.25;
-            blockInfo[0].stats = new uint[(int)LsraStat.COUNT];
-            blockInfo[first.bbNum].stats = new uint[(int)LsraStat.COUNT];
-            blockInfo[resolution.bbNum].stats = new uint[(int)LsraStat.COUNT];
-            var entryStats = blockInfo[0].stats ?? throw new AssertionException("Missing entry statistics.");
-            var firstStats = blockInfo[first.bbNum].stats ?? throw new AssertionException("Missing block statistics.");
-            var resolutionStats = blockInfo[resolution.bbNum].stats
+            blockStats[0] = new uint[(int)LsraStat.COUNT];
+            blockStats[first.bbNum] = new uint[(int)LsraStat.COUNT];
+            blockStats[resolution.bbNum] = new uint[(int)LsraStat.COUNT];
+            var entryStats = blockStats[0] ?? throw new AssertionException("Missing entry statistics.");
+            var firstStats = blockStats[first.bbNum] ?? throw new AssertionException("Missing block statistics.");
+            var resolutionStats = blockStats[resolution.bbNum]
                 ?? throw new AssertionException("Missing resolution statistics.");
             entryStats[(int)LsraStat.STAT_SPILL] = 2;
             entryStats[(int)LsraStat.STAT_FREE] = 5;
@@ -300,6 +305,7 @@ internal static unsafe class CodeGenEmissionPhaseTests
             firstStats[(int)LsraStat.STAT_COPY_REG] = 4;
             resolutionStats[(int)LsraStat.STAT_SPILL] = 99;
             BlockInfo(allocator) = blockInfo;
+            BlockStats(allocator) = blockStats;
             BbNumMaxBeforeResolution(allocator) = (uint)first.bbNum;
 
             using var stream = new MemoryStream();
@@ -315,7 +321,6 @@ internal static unsafe class CodeGenEmissionPhaseTests
                 ", SplitEdges 0 SplitEdgesWt 0.000000"));
         });
     }
-#endif
 
     private static void WithEmission(EmissionAction action)
     {
@@ -514,7 +519,6 @@ internal static unsafe class CodeGenEmissionPhaseTests
     private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
 #endif
 
-#if TRACK_LSRA_STATS && DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
 
@@ -524,8 +528,10 @@ internal static unsafe class CodeGenEmissionPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint BbNumMaxBeforeResolution(LinearScan allocator);
-#endif
 }
 #endif

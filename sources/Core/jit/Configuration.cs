@@ -28,6 +28,12 @@ internal static class Configuration
 
     internal static bool EMITTER_STATS => BuildFeatures.EmitterStatistics;
 
+    internal static bool TRACK_LSRA_STATS => BuildFeatures.TrackLsraStatistics;
+
+    internal static bool DUMP_FLOWGRAPHS => BuildFeatures.DumpFlowgraphs;
+
+    internal static bool DUMP_GC_TABLES => BuildFeatures.DumpGcTables;
+
     internal static bool OPTIONAL_STATISTICS => BuildFeatures.OptionalStatistics;
 
     private static class BuildFeatures
@@ -40,6 +46,9 @@ internal static class Configuration
         private static bool s_nodeBashStatistics;
         private static bool s_countAstOperators;
         private static bool s_emitterStatistics;
+        private static bool s_trackLsraStatistics;
+        private static bool s_dumpFlowgraphs;
+        private static bool s_dumpGcTables;
         private static bool s_optionalStatistics;
 
         static BuildFeatures()
@@ -52,6 +61,9 @@ internal static class Configuration
             EnableNodeBashStatistics();
             EnableCountAstOperators();
             EnableEmitterStatistics();
+            EnableTrackLsraStatistics();
+            EnableDumpFlowgraphs();
+            EnableDumpGcTables();
             EnableOptionalStatistics();
         }
 
@@ -70,6 +82,12 @@ internal static class Configuration
         internal static bool CountAstOperators => s_countAstOperators;
 
         internal static bool EmitterStatistics => s_emitterStatistics;
+
+        internal static bool TrackLsraStatistics => s_trackLsraStatistics;
+
+        internal static bool DumpFlowgraphs => s_dumpFlowgraphs;
+
+        internal static bool DumpGcTables => s_dumpGcTables;
 
         internal static bool OptionalStatistics => s_optionalStatistics;
 
@@ -96,6 +114,15 @@ internal static class Configuration
 
         [Conditional("EMITTER_STATS")]
         private static void EnableEmitterStatistics() => s_emitterStatistics = true;
+
+        [Conditional("TRACK_LSRA_STATS")]
+        private static void EnableTrackLsraStatistics() => s_trackLsraStatistics = true;
+
+        [Conditional("DUMP_FLOWGRAPHS")]
+        private static void EnableDumpFlowgraphs() => s_dumpFlowgraphs = true;
+
+        [Conditional("DUMP_GC_TABLES")]
+        private static void EnableDumpGcTables() => s_dumpGcTables = true;
 
         [Conditional("NODEBASH_STATS")]
         [Conditional("COUNT_AST_OPERS")]

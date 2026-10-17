@@ -11,22 +11,21 @@ public partial class Emitter
 {
     private const int EMIT_MAX_IG_INS_COUNT = 256;
 
-#if EMITTER_STATS
     private static uint emitTotalInsCnt;
     private static uint emitTotalIDescCnt;
     private static uint emitTotalIDescSmallCnt;
     private static uint emitTotalIDescJmpCnt;
     private static uint emitTotalIDescLblCnt;
     private static uint emitTotalIDescAlignCnt;
-#endif
 
     private void emitRecordMemAllocation(nuint size)
     {
         assert((size % sizeof(int)) == 0);
 
-#if EMITTER_STATS
-        emitTotMemAlloc = unchecked(emitTotMemAlloc + size);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotMemAlloc = unchecked(emitTotMemAlloc + size);
+        }
     }
 
     private byte[] emitGetMem(nuint size)
@@ -154,9 +153,10 @@ public partial class Emitter
             id.idSetIsCnsReloc();
         }
 
-#if EMITTER_STATS
-        emitTotalInsCnt = unchecked(emitTotalInsCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalInsCnt = unchecked(emitTotalInsCnt + 1);
+        }
         emitCurIGinsCnt++;
 
 #if DEBUG
@@ -178,18 +178,20 @@ public partial class Emitter
 
     private instrDescBasic emitAllocInstr(emitAttr attr)
     {
-#if EMITTER_STATS
-        emitTotalIDescCnt = unchecked(emitTotalIDescCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescCnt = unchecked(emitTotalIDescCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescBasic>(unchecked((nuint)INSTR_DESC_SIZE), attr);
     }
 
     private instrDescJmp emitAllocInstrJmp()
     {
-#if EMITTER_STATS
-        emitTotalIDescJmpCnt = unchecked(emitTotalIDescJmpCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescJmpCnt = unchecked(emitTotalIDescJmpCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescJmp>(unchecked((nuint)DescriptorSizes.Jump), EA_1BYTE);
     }
@@ -201,18 +203,20 @@ public partial class Emitter
             throw new FatalJitException(CORJIT_SKIPPED, "Label instruction descriptors are not supported for this target.");
         }
 
-#if EMITTER_STATS
-        emitTotalIDescLblCnt = unchecked(emitTotalIDescLblCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescLblCnt = unchecked(emitTotalIDescLblCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescLbl>(unchecked((nuint)DescriptorSizes.Label), EA_4BYTE);
     }
 
     private instrDescAlign emitAllocInstrAlign()
     {
-#if EMITTER_STATS
-        emitTotalIDescAlignCnt = unchecked(emitTotalIDescAlignCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescAlignCnt = unchecked(emitTotalIDescAlignCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescAlign>((nuint)DescriptorSizes.Align, EA_1BYTE);
     }
@@ -222,9 +226,10 @@ public partial class Emitter
         var id = emitAllocAnyInstr<instrDescBasic>(SMALL_IDSC_SIZE, attr);
         id.idSetIsSmallDsc();
 
-#if EMITTER_STATS
-        emitTotalIDescSmallCnt = unchecked(emitTotalIDescSmallCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescSmallCnt = unchecked(emitTotalIDescSmallCnt + 1);
+        }
 
         return id;
     }

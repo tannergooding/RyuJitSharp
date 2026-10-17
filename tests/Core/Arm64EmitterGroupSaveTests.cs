@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 || EMITTER_STATS
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -10,8 +9,17 @@ using static RyuJitSharp.instruction;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class Arm64EmitterGroupSaveTests
+internal sealed unsafe class Arm64EmitterGroupSaveTests
 {
+    [SetUp]
+    public void RequireApplicableConfiguration()
+    {
+        if (!Configuration.TARGET_ARM64 && !Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("This fixture requires ARM64 semantics or emitter statistics.");
+        }
+    }
+
 #if TARGET_ARMARCH
     [Test]
     public static void Arm64SaveClearsBarrierWithoutMarkingBranchRemovable()
@@ -41,10 +49,14 @@ internal static unsafe class Arm64EmitterGroupSaveTests
     }
 #endif
 
-#if EMITTER_STATS
     [Test]
     public static void SaveAccumulatesNativeWidthCountersAndPrologMaxima()
     {
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+
         var oldPointers = TotalPointers(null);
         var oldInstructions = TotalInstructions(null);
         var oldSize = TotalSize(null);
@@ -96,7 +108,6 @@ internal static unsafe class Arm64EmitterGroupSaveTests
             MaxPrologSize(null) = oldMaxPrologSize;
         }
     }
-#endif
 
     private static SaveEmitter CreateEmitter()
     {
@@ -162,7 +173,6 @@ internal static unsafe class Arm64EmitterGroupSaveTests
     private static extern ref Emitter.instrDesc? LastBarrier(Emitter emitter);
 #endif
 
-#if EMITTER_STATS
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIGptrs")]
     private static extern ref uint TotalPointers(Emitter? emitter);
 
@@ -186,6 +196,4 @@ internal static unsafe class Arm64EmitterGroupSaveTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitMaxPrologIGSize")]
     private static extern ref nuint MaxPrologSize(Emitter? emitter);
-#endif
 }
-#endif

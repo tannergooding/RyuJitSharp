@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private const int SMALL_CNS_TSZ = 256;
 
     private static uint emitTotalIDescCnsCnt;
@@ -18,7 +17,8 @@ public partial class Emitter
     private static uint emitTotalIDescAmdCnt;
     private static uint emitTotalIDescCnsAmdCnt;
 
-    private static readonly uint[] emitSmallCns = new uint[SMALL_CNS_TSZ];
+    private static readonly uint[]? emitSmallCns =
+        Configuration.EMITTER_STATS ? new uint[SMALL_CNS_TSZ] : null;
     private static uint emitSmallCnsCnt;
     private static uint emitLargeCnsCnt;
     private static uint emitInt8CnsCnt;
@@ -83,8 +83,9 @@ public partial class Emitter
             index = (int)(value + (SMALL_CNS_TSZ / 2));
         }
 
+        var smallConstantCounts = emitSmallCns!;
         emitSmallCnsCnt = unchecked(emitSmallCnsCnt + 1);
-        emitSmallCns[index] = unchecked(emitSmallCns[index] + 1);
+        smallConstantCounts[index] = unchecked(smallConstantCounts[index] + 1);
 
         TrackCns(value);
     }
@@ -95,13 +96,13 @@ public partial class Emitter
 
         TrackCns(value);
     }
-#endif
 
     private instrDescCns emitAllocInstrCns(emitAttr attr)
     {
-#if EMITTER_STATS
-        emitTotalIDescCnsCnt = unchecked(emitTotalIDescCnsCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescCnsCnt = unchecked(emitTotalIDescCnsCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescCns>(unchecked((nuint)ConstantDescriptorSizes.Constant), attr);
     }
@@ -117,18 +118,20 @@ public partial class Emitter
 
     private instrDescDsp emitAllocInstrDsp(emitAttr attr)
     {
-#if EMITTER_STATS
-        emitTotalIDescDspCnt = unchecked(emitTotalIDescDspCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescDspCnt = unchecked(emitTotalIDescDspCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescDsp>(unchecked((nuint)ConstantDescriptorSizes.Displacement), attr);
     }
 
     private instrDescCnsDsp emitAllocInstrCnsDsp(emitAttr attr)
     {
-#if EMITTER_STATS
-        emitTotalIDescCnsDspCnt = unchecked(emitTotalIDescCnsDspCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescCnsDspCnt = unchecked(emitTotalIDescCnsDspCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescCnsDsp>(unchecked((nuint)ConstantDescriptorSizes.ConstantDisplacement), attr);
     }
@@ -137,9 +140,10 @@ public partial class Emitter
     {
         RequireXarchAddressModeDescriptor();
 
-#if EMITTER_STATS
-        emitTotalIDescAmdCnt = unchecked(emitTotalIDescAmdCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescAmdCnt = unchecked(emitTotalIDescAmdCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescAmd>(unchecked((nuint)ConstantDescriptorSizes.AddressMode), attr);
     }
@@ -148,9 +152,10 @@ public partial class Emitter
     {
         RequireXarchAddressModeDescriptor();
 
-#if EMITTER_STATS
-        emitTotalIDescCnsAmdCnt = unchecked(emitTotalIDescCnsAmdCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescCnsAmdCnt = unchecked(emitTotalIDescCnsAmdCnt + 1);
+        }
 
         return emitAllocAnyInstr<instrDescCnsAmd>(unchecked((nuint)ConstantDescriptorSizes.ConstantAddressMode), attr);
     }
@@ -171,9 +176,10 @@ public partial class Emitter
             var id = emitAllocInstr(attr);
             id.idSmallCns(cns);
 
-#if EMITTER_STATS
-            TrackSmallCns(cns);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                TrackSmallCns(cns);
+            }
 
             return id;
         }
@@ -181,9 +187,10 @@ public partial class Emitter
         {
             var id = emitAllocInstrCns(attr, unchecked((nuint)cns));
 
-#if EMITTER_STATS
-            TrackLargeCns(cns);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                TrackLargeCns(cns);
+            }
 
             return id;
         }
@@ -196,9 +203,10 @@ public partial class Emitter
             var id = emitNewInstrSmall(attr);
             id.idSmallCns(cns);
 
-#if EMITTER_STATS
-            TrackSmallCns(cns);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                TrackSmallCns(cns);
+            }
 
             return id;
         }
@@ -206,9 +214,10 @@ public partial class Emitter
         {
             var id = emitAllocInstrCns(attr, unchecked((nuint)cns));
 
-#if EMITTER_STATS
-            TrackLargeCns(cns);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                TrackLargeCns(cns);
+            }
 
             return id;
         }
@@ -220,9 +229,10 @@ public partial class Emitter
         {
             var id = emitAllocInstr(attr);
 
-#if EMITTER_STATS
-            emitSmallDspCnt = unchecked(emitSmallDspCnt + 1);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                emitSmallDspCnt = unchecked(emitSmallDspCnt + 1);
+            }
 
             return id;
         }
@@ -232,9 +242,10 @@ public partial class Emitter
             id.idSetIsLargeDsp();
             id.iddDspVal = dsp;
 
-#if EMITTER_STATS
-            emitLargeDspCnt = unchecked(emitLargeDspCnt + 1);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                emitLargeDspCnt = unchecked(emitLargeDspCnt + 1);
+            }
 
             return id;
         }
@@ -249,10 +260,11 @@ public partial class Emitter
                 var id = emitAllocInstr(size);
                 id.idSmallCns(cns);
 
-#if EMITTER_STATS
-                TrackSmallCns(cns);
-                emitSmallDspCnt = unchecked(emitSmallDspCnt + 1);
-#endif
+                if (Configuration.EMITTER_STATS)
+                {
+                    TrackSmallCns(cns);
+                    emitSmallDspCnt = unchecked(emitSmallDspCnt + 1);
+                }
 
                 return id;
             }
@@ -260,10 +272,11 @@ public partial class Emitter
             {
                 var id = emitAllocInstrCns(size, unchecked((nuint)cns));
 
-#if EMITTER_STATS
-                TrackLargeCns(cns);
-                emitSmallDspCnt = unchecked(emitSmallDspCnt + 1);
-#endif
+                if (Configuration.EMITTER_STATS)
+                {
+                    TrackLargeCns(cns);
+                    emitSmallDspCnt = unchecked(emitSmallDspCnt + 1);
+                }
 
                 return id;
             }
@@ -277,10 +290,11 @@ public partial class Emitter
                 id.iddDspVal = dsp;
                 id.idSmallCns(cns);
 
-#if EMITTER_STATS
-                TrackSmallCns(cns);
-                emitLargeDspCnt = unchecked(emitLargeDspCnt + 1);
-#endif
+                if (Configuration.EMITTER_STATS)
+                {
+                    TrackSmallCns(cns);
+                    emitLargeDspCnt = unchecked(emitLargeDspCnt + 1);
+                }
 
                 return id;
             }
@@ -292,10 +306,11 @@ public partial class Emitter
                 id.idSetIsLargeDsp();
                 id.iddcDspVal = dsp;
 
-#if EMITTER_STATS
-                TrackLargeCns(cns);
-                emitLargeDspCnt = unchecked(emitLargeDspCnt + 1);
-#endif
+                if (Configuration.EMITTER_STATS)
+                {
+                    TrackLargeCns(cns);
+                    emitLargeDspCnt = unchecked(emitLargeDspCnt + 1);
+                }
 
                 return id;
             }

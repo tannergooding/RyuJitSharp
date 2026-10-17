@@ -507,9 +507,10 @@ public partial class Compiler
             GenTree.DumpNodeSizes();
         }
 
-#if EMITTER_STATS
-        emitterStaticStats();
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitterStaticStats();
+        }
     }
 
     [System.Diagnostics.Conditional("DEBUG")]
@@ -557,9 +558,10 @@ public partial class Compiler
     /// <summary>One-time initialization.</summary>
     public static void compStartup()
     {
-#if DISPLAY_SIZES
-        grossVMsize = grossNCsize = totalNCsize = 0;
-#endif
+        if (Configuration.DISPLAY_SIZES)
+        {
+            grossVMsize = grossNCsize = totalNCsize = 0;
+        }
 
         // Initialize the table of tree node sizes
         GenTree.InitNodeSize();
@@ -3922,12 +3924,10 @@ public partial class Compiler
         // Generate code
         codeGen.genGenerateCode(out methodCodePtr, out methodCodeSize);
 
-#if TRACK_LSRA_STATS
-        if (JitConfig.DisplayLsraStats == 2)
+        if (Configuration.TRACK_LSRA_STATS && (JitConfig.DisplayLsraStats == 2))
         {
             _regAlloc.dumpLsraStatsCsv(jitstdout());
         }
-#endif
 
         // We're done -- set the active phase to the last phase (which isn't really a phase)
         mostRecentlyActivePhase = PHASE_POST_EMIT;

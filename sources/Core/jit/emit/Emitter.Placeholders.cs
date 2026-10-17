@@ -11,9 +11,7 @@ public partial class Emitter
 {
     private const int MAX_PLACEHOLDER_IG_SIZE = 256;
 
-#if EMITTER_STATS
     private static uint emitTotalPhIGcnt;
-#endif
 
     public void emitCreatePlaceholderIG(insGroupPlaceholderType igType, BasicBlock block, VARSET_TP gcVars,
         regMaskTP gcRefRegs, regMaskTP byrefRegs, bool last)
@@ -58,9 +56,10 @@ public partial class Emitter
         VarSetOps.Assign(_compiler, ref data.igPhInitGCrefVars, emitInitGCrefVars);
         placeholder.igPhData = data;
 
-#if EMITTER_STATS
-        emitTotalPhIGcnt = unchecked(emitTotalPhIGcnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalPhIGcnt = unchecked(emitTotalPhIGcnt + 1);
+        }
 
         if (igType == IGPT_EPILOG)
         {

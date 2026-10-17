@@ -23,12 +23,10 @@ public partial class LinearScan
 
         var parent = treeUse.User();
         var oper = refPosition.reload ? GT_RELOAD : GT_COPY;
-#if DEBUG
-        if (!refPosition.reload)
+        if (Configuration.DEBUG && Configuration.TRACK_LSRA_STATS && !refPosition.reload)
         {
             updateLsraStat(LsraStat.STAT_COPY_REG, checked((uint)block.bbNum));
         }
-#endif
 
         if (parent.Oper.IsCopyOrReload)
         {

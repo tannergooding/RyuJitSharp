@@ -165,11 +165,9 @@ internal static unsafe class CodeGenFrameFinalizationTests
 
         public void recordVarLocationsAtStartOfBB(BasicBlock block) => record(block);
 
-#if TRACK_LSRA_STATS
         public void dumpLsraStatsCsv(System.IO.StreamWriter writer) => throw new NotSupportedException();
 
         public void dumpLsraStatsSummary(System.IO.StreamWriter writer) => throw new NotSupportedException();
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]

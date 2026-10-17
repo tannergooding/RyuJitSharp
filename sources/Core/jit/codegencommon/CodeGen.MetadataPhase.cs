@@ -84,11 +84,12 @@ public sealed partial class CodeGen
         RegSet.rsSpillDone();
         RegSet.tmpDone();
 
-#if DISPLAY_SIZES
-        var dataSize = unchecked((nuint)(uint)Emitter.emitDataSize());
-        grossVMsize = unchecked(grossVMsize + (uint)_compiler.info.compILCodeSize);
-        totalNCsize = unchecked(totalNCsize + _codeSize + dataSize + (nuint)_compiler.compInfoBlkSize);
-        grossNCsize = unchecked(grossNCsize + _codeSize + dataSize);
-#endif
+        if (Configuration.DISPLAY_SIZES)
+        {
+            var dataSize = unchecked((nuint)(uint)Emitter.emitDataSize());
+            grossVMsize = unchecked(grossVMsize + (uint)_compiler.info.compILCodeSize);
+            totalNCsize = unchecked(totalNCsize + _codeSize + dataSize + (nuint)_compiler.compInfoBlkSize);
+            grossNCsize = unchecked(grossNCsize + _codeSize + dataSize);
+        }
     }
 }

@@ -56,11 +56,11 @@ public sealed partial class LinearScan
         _bbNumMaxBeforeResolution = (uint)_compiler.fgBBNumMax;
         var blockInfo = new LsraBlockInfo[_compiler.fgBBNumMax + 1];
         _blockInfo = blockInfo;
+        var blockStats = Configuration.TRACK_LSRA_STATS ? new uint[]?[blockInfo.Length] : null;
+        _blockStats = blockStats;
         _hasCriticalEdges = false;
         blockInfo[0].weight = BB_UNITY_WEIGHT;
-#if TRACK_LSRA_STATS
-        blockInfo[0].stats = new uint[(int)LsraStat.COUNT];
-#endif
+        blockStats?[0] = new uint[(int)LsraStat.COUNT];
 
         assert(_compiler.fgPredsComputed);
         if (!_compiler.fgPredsComputed)
@@ -155,9 +155,7 @@ public sealed partial class LinearScan
             info.hasEHBoundaryIn = block.hasEHBoundaryIn;
             info.hasEHBoundaryOut = block.hasEHBoundaryOut;
             info.hasEHPred = false;
-#if TRACK_LSRA_STATS
-            info.stats = new uint[(int)LsraStat.COUNT];
-#endif
+            blockStats?[block.bbNum] = new uint[(int)LsraStat.COUNT];
 
             var isCallFinallyPairTail = block.isBBCallFinallyPairTail;
             if (isCallFinallyPairTail)

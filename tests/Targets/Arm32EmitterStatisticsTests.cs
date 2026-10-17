@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if EMITTER_STATS && TARGET_ARM
 using System.IO;
 using System.Text;
 using NUnit.Framework;
@@ -13,22 +12,27 @@ internal static class Arm32EmitterStatisticsTests
     [Test]
     public static void InstructionGroupSizeAndStaticReportMatchNativeLayout()
     {
-#if TARGET_WINDOWS
-#if DEBUG
-        const int expectedGroupSize = 88;
-#else
-        var expectedGroupSize = Configuration.LATE_DISASM ? 60 : 40;
-#endif
-#elif TARGET_UNIX
-#if DEBUG
-        const int expectedGroupSize = 96;
-#else
-        var expectedGroupSize = Configuration.LATE_DISASM ? 64 : 48;
-#endif
-#else
-        Assert.Fail("ARM32 emitter statistics require a known native ABI.");
-        return;
-#endif
+        Assume.That(Configuration.EMITTER_STATS && Configuration.TARGET_ARM);
+
+        int expectedGroupSize;
+        if (Configuration.TARGET_WINDOWS)
+        {
+            expectedGroupSize = Configuration.DEBUG
+                ? 88
+                : Configuration.LATE_DISASM ? 60 : 40;
+        }
+        else if (Configuration.TARGET_UNIX)
+        {
+            expectedGroupSize = Configuration.DEBUG
+                ? 96
+                : Configuration.LATE_DISASM ? 64 : 48;
+        }
+        else
+        {
+            Assert.Fail("ARM32 emitter statistics require a known native ABI.");
+            return;
+        }
+
         Assert.That(Emitter.emitNativeIGSize(), Is.EqualTo((nuint)expectedGroupSize));
 
         var previous = Globals.s_jitstdout;
@@ -52,4 +56,3 @@ internal static class Arm32EmitterStatisticsTests
         }
     }
 }
-#endif

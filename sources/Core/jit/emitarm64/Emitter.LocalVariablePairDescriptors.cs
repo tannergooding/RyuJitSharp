@@ -7,16 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private static uint emitTotalIDescLclVarPairCnt;
     private static uint emitTotalIDescLclVarPairCnsCnt;
-#endif
 
     private instrDescLclVarPair emitAllocInstrLclVarPair(emitAttr attr)
     {
-#if EMITTER_STATS
-        emitTotalIDescLclVarPairCnt = unchecked(emitTotalIDescLclVarPairCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescLclVarPairCnt = unchecked(emitTotalIDescLclVarPairCnt + 1);
+        }
         var result = emitAllocAnyInstr<instrDescLclVarPair>((nuint)DescriptorSizes.LocalVarPair, attr);
         result.idSetIsLclVarPair();
 
@@ -25,9 +24,10 @@ public partial class Emitter
 
     private instrDescLclVarPairCns emitAllocInstrLclVarPairCns(emitAttr attr, nint cns)
     {
-#if EMITTER_STATS
-        emitTotalIDescLclVarPairCnsCnt = unchecked(emitTotalIDescLclVarPairCnsCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescLclVarPairCnsCnt = unchecked(emitTotalIDescLclVarPairCnsCnt + 1);
+        }
         var result = emitAllocAnyInstr<instrDescLclVarPairCns>((nuint)DescriptorSizes.LocalVarPairConstant, attr);
         result.idSetIsLargeCns();
         result.idSetIsLclVarPair();
@@ -38,10 +38,11 @@ public partial class Emitter
 
     private instrDesc emitNewInstrLclVarPair(emitAttr attr, nint cns)
     {
-#if EMITTER_STATS
-        emitTotalIDescCnt = unchecked(emitTotalIDescCnt + 1);
-        emitTotalIDescCnsCnt = unchecked(emitTotalIDescCnsCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescCnt = unchecked(emitTotalIDescCnt + 1);
+            emitTotalIDescCnsCnt = unchecked(emitTotalIDescCnsCnt + 1);
+        }
         if (instrDesc.fitsInSmallCns(cns))
         {
             var id = emitAllocInstrLclVarPair(attr);

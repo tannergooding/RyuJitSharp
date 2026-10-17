@@ -468,8 +468,7 @@ public partial struct GCInfo
             }
         }
 
-#if DISPLAY_SIZES
-        if (write != 0)
+        if (Configuration.DISPLAY_SIZES && (write != 0))
         {
             if (_codeGen.Interruptible)
             {
@@ -480,7 +479,6 @@ public partial struct GCInfo
                 Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
             }
         }
-#endif
 
         return size;
     }

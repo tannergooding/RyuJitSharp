@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if EMITTER_STATS
 using System;
 using System.IO;
 using System.Reflection;
@@ -12,8 +11,17 @@ using NUnit.Framework;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class EmitterMethodStatisticsTests
+internal sealed unsafe class EmitterMethodStatisticsTests
 {
+    [SetUp]
+    public void RequireEmitterStatistics()
+    {
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+    }
+
     [Test]
     public static void MethodStartResetsLocalCountersAndAccountsForTwoNativeGroups()
     {
@@ -150,7 +158,8 @@ internal static unsafe class EmitterMethodStatisticsTests
     [Test]
     public static void ConstantAndDisplacementAllocationCountsNativeStatistics()
     {
-        var smallCnsBuckets = SmallCnsBuckets(null);
+        var smallCnsBuckets = SmallCnsBuckets(null)
+            ?? throw new AssertionException("Missing emitter constant statistics.");
         var previousBasicDescriptors = TotalBasicDescriptors(null);
         var previousConstantDescriptors = TotalConstantDescriptors(null);
         var previousDisplacementDescriptors = TotalDisplacementDescriptors(null);
@@ -457,7 +466,6 @@ internal static unsafe class EmitterMethodStatisticsTests
             TotalActualSize(null) = previousActualSize;
         }
     }
-#endif
 
     private static void AssertField(string report, string name, int offset, int size)
     {
@@ -664,7 +672,7 @@ internal static unsafe class EmitterMethodStatisticsTests
     private static extern ref uint TotalAlignmentDescriptors(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallCns")]
-    private static extern ref uint[] SmallCnsBuckets(Emitter? emitter);
+    private static extern ref uint[]? SmallCnsBuckets(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallCnsCnt")]
     private static extern ref uint TotalSmallConstants(Emitter? emitter);

@@ -7,9 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private static uint emitTotalIDescRelocCnt;
-#endif
 
     private unsafe instrDescReloc emitNewInstrReloc(emitAttr attr, nuint address)
     {
@@ -22,9 +20,10 @@ public partial class Emitter
         assert(id.idIsReloc());
         id.idrRelocVal = (byte*)address;
 
-#if EMITTER_STATS
-        emitTotalIDescRelocCnt = unchecked(emitTotalIDescRelocCnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescRelocCnt = unchecked(emitTotalIDescRelocCnt + 1);
+        }
 
         return id;
     }

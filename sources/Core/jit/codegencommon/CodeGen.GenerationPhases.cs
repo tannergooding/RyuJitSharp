@@ -276,14 +276,12 @@ public sealed partial class CodeGen
                     }
                 }
 
-#if TRACK_LSRA_STATS
-                if (JitConfig.DisplayLsraStats == 3)
+                if (Configuration.TRACK_LSRA_STATS && (JitConfig.DisplayLsraStats == 3))
                 {
                     var allocator = _compiler.RegisterAllocator;
                     assert(allocator is not null);
                     allocator.dumpLsraStatsSummary(jitstdout());
                 }
-#endif
 #if DEBUG
                 jitprintf($" (MethodHash={_compiler.info.compMethodHash():x8}) for method {_compiler.info.compFullName} ({_compiler.compGetTieringName(true)})\n");
 #endif

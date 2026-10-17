@@ -18,11 +18,15 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class GcInfoTableEncodingTests
 {
-#if DISPLAY_SIZES
     [TestCase(false)]
     [TestCase(true)]
     public static void HeaderRecordsInterruptibilityWithUnsignedWrap(bool interruptible)
     {
+        if (!Configuration.DISPLAY_SIZES)
+        {
+            Assert.Ignore("Display-size statistics are disabled in this build.");
+        }
+
         var counts = (Compiler.genMethodICnt, Compiler.genMethodNCnt);
         try
         {
@@ -47,7 +51,6 @@ internal static unsafe class GcInfoTableEncodingTests
             (Compiler.genMethodICnt, Compiler.genMethodNCnt) = counts;
         }
     }
-#endif
 
     [Test]
     public static void HeaderPublishesCodeLengthFrameVarargsAndOutgoingArea()

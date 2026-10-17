@@ -10,9 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private static uint emitTotalIDescCGCACnt;
-#endif
 
     private regMaskTP CallScratchRegisters
     {
@@ -31,9 +29,10 @@ public partial class Emitter
 
     private instrDescCGCA emitAllocInstrCGCA(emitAttr attr)
     {
-#if EMITTER_STATS
-        emitTotalIDescCGCACnt = unchecked(emitTotalIDescCGCACnt + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIDescCGCACnt = unchecked(emitTotalIDescCGCACnt + 1);
+        }
         return emitAllocAnyInstr<instrDescCGCA>(unchecked((nuint)instrDescCGCA.NativeSize), attr);
     }
 

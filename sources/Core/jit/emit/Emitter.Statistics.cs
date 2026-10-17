@@ -11,7 +11,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
     {
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_ARM)
@@ -45,14 +44,15 @@ public partial class Emitter
         uint instructionCount = 0;
         uint displayedInstructionCount = 0;
 
-        for (var format = 0; format < emitIFcounts.Length; format++)
+        var instructionFormatCounts = emitIFcounts!;
+        for (var format = 0; format < instructionFormatCounts.Length; format++)
         {
-            instructionCount = unchecked(instructionCount + emitIFcounts[format]);
+            instructionCount = unchecked(instructionCount + instructionFormatCounts[format]);
         }
 
-        for (var format = 0; format < emitIFcounts.Length; format++)
+        for (var format = 0; format < instructionFormatCounts.Length; format++)
         {
-            var count = emitIFcounts[format];
+            var count = instructionFormatCounts[format];
 
             if ((count > 0) && (unchecked(1000u * count) >= instructionCount))
             {
@@ -165,15 +165,15 @@ public partial class Emitter
         }
 
         output.Write("Descriptor size distribution:\n");
-        emitSizeTable.dump(output);
+        emitSizeTable!.dump(output);
         output.Write("\n");
 
         output.Write("GC ref frame variable counts:\n");
-        GCrefsTable.dump(output);
+        GCrefsTable!.dump(output);
         output.Write("\n");
 
         output.Write("Max. stack depth distribution:\n");
-        stkDepthTable.dump(output);
+        stkDepthTable!.dump(output);
         output.Write("\n");
 
         var totalConstantCount = unchecked(emitLargeCnsCnt + emitSmallCnsCnt);
@@ -198,7 +198,7 @@ public partial class Emitter
 
             for (var index = 0; index < SMALL_CNS_TSZ; index++)
             {
-                var count = emitSmallCns[index];
+                var count = emitSmallCns![index];
 
                 if (count >= minimumCount)
                 {
@@ -269,5 +269,4 @@ public partial class Emitter
             output.Write(value.ToString(format, CultureInfo.InvariantCulture).PadLeft(width));
         }
     }
-#endif
 }

@@ -329,9 +329,10 @@ public sealed partial class LinearScan
                 if (_found)
                 {
                     selectionScore = score;
-#if TRACK_LSRA_STATS
-                    _linearScan.updateLsraStat(getLsraStatFromScore(score), refPosition.bbNum);
-#endif
+                    if (Configuration.TRACK_LSRA_STATS)
+                    {
+                        _linearScan.updateLsraStat(getLsraStatFromScore(score), refPosition.bbNum);
+                    }
                 }
             }
 #else
@@ -417,7 +418,6 @@ public sealed partial class LinearScan
         }
     }
 
-#if TRACK_LSRA_STATS
     private static LsraStat getLsraStatFromScore(RegisterScore score) => score switch
     {
         RegisterScore.CONST_AVAILABLE => LsraStat.STAT_CONST_AVAILABLE,
@@ -438,5 +438,4 @@ public sealed partial class LinearScan
         RegisterScore.REG_NUM => LsraStat.STAT_REG_NUM,
         _ => LsraStat.STAT_FREE,
     };
-#endif
 }

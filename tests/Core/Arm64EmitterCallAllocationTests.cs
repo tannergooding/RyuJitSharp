@@ -146,10 +146,14 @@ internal static unsafe class Arm64EmitterCallAllocationTests
         }
     }
 
-#if EMITTER_STATS
     [Test]
     public static void EachLargeCallIncrementsTheAllocationCounter()
     {
+        if (!Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are disabled in this build.");
+        }
+
         var before = AllocationCount(null);
         try
         {
@@ -167,7 +171,6 @@ internal static unsafe class Arm64EmitterCallAllocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCGCACnt")]
     private static extern ref uint AllocationCount(Emitter? emitter);
-#endif
 
     private static CallEmitter CreateEmitter()
     {

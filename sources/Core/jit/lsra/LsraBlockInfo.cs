@@ -14,8 +14,4 @@ internal struct LsraBlockInfo
     public bool hasEHBoundaryIn;
     public bool hasEHBoundaryOut;
     public bool hasEHPred;
-
-#if TRACK_LSRA_STATS
-    public uint[]? stats;
-#endif
 }
