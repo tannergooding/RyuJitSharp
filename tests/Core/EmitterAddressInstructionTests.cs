@@ -410,7 +410,6 @@ internal static class EmitterAddressInstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void AbsoluteAddressDebugInformationPreservesHandleAndFlags()
     {
@@ -418,10 +417,18 @@ internal static class EmitterAddressInstructionTests
         {
             var handle = unchecked((nuint)0xFEDCBA9876543210UL);
             emitter.emitIns_R_AI(INS_lea, EA_8BYTE, REG_X64_RAX, 128, handle, GTF_ICON_HDL_MASK);
-            var info = Last(emitter).idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-
-            Assert.That(info.idMemCookie, Is.EqualTo(unchecked((nint)handle)));
-            Assert.That(info.idFlags, Is.EqualTo(GTF_ICON_HDL_MASK));
+            var info = Last(emitter).idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredInfo = info ?? throw new AssertionException("Missing debug information.");
+                Assert.That(requiredInfo.idMemCookie, Is.EqualTo(unchecked((nint)handle)));
+                Assert.That(requiredInfo.idFlags, Is.EqualTo(GTF_ICON_HDL_MASK));
+            }
+            else if (info is not null)
+            {
+                Assert.That(info.idMemCookie, Is.Zero);
+                Assert.That(info.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
         });
     }
 
@@ -429,9 +436,11 @@ internal static class EmitterAddressInstructionTests
     [TestCase(true)]
     public static void DisassemblyRecordsAddressAndPrefixInstructions(bool data16)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -452,7 +461,6 @@ internal static class EmitterAddressInstructionTests
             Assert.That(diagnostic, Does.Contain(data16 ? "data16" : "lea"));
         });
     }
-#endif
 
     private static Emitter.instrDesc Address(Emitter emitter, instruction ins, emitAttr attr,
         regNumber reg, regNumber index, uint scale, nint displacement, regNumber destination = REG_X64_RAX)

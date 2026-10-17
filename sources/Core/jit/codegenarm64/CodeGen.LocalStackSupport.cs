@@ -9,9 +9,7 @@ public sealed partial class CodeGen
 {
     public void instGen_Set_Reg_To_ImmArm64(emitAttr size, regNumber reg, nint imm,
         insFlags flags = insFlags.INS_FLAGS_DONT_CARE
-#if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
         )
     {
         assert(!genIsValidFloatReg(reg));
@@ -23,11 +21,7 @@ public sealed partial class CodeGen
 
         if (EA_IS_RELOC(size))
         {
-            Emitter.emitIns_R_AI(INS_adrp, size, reg, imm
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            Emitter.emitIns_R_AI(INS_adrp, size, reg, imm, targetHandle, gtFlags);
         }
         else if (imm == 0)
         {
@@ -38,11 +32,7 @@ public sealed partial class CodeGen
             var immSize = EA_SIZE(size);
             if (Emitter.emitIns_valid_imm_for_mov(imm, immSize))
             {
-                Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE
-#if DEBUG
-                    , targetHandle, gtFlags
-#endif
-                    );
+                Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE, targetHandle, gtFlags);
             }
             else
             {
@@ -75,11 +65,8 @@ public sealed partial class CodeGen
                             imm16 = unchecked((ushort)~imm16);
                         }
 
-                        Emitter.emitIns_R_I_I(ins, size, reg, imm16, i, INS_OPTS_LSL
-#if DEBUG
-                            , i == 0 ? targetHandle : 0, i == 0 ? gtFlags : GTF_EMPTY
-#endif
-                            );
+                        Emitter.emitIns_R_I_I(ins, size, reg, imm16, i, INS_OPTS_LSL,
+                            i == 0 ? targetHandle : 0, i == 0 ? gtFlags : GTF_EMPTY);
                         ins = INS_movk;
                     }
                 }
@@ -98,9 +85,7 @@ public sealed partial class CodeGen
 
     public void instGen_Set_Reg_To_Base_Plus_Imm(emitAttr size, regNumber dstReg, regNumber baseReg, nint imm,
         insFlags flags = insFlags.INS_FLAGS_DONT_CARE
-#if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
         )
     {
         if (Emitter.emitIns_valid_imm_for_add(imm, size))

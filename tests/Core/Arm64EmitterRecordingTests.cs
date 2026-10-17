@@ -2313,11 +2313,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         compiler.opts.compReloc = reloc;
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_ARM64_R4, (nint)address
-#if DEBUG
-            , targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL
-#endif
-            );
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(
+            EA_8BYTE | EA_CNS_RELOC_FLG, REG_ARM64_R4, (nint)address,
+            targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL);
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(reloc ? 2 : 1));
         var first = instructions[0];
@@ -2330,11 +2328,18 @@ internal static unsafe class Arm64EmitterRecordingTests
             Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_ARM64_R4));
             Assert.That(instructions[1].idIsCnsReloc(), Is.True);
             Assert.That((nint)instructions[1].idAddr().iiaAddr, Is.EqualTo((nint)address));
-#if DEBUG
-            var debugInfo = first.idDebugOnlyInfo() ?? throw new AssertionException("Missing relocation metadata.");
-            Assert.That(debugInfo.idMemCookie, Is.EqualTo((nint)0x4321));
-            Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
-#endif
+            var debugInfo = first.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredDebugInfo = debugInfo ?? throw new AssertionException("Missing relocation metadata.");
+                Assert.That(requiredDebugInfo.idMemCookie, Is.EqualTo((nint)0x4321));
+                Assert.That(requiredDebugInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+            }
         }
     }
 
@@ -2372,7 +2377,6 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_ARM64_ZR));
     }
 
-#if DEBUG
     [TestCase(0x12345678L)]
     [TestCase(0x1234000056780000L)]
     public static void MaterializationHalfwordCookiesBelongOnlyToTheLowHalfword(long value)
@@ -2382,23 +2386,33 @@ internal static unsafe class Arm64EmitterRecordingTests
             targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL);
         foreach (var id in CurrentInstructions(emitter))
         {
-            var lowHalfword = ((uint)Emitter.emitGetInsSC(id) >> 16) == 0;
-            var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing immediate metadata.");
-            Assert.That(info.idMemCookie, Is.EqualTo(lowHalfword ? (nint)0x4321 : 0));
-            Assert.That(info.idFlags, Is.EqualTo(lowHalfword ? GTF_ICON_CLASS_HDL : GenTreeFlags.GTF_EMPTY));
+            var info = id.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var lowHalfword = ((uint)Emitter.emitGetInsSC(id) >> 16) == 0;
+                var requiredInfo = info ?? throw new AssertionException("Missing immediate metadata.");
+                Assert.That(requiredInfo.idMemCookie, Is.EqualTo(lowHalfword ? (nint)0x4321 : 0));
+                Assert.That(requiredInfo.idFlags, Is.EqualTo(lowHalfword ? GTF_ICON_CLASS_HDL : GenTreeFlags.GTF_EMPTY));
+            }
+            else if (info is not null)
+            {
+                Assert.That(info.idMemCookie, Is.Zero);
+                Assert.That(info.idFlags, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+            }
         }
     }
 
     [Test]
     public static void NonzeroImmediateFlagRequestPreservesNativeZeroMaskAssertion()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateLocalStackEmitter(0, false);
         Assert.That(() => EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(
             EA_8BYTE, REG_ARM64_R4, 1, insFlags.INS_FLAGS_SET),
             Throws.Exception.With.Message.Contains("canEncode"));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
-#endif
 
     [TestCase(var_types.TYP_FLOAT, 0UL, INS_movi)]
     [TestCase(var_types.TYP_DOUBLE, 0UL, INS_movi)]

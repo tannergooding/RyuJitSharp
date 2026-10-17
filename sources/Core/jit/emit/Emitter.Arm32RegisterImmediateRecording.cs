@@ -23,7 +23,7 @@ public partial class Emitter
         RequireArm32Target();
         var size = EA_SIZE(attr);
         var format = IF_NONE;
-        var recordedFlags = INS_FLAGS_DONT_CARE;
+        insFlags recordedFlags;
 
         if (ins == INS_lea)
         {
@@ -41,11 +41,7 @@ public partial class Emitter
                 {
                     if ((reg1 == TargetRuntimeMetadata.StackPointerBaseRegister) && ((imm & 0x01fc) == imm))
                     {
-                        recordArm32InsRI(ins, attr, reg1, imm, flags
-#if DEBUG
-                            , GTF_EMPTY
-#endif
-                            );
+                        recordArm32InsRI(ins, attr, reg1, imm, flags, GTF_EMPTY);
                         return;
                     }
                     if (isArm32LowRegister(reg1))
@@ -92,11 +88,7 @@ public partial class Emitter
                         imm = unchecked(-imm);
                     }
 
-                    recordArm32InsRI(ins, attr, reg1, imm, flags
-#if DEBUG
-                        , GTF_EMPTY
-#endif
-                        );
+                    recordArm32InsRI(ins, attr, reg1, imm, flags, GTF_EMPTY);
                     return;
                 }
                 if (isArm32ModifiedImmediate(imm))

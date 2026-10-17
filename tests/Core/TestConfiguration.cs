@@ -12,6 +12,9 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspMetrics")]
     private static extern ref bool DspMetrics(ref Compiler.Options options);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspCode")]
+    private static extern ref bool DspCode(ref Compiler.Options options);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgSafeBasicBlockCreation")]
     private static extern ref bool SafeBasicBlockCreation(Compiler compiler);
 
@@ -86,6 +89,14 @@ internal static partial class TestConfiguration
         if (IsDebug)
         {
             DspMetrics(ref compiler.opts) = enabled;
+        }
+    }
+
+    public static void SetDspCode(Compiler compiler, bool enabled)
+    {
+        if (IsDebug)
+        {
+            DspCode(ref compiler.opts) = enabled;
         }
     }
 

@@ -87,11 +87,8 @@ public unsafe partial class Emitter
     }
 
     public void emitIns_R_IArm64(instruction ins, emitAttr attr, regNumber reg, nint imm,
-        insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+        insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE,
+        nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         if (!Configuration.TARGET_ARM64)
         {
@@ -100,7 +97,6 @@ public unsafe partial class Emitter
         }
 
         var size = EA_SIZE(attr);
-        var elemsize = EA_UNKNOWN;
         var fmt = IF_NONE;
         var canEncode = false;
         bitMaskImm bmi;
@@ -200,7 +196,7 @@ public unsafe partial class Emitter
                     opt = INS_OPTS_1D;
                 }
                 assert(isValidArrangement(size, opt));
-                elemsize = optGetElemsize(opt);
+                var elemsize = optGetElemsize(opt);
 
                 if (elemsize == EA_8BYTE)
                 {
@@ -269,7 +265,7 @@ public unsafe partial class Emitter
                 assert(isValidVectorDatasizeArm64(size));
                 assert(isVectorRegister(reg));
                 assert(isValidArrangement(size, opt));
-                elemsize = optGetElemsize(opt);
+                var elemsize = optGetElemsize(opt);
                 assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
 
                 bsi.immBSVal = 0;
@@ -336,12 +332,13 @@ public unsafe partial class Emitter
         id.idInsOpt(opt);
         id.idReg1(reg);
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idMemCookie = unchecked((nint)targetHandle);
-        debugInfo.idFlags = gtFlags;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idMemCookie = unchecked((nint)targetHandle);
+            debugInfo.idFlags = gtFlags;
+        }
         dispIns(id);
         appendToCurIG(id);
     }

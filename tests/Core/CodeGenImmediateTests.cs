@@ -198,7 +198,6 @@ internal static unsafe class CodeGenImmediateTests
         });
     }
 
-#if DEBUG
     [TestCase(CorInfoReloc.NONE, 0)]
     [TestCase(CorInfoReloc.NONE, 1)]
     [TestCase(CorInfoReloc.RELATIVE32, 1)]
@@ -212,12 +211,20 @@ internal static unsafe class CodeGenImmediateTests
 
             codeGen.instGen_Set_Reg_To_Imm(attr, REG_RAX, 0x1234, targetHandle: targetHandle, gtFlags: GTF_ICON_CLASS_HDL);
 
-            var debug = Last(codeGen).idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-            Assert.That(debug.idMemCookie, Is.EqualTo(unchecked((nint)targetHandle)));
-            Assert.That(debug.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+            var debugInfo = Last(codeGen).idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredDebugInfo = debugInfo ?? throw new AssertionException("Missing debug information.");
+                Assert.That(requiredDebugInfo.idMemCookie, Is.EqualTo(unchecked((nint)targetHandle)));
+                Assert.That(requiredDebugInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
         });
     }
-#endif
 
     private static void WithCodeGen(CorInfoReloc hint, Action<Compiler, CodeGen> action)
     {

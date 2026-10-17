@@ -103,12 +103,38 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.compReloc = true;
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(emitter);
+            var address = (nint)0x1234;
+            var targetHandle = (nuint)0x4321;
 
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_S0, 0x1234));
+            codeGen.instGen_Set_Reg_To_Imm(
+                EA_PTR_DSP_RELOC, REG_S0, address, targetHandle: targetHandle, gtFlags: GTF_ICON_CLASS_HDL);
 
-            Assert.That(failure?.Message,
-                Does.Contain("LoongArch64 relocated-address instruction recording is not ported."));
+            Assert.That(descriptors, Has.Count.EqualTo(initialCount + 1));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialSize + 8));
+            var descriptor = descriptors[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_bl));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_S0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LOONGARCH64_RELOC));
+            Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo(address));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+
+            var debugInfo = descriptor.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredDebugInfo = debugInfo ?? throw new AssertionException("Missing relocation metadata.");
+                Assert.That(requiredDebugInfo.idMemCookie, Is.EqualTo((nint)targetHandle));
+                Assert.That(requiredDebugInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
+                Assert.That(debugInfo.idFlags, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+            }
         });
     }
 

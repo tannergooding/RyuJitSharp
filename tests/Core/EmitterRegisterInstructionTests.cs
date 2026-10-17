@@ -382,7 +382,6 @@ internal static class EmitterRegisterInstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void ImmediateDebugInformationPreservesHandleBitsAndTreeFlags()
     {
@@ -390,10 +389,18 @@ internal static class EmitterRegisterInstructionTests
         {
             var handle = unchecked((nuint)0xFEDCBA9876543210UL);
             emitter.emitIns_R_I(INS_mov, EA_8BYTE, REG_X64_RAX, -1, targetHandle: handle, gtFlags: GTF_ICON_HDL_MASK);
-            var info = Last(emitter).idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-
-            Assert.That(info.idMemCookie, Is.EqualTo(unchecked((nint)handle)));
-            Assert.That(info.idFlags, Is.EqualTo(GTF_ICON_HDL_MASK));
+            var info = Last(emitter).idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredInfo = info ?? throw new AssertionException("Missing debug information.");
+                Assert.That(requiredInfo.idMemCookie, Is.EqualTo(unchecked((nint)handle)));
+                Assert.That(requiredInfo.idFlags, Is.EqualTo(GTF_ICON_HDL_MASK));
+            }
+            else if (info is not null)
+            {
+                Assert.That(info.idMemCookie, Is.Zero);
+                Assert.That(info.idFlags, Is.EqualTo(GTF_EMPTY));
+            }
         });
     }
 
@@ -402,9 +409,11 @@ internal static class EmitterRegisterInstructionTests
     [TestCase(2)]
     public static void DisassemblyRecordsRegisterInstructionsAndPreservesMoveElision(int entrypoint)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -437,10 +446,12 @@ internal static class EmitterRegisterInstructionTests
                 Is.EqualTo(entrypoint != 2));
         });
     }
-#else
+
     [Test]
     public static void ReleaseRetainsNativeMovFallthroughInTheNonMovEntrypoint()
     {
+        Assume.That(!TestConfiguration.IsDebug);
+
         WithEmitter((compiler, emitter) =>
         {
             emitter.emitIns_R_R(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX);
@@ -448,7 +459,6 @@ internal static class EmitterRegisterInstructionTests
             Assert.That(CurrentSize(emitter), Is.EqualTo(6));
         });
     }
-#endif
 
     private static void WithEmitter(Action<Compiler, Emitter> action, bool minopts = true)
     {

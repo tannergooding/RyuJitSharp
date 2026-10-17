@@ -10,11 +10,7 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val,
-        insOpts instOptions = INS_OPTS_NONE
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+        insOpts instOptions = INS_OPTS_NONE, nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         if (Configuration.TARGET_ARM)
         {
@@ -24,29 +20,20 @@ public partial class Emitter
                     "ARM32 register-immediate instruction options are not ported.");
             }
 
-#if DEBUG
-            if (targetHandle != 0)
+            if (Configuration.DEBUG && (targetHandle != 0))
             {
                 throw new FatalJitException(CORJIT_SKIPPED,
                     "ARM32 register-immediate recording does not accept a target handle.");
             }
-#endif
 
-            recordArm32InsRI(ins, attr, reg, unchecked((int)val), INS_FLAGS_DONT_CARE
-#if DEBUG
-                , gtFlags
-#endif
-                );
+            recordArm32InsRI(ins, attr, reg, unchecked((int)val), INS_FLAGS_DONT_CARE, gtFlags);
             return;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            emitIns_R_IArm64(ins, attr, reg, val, instOptions
-#if DEBUG
-                , targetHandle: targetHandle, gtFlags: gtFlags
-#endif
-                );
+            emitIns_R_IArm64(ins, attr, reg, val, instOptions,
+                targetHandle: targetHandle, gtFlags: gtFlags);
             return;
         }
 
@@ -116,9 +103,10 @@ public partial class Emitter
         else
         {
             val = unchecked((int)val);
-#if DEBUG
-            targetHandle = unchecked((uint)targetHandle);
-#endif
+            if (Configuration.DEBUG)
+            {
+                targetHandle = unchecked((uint)targetHandle);
+            }
         }
 
         assert(_compiler is not null);
@@ -177,7 +165,6 @@ public partial class Emitter
                 fmt = IF_XARCH_RRW_SHF;
                 sz = 3;
                 val &= 0x7F;
-                valInByte = true;
                 break;
             }
 
@@ -251,12 +238,13 @@ public partial class Emitter
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(reg);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idFlags = gtFlags;
-        debugInfo.idMemCookie = unchecked((nint)targetHandle);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idFlags = gtFlags;
+            debugInfo.idMemCookie = unchecked((nint)targetHandle);
+        }
         SetEvexNfIfNeeded(id, instOptions);
         SetEvexDFVIfNeeded(id, instOptions);
 
@@ -307,11 +295,8 @@ public partial class Emitter
         }
     }
 
-    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val, insFlags flags
-#if DEBUG
-        , GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val, insFlags flags,
+        GenTreeFlags gtFlags = GTF_EMPTY)
     {
         if (!Configuration.TARGET_ARM)
         {
@@ -319,11 +304,7 @@ public partial class Emitter
                 "ARM32 register-immediate instruction flags are not supported for this target.");
         }
 
-        recordArm32InsRI(ins, attr, reg, unchecked((int)val), flags
-#if DEBUG
-            , gtFlags
-#endif
-            );
+        recordArm32InsRI(ins, attr, reg, unchecked((int)val), flags, gtFlags);
     }
 
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,

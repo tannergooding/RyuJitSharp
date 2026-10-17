@@ -252,19 +252,12 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
     }
 
-    public unsafe void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+    public unsafe void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp,
+        nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         if (Configuration.TARGET_ARM64)
         {
-            emitIns_R_AI_Arm64(ins, attr, ireg, disp
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            emitIns_R_AI_Arm64(ins, attr, ireg, disp, targetHandle, gtFlags);
             return;
         }
 
@@ -291,12 +284,13 @@ public partial class Emitter
                 loongArchInstr.idOpSize(EA_PTRSIZE);
             }
 
-#if DEBUG
-            var loongArchDebugInfo = loongArchInstr.idDebugOnlyInfo();
-            assert(loongArchDebugInfo is not null);
-            loongArchDebugInfo.idMemCookie = unchecked((nint)targetHandle);
-            loongArchDebugInfo.idFlags = gtFlags;
-#endif
+            if (Configuration.DEBUG)
+            {
+                var loongArchDebugInfo = loongArchInstr.idDebugOnlyInfo();
+                assert(loongArchDebugInfo is not null);
+                loongArchDebugInfo.idMemCookie = unchecked((nint)targetHandle);
+                loongArchDebugInfo.idFlags = gtFlags;
+            }
             loongArchInstr.idAddr().iiaAddr = (byte*)disp;
             loongArchInstr.idCodeSize(8);
             appendToCurIG(loongArchInstr);
@@ -348,9 +342,10 @@ public partial class Emitter
         if (Configuration.TARGET_X86)
         {
             disp = unchecked((int)disp);
-#if DEBUG
-            targetHandle = unchecked((uint)targetHandle);
-#endif
+            if (Configuration.DEBUG)
+            {
+                targetHandle = unchecked((uint)targetHandle);
+            }
         }
         assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
@@ -368,12 +363,13 @@ public partial class Emitter
             id.idSetTlsGD();
         }
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idFlags = gtFlags;
-        debugInfo.idMemCookie = unchecked((nint)targetHandle);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idFlags = gtFlags;
+            debugInfo.idMemCookie = unchecked((nint)targetHandle);
+        }
         assert(emitGetInsAmdAny(id) == disp);
         var sz = emitInsSizeAM(id, insCodeRM(ins));
         id.idCodeSize(sz);

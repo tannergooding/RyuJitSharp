@@ -10,11 +10,7 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
     private void emitIns_R_I_I_Arm64(instruction ins, emitAttr attr, regNumber reg, nint imm1, nint imm2,
-        insOpts opt = INS_OPTS_NONE
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+        insOpts opt = INS_OPTS_NONE, nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         var size = EA_SIZE(attr);
         var fmt = IF_NONE;
@@ -108,12 +104,13 @@ public partial class Emitter
         id.idInsOpt(opt);
         id.idReg1(reg);
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idFlags = gtFlags;
-        debugInfo.idMemCookie = unchecked((nint)targetHandle);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idFlags = gtFlags;
+            debugInfo.idMemCookie = unchecked((nint)targetHandle);
+        }
         dispIns(id);
         appendToCurIG(id);
     }

@@ -13,38 +13,24 @@ public sealed partial class CodeGen
 {
     public void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, nint imm,
         insFlags flags = INS_FLAGS_DONT_CARE
-#if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
         )
     {
         if (Configuration.TARGET_ARM)
         {
-            instGen_Set_Reg_To_ImmArm(size, reg, imm, flags
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            instGen_Set_Reg_To_ImmArm(size, reg, imm, flags, targetHandle, gtFlags);
             return;
         }
 
         if (Configuration.TARGET_XARCH)
         {
-            instGen_Set_Reg_To_ImmXarch(size, reg, imm, flags
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            instGen_Set_Reg_To_ImmXarch(size, reg, imm, flags, targetHandle, gtFlags);
             return;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            instGen_Set_Reg_To_ImmArm64(size, reg, imm, flags
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            instGen_Set_Reg_To_ImmArm64(size, reg, imm, flags, targetHandle, gtFlags);
             return;
         }
 
@@ -77,11 +63,7 @@ public sealed partial class CodeGen
         if (EA_IS_RELOC(size))
         {
             assert(genIsValidIntReg(reg));
-            Emitter.emitIns_R_AI(INS_bl, size, reg, imm
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            Emitter.emitIns_R_AI(INS_bl, size, reg, imm, targetHandle, gtFlags);
         }
         else
         {

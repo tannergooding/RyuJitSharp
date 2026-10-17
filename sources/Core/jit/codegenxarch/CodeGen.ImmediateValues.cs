@@ -7,11 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void instGen_Set_Reg_To_ImmXarch(emitAttr size, regNumber reg, nint imm, insFlags flags = INS_FLAGS_DONT_CARE
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+    public void instGen_Set_Reg_To_ImmXarch(
+        emitAttr size,
+        regNumber reg,
+        nint imm,
+        insFlags flags = INS_FLAGS_DONT_CARE,
+        nuint targetHandle = 0,
+        GenTreeFlags gtFlags = GTF_EMPTY)
     {
         assert(!genIsValidFloatReg(reg));
         var origAttr = size;
@@ -38,28 +40,16 @@ public sealed partial class CodeGen
             if (!EA_IS_CNS_SEC_RELOC(origAttr))
             {
                 size = (size & ~EA_CNS_RELOC_FLG) | EA_DSP_RELOC_FLG;
-                Emitter.emitIns_R_AI(INS_lea, size, reg, imm
-#if DEBUG
-                    , targetHandle, gtFlags
-#endif
-                    );
+                Emitter.emitIns_R_AI(INS_lea, size, reg, imm, targetHandle, gtFlags);
             }
             else
             {
-                Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE
-#if DEBUG
-                    , targetHandle, gtFlags
-#endif
-                    );
+                Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE, targetHandle, gtFlags);
             }
         }
         else
         {
-            Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-                );
+            Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE, targetHandle, gtFlags);
         }
 
         _regSet.verifyRegUsed(reg);

@@ -9,9 +9,7 @@ public sealed partial class CodeGen
 {
     public void instGen_Set_Reg_To_ImmArm(emitAttr size, regNumber reg, nint imm,
         insFlags flags = INS_FLAGS_DONT_CARE
-#if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
         )
     {
         if (!Configuration.TARGET_ARM)

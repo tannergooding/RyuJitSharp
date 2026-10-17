@@ -287,13 +287,11 @@ public partial class Emitter
     }
 
     private void recordArm32InsRI(instruction ins, emitAttr attr, regNumber reg, int imm, insFlags flags
-#if DEBUG
         , GenTreeFlags gtFlags
-#endif
         )
     {
-        var format = IF_NONE;
-        var recordedFlags = INS_FLAGS_DONT_CARE;
+        Emitter.insFormat format;
+        insFlags recordedFlags;
 
         switch (ins)
         {
@@ -365,7 +363,7 @@ public partial class Emitter
             {
                 recordedFlags = INS_FLAGS_NOT_SET;
                 var hasLr = false;
-                var hasPc = false;
+                var hasPc = (imm & 0x8000) != 0;
                 var useThumb2 = false;
                 var onlyThumb1 = false;
 
@@ -373,7 +371,6 @@ public partial class Emitter
                 assert((imm & 0xc000) != 0xc000);
                 assert((imm & 0xffff0000) == 0);
 
-                hasPc = (imm & 0x8000) != 0;
                 if ((imm & 0x4000) != 0)
                 {
                     hasLr = true;
@@ -602,11 +599,12 @@ public partial class Emitter
         id.idInsSize(emitInsSize(format));
         id.idInsFlags(recordedFlags);
         id.idReg1(reg);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idFlags = gtFlags;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idFlags = gtFlags;
+        }
 
         dispIns(id);
         appendToCurIG(id);

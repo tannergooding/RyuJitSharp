@@ -9,11 +9,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private unsafe void emitIns_R_AI_Arm64(instruction ins, emitAttr attr, regNumber ireg, nint addr
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+    private unsafe void emitIns_R_AI_Arm64(instruction ins, emitAttr attr, regNumber ireg, nint addr,
+        nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         if (!Configuration.TARGET_ARM64)
         {
@@ -54,12 +51,13 @@ public partial class Emitter
         id.idAddr().iiaAddr = (byte*)addr;
         id.idReg1(ireg);
         id.idSetIsDspReloc();
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idMemCookie = unchecked((nint)targetHandle);
-        debugInfo.idFlags = gtFlags;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idMemCookie = unchecked((nint)targetHandle);
+            debugInfo.idFlags = gtFlags;
+        }
 
         dispIns(id);
         appendToCurIG(id);

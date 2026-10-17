@@ -53,19 +53,13 @@ public partial class Emitter
         regNumber reg,
         nint imm1,
         nint imm2,
-        insOpts instOptions = INS_OPTS_NONE
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+        insOpts instOptions = INS_OPTS_NONE,
+        nuint targetHandle = 0,
+        GenTreeFlags gtFlags = GTF_EMPTY)
     {
         if (Configuration.TARGET_ARM64)
         {
-            emitIns_R_I_I_Arm64(ins, attr, reg, imm1, imm2, instOptions
-#if DEBUG
-                , targetHandle, gtFlags
-#endif
-            );
+            emitIns_R_I_I_Arm64(ins, attr, reg, imm1, imm2, instOptions, targetHandle, gtFlags);
             return;
         }
 

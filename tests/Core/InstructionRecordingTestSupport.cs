@@ -1,6 +1,5 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -38,4 +37,3 @@ internal static class InstructionRecordingTestSupport
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif
