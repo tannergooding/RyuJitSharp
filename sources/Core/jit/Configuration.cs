@@ -24,6 +24,8 @@ internal static class Configuration
 
     internal static bool NODEBASH_STATS => BuildFeatures.NodeBashStatistics;
 
+    internal static bool COUNT_BASIC_BLOCKS => BuildFeatures.CountBasicBlocks;
+
     internal static bool COUNT_AST_OPERS => BuildFeatures.CountAstOperators;
 
     internal static bool EMITTER_STATS => BuildFeatures.EmitterStatistics;
@@ -44,6 +46,7 @@ internal static class Configuration
         private static bool s_displaySizes;
         private static bool s_callArgumentStatistics;
         private static bool s_nodeBashStatistics;
+        private static bool s_countBasicBlocks;
         private static bool s_countAstOperators;
         private static bool s_emitterStatistics;
         private static bool s_trackLsraStatistics;
@@ -59,6 +62,7 @@ internal static class Configuration
             EnableDisplaySizes();
             EnableCallArgumentStatistics();
             EnableNodeBashStatistics();
+            EnableCountBasicBlocks();
             EnableCountAstOperators();
             EnableEmitterStatistics();
             EnableTrackLsraStatistics();
@@ -78,6 +82,8 @@ internal static class Configuration
         internal static bool CallArgumentStatistics => s_callArgumentStatistics;
 
         internal static bool NodeBashStatistics => s_nodeBashStatistics;
+
+        internal static bool CountBasicBlocks => s_countBasicBlocks;
 
         internal static bool CountAstOperators => s_countAstOperators;
 
@@ -109,6 +115,9 @@ internal static class Configuration
         [Conditional("NODEBASH_STATS")]
         private static void EnableNodeBashStatistics() => s_nodeBashStatistics = true;
 
+        [Conditional("COUNT_BASIC_BLOCKS")]
+        private static void EnableCountBasicBlocks() => s_countBasicBlocks = true;
+
         [Conditional("COUNT_AST_OPERS")]
         private static void EnableCountAstOperators() => s_countAstOperators = true;
 
@@ -125,6 +134,7 @@ internal static class Configuration
         private static void EnableDumpGcTables() => s_dumpGcTables = true;
 
         [Conditional("NODEBASH_STATS")]
+        [Conditional("COUNT_BASIC_BLOCKS")]
         [Conditional("COUNT_AST_OPERS")]
         [Conditional("CALL_ARG_STATS")]
         [Conditional("MEASURE_NODE_SIZE")]

@@ -31,9 +31,8 @@ public sealed class BlockReachabilitySets
         }
 
         bool change;
-#if COUNT_BASIC_BLOCKS
+        var countBasicBlockStatistics = Configuration.COUNT_BASIC_BLOCKS;
         uint changedIterCount = 1;
-#endif
         do
         {
             change = false;
@@ -48,14 +47,16 @@ public sealed class BlockReachabilitySets
                         sets[block.bbPostorderNum], sets[predBlock.bbPostorderNum]);
                 }
             }
-#if COUNT_BASIC_BLOCKS
-            changedIterCount++;
-#endif
+            if (countBasicBlockStatistics)
+            {
+                changedIterCount++;
+            }
         } while (change);
 
-#if COUNT_BASIC_BLOCKS
-        computeReachabilitySetsIterationTable.record(changedIterCount);
-#endif
+        if (countBasicBlockStatistics)
+        {
+            computeReachabilitySetsIterationTable!.record(changedIterCount);
+        }
 
         var reachabilitySets = new BlockReachabilitySets(dfsTree, sets);
 

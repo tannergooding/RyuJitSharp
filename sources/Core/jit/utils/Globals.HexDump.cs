@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
@@ -11,6 +11,7 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    [Conditional("DEBUG")]
     public static unsafe void hexDump(StreamWriter writer, byte* address, nuint size)
     {
         if (size == 0)
@@ -25,4 +26,3 @@ public static partial class Globals
         }
     }
 }
-#endif

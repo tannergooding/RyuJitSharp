@@ -199,27 +199,28 @@ public partial class Compiler
         compDispCallArgStats(jitstdout());
 #endif
 
-#if COUNT_BASIC_BLOCKS
-        jitprintf("--------------------------------------------------\n");
-        jitprintf("Basic block count frequency table:\n");
-        jitprintf("--------------------------------------------------\n");
-        bbCntTable.dump(jitstdout());
-        jitprintf("--------------------------------------------------\n");
+        if (Configuration.COUNT_BASIC_BLOCKS)
+        {
+            jitprintf("--------------------------------------------------\n");
+            jitprintf("Basic block count frequency table:\n");
+            jitprintf("--------------------------------------------------\n");
+            bbCntTable!.dump(jitstdout());
+            jitprintf("--------------------------------------------------\n");
 
-        jitprintf("\n");
+            jitprintf("\n");
 
-        jitprintf("--------------------------------------------------\n");
-        jitprintf("IL method size frequency table for methods with a single basic block:\n");
-        jitprintf("--------------------------------------------------\n");
-        bbOneBBSizeTable.dump(jitstdout());
-        jitprintf("--------------------------------------------------\n");
+            jitprintf("--------------------------------------------------\n");
+            jitprintf("IL method size frequency table for methods with a single basic block:\n");
+            jitprintf("--------------------------------------------------\n");
+            bbOneBBSizeTable!.dump(jitstdout());
+            jitprintf("--------------------------------------------------\n");
 
-        jitprintf("--------------------------------------------------\n");
-        jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
-        jitprintf("--------------------------------------------------\n");
-        computeReachabilitySetsIterationTable.dump(jitstdout());
-        jitprintf("--------------------------------------------------\n");
-#endif
+            jitprintf("--------------------------------------------------\n");
+            jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
+            jitprintf("--------------------------------------------------\n");
+            computeReachabilitySetsIterationTable!.dump(jitstdout());
+            jitprintf("--------------------------------------------------\n");
+        }
 
         if (Configuration.MEASURE_NODE_SIZE)
         {

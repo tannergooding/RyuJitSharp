@@ -9,11 +9,7 @@ public partial class Globals
 {
     public static bool getInlinePInvokeCheckEnabled()
     {
-#if DEBUG
-        return JitConfig.JitPInvokeCheckEnabled is not 0;
-#else
-        return false;
-#endif
+        return Configuration.DEBUG && JitConfig.JitPInvokeCheckEnabled is not 0;
     }
 
     public static genTreeOps LargeOpOpcode()

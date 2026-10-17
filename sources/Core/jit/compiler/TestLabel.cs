@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 global using static RyuJitSharp.TestLabel;
 
 namespace RyuJitSharp;
@@ -29,4 +28,3 @@ public enum TestLabel
     /// <summary>Expression must (or must not) be hoisted out of the loop.</summary>
     TL_LoopHoist,
 }
-#endif

@@ -195,27 +195,31 @@ internal static unsafe class BlockWeightTests
         });
     }
 
-#if COUNT_BASIC_BLOCKS
     [TestCase(false, 2)]
     [TestCase(true, 3)]
     public static void ReachabilityRecordsNativeIterationCount(bool hasSuccessor, int expected)
     {
+        if (!Configuration.COUNT_BASIC_BLOCKS)
+        {
+            Assert.Ignore("Basic block counting is disabled in this build.");
+        }
+
         WithCompiler(compiler => {
             _ = CreateGraph(compiler, hasSuccessor ? [[1], []] : [[]]);
-            var before = HistogramTests.Counts(computeReachabilitySetsIterationTable)[expected - 1];
+            var before = HistogramTests.Counts(computeReachabilitySetsIterationTable!)[expected - 1];
 
             _ = BlockReachabilitySets.Build(compiler.fgComputeDfs());
 
-            Assert.That(HistogramTests.Counts(computeReachabilitySetsIterationTable)[expected - 1],
+            Assert.That(HistogramTests.Counts(computeReachabilitySetsIterationTable!)[expected - 1],
                 Is.EqualTo(unchecked(before + 1)));
         });
     }
-#endif
 
-#if DEBUG
     [Test]
     public static void DiagnosticsDistinguishUnreachableBlocksAndListReturns()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var blocks = CreateGraph(compiler, [[1], [], []]);
             var dfs = compiler.fgComputeDfs();
@@ -231,7 +235,6 @@ internal static unsafe class BlockWeightTests
             Assert.That(output, Does.Contain($"{FMT_BB(blocks[2].bbNum)} {FMT_BB(blocks[1].bbNum)}"));
         });
     }
-#endif
 
     private static void PrepareGraph(Compiler compiler)
     {
@@ -280,10 +283,8 @@ internal static unsafe class BlockWeightTests
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.CreateJitTls();
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);

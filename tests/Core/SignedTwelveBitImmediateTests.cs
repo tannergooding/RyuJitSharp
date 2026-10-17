@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -19,4 +18,3 @@ internal static class SignedTwelveBitImmediateTests
         Assert.That(Emitter.isValidSimm12(unchecked((nint)value)), Is.EqualTo(expected));
     }
 }
-#endif

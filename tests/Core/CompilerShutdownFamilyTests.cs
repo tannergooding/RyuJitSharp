@@ -167,6 +167,7 @@ internal static class CompilerShutdownFamilyTests
 
         if (Configuration.MEASURE_NODE_SIZE &&
             (Configuration.NODEBASH_STATS ||
+                Configuration.COUNT_BASIC_BLOCKS ||
                 Configuration.COUNT_AST_OPERS ||
                 Configuration.CALL_ARG_STATS ||
                 Configuration.MEASURE_BLOCK_SIZE ||
@@ -195,6 +196,7 @@ internal static class CompilerShutdownFamilyTests
 
             var onlyNodeBash =
                 Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_BASIC_BLOCKS &&
                 !Configuration.COUNT_AST_OPERS &&
                 !Configuration.CALL_ARG_STATS &&
                 !Configuration.MEASURE_BLOCK_SIZE &&
@@ -204,6 +206,7 @@ internal static class CompilerShutdownFamilyTests
                 Configuration.EMITTER_STATS &&
                 (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_ARM) &&
                 !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_BASIC_BLOCKS &&
                 !Configuration.COUNT_AST_OPERS &&
                 !Configuration.CALL_ARG_STATS &&
                 !Configuration.MEASURE_BLOCK_SIZE &&
@@ -211,6 +214,7 @@ internal static class CompilerShutdownFamilyTests
             var onlyCallArgumentStats =
                 Configuration.CALL_ARG_STATS &&
                 !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_BASIC_BLOCKS &&
                 !Configuration.COUNT_AST_OPERS &&
                 !Configuration.MEASURE_BLOCK_SIZE &&
                 !Configuration.MEASURE_PTRTAB_SIZE &&
@@ -218,6 +222,7 @@ internal static class CompilerShutdownFamilyTests
             var onlyOperatorCounts =
                 Configuration.COUNT_AST_OPERS &&
                 !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_BASIC_BLOCKS &&
                 !Configuration.CALL_ARG_STATS &&
                 !Configuration.MEASURE_BLOCK_SIZE &&
                 !Configuration.MEASURE_PTRTAB_SIZE &&
@@ -225,6 +230,7 @@ internal static class CompilerShutdownFamilyTests
             var onlyBlockSize =
                 Configuration.MEASURE_BLOCK_SIZE &&
                 !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_BASIC_BLOCKS &&
                 !Configuration.COUNT_AST_OPERS &&
                 !Configuration.CALL_ARG_STATS &&
                 !Configuration.MEASURE_PTRTAB_SIZE &&
@@ -232,12 +238,23 @@ internal static class CompilerShutdownFamilyTests
             var onlyPointerTableStats =
                 Configuration.MEASURE_PTRTAB_SIZE &&
                 !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_BASIC_BLOCKS &&
                 !Configuration.COUNT_AST_OPERS &&
                 !Configuration.CALL_ARG_STATS &&
                 !Configuration.MEASURE_BLOCK_SIZE &&
                 !Configuration.EMITTER_STATS;
+            var onlyBasicBlockCounts =
+                Configuration.COUNT_BASIC_BLOCKS &&
+                !Configuration.NODEBASH_STATS &&
+                !Configuration.COUNT_AST_OPERS &&
+                !Configuration.CALL_ARG_STATS &&
+                !Configuration.MEASURE_NODE_SIZE &&
+                !Configuration.MEASURE_BLOCK_SIZE &&
+                !Configuration.MEASURE_PTRTAB_SIZE &&
+                !Configuration.EMITTER_STATS &&
+                !Configuration.DISPLAY_SIZES;
 
-            if (onlyNodeBash || onlyEmitterStats || onlyBlockSize || onlyPointerTableStats)
+            if (onlyNodeBash || onlyEmitterStats || onlyBlockSize || onlyPointerTableStats || onlyBasicBlockCounts)
             {
                 Compiler.compShutdown();
             }
@@ -323,6 +340,12 @@ internal static class CompilerShutdownFamilyTests
                     Assert.That(text, Does.Contain("\nGC pointer table stats\n"));
                     Assert.That(text, Does.Contain("Reg pointer descriptor size (internal):        0 (avg    0 per method)\n"));
                     Assert.That(text, Does.Contain("Total pointer table size:        0 (avg    0 per method)\n"));
+                }
+                else if (Configuration.COUNT_BASIC_BLOCKS)
+                {
+                    Assert.That(text, Does.Contain("Basic block count frequency table:"));
+                    Assert.That(text, Does.Contain("IL method size frequency table for methods with a single basic block:"));
+                    Assert.That(text, Does.Contain("fgComputeReachabilitySets `while (change)` iterations:"));
                 }
                 else if (Configuration.EMITTER_STATS)
                 {

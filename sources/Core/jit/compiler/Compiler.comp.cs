@@ -1415,14 +1415,15 @@ public partial class Compiler
             opts.disAsm = false;
         }
 
-#if COUNT_BASIC_BLOCKS
-        bbCntTable.record(unchecked((uint)fgBBcount));
-
-        if (fgBBcount == 1)
+        if (Configuration.COUNT_BASIC_BLOCKS)
         {
-            bbOneBBSizeTable.record(unchecked((uint)methodInfo->ILCodeSize));
+            bbCntTable!.record(unchecked((uint)fgBBcount));
+
+            if (fgBBcount == 1)
+            {
+                bbOneBBSizeTable!.record(unchecked((uint)methodInfo->ILCodeSize));
+            }
         }
-#endif
 
         if (Configuration.DEBUG && verbose)
         {
