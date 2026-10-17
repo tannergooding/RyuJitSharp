@@ -240,12 +240,13 @@ public sealed partial class CodeGen
 
                 Emitter.emitIns_R(INS_mrs_tpid0, attr, REG_ARM64_R1);
                 GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_ARM64_R0));
-#if DEBUG
-                genEmitTlsDescriptorAddressArm64(attr, REG_ARM64_R0, target.RegNum, (nint)parameters.methHnd,
-                    unchecked((nuint)icon.TargetHandle), icon.Flags);
-#else
-                genEmitTlsDescriptorAddressArm64(attr, REG_ARM64_R0, target.RegNum, (nint)parameters.methHnd);
-#endif
+                genEmitTlsDescriptorAddressArm64(
+                    attr,
+                    REG_ARM64_R0,
+                    target.RegNum,
+                    (nint)parameters.methHnd,
+                    Configuration.DEBUG ? unchecked((nuint)icon.TargetHandle) : 0,
+                    Configuration.DEBUG ? icon.Flags : GTF_EMPTY);
             }
             parameters.callType = EC_INDIR_R;
             parameters.ireg = target.RegNum;

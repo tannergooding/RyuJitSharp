@@ -8,16 +8,9 @@ namespace RyuJitSharp;
 public sealed partial class CodeGen
 {
     // Keep the ARM64-only TLS emitter API behind a target-selected CodeGen partial.
-    private unsafe void genEmitTlsDescriptorAddressArm64(emitAttr attr, regNumber reg1, regNumber reg2, nint address
-#if DEBUG
-        , nuint targetHandle, GenTreeFlags flags
-#endif
-        )
+    private unsafe void genEmitTlsDescriptorAddressArm64(emitAttr attr, regNumber reg1, regNumber reg2, nint address,
+        nuint targetHandle, GenTreeFlags flags)
     {
-#if DEBUG
         Emitter.emitIns_Adrp_Ldr_Add(attr, reg1, reg2, address, targetHandle, flags);
-#else
-        Emitter.emitIns_Adrp_Ldr_Add(attr, reg1, reg2, address);
-#endif
     }
 }

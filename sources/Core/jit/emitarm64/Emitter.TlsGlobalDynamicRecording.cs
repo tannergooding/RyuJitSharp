@@ -9,11 +9,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public unsafe void emitIns_Adrp_Ldr_Add(emitAttr attr, regNumber reg1, regNumber reg2, nint addr
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+    public unsafe void emitIns_Adrp_Ldr_Add(emitAttr attr, regNumber reg1, regNumber reg2, nint addr,
+        nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         assert(_compiler is not null);
         assert(_compiler.IsTargetAbi(CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI));
@@ -32,12 +29,13 @@ public partial class Emitter
         id.idReg1(reg1);
         id.idSetIsDspReloc();
         id.idSetTlsGD();
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idMemCookie = unchecked((nint)targetHandle);
-        debugInfo.idFlags = gtFlags;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idMemCookie = unchecked((nint)targetHandle);
+            debugInfo.idFlags = gtFlags;
+        }
 
         dispIns(id);
         appendToCurIG(id);

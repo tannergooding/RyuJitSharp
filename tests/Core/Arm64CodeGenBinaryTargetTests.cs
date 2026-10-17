@@ -211,15 +211,59 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
                 Assert.That(descriptor.idIsTlsGD(), Is.True);
                 Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo(offset.IconValue));
             }
-#if DEBUG
-            foreach (var descriptor in descriptors)
+            if (TestConfiguration.IsDebug)
             {
-                var debugInfo = descriptor.idDebugOnlyInfo()
-                    ?? throw new AssertionException("Missing TLS relocation debug information.");
-                Assert.That(debugInfo.idMemCookie, Is.EqualTo(offset.IconValue));
+                foreach (var descriptor in descriptors)
+                {
+                    var debugInfo = descriptor.idDebugOnlyInfo()
+                        ?? throw new AssertionException("Missing TLS relocation debug information.");
+                    Assert.That(debugInfo.idMemCookie, Is.EqualTo(offset.IconValue));
+                    Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
+                }
+            }
+        }, CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI);
+    }
+
+    [Test]
+    public static void TlsDescriptorRecordingForwardsDebugMetadata()
+    {
+        if (!TargetOS.IsUnix)
+        {
+            Assert.Ignore("The TLSDESC recording path is only supported on Unix targets.");
+        }
+
+        WithCodeGen((_, codeGen) =>
+        {
+            var address = (nint)0x1234;
+            var targetHandle = (nuint)0x4321;
+            var targetFlags = GTF_ICON_TLS_HDL | GTF_ICON_TLSGD_OFFSET;
+            codeGen.Emitter.emitIns_Adrp_Ldr_Add(
+                EA_8BYTE | EA_CNS_RELOC_FLG | EA_CNS_TLSGD_RELOC,
+                REG_ARM64_R0,
+                REG_ARM64_R1,
+                address,
+                targetHandle,
+                targetFlags);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            var relocation = descriptors[0];
+            Assert.That(relocation.idIns(), Is.EqualTo(INS_adrp));
+            Assert.That(relocation.idIsDspReloc(), Is.True);
+            Assert.That(relocation.idIsTlsGD(), Is.True);
+
+            var debugInfo = relocation.idDebugOnlyInfo();
+            if (TestConfiguration.IsDebug)
+            {
+                var requiredDebugInfo = debugInfo
+                    ?? throw new AssertionException("Missing TLS descriptor debug information.");
+                Assert.That(requiredDebugInfo.idMemCookie, Is.EqualTo((nint)targetHandle));
+                Assert.That(requiredDebugInfo.idFlags, Is.EqualTo(targetFlags));
+            }
+            else if (debugInfo is not null)
+            {
+                Assert.That(debugInfo.idMemCookie, Is.Zero);
                 Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_EMPTY));
             }
-#endif
         }, CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI);
     }
 
