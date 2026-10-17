@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 #if NODEBASH_STATS
 using System.IO;
 #endif
@@ -14,7 +13,6 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
-#if MEASURE_NODE_SIZE
     internal static void DumpNodeSizes()
     {
         var smallNodeSize = TREE_NODE_SZ_SMALL;
@@ -68,7 +66,6 @@ public partial class GenTree
             }
         }
     }
-#endif
 
 #if NODEBASH_STATS
     internal static void ReportOperBashing(StreamWriter output)
@@ -119,26 +116,19 @@ public partial class GenTree
     }
 #endif
 
-#if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
     internal static byte GetTrueSize(uint op)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtTrueSizes native logical sizes are not ported.");
     }
-#endif
 
-#if NODEBASH_STATS || MEASURE_NODE_SIZE
     private static string GetOperName(genTreeOps oper)
     {
         var name = oper.ToString();
         return name[3..];
     }
-#endif
 
-#if MEASURE_NODE_SIZE
     private static byte GetNodeSize(uint op)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
     }
-#endif
 }
-#endif

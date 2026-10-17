@@ -514,9 +514,7 @@ public partial class Compiler
             //
             // Initialize all the per-method statistics gathering data structures.
             //
-#if MEASURE_NODE_SIZE
-            genNodeSizeStatsPerFunc.Init();
-#endif
+            InitializeNodeSizeStatistics();
         }
 
 #if DEBUG

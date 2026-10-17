@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if MEASURE_NODE_SIZE
 namespace RyuJitSharp;
 
 public struct NodeSizeStats
@@ -19,4 +18,3 @@ public struct NodeSizeStats
         genTreeNodeActualSize = 0;
     }
 }
-#endif

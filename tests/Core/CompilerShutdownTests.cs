@@ -410,7 +410,7 @@ internal static unsafe class CompilerShutdownTests
             s_jitstdout = writer;
             CsvFile(null) = csv;
             Compiler.genMethodCnt = 0;
-            XmlHeader(null) = true;
+            XmlHeader = true;
             LoopStats(ref JitConfig) = 1;
             try
             {
@@ -421,7 +421,7 @@ internal static unsafe class CompilerShutdownTests
                 }
                 writer.Flush();
 
-                Assert.That(XmlHeader(null), Is.False);
+                Assert.That(XmlHeader, Is.False);
                 Assert.That(csvStream.CanWrite, Is.True);
                 var text = Encoding.UTF8.GetString(output.ToArray());
                 if (canOpenXml)
@@ -453,7 +453,7 @@ internal static unsafe class CompilerShutdownTests
         WithState(() => {
             LoopStats(ref JitConfig) = loops;
             EnregStats(ref JitConfig) = locals;
-            XmlHeader(null) = true;
+            XmlHeader = true;
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
             s_jitstdout = writer;
@@ -464,7 +464,7 @@ internal static unsafe class CompilerShutdownTests
             var text = Encoding.UTF8.GetString(output.ToArray());
             Assert.That(text.Contains("Loop hoisting stats", StringComparison.Ordinal), Is.EqualTo(loops != 0));
             Assert.That(text.Contains("Locals enregistration statistics", StringComparison.Ordinal), Is.EqualTo(locals != 0));
-            Assert.That(XmlHeader(null), Is.True);
+            Assert.That(XmlHeader, Is.True);
             Assert.That(text, Does.Not.Contain("</InlineForest>"));
             if ((loops != 0) && (locals != 0))
             {
@@ -484,10 +484,8 @@ internal static unsafe class CompilerShutdownTests
         var summary = CompTimeSummaryInfo.s_compTimeSummary;
         var alt = AltAssemblies(null);
         var altInitialized = AltInitialized(null);
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
         var methodCount = Compiler.genMethodCnt;
         Compiler.genMethodCnt = 1;
-#endif
 #if DISPLAY_SIZES
         var sizeStatistics = (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
             gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt);
@@ -497,9 +495,9 @@ internal static unsafe class CompilerShutdownTests
 #if DEBUG
         var dump = DumpAssemblies(null);
         var dumpInitialized = DumpInitialized(null);
-        var xmlHeader = XmlHeader(null);
+        var xmlHeader = XmlHeader;
         var enreg = Compiler.s_enregisterStats;
-        XmlHeader(null) = false;
+        XmlHeader = false;
         Compiler.s_enregisterStats = default;
 #endif
         JitConfig = new JitConfigValues();
@@ -519,9 +517,7 @@ internal static unsafe class CompilerShutdownTests
             CompTimeSummaryInfo.s_compTimeSummary = summary;
             AltAssemblies(null) = alt;
             AltInitialized(null) = altInitialized;
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
             Compiler.genMethodCnt = methodCount;
-#endif
 #if DISPLAY_SIZES
             (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
                 gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt) = sizeStatistics;
@@ -529,7 +525,7 @@ internal static unsafe class CompilerShutdownTests
 #if DEBUG
             DumpAssemblies(null) = dump;
             DumpInitialized(null) = dumpInitialized;
-            XmlHeader(null) = xmlHeader;
+            XmlHeader = xmlHeader;
             Compiler.s_enregisterStats = enreg;
 #endif
         }
@@ -557,8 +553,21 @@ internal static unsafe class CompilerShutdownTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pJitDisasmIncludeAssembliesListInitialized")]
     private static extern ref bool DumpInitialized(Compiler? compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_HasDumpedXmlHeader")]
-    private static extern ref bool XmlHeader(InlineStrategy? strategy);
+    private static readonly FieldInfo s_xmlHeaderField =
+        typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)!
+            .GetField("HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    private static bool XmlHeader
+    {
+        get
+        {
+            return (bool)s_xmlHeaderField.GetValue(null)!;
+        }
+        set
+        {
+            s_xmlHeaderField.SetValue(null, value);
+        }
+    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDumpXmlFile")]
     private static extern ref byte* XmlFile(ref JitConfigValues config);

@@ -34,7 +34,6 @@ internal static class CompilerShutdownFamilyTests
 
         Assert.That(GenTree.GetNodeCount((uint)GT_COUNT), Is.Zero);
     }
-#endif
 
 #if MEASURE_BLOCK_SIZE
     [Test]
@@ -61,19 +60,29 @@ internal static class CompilerShutdownFamilyTests
     }
 #endif
 
-#if MEASURE_NODE_SIZE
     [Test]
     public static void MeasurementStructureNamesRemainAvailableWithoutDebug()
     {
+        if (!Configuration.DEBUG && !Configuration.MEASURE_NODE_SIZE)
+        {
+            var exception = Assert.Throws<InvalidOperationException>(() => _ = genTreeOps.GT_ADD.StructName);
+            Assert.That(exception?.Message,
+                Is.EqualTo("Operator struct type metadata is only available in Debug or node-size measurement builds."));
+            return;
+        }
+
         Assert.That(genTreeOps.GT_ADD.StructName, Is.EqualTo(nameof(GenTreeOp)));
         Assert.That(genTreeOps.GT_CALL.StructName, Is.EqualTo(nameof(GenTreeCall)));
     }
-#endif
 
-#if !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
     [Test]
     public static void DisabledStatisticsPreserveCleanupAndTimingShutdown()
     {
+        if (Configuration.OPTIONAL_STATISTICS)
+        {
+            Assert.Ignore("Optional statistics are enabled for this build.");
+        }
+
         WithShutdownState(() => {
             AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             using var output = new MemoryStream();
@@ -96,12 +105,19 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(text, Does.Not.Contain("GC pointer table stats"));
         });
     }
-#endif
 
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     [Test]
     public static void ZeroMethodGuardPrecedesEveryOptionalStatisticsDependency()
     {
+        if (!Configuration.DEBUG &&
+            !Configuration.MEASURE_NODE_SIZE &&
+            !Configuration.MEASURE_BLOCK_SIZE &&
+            !Configuration.DISPLAY_SIZES &&
+            !Configuration.CALL_ARG_STATS)
+        {
+            Assert.Ignore("No zero-method statistics mode is enabled for this build.");
+        }
+
         WithShutdownState(() => {
             Compiler.genMethodCnt = 0;
             AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
@@ -127,12 +143,27 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(Encoding.UTF8.GetString(output.ToArray()), Is.Empty);
         });
     }
-#endif
 
-#if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || EMITTER_STATS
     [Test]
     public static void ShutdownPreservesStatisticsCallOrderAndUnportedDependencies()
     {
+        if (!Configuration.OPTIONAL_STATISTICS)
+        {
+            Assert.Ignore("Optional statistics are disabled for this build.");
+        }
+
+        if (Configuration.MEASURE_NODE_SIZE &&
+            (Configuration.NODEBASH_STATS ||
+                Configuration.COUNT_AST_OPERS ||
+                Configuration.CALL_ARG_STATS ||
+                Configuration.MEASURE_BLOCK_SIZE ||
+                Configuration.MEASURE_PTRTAB_SIZE ||
+                Configuration.EMITTER_STATS ||
+                Configuration.DISPLAY_SIZES))
+        {
+            Assert.Ignore("The shutdown statistics test covers one optional statistics mode at a time.");
+        }
+
         WithShutdownState(() => {
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
@@ -140,25 +171,26 @@ internal static class CompilerShutdownFamilyTests
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-            Compiler.s_dspMemStats = true;
+            Compiler.s_dspMemStats = JitConfig.DisplayMemStats != 0;
+            FatalJitException? exception = null;
 #if MEASURE_BLOCK_SIZE
             BasicBlock.s_Count = 9;
             BasicBlock.s_Size = -1;
             Compiler.genMethodCnt = 3;
 #endif
-#if NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+#if NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Compiler.compShutdown();
-#elif EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64) && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
+#elif EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64) && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
             Compiler.compShutdown();
-#elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+#elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Compiler.argTotalCalls = 0;
             Compiler.compShutdown();
-#elif COUNT_AST_OPERS && !NODEBASH_STATS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+#elif COUNT_AST_OPERS && !NODEBASH_STATS && !CALL_ARG_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             var previousCount = GenTree.GetNodeCount((uint)GT_ADD);
             try
             {
                 GenTree.GetNodeCount((uint)GT_ADD) = unchecked(previousCount + 1);
-                var exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
+                exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
                 Assert.That(exception?.Message,
                     Is.EqualTo("GenTree::s_gtTrueSizes native logical sizes are not ported."));
             }
@@ -166,10 +198,10 @@ internal static class CompilerShutdownFamilyTests
             {
                 GenTree.GetNodeCount((uint)GT_ADD) = previousCount;
             }
-#elif MEASURE_BLOCK_SIZE && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+#elif MEASURE_BLOCK_SIZE && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Compiler.compShutdown();
 #else
-            var exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
+            exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
 #endif
             writer.Flush();
@@ -183,41 +215,46 @@ internal static class CompilerShutdownFamilyTests
 #if !NODEBASH_STATS
             Assert.That(CsvFile(null), Is.Null);
 #endif
+            if (Configuration.MEASURE_NODE_SIZE)
+            {
+                Assert.That(exception?.Message, Is.EqualTo("genNodeSizeStats collection is not ported."));
+                Assert.That(text, Does.EndWith(
+                    "\n---------------------------------------------------\n" +
+                    "GenTree node allocation stats\n" +
+                    "---------------------------------------------------\n"));
+            }
+            else
+            {
 #if COUNT_AST_OPERS
-            Assert.That(text, Does.Not.Contain("GenTree operator counts"));
-#elif CALL_ARG_STATS && !NODEBASH_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
-            Assert.That(text, Does.Not.Contain("Call stats"));
-            Assert.That(text, Does.Not.Contain("Basic block count frequency table"));
-#elif MEASURE_NODE_SIZE
-            Assert.That(exception?.Message, Is.EqualTo("genNodeSizeStats collection is not ported."));
-            Assert.That(text, Does.EndWith(
-                "\n---------------------------------------------------\n" +
-                "GenTree node allocation stats\n" +
-                "---------------------------------------------------\n"));
+                Assert.That(text, Does.Not.Contain("GenTree operator counts"));
+#elif CALL_ARG_STATS && !NODEBASH_STATS && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+                Assert.That(text, Does.Not.Contain("Call stats"));
+                Assert.That(text, Does.Not.Contain("Basic block count frequency table"));
 #elif MEASURE_BLOCK_SIZE
-            var average = unchecked((uint)(nuint.MaxValue / 3));
-            Assert.That(text, Does.EndWith(
-                "\n---------------------------------------------------\n" +
-                "BasicBlock and FlowEdge/BasicBlockList allocation stats\n" +
-                "---------------------------------------------------\n" +
-                $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n" +
-                "Allocated      0 flow nodes (      0 bytes total, avg    0 bytes per method)\n\n" +
-                "A total of      3 methods compiled.\n"));
+                var average = unchecked((uint)(nuint.MaxValue / 3));
+                Assert.That(text, Does.EndWith(
+                    "\n---------------------------------------------------\n" +
+                    "BasicBlock and FlowEdge/BasicBlockList allocation stats\n" +
+                    "---------------------------------------------------\n" +
+                    $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n" +
+                    "Allocated      0 flow nodes (      0 bytes total, avg    0 bytes per method)\n\n" +
+                    "A total of      3 methods compiled.\n"));
 #elif MEASURE_PTRTAB_SIZE
-            Assert.That(exception?.Message, Is.EqualTo("GCInfo::s_gcRegPtrDscSize collection is not ported."));
-            Assert.That(text, Does.EndWith(
-                "\n---------------------------------------------------\n" +
-                "GC pointer table stats\n" +
-                "---------------------------------------------------\n"));
+                Assert.That(exception?.Message, Is.EqualTo("GCInfo::s_gcRegPtrDscSize collection is not ported."));
+                Assert.That(text, Does.EndWith(
+                    "\n---------------------------------------------------\n" +
+                    "GC pointer table stats\n" +
+                    "---------------------------------------------------\n"));
 #elif EMITTER_STATS
 #if TARGET_XARCH || TARGET_ARM64 || TARGET_ARM
-            Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
-            Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
-            Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
+                Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
+                Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
+                Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
 #else
-            Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch and arm64 is not ported."));
+                Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch and arm64 is not ported."));
 #endif
 #endif
+            }
             Assert.That(text, Does.Not.Contain("Fatal errors stats"));
         });
     }
@@ -247,6 +284,11 @@ internal static class CompilerShutdownFamilyTests
     [Test]
     public static void ShutdownReportsManagedAllocationStatsWithoutInventingArenaUsage()
     {
+        if (Configuration.MEASURE_NODE_SIZE)
+        {
+            Assert.Ignore("Node-size statistics terminate at the explicit unported collection dependency.");
+        }
+
         WithShutdownState(() => {
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
@@ -263,20 +305,16 @@ internal static class CompilerShutdownFamilyTests
         });
     }
 
-#if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || EMITTER_STATS
 #if NODEBASH_STATS
     [TestCase("OperBashing")]
 #endif
 #if COUNT_AST_OPERS
     [TestCase("SmallNodeSize")]
 #endif
-#if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
     [TestCase("TrueNodeSize")]
-#endif
 #if CALL_ARG_STATS
     [TestCase("CallArguments")]
 #endif
-#if MEASURE_NODE_SIZE
     [TestCase("NodeStatistics")]
     [TestCase("PerMethodNodeStatistics")]
     [TestCase("NodeStatisticsInit")]
@@ -284,7 +322,6 @@ internal static class CompilerShutdownFamilyTests
     [TestCase("NodeSizeHistogram")]
     [TestCase("NodeSizeDump")]
     [TestCase("StaticNodeSizeReport")]
-#endif
 #if MEASURE_BLOCK_SIZE
     [TestCase("BasicBlockSize")]
     [TestCase("FlowEdgeSize")]
@@ -298,6 +335,17 @@ internal static class CompilerShutdownFamilyTests
 #endif
     public static void StatisticsDependenciesTerminateOrReportWithoutInventingData(string dependency)
     {
+        if (Configuration.MEASURE_NODE_SIZE &&
+            (Configuration.NODEBASH_STATS ||
+                Configuration.COUNT_AST_OPERS ||
+                Configuration.CALL_ARG_STATS ||
+                Configuration.MEASURE_BLOCK_SIZE ||
+                Configuration.MEASURE_PTRTAB_SIZE ||
+                Configuration.EMITTER_STATS))
+        {
+            Assert.Ignore("The dependency test covers one optional statistics mode at a time.");
+        }
+
         using var output = new MemoryStream();
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
 
@@ -320,7 +368,6 @@ internal static class CompilerShutdownFamilyTests
         }
 #endif
 
-#if MEASURE_NODE_SIZE
         if (dependency == "NodeStatisticsInit")
         {
             NodeSizeStats statistics = default;
@@ -353,7 +400,14 @@ internal static class CompilerShutdownFamilyTests
 
             return;
         }
-#endif
+
+        if (dependency == "StaticNodeSizeReport" && !Configuration.MEASURE_NODE_SIZE)
+        {
+            AccessDependency(dependency, writer);
+            writer.Flush();
+            Assert.That(output.Length, Is.Zero);
+            return;
+        }
 
 #if CALL_ARG_STATS
         if (dependency == "CallArguments")
@@ -408,13 +462,11 @@ internal static class CompilerShutdownFamilyTests
                 break;
             }
 #endif
-#if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
             case "TrueNodeSize":
             {
                 _ = GenTree.GetTrueSize(0);
                 break;
             }
-#endif
 #if CALL_ARG_STATS
             case "CallArguments":
             {
@@ -422,7 +474,6 @@ internal static class CompilerShutdownFamilyTests
                 break;
             }
 #endif
-#if MEASURE_NODE_SIZE
             case "NodeStatistics":
             {
                 _ = genNodeSizeStats.genTreeNodeCnt;
@@ -459,7 +510,6 @@ internal static class CompilerShutdownFamilyTests
                 Compiler.compDisplayStaticSizes();
                 break;
             }
-#endif
 #if MEASURE_BLOCK_SIZE
             case "BasicBlockSize":
             {
@@ -497,7 +547,6 @@ internal static class CompilerShutdownFamilyTests
             }
         }
     }
-#endif
 
 #if COUNT_AST_OPERS
     [TestCase(0U, 0U, true)]
@@ -566,10 +615,8 @@ internal static class CompilerShutdownFamilyTests
 #if DEBUG
         var dump = DumpAssemblies(null);
 #endif
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
         var methods = Compiler.genMethodCnt;
         Compiler.genMethodCnt = 1;
-#endif
 #if DISPLAY_SIZES
         var sizes = (grossVMsize, grossNCsize, totalNCsize);
         grossVMsize = grossNCsize = totalNCsize = 0;
@@ -600,9 +647,7 @@ internal static class CompilerShutdownFamilyTests
 #if DEBUG
             DumpAssemblies(null) = dump;
 #endif
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
             Compiler.genMethodCnt = methods;
-#endif
 #if DISPLAY_SIZES
             (grossVMsize, grossNCsize, totalNCsize) = sizes;
 #endif

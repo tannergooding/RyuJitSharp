@@ -922,7 +922,7 @@ public enum genTreeOps : byte
             var structTypeExpression = name.Equals("MUL_LONG", StringComparison.Ordinal)
                 ? "Configuration.TARGET_ARM64 ? typeof(GenTreeOp) : typeof(GenTreeMultiRegOp)"
                 : $"typeof({structType})";
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {structTypeExpression}, // GT_{name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            {structTypeExpression}, // GT_{name}");
         });
 
         _ = Directory.CreateDirectory(@"Outputs\jit\gentreeopsdef");
@@ -962,10 +962,11 @@ public static partial class genTreeOpsExtensions
 {{namesBuilder}}        ];
     }
 
-#if DEBUG || MEASURE_NODE_SIZE
-    private static readonly Type[] s_structTypes = [
-{{structTypesBuilder}}    ];
-#endif
+    private static class StructTypeTable
+    {
+        internal static readonly Type[] s_structTypes = [
+{{structTypesBuilder}}        ];
+    }
 }
 """);
     }

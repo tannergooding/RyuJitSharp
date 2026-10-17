@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -11,11 +12,25 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     internal static uint genMethodCnt;
     internal static uint genMethodICnt;
     internal static uint genMethodNCnt;
-#endif
+
+    [Conditional("DEBUG")]
+    [Conditional("MEASURE_NODE_SIZE")]
+    [Conditional("MEASURE_BLOCK_SIZE")]
+    [Conditional("DISPLAY_SIZES")]
+    [Conditional("CALL_ARG_STATS")]
+    private static void IncrementMethodCount()
+    {
+        genMethodCnt = unchecked(genMethodCnt + 1);
+    }
+
+    [Conditional("MEASURE_NODE_SIZE")]
+    private static void InitializeNodeSizeStatistics()
+    {
+        genNodeSizeStatsPerFunc.Init();
+    }
 
 #if DEBUG
     private static bool s_compOrderHeaderPrinted;
@@ -23,9 +38,7 @@ public partial class Compiler
 
     public unsafe void compCompileFinish()
     {
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
-        genMethodCnt = unchecked(genMethodCnt + 1);
-#endif
+        IncrementMethodCount();
 
         if (s_dspMemStats)
         {

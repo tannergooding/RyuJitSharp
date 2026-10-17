@@ -502,9 +502,10 @@ public partial class Compiler
 
     public static void compDisplayStaticSizes()
     {
-#if MEASURE_NODE_SIZE
-        GenTree.DumpNodeSizes();
-#endif
+        if (Configuration.MEASURE_NODE_SIZE)
+        {
+            GenTree.DumpNodeSizes();
+        }
 
 #if EMITTER_STATS
         emitterStaticStats();

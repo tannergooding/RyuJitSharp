@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -10,6 +11,101 @@ internal static class Configuration
 #else
     internal const bool DEBUG = false;
 #endif
+
+    internal static bool MEASURE_NODE_SIZE => BuildFeatures.MeasureNodeSize;
+
+    internal static bool MEASURE_BLOCK_SIZE => BuildFeatures.MeasureBlockSize;
+
+    internal static bool MEASURE_PTRTAB_SIZE => BuildFeatures.MeasurePointerTableSize;
+
+    internal static bool DISPLAY_SIZES => BuildFeatures.DisplaySizes;
+
+    internal static bool CALL_ARG_STATS => BuildFeatures.CallArgumentStatistics;
+
+    internal static bool NODEBASH_STATS => BuildFeatures.NodeBashStatistics;
+
+    internal static bool COUNT_AST_OPERS => BuildFeatures.CountAstOperators;
+
+    internal static bool EMITTER_STATS => BuildFeatures.EmitterStatistics;
+
+    internal static bool OPTIONAL_STATISTICS => BuildFeatures.OptionalStatistics;
+
+    private static class BuildFeatures
+    {
+        private static bool s_measureNodeSize;
+        private static bool s_measureBlockSize;
+        private static bool s_measurePointerTableSize;
+        private static bool s_displaySizes;
+        private static bool s_callArgumentStatistics;
+        private static bool s_nodeBashStatistics;
+        private static bool s_countAstOperators;
+        private static bool s_emitterStatistics;
+        private static bool s_optionalStatistics;
+
+        static BuildFeatures()
+        {
+            EnableMeasureNodeSize();
+            EnableMeasureBlockSize();
+            EnableMeasurePointerTableSize();
+            EnableDisplaySizes();
+            EnableCallArgumentStatistics();
+            EnableNodeBashStatistics();
+            EnableCountAstOperators();
+            EnableEmitterStatistics();
+            EnableOptionalStatistics();
+        }
+
+        internal static bool MeasureNodeSize => s_measureNodeSize;
+
+        internal static bool MeasureBlockSize => s_measureBlockSize;
+
+        internal static bool MeasurePointerTableSize => s_measurePointerTableSize;
+
+        internal static bool DisplaySizes => s_displaySizes;
+
+        internal static bool CallArgumentStatistics => s_callArgumentStatistics;
+
+        internal static bool NodeBashStatistics => s_nodeBashStatistics;
+
+        internal static bool CountAstOperators => s_countAstOperators;
+
+        internal static bool EmitterStatistics => s_emitterStatistics;
+
+        internal static bool OptionalStatistics => s_optionalStatistics;
+
+        [Conditional("MEASURE_NODE_SIZE")]
+        private static void EnableMeasureNodeSize() => s_measureNodeSize = true;
+
+        [Conditional("MEASURE_BLOCK_SIZE")]
+        private static void EnableMeasureBlockSize() => s_measureBlockSize = true;
+
+        [Conditional("MEASURE_PTRTAB_SIZE")]
+        private static void EnableMeasurePointerTableSize() => s_measurePointerTableSize = true;
+
+        [Conditional("DISPLAY_SIZES")]
+        private static void EnableDisplaySizes() => s_displaySizes = true;
+
+        [Conditional("CALL_ARG_STATS")]
+        private static void EnableCallArgumentStatistics() => s_callArgumentStatistics = true;
+
+        [Conditional("NODEBASH_STATS")]
+        private static void EnableNodeBashStatistics() => s_nodeBashStatistics = true;
+
+        [Conditional("COUNT_AST_OPERS")]
+        private static void EnableCountAstOperators() => s_countAstOperators = true;
+
+        [Conditional("EMITTER_STATS")]
+        private static void EnableEmitterStatistics() => s_emitterStatistics = true;
+
+        [Conditional("NODEBASH_STATS")]
+        [Conditional("COUNT_AST_OPERS")]
+        [Conditional("CALL_ARG_STATS")]
+        [Conditional("MEASURE_NODE_SIZE")]
+        [Conditional("MEASURE_BLOCK_SIZE")]
+        [Conditional("MEASURE_PTRTAB_SIZE")]
+        [Conditional("EMITTER_STATS")]
+        private static void EnableOptionalStatistics() => s_optionalStatistics = true;
+    }
 
     private static readonly Architecture s_hostArchitecture = RuntimeInformation.ProcessArchitecture;
 

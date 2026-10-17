@@ -42,12 +42,15 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
-        if (genMethodCnt == 0)
+        if ((Configuration.DEBUG ||
+                Configuration.MEASURE_NODE_SIZE ||
+                Configuration.MEASURE_BLOCK_SIZE ||
+                Configuration.DISPLAY_SIZES ||
+                Configuration.CALL_ARG_STATS) &&
+            (genMethodCnt == 0))
         {
             return;
         }
-#endif
 
 #if NODEBASH_STATS
         GenTree.ReportOperBashing(jitstdout());
@@ -219,30 +222,31 @@ public partial class Compiler
         jitprintf("--------------------------------------------------\n");
 #endif
 
-#if MEASURE_NODE_SIZE
-        unchecked
+        if (Configuration.MEASURE_NODE_SIZE)
         {
-            jitprintf("\n");
-            jitprintf("---------------------------------------------------\n");
-            jitprintf("GenTree node allocation stats\n");
-            jitprintf("---------------------------------------------------\n");
+            unchecked
+            {
+                jitprintf("\n");
+                jitprintf("---------------------------------------------------\n");
+                jitprintf("GenTree node allocation stats\n");
+                jitprintf("---------------------------------------------------\n");
 
-            jitprintf($"Allocated {genNodeSizeStats.genTreeNodeCnt,6} tree nodes ({genNodeSizeStats.genTreeNodeSize,7} bytes total, " +
-                $"avg {genNodeSizeStats.genTreeNodeSize / genMethodCnt,4} bytes per method)\n");
-            jitprintf($"Allocated {genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,7} bytes of unused tree node space " +
-                $"({formatFloat((float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) / genNodeSizeStats.genTreeNodeSize, "F2"),3}%)\n");
+                jitprintf($"Allocated {genNodeSizeStats.genTreeNodeCnt,6} tree nodes ({genNodeSizeStats.genTreeNodeSize,7} bytes total, " +
+                    $"avg {genNodeSizeStats.genTreeNodeSize / genMethodCnt,4} bytes per method)\n");
+                jitprintf($"Allocated {genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,7} bytes of unused tree node space " +
+                    $"({formatFloat((float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) / genNodeSizeStats.genTreeNodeSize, "F2"),3}%)\n");
 
-            jitprintf("\n");
-            jitprintf("---------------------------------------------------\n");
-            jitprintf("Distribution of per-method GenTree node counts:\n");
-            genTreeNcntHist.dump(jitstdout());
+                jitprintf("\n");
+                jitprintf("---------------------------------------------------\n");
+                jitprintf("Distribution of per-method GenTree node counts:\n");
+                genTreeNcntHist.dump(jitstdout());
 
-            jitprintf("\n");
-            jitprintf("---------------------------------------------------\n");
-            jitprintf("Distribution of per-method GenTree node  allocations (in bytes):\n");
-            genTreeNsizHist.dump(jitstdout());
+                jitprintf("\n");
+                jitprintf("---------------------------------------------------\n");
+                jitprintf("Distribution of per-method GenTree node  allocations (in bytes):\n");
+                genTreeNsizHist.dump(jitstdout());
+            }
         }
-#endif
 
 #if MEASURE_BLOCK_SIZE
         unchecked
@@ -309,8 +313,11 @@ public partial class Compiler
         }
 #endif
 
-#if MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || DISPLAY_SIZES
-        if (genMethodCnt != 0)
+        if ((Configuration.MEASURE_NODE_SIZE ||
+                Configuration.MEASURE_BLOCK_SIZE ||
+                Configuration.MEASURE_PTRTAB_SIZE ||
+                Configuration.DISPLAY_SIZES) &&
+            (genMethodCnt != 0))
         {
             jitprintf("\n");
             jitprintf($"A total of {genMethodCnt,6} methods compiled");
@@ -322,7 +329,6 @@ public partial class Compiler
 #endif
             jitprintf(".\n");
         }
-#endif
 
 #if EMITTER_STATS
         emitterStats(jitstdout());

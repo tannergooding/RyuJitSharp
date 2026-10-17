@@ -9,15 +9,10 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if COUNT_AST_OPERS || MEASURE_NODE_SIZE
     internal static nuint TREE_NODE_SZ_SMALL => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeLclFld) is not ported.");
-#endif
 
-#if MEASURE_NODE_SIZE
     internal static nuint TREE_NODE_SZ_LARGE => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeCall) is not ported.");
-#endif
 
-#if MEASURE_NODE_SIZE
     internal static ref NodeSizeStats genNodeSizeStats => throw new FatalJitException(CORJIT_SKIPPED, "genNodeSizeStats collection is not ported.");
 
     internal static ref NodeSizeStats genNodeSizeStatsPerFunc => throw new FatalJitException(CORJIT_SKIPPED, "genNodeSizeStatsPerFunc collection is not ported.");
@@ -25,7 +20,6 @@ public partial class Globals
     internal static Histogram genTreeNcntHist => throw new FatalJitException(CORJIT_SKIPPED, "genTreeNcntHist collection is not ported.");
 
     internal static Histogram genTreeNsizHist => throw new FatalJitException(CORJIT_SKIPPED, "genTreeNsizHist collection is not ported.");
-#endif
 
 #if MEASURE_BLOCK_SIZE
     private static nuint s_genFlowNodeCnt;

@@ -398,23 +398,21 @@ public static partial class genTreeOpsExtensions
             }
         }
 
-#if MEASURE_NODE_SIZE
         public string StructName => oper.StructType.Name;
-#endif
 
-#if DEBUG || MEASURE_NODE_SIZE
         public Type StructType
         {
             get
             {
-                assert(s_structTypes.Length == (int)(GT_COUNT));
-                return s_structTypes[(int)(oper)];
+                if (!Configuration.DEBUG && !Configuration.MEASURE_NODE_SIZE)
+                {
+                    throw new InvalidOperationException("Operator struct type metadata is only available in Debug or node-size measurement builds.");
+                }
+
+                assert(StructTypeTable.s_structTypes.Length == (int)(GT_COUNT));
+                return StructTypeTable.s_structTypes[(int)(oper)];
             }
         }
-#else
-        public Type StructType
-            => throw new System.InvalidOperationException("Operator struct type metadata is only available in Debug or node-size measurement builds.");
-#endif
 
         public genTreeOps SwapRelop
         {
