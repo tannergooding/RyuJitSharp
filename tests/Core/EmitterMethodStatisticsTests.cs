@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+#if EMITTER_STATS
 using System;
 using System.IO;
 using System.Reflection;
@@ -523,6 +524,7 @@ internal sealed unsafe class EmitterMethodStatisticsTests
             return NewCallDescriptor(this, attr);
         }
 #endif
+        #endif
 
 #if TARGET_XARCH
         public instrDesc AllocateAddressModeDescriptor(emitAttr attr)

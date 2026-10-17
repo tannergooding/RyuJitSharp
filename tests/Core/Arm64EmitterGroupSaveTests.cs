@@ -2,12 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
 [NonParallelizable]
 internal sealed unsafe class Arm64EmitterGroupSaveTests
 {

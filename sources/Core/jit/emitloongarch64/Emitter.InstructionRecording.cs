@@ -103,10 +103,9 @@ public partial class Emitter
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;
         emitCurIGjmpList = id;
-        if (Configuration.EMITTER_STATS)
-        {
-            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-        }
+#if EMITTER_STATS
+        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+#endif
         id.idCodeSize(4);
         appendToCurIG(id);
     }

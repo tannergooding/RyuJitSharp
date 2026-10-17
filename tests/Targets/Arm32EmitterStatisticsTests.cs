@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+#if EMITTER_STATS && TARGET_ARM
 using System.IO;
 using System.Text;
 using NUnit.Framework;
@@ -56,3 +57,4 @@ internal static class Arm32EmitterStatisticsTests
         }
     }
 }
+#endif

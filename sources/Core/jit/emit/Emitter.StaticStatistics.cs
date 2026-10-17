@@ -9,6 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if EMITTER_STATS
     private struct NativeLayout
     {
         private int _offset;
@@ -239,4 +240,5 @@ public partial class Emitter
         var value = divide ? capacity / size : capacity;
         jitprintf(FormattableString.Invariant($"{name} = {value,2}\n"));
     }
+#endif
 }

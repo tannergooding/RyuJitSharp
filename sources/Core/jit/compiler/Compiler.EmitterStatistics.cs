@@ -4,8 +4,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+#if EMITTER_STATS
     private static void emitterStaticStats()
     {
         Emitter.emitStaticStats();
     }
+#endif
 }

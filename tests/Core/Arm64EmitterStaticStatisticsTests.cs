@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+#if TARGET_ARM64 && TARGET_WINDOWS && EMITTER_STATS
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -70,3 +71,4 @@ internal sealed class Arm64EmitterStaticStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitterStaticStats")]
     private static extern void StaticReport(Compiler? compiler);
 }
+#endif

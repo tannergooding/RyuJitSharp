@@ -328,10 +328,9 @@ public partial class Compiler
             jitprintf(".\n");
         }
 
-        if (Configuration.EMITTER_STATS)
-        {
-            emitterStats(jitstdout());
-        }
+#if EMITTER_STATS
+        emitterStats(jitstdout());
+#endif
 
 #if MEASURE_FATAL
         jitprintf("\n");

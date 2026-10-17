@@ -12,7 +12,9 @@ public partial class Emitter
     private const InsGroupFlags IGF_PROPAGATE_MASK =
         InsGroupFlags.Prolog | InsGroupFlags.Epilog | InsGroupFlags.FuncletProlog | InsGroupFlags.FuncletEpilog;
 
+#if EMITTER_STATS
     private static uint emitTotalIGcnt;
+#endif
 
     private insGroup emitAllocAndLinkIG()
     {
@@ -31,14 +33,13 @@ public partial class Emitter
     {
         insGroup ig = new();
 
-        if (Configuration.EMITTER_STATS)
-        {
-            var size = emitNativeIGSize();
-            emitTotMemAlloc = unchecked(emitTotMemAlloc + size);
-            emitTotalIGcnt = unchecked(emitTotalIGcnt + 1);
-            emitTotalIGsize = unchecked(emitTotalIGsize + size);
-            emitSizeMethod = unchecked(emitSizeMethod + size);
-        }
+#if EMITTER_STATS
+        var size = emitNativeIGSize();
+        emitTotMemAlloc = unchecked(emitTotMemAlloc + size);
+        emitTotalIGcnt = unchecked(emitTotalIGcnt + 1);
+        emitTotalIGsize = unchecked(emitTotalIGsize + size);
+        emitSizeMethod = unchecked(emitSizeMethod + size);
+#endif
 
 #if DEBUG
         ig.igSelf = ig;

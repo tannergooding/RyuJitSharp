@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -16,6 +17,7 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
 [NonParallelizable]
 internal sealed unsafe class LinearScanAllocationStatisticsTests
 {

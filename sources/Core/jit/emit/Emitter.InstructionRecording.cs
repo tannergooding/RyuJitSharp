@@ -41,12 +41,9 @@ public partial class Emitter
             assert(debugInfo is not null);
             assert(debugInfo.idSize == (nuint)emitSizeOfInsDsc(id));
         }
-        if (Configuration.EMITTER_STATS)
-        {
-            var instructionFormatCounts = emitIFcounts!;
-            var format = (int)id.idInsFmt();
-            instructionFormatCounts[format] = unchecked(instructionFormatCounts[format] + 1);
-        }
+#if EMITTER_STATS
+        emitIFcounts[(int)id.idInsFmt()] = unchecked(emitIFcounts[(int)id.idInsFmt()] + 1);
+#endif
     }
 
     private void appendToCurIG(instrDesc id)
@@ -94,8 +91,9 @@ public partial class Emitter
             "Load/store classification is only supported on ARM32 and ARM64.");
     }
 
-    private static readonly uint[]? emitIFcounts =
-        Configuration.EMITTER_STATS ? new uint[emitFmtToOps.Length] : null;
+#if EMITTER_STATS
+    private static readonly uint[] emitIFcounts = new uint[emitFmtToOps.Length];
+#endif
 
 #if DEBUG
     private void emitInsSanityCheck(instrDesc id)
