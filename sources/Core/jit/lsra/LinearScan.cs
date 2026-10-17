@@ -62,11 +62,12 @@ public sealed partial class LinearScan : IRegAlloc
     internal readonly List<Interval> intervals;
     internal readonly RegRecord[] physRegs;
 
+    private int _lsraStressMask;
+
 #if DEBUG
     private uint _maxNodeLocation;
     private uint _consecutiveRegistersLocation;
     private RefPosition? _activeRefPosition;
-    private int _lsraStressMask;
     private static ConfigMethodRange s_jitStressRegsRange;
 #endif
 

@@ -17,13 +17,12 @@ public partial class Compiler
                 // Null locations represent the beginning/end of the code without exposing the prolog IG.
                 startLoc = null;
 
-#if DEBUG
-                if ((fgFirstColdBlock is not null) && (JitConfig.JitFakeProcedureSplitting != 0))
+                if (Configuration.DEBUG && (fgFirstColdBlock is not null) &&
+                    (JitConfig.JitFakeProcedureSplitting != 0))
                 {
                     endLoc = UnwindBlockLocation(fgFirstFuncletBB);
                     return;
                 }
-#endif
 
                 endLoc = UnwindBlockLocation(fgFirstColdBlock ?? fgFirstFuncletBB);
             }

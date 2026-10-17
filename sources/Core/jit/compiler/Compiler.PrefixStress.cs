@@ -9,29 +9,18 @@ public partial class Compiler
 {
     internal bool DoJitStressEvexEncoding()
     {
-#if DEBUG
-        return ((JitConfig.JitStressEvexEncoding != 0) || (JitConfig.JitStressRex2Encoding != 0))
-            && canUseEvexEncoding();
-#else
-        return false;
-#endif
+        return Configuration.DEBUG &&
+            ((JitConfig.JitStressEvexEncoding != 0) || (JitConfig.JitStressRex2Encoding != 0)) &&
+            canUseEvexEncoding();
     }
 
     internal bool DoJitStressRex2Encoding()
     {
-#if DEBUG
-        return (JitConfig.JitStressRex2Encoding != 0) && canUseApxEncoding();
-#else
-        return false;
-#endif
+        return Configuration.DEBUG && (JitConfig.JitStressRex2Encoding != 0) && canUseApxEncoding();
     }
 
     internal bool DoJitStressPromotedEvexEncoding()
     {
-#if DEBUG
-        return (JitConfig.JitStressPromotedEvexEncoding != 0) && canUseApxEncoding();
-#else
-        return false;
-#endif
+        return Configuration.DEBUG && (JitConfig.JitStressPromotedEvexEncoding != 0) && canUseApxEncoding();
     }
 }

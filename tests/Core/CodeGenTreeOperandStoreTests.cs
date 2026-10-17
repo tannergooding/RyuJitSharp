@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GenTreeFlags;
@@ -18,6 +17,7 @@ internal static class CodeGenTreeOperandStoreTests
     [TestCase(true)]
     public static void LocalAndSpillStoresKeepTheirSeparateStackHomes(bool writeThrough)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             codeGen.RegSet.tmpInit();
@@ -62,6 +62,7 @@ internal static class CodeGenTreeOperandStoreTests
     [TestCase(TYP_INT)]
     public static void SpillStoreUsesTheSourceActualWidth(var_types type)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.RegSet.tmpInit();
@@ -88,4 +89,3 @@ internal static class CodeGenTreeOperandStoreTests
         });
     }
 }
-#endif

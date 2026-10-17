@@ -44,7 +44,6 @@ public class Instrumentor
         _modifiedFlow = true;
     }
 
-#if DEBUG
     protected static uint ConvertSynthesizedCount32(double weight)
     {
         const double signedLimit = 9223372036854775808.0;
@@ -78,7 +77,6 @@ public class Instrumentor
 
         return unchecked((ulong)(long)weight);
     }
-#endif
 }
 
 public sealed class NonInstrumentor(Compiler compiler) : Instrumentor(compiler);

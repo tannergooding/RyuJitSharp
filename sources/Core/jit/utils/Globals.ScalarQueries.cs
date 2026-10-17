@@ -32,7 +32,6 @@ public partial class Globals
         }
     }
 
-#if DEBUG
     public static uint CountDigits(uint num, uint @base = 10)
     {
         assert((2 <= @base) && (@base <= 16), "2 <= base && base <= 16");
@@ -46,5 +45,4 @@ public partial class Globals
 
         return count;
     }
-#endif
 }

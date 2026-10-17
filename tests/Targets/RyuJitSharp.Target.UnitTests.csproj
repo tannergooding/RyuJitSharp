@@ -75,10 +75,19 @@
     <Compile Include="..\Core\ValueNumHardwareEvaluationClosureTests.cs" Link="ValueNumHardwareEvaluationClosureTests.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="LoongArch64CalleeSavedFrameTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-x86')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-x86'))) or $(RyuJitTargetRuntimeIdentifier.EndsWith('-x64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-x64')))">
+    <Compile Include="..\Core\IntrinsicInputSizeTests.cs" Link="IntrinsicInputSizeTests.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
     <Compile Include="..\Core\Jit32GcInfoTests.cs" Link="Jit32GcInfoTests.cs" />
     <Compile Include="..\Core\ValueNumConstantExtractionTests.cs" Link="ValueNumConstantExtractionTests.cs" />
     <Compile Include="..\Core\EmitterOpcodeTests.cs" Link="EmitterOpcodeTests.cs" />
+    <Compile Include="..\Core\CodeGenXarchFrameClosureTests.cs" Link="CodeGenXarchFrameClosureTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">
@@ -155,6 +164,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64')">
+    <Compile Include="LoongArch64CalleeSavedFrameTests.cs" />
     <Compile Include="..\Core\LoongArch64CodeGenRegisterTransferTests.cs" Link="LoongArch64CodeGenRegisterTransferTests.cs" />
   </ItemGroup>
 
@@ -176,6 +186,7 @@
     <Compile Include="..\Core\RiscVCodeGenRegisterTransferTests.cs" Link="RiscVCodeGenRegisterTransferTests.cs" />
     <Compile Include="..\Core\RiscVLocalFieldCodeGenTests.cs" Link="RiscVLocalFieldCodeGenTests.cs" />
     <Compile Include="..\Core\RiscVLoweringPortTests.cs" Link="RiscVLoweringPortTests.cs" />
+    <Compile Include="..\Core\RiscVEmitterFlagsOverloadTests.cs" Link="RiscVEmitterFlagsOverloadTests.cs" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">

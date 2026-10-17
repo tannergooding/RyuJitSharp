@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI || TARGET_X86
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -12,12 +11,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenXarchScalarClosureTests
 {
-#if UNIX_AMD64_ABI
     [TestCase(0, false)]
     [TestCase(0, true)]
     [TestCase(1, true)]
     public static void UnixDispatcherPreservesReusedConstantGcBoundary(int value, bool nonempty)
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = compiler.gtNewIconNode(TYP_INT, value);
@@ -34,14 +33,13 @@ internal static class CodeGenXarchScalarClosureTests
             Assert.That(ReferenceEquals(before, codeGen.Emitter.emitCurIG), Is.EqualTo(value != 0 || !nonempty));
         });
     }
-#endif
 
-#if TARGET_X86
     [TestCase(0, false)]
     [TestCase(0, true)]
     [TestCase(1, true)]
     public static void X86ReusedConstantOnlyLabelsExistingInstructionsForZero(int value, bool nonempty)
     {
+        Assume.That(Configuration.TARGET_X86);
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -64,22 +62,21 @@ internal static class CodeGenXarchScalarClosureTests
     [TestCase(true)]
     public static void X86CatchArgumentTransfersTheExceptionObjectRoot(bool same)
     {
+        Assume.That(Configuration.TARGET_X86);
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
                 ?? throw new AssertionException("Missing x86 code generator.");
             compiler.compCurBB = new BasicBlock(null, null) { CatchType = bbCatchType.BBCT_FILTER };
-            var exceptionMask = new regMaskTP(RBM_EAX);
+            var exceptionMask = RBM_X86_EAX;
             codeGen.GCInfo.gcMarkRegSetGCref(exceptionMask);
-            var tree = new GenTree(GT_CATCH_ARG, TYP_REF) { RegNum = same ? REG_EAX : REG_ECX };
+            var tree = new GenTree(GT_CATCH_ARG, TYP_REF) { RegNum = same ? REG_X86_EAX : REG_X86_ECX };
 
             var before = emitter.emitCurIG;
             codeGen.genCodeForCatchArg(tree);
 
             Assert.That(emitter.emitCurIG, Is.SameAs(before));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(same ? exceptionMask : new regMaskTP(RBM_ECX)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(same ? exceptionMask : RBM_X86_ECX));
         });
     }
-#endif
 }
-#endif

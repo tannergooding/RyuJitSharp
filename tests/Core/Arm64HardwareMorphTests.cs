@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
 using NUnit.Framework;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
@@ -13,6 +12,9 @@ internal static class Arm64HardwareMorphTests
     [Test]
     public static void AdvSimdAddConstantsAreReassociated()
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_HW_INTRINSICS,
+            "requires ARM64 hardware intrinsic support");
+
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             var local = new GenTreeLclVar(TYP_SIMD16, 0);
             var first = new GenTreeVecCon(TYP_SIMD16);
@@ -32,4 +34,3 @@ internal static class Arm64HardwareMorphTests
         });
     }
 }
-#endif

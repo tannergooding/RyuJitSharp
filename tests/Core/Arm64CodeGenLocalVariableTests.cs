@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64CodeGenLocalVariableTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(TYP_INT, EA_4BYTE)]
     [TestCase(TYP_LONG, EA_8BYTE)]
     public static void StackLocalLoadsUseTheNodeTypeAndLocalFrameAddress(var_types type, emitAttr size)
@@ -103,6 +108,11 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
 
     private static IEnumerable<TestCaseData> LocalAddressTypes()
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_BYREF);
         yield return new TestCaseData(TYP_I_IMPL);
     }
@@ -532,4 +542,3 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

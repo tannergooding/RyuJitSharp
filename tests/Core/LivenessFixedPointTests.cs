@@ -516,7 +516,7 @@ internal static unsafe class LivenessFixedPointTests
             Assert.That(Capture(liveness.DoLiveVarAnalysis),
                 Is.EqualTo("\nBB liveness after DoLiveVarAnalysis():\n\n".ReplaceLineEndings(Environment.NewLine) + expected));
             Assert.That(Capture(() => compiler.fgDispBBLiveness(block)), Is.EqualTo(expected));
-            Assert.That(Capture(compiler.fgDispBBLiveness), Is.EqualTo(expected));
+            Assert.That(Capture(() => compiler.fgDispBBLiveness()), Is.EqualTo(expected));
         });
     }
 

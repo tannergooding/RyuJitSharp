@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.CorJitResult;
@@ -15,10 +14,10 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64Simd12IndirectStoreTests
 {
-#if FEATURE_SIMD
     [Test]
     public static void StoresEightBytesThenExtractsAndStoresTheUpperFourBytes()
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_SIMD);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
@@ -55,11 +54,11 @@ internal static unsafe class Arm64Simd12IndirectStoreTests
             Assert.That(store.Addr, Is.SameAs(address));
         });
     }
-#endif
 
     [Test]
     public static void ScalarStoresStopAtTheUnportedIndirectStoreEmitter()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
@@ -76,4 +75,3 @@ internal static unsafe class Arm64Simd12IndirectStoreTests
         });
     }
 }
-#endif

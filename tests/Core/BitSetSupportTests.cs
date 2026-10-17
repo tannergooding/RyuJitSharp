@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using RyuJitSharp;
 
@@ -89,8 +90,65 @@ internal static class BitSetSupportTests
     }
 
     [Test]
+    public static void CounterWrapperPreservesOperationsWhenCounterIsDisabled()
+    {
+        var environment = new TestEnvironment(size: 8);
+        var bitSet = BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.MakeEmpty(environment);
+
+        BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.AddElemD(environment, bitSet, 3);
+
+        Assert.That(
+            BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.IsMember(environment, bitSet, 3),
+            Is.True);
+    }
+
+    [Test]
+    public static void CompilerBitSetCountersAreAllocatedOnlyWhenEnabled()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+
+        Assert.That(Compiler._varsetOpCounter is not null, Is.EqualTo(Configuration.VARSET_COUNTOPS));
+        Assert.That(Compiler._allvarsetOpCounter is not null, Is.EqualTo(Configuration.ALLVARSET_COUNTOPS));
+        Assert.That(TrackedVarBitSetTraits.GetOpCounter(compiler), Is.SameAs(Compiler._varsetOpCounter));
+        Assert.That(AllVarBitSetTraits.GetOpCounter(compiler), Is.SameAs(Compiler._allvarsetOpCounter));
+
+        compiler.lvaTrackedCount = 1;
+        compiler.lvaTrackedCountInSizeTUnits = 1;
+        var trackedCount = Compiler._varsetOpCounter?.GetCount(BitSetSupport.Operation.BSOP_MakeEmpty);
+        _ = BitSetOpsWithCounter<Compiler, TrackedVarBitSetTraits>.MakeEmpty(compiler);
+
+        if (Compiler._varsetOpCounter is null)
+        {
+            Assert.That(Configuration.VARSET_COUNTOPS, Is.False);
+        }
+        else
+        {
+            Assert.That(
+                Compiler._varsetOpCounter.GetCount(BitSetSupport.Operation.BSOP_MakeEmpty),
+                Is.EqualTo(trackedCount + 1));
+        }
+
+        compiler.lvaCount = 1;
+        var allVarCount = Compiler._allvarsetOpCounter?.GetCount(BitSetSupport.Operation.BSOP_MakeEmpty);
+        _ = BitSetOpsWithCounter<Compiler, AllVarBitSetTraits>.MakeEmpty(compiler);
+
+        if (Compiler._allvarsetOpCounter is null)
+        {
+            Assert.That(Configuration.ALLVARSET_COUNTOPS, Is.False);
+        }
+        else
+        {
+            Assert.That(
+                Compiler._allvarsetOpCounter.GetCount(BitSetSupport.Operation.BSOP_MakeEmpty),
+                Is.EqualTo(allVarCount + 1));
+        }
+    }
+
+    [Test]
     public static void CounterWrapperRecordsEverySupportedOperation()
     {
+        Assume.That(Configuration.VARSET_COUNTOPS || Configuration.ALLVARSET_COUNTOPS);
+
         var counter = new BitSetSupport.BitSetOpCounter("unused");
         var environment = new TestEnvironment(size: 8, counter: counter);
         var bitSet = BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.MakeEmpty(environment);
@@ -327,7 +385,6 @@ internal static class BitSetSupportTests
 
         public static int GetSize(TestEnvironment env) => TestBitSetTraits.GetSize(env);
 
-        public static BitSetSupport.BitSetOpCounter GetOpCounter(TestEnvironment env)
-            => env.Counter ?? throw new InvalidOperationException("The test environment has no bitset operation counter.");
+        public static BitSetSupport.BitSetOpCounter? GetOpCounter(TestEnvironment env) => env.Counter;
     }
 }

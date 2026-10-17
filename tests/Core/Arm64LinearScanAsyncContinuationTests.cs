@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -16,6 +15,8 @@ internal static class Arm64LinearScanAsyncContinuationTests
     [Test]
     public static void AsyncContinuationUsesItsFixedReturnRegister()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64LinearScanConstructionTests.WithCompiler(false, false, (compiler, _) => {
             var allocator = new LinearScan(compiler);
             BuildPhysRegRecords(allocator);
@@ -37,4 +38,3 @@ internal static class Arm64LinearScanAsyncContinuationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);
 }
-#endif

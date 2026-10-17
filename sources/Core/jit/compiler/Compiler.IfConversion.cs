@@ -14,12 +14,10 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (JitConfig.JitDoIfConversion == 0)
+        if (Configuration.DEBUG && (JitConfig.JitDoIfConversion == 0))
         {
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
 
         var madeChanges = false;
         assert(!fgSsaValid);

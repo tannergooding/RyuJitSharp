@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH
 using NUnit.Framework;
 using static RyuJitSharp.insCC;
 
@@ -26,6 +25,8 @@ internal static class GenTreeConditionCodeTests
     [TestCase(INS_CC_NLE, 15u)]
     public static void ValuesMatchNativeConditionCodes(insCC conditionCode, uint expected)
     {
+        Assume.That(Configuration.TARGET_XARCH, "requires an xarch target");
+
         Assert.That((uint)conditionCode, Is.EqualTo(expected));
     }
 
@@ -43,7 +44,8 @@ internal static class GenTreeConditionCodeTests
     [TestCase(INS_CC_NLE, INS_CC_G)]
     public static void AliasesRetainNativeValues(insCC conditionCode, insCC alias)
     {
+        Assume.That(Configuration.TARGET_XARCH, "requires an xarch target");
+
         Assert.That(alias, Is.EqualTo(conditionCode));
     }
 }
-#endif

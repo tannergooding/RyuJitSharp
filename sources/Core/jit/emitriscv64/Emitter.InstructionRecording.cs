@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 
@@ -11,11 +12,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     private static void emitInsSanityCheckRiscV64(instrDesc id)
     {
     }
-#endif
 
     public bool emitIns_MovRiscV64(
         instruction ins,

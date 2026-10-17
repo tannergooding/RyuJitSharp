@@ -13,7 +13,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenInstructionSelectionClosureTests
 {
-#if TARGET_AMD64
     [TestCase(EJ_XARCH_js, INS_sets)]
     [TestCase(EJ_XARCH_jne, INS_setne)]
     [TestCase(EJ_XARCH_jle, INS_setle)]
@@ -22,6 +21,7 @@ internal static class CodeGenInstructionSelectionClosureTests
     [TestCase(EJ_XARCH_jnp, INS_setnp)]
     public static void Amd64ConditionAdapterRecordsTheMatchingByteSet(emitJumpKind condition, instruction expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.inst_SET(condition, REG_X64_RAX);
@@ -40,6 +40,7 @@ internal static class CodeGenInstructionSelectionClosureTests
     public static void Amd64ExtendedMoveRecordsSignAndActualWidth(
         var_types sourceType, instruction expected, emitAttr size)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.inst_Mov_Extend(sourceType, srcInReg: true, REG_X64_R8, REG_X64_RAX, canSkip: false, EA_UNKNOWN);
@@ -50,9 +51,6 @@ internal static class CodeGenInstructionSelectionClosureTests
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(size));
         });
     }
-#endif
-
-#if TARGET_ARM64
     [TestCase(TYP_BYTE, true, INS_sxtb)]
     [TestCase(TYP_UBYTE, true, INS_uxtb)]
     [TestCase(TYP_SHORT, true, INS_sxth)]
@@ -65,10 +63,10 @@ internal static class CodeGenInstructionSelectionClosureTests
     public static void Arm64ExtensionSelectionKeepsRegisterAndMemoryForms(
         var_types sourceType, bool srcInReg, instruction expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var codeGen = new CodeGen(compiler);
 
         Assert.That(codeGen.ins_Move_Extend(sourceType, srcInReg), Is.EqualTo(expected));
     }
-#endif
 }

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
@@ -16,6 +15,11 @@ internal static unsafe class Arm32CodeGenAsyncResumeInfoTests
     [Test]
     public static void AsyncResumeDispatchUsesTheTargetWidthTableAndArm32AddressInstructions()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            Assert.Ignore("Async resume code generation case requires the ARM32 target.");
+        }
+
         AsyncResumeCodeGenTestSupport.WithCodeGen((compiler, codeGen, context) =>
         {
             codeGen.genCodeForTreeNode(new GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, 1));
@@ -59,4 +63,3 @@ internal static unsafe class Arm32CodeGenAsyncResumeInfoTests
         });
     }
 }
-#endif

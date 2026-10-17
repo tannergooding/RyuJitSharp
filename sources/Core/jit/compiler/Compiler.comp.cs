@@ -4689,9 +4689,13 @@ public partial class Compiler
     internal bool compOpportunisticallyDependsOn(ManagedInstructionSet isa, bool preserveNegativeDependency = false)
         => (preserveNegativeDependency || opts.compSupportsISA.HasInstructionSet(isa)) && compExactlyDependsOn(isa, preserveNegativeDependency);
 
-#if DEBUG
     public string? compLocalVarName(int varNum, int offs)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Local variable names are only available in Debug builds.");
+        }
+
         for (var index = 0; index < info.compVarScopesCount; index++)
         {
             ref var scope = ref info.compVarScopes[index];
@@ -4712,6 +4716,11 @@ public partial class Compiler
 
     public VarName? compVarName(regNumber reg, bool isFloatReg = false)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Register variable names are only available in Debug builds.");
+        }
+
         if (isFloatReg)
         {
             assert(genIsValidFloatReg(reg));
@@ -4749,5 +4758,4 @@ public partial class Compiler
         }
         return null;
     }
-#endif
 }

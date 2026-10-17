@@ -121,9 +121,10 @@ public partial class Compiler
 
                 ref var promField = ref structPromotionInfo.fields[structPromotionInfo.fieldCnt];
 
-#if DEBUG
-                promField.diagFldHnd = node.diagFieldHnd;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    promField.diagFldHnd = node.diagFieldHnd;
+                }
 
                 // Ensured by assertion on size above.
                 assert((byte)(node.offset) == node.offset);
@@ -457,14 +458,12 @@ public partial class Compiler
                 // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
                 shouldPromote = false;
             }
-#if DEBUG
-            else if (_compiler.compPromoteFewerStructs(lclNum))
+            else if (Configuration.DEBUG && _compiler.compPromoteFewerStructs(lclNum))
             {
                 // Do not promote some structs, that can be promoted, to stress promoted/unpromoted moves.
                 JITDUMP($"Not promoting promotable struct local V{lclNum:D2}, because of STRESS_PROMOTE_FEWER_STRUCTS\n");
                 shouldPromote = false;
             }
-#endif
 
             //
             // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
@@ -521,14 +520,16 @@ public partial class Compiler
                 // Now grab the temp for the field local.
                 var reason = "";
 
-#if DEBUG
-                reason = $"field V{lclNum:D2}.{_compiler.eeGetFieldName(fieldInfo.diagFldHnd, includeType: false)} (fldOffset=0x{fieldInfo.fldOffset:x})";
-
-                if (index > 0)
+                if (Configuration.DEBUG)
                 {
-                    noway_assert(fieldInfo.fldOffset > Unsafe.Subtract(ref fieldInfo, 1).fldOffset);
+                    reason =
+                        $"field V{lclNum:D2}.{_compiler.eeGetFieldName(fieldInfo.diagFldHnd, includeType: false)} (fldOffset=0x{fieldInfo.fldOffset:x})";
+
+                    if (index > 0)
+                    {
+                        noway_assert(fieldInfo.fldOffset > Unsafe.Subtract(ref fieldInfo, 1).fldOffset);
+                    }
                 }
-#endif
 
                 // Lifetime of field locals might span multiple BBs, so they must be long lifetime temps.
                 var varNum = _compiler.lvaGrabTemp(false, reason);

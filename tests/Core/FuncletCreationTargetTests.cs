@@ -20,17 +20,22 @@ internal static class FuncletCreationTargetTests
         Assert.That(compiler.fgFuncletsCreated, Is.True);
         Assert.That(compiler.compFuncInfoCount, Is.EqualTo(1));
         Assert.That(compiler.compFuncInfos[0].funKind, Is.EqualTo(FUNC_ROOT));
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        Assert.That(compiler.compFuncInfos[0].GetUnwindInfo(), Is.Not.Null);
-        Assert.That(compiler.compFuncInfos[0].uwiCold, Is.Null);
-#endif
-#if !HAS_FIXED_REGISTER_SET
-        Assert.That(compiler.compFuncInfos[0].funStackPointerReg, Is.EqualTo(Globals.REG_NA));
-        Assert.That(compiler.compFuncInfos[0].funFramePointerReg, Is.EqualTo(Globals.REG_NA));
-#endif
-#if TARGET_WASM
-        Assert.That(compiler.compFuncInfos[0].funWasmLocalDecls, Is.Null);
-        Assert.That(compiler.compFuncInfos[0].funWasmExnRefLocalIndex, Is.EqualTo(uint.MaxValue));
-#endif
+        if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            Assert.That(compiler.compFuncInfos[0].GetUnwindInfo(), Is.Not.Null);
+            Assert.That(compiler.compFuncInfos[0].uwiCold, Is.Null);
+        }
+
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            Assert.That(compiler.compFuncInfos[0].funStackPointerReg, Is.EqualTo(Globals.REG_NA));
+            Assert.That(compiler.compFuncInfos[0].funFramePointerReg, Is.EqualTo(Globals.REG_NA));
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            Assert.That(compiler.compFuncInfos[0].funWasmLocalDecls, Is.Null);
+            Assert.That(compiler.compFuncInfos[0].funWasmExnRefLocalIndex, Is.EqualTo(uint.MaxValue));
+        }
     }
 }

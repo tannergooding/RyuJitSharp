@@ -25,9 +25,10 @@ public partial class Compiler
             _ancestors = [];
             _isLIR = isLIR;
 
-#if DEBUG
-            tree._seqNum = 0;
-#endif
+            if (Configuration.DEBUG)
+            {
+                tree._seqNum = 0;
+            }
         }
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
@@ -45,9 +46,10 @@ public partial class Compiler
             node.Prev = prevNode;
             prevNode.Next = node;
 
-#if DEBUG
-            node._seqNum = prevNode._seqNum + 1;
-#endif
+            if (Configuration.DEBUG)
+            {
+                node._seqNum = prevNode._seqNum + 1;
+            }
 
             _prevNode = node;
             return WALK_CONTINUE;

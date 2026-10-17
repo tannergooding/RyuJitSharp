@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.emitAttr;
@@ -18,6 +17,7 @@ internal static class Arm64CodeGenSwitchTableTests
     [Test]
     public static void TableSwitchDispatchRecordsIndexedLoadThenFailsAtUnportedBlockAddress()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var index = compiler.gtNewIconNode(TYP_I_IMPL, 2);
@@ -52,6 +52,7 @@ internal static class Arm64CodeGenSwitchTableTests
     [Test]
     public static void JumpTableDispatchRetainsTheExplicitEmitterNyi()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) =>
         {
             var tree = new GenTree(GT_JMPTABLE, TYP_I_IMPL)
@@ -69,4 +70,3 @@ internal static class Arm64CodeGenSwitchTableTests
         });
     }
 }
-#endif

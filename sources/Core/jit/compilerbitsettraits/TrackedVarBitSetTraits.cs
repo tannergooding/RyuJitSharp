@@ -7,11 +7,7 @@ namespace RyuJitSharp;
 
 /// <summary>Customizes the bit set to represent sets of tracked local vars.</summary>
 /// <remarks>The size of the bitset is determined by the # of tracked locals (up to some internal maximum), and the Compiler* tracks the tracked local epochs</remarks>
-#if VARSET_COUNTOPS
 public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>, IBitSetOpCounterTraits<Compiler>
-#else
-public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>
-#endif
 {
     public static int GetArrSize(Compiler env) => env.lvaTrackedCountInSizeTUnits;
 
@@ -19,7 +15,14 @@ public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>
 
     public static int GetSize(Compiler env) => env.lvaTrackedCount;
 
-#if VARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter GetOpCounter(Compiler env) => Compiler._varsetOpCounter;
-#endif
+    public static BitSetSupport.BitSetOpCounter? GetOpCounter(Compiler env)
+    {
+        if (!Configuration.VARSET_COUNTOPS)
+        {
+            return null;
+        }
+
+        return Compiler._varsetOpCounter
+            ?? throw new System.InvalidOperationException("The varset operation counter is not initialized.");
+    }
 }

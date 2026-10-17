@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -16,6 +15,7 @@ internal static unsafe class Arm64CodeGenInitializationTests
     [Test]
     public static void InitializationResetsLivenessAndMarksLiveInRegisterParameters()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -72,4 +72,3 @@ internal static unsafe class Arm64CodeGenInitializationTests
         }
     }
 }
-#endif

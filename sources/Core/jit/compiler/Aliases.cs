@@ -6,9 +6,7 @@
 // Actual ASCII string
 global using VarName = string;
 
-#if DEBUG
 global using NodeToTestDataMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, RyuJitSharp.TestLabelAndNum>;
-#endif
 
 global using FieldHandleSet = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_FIELD_STRUCT_>, RyuJitSharp.FieldKindForVN>;
 

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -16,6 +15,7 @@ internal static unsafe class LoongArchLinearScanCastTests
     [Test]
     public static void CastBuildsOnlyItsOperandUseAndDestinationDefinition()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_LONG, 17);
             ReferenceBuildLocation(allocator) = 2;
@@ -74,4 +74,3 @@ internal static unsafe class LoongArchLinearScanCastTests
         }
     }
 }
-#endif

@@ -69,14 +69,15 @@ public partial struct FuncInfoDsc
     {
         if (!needsUnwindableFrame)
         {
-#if DEBUG
-            var currentCompiler = JitTls.Compiler;
-            assert(currentCompiler is not null);
-            if (currentCompiler.verbose)
+            if (Configuration.DEBUG)
             {
-                logf($"{(IsFunclet() ? "Funclet" : "Main method")} (index {GetFuncletIdx(compiler)}) needs to be unwindable\n");
+                var currentCompiler = JitTls.Compiler;
+                assert(currentCompiler is not null);
+                if (currentCompiler.verbose)
+                {
+                    logf($"{(IsFunclet() ? "Funclet" : "Main method")} (index {GetFuncletIdx(compiler)}) needs to be unwindable\n");
+                }
             }
-#endif
             needsUnwindableFrame = true;
         }
     }

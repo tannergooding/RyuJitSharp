@@ -2,6 +2,7 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 
+using System.Diagnostics;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
@@ -59,7 +60,7 @@ public unsafe struct LC_Ident
         };
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void Print()
     {
         switch (Type)
@@ -123,6 +124,7 @@ public unsafe struct LC_Ident
         }
     }
 
+    [Conditional("DEBUG")]
     private readonly void PrintOffset()
     {
         if (Offset > 0)
@@ -134,8 +136,6 @@ public unsafe struct LC_Ident
             jitprintf($"{Offset}");
         }
     }
-#endif
-
     public readonly GenTree ToGenTree(Compiler compiler, BasicBlock block)
     {
         switch (Type)

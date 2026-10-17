@@ -337,13 +337,11 @@ public partial class Compiler
     // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
     public unsafe CORINFO_CLASS_HANDLE _refAnyClass;
 
-#if VARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter _varsetOpCounter = new("VarSetOpCounts.log");
-#endif
+    public static BitSetSupport.BitSetOpCounter? _varsetOpCounter =
+        Configuration.VARSET_COUNTOPS ? new("VarSetOpCounts.log") : null;
 
-#if ALLVARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter _allvarsetOpCounter = new("AllVarSetOpCounts.log");
-#endif
+    public static BitSetSupport.BitSetOpCounter? _allvarsetOpCounter =
+        Configuration.ALLVARSET_COUNTOPS ? new("AllVarSetOpCounts.log") : null;
 
     public FpStructLoweringMap? _fpStructLoweringCache;
 
@@ -3201,7 +3199,6 @@ public partial class Compiler
         return result;
     }
 
-#if DEBUG
     /// <summary>helper to determine if the local should not be promoted under a stress mode.</summary>
     /// <param name="lclNum">local number to test</param>
     /// <returns>true if this local should not be promoted.</returns>
@@ -3217,7 +3214,6 @@ public partial class Compiler
         }
         return rejectThisPromo;
     }
-#endif
 
     [Conditional("DEBUG")]
     public void vnPrint(ValueNum vn, int level)

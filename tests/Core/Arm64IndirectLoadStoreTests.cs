@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -19,6 +18,7 @@ internal static class Arm64IndirectLoadStoreTests
     [Test]
     public static void ContainedBaseOffsetLoadUsesImmediateAddressing()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var baseAddress = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
@@ -40,6 +40,7 @@ internal static class Arm64IndirectLoadStoreTests
     [Test]
     public static void ContainedScaledIndexLoadUsesExtendedAddressing()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var baseAddress = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
@@ -60,4 +61,3 @@ internal static class Arm64IndirectLoadStoreTests
         });
     }
 }
-#endif

@@ -13,8 +13,9 @@ public sealed partial class insGroup
 
     public insGroup? igPrev;
 
-#if DEBUG
     public insGroup? igSelf;
+
+#if DEBUG
     public BasicBlock? lastGeneratedBlock;
     public List<BasicBlock> igBlocks = [];
     public nuint igDataSize;

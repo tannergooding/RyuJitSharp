@@ -27,7 +27,7 @@ internal static class SsaDiagnosticsTests
             var secondNumber = definitions.AllocSsaNum();
             definitions.GetSsaDef(secondNumber).AddUse(first);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.DumpSsaSummary);
+            var text = CodeGenLifeTransitionTests.Capture(() => compiler.DumpSsaSummary());
 
             Assert.That(text, Is.EqualTo(
                 $"V00: in SSA but no defs{Environment.NewLine}" +

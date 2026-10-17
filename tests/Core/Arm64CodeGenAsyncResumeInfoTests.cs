@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
@@ -13,6 +12,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64CodeGenAsyncResumeInfoTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void AsyncResumeDispatchUsesTheTargetWidthTableAndArm64AddressInstruction()
     {
@@ -44,4 +49,3 @@ internal static unsafe class Arm64CodeGenAsyncResumeInfoTests
         });
     }
 }
-#endif

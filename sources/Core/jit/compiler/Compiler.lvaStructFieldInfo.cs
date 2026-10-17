@@ -16,9 +16,7 @@ public partial class Compiler
         public var_types fldType;
         public int fldSize;
 
-#if DEBUG
         /// <summary>Field handle for diagnostic purposes only. See CORINFO_TYPE_LAYOUT_NODE.</summary>
         public unsafe CORINFO_FIELD_HANDLE diagFldHnd;
-#endif
     }
 }

@@ -18,5 +18,5 @@ public interface IBitSetTraits<TEnv>
 public interface IBitSetOpCounterTraits<TEnv>
     where TEnv : class
 {
-    static abstract BitSetSupport.BitSetOpCounter GetOpCounter(TEnv env);
+    static abstract BitSetSupport.BitSetOpCounter? GetOpCounter(TEnv env);
 }

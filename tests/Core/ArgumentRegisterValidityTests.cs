@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if HAS_FIXED_REGISTER_SET
 using NUnit.Framework;
 using System.Collections.Generic;
 using static RyuJitSharp.Globals;
@@ -21,6 +20,7 @@ internal static class ArgumentRegisterValidityTests
     [TestCase(CorInfoCallConvExtension.Swift)]
     public static void IntegerValidityUsesTheCompleteConventionMask(CorInfoCallConvExtension callConv)
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
         var arguments = fullIntArgRegMask(callConv);
         for (var reg = TargetRuntimeMetadata.IntegerRegisterFirst;
             reg <= TargetRuntimeMetadata.IntegerRegisterLast; reg++)
@@ -48,14 +48,16 @@ internal static class ArgumentRegisterValidityTests
     public static void FloatingValidityPreservesInclusiveEndpointsAndRejectsNoRegister(
         regNumber reg, bool expected)
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
         Assert.That(isValidFloatArgReg(reg), Is.EqualTo(expected));
     }
 
-#if HAS_MORE_THAN_64_REGISTERS && FEATURE_MASKED_HW_INTRINSICS
     [TestCase(CorInfoCallConvExtension.Managed)]
     [TestCase(CorInfoCallConvExtension.Swift)]
     public static void IntegerPredicatePreservesNativeBankLocalInput(CorInfoCallConvExtension callConv)
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET && Configuration.HAS_MORE_THAN_64_REGISTERS &&
+            Configuration.FEATURE_MASKED_HW_INTRINSICS);
         var lowerArguments = fullIntArgRegMask(callConv).Lower;
         var sawOverlap = false;
         for (var reg = TargetRuntimeMetadata.MaskRegisterFirst;
@@ -68,6 +70,4 @@ internal static class ArgumentRegisterValidityTests
 
         Assert.That(sawOverlap, Is.True);
     }
-#endif
 }
-#endif

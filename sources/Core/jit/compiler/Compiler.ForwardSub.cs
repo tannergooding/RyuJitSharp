@@ -15,12 +15,10 @@ public partial class Compiler
         {
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#if DEBUG
-        if (JitConfig.JitNoForwardSub > 0)
+        if (Configuration.DEBUG && (JitConfig.JitNoForwardSub > 0))
         {
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
         if (!fgDidEarlyLiveness)
         {
             JITDUMP("Liveness information not available, skipping forward sub\n");

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeDebugFlags;
 using static RyuJitSharp.GenTreeFlags;
@@ -31,6 +30,8 @@ internal static class GenTreeFlagDisplayTests
         GTF_DONT_CSE | GTF_MAKE_CSE | GTF_REVERSE_OPS | GTF_UNSIGNED | GTF_SPILL | GTF_SPILLED, "ACXGO?NRU#")]
     public static void FlagDisplayMatchesNativeColumnsAndWidth(GenTreeFlags flags, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var displayed = 0;
         var output = CodeGenLifeTransitionTests.Capture(() => displayed = GenTree.gtDispFlags(flags));
 
@@ -50,4 +51,3 @@ internal static class GenTreeFlagDisplayTests
         Assert.That(GTF_DEBUG_NODE_MASK & GTF_DEBUG_CAST_DONT_FOLD, Is.EqualTo(GTF_DEBUG_NONE));
     }
 }
-#endif

@@ -68,14 +68,13 @@ public sealed class hashBvNode
         return result;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dump()
     {
         jitprintf($"base: {baseIndex} {{ ");
         foreachBit(index => jitprintf($"{unchecked((int)index)} "));
         jitprintf("}\n");
     }
-#endif
 
     public void foreachBit(Action<indexType> action)
     {

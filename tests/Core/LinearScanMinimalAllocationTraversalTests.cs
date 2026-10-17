@@ -237,12 +237,14 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [Test]
     public static void RegisterDumpRetainsNativeTinyDumpWithoutAddingANewline()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var register = new RegRecord { regNum = regNumber.REG_X64_RAX };
 
-        var output = Capture(register.dump);
+        var output = Capture(() => register.dump());
 
         Assert.That(output, Is.EqualTo($"<Reg:{register.regNum.Name,-3}> "));
-        Assert.That(output, Is.EqualTo(Capture(register.tinyDump)));
+        Assert.That(output, Is.EqualTo(Capture(() => register.tinyDump())));
     }
 
     [Test]

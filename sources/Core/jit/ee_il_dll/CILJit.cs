@@ -26,10 +26,8 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
         JitFlags jitFlags = new JitFlags();
         jitFlags.SetFromFlags(corJitFlags);
 
-#if DEBUG
         // Initialize any necessary thread-local state
-        using JitTls jitTls = new JitTls(jitInfo);
-#endif
+        using var jitTls = JitTls.CreateScope(jitInfo);
 
         var result = jitNativeCode(methodInfo->ftn, methodInfo->scope, jitInfo, methodInfo, out var methodCodePtr, out *nativeSizeOfCode, &jitFlags, inlineInfo: null);
 

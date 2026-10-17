@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using static RyuJitSharp.var_types;
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public sealed class ArrIndex
@@ -19,7 +21,7 @@ public sealed class ArrIndex
     // Native value copies share the populated index/check buffers. Consumers do not grow them.
     internal ArrIndex Copy() => (ArrIndex)MemberwiseClone();
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print(int dim = -1)
     {
         jitprintf($"V{ArrLcl:D2}");
@@ -29,6 +31,7 @@ public sealed class ArrIndex
         }
     }
 
+    [Conditional("DEBUG")]
     public void PrintBoundsCheckNodes(int dim = -1)
     {
         for (var i = 0; i < ((dim < 0) ? Rank : dim); i++)
@@ -36,7 +39,6 @@ public sealed class ArrIndex
             jitprintf($"[{BndsChks[i].TreeId:D6}]");
         }
     }
-#endif
 }
 
 public sealed class SpanIndex
@@ -46,9 +48,9 @@ public sealed class SpanIndex
     public GenTree? BndsChk;
     public BasicBlock? UseBlock;
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print() => jitprintf($"V{LenLcl:D2}[V{IndLcl:D2}]");
 
+    [Conditional("DEBUG")]
     public void PrintBoundsCheckNode() => jitprintf($"[{BndsChk!.TreeId:D6}]");
-#endif
 }

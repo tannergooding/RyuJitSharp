@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -21,6 +20,11 @@ internal static class Arm32PhysicalRegisterCodeGenTests
     [TestCase(TYP_BYREF)]
     public static void PhysicalRegisterReadsMoveAndTransferGcState(var_types type)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            Assert.Ignore("This physical-register test requires the ARM32 target.");
+        }
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var source = REG_R2;
@@ -53,4 +57,3 @@ internal static class Arm32PhysicalRegisterCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

@@ -5,17 +5,20 @@
 
 using System;
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public void lvaDispVarSet(ReadOnlySpan<nint> set)
     {
         var allVars = VarSetOps.MakeEmpty(this);
         lvaDispVarSet(set, allVars);
     }
 
+    [Conditional("DEBUG")]
     public void lvaDispVarSet(ReadOnlySpan<nint> set, ReadOnlySpan<nint> allVars)
     {
         jitprintf("{");
@@ -63,5 +66,4 @@ public partial class Compiler
 
         jitprintf("}");
     }
-#endif
 }

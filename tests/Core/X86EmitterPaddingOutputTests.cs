@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86
 using System;
 using NUnit.Framework;
 
@@ -14,6 +13,8 @@ internal static unsafe class X86EmitterPaddingOutputTests
     [TestCase(15u)]
     public static void NopsUseSingleByteX86Padding(uint size)
     {
+        Assume.That(Configuration.TARGET_X86, "requires the x86 target");
+
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
         {
             var buffer = stackalloc byte[20];
@@ -32,6 +33,8 @@ internal static unsafe class X86EmitterPaddingOutputTests
     [Test]
     public static void Data16LeavesX86CodeUnchanged()
     {
+        Assume.That(Configuration.TARGET_X86, "requires the x86 target");
+
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
         {
             var buffer = stackalloc byte[2];
@@ -43,10 +46,12 @@ internal static unsafe class X86EmitterPaddingOutputTests
         });
     }
 
-#if !DEBUG
     [Test]
     public static void OutOfRangePaddingRetainsNativeReleaseBehavior()
     {
+        Assume.That(Configuration.TARGET_X86, "requires the x86 target");
+        Assume.That(!TestConfiguration.IsDebug, "the out-of-range behavior is Release-specific");
+
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
         {
             var buffer = stackalloc byte[20];
@@ -57,6 +62,4 @@ internal static unsafe class X86EmitterPaddingOutputTests
             Assert.That(buffer[0], Is.EqualTo(0xA5));
         });
     }
-#endif
 }
-#endif

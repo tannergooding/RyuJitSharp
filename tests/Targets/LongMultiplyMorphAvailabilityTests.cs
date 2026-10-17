@@ -101,7 +101,7 @@ internal static unsafe class LongMultiplyMorphAvailabilityTests
             var multiply = new GenTreeOp(GT_MUL, TYP_LONG, first, second) { IsUnsigned = unsigned };
             multiply.Set64RsltMul();
 
-            Assert.DoesNotThrow(multiply.DebugCheckLongMul);
+            Assert.DoesNotThrow(() => multiply.DebugCheckLongMul());
         });
     }
 #endif

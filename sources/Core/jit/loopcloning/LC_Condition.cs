@@ -2,6 +2,7 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 
+using System.Diagnostics;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
@@ -25,7 +26,7 @@ public readonly struct LC_Expr
         Type = ExprType.Ident;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print()
     {
         if (Type is ExprType.Ident)
@@ -37,8 +38,6 @@ public readonly struct LC_Expr
             jitprintf("INVALID");
         }
     }
-#endif
-
     public bool Matches(in LC_Expr that)
     {
         assert(Type is not ExprType.Invalid && that.Type is not ExprType.Invalid);
@@ -70,15 +69,13 @@ public readonly struct LC_Condition
         CompareUnsigned = asUnsigned;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print()
     {
         Op1.Print();
         jitprintf($" {Oper.ToString()[3..]}{(CompareUnsigned ? "U" : "")} ");
         Op2.Print();
     }
-#endif
-
     public GenTree ToGenTree(Compiler compiler, BasicBlock block, bool invert)
     {
         var left = Op1.ToGenTree(compiler, block);

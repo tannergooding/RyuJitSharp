@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI || TARGET_X86
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -13,11 +12,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenXarchNodeDispatchRestorationTests
 {
-#if UNIX_AMD64_ABI
     [TestCase(GT_NOP, false)]
     [TestCase(GT_NO_OP, true)]
     public static void UnixMarkersAndNopsReachTheirNativeDispatchCases(genTreeOps oper, bool emitsInstruction)
     {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("This dispatch case requires the Unix AMD64 ABI.");
+        }
+
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.genCodeForTreeNode(new GenTree(oper, TYP_VOID));
@@ -34,6 +37,11 @@ internal static class CodeGenXarchNodeDispatchRestorationTests
     [Test]
     public static void UnixKeepAliveConsumesTheOperandWithoutEmittingAnInstruction()
     {
+        if (!Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("This dispatch case requires the Unix AMD64 ABI.");
+        }
+
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             var operand = new GenTreePhysReg(REG_RAX, TYP_REF) { RegNum = REG_RAX };
@@ -45,13 +53,16 @@ internal static class CodeGenXarchNodeDispatchRestorationTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
         });
     }
-#endif
 
-#if TARGET_X86
     [TestCase(false)]
     [TestCase(true)]
     public static void X86ContainedAndMarkerNodesDoNotRequireAmd64Recording(bool contained)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            Assert.Ignore("This dispatch case requires the x86 target.");
+        }
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -66,6 +77,4 @@ internal static class CodeGenXarchNodeDispatchRestorationTests
             Assert.That(group.igData, Is.SameAs(instructions));
         });
     }
-#endif
 }
-#endif

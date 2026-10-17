@@ -8,27 +8,29 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class XarchImulHelperTests
 {
-#if IMUL_TEST_AMD64
     [Test]
     public static void ImulOpcodesPreserveEveryIntegerRegisterNumber()
     {
-        for (var reg = REG_RAX; reg <= REG_R31; reg++)
+        Assume.That(Configuration.TARGET_AMD64, "requires AMD64 target semantics");
+
+        for (var reg = REG_X64_RAX; reg <= REG_X64_R31; reg++)
         {
             var ins = Emitter.inst3opImulForReg(reg);
             Assert.That((int)ins - (int)INS_imul_AX, Is.EqualTo((int)reg));
         }
     }
-#elif IMUL_TEST_X86
-    [TestCase(REG_EAX, INS_imul_AX)]
-    [TestCase(REG_EBX, INS_imul_BX)]
-    [TestCase(REG_ECX, INS_imul_CX)]
-    [TestCase(REG_EDX, INS_imul_DX)]
-    [TestCase(REG_EBP, INS_imul_BP)]
-    [TestCase(REG_ESI, INS_imul_SI)]
-    [TestCase(REG_EDI, INS_imul_DI)]
+
+    [TestCase(REG_X86_EAX, INS_imul_AX)]
+    [TestCase(REG_X86_EBX, INS_imul_BX)]
+    [TestCase(REG_X86_ECX, INS_imul_CX)]
+    [TestCase(REG_X86_EDX, INS_imul_DX)]
+    [TestCase(REG_X86_EBP, INS_imul_BP)]
+    [TestCase(REG_X86_ESI, INS_imul_SI)]
+    [TestCase(REG_X86_EDI, INS_imul_DI)]
     public static void ImulOpcodesPreserveEachX86RegisterNumber(regNumber reg, instruction expected)
     {
+        Assume.That(Configuration.TARGET_X86, "requires x86 target semantics");
+
         Assert.That(Emitter.inst3opImulForReg(reg), Is.EqualTo(expected));
     }
-#endif
 }

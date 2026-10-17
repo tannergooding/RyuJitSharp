@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -16,6 +15,8 @@ internal static unsafe class Arm64CodeGenNullCheckTests
     [Test]
     public static void NullChecksLoadIntoTheZeroRegisterToPreserveFaulting()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_REF, 7);
@@ -34,4 +35,3 @@ internal static unsafe class Arm64CodeGenNullCheckTests
         });
     }
 }
-#endif

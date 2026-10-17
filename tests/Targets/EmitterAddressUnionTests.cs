@@ -36,30 +36,36 @@ internal static class EmitterAddressUnionTests
             Is.EqualTo(TargetRuntimeMetadata.CodeAlignment == 1));
     }
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
     [TestCase(0u)]
     [TestCase(0x12345678u)]
     [TestCase(uint.MaxValue)]
     public static void EncodedInstructionRoundTrips(uint encodedInstruction)
     {
+        if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            Assert.Ignore("Encoded-instruction storage is available on LoongArch64 and RISC-V.");
+        }
+
         var address = default(Emitter.instrDesc.idAddrUnion);
         address.iiaSetInstrEncode(encodedInstruction);
 
         Assert.That(address.iiaGetInstrEncode(), Is.EqualTo(encodedInstruction));
     }
-#endif
 
-#if TARGET_LOONGARCH64
     [TestCase(int.MinValue)]
     [TestCase(-4)]
     [TestCase(0)]
     [TestCase(int.MaxValue)]
     public static void JumpOffsetRoundTrips(int offset)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            Assert.Ignore("Jump-offset storage requires the LoongArch64 target.");
+        }
+
         var address = default(Emitter.instrDesc.idAddrUnion);
         address.iiaSetJmpOffset(offset);
 
         Assert.That(address.iiaGetJmpOffset(), Is.EqualTo(offset));
     }
-#endif
 }

@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
@@ -45,7 +46,7 @@ public sealed class LC_ArrayDeref
         return null;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print(int indent = 0)
     {
         jitprintf($"{new string(' ', 4 * indent)}V{Lcl():D2}, level {Level} => {{");
@@ -63,7 +64,6 @@ public sealed class LC_ArrayDeref
         }
         jitprintf($"\n{new string(' ', 4 * indent)}}}");
     }
-#endif
 
     public void DeriveLevelConditions(List<List<LC_Condition>> conditions)
     {

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -17,6 +16,7 @@ internal static unsafe class LoongArchLoweringTests
     [TestCase(true)]
     public static void IntegerJTrueLoweringReturnsNextLirNode(bool hasComparison)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
         WithLowering((compiler, block, lowering) =>
         {
             GenTree condition;
@@ -79,4 +79,3 @@ internal static unsafe class LoongArchLoweringTests
         }
     }
 }
-#endif

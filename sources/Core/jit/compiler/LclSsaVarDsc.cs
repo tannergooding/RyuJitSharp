@@ -37,13 +37,11 @@ public struct LclSsaVarDsc
 
     public ValueNumPair _vnPair = new();
 
-#if DEBUG
     /// <summary>True if this ssa def VN was updated</summary>
     public bool _updated;
 
     /// <summary>Originally assigned VN</summary>
     public ValueNumPair _origVNPair = new();
-#endif
 
     public LclSsaVarDsc()
     {

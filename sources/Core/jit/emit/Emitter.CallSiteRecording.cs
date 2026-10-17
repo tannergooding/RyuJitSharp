@@ -3,25 +3,26 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    [Conditional("DEBUG")]
     private unsafe void emitRecordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
     {
-#if DEBUG
         assert(_compiler is not null);
         CORINFO_SIG_INFO sigInfo = default;
         if (callSig == null)
         {
             if ((methodHandle != null) && (Compiler.eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF))
             {
-                _compiler.eeGetMethodSig(methodHandle, out sigInfo);
+                _compiler!.eeGetMethodSig(methodHandle, out sigInfo);
                 callSig = &sigInfo;
             }
         }
 
         emitCmpHandle->recordCallSite(unchecked((int)instrOffset), callSig, methodHandle);
-#endif
     }
 }

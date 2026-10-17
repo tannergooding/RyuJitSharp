@@ -18,23 +18,19 @@ public partial class Liveness<TLiveness>
             if (descriptor.lvHasExplicitInit && (descriptor.Type is TYP_STRUCT) &&
                 descriptor.HasGCPtr && (descriptor.lvRefCnt() > 1))
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     jitprintf($"Not removing a potential explicit init [{store.TreeId:D6}] of V{local.LclNum:D2}\n");
                 }
-#endif
                 return false;
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"Removing dead {(store.Oper.IsIndir ? "indirect store" : "local store")}:\n");
             _compiler.gtDispTree(store, topOnly: true);
         }
-#endif
         block.Remove(store);
         _compiler.fgStmtRemoved = true;
 
@@ -55,13 +51,11 @@ public partial class Liveness<TLiveness>
             if (((node.Flags & GTF_SET_FLAGS) == 0) && !node.MayThrow(_compiler) &&
                 CanUncontainOrRemoveOperands(node))
             {
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     jitprintf("Removing dead node:\n");
                     _compiler.gtDispTree(node, topOnly: true);
                 }
-#endif
                 _ = node.VisitOperands(operand => {
                     operand.IsUnusedValue = true;
                     return GenTree.VisitResult.Continue;

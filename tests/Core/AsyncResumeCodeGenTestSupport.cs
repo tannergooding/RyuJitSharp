@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM || TARGET_ARM64
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,11 +11,7 @@ internal static unsafe class AsyncResumeCodeGenTestSupport
 {
     internal static void WithCodeGen(ResumeAction action)
     {
-#if TARGET_ARM
-        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
-#elif TARGET_ARM64
-        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
-#endif
+        void RecordResume(Compiler compiler, CodeGen codeGen)
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.getAsyncResumptionStub = &GetAsyncResumptionStub;
@@ -39,7 +34,20 @@ internal static unsafe class AsyncResumeCodeGenTestSupport
             codeGen.Emitter.emitCmpHandle = &context.JitInfo;
 
             action(compiler, codeGen, &context);
-        });
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            ArmCalleeSavedRegisterTests.WithCodeGen(RecordResume);
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            Arm64CodeGenLocalVariableTests.WithCodeGen(RecordResume);
+        }
+        else
+        {
+            throw new System.PlatformNotSupportedException("Async resume recording is only supported on ARM targets.");
+        }
     }
 
     internal static List<Emitter.instrDesc> Descriptors(Emitter emitter)
@@ -76,4 +84,3 @@ internal static unsafe class AsyncResumeCodeGenTestSupport
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 && FEATURE_HW_INTRINSICS
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
 
@@ -14,6 +13,9 @@ internal static class RuntimeVectorTLengthTests
     [TestCase(InstructionSet_VectorT512, 64u)]
     public static void UsesReportedCompileTimeWidth(ManagedInstructionSet isa, uint expected)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.FEATURE_HW_INTRINSICS,
+            "requires AMD64 hardware intrinsic support");
+
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT128);
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT256);
@@ -25,4 +27,3 @@ internal static class RuntimeVectorTLengthTests
         });
     }
 }
-#endif

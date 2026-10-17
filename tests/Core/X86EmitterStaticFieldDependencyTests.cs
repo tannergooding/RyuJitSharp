@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86
 using System;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
@@ -21,16 +20,21 @@ internal static class X86EmitterStaticFieldDependencyTests
     public static void ByteOperandsRequireEncodableRegisters(instruction ins, emitAttr size, regNumber reg1,
         regNumber reg2, bool expected)
     {
+        RequireX86Target();
         Assert.That(Emitter.emitVerifyEncodable(ins, size, reg1, reg2), Is.EqualTo(expected));
     }
 
-#if FEATURE_HW_INTRINSICS
     [Test]
     public static void Crc32AllowsNonByteDestination()
     {
+        RequireX86Target();
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            Assert.Ignore("CRC32 instruction validation requires hardware intrinsics.");
+        }
+
         Assert.That(Emitter.emitVerifyEncodable(INS_crc32, EA_1BYTE, REG_X86_ESI), Is.True);
     }
-#endif
 
     [TestCase(REG_X86_EAX, EA_1BYTE)]
     [TestCase(REG_X86_ESP, EA_1BYTE)]
@@ -38,6 +42,7 @@ internal static class X86EmitterStaticFieldDependencyTests
     [TestCase(REG_X86_XMM7, EA_16BYTE)]
     public static void X86HasNoExtendedRegisters(regNumber reg, emitAttr attr)
     {
+        RequireX86Target();
         Assert.That(Emitter.IsExtendedReg(reg), Is.False);
         Assert.That(Emitter.IsExtendedReg(reg, attr), Is.False);
     }
@@ -51,16 +56,25 @@ internal static class X86EmitterStaticFieldDependencyTests
     public static void SignedByteImmediateRequiresTargetWidthAndAnEncodableInstruction(
         instruction ins, long value, bool expected)
     {
+        RequireX86Target();
         Assert.That(Emitter.ImmCanUseSByteEncoding(ins, unchecked((nint)value)), Is.EqualTo(expected));
     }
 
     [Test]
     public static void CrossTargetImmediateMustFitX86Width()
     {
+        RequireX86Target();
         if (IntPtr.Size == 8)
         {
             Assert.That(Emitter.ImmCanUseSByteEncoding(INS_add, unchecked((nint)0x1_0000_007FL)), Is.False);
         }
     }
+
+    private static void RequireX86Target()
+    {
+        if (!Configuration.TARGET_X86)
+        {
+            Assert.Ignore("Emitter validation cases require the x86 target.");
+        }
+    }
 }
-#endif

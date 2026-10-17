@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public struct CheckTransformableIndirectCallsVisitor : IGenTreeVisitor<CheckTransformableIndirectCallsVisitor>
@@ -33,4 +32,3 @@ public struct CheckTransformableIndirectCallsVisitor : IGenTreeVisitor<CheckTran
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
         => IGenTreeVisitor<CheckTransformableIndirectCallsVisitor>.WalkTree(ref this, ref use, user, _ancestors);
 }
-#endif

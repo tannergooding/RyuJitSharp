@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG && TARGET_AMD64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.regMask;
@@ -19,6 +18,11 @@ internal static class LinearScanRegisterStateCompletionTests
     public static void BoundaryRotationSelectsAndWrapsTheSignBitRegister(
         var_types type, regNumber target, regNumber expected)
     {
+        if (!Configuration.DEBUG || !Configuration.TARGET_AMD64)
+        {
+            Assert.Ignore("This register-state test requires Debug AMD64.");
+        }
+
         LinearScanMinimalCandidatesTests.WithCompiler(compiler =>
         {
             var allocator = new LinearScan(compiler);
@@ -46,4 +50,3 @@ internal static class LinearScanRegisterStateCompletionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
 }
-#endif

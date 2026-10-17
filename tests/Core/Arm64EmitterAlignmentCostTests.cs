@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -14,6 +13,7 @@ internal static class Arm64EmitterAlignmentCostTests
     [Test]
     public static void EmptyAlignmentDoesNotRequirePlacementMetadata()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) =>
         {
             var id = View.Alignment(INS_OPTS_NONE, false);
@@ -28,6 +28,7 @@ internal static class Arm64EmitterAlignmentCostTests
     [TestCase(true)]
     public static void EmittedAlignmentUsesPlacementMetadata(bool placedAfterJump)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) =>
         {
             var id = View.Alignment(INS_OPTS_LSL, placedAfterJump);
@@ -41,6 +42,7 @@ internal static class Arm64EmitterAlignmentCostTests
     [TestCase(true)]
     public static void RecordedAlignmentPreservesPlacementForScoring(bool placedAfterJump)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.compJitAlignLoopBoundary = 16;
@@ -81,4 +83,3 @@ internal static class Arm64EmitterAlignmentCostTests
         private static extern ref instrDescAlign? CurrentAlignment(Emitter emitter);
     }
 }
-#endif

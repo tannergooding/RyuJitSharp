@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -23,11 +22,12 @@ internal static unsafe class LoongArch64CodeGenImmediateTests
     [TestCase(2048, "LoongArch64 address constant recording is not ported.")]
     public static void ImmediateRangeSelectsNativeRecordingPath(long immediate, string expectedMessage)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
         WithCodeGen(codeGen =>
         {
             var failure = Assert.Throws<FatalJitException>(() =>
-                _ = InstructionWithConstant(codeGen, INS_addi_d, EA_PTRSIZE, REG_R1, REG_R2,
-                    unchecked((nint)immediate), REG_R3));
+                _ = InstructionWithConstant(codeGen, INS_addi_d, EA_8BYTE, REG_LOONGARCH64_A0,
+                    REG_LOONGARCH64_A1, unchecked((nint)immediate), REG_LOONGARCH64_T0));
 
             Assert.That(failure?.Message, Is.EqualTo(expectedMessage));
         });
@@ -55,11 +55,7 @@ internal static unsafe class LoongArch64CodeGenImmediateTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(codeGen);
         }
         finally
@@ -72,4 +68,3 @@ internal static unsafe class LoongArch64CodeGenImmediateTests
     private static extern bool InstructionWithConstant(CodeGen codeGen, instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, nint immediate, regNumber tmpReg, bool inUnwindRegion = false);
 }
-#endif

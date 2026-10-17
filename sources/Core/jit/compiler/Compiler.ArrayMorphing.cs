@@ -53,13 +53,9 @@ public partial class Compiler
         }
     }
 
-    private bool fgMorphArrayOpsStmt(MorphMDArrayTempCache tempCache, BasicBlock block, Statement stmt)
+    private bool fgMorphArrayOpsStmt(MorphMDArrayTempCache tempCache, Statement stmt)
     {
-        var visitor = new MorphMDArrayVisitor(this, tempCache
-#if DEBUG
-            , block
-#endif
-        );
+        var visitor = new MorphMDArrayVisitor(this, tempCache);
         _ = visitor.WalkTree(ref stmt.RootNodeRef, null);
         return visitor.Changed;
     }
@@ -84,7 +80,7 @@ public partial class Compiler
             compCurBB = block;
             foreach (var stmt in block.Statements)
             {
-                if (fgMorphArrayOpsStmt(tempCache, block, stmt))
+                if (fgMorphArrayOpsStmt(tempCache, stmt))
                 {
                     changed = true;
                     var morphedTree = fgMorphTree(stmt.RootNode);

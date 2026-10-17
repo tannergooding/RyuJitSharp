@@ -9,11 +9,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public unsafe void emitIns_Add_Add_Tls_Reloc(emitAttr attr, regNumber targetReg, regNumber reg, nint imm
-#if DEBUG
-        , GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
+    public unsafe void emitIns_Add_Add_Tls_Reloc(
+        emitAttr attr, regNumber targetReg, regNumber reg, nint imm, GenTreeFlags gtFlags = GTF_EMPTY)
     {
         var size = EA_SIZE(attr);
 
@@ -35,12 +32,13 @@ public partial class Emitter
         // TLS relocations always materialize an 8-byte address.
         id.idOpSize(EA_8BYTE);
         id.idSetTlsGD();
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idMemCookie = imm;
-        debugInfo.idFlags = gtFlags;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo!.idMemCookie = imm;
+            debugInfo.idFlags = gtFlags;
+        }
         dispIns(id);
         appendToCurIG(id);
 
@@ -53,12 +51,13 @@ public partial class Emitter
         id.idReg2(reg);
         id.idOpSize(EA_8BYTE);
         id.idSetTlsGD();
-#if DEBUG
-        debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idMemCookie = imm;
-        debugInfo.idFlags = gtFlags;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo!.idMemCookie = imm;
+            debugInfo.idFlags = gtFlags;
+        }
         dispIns(id);
         appendToCurIG(id);
     }

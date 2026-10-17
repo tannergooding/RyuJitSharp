@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_RISCV64
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.genTreeOps;
@@ -12,6 +11,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RiscVLocalFieldCodeGenTests
 {
+    [SetUp]
+    public static void RequireRiscV64Target()
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This fixture requires the RISC-V 64-bit target.");
+    }
+
     [Test]
     public static void LocalFieldLoadUsesTheRiscVRecorder()
     {
@@ -38,4 +43,3 @@ internal static class RiscVLocalFieldCodeGenTests
         });
     }
 }
-#endif

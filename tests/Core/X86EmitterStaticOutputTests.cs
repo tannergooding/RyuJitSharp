@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -33,9 +33,7 @@ internal static unsafe class X86EmitterStaticOutputTests
             id.idAddr().iiaFieldHnd = FLD_GLOBAL_DS;
             var code = (ulong)(store ? insCodeMR(INS_mov) : insCodeRM(INS_mov)) | 0x0500;
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            SetEmitIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, code, null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -63,9 +61,7 @@ internal static unsafe class X86EmitterStaticOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            SetEmitIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCode(INS_mov) | 0x30, null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -84,6 +80,8 @@ internal static unsafe class X86EmitterStaticOutputTests
 
     internal static void WithEmitter(Action<Compiler, Emitter> action)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -98,11 +96,7 @@ internal static unsafe class X86EmitterStaticOutputTests
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
+            emitter.emitBegFN(true);
             action(compiler, emitter);
         }
         finally
@@ -111,8 +105,17 @@ internal static unsafe class X86EmitterStaticOutputTests
         }
     }
 
+    [Conditional("DEBUG")]
+    internal static void SetEmitIssuing(Emitter emitter)
+    {
+        EmitIssuing(emitter) = true;
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrDsp")]
     private static extern Emitter.instrDesc NewInstructionDisplacement(Emitter emitter, emitAttr attr, nint displacement);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
+    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask ReferenceRegs(Emitter emitter);
@@ -126,4 +129,3 @@ internal static unsafe class X86EmitterStaticOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
     private static extern ref GCInfo.regPtrDsc? RegPtrList(ref GCInfo info);
 }
-#endif

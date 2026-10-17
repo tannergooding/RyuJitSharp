@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -20,6 +19,11 @@ internal static unsafe class Arm64AndUnixEmitterSimpleRecordingTests
     [TestCase(128, 5u)]
     public static void ImmediateOnlyRecordingUsesNativeConstantWidths(int value, uint expectedSize)
     {
+        if (!Configuration.TARGET_AMD64 || !Configuration.UNIX_AMD64_ABI)
+        {
+            Assert.Ignore("This recording test requires the Unix AMD64 target.");
+        }
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -33,11 +37,7 @@ internal static unsafe class Arm64AndUnixEmitterSimpleRecordingTests
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
+            emitter.emitBegFN(true, false);
 
             emitter.emitIns_I(INS_push, EA_PTRSIZE, value);
             var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing push descriptor.");
@@ -54,4 +54,3 @@ internal static unsafe class Arm64AndUnixEmitterSimpleRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
 }
-#endif

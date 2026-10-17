@@ -24,11 +24,9 @@ public sealed partial class SsaBuilder
         RenameVariables();
         _compiler.EndPhase(PHASE_BUILD_SSA_RENAME);
 
-#if DEBUG
         if (_compiler.verbose)
         {
             _compiler.DumpSsaSummary();
         }
-#endif
     }
 }

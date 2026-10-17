@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_RISCV64
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -19,6 +18,7 @@ internal static class RiscVCodeGenRegisterTransferTests
     public static void RegisterArgumentMoveReachesRiscVInstructionRecording(
         regNumber sourceReg, regNumber targetReg, var_types type)
     {
+        Assume.That(Configuration.TARGET_RISCV64);
         RiscVCodeGenPortTests.WithCodeGen((_, codeGen) =>
         {
             var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
@@ -41,6 +41,7 @@ internal static class RiscVCodeGenRegisterTransferTests
     [Test]
     public static void PhysicalRegisterMoveReachesRiscVInstructionRecording()
     {
+        Assume.That(Configuration.TARGET_RISCV64);
         RiscVCodeGenPortTests.WithCodeGen((_, codeGen) =>
         {
             var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
@@ -59,4 +60,3 @@ internal static class RiscVCodeGenRegisterTransferTests
         });
     }
 }
-#endif

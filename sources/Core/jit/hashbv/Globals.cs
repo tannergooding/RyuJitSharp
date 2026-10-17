@@ -84,22 +84,25 @@ public static partial class Globals
         return HbvWalk.Continue;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void pBit(indexType index)
     {
         jitprintf($"{unchecked((int)index)} ");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void SimpleDumpNode(hashBvNode node)
     {
         jitprintf($"base: {node.baseIndex}\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void DumpNode(hashBvNode node)
     {
         node.dump();
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void SimpleDumpDualNode(
         hashBv left,
         hashBv right,
@@ -110,5 +113,4 @@ public static partial class Globals
         jitprintf(leftNode is null ? "----," : $"{leftNode.baseIndex},");
         jitprintf(rightNode is null ? "----\n" : $"{rightNode.baseIndex}\n");
     }
-#endif
 }

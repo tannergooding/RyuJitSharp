@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT).
 // See License.md in the repository root.
 
-#if TARGET_WASM
 using NUnit.Framework;
 using static RyuJitSharp.instruction;
 
@@ -17,6 +16,7 @@ internal static class WasmEmitterSizingTests
     [TestCase(ulong.MaxValue, 10)]
     public static void Uleb128SizesMatchSevenBitEncoding(ulong value, int expectedSize)
     {
+        RequireWasmTarget();
         Assert.That(Emitter.SizeOfULEB128(value), Is.EqualTo(expectedSize));
     }
 
@@ -34,6 +34,7 @@ internal static class WasmEmitterSizingTests
     [TestCase(long.MaxValue, 10)]
     public static void Sleb128SizesMatchSignedSevenBitEncoding(long value, int expectedSize)
     {
+        RequireWasmTarget();
         Assert.That(Emitter.SizeOfSLEB128(value), Is.EqualTo(expectedSize));
     }
 
@@ -46,6 +47,7 @@ internal static class WasmEmitterSizingTests
     [TestCase(WasmValueType.ExnRef, 0x69)]
     public static void WasmValueTypesUseTheirNativeEncoding(WasmValueType type, byte expectedCode)
     {
+        RequireWasmTarget();
         Assert.That(Emitter.GetWasmValueTypeCode(type), Is.EqualTo(expectedCode));
     }
 
@@ -55,6 +57,7 @@ internal static class WasmEmitterSizingTests
     public static void WasmInstructionTablesMatchNativeEncodings(
         instruction ins, uint expectedOpcode, byte expectedPrefix, Emitter.insFormat expectedFormat)
     {
+        RequireWasmTarget();
         Assert.That(Emitter.GetInsOpcode(ins), Is.EqualTo(expectedOpcode));
         Assert.That(Emitter.GetOpcodePrefix(ins), Is.EqualTo(expectedPrefix));
         Assert.That(Emitter.emitInsFormatWasm(ins), Is.EqualTo(expectedFormat));
@@ -66,6 +69,7 @@ internal static class WasmEmitterSizingTests
     [TestCase(8, 2)]
     public static void WasmVectorLaneRangesMatchElementWidths(byte elementSize, byte laneCount)
     {
+        RequireWasmTarget();
         Assert.That(Emitter.isValidSimdElemSize(elementSize), Is.True);
         Assert.That(Emitter.isValidVectorIndex(elementSize, unchecked((byte)(laneCount - 1))), Is.True);
         Assert.That(Emitter.isValidVectorIndex(elementSize, laneCount), Is.False);
@@ -76,7 +80,12 @@ internal static class WasmEmitterSizingTests
     [TestCase(16)]
     public static void InvalidWasmVectorElementWidthsAreRejected(byte elementSize)
     {
+        RequireWasmTarget();
         Assert.That(Emitter.isValidSimdElemSize(elementSize), Is.False);
     }
+
+    private static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM);
+    }
 }
-#endif

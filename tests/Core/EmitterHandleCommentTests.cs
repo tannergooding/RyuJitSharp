@@ -11,13 +11,9 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterHandleCommentTests
 {
-#if TARGET_XARCH
-    private const string Prefix = "      ;";
-#elif TARGET_WASM
-    private const string Prefix = "      ;;";
-#else
-    private const string Prefix = "      //";
-#endif
+    private static string Prefix => Configuration.TARGET_XARCH ? "      ;"
+        : Configuration.TARGET_WASM ? "      ;;"
+        : "      //";
 
     [TestCase(GTF_ICON_STR_HDL, "string handle")]
     [TestCase(GTF_ICON_CONST_PTR, "const ptr")]
@@ -25,11 +21,10 @@ internal static unsafe class EmitterHandleCommentTests
     [TestCase(GTF_ICON_STATIC_HDL, "static handle")]
     [TestCase(GTF_ICON_FTN_ADDR, "function address")]
     [TestCase(GTF_ICON_TOKEN_HDL, "token handle")]
-#if !DEBUG
     [TestCase(GTF_ICON_OBJ_HDL, "frozen object handle")]
-#endif
     public static void SimpleHandleDescriptionsUseTheTargetCommentPrefix(GenTreeFlags flags, string description)
     {
+        Assume.That(!TestConfiguration.IsDebug || (flags != GTF_ICON_OBJ_HDL));
         var emitter = CreateEmitter();
         var output = Capture(() => EmitHandleComment(emitter, 1, 0, flags));
 

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if DEBUG
     public string emitOffsetToLabel(uint offs)
     {
         var nextOffs = 0u;
@@ -29,5 +28,4 @@ public partial class Emitter
 
         return nextOffs == offs ? "END" : "UNKNOWN";
     }
-#endif
 }

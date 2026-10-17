@@ -61,7 +61,6 @@ public partial class Emitter
         }
     }
 
-#if DEBUG
     private static void emitInsSanityCheckXarch(instrDesc id)
     {
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
@@ -83,5 +82,4 @@ public partial class Emitter
                 ID_OP_SPEC or ID_OP_CALL or ID_OP_JMP);
         }
     }
-#endif
 }

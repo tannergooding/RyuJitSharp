@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH && FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -17,6 +16,9 @@ internal static unsafe class HardwareIntrinsicFoldExprWindowsTests
     [TestCase(NI_AVX2_TrailingZeroCount, TYP_INT, 1L)]
     public static void XarchConstantFoldsRemainAvailable(NamedIntrinsic intrinsicId, var_types type, long expected)
     {
+        Assume.That(Configuration.TARGET_XARCH && Configuration.FEATURE_HW_INTRINSICS,
+            "requires xarch hardware intrinsic support");
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -40,4 +42,3 @@ internal static unsafe class HardwareIntrinsicFoldExprWindowsTests
         }
     }
 }
-#endif

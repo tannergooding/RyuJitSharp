@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_RISCV64
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.emitAttr;
@@ -10,6 +9,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RiscVZeroOperandInstructionTests
 {
+    [SetUp]
+    public static void RequireRiscV64Target()
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This fixture requires the RISC-V 64-bit target.");
+    }
+
     [TestCase(INS_nop, 0x00000013u)]
     [TestCase(INS_ecall, 0x00000073u)]
     public static void ZeroOperandInstructionsRecordTheirOpcodeAndSize(instruction ins, uint expectedEncoding)
@@ -44,4 +49,3 @@ internal static class RiscVZeroOperandInstructionTests
         });
     }
 }
-#endif

@@ -10,11 +10,7 @@ namespace RyuJitSharp;
 ///   <para>This index is private to the Compiler, and it is the responsibility of the compiler not to use indices &gt;= this maximum.</para>
 ///   <para>We rely on the fact that variables are never deleted, and therefore use the total # of locals as the epoch number (up to the maximum).</para>
 /// </remarks>
-#if ALLVARSET_COUNTOPS
 public struct AllVarBitSetTraits : IBitSetTraits<Compiler>, IBitSetOpCounterTraits<Compiler>
-#else
-public struct AllVarBitSetTraits : IBitSetTraits<Compiler>
-#endif
 {
     public static unsafe int GetArrSize(Compiler env)
     {
@@ -26,7 +22,14 @@ public struct AllVarBitSetTraits : IBitSetTraits<Compiler>
 
     public static int GetSize(Compiler env) => int.Min(env.lvaCount, lclMAX_ALLSET_TRACKED);
 
-#if ALLVARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter GetOpCounter(Compiler env) => Compiler._allvarsetOpCounter;
-#endif
+    public static BitSetSupport.BitSetOpCounter? GetOpCounter(Compiler env)
+    {
+        if (!Configuration.ALLVARSET_COUNTOPS)
+        {
+            return null;
+        }
+
+        return Compiler._allvarsetOpCounter
+            ?? throw new System.InvalidOperationException("The all-varset operation counter is not initialized.");
+    }
 }

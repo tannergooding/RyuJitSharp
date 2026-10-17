@@ -10,18 +10,17 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class DevirtualizationContextTests
 {
-#if DEBUG
     [Test]
     public static void DisabledDevirtualizationPreservesExactContext()
     {
-        using var tls = new JitTls(null);
-        var previousCompiler = JitTls.Compiler;
+        Assume.That(TestConfiguration.IsDebug, "the test requires Debug JIT TLS state");
+
         var previousConfig = Globals.JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags jitFlags = default;
         compiler.opts.jitFlags = &jitFlags;
         compiler.opts.SetMinOpts(false);
-        JitTls.Compiler = compiler;
+        using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler);
         Globals.JitConfig = new JitConfigValues();
 
         try
@@ -50,8 +49,6 @@ internal static unsafe class DevirtualizationContextTests
         finally
         {
             Globals.JitConfig = previousConfig;
-            JitTls.Compiler = previousCompiler;
         }
     }
-#endif
 }

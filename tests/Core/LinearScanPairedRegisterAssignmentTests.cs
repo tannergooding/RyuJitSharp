@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,7 @@ internal static unsafe class LinearScanPairedRegisterAssignmentTests
     [Test]
     public static void DoubleConstantAssignmentAndUnassignmentPreserveSingleRegisterState()
     {
+        Assume.That(Configuration.TARGET_AMD64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -79,4 +79,3 @@ internal static unsafe class LinearScanPairedRegisterAssignmentTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
     private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
 }
-#endif

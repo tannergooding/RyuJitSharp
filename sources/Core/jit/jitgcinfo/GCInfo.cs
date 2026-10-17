@@ -3,9 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if EMIT_GENERATE_GCINFO
 using System.Collections.Generic;
-#endif
 
 namespace RyuJitSharp;
 
@@ -23,11 +21,9 @@ public partial struct GCInfo
         gcPtrArgCnt = 0;
         gcCallDescList = null;
         gcCallDescLast = null;
-#if EMIT_GENERATE_GCINFO
         gcEpilogTable = null;
         _regSlotMap = null;
         _stackSlotMap = null;
-#endif
     }
 
     public readonly Compiler Compiler => _codeGen.Compiler;
@@ -42,9 +38,7 @@ public partial struct GCInfo
     private CallDsc? gcCallDescList;
     private CallDsc? gcCallDescLast;
 
-#if EMIT_GENERATE_GCINFO
     private unsafe byte* gcEpilogTable;
     private Dictionary<RegSlotIdKey, uint>? _regSlotMap;
     private Dictionary<StackSlotIdKey, uint>? _stackSlotMap;
-#endif
 }

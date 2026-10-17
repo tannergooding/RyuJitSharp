@@ -23,12 +23,10 @@ internal static class SharedTypeQueryTests
     [TestCaseSource(nameof(Types))]
     public static void RegisterParameterRulePreservesTargetAndTypeOrdering(var_types type)
     {
-#if TARGET_X86
-        var expected = type is TYP_UNDEF or TYP_VOID or TYP_BYTE or TYP_UBYTE or
-            TYP_SHORT or TYP_USHORT or TYP_INT or TYP_REF or TYP_BYREF;
-#else
-        const bool expected = true;
-#endif
+        var expected = !Configuration.TARGET_X86 ||
+            type is TYP_UNDEF or TYP_VOID or TYP_BYTE or TYP_UBYTE or
+                TYP_SHORT or TYP_USHORT or TYP_INT or TYP_REF or TYP_BYREF;
+
         Assert.That(isRegParamType(type), Is.EqualTo(expected));
     }
 

@@ -1,12 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using NUnit.Framework;
-using static RyuJitSharp.Globals;
-#if DEBUG && TARGET_AMD64
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
+using NUnit.Framework;
+using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -24,40 +22,38 @@ internal static unsafe class FixedReturnBufferMaskTests
     [TestCase(CorInfoCallConvExtension.Swift)]
     public static void FullArgumentMaskIncludesOnlyNativeConventionRegisters(CorInfoCallConvExtension callConv)
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
         var expected = new regMaskTP(SRBM_ARG_REGS);
-#if TARGET_ARM64
-        if (!TargetOS.IsWindows || !callConvIsInstanceMethodCallConv(callConv))
+
+        if (Configuration.TARGET_ARM64 && (!TargetOS.IsWindows || !callConvIsInstanceMethodCallConv(callConv)))
         {
             var retBuffer = new regMaskTP(SRBM_ARG_RET_BUFF);
             Assert.That(theFixedRetBuffMask(callConv), Is.EqualTo(retBuffer));
             Assert.That(PopCount(retBuffer), Is.EqualTo(1));
             expected |= retBuffer;
         }
-#elif TARGET_AMD64 && SWIFT_SUPPORT
-        if (callConv == CorInfoCallConvExtension.Swift)
+        else if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT &&
+            callConv == CorInfoCallConvExtension.Swift)
         {
             var retBuffer = new regMaskTP(SRBM_SWIFT_ARG_RET_BUFF);
             Assert.That(theFixedRetBuffMask(callConv), Is.EqualTo(retBuffer));
             Assert.That(PopCount(retBuffer), Is.EqualTo(1));
             expected |= retBuffer;
         }
-#endif
 
-#if SWIFT_SUPPORT
-        if (callConv == CorInfoCallConvExtension.Swift)
+        if (Configuration.SWIFT_SUPPORT && callConv == CorInfoCallConvExtension.Swift)
         {
             expected |= Globals.genRegMask(TargetRuntimeMetadata.SwiftSelfRegister) |
                 Globals.genRegMask(TargetRuntimeMetadata.SwiftErrorRegister);
         }
-#endif
 
         Assert.That(fullIntArgRegMask(callConv), Is.EqualTo(expected));
-#if HAS_MORE_THAN_64_REGISTERS
-        Assert.That(fullIntArgRegMask(callConv).Upper, Is.EqualTo((regMask)0));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            Assert.That(fullIntArgRegMask(callConv).Upper, Is.EqualTo((regMask)0));
+        }
     }
 
-#if DEBUG && TARGET_AMD64
     private static readonly List<string?> s_assertions = [];
 
     [TestCase(CorInfoCallConvExtension.Managed)]
@@ -65,6 +61,7 @@ internal static unsafe class FixedReturnBufferMaskTests
     [TestCase(CorInfoCallConvExtension.Thiscall)]
     public static void InvalidFixedBufferRequestPreservesNativeAssertionSequence(CorInfoCallConvExtension callConv)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
@@ -73,17 +70,13 @@ internal static unsafe class FixedReturnBufferMaskTests
 
         var result = theFixedRetBuffMask(callConv);
 
-        Assert.That(s_assertions, Is.EqualTo<string[]>([
-            "hasFixedRetBuffReg(callConv)",
-#if SWIFT_SUPPORT
-            "callConv == CorInfoCallConvExtension::Swift",
-#endif
-        ]));
-#if SWIFT_SUPPORT
-        Assert.That(result, Is.EqualTo(new regMaskTP(SRBM_SWIFT_ARG_RET_BUFF)));
-#else
-        Assert.That(result, Is.EqualTo(RBM_NONE));
-#endif
+        string[] expectedAssertions = Configuration.SWIFT_SUPPORT
+            ? ["hasFixedRetBuffReg(callConv)", "callConv == CorInfoCallConvExtension::Swift"]
+            : ["hasFixedRetBuffReg(callConv)"];
+        Assert.That(s_assertions, Is.EqualTo(expectedAssertions));
+        Assert.That(result, Is.EqualTo(Configuration.SWIFT_SUPPORT
+            ? new regMaskTP(SRBM_SWIFT_ARG_RET_BUFF)
+            : RBM_NONE));
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -92,5 +85,4 @@ internal static unsafe class FixedReturnBufferMaskTests
         s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
         return 0;
     }
-#endif
 }

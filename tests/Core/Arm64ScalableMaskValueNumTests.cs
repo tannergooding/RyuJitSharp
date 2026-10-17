@@ -186,11 +186,7 @@ internal static class Arm64ScalableMaskValueNumTests
 
     internal static void SetScalableConfiguration(bool enabled)
     {
-        object config = JitConfig;
-        var field = typeof(JitConfigValues).GetField("_jitUseScalableVectorT", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("Expected scalable-vector configuration field.");
-        field.SetValue(config, enabled ? 1 : 0);
-        JitConfig = (JitConfigValues)config;
+        TestConfiguration.SetScalableVectorConfiguration(enabled);
     }
 }
 #endif

@@ -3,11 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public void fgDispBBLiveness()
     {
         foreach (var block in Blocks)
@@ -16,6 +18,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void fgDispBBLiveness(BasicBlock block)
     {
         var allVars = VarSetOps.Union(this, block.bbLiveIn, block.bbLiveOut);
@@ -40,5 +43,4 @@ public partial class Compiler
         }
         jitprintf("\n\n");
     }
-#endif
 }

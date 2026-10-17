@@ -2,6 +2,7 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 
+using System.Diagnostics;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.var_types;
 
@@ -42,7 +43,7 @@ public struct LC_Array
 
     public readonly int GetDimRank() => (Dim < 0) ? ArrIndex.Rank : Dim;
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void Print()
     {
         ArrIndex.Print(Dim);
@@ -51,7 +52,6 @@ public struct LC_Array
             jitprintf(".Length");
         }
     }
-#endif
 
     public readonly bool Matches(in LC_Array that)
     {
@@ -116,9 +116,8 @@ public readonly struct LC_Span
         SpanIndex = spanIndex;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Print() => SpanIndex.Print();
-#endif
 
     public bool Matches(in LC_Span that)
         => (SpanIndex.LenLcl == that.SpanIndex.LenLcl) && (SpanIndex.IndLcl == that.SpanIndex.IndLcl);

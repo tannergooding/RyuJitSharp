@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,6 +34,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RiscVCodeGenPortTests
 {
+    [SetUp]
+    public static void RequireRiscV64Target()
+    {
+        Assume.That(Configuration.TARGET_RISCV64, "This fixture requires the RISC-V 64-bit target.");
+    }
+
     private const string RiscVRecorderDebugBoundary = "Instruction sanity checking outside AMD64 is not ported.";
 
     internal static void EmitTargetLoadStoreOp(
@@ -969,6 +974,11 @@ internal static unsafe class RiscVCodeGenPortTests
 
     private static IEnumerable<TestCaseData> DebugOnlyTestCases()
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            yield break;
+        }
+
         if (TestConfiguration.IsDebug)
         {
             yield return new TestCaseData(TestConfiguration.IsDebug);
@@ -1065,7 +1075,6 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T1), Is.True);
         });
     }
-#endif
 
     [TestCaseSource(nameof(FrameInstructionWithConstantCases))]
     public static void FrameInstructionWithConstantUsesTheSignedImmediateBoundary(
@@ -1089,6 +1098,11 @@ internal static unsafe class RiscVCodeGenPortTests
 
     private static IEnumerable<TestCaseData> FrameInstructionWithConstantCases()
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            yield break;
+        }
+
         if (!TestConfiguration.IsDebug)
         {
             yield return new TestCaseData(-2048, true, INS_addi);
@@ -1121,6 +1135,11 @@ internal static unsafe class RiscVCodeGenPortTests
 
     private static IEnumerable<TestCaseData> ReleaseOnlyTestCases()
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            yield break;
+        }
+
         if (!TestConfiguration.IsDebug)
         {
             yield return new TestCaseData(TestConfiguration.IsDebug);
@@ -1976,6 +1995,11 @@ internal static unsafe class RiscVCodeGenPortTests
 
     private static IEnumerable<TestCaseData> LocalAddressTypes()
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_BYREF);
         yield return new TestCaseData(TYP_I_IMPL);
     }

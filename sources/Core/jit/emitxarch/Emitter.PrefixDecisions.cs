@@ -57,9 +57,9 @@ public partial class Emitter
                 return true;
             }
 
-#if DEBUG
-            if ((_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                .DoJitStressPromotedEvexEncoding())
+            if (Configuration.DEBUG &&
+                (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
+                    .DoJitStressPromotedEvexEncoding())
             {
                 if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_cmovo, INS_cmovg))
                 {
@@ -67,7 +67,6 @@ public partial class Emitter
                 }
                 return true;
             }
-#endif
             return false;
         }
 
@@ -80,13 +79,12 @@ public partial class Emitter
         {
             if (IsKMOVInstruction(ins))
             {
-#if DEBUG
-                if ((_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                    .DoJitStressPromotedEvexEncoding())
+                if (Configuration.DEBUG &&
+                    (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
+                        .DoJitStressPromotedEvexEncoding())
                 {
                     return true;
                 }
-#endif
                 return HasExtendedGPReg(id);
             }
             return true;
@@ -107,17 +105,18 @@ public partial class Emitter
             return true;
         }
 
-#if DEBUG
-        var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
-        if (compiler.DoJitStressEvexEncoding() && !IsBMIInstruction(ins) && !IsKMOVInstruction(ins))
+        if (Configuration.DEBUG)
         {
-            return true;
+            var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
+            if (compiler.DoJitStressEvexEncoding() && !IsBMIInstruction(ins) && !IsKMOVInstruction(ins))
+            {
+                return true;
+            }
+            if (compiler.DoJitStressPromotedEvexEncoding() && IsBMIInstruction(ins))
+            {
+                return true;
+            }
         }
-        if (compiler.DoJitStressPromotedEvexEncoding() && IsBMIInstruction(ins))
-        {
-            return true;
-        }
-#endif
 
         if (id.idHasMem())
         {
@@ -158,13 +157,12 @@ public partial class Emitter
             return true;
         }
 
-#if DEBUG
-        if ((_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-            .DoJitStressRex2Encoding())
+        if (Configuration.DEBUG &&
+            (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
+                .DoJitStressRex2Encoding())
         {
             return ins is not (INS_i_jmp or INS_tail_i_jmp);
         }
-#endif
         return false;
     }
 

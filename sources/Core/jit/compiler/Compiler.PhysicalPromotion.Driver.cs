@@ -29,12 +29,10 @@ public partial class Compiler
             var block = dfsTree.GetPostOrder(index - 1);
             var first = replacer.StartBlock(block);
             JITDUMP("\nReplacing in ");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 block.dspBlockHeader();
             }
-#endif
             JITDUMP("\n");
             foreach (var statement in new StatementList(first))
             {

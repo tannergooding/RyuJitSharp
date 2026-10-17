@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.NamedIntrinsic;
 
@@ -19,6 +18,8 @@ internal static class Arm64IntrinsicMetadataTests
     public static void ScalarInputVariantMapsToItsScalarIntrinsic(
         NamedIntrinsic id, NamedIntrinsic expected)
     {
+        Assume.That(Configuration.TARGET_ARM64, "requires the ARM64 target");
+
         Assert.That(HWIntrinsicInfo.GetScalarInputVariant(id), Is.EqualTo(expected));
     }
 
@@ -30,8 +31,9 @@ internal static class Arm64IntrinsicMetadataTests
     public static void ImmediateOperandPositionsMatchNativeSignatureOrder(
         NamedIntrinsic id, int argumentCount, int first, int second)
     {
+        Assume.That(Configuration.TARGET_ARM64, "requires the ARM64 target");
+
         HWIntrinsicInfo.GetImmOpsPositions(id, argumentCount, out var actualFirst, out var actualSecond);
         Assert.That((actualFirst, actualSecond), Is.EqualTo((first, second)));
     }
 }
-#endif

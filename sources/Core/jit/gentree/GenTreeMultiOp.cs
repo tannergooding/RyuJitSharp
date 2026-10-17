@@ -37,7 +37,6 @@ public abstract class GenTreeMultiOp : GenTree
 
     protected void ResetOperands(GenTree[] operands) => _operands = operands;
 
-#if DEBUG
     internal override GenTree CloneForMorphStress(Compiler compiler)
     {
         var clone = (GenTreeMultiOp)base.CloneForMorphStress(compiler);
@@ -50,7 +49,6 @@ public abstract class GenTreeMultiOp : GenTree
 
         return clone;
     }
-#endif
 
     public static bool OperandsAreEqual(GenTreeMultiOp op1, GenTreeMultiOp op2)
     {

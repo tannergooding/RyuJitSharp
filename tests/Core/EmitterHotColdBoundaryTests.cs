@@ -1,4 +1,3 @@
-#if TARGET_XARCH
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 
@@ -14,6 +13,8 @@ internal static class EmitterHotColdBoundaryTests
     public static void DetectsHotColdBoundary(
         int hotSize, int coldSize, uint srcOffset, uint dstOffset, bool expected)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         emitter.emitTotalHotCodeSize = hotSize;
         emitter.emitTotalColdCodeSize = coldSize;
@@ -24,4 +25,3 @@ internal static class EmitterHotColdBoundaryTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitJumpCrossHotColdBoundary")]
     private static extern bool CrossBoundary(Emitter emitter, uint srcOffset, uint dstOffset);
 }
-#endif

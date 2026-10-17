@@ -12,11 +12,8 @@ public partial class Emitter
 {
     public void emitIns_R_R_R_I_LdStPair(instruction ins, emitAttr attr, emitAttr attr2,
         regNumber reg1, regNumber reg2, regNumber reg3, nint imm,
-        int varx1 = -1, int varx2 = -1, int offs1 = -1, int offs2 = -1
-#if DEBUG
-        , uint var1RefsOffs = unchecked((uint)BAD_IL_OFFSET), uint var2RefsOffs = unchecked((uint)BAD_IL_OFFSET)
-#endif
-        )
+        int varx1 = -1, int varx2 = -1, int offs1 = -1, int offs2 = -1,
+        uint var1RefsOffs = unchecked((uint)BAD_IL_OFFSET), uint var2RefsOffs = unchecked((uint)BAD_IL_OFFSET))
     {
         assert((ins == INS_stp) || (ins == INS_ldp));
         var size = EA_SIZE(attr);
@@ -103,12 +100,13 @@ public partial class Emitter
             id.idGCrefReg2(GCT_NONE);
         }
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = var1RefsOffs;
-        debugInfo.idVarRefOffs2 = var2RefsOffs;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = var1RefsOffs;
+            debugInfo.idVarRefOffs2 = var2RefsOffs;
+        }
         dispIns(id);
         appendToCurIG(id);
     }

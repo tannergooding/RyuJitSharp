@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 #if DEBUG
@@ -24,6 +23,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64LinearScanConstructionTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void HelperCallKillSetsMatchArm64CallingConventions()
     {
@@ -230,7 +235,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
     public static void ScalableMasksNeedNoConstantScratch(var_types type, bool index)
     {
         WithCompiler(false, false, (compiler, _) => {
-            Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
+            TestConfiguration.SetScalableVectorConfiguration(true);
             compiler.compFloatingPointUsed = true;
             var allocator = new LinearScan(compiler);
             var mask = compiler.gtNewMskConNode(TYP_MASK, type, index);
@@ -1170,4 +1175,3 @@ internal static unsafe class Arm64LinearScanConstructionTests
         }
     }
 }
-#endif

@@ -75,15 +75,13 @@ public partial class Compiler
         if (GetMemorySsaMap(memoryKind).TryGetValue(tree, out var ssaNum))
         {
             GetMemoryPerSsaData(ssaNum)._vnPair.Liberal = fgCurMemoryVN[(int)memoryKind];
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 assert(vnStore is not null);
                 jitprintf($"Node [{tree.TreeId:D6}] sets {memoryKind} SSA # {ssaNum} to VN ${fgCurMemoryVN[(int)memoryKind]:x}: ");
                 vnStore.vnDump(this, fgCurMemoryVN[(int)memoryKind]);
                 jitprintf("\n");
             }
-#endif
         }
     }
 }

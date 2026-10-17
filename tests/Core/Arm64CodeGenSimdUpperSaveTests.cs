@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -19,6 +18,7 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
     [Test]
     public static void RegisterSaveExtractsTheUpperDoubleLane()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = CreateSource(compiler);
@@ -43,6 +43,7 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
     [Test]
     public static void SpilledRegisterSaveStoresTheUpperDoubleLaneInTheLocalHome()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = CreateSource(compiler);
@@ -80,4 +81,3 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
         };
     }
 }
-#endif

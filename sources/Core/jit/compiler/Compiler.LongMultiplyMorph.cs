@@ -9,9 +9,7 @@ public partial class Compiler
 {
     private GenTreeOp fgMorphLongMul(GenTreeOp mul)
     {
-#if DEBUG
         mul.DebugCheckLongMul();
-#endif
 
         var op1 = mul.Op1;
         var op2 = mul.Op2;

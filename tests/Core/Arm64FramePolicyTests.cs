@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 
@@ -50,6 +49,11 @@ internal static unsafe class Arm64FramePolicyTests
 
     private static void WithCodeGen(int option, System.Action<CodeGen> action)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            Assert.Ignore("Frame-policy checks require the ARM64 target.");
+        }
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -69,4 +73,3 @@ internal static unsafe class Arm64FramePolicyTests
         }
     }
 }
-#endif

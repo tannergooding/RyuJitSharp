@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -18,34 +17,43 @@ internal static unsafe class ArmArchEpilogTests
     [Test]
     public static void RootEpilogEmitsTheArchitectureReturn()
     {
-#if TARGET_ARM
-        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        if (!Configuration.TARGET_ARMARCH)
         {
-            var unwindInfo = new UnwindInfo();
-            unwindInfo.InitUnwindInfo(compiler, null, null);
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = unwindInfo }];
-            compiler.compFuncInfoCount = 1;
-            compiler.compCurrFuncIdx = 0;
-            compiler.fgFuncletsCreated = true;
+            Assert.Ignore("Root epilog checks require an ARM target.");
+        }
 
-            AssertRootEpilog(compiler, codeGen, INS_pop);
-        });
-#else
-        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) => AssertRootEpilog(compiler, codeGen, INS_ret));
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+            {
+                var unwindInfo = new UnwindInfo();
+                unwindInfo.InitUnwindInfo(compiler, null, null);
+                compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = unwindInfo }];
+                compiler.compFuncInfoCount = 1;
+                compiler.compCurrFuncIdx = 0;
+                compiler.fgFuncletsCreated = true;
+
+                AssertRootEpilog(compiler, codeGen, INS_pop);
+            });
+        }
+        else
+        {
+            Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) => AssertRootEpilog(compiler, codeGen, INS_ret));
+        }
     }
 
     private static void AssertRootEpilog(Compiler compiler, CodeGen codeGen, instruction expectedReturn)
     {
         codeGen.IsFramePointerUsed = false;
-#if TARGET_ARM64
-        compiler.compCalleeRegsPushed = 2;
-        compiler.compFrameInfo = new Compiler.FrameInfo
+        if (Configuration.TARGET_ARM64)
         {
-            frameType = 1,
-            calleeSaveSpOffset = 16,
-        };
-#endif
+            compiler.compCalleeRegsPushed = 2;
+            compiler.compFrameInfo = new Compiler.FrameInfo
+            {
+                frameType = 1,
+                calleeSaveSpOffset = 16,
+            };
+        }
 
         var group = CurrentGroup(codeGen.Emitter) ??
             throw new AssertionException("Missing epilog instruction group.");
@@ -70,4 +78,3 @@ internal static unsafe class ArmArchEpilogTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
     private static extern ref insGroup? CurrentGroup(Emitter emitter);
 }
-#endif

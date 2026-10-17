@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.var_types;
@@ -12,7 +11,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class X86CallAlignmentTests
 {
-#if UNIX_X86_ABI
     [TestCase(0u, 0u)]
     [TestCase(4u, 12u)]
     [TestCase(12u, 4u)]
@@ -20,6 +18,11 @@ internal static class X86CallAlignmentTests
     [TestCase(uint.MaxValue, 1u)]
     public static void CallAlignmentRetainsUnsignedPadAndStackArgumentSize(uint level, uint expectedPad)
     {
+        if (!Configuration.TARGET_X86 || !Configuration.UNIX_X86_ABI)
+        {
+            Assert.Ignore("Unsigned call alignment cases require the Unix x86 target.");
+        }
+
         CallArgs args = default;
         args.SetStkSizeBytes(4);
         args.ComputeStackAlignment(level);
@@ -28,10 +31,15 @@ internal static class X86CallAlignmentTests
         Assert.That(args.GetStkAlign(), Is.EqualTo(expectedPad));
         Assert.That(args.IsStkAlignmentDone, Is.False);
     }
-#else
+
     [Test]
     public static void WindowsCallAlignmentDoesNotChangeTheStackOrEmitInstructions()
     {
+        if (!Configuration.TARGET_X86 || Configuration.UNIX_X86_ABI)
+        {
+            Assert.Ignore("The no-op alignment case requires the Windows x86 target.");
+        }
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -60,6 +68,4 @@ internal static class X86CallAlignmentTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRemoveAlignmentAfterCall")]
     private static extern void Remove(CodeGen codeGen, GenTreeCall call, uint bias);
-#endif
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -23,6 +22,7 @@ internal static class Arm64PhysicalRegisterCodeGenTests
     [TestCase(TYP_BYREF)]
     public static void PhysicalRegisterReadsMoveAndTransferGcState(var_types type)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var source = REG_ARM64_R1;
@@ -50,6 +50,7 @@ internal static class Arm64PhysicalRegisterCodeGenTests
     [Test]
     public static void FfrPhysicalRegisterReadsUseScalableSVEInstruction()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Arm64CalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var tree = new GenTreePhysReg(REG_FFR, TYP_MASK) { RegNum = REG_ARM64_P0 };
@@ -75,4 +76,3 @@ internal static class Arm64PhysicalRegisterCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

@@ -26,8 +26,7 @@ public partial struct RegSet
             throw new FatalJitException(CORJIT_SKIPPED, "Live register masks require a fixed register set.");
         }
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf("\t\t\t\t\t\t\tLive regs: ");
             if (_rsMaskVars == newMaskVars)
@@ -56,7 +55,6 @@ public partial struct RegSet
             _codeGen.Emitter.emitDispRegSet(newMaskVars);
             jitprintf("\n");
         }
-#endif
         _rsMaskVars = newMaskVars;
     }
 

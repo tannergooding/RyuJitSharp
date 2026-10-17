@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -13,13 +12,15 @@ using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
 
-internal static class EmitterExecutionCostX86Tests
+internal static unsafe class EmitterExecutionCostX86Tests
 {
     [TestCase(INS_fld, IF_XARCH_SRD, 0.5f, Read)]
     [TestCase(INS_fstp, IF_XARCH_SWR, 1.0f, Write)]
     public static void X87LoadAndStorePreserveNativeThroughputAndLatency(
         instruction ins, Emitter.insFormat format, float throughput, Emitter.PerfScoreMemoryAccessKind accessKind)
     {
+        Assume.That(Configuration.TARGET_X86, "requires the x86 target");
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
@@ -44,4 +45,3 @@ internal static class EmitterExecutionCostX86Tests
         }
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_SIMD && TARGET_AMD64
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
 
@@ -23,6 +22,9 @@ internal static class SimdRoundUpUnsignedControlTests
     [TestCase(64, 33, 64)]
     public static void PreferredWidthUsesUnsignedSize(int preferredWidth, int size, int expected)
     {
+        Assume.That(Configuration.FEATURE_SIMD && Configuration.TARGET_AMD64,
+            "requires AMD64 SIMD support");
+
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX);
@@ -41,4 +43,3 @@ internal static class SimdRoundUpUnsignedControlTests
         });
     }
 }
-#endif

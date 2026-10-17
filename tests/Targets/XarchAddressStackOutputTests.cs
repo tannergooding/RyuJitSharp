@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -19,6 +18,7 @@ internal static unsafe class XarchAddressStackOutputTests
     public static void StackLoadsRetainFrameAndStackPointerDisplacements(bool framePointerBased, int frameOffset,
         string hex)
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
         SysVX64EmitterCallTests.WithEmitter((compiler, emitter) =>
         {
             compiler.lvaTable[0].Type = TYP_LONG;
@@ -28,12 +28,13 @@ internal static unsafe class XarchAddressStackOutputTests
             var codeGen = compiler.codeGen ?? throw new AssertionException("Missing active code generator.");
             codeGen.IsFramePointerUsed = framePointerBased;
             compiler.lvaTable[0].StackOffset = frameOffset;
-            emitter.emitIns_R_S(INS_mov, EA_8BYTE, REG_RAX, 0, 0);
+            emitter.emitIns_R_S(INS_mov, EA_8BYTE, REG_X64_RAX, 0, 0);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No stack load was recorded.");
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                EmitIssuing(emitter) = true;
+            }
             var end = emitter.emitOutputSV(buffer, id, (ulong)insCodeRM(INS_mov), null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -45,14 +46,16 @@ internal static unsafe class XarchAddressStackOutputTests
     [Test]
     public static void AddressLoadRetainsFullWidthDisplacement()
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
         SysVX64EmitterCallTests.WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_RAX, REG_RCX, 128);
+            emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, 128);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No address load was recorded.");
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                EmitIssuing(emitter) = true;
+            }
             var end = emitter.emitOutputAM(buffer, id, (ulong)insCodeRM(INS_mov), null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -63,5 +66,7 @@ internal static unsafe class XarchAddressStackOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
+    private static extern ref bool EmitIssuing(Emitter emitter);
 }
-#endif

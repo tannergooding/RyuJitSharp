@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && PROFILING_SUPPORTED
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -16,6 +15,7 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
     [Test]
     public static void UnhookedEntryDoesNotEmitInstructionsOrClearScratchState()
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.PROFILING_SUPPORTED);
         WithEntry((_, codeGen) =>
         {
             var initRegZeroed = true;
@@ -31,6 +31,7 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
     [TestCase(true)]
     public static void HookedEntryPreparesTheFunctionIdAndCallerStackBeforeTheHelperCall(bool indirect)
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.PROFILING_SUPPORTED);
         WithEntry((compiler, codeGen) =>
         {
             ProfilerHookNeeded(compiler) = true;
@@ -75,4 +76,3 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 }
-#endif

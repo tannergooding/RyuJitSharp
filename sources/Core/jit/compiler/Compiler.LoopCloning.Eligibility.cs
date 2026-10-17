@@ -25,10 +25,8 @@ public partial class Compiler
             return false;
         }
 
-        var cloneLoopsWithEH = true;
-#if DEBUG
-        cloneLoopsWithEH = JitConfig.JitCloneLoopsWithEH > 0;
-#endif
+        var cloneLoopsWithEH = !Configuration.DEBUG || JitConfig.JitCloneLoopsWithEH > 0;
+
         if (!optCanDuplicateLoop(loop, cloneLoopsWithEH, out var reason))
         {
             JITDUMP($"Loop cloning: rejecting loop L{loop.Index:D2}: {reason}\n");

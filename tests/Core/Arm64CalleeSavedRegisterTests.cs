@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +25,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64CalleeSavedRegisterTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
 #if DEBUG
     private static readonly List<string> s_assertions = [];
     private static readonly string[] s_largeOffsetAssertions =
@@ -809,4 +814,3 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "genGetSlotSizeForRegsInMaskArm64")]
     private static extern int SlotSize(CodeGen? codeGen, regMaskTP mask);
 }
-#endif

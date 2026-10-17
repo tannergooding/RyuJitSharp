@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -15,27 +14,45 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterFrameReferenceTests
 {
-#if DEBUG
     [TestCase(-3, -16, false, "[TEMP_03-0x10]")]
     [TestCase(-3, 16, true, "[TEMP_03+0x10]")]
     [TestCase(-3, 0, false, "[TEMP_03]")]
     public static void ArmFrameReferencePreservesTemporaryAndDisplacementText(int variable, int displacement,
         bool assembly, string expected)
     {
+        RequireArmTarget();
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("Diagnostic frame-reference output is available in Debug builds.");
+        }
+
         var emitter = CreateEmitter();
 
         Assert.That(Capture(() => DisplayFrameReference(emitter, variable, displacement, 0, assembly)),
             Is.EqualTo(expected));
     }
-#else
+
     [Test]
     public static void ReleaseFrameReferenceDiagnosticDoesNotEmit()
     {
+        RequireArmTarget();
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("The empty frame-reference diagnostic case is for Release builds.");
+        }
+
         var emitter = CreateEmitter();
 
         Assert.That(Capture(() => DisplayFrameReference(emitter, -3, -16, 0, false)), Is.Empty);
     }
-#endif
+
+    private static void RequireArmTarget()
+    {
+        if (!Configuration.TARGET_ARM && !Configuration.TARGET_ARM64)
+        {
+            Assert.Ignore("Frame-reference diagnostics require an ARM target.");
+        }
+    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispFrameRef")]
     private static extern void DisplayFrameReference(Emitter emitter, int variable, int displacement, uint ilOffset,
@@ -71,4 +88,3 @@ internal static unsafe class EmitterFrameReferenceTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

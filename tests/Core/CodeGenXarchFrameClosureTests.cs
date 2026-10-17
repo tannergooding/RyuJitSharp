@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -11,6 +10,8 @@ internal static class CodeGenXarchFrameClosureTests
     [TestCase(true)]
     public static void X86FuncletCaptureDoesNotRequireFinalFrameLayout(bool hasFunclet)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         X86EmitterStaticOutputTests.WithEmitter((compiler, emitter) =>
         {
             var codeGen = compiler.codeGen as CodeGen
@@ -24,4 +25,3 @@ internal static class CodeGenXarchFrameClosureTests
         });
     }
 }
-#endif

@@ -7,7 +7,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CompilerLocalMetadataTests
 {
-#if DEBUG
     [TestCase(1, 0, "first")]
     [TestCase(1, 3, "first")]
     [TestCase(1, 4, "second")]
@@ -18,6 +17,8 @@ internal static class CompilerLocalMetadataTests
     [TestCase(3, 1, null)]
     public static void LocalNamesUseOriginalOrderAndHalfOpenLifetimes(int variable, int offset, string? expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compVarScopes =
         [
@@ -34,6 +35,8 @@ internal static class CompilerLocalMetadataTests
     [Test]
     public static void AFirstMatchingNullNameDoesNotFallThroughToLaterScopes()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compVarScopes =
         [
@@ -44,6 +47,4 @@ internal static class CompilerLocalMetadataTests
 
         Assert.That(compiler.compLocalVarName(0, 1), Is.Null);
     }
-#endif
-
 }

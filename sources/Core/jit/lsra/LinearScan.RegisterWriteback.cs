@@ -57,9 +57,10 @@ public partial class LinearScan
 
             var newNode = new GenTreeCopyOrReload(oper, regType, tree);
             assert(refPosition.registerAssignment != SRBM_NONE);
-#if DEBUG
-            newNode._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+            if (Configuration.DEBUG)
+            {
+                newNode._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+            }
             newNode.SetRegNumByIdx(refPosition.assignedReg(), checked((byte)multiRegIdx));
             if (refPosition.copyReg)
             {

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
@@ -44,6 +43,11 @@ internal static unsafe class Arm64TreeCostTests
 
     private static void WithCompiler(System.Action<Compiler> action)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            Assert.Ignore("Tree cost cases require the ARM64 target.");
+        }
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -62,4 +66,3 @@ internal static unsafe class Arm64TreeCostTests
         }
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -14,10 +13,14 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64Simd12IndirectLoadTests
 {
-#if FEATURE_SIMD
     [Test]
     public static void LoadsEightBytesThenInsertsTheUpperFourBytes()
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
+        {
+            Assert.Ignore("The SIMD12 load case requires ARM64 SIMD support.");
+        }
+
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
@@ -53,6 +56,4 @@ internal static unsafe class Arm64Simd12IndirectLoadTests
             Assert.That(load.RegNum, Is.EqualTo(REG_ARM64_V0));
         });
     }
-#endif
 }
-#endif

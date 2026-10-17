@@ -50,7 +50,7 @@ internal static class GenTreeOpsIdentityTests
 
         if (!TestConfiguration.IsDebug)
         {
-            Assert.Throws<InvalidOperationException>(() => _ = GT_NONE.DebugKind);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = GT_NONE.DebugKind);
         }
 
         Assert.That(GT_BITTEST_EQ.IsCompare, Is.EqualTo(Configuration.TARGET_XARCH));
@@ -66,9 +66,10 @@ internal static class GenTreeOpsIdentityTests
         Assert.That(GT_CNS_LNG.IsCnsNativeLong, Is.EqualTo(!Configuration.TARGET_64BIT));
         Assert.That(GT_CNS_LNG.IsLong, Is.EqualTo(Configuration.TARGET_32BIT));
 
-#if DEBUG
-        var mulLongType = Configuration.TARGET_ARM64 ? typeof(GenTreeOp) : typeof(GenTreeMultiRegOp);
-        Assert.That(GT_MUL_LONG.StructType, Is.EqualTo(mulLongType));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var mulLongType = Configuration.TARGET_ARM64 ? typeof(GenTreeOp) : typeof(GenTreeMultiRegOp);
+            Assert.That(GT_MUL_LONG.StructType, Is.EqualTo(mulLongType));
+        }
     }
 }

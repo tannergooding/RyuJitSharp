@@ -11,58 +11,54 @@ public struct PhasedVar<T>
 {
     private T _value;
 
-#if DEBUG
     /// <summary>true once the variable has been initialized, that is, written once.</summary>
     private bool _initialized;
 
     /// <summary>false if we are in the (initial) "write" phase.</summary>
     /// <remarks>Reading the value enters this phase until explicitly reset.</remarks>
     private bool _readPhase;
-#endif
 
     public PhasedVar(T value)
     {
         _value = value;
-#if DEBUG
-        _initialized = true;
+        _initialized = false;
         _readPhase = false;
-#endif
+
+        if (Configuration.DEBUG)
+        {
+            _initialized = true;
+            _readPhase = false;
+        }
     }
 
-#if DEBUG
-    public readonly bool HasFinalValue => _readPhase == true;
-#else
-    public readonly bool HasFinalValue => true;
-#endif
+    public readonly bool HasFinalValue => !Configuration.DEBUG || _readPhase;
 
     public T Value
     {
-#if DEBUG
         get
         {
-            if (_initialized)
+            if (Configuration.DEBUG)
             {
-                _readPhase = true;
+                if (_initialized)
+                {
+                    _readPhase = true;
+                }
+                else
+                {
+                    assert(Debugger.IsAttached);
+                }
             }
-            else
-            {
-                assert(Debugger.IsAttached);
-            }
+
             return _value;
         }
-#else
-        readonly get
-        {
-            return _value;
-        }
-#endif
 
         set
         {
-#if DEBUG
-            assert(!_readPhase);
-            _initialized = true;
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(!_readPhase);
+                _initialized = true;
+            }
 
             _value = value;
         }
@@ -71,32 +67,28 @@ public struct PhasedVar<T>
     // Override the value without reopening a read phase or asserting write-phase ownership.
     public void OverrideAssign(T value)
     {
-#if DEBUG
-        _initialized = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _initialized = true;
+        }
+
         _value = value;
     }
 
-#if DEBUG
     public void MarkAsReadOnly()
-#else
-    public readonly void MarkAsReadOnly()
-#endif
     {
-#if DEBUG
-        assert(_initialized);
-        _readPhase = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_initialized);
+            _readPhase = true;
+        }
     }
 
-#if DEBUG
     public void ResetWritePhase()
-#else
-    public readonly void ResetWritePhase()
-#endif
     {
-#if DEBUG
-        _readPhase = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _readPhase = false;
+        }
     }
 }

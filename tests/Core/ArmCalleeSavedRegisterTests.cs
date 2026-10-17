@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -28,6 +27,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class ArmCalleeSavedRegisterTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM target.");
+    }
+
     [Test]
     public static void MinOptsStillLaysOutTheFrameBeforeReservingTheRegister()
     {
@@ -118,6 +123,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     private static IEnumerable<TestCaseData> SmallFrameCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(0u, SRBM_NONE, false, SRBM_NONE);
         yield return new TestCaseData(4u, SRBM_NONE, false, SRBM_R3);
         yield return new TestCaseData(8u, SRBM_NONE, false, SRBM_R2 | SRBM_R3);
@@ -164,6 +174,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     private static IEnumerable<TestCaseData> PopReturnCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(false, SRBM_NONE, SRBM_NONE, true);
         yield return new TestCaseData(true, SRBM_NONE, SRBM_NONE, false);
         yield return new TestCaseData(false, SRBM_R0, SRBM_NONE, false);
@@ -195,6 +210,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     private static IEnumerable<TestCaseData> PushRecordsCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(SRBM_NONE, false, 0, false);
         yield return new TestCaseData(SRBM_R4, false, 4, true);
         yield return new TestCaseData(SRBM_R4 | SRBM_R5, true, 8, false);
@@ -255,6 +275,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     private static IEnumerable<TestCaseData> IntegerPopCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(false, SRBM_NONE, SRBM_NONE, false, 0, true);
         yield return new TestCaseData(false, SRBM_NONE, SRBM_NONE, true, 4, true);
         yield return new TestCaseData(false, SRBM_R0, SRBM_NONE, true, 8, false);
@@ -334,6 +359,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     private static IEnumerable<TestCaseData> FloatSaveCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(true, REG_F16, 2);
         yield return new TestCaseData(true, REG_F16, 4);
         yield return new TestCaseData(true, REG_F16, 16);
@@ -433,20 +463,17 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 #if DEBUG
     internal static void WithUnwindSizeCheckSkipped(UnwindInfo unwindInfo, Action action)
     {
-        var previous = AddingUnwindNop(unwindInfo);
-        AddingUnwindNop(unwindInfo) = true;
+        var previous = unwindInfo.uwiAddingNOP;
+        unwindInfo.uwiAddingNOP = true;
         try
         {
             action();
         }
         finally
         {
-            AddingUnwindNop(unwindInfo) = previous;
+            unwindInfo.uwiAddingNOP = previous;
         }
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "uwiAddingNOP")]
-    private static extern ref bool AddingUnwindNop(UnwindInfo unwindInfo);
 
 #else
     internal static void WithUnwindSizeCheckSkipped(UnwindInfo unwindInfo, Action action)
@@ -458,6 +485,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 #if DEBUG
     private static IEnumerable<TestCaseData> PInvokeCalleeSavedRootCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_REF, REG_R4, true, true, 1, true);
         yield return new TestCaseData(TYP_BYREF, REG_R5, true, true, 1, true);
         yield return new TestCaseData(TYP_REF, REG_R4, true, false, 0, false);
@@ -867,4 +899,3 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "unwindPopMaskFloatArmCore")]
     private static extern void PopFloatUnwind(CodeGen codeGen, regMaskTP mask);
 }
-#endif

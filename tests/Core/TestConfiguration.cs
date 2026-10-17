@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -16,6 +18,17 @@ internal static partial class TestConfiguration
     private static extern ref bool DspCode(ref Compiler.Options options);
 
     public static bool IsDebug => Configuration.DEBUG;
+
+    public static void SetScalableVectorConfiguration(bool enabled)
+    {
+        object config = JitConfig;
+        var field = typeof(JitConfigValues).GetField(
+            "_jitUseScalableVectorT",
+            BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("Expected scalable-vector configuration field.");
+        field.SetValue(config, enabled ? 1 : 0);
+        JitConfig = (JitConfigValues)config;
+    }
 
     public static unsafe IDisposable? CreateJitTls()
     {

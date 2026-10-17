@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.PerfScoreMemoryAccessKind;
 using static RyuJitSharp.Emitter.insFormat;
@@ -22,6 +21,11 @@ internal static class Arm64EmitterExecutionMemoryTests
     public static void ClassifiesMemoryAccessAndLocality(instruction ins, Emitter.insFormat format,
         regNumber reg2, regNumber reg3, Emitter.PerfScoreMemoryAccessKind expectedKind, bool expectedLocal)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            Assert.Ignore("Memory-access classification case requires the ARM64 target.");
+        }
+
         var id = View.Basic(ins, format, reg2, reg3);
 
         Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) =>
@@ -46,4 +50,3 @@ internal static class Arm64EmitterExecutionMemoryTests
         }
     }
 }
-#endif

@@ -37,14 +37,12 @@ public sealed partial class LinearScan
             return previousBlock;
         }
 
-        BasicBlock? predecessor = null;
-#if DEBUG
-        if ((_lsraStressMask & 0x300) == 0x100)
+        BasicBlock? predecessor;
+        if (Configuration.DEBUG && ((_lsraStressMask & 0x300) == 0x100))
         {
             predecessor = previousBlock;
         }
         else
-#endif
         {
             predecessor = block.GetUniquePred(_compiler);
             if (predecessor is not null)

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 /// <summary>Visitor to make sure there is no more GT_RET_EXPR and GTF_CALL_INLINE_CANDIDATE nodes.</summary>
@@ -40,4 +39,3 @@ public struct DebugCheckInlineCandidatesVisitor : IGenTreeVisitor<DebugCheckInli
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
         => IGenTreeVisitor<DebugCheckInlineCandidatesVisitor>.WalkTree(ref this, ref use, user, _ancestors);
 }
-#endif

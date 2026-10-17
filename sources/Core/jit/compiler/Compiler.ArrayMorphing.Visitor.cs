@@ -13,11 +13,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private struct MorphMDArrayVisitor(Compiler compiler, MorphMDArrayTempCache tempCache
-#if DEBUG
-        , BasicBlock block
-#endif
-    )
+    private struct MorphMDArrayVisitor(Compiler compiler, MorphMDArrayTempCache tempCache)
         : IGenTreeVisitor<MorphMDArrayVisitor>
     {
         private readonly GenTreeStack _ancestors = [];
@@ -35,9 +31,7 @@ public partial class Compiler
                 return WALK_CONTINUE;
             }
 
-#if DEBUG
-            JITDUMP($"Morphing GT_ARR_ELEM [{arrElem.TreeId:D6}] in {FMT_BB(block.bbNum)} of '{compiler.info.compFullName}'\n");
-#endif
+            JITDUMP($"Morphing GT_ARR_ELEM [{arrElem.TreeId:D6}] in {FMT_BB(compiler.compCurBB!.bbNum)} of '{compiler.info.compFullName}'\n");
             DISPTREE(arrElem);
 
             assert((arrElem.ArrRank >= 2) && (arrElem.ArrRank <= GenTreeArrElem.MaxRank));

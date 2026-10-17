@@ -5,13 +5,14 @@ using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
 
-#if DEBUG
 [NonParallelizable]
 internal static class PhaseTests
 {
     [Test]
     public static unsafe void DisabledPhaseChecksSkipValidation()
     {
+        Assume.That(TestConfiguration.IsDebug, "phase checks are available in Debug builds");
+
         var previousConfig = Globals.JitConfig;
         using var jitTls = new JitTls(null);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -38,4 +39,3 @@ internal static class PhaseTests
         protected override PhaseStatus DoPhase() => PhaseStatus.MODIFIED_EVERYTHING;
     }
 }
-#endif

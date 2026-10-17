@@ -51,15 +51,15 @@ public sealed partial class RegRecord : Referenceable
         isCalleeSave = (LinearScan.calleeSaveRegs(registerType) & genSingleTypeRegMask(reg)) != SRBM_NONE;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void dump()
     {
         tinyDump();
     }
 
+    [Conditional("DEBUG")]
     public void tinyDump()
     {
         jitprintf($"<Reg:{regNum.Name,-3}> ");
     }
-#endif
 }

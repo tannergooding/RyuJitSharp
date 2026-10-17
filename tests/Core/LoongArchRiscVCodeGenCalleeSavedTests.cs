@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.regNumber;
@@ -15,10 +14,14 @@ internal static class LoongArchRiscVCodeGenCalleeSavedTests
     [Test]
     public static void EmptyCalleeSavedMasksSkipEmitterAndUnwindDependencies()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "requires LoongArch64 or RISC-V64 target semantics");
+
         var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
 
         SaveCalleeSavedRegisters(codeGen, default, 0);
-        RestoreCalleeSavedRegisters(codeGen, default, REG_SP, 0, reportUnwindData: false);
+        var stackPointer = Configuration.TARGET_LOONGARCH64 ? REG_LOONGARCH64_SP : REG_RISCV64_SP;
+        RestoreCalleeSavedRegisters(codeGen, default, stackPointer, 0, reportUnwindData: false);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genSaveCalleeSavedRegistersHelp")]
@@ -28,4 +31,3 @@ internal static class LoongArchRiscVCodeGenCalleeSavedTests
     private static extern void RestoreCalleeSavedRegisters(CodeGen codeGen, regMaskTP mask, regNumber baseReg,
         int offset, bool reportUnwindData);
 }
-#endif

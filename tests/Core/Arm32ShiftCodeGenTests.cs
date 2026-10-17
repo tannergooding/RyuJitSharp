@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -25,6 +24,7 @@ internal static class Arm32ShiftCodeGenTests
     public static void VariableShiftsUseThreeRegisterInstruction(
         genTreeOps oper, instruction expected)
     {
+        Assume.That(Configuration.TARGET_ARM);
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var operand = new GenTreePhysReg(REG_R2, TYP_INT) { RegNum = REG_R2 };
@@ -52,6 +52,7 @@ internal static class Arm32ShiftCodeGenTests
     public static void ImmediateCountsAreMaskedToTheRegisterWidth(
         genTreeOps oper, instruction expected, int count, int expectedCount)
     {
+        Assume.That(Configuration.TARGET_ARM);
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var operand = new GenTreePhysReg(REG_R2, TYP_INT) { RegNum = REG_R2 };
@@ -74,4 +75,3 @@ internal static class Arm32ShiftCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

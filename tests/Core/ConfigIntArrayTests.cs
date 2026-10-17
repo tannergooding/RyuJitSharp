@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Text;
@@ -25,6 +24,7 @@ internal static unsafe class ConfigIntArrayTests
     [TestCase("a+ \t", new int[0])]
     public static void ParsesNativeTokensAndWrappingArithmetic(string text, int[] expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         var array = Parse(text);
 
         Assert.That(array.GetLength(), Is.EqualTo(expected.Length));
@@ -36,6 +36,7 @@ internal static unsafe class ConfigIntArrayTests
     [Test]
     public static void StopsAtFirstNulAndInitializesOnlyOnce()
     {
+        Assume.That(TestConfiguration.IsDebug);
         var initial = "1,2\0-3"u8.ToArray();
         var replacement = "4,5\0"u8.ToArray();
         ConfigIntArray array = default;
@@ -53,6 +54,7 @@ internal static unsafe class ConfigIntArrayTests
     [Test]
     public static void MissingConfigurationFailsExplicitly()
     {
+        Assume.That(TestConfiguration.IsDebug);
         ConfigIntArray array = default;
         _ = Assert.Throws<FatalJitException>(() => array.EnsureInit(null));
         Assert.That(array.GetLength(), Is.Zero);
@@ -63,6 +65,7 @@ internal static unsafe class ConfigIntArrayTests
     [TestCase("1;-;2", "1, 0, -2")]
     public static void DumpPreservesNativeLayout(string? text, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         using var tls = new JitTls(null);
         var array = text is null ? default : Parse(text);
         using var stream = new MemoryStream();
@@ -96,4 +99,3 @@ internal static unsafe class ConfigIntArrayTests
         }
     }
 }
-#endif

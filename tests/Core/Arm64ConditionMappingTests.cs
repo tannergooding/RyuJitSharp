@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.insCond;
@@ -28,7 +27,8 @@ internal static class Arm64ConditionMappingTests
     [TestCase(EJ_ARMARCH_le, INS_COND_LE)]
     public static void JumpKindsMapToTheirArm64ConditionCodes(emitJumpKind condition, insCond expected)
     {
+        Assume.That(Configuration.TARGET_ARM64, "requires the ARM64 target");
+
         Assert.That(CodeGen.JumpKindToInsCond(condition), Is.EqualTo(expected));
     }
 }
-#endif

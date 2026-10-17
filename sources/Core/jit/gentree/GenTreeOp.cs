@@ -224,8 +224,8 @@ public class GenTreeOp : GenTreeUnOp
         return true;
     }
 
-#if DEBUG
     // The 32-bit lowering path must preserve the MUL_LONG-compatible tree shape from morph through decomposition.
+    [System.Diagnostics.Conditional("DEBUG")]
     public void DebugCheckLongMul()
     {
         if (Configuration.TARGET_64BIT || Configuration.TARGET_WASM)
@@ -258,7 +258,6 @@ public class GenTreeOp : GenTreeUnOp
 
         assert(op1.AsCast().IsUnsigned == IsUnsigned);
     }
-#endif
 
 #nullable disable
     public ref GenTree Op2Ref => ref _op2;

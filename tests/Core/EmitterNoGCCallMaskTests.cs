@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.CorInfoHelpFunc;
@@ -16,6 +15,7 @@ internal static unsafe class EmitterNoGCCallMaskTests
     [Test]
     public static void NoGcClassificationDistinguishesMethodsFromHelpers()
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
         Assert.That(Emitter.emitNoGChelper((CORINFO_METHOD_STRUCT_*)0x2000), Is.False);
         Assert.That(Emitter.emitNoGChelper(Compiler.eeFindHelper(CORINFO_HELP_ASSIGN_REF)), Is.True);
         Assert.That(Emitter.emitNoGChelper(Compiler.eeFindHelper(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)), Is.False);
@@ -24,6 +24,7 @@ internal static unsafe class EmitterNoGCCallMaskTests
     [Test]
     public static void HelperKillMasksAndSavedSetsPreserveAmd64CallRegisters()
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
@@ -60,4 +61,3 @@ internal static unsafe class EmitterNoGCCallMaskTests
         });
     }
 }
-#endif

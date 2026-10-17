@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -14,6 +13,11 @@ public partial class Compiler
 {
     public void compDispScopeLists()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Scope diagnostics are only available in Debug builds.");
+        }
+
         jitprintf(string.Create(CultureInfo.InvariantCulture,
             $"Local variable scopes = {info.compVarScopesCount}\n"));
         if (info.compVarScopesCount != 0)
@@ -55,4 +59,3 @@ public partial class Compiler
         }
     }
 }
-#endif

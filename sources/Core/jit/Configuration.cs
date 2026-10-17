@@ -28,6 +28,10 @@ internal static class Configuration
 
     internal static bool COUNT_AST_OPERS => BuildFeatures.CountAstOperators;
 
+    internal static bool VARSET_COUNTOPS => BuildFeatures.VarSetCountOps;
+
+    internal static bool ALLVARSET_COUNTOPS => BuildFeatures.AllVarSetCountOps;
+
     internal static bool EMITTER_STATS => BuildFeatures.EmitterStatistics;
 
     internal static bool TRACK_LSRA_STATS => BuildFeatures.TrackLsraStatistics;
@@ -48,6 +52,8 @@ internal static class Configuration
         private static bool s_nodeBashStatistics;
         private static bool s_countBasicBlocks;
         private static bool s_countAstOperators;
+        private static bool s_varSetCountOps;
+        private static bool s_allVarSetCountOps;
         private static bool s_emitterStatistics;
         private static bool s_trackLsraStatistics;
         private static bool s_dumpFlowgraphs;
@@ -64,6 +70,8 @@ internal static class Configuration
             EnableNodeBashStatistics();
             EnableCountBasicBlocks();
             EnableCountAstOperators();
+            EnableVarSetCountOps();
+            EnableAllVarSetCountOps();
             EnableEmitterStatistics();
             EnableTrackLsraStatistics();
             EnableDumpFlowgraphs();
@@ -86,6 +94,10 @@ internal static class Configuration
         internal static bool CountBasicBlocks => s_countBasicBlocks;
 
         internal static bool CountAstOperators => s_countAstOperators;
+
+        internal static bool VarSetCountOps => s_varSetCountOps;
+
+        internal static bool AllVarSetCountOps => s_allVarSetCountOps;
 
         internal static bool EmitterStatistics => s_emitterStatistics;
 
@@ -120,6 +132,12 @@ internal static class Configuration
 
         [Conditional("COUNT_AST_OPERS")]
         private static void EnableCountAstOperators() => s_countAstOperators = true;
+
+        [Conditional("VARSET_COUNTOPS")]
+        private static void EnableVarSetCountOps() => s_varSetCountOps = true;
+
+        [Conditional("ALLVARSET_COUNTOPS")]
+        private static void EnableAllVarSetCountOps() => s_allVarSetCountOps = true;
 
         [Conditional("EMITTER_STATS")]
         private static void EnableEmitterStatistics() => s_emitterStatistics = true;

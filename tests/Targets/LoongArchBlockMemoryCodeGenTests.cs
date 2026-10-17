@@ -14,7 +14,7 @@ using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
-namespace RyuJitSharp.Target.UnitTests;
+namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LoongArchBlockMemoryCodeGenTests
 {

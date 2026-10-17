@@ -10,7 +10,6 @@ public partial class Phase
     /// <summary>Observations made before a phase runs that should still be true afterwards,if the phase status is MODIFIED_NOTHING.</summary>
     private struct Observations
     {
-#if DEBUG
         private Compiler _compiler;
         private int _fgBBcount;
         private int _fgBBNumMax;
@@ -19,32 +18,40 @@ public partial class Phase
         private int _compGenTreeID;
         private int _compStatementID;
         private int _compBasicBlockID;
-#endif
 
         /// <summary>snapshot key compiler variables before running a phase</summary>
         /// <param name="compiler">current compiler instance</param>
         public Observations(Compiler compiler)
         {
-#if DEBUG
-            compiler = compiler.impInlineRoot;
+            _compiler = null!;
+            _fgBBcount = 0;
+            _fgBBNumMax = 0;
+            _compHndBBtabCount = 0;
+            _lvaCount = 0;
+            _compGenTreeID = 0;
+            _compStatementID = 0;
+            _compBasicBlockID = 0;
 
-            _compiler = compiler;
-            _fgBBcount = compiler.fgBBcount;
-            _fgBBNumMax = compiler.fgBBNumMax;
-            _compHndBBtabCount = compiler.compHndBBtabCount;
-            _lvaCount = compiler.lvaCount;
-            _compGenTreeID = compiler.compGenTreeID;
-            _compStatementID = compiler.compStatementID;
-            _compBasicBlockID = compiler.compBasicBlockID;
-#endif
+            if (Configuration.DEBUG)
+            {
+                compiler = compiler.impInlineRoot;
+
+                _compiler = compiler;
+                _fgBBcount = compiler.fgBBcount;
+                _fgBBNumMax = compiler.fgBBNumMax;
+                _compHndBBtabCount = compiler.compHndBBtabCount;
+                _lvaCount = compiler.lvaCount;
+                _compGenTreeID = compiler.compGenTreeID;
+                _compStatementID = compiler.compStatementID;
+                _compBasicBlockID = compiler.compBasicBlockID;
+            }
         }
 
         /// <summary>verify key compiler variables are unchanged if phase claims it made no modifications</summary>
         /// <param name="status">status from the just-completed phase</param>
         public readonly void Check(PhaseStatus status)
         {
-#if DEBUG
-            if (status == PhaseStatus.MODIFIED_NOTHING)
+            if (Configuration.DEBUG && status == PhaseStatus.MODIFIED_NOTHING)
             {
                 var compiler = _compiler;
 
@@ -56,7 +63,6 @@ public partial class Phase
                 assert(_compStatementID == compiler.compStatementID);
                 assert(_compBasicBlockID == compiler.compBasicBlockID);
             }
-#endif
         }
     }
 }

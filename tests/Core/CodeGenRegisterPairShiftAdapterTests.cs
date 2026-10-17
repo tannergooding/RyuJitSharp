@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -33,11 +32,14 @@ internal static class CodeGenRegisterPairShiftAdapterTests
     [TestCase(1u, INS_shl_1, 0)]
     [TestCase(33u, INS_shl_N, 33)]
     [TestCase(255u, INS_shl_N, 127)]
-#if TARGET_X86
     [TestCase(uint.MaxValue, INS_shl_N, 127)]
-#endif
     public static void ShiftSelectsImplicitOneOrImmediateInstruction(uint count, instruction expected, int immediate)
     {
+        if (count == uint.MaxValue)
+        {
+            Assume.That(Configuration.TARGET_X86);
+        }
+
         WithCodeGen(codeGen =>
         {
             codeGen.inst_RV_SH(INS_shl, EA_4BYTE, FirstRegister, count);
@@ -56,24 +58,23 @@ internal static class CodeGenRegisterPairShiftAdapterTests
 
     private static void WithCodeGen(System.Action<CodeGen> action)
     {
-#if TARGET_AMD64
-        CodeGenBinaryTests.WithCodeGen((_, codeGen) => action(codeGen));
-#else
-        X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
+        Assume.That(Configuration.TARGET_XARCH);
+        if (Configuration.TARGET_AMD64)
         {
-            var codeGen = compiler.codeGen as CodeGen
-                ?? throw new AssertionException("Missing x86 code generator.");
-            action(codeGen);
-        });
-#endif
+            CodeGenBinaryTests.WithCodeGen((_, codeGen) => action(codeGen));
+        }
+        else
+        {
+            X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
+            {
+                var codeGen = compiler.codeGen as CodeGen
+                    ?? throw new AssertionException("Missing x86 code generator.");
+                action(codeGen);
+            });
+        }
     }
 
-#if TARGET_AMD64
-    private const regNumber FirstRegister = REG_X64_RAX;
-    private const regNumber SecondRegister = REG_X64_RCX;
-#else
-    private const regNumber FirstRegister = REG_X64_EAX;
-    private const regNumber SecondRegister = REG_X64_ECX;
-#endif
+    private static regNumber FirstRegister => Configuration.TARGET_AMD64 ? REG_X64_RAX : REG_X64_EAX;
+
+    private static regNumber SecondRegister => Configuration.TARGET_AMD64 ? REG_X64_RCX : REG_X64_ECX;
 }
-#endif

@@ -26,9 +26,7 @@ public partial class Emitter
     public uint emitCodeOffset(insGroup ig, uint codePos)
     {
         var number = emitGetInsNumFromCodePos(codePos);
-#if DEBUG
         assert(ig.igSelf == ig);
-#endif
         uint offset;
 
         if (number == 0)
@@ -61,9 +59,7 @@ public partial class Emitter
 
     private static uint emitFindOffset(insGroup ig, uint insNum)
     {
-#if DEBUG
         assert(ig.igSelf == ig);
-#endif
         if (Configuration.DEBUG)
         {
             assert(ig.igInsCnt >= insNum);

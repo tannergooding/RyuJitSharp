@@ -10,36 +10,48 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RegisterClassificationTests
 {
-    [TestCase(TYP_UNDEF, false)]
-    [TestCase(TYP_VOID, false)]
-    [TestCase(TYP_BYTE, false)]
-    [TestCase(TYP_INT, false)]
-    [TestCase(TYP_LONG, false)]
-    [TestCase(TYP_STRUCT, false)]
-    [TestCase(TYP_REF, false)]
-    [TestCase(TYP_BYREF, false)]
-    [TestCase(TYP_FLOAT, true)]
-    [TestCase(TYP_DOUBLE, true)]
-#if FEATURE_SIMD
-    [TestCase(TYP_SIMD8, true)]
-    [TestCase(TYP_SIMD12, true)]
-    [TestCase(TYP_SIMD16, true)]
-#if TARGET_XARCH
-    [TestCase(TYP_SIMD32, true)]
-    [TestCase(TYP_SIMD64, true)]
-#elif TARGET_ARM64
-    [TestCase(TYP_SIMD_ARM64, true)]
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-    [TestCase(TYP_MASK, false)]
-#endif
-#endif
+    private static IEnumerable<TestCaseData> FloatingRegisterTypes()
+    {
+        yield return new TestCaseData(TYP_UNDEF, false);
+        yield return new TestCaseData(TYP_VOID, false);
+        yield return new TestCaseData(TYP_BYTE, false);
+        yield return new TestCaseData(TYP_INT, false);
+        yield return new TestCaseData(TYP_LONG, false);
+        yield return new TestCaseData(TYP_STRUCT, false);
+        yield return new TestCaseData(TYP_REF, false);
+        yield return new TestCaseData(TYP_BYREF, false);
+        yield return new TestCaseData(TYP_FLOAT, true);
+        yield return new TestCaseData(TYP_DOUBLE, true);
+
+        if (Configuration.FEATURE_SIMD)
+        {
+            yield return new TestCaseData(TYP_SIMD8, true);
+            yield return new TestCaseData(TYP_SIMD12, true);
+            yield return new TestCaseData(TYP_SIMD16, true);
+
+            if (Configuration.TARGET_XARCH)
+            {
+                yield return new TestCaseData(TYP_SIMD32, true);
+                yield return new TestCaseData(TYP_SIMD64, true);
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                yield return new TestCaseData(TYP_SIMD_ARM64, true);
+            }
+
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+            {
+                yield return new TestCaseData(TYP_MASK, false);
+            }
+        }
+    }
+
+    [TestCaseSource(nameof(FloatingRegisterTypes))]
     public static void FloatingRegisterTypeUsesTheNativeRegisterBank(var_types type, bool expected)
     {
         Assert.That(isFloatRegType(type), Is.EqualTo(expected));
     }
 
-#if HAS_FIXED_REGISTER_SET
     private static IEnumerable<TestCaseData> RegisterCases()
     {
         if (Configuration.TARGET_XARCH)
@@ -79,7 +91,7 @@ internal static class RegisterClassificationTests
     [TestCaseSource(nameof(RegisterCases))]
     public static void ByteRegisterClassificationUsesTheRuntimeTargetPolicy(regNumber reg, bool expected)
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
         Assert.That(isByteReg(reg), Is.EqualTo(expected));
     }
-#endif
 }

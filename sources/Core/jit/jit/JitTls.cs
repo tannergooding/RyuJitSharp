@@ -12,11 +12,13 @@ namespace RyuJitSharp;
 // If you are using it more broadly in retail code, you would need to understand the
 // performance implications of accessing TLS.
 
-#if DEBUG
 public sealed class JitTls : IDisposable
 {
     [ThreadStatic]
     private static JitTls? t_jitTls;
+
+    [ThreadStatic]
+    private static Compiler? t_compiler;
 
     private Compiler? _compiler;
     private LogEnv _logEnv;
@@ -24,29 +26,51 @@ public sealed class JitTls : IDisposable
 
     public unsafe JitTls(ICorJitInfo* jitInfo)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JitTls scopes are only available in Debug builds.");
+        }
+
         _logEnv = new LogEnv(jitInfo);
         _next = t_jitTls;
         t_jitTls = this;
     }
 
-    public static unsafe IDisposable? CreateScope(ICorJitInfo* jitInfo) => new JitTls(jitInfo);
+    public static unsafe IDisposable? CreateScope(ICorJitInfo* jitInfo)
+    {
+        return Configuration.DEBUG ? new JitTls(jitInfo) : null;
+    }
 
     // Native JitTls is a stack scope; restore TLS on the owning thread, not a finalizer thread.
     public void Dispose()
     {
-        t_jitTls = _next;
+        if (Configuration.DEBUG)
+        {
+            t_jitTls = _next;
+        }
     }
 
     public static Compiler? Compiler
     {
         get
         {
+            if (!Configuration.DEBUG)
+            {
+                return t_compiler;
+            }
+
             var jitTls = t_jitTls;
             return jitTls?._compiler;
         }
 
         set
         {
+            if (!Configuration.DEBUG)
+            {
+                t_compiler = value;
+                return;
+            }
+
             var jitTls = t_jitTls;
             assert(jitTls is not null);
             jitTls._compiler = value;
@@ -57,36 +81,13 @@ public sealed class JitTls : IDisposable
     {
         get
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("JitTls.LogEnv is only available in Debug builds.");
+            }
+
             var jitTls = t_jitTls;
             return ref ((jitTls is not null) ? ref jitTls._logEnv : ref Unsafe.NullRef<LogEnv>());
         }
     }
 }
-#else
-public static class JitTls
-{
-    [ThreadStatic]
-    private static Compiler? t_compiler;
-
-    public static unsafe IDisposable? CreateScope(ICorJitInfo* jitInfo)
-    {
-        _ = jitInfo;
-        return null;
-    }
-
-    public static ref LogEnv LogEnv => throw new InvalidOperationException("JitTls.LogEnv is only available in Debug builds.");
-
-    public static Compiler? Compiler
-    {
-        get
-        {
-            return t_compiler;
-        }
-
-        set
-        {
-            t_compiler = value;
-        }
-    }
-}
-#endif
