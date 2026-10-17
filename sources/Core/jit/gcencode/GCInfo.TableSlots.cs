@@ -131,9 +131,7 @@ public partial struct GCInfo
 
         if (mode == MakeRegPtrMode.MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
         {
-#if DEBUG
             assert(_codeGen.RegSet.tmpGetAllFree());
-#endif
             for (var temp = _codeGen.RegSet.tmpListBeg(); temp is not null;
                 temp = _codeGen.RegSet.tmpListNxt(temp))
             {

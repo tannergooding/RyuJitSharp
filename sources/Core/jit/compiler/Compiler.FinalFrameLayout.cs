@@ -523,9 +523,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         assert(codeGen.RegSet.tmpGetAllFree());
-#endif
         for (var temp = codeGen.RegSet.tmpListBeg(); temp is not null; temp = codeGen.RegSet.tmpListNxt(temp))
         {
             if (!varTypeHasUnknownSize(temp.tdTempType))

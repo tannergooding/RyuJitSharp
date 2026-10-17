@@ -330,9 +330,8 @@ public sealed partial class CodeGen
         }
         else
         {
-#if DEBUG
-            assert(varTypeIsIntOrI(srcType) || _compiler.canUseEvexEncodingDebugOnly());
-#endif
+            assert(varTypeIsIntOrI(srcType) ||
+                (Configuration.TARGET_XARCH && _compiler.compIsaSupportedDebugOnly(InstructionSet_AVX512)));
             var ins = ins_FloatConv(dstType, srcType);
             var isRmw = !_compiler.canUseVexEncoding();
             inst_RV_RV_TT(ins, srcType.EmitSize, targetReg, targetReg, op1, isRmw, INS_OPTS_NONE);

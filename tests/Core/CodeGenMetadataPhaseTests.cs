@@ -191,9 +191,7 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 Assert.That(Compiler.genMethodICnt, Is.EqualTo(codeGen.Interruptible ? 18U : 17U));
                 Assert.That(Compiler.genMethodNCnt, Is.EqualTo(codeGen.Interruptible ? 23U : 24U));
 #endif
-#if DEBUG
                 Assert.That(codeGen.RegSet.tmpGetAllFree(), Is.True);
-#endif
                 Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
             });
         }

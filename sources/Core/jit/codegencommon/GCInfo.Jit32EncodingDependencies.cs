@@ -138,9 +138,7 @@ public partial struct GCInfo
             }
         }
 
-#if DEBUG
         assert(RegSet.tmpGetAllFree());
-#endif
         for (var temp = RegSet.tmpListBeg(); temp is not null; temp = RegSet.tmpListNxt(temp))
         {
             if (!varTypeIsGC(temp.tdTempType))

@@ -39,9 +39,7 @@ public sealed class TempDsc
         _tdType = tdType;
     }
 
-#if DEBUG
-    public bool tdLegalOffset => _tdOffs != BAD_TEMP_OFFSET;
-#endif
+    public bool tdLegalOffset => Configuration.DEBUG && (_tdOffs != BAD_TEMP_OFFSET);
 
     public int tdTempNum => _tdNum;
 

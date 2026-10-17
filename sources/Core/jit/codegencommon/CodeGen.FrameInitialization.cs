@@ -144,16 +144,13 @@ public sealed partial class CodeGen
                         {
                             initStkLclCnt = unchecked(initStkLclCnt +
                                 (uint)(roundUp(_compiler.lvaLclStackHomeSize(varNum), Configuration.TARGET_POINTER_SIZE) / sizeof(int)));
-                            counted = true;
                         }
                     }
                 }
             }
         }
 
-#if DEBUG
         assert(_regSet.tmpGetAllFree());
-#endif
         for (var temp = _regSet.tmpListBeg(); temp is not null; temp = _regSet.tmpListNxt(temp))
         {
             if (varTypeIsGC(temp.tdTempType))

@@ -32,28 +32,30 @@ public partial struct RegSet
 
     public readonly void rsSpillChk()
     {
-#if DEBUG
-        assert(tmpGetCount == 0);
-
-        for (var reg = TargetRuntimeMetadata.FirstRegister; reg < REG_COUNT; reg++)
+        if (Configuration.DEBUG)
         {
-            assert(_rsSpillDesc[(int)reg] is null);
+            assert(tmpGetCount == 0);
+
+            for (var reg = TargetRuntimeMetadata.FirstRegister; reg < REG_COUNT; reg++)
+            {
+                assert(_rsSpillDesc[(int)reg] is null);
+            }
         }
-#endif
     }
 
     public readonly void tmpDone()
     {
-#if DEBUG
-        assert(tmpGetAllFree());
-        var count = 0;
-        for (var temp = tmpListBeg(); temp is not null; temp = tmpListNxt(temp))
+        if (Configuration.DEBUG)
         {
-            assert(temp.tdLegalOffset);
-            count++;
+            assert(tmpGetAllFree());
+            var count = 0;
+            for (var temp = tmpListBeg(); temp is not null; temp = tmpListNxt(temp))
+            {
+                assert(temp.tdLegalOffset);
+                count++;
+            }
+            assert(count == tmpCount);
+            assert(tmpGetCount == 0);
         }
-        assert(count == tmpCount);
-        assert(tmpGetCount == 0);
-#endif
     }
 }

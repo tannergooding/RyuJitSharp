@@ -93,9 +93,10 @@ public partial struct RegSet
             jitprintf($"reused temp #{-temp.tdTempNum}, slot {slot}, size = {temp.tdTempSize}\n");
         }
 
-#if DEBUG
-        tmpGetCount++;
-#endif
+        if (Configuration.DEBUG)
+        {
+            tmpGetCount++;
+        }
 
         temp.tdNext = tmpUsed[slot];
         tmpUsed[slot] = temp;
@@ -113,10 +114,11 @@ public partial struct RegSet
             jitprintf($"release temp #{-temp.tdTempNum}, slot {slot}, size = {temp.tdTempSize}\n");
         }
 
-#if DEBUG
-        assert(tmpGetCount != 0);
-        tmpGetCount--;
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(tmpGetCount != 0);
+            tmpGetCount--;
+        }
 
         TempDsc? previous = null;
         var current = tmpUsed[slot];

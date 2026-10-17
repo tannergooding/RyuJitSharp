@@ -11,6 +11,24 @@ namespace RyuJitSharp.UnitTests;
 internal static class SpillTemporaryTests
 {
     [Test]
+    public static void AllFreeDetectsCheckedOutTempsInEveryBuildConfiguration()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var codeGen = new CodeGen(compiler);
+        ref var regSet = ref codeGen.RegSet;
+
+        regSet.tmpBeginPreAllocateTemps();
+        regSet.tmpPreAllocateTemps(TYP_INT, 1);
+        var temp = regSet.tmpGetTemp(TYP_INT);
+
+        Assert.That(regSet.tmpGetAllFree(), Is.False);
+
+        regSet.tmpRlsTemp(temp);
+
+        Assert.That(regSet.tmpGetAllFree(), Is.True);
+    }
+
+    [Test]
     public static void FinalCleanupChecksReleasedTempsWithoutDiscardingDescriptors()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -91,9 +109,7 @@ internal static class SpillTemporaryTests
         regSet.tmpRlsTemp(second);
         regSet.tmpRlsTemp(floating);
 
-#if DEBUG
         Assert.That(regSet.tmpGetAllFree(), Is.True);
-#endif
         Assert.That(regSet.tmpGetTemp(TYP_INT), Is.SameAs(second));
         Assert.That(regSet.tmpGetTemp(TYP_FLOAT), Is.SameAs(floating));
     }

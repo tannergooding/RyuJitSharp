@@ -1288,9 +1288,7 @@ public partial class Compiler
 
         assert(codeGen is not null);
 
-#if DEBUG
         assert(codeGen.RegSet.tmpGetAllFree());
-#endif
 
         for (var tempDsc = codeGen.RegSet.tmpListBeg(); tempDsc is not null; tempDsc = codeGen.RegSet.tmpListNxt(tempDsc))
         {

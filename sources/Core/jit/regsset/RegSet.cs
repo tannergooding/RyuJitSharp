@@ -100,9 +100,10 @@ public partial struct RegSet
     {
         tmpCount = 0;
         tmpSize = -1;
-#if DEBUG
-        tmpGetCount = 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            tmpGetCount = 0;
+        }
         tmpFree = default;
         tmpUsed = default;
     }
@@ -110,11 +111,9 @@ public partial struct RegSet
     private int tmpCount;
     private int tmpSize;
 
-#if DEBUG
     /// <summary>Temps which haven't been released yet</summary>
     /// <remarks>Used by RegSet::rsSpillChk()</remarks>
     private int tmpGetCount;
-#endif
 
     private InlineArrayRegSetTempSlotCount<TempDsc?> tmpFree;
     private InlineArrayRegSetTempSlotCount<TempDsc?> tmpUsed;
@@ -192,19 +191,21 @@ public partial struct RegSet
         return null;
     }
 
-#if DEBUG
     public readonly bool tmpGetAllFree()
     {
-        // The 'tmpGetCount' should equal the number of things in the 'tmpUsed' lists. This is a convenient place to assert that.
-        var usedCount = 0;
-
-        for (var tempDsc = tmpListBeg(TEMP_USAGE_USED); tempDsc is not null; tempDsc = tmpListNxt(tempDsc, TEMP_USAGE_USED))
+        if (Configuration.DEBUG)
         {
-            usedCount++;
-        }
-        assert(usedCount == tmpGetCount);
+            // The 'tmpGetCount' should equal the number of things in the 'tmpUsed' lists. This is a convenient place to assert that.
+            var usedCount = 0;
 
-        if (tmpGetCount != 0)
+            for (var tempDsc = tmpListBeg(TEMP_USAGE_USED); tempDsc is not null; tempDsc = tmpListNxt(tempDsc, TEMP_USAGE_USED))
+            {
+                usedCount++;
+            }
+            assert(usedCount == tmpGetCount);
+        }
+
+        if (Configuration.DEBUG && (tmpGetCount != 0))
         {
             return false;
         }
@@ -220,7 +221,6 @@ public partial struct RegSet
         }
         return true;
     }
-#endif
 
     /// <summary>Given a temp number, get the corresponding temp.</summary>
     /// <param name="tnum"></param>

@@ -238,9 +238,7 @@ public sealed partial class CodeGen
                 }
             }
 
-#if DEBUG
             assert(_regSet.tmpGetAllFree());
-#endif
             for (var temp = _regSet.tmpListBeg(); temp is not null; temp = _regSet.tmpListNxt(temp))
             {
                 if (varTypeIsGC(temp.tdTempType))
