@@ -512,7 +512,7 @@ public partial class Compiler
 #endif
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public unsafe void compDispLocalVars()
     {
         jitprintf($"info.compVarScopesCount = {info.compVarScopesCount}\n");
@@ -538,6 +538,7 @@ public partial class Compiler
     ///   <para>They will be run only once per process, and only in debug (Perhaps should be under the control of a DOTNET_ flag.)</para>
     ///   <para>These should fail by asserting.</para>
     /// </remarks>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void compDoComponentUnitTestsOnce()
     {
         if (JitConfig.RunComponentUnitTests == 0)
@@ -552,7 +553,6 @@ public partial class Compiler
             BitSetSupport.TestSuite(this);
         }
     }
-#endif
 
     /// <summary>One-time initialization.</summary>
     public static void compStartup()

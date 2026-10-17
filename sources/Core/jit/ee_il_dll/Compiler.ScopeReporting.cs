@@ -46,12 +46,10 @@ public partial class Compiler
     public unsafe void eeSetLVdone()
     {
         assert(opts.compScopeInfo);
-#if DEBUG
-        if (verbose || opts.dspDebugInfo)
+        if (Configuration.DEBUG && (verbose || opts.dspDebugInfo))
         {
             eeDispVars(info.compMethodHnd, eeVarsCount, eeVars);
         }
-#endif
         if ((eeVarsCount == 0) && (eeVars != null))
         {
             // The EE still receives a null table for zero records; release the
@@ -64,7 +62,7 @@ public partial class Compiler
         eeVars = null; // We give up ownership after setVars().
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public unsafe void eeDispVar(ICorDebugInfo.NativeVarInfo* variable)
     {
         var name = variable->varNumber switch
@@ -97,6 +95,7 @@ public partial class Compiler
         jitprintf("\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public unsafe void eeDispVars(CORINFO_METHOD_HANDLE ftn, int count, ICorDebugInfo.NativeVarInfo* variables)
     {
         var uniqueVars = AllVarSetOps.MakeEmpty(this);
@@ -115,5 +114,4 @@ public partial class Compiler
             eeDispVar(&variables[index]);
         }
     }
-#endif
 }

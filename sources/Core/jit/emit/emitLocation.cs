@@ -110,13 +110,12 @@ public struct emitLocation : IEquatable<emitLocation>
         return false;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public readonly void Print(int compMethodID)
     {
         assert(ig is not null);
         jitprintf($"(G_M{unchecked((uint)compMethodID):D3}_IG{ig.GetDisplayId():D2},ins#{GetInsNum()},ofs#{GetInsOffset()})");
     }
-#endif
 
     public readonly bool Equals(emitLocation other)
     {

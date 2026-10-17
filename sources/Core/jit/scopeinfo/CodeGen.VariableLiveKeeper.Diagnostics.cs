@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Collections.Generic;
 using static RyuJitSharp.ICorDebugInfo.VarLocType;
 
@@ -13,6 +12,11 @@ public sealed partial class CodeGen
 {
     public void dumpSiVarLoc(in siVarLoc varLoc)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         switch (varLoc.vlType)
         {
             case VLT_REG:
@@ -157,6 +161,7 @@ public sealed partial class CodeGen
     {
         public sealed partial class VariableLiveRange
         {
+            [System.Diagnostics.Conditional("DEBUG")]
             public void dumpVariableLiveRange(CodeGen codeGen)
             {
                 codeGen.dumpSiVarLoc(in m_VarLocation);
@@ -174,6 +179,7 @@ public sealed partial class CodeGen
                 jitprintf("]");
             }
 
+            [System.Diagnostics.Conditional("DEBUG")]
             public void dumpVariableLiveRange(Emitter emit, CodeGen codeGen)
             {
                 codeGen.dumpSiVarLoc(in m_VarLocation);
@@ -184,8 +190,20 @@ public sealed partial class CodeGen
         private sealed class LiveRangeDumper
         {
             // Append-only range storage makes this index equivalent to the native stable list iterator.
+            private readonly Compiler m_compiler;
+            private readonly int m_varNum;
             private int m_startingLiveRange;
             private bool m_hasLiveRangesToDump;
+
+            public LiveRangeDumper(Compiler compiler, int varNum)
+            {
+                m_compiler = compiler;
+                m_varNum = varNum;
+            }
+
+            public Compiler Compiler => m_compiler;
+
+            public int VarNum => m_varNum;
 
             public void resetDumper(List<VariableLiveRange> liveRanges)
             {
@@ -213,6 +231,7 @@ public sealed partial class CodeGen
 
         private sealed partial class VariableLiveDescriptor
         {
+            [System.Diagnostics.Conditional("DEBUG")]
             public void dumpAllRegisterLiveRangesForBlock(Emitter emit, CodeGen codeGen)
             {
                 var first = true;
@@ -227,10 +246,11 @@ public sealed partial class CodeGen
                 }
             }
 
+            [System.Diagnostics.Conditional("DEBUG")]
             public void dumpRegisterLiveRangesForBlockBeforeCodeGenerated(CodeGen codeGen)
             {
                 var first = true;
-                for (var index = m_VariableLifeBarrier.getStartForDump(); index < m_VariableLiveRanges.Count; index++)
+                for (var index = getLiveRangeDumper().getStartForDump(); index < m_VariableLiveRanges.Count; index++)
                 {
                     if (!first)
                     {
@@ -243,14 +263,17 @@ public sealed partial class CodeGen
 
             public bool hasVarLiveRangesToDump() => m_VariableLiveRanges.Count != 0;
 
-            public bool hasVarLiveRangesFromLastBlockToDump() => m_VariableLifeBarrier.hasLiveRangesToDump();
+            public bool hasVarLiveRangesFromLastBlockToDump() =>
+                Configuration.DEBUG && getLiveRangeDumper().hasLiveRangesToDump();
 
+            [System.Diagnostics.Conditional("DEBUG")]
             public void endBlockLiveRanges()
             {
-                m_VariableLifeBarrier.resetDumper(m_VariableLiveRanges);
+                getLiveRangeDumper().resetDumper(m_VariableLiveRanges);
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         public void dumpBlockVariableLiveRanges(BasicBlock block)
         {
             var hasDumpedHistory = false;
@@ -279,6 +302,7 @@ public sealed partial class CodeGen
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         public void dumpLvaVariableLiveRanges()
         {
             var hasDumpedHistory = false;
@@ -307,4 +331,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

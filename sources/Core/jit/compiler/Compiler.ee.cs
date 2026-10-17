@@ -560,9 +560,10 @@ public partial class Compiler
             localVar.vsdLVnum = i;
             localVar.vsdVarNum = compMapILvarNum(v->varNumber);
 
-#if DEBUG
-            localVar.vsdName = gtGetLclVarName(localVar.vsdVarNum);
-#endif
+            if (Configuration.DEBUG)
+            {
+                localVar.vsdName = gtGetLclVarName(localVar.vsdVarNum);
+            }
 
             info.compVarScopesCount++;
         }
@@ -603,9 +604,10 @@ public partial class Compiler
                 localVar.vsdVarNum = varNum;
                 localVar.vsdLVnum = info.compVarScopesCount;
 
-#if DEBUG
-                localVar.vsdName = gtGetLclVarName(localVar.vsdVarNum);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    localVar.vsdName = gtGetLclVarName(localVar.vsdVarNum);
+                }
 
                 info.compVarScopesCount++;
             }
@@ -616,12 +618,10 @@ public partial class Compiler
             info.compCompHnd->freeArray(varInfoTable);
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             compDispLocalVars();
         }
-#endif
     }
 
     public unsafe bool eeIsByrefLike(CORINFO_CLASS_HANDLE classHandle)

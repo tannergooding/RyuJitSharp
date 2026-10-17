@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -28,23 +29,18 @@ public sealed partial class CodeGen
         private sealed partial class VariableLiveDescriptor
         {
             private readonly List<VariableLiveRange> m_VariableLiveRanges = [];
-#if DEBUG
-            private readonly LiveRangeDumper m_VariableLifeBarrier = new();
-            private readonly int m_varNum;
-            private readonly Compiler m_compiler;
-#endif
+            private readonly LiveRangeDumper? m_VariableLifeBarrier;
 
-            public VariableLiveDescriptor(
-#if DEBUG
-                Compiler compiler, int varNum
-#endif
-                )
+            public VariableLiveDescriptor(Compiler compiler, int varNum)
             {
-#if DEBUG
-                m_varNum = varNum;
-                m_compiler = compiler;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    m_VariableLifeBarrier = new LiveRangeDumper(compiler, varNum);
+                }
             }
+
+            private LiveRangeDumper getLiveRangeDumper() => m_VariableLifeBarrier
+                ?? throw new InvalidOperationException("Live range diagnostics are only available in Debug builds.");
 
             public bool hasVariableLiveRangeOpen()
             {
@@ -61,36 +57,42 @@ public sealed partial class CodeGen
                     siVarLoc.Equals(varLocation, m_VariableLiveRanges[^1].m_VarLocation) &&
                     m_VariableLiveRanges[^1].m_EndEmitLocation.IsPreviousInsNum(emit))
                 {
-#if DEBUG
-                    if (m_compiler.verbose)
+                    if (Configuration.DEBUG)
                     {
-                        jitprintf($"Debug: Extending V{m_varNum:D2} debug range...\n");
+                        var liveRangeDumper = getLiveRangeDumper();
+                        if (liveRangeDumper.Compiler.verbose)
+                        {
+                            jitprintf($"Debug: Extending V{liveRangeDumper.VarNum:D2} debug range...\n");
+                        }
                     }
-#endif
                     m_VariableLiveRanges[^1].m_EndEmitLocation.Init();
                 }
                 else
                 {
-#if DEBUG
-                    if (m_compiler.verbose)
+                    if (Configuration.DEBUG)
                     {
-                        var reason = m_VariableLiveRanges.Count == 0 ? "first" :
-                            siVarLoc.Equals(varLocation, m_VariableLiveRanges[^1].m_VarLocation) ?
-                                "new var or location" : "not adjacent";
-                        jitprintf($"Debug: New V{m_varNum:D2} debug range: {reason}\n");
+                        var liveRangeDumper = getLiveRangeDumper();
+                        if (liveRangeDumper.Compiler.verbose)
+                        {
+                            var reason = m_VariableLiveRanges.Count == 0 ? "first" :
+                                siVarLoc.Equals(varLocation, m_VariableLiveRanges[^1].m_VarLocation) ?
+                                    "new var or location" : "not adjacent";
+                            jitprintf($"Debug: New V{liveRangeDumper.VarNum:D2} debug range: {reason}\n");
+                        }
                     }
-#endif
                     var liveRange = new VariableLiveRange(varLocation, default, default);
                     m_VariableLiveRanges.Add(liveRange);
                     liveRange.m_StartEmitLocation.CaptureLocation(emit);
                 }
 
-#if DEBUG
-                if (!m_VariableLifeBarrier.hasLiveRangesToDump())
+                if (Configuration.DEBUG)
                 {
-                    m_VariableLifeBarrier.setDumperStartAt(m_VariableLiveRanges.Count - 1);
+                    var liveRangeDumper = getLiveRangeDumper();
+                    if (!liveRangeDumper.hasLiveRangesToDump())
+                    {
+                        liveRangeDumper.setDumperStartAt(m_VariableLiveRanges.Count - 1);
+                    }
                 }
-#endif
                 noway_assert(m_VariableLiveRanges[^1].m_StartEmitLocation.Valid());
                 noway_assert(!m_VariableLiveRanges[^1].m_EndEmitLocation.Valid());
             }
@@ -100,12 +102,14 @@ public sealed partial class CodeGen
                 noway_assert(hasVariableLiveRangeOpen());
                 m_VariableLiveRanges[^1].m_EndEmitLocation.CaptureLocation(emit);
 
-#if DEBUG
-                if (m_compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    jitprintf($"Debug: Closing V{m_varNum:D2} debug range.\n");
+                    var liveRangeDumper = getLiveRangeDumper();
+                    if (liveRangeDumper.Compiler.verbose)
+                    {
+                        jitprintf($"Debug: Closing V{liveRangeDumper.VarNum:D2} debug range.\n");
+                    }
                 }
-#endif
                 noway_assert(m_VariableLiveRanges[^1].m_EndEmitLocation.Valid());
             }
 

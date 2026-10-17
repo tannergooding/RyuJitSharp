@@ -401,12 +401,10 @@ public sealed partial class CodeGen
         }
         noway_assert(genStackLevel == 0);
         genEmitEndBlock(block);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             getVariableLiveKeeper().dumpBlockVariableLiveRanges(block);
         }
-#endif
         _compiler.compCurBB = null;
     }
 

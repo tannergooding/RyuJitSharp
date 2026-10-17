@@ -46,16 +46,8 @@ public sealed partial class CodeGen
 
             for (var varNum = 0; varNum < totalLocalCount; varNum++)
             {
-                m_vlrLiveDsc[varNum] = new VariableLiveDescriptor(
-#if DEBUG
-                    m_compiler, varNum
-#endif
-                    );
-                m_vlrLiveDscForProlog[varNum] = new VariableLiveDescriptor(
-#if DEBUG
-                    m_compiler, varNum
-#endif
-                    );
+                m_vlrLiveDsc[varNum] = new VariableLiveDescriptor(m_compiler, varNum);
+                m_vlrLiveDscForProlog[varNum] = new VariableLiveDescriptor(m_compiler, varNum);
             }
         }
 

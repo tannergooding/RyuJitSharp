@@ -6,10 +6,6 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if DEBUG
-using System.IO;
-using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.ICorDebugInfo.VarLocType;
@@ -326,16 +322,16 @@ internal static unsafe class VariableLiveKeeperTests
         Assert.That(Unsafe.SizeOf<CodeGen.siVarLoc>(), Is.EqualTo(Unsafe.SizeOf<ICorDebugInfo.VarLoc>()));
     }
 
-#if DEBUG
     [Test]
     public static void RangeDiagnosticsPreserveNativeMessagesAndDumperBarrier()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler((compiler, codeGen) =>
         {
             EmitInstruction(codeGen.Emitter, 1);
             TestConfiguration.EnableVerbose(compiler);
             var keeper = codeGen.getVariableLiveKeeper();
-            var output = Capture(() =>
+            var output = TestConfiguration.CaptureDebugOutput(() =>
             {
                 keeper.siStartVariableLiveRange(in compiler.lvaTable[0], 0);
                 keeper.siEndVariableLiveRange(0);
@@ -347,38 +343,18 @@ internal static unsafe class VariableLiveKeeperTests
                 $"Debug: Closing V00 debug range.{Environment.NewLine}" +
                 $"Debug: Extending V00 debug range...{Environment.NewLine}"));
 
-            compiler.verbose = false;
+            TestConfiguration.SetVerbose(compiler, false);
             var block = new BasicBlock(null, null) { bbNum = 3 };
-            var firstDump = Capture(() => keeper.dumpBlockVariableLiveRanges(block));
-            var secondDump = Capture(() => keeper.dumpBlockVariableLiveRanges(block));
+            var firstDump = TestConfiguration.CaptureDebugOutput(() => keeper.dumpBlockVariableLiveRanges(block));
+            var secondDump = TestConfiguration.CaptureDebugOutput(() => keeper.dumpBlockVariableLiveRanges(block));
             Assert.That(secondDump, Is.EqualTo(firstDump));
             Assert.That(firstDump, Does.Contain("rsp'[16] (1 slot)"));
             keeper.siEndVariableLiveRange(0);
-            _ = Capture(() => keeper.dumpBlockVariableLiveRanges(block));
-            var emptyDump = Capture(() => keeper.dumpBlockVariableLiveRanges(block));
+            _ = TestConfiguration.CaptureDebugOutput(() => keeper.dumpBlockVariableLiveRanges(block));
+            var emptyDump = TestConfiguration.CaptureDebugOutput(() => keeper.dumpBlockVariableLiveRanges(block));
             Assert.That(emptyDump, Does.EndWith($"..None..{Environment.NewLine}"));
         });
     }
-
-    private static string Capture(Action action)
-    {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
-        {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
-#endif
 
     private static void WithCompiler(Action<Compiler, CodeGen> action, bool framePointerUsed = false)
     {
@@ -423,11 +399,7 @@ internal static unsafe class VariableLiveKeeperTests
             codeGen.initializeVariableLiveKeeper();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(framePointerUsed
-#if DEBUG
-                , false
-#endif
-                );
+            codeGen.Emitter.emitBegFN(framePointerUsed, false);
             action(compiler, codeGen);
         }
         finally

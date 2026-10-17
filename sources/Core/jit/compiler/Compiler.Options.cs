@@ -309,7 +309,6 @@ public partial class Compiler
         public readonly bool dspEHTable => false;
 #endif
 
-#if DEBUG
         /// <summary>Display the Debug info reported to the VM</summary>
         public bool dspDebugInfo;
 
@@ -345,7 +344,6 @@ public partial class Compiler
 
         /// <summary>Display the GC tables</summary>
         public bool dspGCtbls;
-#endif
 
         /// <summary>Display metrics</summary>
 #if DEBUG

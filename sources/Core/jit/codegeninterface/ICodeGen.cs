@@ -120,9 +120,7 @@ public interface ICodeGen
 
     uint getCurrentStackLevel();
 
-#if DEBUG
     void dumpSiVarLoc(in CodeGen.siVarLoc varLoc);
-#endif
 
     void genUpdateVarReg(ref LclVarDsc local, GenTree tree);
 

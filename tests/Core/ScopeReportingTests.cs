@@ -9,10 +9,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if DEBUG
-using System.IO;
-using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.ICorDebugInfo.VarLocType;
@@ -247,9 +243,7 @@ internal static unsafe class ScopeReportingTests
                 igFlags = InsGroupFlags.UpdatedInstructionSize,
                 igData = [descriptor],
             };
-#if DEBUG
-            group.igSelf = group;
-#endif
+            SetInstructionGroupSelf(group);
             var ranges = (List<CodeGen.VariableLiveKeeper.VariableLiveRange>)
                 codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0);
             ranges.Add(new(Register(REG_X64_RCX), new(group, Emitter.emitSpecifiedOffset(1, 4)),
@@ -304,10 +298,10 @@ internal static unsafe class ScopeReportingTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DebugTranslationsUseTheLastMatchingNameAndMappedILNumber()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler((compiler, codeGen, _) =>
         {
             compiler.info.compRetBuffArg = 0;
@@ -334,6 +328,7 @@ internal static unsafe class ScopeReportingTests
     [Test]
     public static void RegisterVariableNamesRespectScopeAvailabilityAndInstructionBounds()
     {
+        Assume.That(TestConfiguration.IsDebug);
         Assume.That(Configuration.LATE_DISASM);
         WithCompiler((compiler, codeGen, _) =>
         {
@@ -362,6 +357,7 @@ internal static unsafe class ScopeReportingTests
     [Test]
     public static void StackVariableNamesMatchTheirRegisterAndDisplacement()
     {
+        Assume.That(TestConfiguration.IsDebug);
         Assume.That(Configuration.LATE_DISASM);
         WithCompiler((compiler, codeGen, _) =>
         {
@@ -381,6 +377,7 @@ internal static unsafe class ScopeReportingTests
     [Test]
     public static void DebugPublicationRetainsCallAndSpecialVariableDiagnostics()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler((compiler, codeGen, _) =>
         {
             compiler.info.compFullName = "ScopeReporting:Method";
@@ -389,7 +386,7 @@ internal static unsafe class ScopeReportingTests
             AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX));
             AddCallReturn(codeGen, 7, 3, Register(REG_X64_XMM0));
 
-            var dump = Capture(codeGen.genSetScopeInfo);
+            var dump = TestConfiguration.CaptureDebugOutput(codeGen.genSetScopeInfo);
 
             Assert.That(dump, Does.Contain("; Variable debug info: 2 live ranges, 0 vars for method ScopeReporting:Method"));
             Assert.That(dump, Does.Contain("( retBuff) : From 00000000h to 00000003h, in rcx"));
@@ -403,12 +400,13 @@ internal static unsafe class ScopeReportingTests
     [TestCase(123, "UNKNOWN")]
     public static void DebugVariableDiagnosticsRetainSpecialNamesAndUnknownFallback(int variableNumber, string name)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler((compiler, _, _) =>
         {
             var location = Register(REG_X64_RCX);
             var nativeLocation = Unsafe.As<CodeGen.siVarLoc, ICorDebugInfo.VarLoc>(ref location);
 
-            var dump = Capture(() =>
+            var dump = TestConfiguration.CaptureDebugOutput(() =>
             {
                 var variable = new ICorDebugInfo.NativeVarInfo
                 {
@@ -427,6 +425,7 @@ internal static unsafe class ScopeReportingTests
     [Test]
     public static void DebugLayoutCheckUsesTheEEStorage()
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGen.checkICodeDebugInfo();
         Assert.That(Unsafe.SizeOf<CodeGen.siVarLoc>(), Is.EqualTo(Unsafe.SizeOf<ICorDebugInfo.VarLoc>()));
     }
@@ -443,26 +442,6 @@ internal static unsafe class ScopeReportingTests
         translations.SetValue(translation, index);
     }
 
-    private static string Capture(Action action)
-    {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
-        {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
-#endif
-
     private const BindingFlags PrivateFields = BindingFlags.Instance | BindingFlags.NonPublic;
 
     private static CodeGen.siVarLoc Register(regNumber reg)
@@ -476,10 +455,19 @@ internal static unsafe class ScopeReportingTests
     private static emitLocation Location(uint offset)
     {
         var group = new insGroup { igOffs = offset };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        SetInstructionGroupSelf(group);
         return new emitLocation(group, 0);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "igSelf")]
+    private static extern ref insGroup? InstructionGroupSelf(insGroup group);
+
+    private static void SetInstructionGroupSelf(insGroup group)
+    {
+        if (TestConfiguration.IsDebug)
+        {
+            InstructionGroupSelf(group) = group;
+        }
     }
 
     private static void AddRange(CodeGen codeGen, int varNum, uint start, uint end,

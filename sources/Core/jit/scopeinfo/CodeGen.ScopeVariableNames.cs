@@ -9,7 +9,11 @@ public sealed partial class CodeGen
 {
     public string? siRegVarName(nuint offs, nuint size, uint reg)
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return null;
+        }
+
         if (!_compiler.opts.compScopeInfo)
         {
             return null;
@@ -34,13 +38,16 @@ public sealed partial class CodeGen
                 return localVarInfo.tlviName;
             }
         }
-#endif
         return null;
     }
 
     public string? siStackVarName(nuint offs, nuint size, uint reg, uint stkOffs)
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return null;
+        }
+
         if (!_compiler.opts.compScopeInfo)
         {
             return null;
@@ -65,7 +72,6 @@ public sealed partial class CodeGen
                 return localVarInfo.tlviName;
             }
         }
-#endif
         return null;
     }
 }

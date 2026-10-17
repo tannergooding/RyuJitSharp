@@ -3,11 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public sealed partial class ValueNumStore
 {
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void RunTests(Compiler compiler)
     {
         var store = new ValueNumStore(compiler);
@@ -63,4 +63,3 @@ public sealed partial class ValueNumStore
         assert(store.ConstantValue<int>(constantSum) == 101);
     }
 }
-#endif

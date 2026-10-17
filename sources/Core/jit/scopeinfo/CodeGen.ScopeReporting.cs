@@ -11,7 +11,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if DEBUG
     private TrnslLocalVarInfo[] genTrnslLocalVarInfo = [];
 
     private struct TrnslLocalVarInfo
@@ -24,7 +23,6 @@ public sealed partial class CodeGen
         public bool tlviAvailable;
         public siVarLoc tlviVarLoc;
     }
-#endif
 
     [Conditional("DEBUG")]
     public static void checkICodeDebugInfo()
@@ -71,10 +69,11 @@ public sealed partial class CodeGen
             (keeper.getLiveRangesCount() == 0));
         _compiler.eeAllocateLVs(varsLocationsCount);
 
-#if DEBUG
-        _genTrnslLocalVarCount = unchecked((int)varsLocationsCount);
-        genTrnslLocalVarInfo = new TrnslLocalVarInfo[varsLocationsCount];
-#endif
+        if (Configuration.DEBUG)
+        {
+            _genTrnslLocalVarCount = unchecked((int)varsLocationsCount);
+            genTrnslLocalVarInfo = new TrnslLocalVarInfo[varsLocationsCount];
+        }
         if (keeper.getLiveRangesCount() > 0)
         {
             genSetScopeInfoUsingVariableRanges();
@@ -213,25 +212,27 @@ public sealed partial class CodeGen
             varLoc.vlFixedVarArg.vlfvOffset = unchecked((int)offset);
         }
 
-#if DEBUG
-        VarName? name = null;
-        for (var scopeNum = 0; scopeNum < _compiler.info.compVarScopesCount; scopeNum++)
+        if (Configuration.DEBUG)
         {
-            if (LVnum == _compiler.info.compVarScopes[scopeNum].vsdLVnum)
+            VarName? name = null;
+            for (var scopeNum = 0; scopeNum < _compiler.info.compVarScopesCount; scopeNum++)
             {
-                name = _compiler.info.compVarScopes[scopeNum].vsdName;
+                if (LVnum == _compiler.info.compVarScopes[scopeNum].vsdLVnum)
+                {
+                    name = _compiler.info.compVarScopes[scopeNum].vsdName;
+                }
             }
+
+            ref var tlvi = ref genTrnslLocalVarInfo[which];
+            tlvi.tlviVarNum = ilVarNum;
+            tlvi.tlviLVnum = LVnum;
+            tlvi.tlviName = name;
+            tlvi.tlviStartPC = startOffs;
+            tlvi.tlviLength = length;
+            tlvi.tlviAvailable = avail;
+            tlvi.tlviVarLoc = varLoc;
         }
 
-        ref var tlvi = ref genTrnslLocalVarInfo[which];
-        tlvi.tlviVarNum = ilVarNum;
-        tlvi.tlviLVnum = LVnum;
-        tlvi.tlviName = name;
-        tlvi.tlviStartPC = startOffs;
-        tlvi.tlviLength = length;
-        tlvi.tlviAvailable = avail;
-        tlvi.tlviVarLoc = varLoc;
-#endif
         _compiler.eeSetLVinfo(which, startOffs, unchecked(startOffs + length), 0, ilVarNum, in varLoc);
     }
 }
