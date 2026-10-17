@@ -35,10 +35,8 @@ public sealed partial class CodeGen : ICodeGen
 
     private regMaskTP _calleeRegArgMaskLiveIn;
 
-#if DEBUG
     private int _genTrnslLocalVarCount;
     private uint _genCurDispOffset;
-#endif
 
     private regMask _srbmAllFloat;
     private regMask _srbmAllInt;
@@ -90,28 +88,30 @@ public sealed partial class CodeGen : ICodeGen
             _cgDisasm.disInit(compiler);
         }
 
-#if DEBUG
-        _genTrnslLocalVarCount = 0;
-
-        if (Configuration.HAS_FIXED_REGISTER_SET)
+        if (Configuration.DEBUG)
         {
-            compiler.compCalleeRegsPushed = unchecked((int)INVALID_POINT_CD);
-        }
+            _genTrnslLocalVarCount = 0;
 
-        if (Configuration.TARGET_XARCH)
-        {
-            compiler.compCalleeFPRegsSavedMask = unchecked((regMask)(-1));
+            if (Configuration.HAS_FIXED_REGISTER_SET)
+            {
+                compiler.compCalleeRegsPushed = unchecked((int)INVALID_POINT_CD);
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                compiler.compCalleeFPRegsSavedMask = unchecked((regMask)(-1));
+            }
         }
-#endif
 
         compiler.genCallSite2DebugInfoMap = null;
         Interruptible = false;
         HasTailCalls = false;
 
-#if DEBUG
-        _genInterruptibleUsed = false;
-        _genCurDispOffset = uint.MaxValue;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _genInterruptibleUsed = false;
+            _genCurDispOffset = uint.MaxValue;
+        }
 
         genSaveFpLrWithAllCalleeSavedRegisters = false;
         genForceFuncletFrameType5 = false;
@@ -517,22 +517,41 @@ public sealed partial class CodeGen : ICodeGen
         }
     }
 
-#if DEBUG
-    public bool IsGcTypeFixed => _genInterruptibleUsed;
+    public bool IsGcTypeFixed
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Code-generation diagnostic state is only available in Debug builds.");
+            }
+
+            return _genInterruptibleUsed;
+        }
+    }
 
     public bool Verbose
     {
         get
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Code-generation diagnostic state is only available in Debug builds.");
+            }
+
             return _verbose;
         }
 
         set
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Code-generation diagnostic state is only available in Debug builds.");
+            }
+
             _verbose = value;
         }
     }
-#endif
 
     public void CopyRegisterInfo()
     {

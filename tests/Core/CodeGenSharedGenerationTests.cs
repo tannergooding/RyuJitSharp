@@ -47,15 +47,16 @@ internal static unsafe class CodeGenSharedGenerationTests
             Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
             Assert.That(codeGen.genReverseAndPairCalleeSavedRegisters, Is.False);
 #endif
-#if DEBUG
-            Assert.That(CurrentDisplayOffset(codeGen), Is.EqualTo(uint.MaxValue));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(CurrentDisplayOffset(codeGen), Is.EqualTo(uint.MaxValue));
 #if HAS_FIXED_REGISTER_SET
-            Assert.That(compiler.compCalleeRegsPushed, Is.EqualTo(unchecked((int)Globals.INVALID_POINT_CD)));
+                Assert.That(compiler.compCalleeRegsPushed, Is.EqualTo(unchecked((int)Globals.INVALID_POINT_CD)));
 #endif
 #if TARGET_XARCH
-            Assert.That(compiler.compCalleeFPRegsSavedMask, Is.EqualTo(unchecked((regMask)(-1))));
+                Assert.That(compiler.compCalleeFPRegsSavedMask, Is.EqualTo(unchecked((regMask)(-1))));
 #endif
-#endif
+            }
         });
     }
 
@@ -66,6 +67,29 @@ internal static unsafe class CodeGenSharedGenerationTests
         WithGeneration(
             (_, codeGen) => Assert.That(VerboseField(codeGen), Is.EqualTo(Configuration.DEBUG && verbose)),
             verbose);
+    }
+
+    [Test]
+    public static void DebugOnlyPropertiesPreserveReleaseContract()
+    {
+        WithGeneration((compiler, codeGen) =>
+        {
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(codeGen.IsGcTypeFixed, Is.False);
+                Assert.That(codeGen.Verbose, Is.False);
+
+                codeGen.Verbose = true;
+
+                Assert.That(codeGen.Verbose, Is.True);
+            }
+            else
+            {
+                _ = Assert.Throws<InvalidOperationException>(() => _ = codeGen.IsGcTypeFixed);
+                _ = Assert.Throws<InvalidOperationException>(() => _ = codeGen.Verbose);
+                _ = Assert.Throws<InvalidOperationException>(() => codeGen.Verbose = true);
+            }
+        });
     }
 
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
@@ -308,8 +332,6 @@ internal static unsafe class CodeGenSharedGenerationTests
     private static extern ref uint MaximumNestedAlignment(CodeGen codeGen);
 #endif
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_genCurDispOffset")]
     private static extern ref uint CurrentDisplayOffset(CodeGen codeGen);
-#endif
 }

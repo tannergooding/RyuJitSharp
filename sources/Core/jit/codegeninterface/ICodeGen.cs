@@ -88,12 +88,10 @@ public interface ICodeGen
     /// <remarks>Used to avoid effects of loop alignment when diagnosing perf issues.</remarks>
     bool ShouldAlignLoops { get; set; }
 
-#if DEBUG
     /// <summary>used to make sure the value of 'GetInterruptible()' isn't changed after it's been used by any logic that depends on its value.</summary>
     bool IsGcTypeFixed { get; }
 
     bool Verbose { get; set; }
-#endif
 
     /// <summary>Call this function after the equivalent fields in Compiler have been initialized.</summary>
     void CopyRegisterInfo();
