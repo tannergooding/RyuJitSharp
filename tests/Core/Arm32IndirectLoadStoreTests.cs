@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -25,6 +24,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm32IndirectLoadStoreTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM32 target.");
+    }
+
     [Test]
     public static void ContainedIndexedLoadUsesScaledBaseAndIndex()
     {
@@ -74,6 +79,11 @@ internal static unsafe class Arm32IndirectLoadStoreTests
 
     private static IEnumerable<TestCaseData> AlignedLocalFieldLoadCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_INT, 4, REG_R3, INS_ldr, EA_4BYTE);
         yield return new TestCaseData(TYP_FLOAT, 4, REG_F0, INS_vldr, EA_4BYTE);
         yield return new TestCaseData(TYP_DOUBLE, 8, REG_F0, INS_vldr, EA_8BYTE);
@@ -472,6 +482,11 @@ internal static unsafe class Arm32IndirectLoadStoreTests
 
     private static IEnumerable<TestCaseData> MisalignedFloatingLocalFieldLoadCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_FLOAT, 1, REG_F0, INS_vmov_i2f);
         yield return new TestCaseData(TYP_DOUBLE, 1, REG_F0, INS_vmov_i2d);
     }
@@ -739,10 +754,10 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         }, minOpts: false);
     }
 
-#if !DEBUG
     [Test]
     public static void OptimizedAdjacentMemoryBarriersCoalesce()
     {
+        Assume.That(!TestConfiguration.IsDebug, "This test validates Release-only barrier coalescing.");
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             codeGen.instGen_MemoryBarrier(BARRIER_FULL);
@@ -755,21 +770,23 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)INS_BARRIER_SY));
         }, minOpts: false);
     }
-#endif
 
     private static void RecordArm32Instructions(TestDelegate action)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                action();
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             action();
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        action();
-#endif
     }
 
     private static void InitializeLocalRegisterCandidate(Compiler compiler)
@@ -842,11 +859,12 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         return descriptors[^1];
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsLoadStoreOp")]
-    private static extern void EmitLoadStoreOp(
-        Emitter emitter, instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir);
+    private static void EmitLoadStoreOp(
+        Emitter emitter, instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
+    {
+        emitter.emitInsLoadStoreOpArm32(ins, attr, dataReg, indir);
+    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

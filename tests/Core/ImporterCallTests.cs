@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -107,10 +108,7 @@ internal static unsafe class ImporterCallTests
         }
     }
 
-    [TestCase(CorInfoType.CORINFO_TYPE_INT)]
-#if TARGET_64BIT
-    [TestCase(CorInfoType.CORINFO_TYPE_LONG)]
-#endif
+    [TestCaseSource(nameof(SignedLog2FallbackTypes))]
     public static void SignedLog2FallbackTracksUnknownExceptions(CorInfoType type)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -158,6 +156,16 @@ internal static unsafe class ImporterCallTests
         finally
         {
             JitTls.Compiler = previous;
+        }
+    }
+
+    private static IEnumerable<TestCaseData> SignedLog2FallbackTypes()
+    {
+        yield return new TestCaseData(CorInfoType.CORINFO_TYPE_INT);
+
+        if (Configuration.TARGET_64BIT)
+        {
+            yield return new TestCaseData(CorInfoType.CORINFO_TYPE_LONG);
         }
     }
 

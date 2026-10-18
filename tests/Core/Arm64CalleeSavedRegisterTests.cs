@@ -31,7 +31,6 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
     }
 
-#if DEBUG
     private static readonly List<string> s_assertions = [];
     private static readonly string[] s_largeOffsetAssertions =
     [
@@ -43,9 +42,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         "reg1 + 1 == reg2",
         "reg1 + 1 == reg2",
     ];
-#endif
 
-#if DEBUG
     [TestCase(TYP_REF, REG_ARM64_R19, true, true, 1, true)]
     [TestCase(TYP_BYREF, REG_ARM64_R20, true, true, 1, true)]
     [TestCase(TYP_REF, REG_ARM64_R19, true, false, 0, false)]
@@ -55,6 +52,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         var_types type, regNumber reg, bool unmanaged, bool hasRoot, int expectedAssertions,
         bool expectedCalleeSavedAssertion)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithCodeGen((compiler, codeGen) =>
         {
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
@@ -63,9 +61,10 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             compiler.fgFirstBB = block;
             compiler.fgLastBB = block;
             compiler.compCurBB = block;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = false;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.fgSafeBasicBlockCreation = false;
+            }
 
             var call = new GenTreeCall(TYP_VOID)
             {
@@ -97,7 +96,6 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             s_assertions.Clear();
         });
     }
-#endif
 
     [TestCase(nameof(Compiler.FrameInfo.frameType))]
     [TestCase(nameof(Compiler.FrameInfo.calleeSaveSpOffset))]
@@ -187,15 +185,14 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         Assert.That(SlotSize(null, Mask(data.Registers)), Is.EqualTo(8));
     }
 
-#if HAS_MORE_THAN_64_REGISTERS
     [Test]
     public static void RegisterCountIncludesBothMaskBanks()
     {
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS);
         var mask = new regMaskTP(SRBM_ARM64_R19 | SRBM_ARM64_V8, SRBM_ARM64_P8 | SRBM_ARM64_P9);
 
         Assert.That(CountRegisters(null, mask), Is.EqualTo(4));
     }
-#endif
 
     [TestCase(REG_ARM64_R19, REG_ARM64_R20, 0, 16, true)]
     [TestCase(REG_ARM64_R19, REG_ARM64_R20, 0, 496, true)]
@@ -364,13 +361,11 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             {
                 AssertStackAdjustment(descriptor, INS_sub, -delta);
             }
-#if DEBUG
-            if (offset == 32760)
+            if (TestConfiguration.IsDebug && (offset == 32760))
             {
                 Assert.That(s_assertions, Is.EqualTo(s_largeOffsetAssertions));
                 s_assertions.Clear();
             }
-#endif
         });
     }
 
@@ -387,13 +382,11 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             Assert.That(descriptor.idIns(), Is.EqualTo(reverse ? INS_str : INS_stp));
             Assert.That(descriptor.idReg1(), Is.EqualTo(reverse ? REG_ARM64_R24 : REG_ARM64_R19));
             Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)1));
-#if DEBUG
-            if (reverse)
+            if (TestConfiguration.IsDebug && reverse)
             {
                 Assert.That(s_assertions, Is.EqualTo(s_reversePairAssertions));
                 s_assertions.Clear();
             }
-#endif
         });
     }
 
@@ -695,12 +688,18 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
 
     internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = new() { doAssert = &RecordAssertion };
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+        }
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions.Clear();
-#endif
+        using var tls = TestConfiguration.IsDebug ? new JitTls(&ee) : null;
+        if (TestConfiguration.IsDebug)
+        {
+            s_assertions.Clear();
+        }
+
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -725,16 +724,13 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             compiler.compFuncInfos[0].GetUnwindInfo().InitUnwindInfo(compiler, null, null);
             action(compiler, codeGen);
-#if DEBUG
-            Assert.That(s_assertions, Is.Empty, "Unexpected JIT assertions: " + string.Join(" | ", s_assertions));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(s_assertions, Is.Empty, "Unexpected JIT assertions: " + string.Join(" | ", s_assertions));
+            }
         }
         finally
         {
@@ -742,14 +738,12 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         }
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
     {
         s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression) ?? "");
         return 0;
     }
-#endif
 
     private static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)
     {

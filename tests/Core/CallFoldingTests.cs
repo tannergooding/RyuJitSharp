@@ -143,7 +143,6 @@ internal static unsafe class CallFoldingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitGuardedDevirtualizationMaxTypeChecks")]
     private static extern ref int GdvMaxTypeChecks(ref JitConfigValues config);
 
-#if DEBUG
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)]
@@ -160,12 +159,14 @@ internal static unsafe class CallFoldingTests
                 compiler.considerGuardedDevirtualization(call, 12, false, null, null, ref context);
             });
 
-            Assert.That(output, Does.Contain("Generic virtual methods are not supported by guarded devirtualization, sorry."));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain("Generic virtual methods are not supported by guarded devirtualization, sorry."));
+            }
             Assert.That(output, Does.Not.Contain("Not guessing; no PGO"));
             Assert.That(call.InlineCandidatesCount, Is.Zero);
         });
     }
-#endif
 
     [Test]
     public static void ProfiledLengthSpecializesTheOwnedArgumentAndPreservesFallback(
@@ -578,9 +579,7 @@ internal static unsafe class CallFoldingTests
             vtable.Base.Base.isExactType =
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsExactType;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
-#endif
             using var tls = TestConfiguration.CreateJitTls();
             var previous = JitTls.Compiler;
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

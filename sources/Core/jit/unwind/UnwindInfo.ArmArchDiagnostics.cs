@@ -4,8 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-// Keep the dump bodies available when MSBuild excludes the ARMARCH backend.
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.Globals;
@@ -20,11 +18,11 @@ public sealed partial class UnwindInfo
     // These sizes match the DEBUG layouts in pinned unwind.h, including its base
     // subobjects, 24/4-byte local buffers, and DEBUG fields. Pointer size follows
     // the host process rather than the target ISA.
-    private static readonly int NATIVE_UNWIND_INFO_SIZE = ArmArchNativeSize(x86: 196, x64: 296);
-    private static readonly int NATIVE_UNWIND_FRAGMENT_INFO_SIZE = ArmArchNativeSize(x86: 172, x64: 248);
-    private static readonly int NATIVE_UNWIND_PROLOG_CODES_SIZE = ArmArchNativeSize(x86: 56, x64: 72);
-    private static readonly int NATIVE_UNWIND_EPILOG_INFO_SIZE = ArmArchNativeSize(x86: 56, x64: 88);
-    private static readonly int NATIVE_UNWIND_EPILOG_CODES_SIZE = ArmArchNativeSize(x86: 32, x64: 48);
+    private static int NATIVE_UNWIND_INFO_SIZE => ArmArchNativeSize(x86: 196, x64: 296);
+    private static int NATIVE_UNWIND_FRAGMENT_INFO_SIZE => ArmArchNativeSize(x86: 172, x64: 248);
+    private static int NATIVE_UNWIND_PROLOG_CODES_SIZE => ArmArchNativeSize(x86: 56, x64: 72);
+    private static int NATIVE_UNWIND_EPILOG_INFO_SIZE => ArmArchNativeSize(x86: 56, x64: 88);
+    private static int NATIVE_UNWIND_EPILOG_CODES_SIZE => ArmArchNativeSize(x86: 32, x64: 48);
 
     private void DumpArmArch(bool isHotCode, int indent)
     {
@@ -206,4 +204,3 @@ public sealed partial class UnwindInfo
         return IntPtr.Size == 8 ? x64 : x86;
     }
 }
-#endif

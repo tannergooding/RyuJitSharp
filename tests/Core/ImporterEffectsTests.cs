@@ -93,6 +93,9 @@ internal static unsafe class ImporterEffectsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
     private static extern ref Statement? ImporterStatements(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "impImportJitTestLabelMark")]
+    private static extern var_types ImportJitTestLabelMark(Compiler compiler, int numArgs);
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsExactType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;
 
@@ -348,18 +351,19 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void VolatilePrefixIsShownInImporterDiagnostics(bool verbose)
     {
+        Assume.That(TestConfiguration.IsDebug, "Importer diagnostics are available only in Debug.");
+
         WithCompiler(compiler => {
             compiler.opts.SetMinOpts(false);
             compiler.info.compMaxStack = 1;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             compiler.lvaTable[0].Type = var_types.TYP_BYREF;
             compiler.stackState.esStack = new StackEntry[1];
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
             var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
             compiler.impPushOnStack(address, new typeInfo());
 
@@ -390,6 +394,8 @@ internal static unsafe class ImporterEffectsTests
     [TestCase(true)]
     public static void ConstrainedPrefixIsShownInImporterDiagnostics(bool verbose)
     {
+        Assume.That(TestConfiguration.IsDebug, "Importer diagnostics are available only in Debug.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &ContinueConstrainedPrefixAssertion;
         vtable.Base.Base.resolveToken = &ResolveConstrainedToken;
@@ -406,7 +412,7 @@ internal static unsafe class ImporterEffectsTests
             compRetBuffArg = Globals.BAD_VAR_NUM,
         };
         compiler.stackState.esStack = [];
-        compiler.verbose = verbose;
+        TestConfiguration.SetVerbose(compiler, verbose);
         var il = new byte[] {
             (byte)OPCODE.CEE_PREFIX1,
             (byte)((int)OPCODE.CEE_CONSTRAINED - 0x0100),
@@ -447,7 +453,6 @@ internal static unsafe class ImporterEffectsTests
         var output = Encoding.UTF8.GetString(stream.ToArray());
         Assert.That(output.Contains("constrained. (02000001) ", StringComparison.Ordinal), Is.EqualTo(verbose));
     }
-#endif
 
     [Test]
     public static void NativeIntegerComparisonsValidateTheWidenedOperands(
@@ -693,12 +698,13 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
-#if DEBUG
     [TestCase(99)]
     [TestCase(100)]
     [TestCase(107)]
     public static void LoopHoistAnnotationsSelectTheIndirectionAddress(int number)
     {
+        Assume.That(TestConfiguration.IsDebug, "Importer test annotations are available only in Debug.");
+
         WithCompiler(compiler => {
             compiler.info.compMaxStack = 3;
             compiler.stackState.esStack = new StackEntry[3];
@@ -710,7 +716,7 @@ internal static unsafe class ImporterEffectsTests
             compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, (int)TestLabel.TL_LoopHoist), new typeInfo());
             compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, number), new typeInfo());
 
-            var type = compiler.impImportJitTestLabelMark(3);
+            var type = ImportJitTestLabelMark(compiler, 3);
 
             Assert.That(type, Is.EqualTo(var_types.TYP_INT));
             Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
@@ -721,7 +727,6 @@ internal static unsafe class ImporterEffectsTests
             Assert.That(annotation._num, Is.EqualTo((nint)(number >= 100 ? number - 100 : number)));
         });
     }
-#endif
 
     private static void PrepareImportedSuccessor(Compiler compiler, BasicBlock block, var_types type)
     {

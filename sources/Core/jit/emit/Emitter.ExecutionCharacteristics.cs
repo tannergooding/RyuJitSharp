@@ -60,8 +60,8 @@ public partial class Emitter
         var insFmt = id.idInsFmt();
         var opSize = id.idOpSize();
         var memFmt = getMemoryOperation(id);
-        var memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
-        var memLatency = PERFSCORE_LATENCY_ILLEGAL;
+        float memThroughput;
+        float memLatency;
         var memAccessKind = PerfScoreMemoryAccessKind.None;
 
         switch (memFmt)
@@ -155,7 +155,7 @@ public partial class Emitter
         }
 
         var insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
-        var insLatency = PERFSCORE_LATENCY_ILLEGAL;
+        float insLatency;
 
         switch (ins)
         {
@@ -166,10 +166,11 @@ public partial class Emitter
                 if (Configuration.FEATURE_LOOP_ALIGN)
                 {
                     var skipAlign = id.idCodeSize() == 0;
-#if DEBUG
-                    skipAlign |= ((instrDescAlign)id).isPlacedAfterJmp;
-#else
-                    if (Configuration.LATE_DISASM)
+                    if (Configuration.DEBUG)
+                    {
+                        skipAlign |= ((instrDescAlign)id).isPlacedAfterJmp;
+                    }
+                    else if (Configuration.LATE_DISASM)
                     {
                         skipAlign |= ((instrDescAlign)id).isPlacedAfterJmp;
                     }
@@ -178,7 +179,6 @@ public partial class Emitter
                         throw new FatalJitException(CORJIT_SKIPPED,
                             "Non-debug alignment performance scoring requires late-disassembly placement metadata.");
                     }
-#endif
 
                     if (skipAlign)
                     {

@@ -1,12 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
-#if DEBUG
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
@@ -92,29 +91,38 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     public static void PoppingLowerRegisterPreservesOtherRegisterBits()
     {
         WithAllocator((compiler, allocator) => {
-#if HAS_MORE_THAN_64_REGISTERS
-            var registers = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RAX);
-#else
-            var registers = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX);
-#endif
+            var registers = Configuration.HAS_MORE_THAN_64_REGISTERS
+                ? new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RAX)
+                : new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX);
             Assert.That(TryPopRegister(allocator, ref registers, out var popped), Is.True);
             Assert.That(popped, Is.EqualTo(regNumber.REG_X64_RAX));
             Assert.That(registers.Lower, Is.EqualTo(SRBM_X64_RBX));
-#if HAS_MORE_THAN_64_REGISTERS
-            Assert.That(registers.Upper, Is.EqualTo(SRBM_X64_RAX));
-#endif
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                Assert.That(registers.Upper, Is.EqualTo(SRBM_X64_RAX));
+            }
         });
     }
 
-#if TARGET_ARM
-    [TestCase(regNumber.REG_F0)]
-    [TestCase(regNumber.REG_F1)]
+    private static IEnumerable<TestCaseData> ArmDoubleConstantRegisterCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(regNumber.REG_ARM32_F0);
+        yield return new TestCaseData(regNumber.REG_ARM32_F1);
+    }
+
+    [TestCaseSource(nameof(ArmDoubleConstantRegisterCases))]
     public static void FixedHalfOfDoubleConstantClearsTheWholePair(regNumber fixedHalf)
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
         WithAllocator((compiler, allocator) => {
-            var pair = genSingleTypeRegMask(regNumber.REG_F0) |
-                genSingleTypeRegMask(regNumber.REG_F1);
-            var untouched = genSingleTypeRegMask(regNumber.REG_F2);
+            var pair = genSingleTypeRegMask(regNumber.REG_ARM32_F0, TYP_FLOAT) |
+                genSingleTypeRegMask(regNumber.REG_ARM32_F1, TYP_FLOAT);
+            var untouched = genSingleTypeRegMask(regNumber.REG_ARM32_F2, TYP_FLOAT);
             RegistersWithConstants(allocator) = new regMaskTP(pair | untouched);
 
             Assert.That(SingleTypeRegisterMask(allocator, fixedHalf, TYP_DOUBLE), Is.EqualTo(pair));
@@ -123,12 +131,11 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             Assert.That(RegistersWithConstants(allocator), Is.EqualTo(new regMaskTP(untouched)));
         });
     }
-#endif
 
-#if DEBUG
     [Test]
     public static void MinimalAllocationDiagnosticsMatchNativeIntervalAndReferenceShapes()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -181,6 +188,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [TestCase(0xFF)]
     public static void UnknownReferenceNamesRetainNativeNullStringFormatting(int refType)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -204,6 +212,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [TestCase(0xFFFFFFFFu, "-1")]
     public static void CandidateCountUsesNativeSignedBitsAndInvariantNegativeSign(uint count, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         var culture = new CultureInfo("fr-FR");
         culture.NumberFormat.NegativeSign = "~";
         var previous = CultureInfo.CurrentCulture;
@@ -237,7 +246,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [Test]
     public static void RegisterDumpRetainsNativeTinyDumpWithoutAddingANewline()
     {
-        Assume.That(TestConfiguration.IsDebug);
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
 
         var register = new RegRecord { regNum = regNumber.REG_X64_RAX };
 
@@ -250,6 +259,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [Test]
     public static void MinimalAllocationVariableReferenceDumpMatchesNativeShape()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -285,6 +295,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [Test]
     public static void MinimalAllocationDumpsMatchNativeCallerOrder()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -317,6 +328,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [Test]
     public static void MinimalTraversalReportsSelectionScoreForAllocation()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -340,6 +352,7 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [Test]
     public static void MinimalTraversalReportsSelectionScoreForRegisterReuse()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA diagnostics.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -360,7 +373,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             Assert.That(output, Does.Contain("ORDER(R) rax "));
         });
     }
-#endif
 
     [Test]
     public static void MinimalTraversalResetsAvailabilityAtBlockBoundary()
@@ -387,20 +399,23 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             var secondUse = allocator.newRefPosition(
                 secondInterval, 12, RefType.RefTypeUse, secondTree, SRBM_X64_RBX);
 
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = Capture(() => AllocateRegistersMinimal(allocator));
-            var lines = output.Split(Environment.NewLine);
-            var blockRow = Array.FindIndex(lines, line =>
-                line.Contains($"BB{blocks[1].bbNum}", StringComparison.Ordinal) &&
-                line.Contains("PredBB", StringComparison.Ordinal));
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = Capture(() => AllocateRegistersMinimal(allocator));
+                var lines = output.Split(Environment.NewLine);
+                var blockRow = Array.FindIndex(lines, line =>
+                    line.Contains($"BB{blocks[1].bbNum}", StringComparison.Ordinal) &&
+                    line.Contains("PredBB", StringComparison.Ordinal));
 
-            Assert.That(blockRow, Is.GreaterThanOrEqualTo(0));
-            Assert.That(blockRow + 1, Is.LessThan(lines.Length));
-            Assert.That(lines[blockRow + 1], Does.Not.StartWith("|"));
-#else
-            AllocateRegistersMinimal(allocator);
-#endif
+                Assert.That(blockRow, Is.GreaterThanOrEqualTo(0));
+                Assert.That(blockRow + 1, Is.LessThan(lines.Length));
+                Assert.That(lines[blockRow + 1], Does.Not.StartWith("|"));
+            }
+            else
+            {
+                AllocateRegistersMinimal(allocator);
+            }
 
             Assert.That(firstInterval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(secondDefinition.registerAssignment, Is.EqualTo(SRBM_X64_RBX));
@@ -640,10 +655,10 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void MinimalTraversalStressSpillPrecedesNextReferenceAndPreservesReload()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA stress behavior.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -671,12 +686,11 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             Assert.That(interveningDefinition.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
         });
     }
-#endif
 
-#if DEBUG
     [Test]
     public static void MinimalTraversalHonorsOptionalRegisterNoAllocationStress()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only LSRA stress behavior.");
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             compiler.fgPredsComputed = true;
@@ -698,7 +712,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             Assert.That(interval.isActive, Is.False);
         });
     }
-#endif
 
     private static Interval NewInterval(LinearScan allocator, var_types type) =>
         NewIntervalCore(allocator, type);
@@ -718,7 +731,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registersWithConstants")]
     private static extern ref regMaskTP ConstantRegisterMask(LinearScan allocator);
 
-#if TARGET_ARM
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getSingleTypeRegMask")]
     private static extern regMask SingleTypeRegisterMask(LinearScan allocator, regNumber register, var_types type);
 
@@ -727,7 +739,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registersWithConstants")]
     private static extern ref regMaskTP RegistersWithConstants(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);
@@ -739,17 +750,14 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "setBlockSequence")]
     private static extern void SetBlockSequence(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getRefTypeShortName")]
     private static extern string? GetRefTypeShortName(LinearScan allocator, RefType refType);
 
-#if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initializeAllocationDumpFormat")]
     private static extern void InitializeAllocationDumpFormat(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpRefPositionShort")]
     private static extern void DumpRefPositionShort(LinearScan allocator, RefPosition? reference, BasicBlock? block = null);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpLsraIntervals")]
     private static extern void DumpLsraIntervals(LinearScan allocator, string message);
@@ -762,7 +770,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocalVars(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
     private static extern ref uint CurrentBlockNumber(LinearScan allocator);
@@ -770,10 +777,8 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentAllocationLocation")]
     private static extern ref uint CurrentAllocationLocation(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
         var blocks = new BasicBlock[kinds.Length];
@@ -842,7 +847,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
         }
     }
 
-#if DEBUG
     private static string Capture(Action action)
     {
         using var stream = new MemoryStream();
@@ -861,7 +865,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);

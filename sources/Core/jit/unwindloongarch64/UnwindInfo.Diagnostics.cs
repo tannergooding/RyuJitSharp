@@ -12,6 +12,7 @@ namespace RyuJitSharp;
 
 public sealed partial class UnwindInfo
 {
+    private const uint UWI_LOONGARCH64_INITIALIZED_PATTERN = 0x0FACADE1;
     private const uint UFI_LOONGARCH64_INITIALIZED_PATTERN = 0x0FACADE0;
 
     [Conditional("DEBUG")]
@@ -29,9 +30,7 @@ public sealed partial class UnwindInfo
         jitprintf($"{prefix}  {fragmentCount} fragment{(fragmentCount != 1 ? "s" : "")}\n");
         jitprintf($"{prefix}  uwiFragmentLast: {LoongArch64Identity(uwiFragmentLast)}\n");
         jitprintf($"{prefix}  uwiEndLoc: {LoongArch64LocationState(uwiEndLoc)}\n");
-#if DEBUG
-        jitprintf($"{prefix}  uwiInitialized: 0x{(uwiInitialized ? UFI_LOONGARCH64_INITIALIZED_PATTERN : 0u):x8}\n");
-#endif
+        jitprintf($"{prefix}  uwiInitialized: 0x{(uwiInitialized ? UWI_LOONGARCH64_INITIALIZED_PATTERN : 0u):x8}\n");
 
         var fragmentNumber = 0;
         for (var fragment = uwiFragmentFirst; fragment is not null; fragment = fragment.ufiNext)
@@ -68,9 +67,7 @@ public sealed partial class UnwindInfo
             jitprintf($"{prefix}  ufiCodeWords: {ufiCodeWords}\n");
             jitprintf($"{prefix}  ufiEpilogScopes: {ufiEpilogScopes}\n");
             jitprintf($"{prefix}  ufiStartOffset: 0x{ufiStartOffset:x}\n");
-#if DEBUG
             jitprintf($"{prefix}  ufiInProlog: {dspBool(ufiInProlog)}\n");
-#endif
             jitprintf($"{prefix}  ufiInitialized: 0x{UnwindInfo.UFI_LOONGARCH64_INITIALIZED_PATTERN:x8}\n");
 
             ufiPrologCodes.DumpLoongArch64(indent + 2);

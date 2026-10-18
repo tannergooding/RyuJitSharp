@@ -201,22 +201,23 @@ public sealed class ProfileSynthesis
             JITDUMP($"fgCalledCount is {FMT_WT(_comp.fgCalledCount)}\n");
         }
 
-#if DEBUG
-        // Invalid IL can satisfy the pre-import single-pass convergence criterion
-        // without conserving flow. Defer asserting until import validates the IL.
-        _comp.fgPgoDeferredInconsistency = false;
-
-        if (_comp.fgPgoConsistent)
+        if (Configuration.DEBUG)
         {
-            var isConsistent = _comp.fgDebugCheckProfileWeights(ProfileChecks.CHECK_LIKELY | ProfileChecks.CHECK_ALL_BLOCKS);
+            // Invalid IL can satisfy the pre-import single-pass convergence criterion
+            // without conserving flow. Defer asserting until import validates the IL.
+            _comp.fgPgoDeferredInconsistency = false;
 
-            if (!isConsistent && !_comp.fgImportDone)
+            if (_comp.fgPgoConsistent)
             {
-                _comp.fgPgoDeferredInconsistency = true;
-                JITDUMP("Will defer asserting until after importation\n");
+                var isConsistent = _comp.fgDebugCheckProfileWeights(ProfileChecks.CHECK_LIKELY | ProfileChecks.CHECK_ALL_BLOCKS);
+
+                if (!isConsistent && !_comp.fgImportDone)
+                {
+                    _comp.fgPgoDeferredInconsistency = true;
+                    JITDUMP("Will defer asserting until after importation\n");
+                }
             }
         }
-#endif
     }
 
     public static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler compiler)
@@ -855,26 +856,27 @@ public sealed class ProfileSynthesis
 
         var ehWeight = exceptionWeight;
 
-#if DEBUG
-        if (JitConfig.JitSynthesisExceptionWeight is not null)
+        if (Configuration.DEBUG)
         {
-            ConfigDoubleArray exceptionWeights = default;
-            exceptionWeights.EnsureInit(JitConfig.JitSynthesisExceptionWeight);
-
-            if (exceptionWeights.GetLength() == 0)
+            if (JitConfig.JitSynthesisExceptionWeight is not null)
             {
-                throw new FormatException("JitSynthesisExceptionWeight requires at least one value.");
-            }
+                ConfigDoubleArray exceptionWeights = default;
+                exceptionWeights.EnsureInit(JitConfig.JitSynthesisExceptionWeight);
 
-            var newFactor = exceptionWeights.GetData()[0];
+                if (exceptionWeights.GetLength() == 0)
+                {
+                    throw new FormatException("JitSynthesisExceptionWeight requires at least one value.");
+                }
 
-            if ((newFactor >= 0) && (newFactor <= 1.0))
-            {
-                ehWeight = newFactor;
+                var newFactor = exceptionWeights.GetData()[0];
+
+                if ((newFactor >= 0) && (newFactor <= 1.0))
+                {
+                    ehWeight = newFactor;
+                }
             }
         }
 
-#endif
         JITDUMP($"Synthesis: exception weight {FMT_WT(ehWeight)}\n");
 
         if (Configuration.DEBUG && (ehWeight == 0))
@@ -907,13 +909,7 @@ public sealed class ProfileSynthesis
     private void ComputeBlockWeights()
     {
         JITDUMP("Computing block weights\n");
-        var useSolver = true;
-
-#if DEBUG
-        useSolver = JitConfig.JitSynthesisUseSolver > 0;
-
-#endif
-        if (useSolver)
+        if (!Configuration.DEBUG || (JitConfig.JitSynthesisUseSolver > 0))
         {
             GaussSeidelSolver();
             return;

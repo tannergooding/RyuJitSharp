@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -36,11 +37,6 @@ public sealed partial class UnwindInfo
     private emitLocation? uwiEndLoc;
     private emitLocation? uwiCurLoc;
 
-#if DEBUG
-    private bool uwiInitialized;
-#endif
-
-#if DEBUG
     private static string DebugReference(object? value)
     {
         return value is null ? "NULL" : $"managed#{RuntimeHelpers.GetHashCode(value):x8}";
@@ -50,7 +46,6 @@ public sealed partial class UnwindInfo
     {
         return new string(' ', indent);
     }
-#endif
 
     public void InitUnwindInfo(Compiler compiler, emitLocation? startLoc, emitLocation? endLoc)
     {
@@ -62,10 +57,11 @@ public sealed partial class UnwindInfo
         uwiEndLoc = endLoc;
         uwiCurLoc = null;
 
-#if DEBUG
-        uwiInitialized = true;
-        uwiAddingNOP = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            uwiInitialized = true;
+            uwiAddingNOP = false;
+        }
     }
 
     public emitLocation? GetCurrentEmitterLocation()
@@ -143,20 +139,21 @@ public sealed partial class UnwindInfo
         noway_assert(first.ufiNext is null);
 
         var maxFragmentSize = UW_MAX_FRAGMENT_SIZE_BYTES;
-#if DEBUG
-        var splitFunctionSize = unchecked((uint)JitConfig.JitSplitFunctionSize);
-        if (Configuration.TARGET_ARMARCH && (splitFunctionSize == 0))
+        if (Configuration.DEBUG)
         {
-            if (compiler.compStressCompile(Compiler.STRESS_UNWIND, 10))
+            var splitFunctionSize = unchecked((uint)JitConfig.JitSplitFunctionSize);
+            if (Configuration.TARGET_ARMARCH && (splitFunctionSize == 0))
             {
-                splitFunctionSize = compiler.compStressCompile(Compiler.STRESS_UNWIND, 5) ? 4u : 200u;
+                if (compiler.compStressCompile(Compiler.STRESS_UNWIND, 10))
+                {
+                    splitFunctionSize = compiler.compStressCompile(Compiler.STRESS_UNWIND, 5) ? 4u : 200u;
+                }
+            }
+            if ((splitFunctionSize != 0) && (splitFunctionSize < maxFragmentSize))
+            {
+                maxFragmentSize = splitFunctionSize;
             }
         }
-        if ((splitFunctionSize != 0) && (splitFunctionSize < maxFragmentSize))
-        {
-            maxFragmentSize = splitFunctionSize;
-        }
-#endif
 
         var emitter = compiler.GetEmitter();
         var startOffset = first.ufiEmitLoc?.CodeOffset(emitter) ?? 0;
@@ -229,7 +226,7 @@ public sealed partial class UnwindInfo
         }
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void Dump(bool isHotCode, int indent = 0)
     {
         if (Configuration.TARGET_ARMARCH)
@@ -265,12 +262,12 @@ public sealed partial class UnwindInfo
         jitprintf($"{indentation}  uwiEndLoc: {DebugReference(uwiEndLoc)}\n");
         jitprintf($"{indentation}  uwiInitialized: 0x{(uwiInitialized ? 0x0FACADE1u : 0u):x8}\n");
 
+        var fragmentNumber = 1;
         for (var fragment = first; fragment is not null; fragment = fragment.ufiNext)
         {
-            fragment.Dump(indent + 2);
+            fragment.Dump(fragmentNumber++, indent + 2);
         }
     }
-#endif
 
     internal uint GetInstructionSize()
     {
@@ -300,15 +297,20 @@ public sealed partial class UnwindInfo
     private void CheckInitialized()
     {
         RequireUnwindStorageTarget();
-#if DEBUG
-        assert(uwiInitialized);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(uwiInitialized);
+        }
         noway_assert(uwiFragmentLast is not null);
     }
 
     private void CheckOpsize(byte firstCodeByte)
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         if (!Configuration.TARGET_ARM || uwiAddingNOP)
         {
             return;
@@ -317,7 +319,6 @@ public sealed partial class UnwindInfo
         var opcodeSize = GetArmOpcodeSize(firstCodeByte);
         var instructionSize = GetInstructionSize();
         assert(opcodeSize == instructionSize);
-#endif
     }
 
     private static unsafe void EmitSplitCallback(void* context, emitLocation location)
@@ -333,12 +334,6 @@ public sealed partial class UnwindInfo
         CheckInitialized();
         var last = uwiFragmentLast!;
         var newFragment = new UnwindFragmentInfo(GetCompiler(), emitLoc, true);
-#if DEBUG
-        if (Configuration.TARGET_RISCV64)
-        {
-            newFragment.SetNumberAfter(last);
-        }
-#endif
         newFragment.CopyPrologCodes(uwiFragmentFirst!);
         newFragment.SplitEpilogCodes(emitLoc, last);
         last.ufiNext = newFragment;
@@ -410,7 +405,6 @@ public sealed partial class UnwindInfo
         public abstract void AddCode(byte b1, byte b2, byte b3);
         public abstract void AddCode(byte b1, byte b2, byte b3, byte b4);
 
-#if DEBUG
         public uint GetCodeSizeFromUnwindCodes(bool isProlog)
         {
             var codes = Codes;
@@ -436,7 +430,6 @@ public sealed partial class UnwindInfo
 
             return size;
         }
-#endif
     }
 
     private sealed partial class UnwindPrologCodes : UnwindCodesStorage
@@ -531,9 +524,7 @@ public sealed partial class UnwindInfo
 
         public void SetFinalSize(int headerBytes, int epilogBytes)
         {
-#if DEBUG
             assert(GetCodeSizeFromUnwindCodes(true) <= MAX_PROLOG_SIZE_BYTES);
-#endif
             var prologBytes = Size();
             EnsureSize(headerBytes + prologBytes + epilogBytes + 3);
             upcUnwindBlockSlot = upcCodeSlot - headerBytes - epilogBytes;
@@ -657,7 +648,7 @@ public sealed partial class UnwindInfo
             return (upcMem, upcUnwindBlockSlot, size);
         }
 
-#if DEBUG
+        [Conditional("DEBUG")]
         public void Dump(int indent = 0)
         {
             if (Configuration.TARGET_ARMARCH)
@@ -714,7 +705,6 @@ public sealed partial class UnwindInfo
                 jitprintf("\n");
             }
         }
-#endif
     }
 
     private sealed partial class UnwindEpilogCodes : UnwindCodesStorage
@@ -812,15 +802,13 @@ public sealed partial class UnwindInfo
 
             uecFinalized = true;
 
-#if DEBUG
             if (!Configuration.TARGET_RISCV64)
             {
                 assert(GetCodeSizeFromUnwindCodes(false) <= MAX_EPILOG_SIZE_BYTES);
             }
-#endif
         }
 
-#if DEBUG
+        [Conditional("DEBUG")]
         public void Dump(Compiler compiler, int indent = 0)
         {
             if (Configuration.TARGET_ARMARCH)
@@ -873,7 +861,6 @@ public sealed partial class UnwindInfo
 
             DumpLoongArch64(indent);
         }
-#endif
     }
 
     private sealed partial class UnwindEpilogInfo
@@ -969,7 +956,7 @@ public sealed partial class UnwindInfo
             return matchIndex;
         }
 
-#if DEBUG
+        [Conditional("DEBUG")]
         public void Dump(int indent = 0)
         {
             if (Configuration.TARGET_ARMARCH)
@@ -997,10 +984,8 @@ public sealed partial class UnwindInfo
             jitprintf($"{indentation}  epiStartOffset: 0x{epiStartOffset:x}\n");
             jitprintf($"{indentation}  epiMatches: {dspBool(epiMatches)}\n");
             jitprintf($"{indentation}  epiStartIndex: {epiStartIndex}\n");
-
             epiCodes.Dump(m_compiler, indent + 2);
         }
-#endif
     }
 
     private sealed partial class UnwindFragmentInfo
@@ -1021,11 +1006,8 @@ public sealed partial class UnwindInfo
         private uint ufiCodeWords;
         private uint ufiEpilogScopes;
         private uint ufiStartOffset = UFI_ILLEGAL_OFFSET;
-#if DEBUG
-        private bool ufiInProlog = true;
-        private uint ufiNum;
-        private uint ufiInitialized;
-#endif
+        private bool ufiInProlog =>
+            !ReferenceEquals(ufiEpilogList, ufiEpilogFirst) && !ufiEpilogFirst.epiEmitLocation.HasValue;
 
         public UnwindFragmentInfo(Compiler compiler, emitLocation? emitLoc, bool hasPhantomProlog)
         {
@@ -1037,21 +1019,7 @@ public sealed partial class UnwindInfo
             ufiPrologCodes = new UnwindPrologCodes(compiler);
             ufiEpilogFirst = new UnwindEpilogInfo(compiler);
             ufiCurCodes = ufiPrologCodes;
-#if DEBUG
-            if (Configuration.TARGET_RISCV64)
-            {
-                ufiNum = 1;
-                ufiInitialized = 0x0FACADE0;
-            }
-#endif
         }
-
-#if DEBUG
-        public void SetNumberAfter(UnwindFragmentInfo previous)
-        {
-            ufiNum = unchecked(previous.ufiNum + 1);
-        }
-#endif
 
         public uint GetStartOffset()
         {
@@ -1066,17 +1034,17 @@ public sealed partial class UnwindInfo
 
         public void AddEpilog()
         {
-#if DEBUG
-            if (ufiInProlog)
+            if (Configuration.DEBUG)
             {
-                assert(ufiEpilogList is null);
-                ufiInProlog = false;
+                if (ufiInProlog)
+                {
+                    assert(ufiEpilogList is null);
+                }
+                else
+                {
+                    assert(ufiEpilogList is not null);
+                }
             }
-            else
-            {
-                assert(ufiEpilogList is not null);
-            }
-#endif
             var newEpilog = ufiEpilogList is null
                 ? ufiEpilogList = ufiEpilogFirst
                 : new UnwindEpilogInfo(m_compiler);
@@ -1341,13 +1309,12 @@ public sealed partial class UnwindInfo
 
             if (isHotCode)
             {
-#if DEBUG
-                if (Configuration.TARGET_ARMARCH && (JitConfig.JitFakeProcedureSplitting != 0) && (coldCode is not null))
+                if (Configuration.DEBUG && Configuration.TARGET_ARMARCH &&
+                    (JitConfig.JitFakeProcedureSplitting != 0) && (coldCode is not null))
                 {
                     assert(endOffset <= unchecked((uint)m_compiler.info.compNativeCodeSize));
                 }
                 else
-#endif
                 {
                     assert(endOffset <= unchecked((uint)m_compiler.info.compTotalHotCodeSize));
                 }
@@ -1363,22 +1330,32 @@ public sealed partial class UnwindInfo
 
             fixed (byte* storage = finalInfo.Memory)
             {
-#if DEBUG
-                if (m_compiler.opts.dspUnwind)
+                if (Configuration.DEBUG && m_compiler.opts.dspUnwind)
                 {
                     Globals.DumpUnwindInfo(m_compiler, isHotCode, startOffset, endOffset,
                         storage + finalInfo.Offset, unchecked((uint)finalInfo.Size));
                 }
-#endif
                 m_compiler.unwindAllocEEInfo((byte*)hotCode, (byte*)coldCode,
                     unchecked((int)eeStartOffset), unchecked((int)eeEndOffset), finalInfo.Size,
                     storage + finalInfo.Offset, functionKind);
             }
         }
 
-#if DEBUG
-        public void Dump(int indent = 0)
+        [Conditional("DEBUG")]
+        public void Dump(int fragmentNumber, int indent)
         {
+            if (Configuration.TARGET_ARMARCH)
+            {
+                DumpArmArch(fragmentNumber, indent);
+                return;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                DumpLoongArch64(fragmentNumber, indent);
+                return;
+            }
+
             if (!Configuration.TARGET_RISCV64)
             {
                 throw new FatalJitException(CORJIT_SKIPPED, "Numbered unwind fragment diagnostics require RISC-V64.");
@@ -1391,7 +1368,7 @@ public sealed partial class UnwindInfo
             }
 
             var indentation = DebugIndent(indent);
-            jitprintf($"{indentation}UnwindFragmentInfo #{ufiNum}, @{DebugReference(this)}:\n");
+            jitprintf($"{indentation}UnwindFragmentInfo #{fragmentNumber}, @{DebugReference(this)}:\n");
             jitprintf($"{indentation}  m_compiler: {DebugReference(m_compiler)}\n");
             jitprintf($"{indentation}  ufiNext: {DebugReference(ufiNext)}\n");
             jitprintf($"{indentation}  ufiEmitLoc: {DebugReference(ufiEmitLoc)}\n");
@@ -1408,7 +1385,7 @@ public sealed partial class UnwindInfo
             jitprintf($"{indentation}  ufiEpilogScopes: {ufiEpilogScopes}\n");
             jitprintf($"{indentation}  ufiStartOffset: 0x{ufiStartOffset:x}\n");
             jitprintf($"{indentation}  ufiInProlog: {dspBool(ufiInProlog)}\n");
-            jitprintf($"{indentation}  ufiInitialized: 0x{ufiInitialized:x8}\n");
+            jitprintf($"{indentation}  ufiInitialized: 0x{0x0FACADE0u:x8}\n");
 
             ufiPrologCodes.Dump(indent + 2);
             for (var epilog = ufiEpilogList; epilog is not null; epilog = epilog.epiNext)
@@ -1416,22 +1393,5 @@ public sealed partial class UnwindInfo
                 epilog.Dump(indent + 2);
             }
         }
-
-        public void Dump(int fragmentNumber, int indent)
-        {
-            if (Configuration.TARGET_ARMARCH)
-            {
-                DumpArmArch(fragmentNumber, indent);
-            }
-            else if (Configuration.TARGET_LOONGARCH64)
-            {
-                DumpLoongArch64(fragmentNumber, indent);
-            }
-            else
-            {
-                Dump(indent);
-            }
-        }
-#endif
     }
 }

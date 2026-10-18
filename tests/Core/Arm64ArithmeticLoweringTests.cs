@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -19,6 +18,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64ArithmeticLoweringTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(GT_EQ, false, INS_FLAGS_Z, INS_FLAGS_NONE)]
     [TestCase(GT_NE, false, INS_FLAGS_NONE, INS_FLAGS_Z)]
     [TestCase(GT_LT, false, INS_FLAGS_NC, INS_FLAGS_Z)]
@@ -67,7 +72,6 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         }
     }
 
-#if DEBUG
     [TestCase(INS_FLAGS_NONE, "0")]
     [TestCase(INS_FLAGS_V, "v")]
     [TestCase(INS_FLAGS_C, "c")]
@@ -86,6 +90,8 @@ internal static unsafe class Arm64ArithmeticLoweringTests
     [TestCase(INS_FLAGS_NZCV, "nzcv")]
     public static void ConditionalCompareDumpUsesNativeFlagNames(insCFlags flags, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "Conditional-compare dumps are available only in Debug.");
+
         CSELiveAcrossCallCostTests.WithCompiler(compiler =>
         {
             var node = new GenTreeCCMP(TYP_VOID, new GenCondition(GenCondition.EQ),
@@ -108,7 +114,6 @@ internal static unsafe class Arm64ArithmeticLoweringTests
             }
         });
     }
-#endif
 
     [TestCase(0, false)]
     [TestCase(1, false)]
@@ -1266,4 +1271,3 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         }
     }
 }
-#endif

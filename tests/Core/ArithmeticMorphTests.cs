@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -602,17 +603,8 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
-    [TestCase(TYP_INT, int.MinValue, false)]
     // 32-bit targets morph TYP_LONG division into a helper before this rewrite.
-#if TARGET_64BIT
-    [TestCase(TYP_LONG, long.MinValue, false)]
-#endif
-    [TestCase(TYP_INT, -1, false)]
-    [TestCase(TYP_INT, 1, false)]
-    [TestCase(TYP_INT, -3, true)]
-#if TARGET_64BIT
-    [TestCase(TYP_LONG, -3, true)]
-#endif
+    [TestCaseSource(nameof(NegatedSignedDivisionCases))]
     public static void NegatedSignedDivisionPreservesMinimumDivisors(var_types type, long divisorValue, bool moveNegation)
     {
         WithCompiler(compiler => {
@@ -640,6 +632,22 @@ internal static unsafe class ArithmeticMorphTests
                 Assert.That(divisor.AsIntConCommon().IntegralValue, Is.EqualTo(divisorValue));
             }
         });
+    }
+
+    private static IEnumerable<TestCaseData> NegatedSignedDivisionCases()
+    {
+        yield return new TestCaseData(TYP_INT, int.MinValue, false);
+        if (Configuration.TARGET_64BIT)
+        {
+            yield return new TestCaseData(TYP_LONG, long.MinValue, false);
+        }
+        yield return new TestCaseData(TYP_INT, -1, false);
+        yield return new TestCaseData(TYP_INT, 1, false);
+        yield return new TestCaseData(TYP_INT, -3, true);
+        if (Configuration.TARGET_64BIT)
+        {
+            yield return new TestCaseData(TYP_LONG, -3, true);
+        }
     }
 
     [Test]

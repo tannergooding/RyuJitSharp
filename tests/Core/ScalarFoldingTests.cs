@@ -495,11 +495,10 @@ internal static unsafe class ScalarFoldingTests
 
             var longValue = new GenTreeIntCon(TYP_I_IMPL, 0x1AB);
             longValue.FixupInitBlkValue(TYP_LONG);
-#if TARGET_64BIT
-            Assert.That(longValue.IconValue, Is.EqualTo(unchecked((nint)0xABABABABABABABABUL)));
-#else
-            Assert.That(longValue.IconValue, Is.EqualTo(unchecked((nint)0xABABABABu)));
-#endif
+            var expectedLongValue = Configuration.TARGET_64BIT
+                ? unchecked((nint)0xABABABABABABABABUL)
+                : unchecked((nint)0xABABABABu);
+            Assert.That(longValue.IconValue, Is.EqualTo(expectedLongValue));
             Assert.That(longValue.Type, Is.EqualTo(TYP_LONG));
         });
     }
@@ -782,13 +781,13 @@ internal static unsafe class ScalarFoldingTests
         });
     }
 
-#if DEBUG
     [TestCase(long.MinValue, " -0x8000000000000000")]
     [TestCase(long.MinValue + 1, " -0x7fffffffffffffff")]
     [TestCase(-1000L, " -0x3e8")]
     [TestCase(long.MaxValue, " 0x7fffffffffffffff")]
     public static void IntegerDumpPreservesUnsignedHexMagnitude(long value, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only integer diagnostics.");
         WithCompiler(compiler => {
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
@@ -808,7 +807,6 @@ internal static unsafe class ScalarFoldingTests
             Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
         });
     }
-#endif
 
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {

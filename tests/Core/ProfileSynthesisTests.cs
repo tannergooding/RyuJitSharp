@@ -172,11 +172,14 @@ internal static unsafe class ProfileSynthesisTests
             foreach (var edge in edges)
             {
                 Assert.That(edge.isHeuristicBased, Is.False);
-#if DEBUG
-                Assert.That(edge.hasLikelihood, Is.False);
-#else
-                Assert.That(edge.Likelihood, Is.Zero);
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(edge.hasLikelihood, Is.False);
+                }
+                else
+                {
+                    Assert.That(edge.Likelihood, Is.Zero);
+                }
             }
 
             AssignLikelihoods(synthesis);
@@ -296,15 +299,16 @@ internal static unsafe class ProfileSynthesisTests
             var synthesis = CreateSynthesis(compiler);
             ComputeCyclicProbabilities(synthesis);
             SetInputWeights(blocks, 100);
-#if DEBUG
-            SolverConfig(ref JitConfig) = solver ? 1 : 0;
-            var output = Capture(compiler, () => ComputeBlockWeights(synthesis));
-            Assert.That(output.Contains("Synthesis solver:", StringComparison.Ordinal), Is.EqualTo(solver));
-
-#else
-            ComputeBlockWeights(synthesis);
-
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                SolverConfig(ref JitConfig) = solver ? 1 : 0;
+                var output = Capture(compiler, () => ComputeBlockWeights(synthesis));
+                Assert.That(output.Contains("Synthesis solver:", StringComparison.Ordinal), Is.EqualTo(solver));
+            }
+            else
+            {
+                ComputeBlockWeights(synthesis);
+            }
             for (var i = 0; i < blocks.Length; i++)
             {
                 Assert.That(blocks[i].bbWeight, Is.EqualTo(expected[i]).Within(1e-10));
@@ -530,9 +534,10 @@ internal static unsafe class ProfileSynthesisTests
             Assert.That(compiler.fgCalledCount, Is.EqualTo(80));
             Assert.That(blocks[1].bbWeight, Is.EqualTo(80));
             Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(1));
-#if DEBUG
-            Assert.That(compiler.fgPgoDeferredInconsistency, Is.False);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.fgPgoDeferredInconsistency, Is.False);
+            }
         });
     }
 
@@ -616,9 +621,10 @@ internal static unsafe class ProfileSynthesisTests
             block.SetKindAndTargetEdge(BBJ_ALWAYS, Edge(block, block, 1));
             compiler.fgPgoHaveWeights = true;
             compiler.fgPgoConsistent = false;
-#if DEBUG
-            SolverConfig(ref JitConfig) = 0;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                SolverConfig(ref JitConfig) = 0;
+            }
             Assert.That(compiler.fgRepairProfile(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.fgPgoConsistent, Is.False);
             Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(1));
@@ -658,9 +664,10 @@ internal static unsafe class ProfileSynthesisTests
             var block = Blocks(compiler, BBJ_ALWAYS)[0];
             block.SetKindAndTargetEdge(BBJ_ALWAYS, Edge(block, block, 1));
             compiler.fgImportDone = imported;
-#if DEBUG
-            SolverConfig(ref JitConfig) = 0;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                SolverConfig(ref JitConfig) = 0;
+            }
             var synthesis = CreateSynthesis(compiler);
             RunSynthesis(synthesis, retain ? ProfileSynthesisOption.RetainLikelihoods : ProfileSynthesisOption.AssignLikelihoods);
             Assert.That(compiler.fgPgoConsistent, Is.False);
@@ -704,7 +711,6 @@ internal static unsafe class ProfileSynthesisTests
         blocks[0].setBBProfileWeight(entryWeight);
     }
 
-#if DEBUG
     [TestCase("0", 0)]
     [TestCase("0x1p-2,0.8", 0.25)]
     [TestCase("1", 1)]
@@ -714,6 +720,7 @@ internal static unsafe class ProfileSynthesisTests
     [TestCase("inf", 0.00001)]
     public static void ExceptionalWeightOverrideUsesOnlyValidFirstFactor(string setting, double expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile synthesis options.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_RETURN, BBJ_RETURN);
             compiler.compHndBBtab = [new() {
@@ -738,6 +745,7 @@ internal static unsafe class ProfileSynthesisTests
     [TestCase(" , ")]
     public static void EmptyExceptionalWeightOverrideFailsExplicitly(string setting)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile synthesis options.");
         WithCompiler(compiler => {
             _ = Blocks(compiler, BBJ_RETURN);
             var bytes = Encoding.UTF8.GetBytes(setting + '\0');
@@ -754,6 +762,7 @@ internal static unsafe class ProfileSynthesisTests
     [TestCase(true)]
     public static void InvalidPreImportFlowDefersConsistencyAssertion(bool imported)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
             blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.2), Edge(blocks[0], blocks[2], 0.2));
@@ -773,6 +782,7 @@ internal static unsafe class ProfileSynthesisTests
     [Test]
     public static void IncomingChecksSeparateMissingLikelihoodFromWeightBalance()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
             var edge = new FlowEdge(blocks[0], blocks[1], null);
@@ -796,6 +806,7 @@ internal static unsafe class ProfileSynthesisTests
     [Test]
     public static void OutgoingChecksPreserveOsrAndMissingLikelihoodExceptions()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
             blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.3), Edge(blocks[0], blocks[2], 0.2));
@@ -814,6 +825,7 @@ internal static unsafe class ProfileSynthesisTests
     [TestCase(2)]
     public static void ProfileChecksExcludeEhAndOsrIncomingFlow(int entryKind)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
             blocks[0].SetCond(Edge(blocks[0], blocks[1], 0.5), Edge(blocks[0], blocks[2], 0.5));
@@ -856,6 +868,7 @@ internal static unsafe class ProfileSynthesisTests
     [TestCase(BBJ_CALLFINALLY, false)]
     public static void EhBoundaryClassificationMatchesNative(BBKinds kind, bool outgoing)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var block = BasicBlock.New(compiler, kind);
             Assert.That(block.hasEHBoundaryIn, Is.False);
@@ -868,6 +881,7 @@ internal static unsafe class ProfileSynthesisTests
     [Test]
     public static void ProfileCheckingHonorsUnprofiledAndDeferredBlocks()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
@@ -888,6 +902,7 @@ internal static unsafe class ProfileSynthesisTests
     [TestCase(0, false)]
     public static void PhaseChecksHonorConfigurationAndExactSuccessDump(int config, bool enabled)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only profile consistency diagnostics.");
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
@@ -927,13 +942,11 @@ internal static unsafe class ProfileSynthesisTests
         finally
         {
             s_jitstdout = previous;
-            compiler.verbose = previousVerbose;
+            TestConfiguration.SetVerbose(compiler, previousVerbose);
         }
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgComputeDfs")]
     private static extern FlowGraphDfsTree ComputeDfs(Compiler compiler, bool useProfile);
 

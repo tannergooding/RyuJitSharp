@@ -14,6 +14,7 @@ public sealed partial class UnwindInfo
     private sealed class DebugData
     {
         internal bool AddingNOP;
+        internal bool Initialized;
     }
 
     private static class DebugDataStorage
@@ -47,6 +48,36 @@ public sealed partial class UnwindInfo
             else if (GetExistingDebugData() is { } debugData)
             {
                 debugData.AddingNOP = false;
+            }
+        }
+    }
+
+    private bool uwiInitialized
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Unwind initialization state is only available in Debug builds.");
+            }
+
+            return GetExistingDebugData()?.Initialized ?? false;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Unwind initialization state is only available in Debug builds.");
+            }
+
+            if (value)
+            {
+                GetDebugData().Initialized = true;
+            }
+            else if (GetExistingDebugData() is { } debugData)
+            {
+                debugData.Initialized = false;
             }
         }
     }

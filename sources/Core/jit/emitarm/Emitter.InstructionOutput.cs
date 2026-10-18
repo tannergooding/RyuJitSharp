@@ -26,9 +26,6 @@ public partial class Emitter
             var format = id.idInsFmt();
             var opSize = id.idOpSize();
             byte callInstructionSize = 0;
-#if DEBUG
-            var displayOffsets = compiler.opts.dspGCtbls || !compiler.opts.disDiffable;
-#endif
 
             assert((int)REG_ARM32_NA == (int)REG_ARM32_NA);
 
@@ -915,11 +912,8 @@ public partial class Emitter
                 var addressOffset = compiler.lvaFrameAddress(varNum, true, out _, 0, false);
                 if (id.idGCref() != GCT_NONE)
                 {
-                    emitGCvarLiveUpd(addressOffset + (int)offset, varNum, id.idGCref(), dst
-#if DEBUG
-                        , (uint)varNum
-#endif
-                    );
+                    emitGCvarLiveUpd(addressOffset + (int)offset, varNum, id.idGCref(), dst,
+                        Configuration.DEBUG ? unchecked((uint)varNum) : 0);
                 }
                 else
                 {
@@ -929,40 +923,38 @@ public partial class Emitter
                             ?? throw new InvalidOperationException("The spill temporary must exist.")).tdTempType;
                     if (variableType is TYP_REF or TYP_BYREF)
                     {
-                        emitGCvarDeadUpd(addressOffset + (int)offset, dst
-#if DEBUG
-                            , (uint)varNum
-#endif
-                        );
+                        emitGCvarDeadUpd(addressOffset + (int)offset, dst,
+                            Configuration.DEBUG ? unchecked((uint)varNum) : 0);
                     }
                 }
             }
 
-#if DEBUG
-            var expectedSize = (nuint)emitSizeOfInsDsc(id);
-            assert(size == expectedSize);
-            if (compiler.opts.disAsm || compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                emitDispInsArm32(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp, (nuint)(dst - *dp), ig);
+                var expectedSize = (nuint)emitSizeOfInsDsc(id);
+                assert(size == expectedSize);
+                if (compiler.opts.disAsm || compiler.verbose)
+                {
+                    var displayOffsets = compiler.opts.dspGCtbls || !compiler.opts.disDiffable;
+                    emitDispInsArm32(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp, (nuint)(dst - *dp), ig);
+                }
+                if (compiler.compDebugBreak
+                    && (uint)JitConfig.JitBreakEmitOutputInstr == (id.idDebugOnlyInfo()
+                        ?? throw new InvalidOperationException("Instruction debug information must exist.")).idNum)
+                {
+                    assert(false, "!\"JitBreakEmitOutputInstr reached\"");
+                }
+                if (compiler.verbose || compiler.opts.disasmWithGC)
+                {
+                    emitDispGCInfoDelta();
+                }
             }
-            if (compiler.compDebugBreak
-                && (uint)JitConfig.JitBreakEmitOutputInstr == (id.idDebugOnlyInfo()
-                    ?? throw new InvalidOperationException("Instruction debug information must exist.")).idNum)
-            {
-                assert(false, "!\"JitBreakEmitOutputInstr reached\"");
-            }
-            if (compiler.verbose || compiler.opts.disasmWithGC)
-            {
-                emitDispGCInfoDelta();
-            }
-#else
-            if (compiler.opts.disAsm)
+            else if (compiler.opts.disAsm)
             {
                 var expectedSize = (nuint)emitSizeOfInsDsc(id);
                 assert(size == expectedSize);
                 emitDispInsArm32(id, false, false, true, emitCurCodeOffs(originalDst), *dp, (nuint)(dst - *dp), ig);
             }
-#endif
             assert(*dp != dst);
             *dp = dst;
 
@@ -974,13 +966,12 @@ public partial class Emitter
         regMaskTP byRefRegisters, byte* callStart, byte* dst, byte callInstructionSize)
     {
         var compiler = _compiler ?? throw new InvalidOperationException("Emitter is not initialized.");
+        _ = compiler;
         emitUpdateLiveGCvars(gcVars, callStart);
-#if DEBUG
-        if (compiler.verbose || compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && (compiler.verbose || compiler.opts.disasmWithGC))
         {
             emitDispGCVarDelta();
         }
-#endif
         if (id.idGCref() == GCT_GCREF)
         {
             gcRefRegisters |= RBM_R0;

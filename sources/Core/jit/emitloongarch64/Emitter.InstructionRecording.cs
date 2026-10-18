@@ -93,12 +93,10 @@ public partial class Emitter
         ((instrDescJmp)id).idjTarget = target;
         id.idjShort = false;
         id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
-#if DEBUG
-        if (compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && compiler.opts.compLongAddress)
         {
             id.idjKeepLong = true;
         }
-#endif
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;

@@ -3,13 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
+
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    [Conditional("DEBUG")]
     private unsafe void emitInsSveSanityCheck(instrDesc id)
     {
         nint imm;
@@ -2294,4 +2296,3 @@ public partial class Emitter
         }
     }
 }
-#endif

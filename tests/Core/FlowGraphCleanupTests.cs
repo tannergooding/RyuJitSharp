@@ -37,9 +37,10 @@ internal static unsafe class FlowGraphCleanupTests
             var ret = new GenTreeUnOp(GT_RETURN, TYP_INT, comparison);
             var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
             var context = new InlineContext(strategy) { _ilSize = 20 };
-#if DEBUG
-            context._ilInstsSet = new BitArray(20, true);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                context._ilInstsSet = new BitArray(20, true);
+            }
             var debugInfo = new DebugInfo(context, new ILLocation(5, 0));
             var statement = compiler.fgNewStmtFromTree(ret, di: debugInfo);
             compiler.fgInsertStmtAtEnd(block, statement);

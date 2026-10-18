@@ -27,13 +27,17 @@ public partial class LIR
         {
         }
 
-#if DEBUG
         /// <summary>Performs a set of correctness checks on the LIR contained in this range.</summary>
         /// <param name="compiler">A compiler context.</param>
         /// <param name="checkUnusedValues"></param>
         /// <returns>'true' if the LIR for the specified range is legal.</returns>
         public bool CheckLir(Compiler compiler, bool checkUnusedValues = false)
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("LIR validation is only available in Debug builds.");
+            }
+
             // This method checks the following properties:
             // - Defs are singly-used
             // - Uses follow defs
@@ -153,10 +157,6 @@ public partial class LIR
             assert(checkLclVarSemanticsHelper.Check());
             return true;
         }
-#else
-        public bool CheckLir(Compiler compiler, bool checkUnusedValues = false)
-            => throw new InvalidOperationException("LIR validation is only available in Debug builds.");
-#endif
 
         /// <summary>Deletes a node from this range.</summary>
         /// <param name="node">The node to delete. Must be part of this range.</param>
@@ -180,13 +180,14 @@ public partial class LIR
 
             assert(lastNode.Next is null);
 
-#if DEBUG
-            // We can't do this in the loop above because it causes `IsPhiNode` to return a false negative for `GT_STORE_LCL_VAR` nodes that participate in phi definitions.
-            for (var node = firstNode; node is not null; node = node.Next)
+            if (Configuration.DEBUG)
             {
-                DEBUG_DESTROY_NODE(node);
+                // We can't do this in the loop above because it causes `IsPhiNode` to return a false negative for `GT_STORE_LCL_VAR` nodes that participate in phi definitions.
+                for (var node = firstNode; node is not null; node = node.Next)
+                {
+                    DEBUG_DESTROY_NODE(node);
+                }
             }
-#endif
         }
 
         /// <summary>Deletes a subrange from this range.</summary>
@@ -506,9 +507,10 @@ public partial class LIR
         /// <param name="markOperandsUnused">If true, marks the node's operands as unused.</param>
         public void Remove(GenTree node, bool markOperandsUnused = false)
         {
-#if DEBUG
-            assert(Contains(node));
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(Contains(node));
+            }
 
             if (markOperandsUnused)
             {
@@ -555,9 +557,10 @@ public partial class LIR
         /// <remarks>Both the start and the end of the subrange must be part of this range.</remarks>
         public void Remove(GenTree firstNode, GenTree lastNode)
         {
-#if DEBUG
-            assert(Contains(firstNode));
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(Contains(firstNode));
+            }
 
             if (Configuration.DEBUG)
             {
@@ -646,9 +649,10 @@ public partial class LIR
         /// <returns>Return Value: Returns true if a use was found; false otherwise.</returns>
         public bool TryGetUse(GenTree node, out Use use)
         {
-#if DEBUG
-            assert(Contains(node));
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(Contains(node));
+            }
 
             // Don't bother looking for uses of nodes that are not values.
             // If the node is the last node, we won't find a use (and we would
@@ -698,9 +702,10 @@ public partial class LIR
             }
             else
             {
-#if DEBUG
-                assert(Contains(insertionPoint));
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(Contains(insertionPoint));
+                }
 
                 last.Next = insertionPoint.Next;
                 if (last.Next is null)
@@ -745,9 +750,10 @@ public partial class LIR
             }
             else
             {
-#if DEBUG
-                assert(Contains(insertionPoint));
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(Contains(insertionPoint));
+                }
                 first.Prev = insertionPoint.Prev;
 
                 if (first.Prev is null)

@@ -377,9 +377,11 @@ public partial class Compiler
                 if ((Configuration.JIT32_GCENCODER && (lclNum == lvaLocAllocSPvar)) ||
                     (lclNum == lvaRetAddrVar))
                 {
-#if DEBUG
-                    assert(dsc.StackOffset != BAD_STK_OFFS);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(dsc.StackOffset != BAD_STK_OFFS);
+                    }
+
                     continue;
                 }
 
@@ -634,27 +636,23 @@ public partial class Compiler
 
             lvaIncrementFrameSize(pad);
             stkOffs -= pad;
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("Pad ");
                 gtDispLclVar(lclNum, false);
                 jitprintf($", size={size}, stkOffs={(stkOffs < 0 ? '-' : '+')}0x{Math.Abs(stkOffs):x}, pad={pad}\n");
             }
-#endif
         }
 
         lvaIncrementFrameSize(size);
         stkOffs -= size;
         local.StackOffset = stkOffs;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("Assign ");
             gtDispLclVar(lclNum, false);
             jitprintf($", size={size}, stkOffs={(stkOffs < 0 ? '-' : '+')}0x{Math.Abs(stkOffs):x}\n");
         }
-#endif
         return stkOffs;
     }
 

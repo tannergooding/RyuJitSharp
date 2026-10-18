@@ -3,11 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if DEBUG
     private enum FullAllocationEvent
     {
         ZERO_REF,
@@ -23,6 +24,7 @@ public sealed partial class LinearScan
         REUSE_REG,
     }
 
+    [Conditional("DEBUG")]
     private void dumpFullAllocationEvent(
         FullAllocationEvent allocationEvent,
         RefPosition reference,
@@ -32,6 +34,7 @@ public sealed partial class LinearScan
         dumpFullAllocationEvent(allocationEvent, reference, interval, REG_NA, selectionScore);
     }
 
+    [Conditional("DEBUG")]
     private void dumpFullAllocationEvent(
         FullAllocationEvent allocationEvent,
         RefPosition reference,
@@ -42,6 +45,7 @@ public sealed partial class LinearScan
         dumpFullAllocationEvent(allocationEvent, reference, interval, register, selectionScore);
     }
 
+    [Conditional("DEBUG")]
     private void dumpFullAllocationEvent(
         FullAllocationEvent allocationEvent,
         RefPosition reference,
@@ -124,5 +128,4 @@ public sealed partial class LinearScan
             }
         }
     }
-#endif
 }

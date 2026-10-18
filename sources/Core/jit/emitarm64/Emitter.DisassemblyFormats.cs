@@ -71,15 +71,6 @@ public partial class Emitter
 
         /* Figure out the operand size */
         var size = id.idOpSize();
-        var attr = size;
-        if (id.idGCref() == GCT_GCREF)
-        {
-            attr = EA_GCREF;
-        }
-        else if (id.idGCref() == GCT_BYREF)
-        {
-            attr = EA_BYREF;
-        }
 
         nint imm;
         int dataOffset;
@@ -275,22 +266,23 @@ public partial class Emitter
                     {
                         jitprintf("HIGH RELOC ");
                         emitDispImm((nint)id.idAddr().iiaAddr, false);
-                        var targetHandle = debugInfo.idMemCookie;
+                        if (Configuration.DEBUG)
+                        {
+                            var targetHandle = debugInfo.idMemCookie;
 
-#if DEBUG
-                        if (targetHandle == (nint)TargetHandleType.THT_InitializeArrayIntrinsics)
-                        {
-                            targetName = "InitializeArrayIntrinsics";
+                            if (targetHandle == (nint)TargetHandleType.THT_InitializeArrayIntrinsics)
+                            {
+                                targetName = "InitializeArrayIntrinsics";
+                            }
+                            else if (targetHandle == (nint)TargetHandleType.THT_GSCookieCheck)
+                            {
+                                targetName = "GlobalSecurityCookieCheck";
+                            }
+                            else if (targetHandle == (nint)TargetHandleType.THT_SetGSCookie)
+                            {
+                                targetName = "SetGlobalSecurityCookie";
+                            }
                         }
-                        else if (targetHandle == (nint)TargetHandleType.THT_GSCookieCheck)
-                        {
-                            targetName = "GlobalSecurityCookieCheck";
-                        }
-                        else if (targetHandle == (nint)TargetHandleType.THT_SetGSCookie)
-                        {
-                            targetName = "SetGlobalSecurityCookie";
-                        }
-#endif
                     }
                     else if (id.idIsBound())
                     {

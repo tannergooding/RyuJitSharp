@@ -201,10 +201,10 @@ internal static class LinearScanEdgeResolutionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void ScratchSelectionExcludesLiveSourceDestinationAndTerminatorRegisters()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation behavior.");
         WithEdge(2, (compiler, allocator, source, target, _) =>
         {
             AvailableIntegerRegisters(allocator) = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RDX | SRBM_X64_RBX;
@@ -227,7 +227,6 @@ internal static class LinearScanEdgeResolutionTests
             Assert.That(consumed, Is.EqualTo(REG_X64_NA));
         });
     }
-#endif
 
     [Test]
     public static void WriteThroughSplitRetainsValidMemoryHome()
@@ -272,10 +271,10 @@ internal static class LinearScanEdgeResolutionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void VerboseJoinReportsSourceDestinationAndResolutionKind()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation diagnostics.");
         WithEdge(1, (compiler, allocator, source, target, _) =>
         {
             TestConfiguration.EnableVerbose(compiler);
@@ -294,7 +293,6 @@ internal static class LinearScanEdgeResolutionTests
                 $"move V00 from {REG_X64_RCX.Name} to {REG_X64_RDX.Name} (Join)"));
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -378,11 +376,12 @@ internal static class LinearScanEdgeResolutionTests
         });
     }
 
-#if DEBUG && TARGET_AMD64
     [TestCase(true)]
     [TestCase(false)]
     public static unsafe void CriticalSwitchRequiresBothOperandsWithRecoverableError(bool missingFirst)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64,
+            "This test validates Debug-only AMD64 behavior.");
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) =>
         {
             compiler.compRationalIRForm = true;
@@ -449,13 +448,12 @@ internal static class LinearScanEdgeResolutionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_op2")]
     private static extern ref GenTree? SecondOperand(GenTreeOp node);
-#endif
 
-#if TARGET_ARM
     [TestCase(TYP_FLOAT, false)]
     [TestCase(TYP_DOUBLE, true)]
     public static void CriticalSharedTargetAccountsForLiveSecondFloatHalf(var_types type, bool reloadAtJoin)
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires ARM32 target semantics.");
         LinearScanLocalCandidatesTests.WithCandidates(2, (compiler, allocator) =>
         {
             compiler.compRationalIRForm = true;
@@ -529,7 +527,6 @@ internal static class LinearScanEdgeResolutionTests
             }
         });
     }
-#endif
 
     [Test]
     public static void CriticalEdgeWithOnlyEhVariablesReloadsAtJoinWithoutSplitting()
@@ -596,7 +593,6 @@ internal static class LinearScanEdgeResolutionTests
         });
     }
 
-#if DEBUG
     [TestCase(0x1, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RBX)]
     [TestCase(0x1, TYP_INT, SRBM_X64_RAX, SRBM_X64_RAX)]
     [TestCase(0x2, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RAX)]
@@ -609,6 +605,7 @@ internal static class LinearScanEdgeResolutionTests
     public static void NullResolutionStressUsesOneCandidateWithoutFixedRegister(
         int stressMask, var_types type, regMask candidates, regMask expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation stress.");
         WithEdge(1, (_, allocator, _, _, _) =>
         {
             StressMask(allocator) = stressMask;
@@ -622,6 +619,7 @@ internal static class LinearScanEdgeResolutionTests
     public static void NonnullStressStillRespectsMinimumCandidatesAndFixedRegister(
         uint minimumCount, bool fixedReference, regMask expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation stress.");
         WithEdge(1, (_, allocator, _, _, _) =>
         {
             StressMask(allocator) = 0x2;
@@ -641,6 +639,7 @@ internal static class LinearScanEdgeResolutionTests
     [TestCase(0x3, REG_X64_NA)]
     public static void ScratchSelectionUsesNullableStressContract(int stressMask, regNumber expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only register-allocation stress.");
         WithEdge(1, (compiler, allocator, source, target, _) =>
         {
             StressMask(allocator) = stressMask;
@@ -650,7 +649,6 @@ internal static class LinearScanEdgeResolutionTests
             Assert.That(scratch, Is.EqualTo(expected));
         });
     }
-#endif
 
     private static void WithEdge(int localCount,
         Action<Compiler, LinearScan, BasicBlock, BasicBlock, BasicBlock> action)
@@ -721,7 +719,6 @@ internal static class LinearScanEdgeResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "handleOutgoingCriticalEdges")]
     private static extern void HandleOutgoingCriticalEdges(LinearScan allocator, BasicBlock block);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "stressLimitRegs")]
     private static extern regMask StressLimit(
         LinearScan allocator, RefPosition? reference, var_types type, regMask candidates);
@@ -732,7 +729,6 @@ internal static class LinearScanEdgeResolutionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocals(LinearScan allocator);

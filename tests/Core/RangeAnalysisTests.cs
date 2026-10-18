@@ -35,7 +35,6 @@ internal static unsafe class RangeAnalysisTests
     private static extern bool DoesVarDefOverflow(RangeCheck analysis, BasicBlock block,
         GenTreeLclVarCommon local, Range range);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
     private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
 
@@ -48,6 +47,7 @@ internal static unsafe class RangeAnalysisTests
     [Test]
     public static void WidenDiagnosticPrintsBlockAndTree()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only range diagnostics.");
         WithCompiler((compiler, _) =>
         {
             var block = new BasicBlock(null, null) { bbNum = 12 };
@@ -79,6 +79,7 @@ internal static unsafe class RangeAnalysisTests
     [Test]
     public static void BetweenBoundsDiagnosticFormatsValueNumberAsHexadecimal()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only range diagnostics.");
         WithCompiler((compiler, store) =>
         {
             var upper = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -109,6 +110,7 @@ internal static unsafe class RangeAnalysisTests
     [Test]
     public static void BinaryOverflowDiagnosticPrintsOperatorAndOperandRanges()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only range diagnostics.");
         WithCompiler((compiler, _) =>
         {
             var block = new BasicBlock(null, null);
@@ -163,6 +165,7 @@ internal static unsafe class RangeAnalysisTests
         bool verbose,
         bool emptyPhiEdgeAssertions)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only range diagnostics.");
         WithCompiler((compiler, store) =>
         {
             var block = new BasicBlock(null, null) { bbNum = 12 };
@@ -199,7 +202,7 @@ internal static unsafe class RangeAnalysisTests
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
             var previous = Globals.s_jitstdout;
             Globals.s_jitstdout = writer;
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
 
             try
             {
@@ -226,8 +229,6 @@ internal static unsafe class RangeAnalysisTests
             }
         });
     }
-#endif
-
     [TestCase(TYP_BYTE, -128, 127)]
     [TestCase(TYP_UBYTE, 0, 255)]
     [TestCase(TYP_SHORT, -32768, 32767)]

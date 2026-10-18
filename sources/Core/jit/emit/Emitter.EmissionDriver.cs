@@ -166,9 +166,7 @@ public partial class Emitter
                 *epilogSize = unchecked(*epilogSize + (uint)emitExitSeqSize);
             }
 
-#if DEBUG
             emitCheckIGList();
-#endif
             var codeChunk = new AllocMemChunk
             {
                 alignment = 1,
@@ -253,27 +251,29 @@ public partial class Emitter
                 emitCurStackLvl = 0;
             }
             VarSetOps.ClearD(compiler, emitThisGCrefVars);
-#if DEBUG
-            if (Configuration.TARGET_X86)
+            if (Configuration.DEBUG)
             {
-                VarSetOps.ClearD(compiler, debugThisGCrefVars);
-                VarSetOps.ClearD(compiler, debugPrevGCrefVars);
-                debugPrevRegPtrDsc = null;
+                if (Configuration.TARGET_X86)
+                {
+                    VarSetOps.ClearD(compiler, debugThisGCrefVars);
+                    VarSetOps.ClearD(compiler, debugPrevGCrefVars);
+                    debugPrevRegPtrDsc = null;
+                }
             }
-#endif
             emitThisGCrefRegs = (regMask)RBM_NONE;
             emitThisByrefRegs = (regMask)RBM_NONE;
             emitThisGCrefVset = true;
 
-#if DEBUG
-            emitIssuing = true;
-            VarSetOps.AssignNoCopy(compiler, ref emitPrevGCrefVars, VarSetOps.UninitVal());
-            emitPrevGCrefRegs = unchecked((regMask)0xBAADFEEDu);
-            emitPrevByrefRegs = unchecked((regMask)0xBAADFEEDu);
-            VarSetOps.AssignNoCopy(compiler, ref emitInitGCrefVars, VarSetOps.UninitVal());
-            emitInitGCrefRegs = unchecked((regMask)0xBAADFEEDu);
-            emitInitByrefRegs = unchecked((regMask)0xBAADFEEDu);
-#endif
+            if (Configuration.DEBUG)
+            {
+                emitIssuing = true;
+                VarSetOps.AssignNoCopy(compiler, ref emitPrevGCrefVars, VarSetOps.UninitVal());
+                emitPrevGCrefRegs = unchecked((regMask)0xBAADFEEDu);
+                emitPrevByrefRegs = unchecked((regMask)0xBAADFEEDu);
+                VarSetOps.AssignNoCopy(compiler, ref emitInitGCrefVars, VarSetOps.UninitVal());
+                emitInitGCrefRegs = unchecked((regMask)0xBAADFEEDu);
+                emitInitByrefRegs = unchecked((regMask)0xBAADFEEDu);
+            }
             codeGen.GCInfo.gcVarPtrSetInit();
             emitSyncThisObjOffs = -1;
             emitSyncThisObjReg = REG_NA;
@@ -342,18 +342,16 @@ public partial class Emitter
                     }
                 }
             }
-#if DEBUG
-            else
+            else if (Configuration.DEBUG)
             {
                 emitTrkVarCnt = 0;
                 emitGCrFrameOffsTab = null;
             }
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
                 jitprintf("\n***************************************************************************\n");
                 jitprintf("Instructions as they come out of the scheduler\n\n");
             }
-#endif
             var cp = codeChunk.block;
             writeableOffset = unchecked((nint)(codeChunk.blockRW - codeChunk.block));
 
@@ -362,16 +360,11 @@ public partial class Emitter
                 *instrCount = 0;
             }
 
-#if DEBUG
-            var nextMapping = compiler.genRichIPmappings.First;
-#endif
-#if DEBUG
+            var nextMapping = Configuration.DEBUG ? compiler.genRichIPmappings.First : null;
             instrDesc? previousId = null;
-#endif
             for (var ig = emitIGlist; ig is not null; ig = ig.igNext)
             {
- #if DEBUG
-                if (Configuration.TARGET_ARM64)
+                if (Configuration.DEBUG && Configuration.TARGET_ARM64)
                 {
                     var groupDescriptors = ig.igData.AsSpan();
                     for (var index = 0; index < ig.igInsCnt; index++)
@@ -386,7 +379,6 @@ public partial class Emitter
                         assert(previousId.idIns() != INS_sve_movprfx);
                     }
                 }
-#endif
                 assert((ig.igFlags & InsGroupFlags.Placeholder) == 0);
                 if (ig == emitFirstColdIG)
                 {
@@ -401,30 +393,31 @@ public partial class Emitter
                     }
                 }
 
-#if DEBUG
-                if (compiler.opts.disAsm || compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    if (compiler.verbose || compiler.opts.disasmWithGC)
+                    if (compiler.opts.disAsm || compiler.verbose)
                     {
-                        jitprintf("\n");
-                        emitDispIG(ig);
-                    }
-                    else
-                    {
-                        jitprintf($"\n{emitLabelString(ig)}:");
-                        if (!compiler.opts.disDiffable)
+                        if (compiler.verbose || compiler.opts.disasmWithGC)
                         {
-                            if (compiler.opts.disAddr)
-                            {
-                                jitprintf("            ");
-                            }
-                            jitprintf($"  ;; offset=0x{emitCurCodeOffs(cp):X4}");
+                            jitprintf("\n");
+                            emitDispIG(ig);
                         }
-                        jitprintf("\n");
+                        else
+                        {
+                            jitprintf($"\n{emitLabelString(ig)}:");
+                            if (!compiler.opts.disDiffable)
+                            {
+                                if (compiler.opts.disAddr)
+                                {
+                                    jitprintf("            ");
+                                }
+                                jitprintf($"  ;; offset=0x{emitCurCodeOffs(cp):X4}");
+                            }
+                            jitprintf("\n");
+                        }
                     }
                 }
-#else
-                if (compiler.opts.disAsm)
+                else if (compiler.opts.disAsm)
                 {
                     jitprintf($"\n{emitLabelString(ig)}:");
                     if (!compiler.opts.disDiffable)
@@ -433,7 +426,6 @@ public partial class Emitter
                     }
                     jitprintf("\n");
                 }
-#endif
                 var bp = cp;
                 var newOffsAdj = unchecked((int)(ig.igOffs - emitCurCodeOffs(cp)));
                 if (Configuration.DEBUG)
@@ -485,12 +477,10 @@ public partial class Emitter
                             emitUpdateLiveGCregs(GCT_BYREF, new regMaskTP(byrefRegs), cp);
                         }
                     }
-#if DEBUG
-                    if (compiler.verbose || compiler.opts.disasmWithGC)
+                    if (Configuration.DEBUG && (compiler.verbose || compiler.opts.disasmWithGC))
                     {
                         emitDispGCInfoDelta();
                     }
-#endif
                 }
                 else
                 {
@@ -513,8 +503,8 @@ public partial class Emitter
                     {
                         var curInstrAddr = (nuint)cp;
                         var id = descriptors[index];
-#if DEBUG
-                        if ((compiler.opts.disAsm || compiler.verbose) && (JitConfig.JitDisasmWithDebugInfo != 0) &&
+                        if (Configuration.DEBUG && (compiler.opts.disAsm || compiler.verbose) &&
+                            (JitConfig.JitDisasmWithDebugInfo != 0) &&
                             (id.idCodeSize() > 0))
                         {
                             var curCodeOffs = emitCurCodeOffs(cp);
@@ -535,14 +525,9 @@ public partial class Emitter
                                 nextMapping = nextMapping.Next;
                             }
                         }
-#endif
                         _ = emitIssue1Instr(ig, id, &cp);
                         if ((compiler.opts.disAsm || (Configuration.DEBUG && compiler.verbose)) &&
-#if DEBUG
-                            (compiler.opts.disAddr || compiler.opts.disAlignment))
-#else
-                            compiler.opts.disAlignment)
-#endif
+                            ((Configuration.DEBUG && compiler.opts.disAddr) || compiler.opts.disAlignment))
                         {
                             var afterInstrAddr = (nuint)cp;
                             var curIns = id.idIns();
@@ -689,33 +674,34 @@ public partial class Emitter
                         {
                             adj >>= 1;
                         }
-#if DEBUG
-                        var debugInfo = jmp.idDebugOnlyInfo();
-                        assert(debugInfo is not null);
-                        if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
-                            (INTERESTING_JUMP_NUM == 0))
+                        if (Configuration.DEBUG)
                         {
-                            if (Configuration.TARGET_ARM)
+                            var debugInfo = jmp.idDebugOnlyInfo();
+                            assert(debugInfo is not null);
+                            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                                (INTERESTING_JUMP_NUM == 0))
                             {
-                                jitprintf("[5] This output is broken for ARM, since it doesn't properly decode the jump offsets of " +
-                                    "the instruction at adr\n");
-                            }
-                            if (INTERESTING_JUMP_NUM == 0)
-                            {
-                                jitprintf($"[5] Jump {debugInfo.idNum}:\n");
-                            }
-                            if (jmp.idjShort)
-                            {
-                                jitprintf($"[5] Jump        is at {unchecked((nuint)(adr + 1 - emitCodeBlock)):X8}\n");
-                                jitprintf($"[5] Jump distance is  {*adr:X2} - {adj:X2} = {unchecked(*adr - adj):X2}\n");
-                            }
-                            else
-                            {
-                                jitprintf($"[5] Jump        is at {unchecked((nuint)(adr + 4 - emitCodeBlock)):X8}\n");
-                                jitprintf($"[5] Jump distance is  {*(int*)adr:X8} - {adj:X2} = {unchecked(*(int*)adr - adj):X8}\n");
+                                if (Configuration.TARGET_ARM)
+                                {
+                                    jitprintf("[5] This output is broken for ARM, since it doesn't properly decode the jump offsets of " +
+                                        "the instruction at adr\n");
+                                }
+                                if (INTERESTING_JUMP_NUM == 0)
+                                {
+                                    jitprintf($"[5] Jump {debugInfo.idNum}:\n");
+                                }
+                                if (jmp.idjShort)
+                                {
+                                    jitprintf($"[5] Jump        is at {unchecked((nuint)(adr + 1 - emitCodeBlock)):X8}\n");
+                                    jitprintf($"[5] Jump distance is  {*adr:X2} - {adj:X2} = {unchecked(*adr - adj):X2}\n");
+                                }
+                                else
+                                {
+                                    jitprintf($"[5] Jump        is at {unchecked((nuint)(adr + 4 - emitCodeBlock)):X8}\n");
+                                    jitprintf($"[5] Jump distance is  {*(int*)adr:X8} - {adj:X2} = {unchecked(*(int*)adr - adj):X8}\n");
+                                }
                             }
                         }
-#endif
                         if (jmp.idjShort)
                         {
                             if (Configuration.TARGET_XARCH)
@@ -808,9 +794,7 @@ public partial class Emitter
                 assert(emitInitGCrefRegs == unchecked((regMask)0xBAADFEEDu));
                 assert(emitInitByrefRegs == unchecked((regMask)0xBAADFEEDu));
             }
-#if DEBUG
             emitCheckIGList();
-#endif
             *prologSize = emitPrologEndPos.CodeOffset(this);
             comp.Metrics.ActualCodeBytes = unchecked((int)actualCodeSize);
 

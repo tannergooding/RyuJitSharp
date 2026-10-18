@@ -418,14 +418,12 @@ public partial class Emitter
         uint offset, byte* code, nuint size, insGroup? ig)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             var debugInfo = id.idDebugOnlyInfo()
                 ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
             jitprintf($"IN{debugInfo.idNum:x4}: ");
         }
-#endif
 
         if (code == null)
         {
@@ -461,7 +459,7 @@ public partial class Emitter
             GCT_BYREF => EA_BYREF,
             _ => id.idOpSize(),
         };
-        var immediate = 0;
+        int immediate;
         string? methodName;
 
         switch (format)

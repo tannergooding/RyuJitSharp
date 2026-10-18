@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -22,6 +21,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64SveMultioperandRecordingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(INS_sve_cdot, INS_OPTS_SCALABLE_B, 3, IF_ARM64_SVE_FA_3A)]
     [TestCase(INS_sve_cdot, INS_OPTS_SCALABLE_H, 1, IF_ARM64_SVE_FA_3B)]
     [TestCase(INS_sve_cmla, INS_OPTS_SCALABLE_H, 3, IF_ARM64_SVE_FB_3A)]
@@ -512,22 +517,26 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                     }
                 }
             }
-#if DEBUG
-            Arm64SveInstructionSanityTests.Capture(() => Assert.Throws<FatalJitException>(() => RecordOperands()));
-#else
-            Assert.Throws<FatalJitException>(() => RecordOperands());
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                _ = Arm64SveInstructionSanityTests.Capture(
+                    () => Assert.Throws<FatalJitException>(() => RecordOperands()));
+            }
+            else
+            {
+                _ = Assert.Throws<FatalJitException>(() => RecordOperands());
+            }
             Assert.That(GroupSize(emitter), Is.Zero);
             Assert.That(LastInstruction(emitter), Is.Null);
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void DisplayPrintsDescriptorFieldsBeforeAppending(int recorder)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only SVE diagnostics.");
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
@@ -595,6 +604,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     [Test]
     public static void ContinuingEeRetainsRecorderThenDescriptorImmediateAssertions()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only SVE assertions.");
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_R_I_I(
@@ -613,6 +623,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     [Test]
     public static void ContinuingEePreservesNativeScatterOptionSanityMismatch()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only SVE assertions.");
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_R_R(
@@ -630,6 +641,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     [TestCase(INS_OPTS_D_TO_S, INS_OPTS_SCALABLE_S)]
     public static void ConversionPrefixUsesDestinationElementSizeBeforeDisplayingBothInstructions(insOpts opt, insOpts prefixOpt)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only SVE diagnostics.");
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
@@ -652,17 +664,19 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
             Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(INS_sve_fcvt));
         });
     }
-#endif
-
     private static Emitter.instrDesc Record(Emitter emitter, Action record, int expectedSize = 4)
     {
-#if DEBUG
-        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
-        Assert.That(assertions, Is.Empty);
-        Assert.That(output, Is.Empty);
-#else
-        record();
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
+            Assert.That(assertions, Is.Empty);
+            Assert.That(output, Is.Empty);
+        }
+        else
+        {
+            record();
+        }
+
         Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
         var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
         Assert.That(id.idCodeSize(), Is.EqualTo(4u));
@@ -706,11 +720,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
             CodeGenEmitter(codeGen) = emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(emitter);
         }
         finally
@@ -731,4 +741,3 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentInstructions(Emitter emitter);
 }
-#endif

@@ -4,10 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if DEBUG
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp;
 
@@ -228,12 +226,10 @@ public sealed partial class LinearScan
             {
                 assert(!refPosition.needsConsecutive);
             }
-#if DEBUG
             if (VERBOSE)
             {
                 _linearScan.initializeAllocationDumpFormat();
             }
-#endif
             assert(!_linearScan._enregisterLocalVars);
             if (_linearScan._enregisterLocalVars)
             {
@@ -266,9 +262,10 @@ public sealed partial class LinearScan
             }
 
             _candidates = _linearScan.getAvailableGPRsForType(_candidates, (var_types)_regType);
-#if DEBUG
-            _candidates = _linearScan.stressLimitRegs(refPosition, _regType, _candidates);
-#endif
+            if (Configuration.DEBUG)
+            {
+                _candidates = _linearScan.stressLimitRegs(refPosition, _regType, _candidates);
+            }
             assert(_candidates != SRBM_NONE);
             if (_candidates == SRBM_NONE)
             {
@@ -899,15 +896,9 @@ public sealed partial class LinearScan
 
                 var assignedInterval = _linearScan.physRegs[(int)regNum].assignedInterval;
                 var foundPrevRegOptReg = true;
-#if DEBUG
-                var hasAssignedInterval = false;
-#endif
                 if (assignedInterval is not null && assignedInterval.recentRefPosition is RefPosition recentRefPosition)
                 {
                     foundPrevRegOptReg &= recentRefPosition.reload && recentRefPosition.RegOptional();
-#if DEBUG
-                    hasAssignedInterval = true;
-#endif
                 }
                 else if (!Configuration.TARGET_ARM)
                 {
@@ -916,32 +907,45 @@ public sealed partial class LinearScan
                 if (Configuration.TARGET_ARM && CurrentInterval.registerType is TYP_DOUBLE)
                 {
                     var otherHalfRegNum = _linearScan.findAnotherHalfRegNum(regNum);
-                    assignedInterval = _linearScan.physRegs[(int)otherHalfRegNum].assignedInterval;
-                    if (assignedInterval is not null && assignedInterval.recentRefPosition is RefPosition otherRefPosition)
+                    var otherAssignedInterval = _linearScan.physRegs[(int)otherHalfRegNum].assignedInterval;
+                    if (otherAssignedInterval is not null && otherAssignedInterval.recentRefPosition is RefPosition otherRefPosition)
                     {
                         // Preserve the native asymmetric check: a nonmatching upper half does not veto.
                         if (otherRefPosition.reload && otherRefPosition.RegOptional())
                         {
                             foundPrevRegOptReg &= otherRefPosition.reload && otherRefPosition.RegOptional();
                         }
-#if DEBUG
-                        hasAssignedInterval = true;
-#endif
+                    }
+
+                    if (foundPrevRegOptReg)
+                    {
+                        prevRegOptSet = candidateBit;
+                    }
+
+                    if (Configuration.DEBUG
+                        && (assignedInterval?.recentRefPosition is null)
+                        && (otherAssignedInterval?.recentRefPosition is null)
+                        && (!Configuration.TARGET_ARM64 || !CurrentRefPosition.needsConsecutive)
+                    )
+                    {
+                        assert(false, "Spill candidate has no assignedInterval recentRefPosition.");
                     }
                 }
-                if (foundPrevRegOptReg)
+                else
                 {
-                    prevRegOptSet = candidateBit;
-                }
+                    if (foundPrevRegOptReg)
+                    {
+                        prevRegOptSet = candidateBit;
+                    }
 
-#if DEBUG
-                if (!hasAssignedInterval
-                    && (!Configuration.TARGET_ARM64 || !CurrentRefPosition.needsConsecutive)
-                )
-                {
-                    assert(false, "Spill candidate has no assignedInterval recentRefPosition.");
+                    if (Configuration.DEBUG
+                        && (assignedInterval?.recentRefPosition is null)
+                        && (!Configuration.TARGET_ARM64 || !CurrentRefPosition.needsConsecutive)
+                    )
+                    {
+                        assert(false, "Spill candidate has no assignedInterval recentRefPosition.");
+                    }
                 }
-#endif
             }
 
             _found = applySelection(RegisterScore.PREV_REG_OPT, prevRegOptSet);
@@ -962,13 +966,11 @@ public sealed partial class LinearScan
         private static regNumber firstRegNumFromMask(SingleTypeRegSet registers, RegisterType registerType) =>
             genRegNumFromMask(findLowestBit(registers), registerType);
 
-#if DEBUG
         private static RegisterScore InvalidOrderingCharacter()
         {
             assert(false, "Invalid lsraOrdering value.");
             throw new FatalJitException("Invalid lsraOrdering value.");
         }
-#endif
     }
 
     internal SingleTypeRegSet selectMinimal(Interval currentInterval, RefPosition refPosition) =>

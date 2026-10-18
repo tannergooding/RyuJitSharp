@@ -71,11 +71,9 @@ public partial class Emitter
         return default;
     }
 
-#if DEBUG || DEBUG_EMIT
 #pragma warning disable CA1802 // Keep the native debug selector non-constant so disabled tracing has no unreachable branches.
     private static readonly int INTERESTING_JUMP_NUM = -1;
 #pragma warning restore CA1802
-#endif
 
     private static uint emitTotalIGjmps;
 

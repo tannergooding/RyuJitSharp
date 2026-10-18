@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -417,7 +418,7 @@ public partial class Compiler
     public static bool jitIsBetweenInclusive(int value, int start, int end)
         => (start <= value) && (value <= end);
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void dispIncomingEHClause(ushort num, in CORINFO_EH_CLAUSE clause)
     {
         jitprintf($"EH clause #{num}:\n");
@@ -480,7 +481,6 @@ public partial class Compiler
             jitprintf($"  ClassToken:    0x{clause.ClassToken:x}\n");
         }
     }
-#endif
 
     public bool ehBlockHasExnFlowDsc(BasicBlock block)
     {

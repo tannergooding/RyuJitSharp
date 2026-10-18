@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -19,19 +19,13 @@ internal static unsafe class Arm64MemoryLoweringTests
 {
     private static bool s_immutable;
 
-    [TestCase(TYP_BYTE, false, INS_ldrsb)]
-    [TestCase(TYP_UBYTE, false, INS_ldrb)]
-    [TestCase(TYP_SHORT, false, INS_ldrsh)]
-    [TestCase(TYP_USHORT, false, INS_ldrh)]
-    [TestCase(TYP_INT, false, INS_ldr)]
-    [TestCase(TYP_LONG, false, INS_ldr)]
-    [TestCase(TYP_REF, false, INS_ldr)]
-    [TestCase(TYP_FLOAT, false, INS_ldr)]
-    [TestCase(TYP_DOUBLE, false, INS_ldr)]
-    [TestCase(TYP_SIMD12, true, INS_ldr)]
-#if FEATURE_MASKED_HW_INTRINSICS
-    [TestCase(TYP_MASK, false, INS_sve_ldr)]
-#endif
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
+    [TestCaseSource(nameof(LoadSelectorCases))]
     public static void LoadSelectorPreservesNativeRegisterClassAndWidth(
         var_types type, bool aligned, instruction expected)
     {
@@ -41,19 +35,26 @@ internal static unsafe class Arm64MemoryLoweringTests
         Assert.That(codeGen.ins_Load(type, aligned), Is.EqualTo(expected));
     }
 
-    [TestCase(TYP_BYTE, false, INS_strb)]
-    [TestCase(TYP_UBYTE, false, INS_strb)]
-    [TestCase(TYP_SHORT, false, INS_strh)]
-    [TestCase(TYP_USHORT, false, INS_strh)]
-    [TestCase(TYP_INT, false, INS_str)]
-    [TestCase(TYP_LONG, false, INS_str)]
-    [TestCase(TYP_BYREF, false, INS_str)]
-    [TestCase(TYP_FLOAT, false, INS_str)]
-    [TestCase(TYP_DOUBLE, false, INS_str)]
-    [TestCase(TYP_SIMD16, true, INS_str)]
-#if FEATURE_MASKED_HW_INTRINSICS
-    [TestCase(TYP_MASK, false, INS_sve_str)]
-#endif
+    private static IEnumerable<TestCaseData> LoadSelectorCases()
+    {
+        yield return new TestCaseData(TYP_BYTE, false, INS_ldrsb);
+        yield return new TestCaseData(TYP_UBYTE, false, INS_ldrb);
+        yield return new TestCaseData(TYP_SHORT, false, INS_ldrsh);
+        yield return new TestCaseData(TYP_USHORT, false, INS_ldrh);
+        yield return new TestCaseData(TYP_INT, false, INS_ldr);
+        yield return new TestCaseData(TYP_LONG, false, INS_ldr);
+        yield return new TestCaseData(TYP_REF, false, INS_ldr);
+        yield return new TestCaseData(TYP_FLOAT, false, INS_ldr);
+        yield return new TestCaseData(TYP_DOUBLE, false, INS_ldr);
+        yield return new TestCaseData(TYP_SIMD12, true, INS_ldr);
+
+        if (Configuration.TARGET_ARM64 && Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            yield return new TestCaseData(TYP_MASK, false, INS_sve_ldr);
+        }
+    }
+
+    [TestCaseSource(nameof(StoreSelectorCases))]
     public static void StoreSelectorPreservesNativeRegisterClassAndWidth(
         var_types type, bool aligned, instruction expected)
     {
@@ -61,6 +62,25 @@ internal static unsafe class Arm64MemoryLoweringTests
         var codeGen = new CodeGen(compiler);
 
         Assert.That(codeGen.ins_Store(type, aligned), Is.EqualTo(expected));
+    }
+
+    private static IEnumerable<TestCaseData> StoreSelectorCases()
+    {
+        yield return new TestCaseData(TYP_BYTE, false, INS_strb);
+        yield return new TestCaseData(TYP_UBYTE, false, INS_strb);
+        yield return new TestCaseData(TYP_SHORT, false, INS_strh);
+        yield return new TestCaseData(TYP_USHORT, false, INS_strh);
+        yield return new TestCaseData(TYP_INT, false, INS_str);
+        yield return new TestCaseData(TYP_LONG, false, INS_str);
+        yield return new TestCaseData(TYP_BYREF, false, INS_str);
+        yield return new TestCaseData(TYP_FLOAT, false, INS_str);
+        yield return new TestCaseData(TYP_DOUBLE, false, INS_str);
+        yield return new TestCaseData(TYP_SIMD16, true, INS_str);
+
+        if (Configuration.TARGET_ARM64 && Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            yield return new TestCaseData(TYP_MASK, false, INS_sve_str);
+        }
     }
 
     [TestCase(TYP_FLOAT, false, false, 0.0)]
@@ -711,4 +731,3 @@ internal static unsafe class Arm64MemoryLoweringTests
         }
     }
 }
-#endif

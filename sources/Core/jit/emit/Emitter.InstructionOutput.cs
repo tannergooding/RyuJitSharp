@@ -53,11 +53,7 @@ public partial class Emitter
         {
             assert(emitIssuing);
         }
-#if DEBUG
-        var dspOffs = _compiler.opts.dspGCtbls;
-#else
-        const bool dspOffs = false;
-#endif
+        var dspOffs = Configuration.DEBUG && _compiler.opts.dspGCtbls;
         var dst = *dp;
         var sz = INSTR_DESC_SIZE;
         var ins = id.idIns();
@@ -593,7 +589,7 @@ public partial class Emitter
             case IF_XARCH_RRW_ARD_CNS:
             {
                 assert(IsSimdInstruction(ins));
-                emitGetInsAmdCns(id, ref cnsVal);
+                _ = emitGetInsAmdCns(id, ref cnsVal);
                 if (hasCodeMI(ins))
                 {
                     assert(TakesEvexPrefix(id));
@@ -623,7 +619,7 @@ public partial class Emitter
             case IF_XARCH_ARW_RRD_CNS:
             {
                 assert(IsSimdInstruction(ins));
-                emitGetInsAmdCns(id, ref cnsVal);
+                _ = emitGetInsAmdCns(id, ref cnsVal);
                 dst = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
                 sz = emitSizeOfInsDsc_AMD(id);
                 break;
@@ -678,7 +674,7 @@ public partial class Emitter
             {
                 assert(IsSimdInstruction(ins));
                 code = insCodeRM(ins);
-                emitGetInsAmdCns(id, ref cnsVal);
+                _ = emitGetInsAmdCns(id, ref cnsVal);
                 if (insFmt == IF_XARCH_RWR_RRD_ARD_RRD)
                 {
                     var op3Reg = decodeRegFromIval(cnsVal.cnsVal);
@@ -740,7 +736,7 @@ public partial class Emitter
             case IF_XARCH_AWR_CNS:
             case IF_XARCH_ARW_CNS:
             {
-                emitGetInsAmdCns(id, ref cnsVal);
+                _ = emitGetInsAmdCns(id, ref cnsVal);
                 dst = emitOutputAM(dst, id, insCodeMI(ins), &cnsVal);
                 sz = emitSizeOfInsDsc_AMD(id);
                 break;
@@ -748,7 +744,7 @@ public partial class Emitter
 
             case IF_XARCH_ARW_SHF:
             {
-                emitGetInsAmdCns(id, ref cnsVal);
+                _ = emitGetInsAmdCns(id, ref cnsVal);
                 dst = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
                 sz = emitSizeOfInsDsc_AMD(id);
                 break;
@@ -805,7 +801,7 @@ public partial class Emitter
             case IF_XARCH_SRW_RRD_CNS:
             {
                 assert(IsSimdInstruction(ins) || ins is INS_shld or INS_shrd);
-                emitGetInsAmdCns(id, ref cnsVal);
+                _ = emitGetInsAmdCns(id, ref cnsVal);
                 dst = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
                 sz = emitSizeOfInsDsc_CNS(id);
                 break;
@@ -1221,12 +1217,10 @@ public partial class Emitter
         // Stack variables cannot be used by the call. Kill them at the call's start,
         // before return-register changes, including at non-returning THROW boundaries.
         emitUpdateLiveGCvars(GCvars, *dp);
-#if DEBUG
-        if (_compiler.verbose || _compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
         {
             emitDispGCVarDelta();
         }
-#endif
         if (id.idGCref() == GCT_GCREF)
         {
             gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
@@ -1276,8 +1270,7 @@ public partial class Emitter
             assert(callInstrSize != 0);
             emitRecordGCcall(dst, callInstrSize);
         }
-#if DEBUG
-        if (ins == INS_call && !id.idIsTlsGD())
+        if (Configuration.DEBUG && ins == INS_call && !id.idIsTlsGD())
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
@@ -1285,7 +1278,6 @@ public partial class Emitter
             emitRecordCallSite(emitCurCodeOffs(*dp), debugInfo.idCallSig is null ? null : &callSig,
                 (CORINFO_METHOD_HANDLE)debugInfo.idMemCookie);
         }
-#endif
 
     DONE_OUTPUT:
             if (Configuration.TARGET_AMD64)
@@ -1389,8 +1381,7 @@ public partial class Emitter
             }
             assert(id.idCodeSize() == (uint)(dst - *dp));
         }
-#if DEBUG
-        if (_compiler.compDebugBreak)
+        if (Configuration.DEBUG && _compiler.compDebugBreak)
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
@@ -1417,9 +1408,7 @@ public partial class Emitter
                 assert(false, "JitBreakEmitOutputInstr reached");
             }
         }
-#endif
         *dp = dst;
-#if DEBUG
         if (ins is INS_mulEAX or INS_imulEAX)
         {
             var returnRegisters = TargetRuntimeMetadata.IntegerReturnMask |
@@ -1431,11 +1420,10 @@ public partial class Emitter
             var mask = inst3opImulReg(ins).SingleTypeMask;
             assert((mask & (emitThisGCrefRegs | emitThisByrefRegs)) == SRBM_NONE);
         }
-        if (_compiler.verbose || _compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
         {
             emitDispGCInfoDelta();
         }
-#endif
 
         return (nuint)sz;
     }

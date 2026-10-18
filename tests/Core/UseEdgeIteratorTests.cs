@@ -596,14 +596,15 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(locals, Is.EqualTo(expectedLocals));
             Assert.That(statement.TreeListEnd, Is.SameAs(expectedLocals[^1]));
             Assert.That(call.Next, Is.Null);
-#if DEBUG
-            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
-            compiler.fgFirstBB = compiler.fgLastBB = block;
-            compiler.fgInsertStmtAtEnd(block, statement);
-            compiler.fgNodeThreading = NodeThreading.AllLocals;
-            compiler.fgDebugCheckLinkedLocals();
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+                var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+                compiler.fgFirstBB = compiler.fgLastBB = block;
+                compiler.fgInsertStmtAtEnd(block, statement);
+                compiler.fgNodeThreading = NodeThreading.AllLocals;
+                compiler.fgDebugCheckLinkedLocals();
+            }
         });
     }
 

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Globals;
@@ -46,7 +47,7 @@ public partial class Emitter
         return sizeof(ushort);
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     private static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
     {
         switch (ins)
@@ -98,6 +99,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     private static void emitOutput_ITypeInstr_SanityCheck(
         instruction ins, regNumber rd, regNumber rs1, uint immediate, uint opcode)
     {
@@ -157,6 +159,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     private static void emitOutput_STypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2)
     {
         switch (ins)
@@ -181,6 +184,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     private static void emitOutput_UTypeInstr_SanityCheck(instruction ins, regNumber rd)
     {
         switch (ins)
@@ -198,6 +202,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     private static void emitOutput_BTypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2)
     {
         switch (ins)
@@ -223,6 +228,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     private static void emitOutput_JTypeInstr_SanityCheck(instruction ins, regNumber rd)
     {
         switch (ins)
@@ -244,14 +250,10 @@ public partial class Emitter
             }
         }
     }
-#endif
-
     private unsafe byte emitOutput_RTypeInstr(byte* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
     {
         var insCode = emitInsCodeRiscV64(ins);
-#if DEBUG
         emitOutput_RTypeInstr_SanityCheck(ins, rd, rs1, rs2);
-#endif
         var opcode = insCode & kInstructionOpcodeMask;
         var funct3 = (insCode & kInstructionFunct3Mask) >> 12;
         var funct7 = (insCode & kInstructionFunct7Mask) >> 25;
@@ -269,9 +271,7 @@ public partial class Emitter
     private unsafe byte emitOutput_ITypeInstr(byte* dst, instruction ins, regNumber rd, regNumber rs1, uint imm12)
     {
         var insCode = emitInsCodeRiscV64(ins);
-#if DEBUG
         emitOutput_ITypeInstr_SanityCheck(ins, rd, rs1, imm12, insCode);
-#endif
         var opcode = insCode & kInstructionOpcodeMask;
         var funct3 = (insCode & kInstructionFunct3Mask) >> 12;
         var funct7 = (insCode & kInstructionFunct7Mask) >> 20;
@@ -284,9 +284,7 @@ public partial class Emitter
     private unsafe byte emitOutput_STypeInstr(byte* dst, instruction ins, regNumber rs1, regNumber rs2, uint imm12)
     {
         var insCode = emitInsCodeRiscV64(ins);
-#if DEBUG
         emitOutput_STypeInstr_SanityCheck(ins, rs1, rs2);
-#endif
         var opcode = insCode & kInstructionOpcodeMask;
         var funct3 = (insCode & kInstructionFunct3Mask) >> 12;
         var code = insEncodeSTypeInstr(
@@ -298,18 +296,14 @@ public partial class Emitter
     private unsafe byte emitOutput_UTypeInstr(byte* dst, instruction ins, regNumber rd, uint imm20)
     {
         var insCode = emitInsCodeRiscV64(ins);
-#if DEBUG
         emitOutput_UTypeInstr_SanityCheck(ins, rd);
-#endif
         return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, castFloatOrIntegralReg(rd), imm20));
     }
 
     private unsafe byte emitOutput_BTypeInstr(byte* dst, instruction ins, regNumber rs1, regNumber rs2, uint imm13)
     {
         var insCode = emitInsCodeRiscV64(ins);
-#if DEBUG
         emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
-#endif
         var opcode = insCode & kInstructionOpcodeMask;
         var funct3 = (insCode & kInstructionFunct3Mask) >> 12;
         var code = insEncodeBTypeInstr(
@@ -322,9 +316,7 @@ public partial class Emitter
         byte* dst, instruction ins, regNumber rs1, regNumber rs2, uint imm13)
     {
         var insCode = emitInsCodeRiscV64(ins) ^ 0x1000;
-#if DEBUG
         emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
-#endif
         var opcode = insCode & kInstructionOpcodeMask;
         var funct3 = (insCode & kInstructionFunct3Mask) >> 12;
         var code = insEncodeBTypeInstr(
@@ -336,9 +328,7 @@ public partial class Emitter
     private unsafe byte emitOutput_JTypeInstr(byte* dst, instruction ins, regNumber rd, uint imm21)
     {
         var insCode = emitInsCodeRiscV64(ins);
-#if DEBUG
         emitOutput_JTypeInstr_SanityCheck(ins, rd);
-#endif
         return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, castFloatOrIntegralReg(rd), imm21));
     }
 
@@ -820,12 +810,10 @@ public partial class Emitter
         }
 
         emitUpdateLiveGCvars(gcVars, dst);
-#if DEBUG
-        if (compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && compiler.opts.disasmWithGC)
         {
             emitDispGCVarDelta();
         }
-#endif
 
         assert(id.idIns() == INS_jalr);
         var originalDst = dst;
@@ -959,11 +947,8 @@ public partial class Emitter
             var address = compiler.lvaFrameAddress(varNum, out _);
             if (id.idGCref() != GCT_NONE)
             {
-#if DEBUG
-                emitGCvarLiveUpd(unchecked(address + (int)offset), varNum, id.idGCref(), dst, unchecked((uint)varNum));
-#else
-                emitGCvarLiveUpd(unchecked(address + (int)offset), varNum, id.idGCref(), dst);
-#endif
+                emitGCvarLiveUpd(unchecked(address + (int)offset), varNum, id.idGCref(), dst,
+                    Configuration.DEBUG ? unchecked((uint)varNum) : 0);
             }
             else
             {
@@ -973,44 +958,41 @@ public partial class Emitter
                         ?? throw new InvalidOperationException("The RISC-V spill temporary must exist.")).tdTempType;
                 if (type is TYP_REF or TYP_BYREF)
                 {
-#if DEBUG
-                    emitGCvarDeadUpd(unchecked(address + (int)offset), dstAfterOne, unchecked((uint)varNum));
-#else
-                    emitGCvarDeadUpd(unchecked(address + (int)offset), dstAfterOne);
-#endif
+                    emitGCvarDeadUpd(unchecked(address + (int)offset), dstAfterOne,
+                        Configuration.DEBUG ? unchecked((uint)varNum) : 0);
                 }
             }
         }
 
-#if DEBUG
-        if (compiler.opts.disAsm || compiler.verbose)
+        if (Configuration.DEBUG)
         {
+            if (compiler.opts.disAsm || compiler.verbose)
+            {
 #if DUMP_GC_TABLES
-            var displayOffsets = compiler.opts.dspGCtbls;
+                var displayOffsets = compiler.opts.dspGCtbls;
 #else
-            var displayOffsets = !compiler.opts.disDiffable;
+                var displayOffsets = !compiler.opts.disDiffable;
 #endif
-            emitDispInsRiscV64(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp,
-                (nuint)(dst - originalDst), ig);
-        }
+                emitDispInsRiscV64(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp,
+                    (nuint)(dst - originalDst), ig);
+            }
 
-        var debugInfo = id.idDebugOnlyInfo()
-            ?? throw new InvalidOperationException("RISC-V instruction output requires debug descriptor info.");
-        if (compiler.compDebugBreak && (JitConfig.JitBreakEmitOutputInstr == debugInfo.idNum))
-        {
-            assert(false, "JitBreakEmitOutputInstr reached");
+            var debugInfo = id.idDebugOnlyInfo()
+                ?? throw new InvalidOperationException("RISC-V instruction output requires debug descriptor info.");
+            if (compiler.compDebugBreak && (JitConfig.JitBreakEmitOutputInstr == debugInfo.idNum))
+            {
+                assert(false, "JitBreakEmitOutputInstr reached");
+            }
+            if (compiler.opts.disasmWithGC)
+            {
+                emitDispGCInfoDelta();
+            }
         }
-        if (compiler.opts.disasmWithGC)
-        {
-            emitDispGCInfoDelta();
-        }
-#else
-        if (compiler.opts.disAsm)
+        else if (compiler.opts.disAsm)
         {
             emitDispInsRiscV64(id, false, false, true, emitCurCodeOffs(originalDst), *dp,
                 (nuint)(dst - originalDst), ig);
         }
-#endif
 
         assert(*dp != dst);
         *dp = dst;

@@ -2,9 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeCallFlags;
@@ -91,7 +89,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(GT_MULHI)]
     [TestCase(GT_MUL_LONG)]
     [TestCase(GT_MOD)]
@@ -99,6 +96,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [TestCase(GT_UDIV)]
     public static void DebugArithmeticKillSetsDoNotReserveFixedRegisters(genTreeOps operation)
     {
+        Assume.That(TestConfiguration.IsDebug, "LSRA debug kill-set diagnostics are available only in Debug.");
+
         WithCompiler(false, false, (compiler, _) => {
             var allocator = new LinearScan(compiler);
             var value = compiler.gtNewIconNode(TYP_INT, 3);
@@ -111,6 +110,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [Test]
     public static void DebugKillSetDispatcherPreservesArm64ShiftAndCallMasks()
     {
+        Assume.That(TestConfiguration.IsDebug, "LSRA debug kill-set diagnostics are available only in Debug.");
+
         WithCompiler(false, false, (compiler, _) => {
             var allocator = new LinearScan(compiler);
             var value = compiler.gtNewIconNode(TYP_INT, 3);
@@ -130,7 +131,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
             });
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -227,13 +227,14 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_BYTE, false)]
     [TestCase(TYP_BYTE, true)]
     [TestCase(TYP_LONG, false)]
     [TestCase(TYP_LONG, true)]
     public static void ScalableMasksNeedNoConstantScratch(var_types type, bool index)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug assertion behavior.");
+
         WithCompiler(false, false, (compiler, _) => {
             TestConfiguration.SetScalableVectorConfiguration(true);
             compiler.compFloatingPointUsed = true;
@@ -246,7 +247,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
             Assert.That(s_assertions, Is.Empty);
         }, captureAssertions: true);
     }
-#endif
 
     [Test]
     public static void ReferenceTraversalBuildsArm64NodeDefinitions()
@@ -278,10 +278,11 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void Amd64OnlyRegisterStressDoesNotConstrainArm64NodeReferences()
     {
+        Assume.That(TestConfiguration.IsDebug, "LSRA register stress diagnostics are available only in Debug.");
+
         WithCompiler(false, false, (compiler, _) => {
             var allocator = new LinearScan(compiler);
             var constant = new GenTreeIntCon(TYP_INT, 42);
@@ -302,6 +303,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [TestCase(true)]
     public static void ConsecutiveDefinitionSkipsReversePreferenceConflicts(bool consecutive)
     {
+        Assume.That(TestConfiguration.IsDebug, "LSRA register stress diagnostics are available only in Debug.");
+
         WithCompiler(false, false, (compiler, _) => {
             var allocator = new LinearScan(compiler);
             var constant = new GenTreeIntCon(TYP_INT, 42);
@@ -322,7 +325,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
             Assert.That(definition.getInterval().hasConflictingDefUse, Is.EqualTo(!consecutive));
         });
     }
-#endif
 
     [Test]
     public static void FiniteCheckDefinesResultBeforeInternalRegisterUse()
@@ -759,7 +761,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
         }, minOpts: false);
     }
 
-#if DEBUG
     [TestCase(false, false)]
     [TestCase(true, false)]
     [TestCase(false, true)]
@@ -767,6 +768,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     public static void ConsecutiveStressFallbackExcludesFixedConflicts(
         bool delayRegFree, bool hasAvailablePair)
     {
+        Assume.That(TestConfiguration.IsDebug, "LSRA register stress diagnostics are available only in Debug.");
+
         WithCompiler(false, false, (compiler, codeGen) => {
             compiler.compFloatingPointUsed = true;
             compiler.info.compNeedsConsecutiveRegisters = true;
@@ -818,6 +821,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [Test]
     public static void RegisterStressPreservesConsecutiveAndPredicateBanks()
     {
+        Assume.That(TestConfiguration.IsDebug, "LSRA register stress diagnostics are available only in Debug.");
+
         WithCompiler(false, false, (compiler, _) => {
             compiler.compFloatingPointUsed = true;
             compiler.info.compNeedsConsecutiveRegisters = true;
@@ -842,7 +847,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
             });
         });
     }
-#endif
 
     [Test]
     public static void ScalableIntrinsicBuildsMaskDefinition()
@@ -1038,13 +1042,11 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_consecutiveRegsInUseThisLocation")]
     private static extern ref regMask ConsecutiveInUse(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_fixedRegsLow")]
     private static extern ref regMask FixedLow(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_nextFixedRef")]
     private static extern ref uint[] NextFixed(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
@@ -1068,7 +1070,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
     private static extern ref uint CurrentBlockNumber(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
 
@@ -1087,7 +1088,6 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "stressLimitRegs")]
     private static extern regMask StressLimit(
         LinearScan allocator, RefPosition? reference, var_types type, regMask mask);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getArm64IntrinsicCandidates")]
     private static extern regMask IntrinsicCandidates(LinearScan allocator,
@@ -1100,10 +1100,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForCall")]
     private static extern regMaskTP GetKillSetForCall(LinearScan allocator, GenTreeCall call);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForNode")]
     private static extern regMaskTP GetKillSetForNode(LinearScan allocator, GenTree tree);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_needToKillFloatRegisters")]
     private static extern ref bool NeedToKillFloatRegisters(LinearScan allocator);
@@ -1124,19 +1122,24 @@ internal static unsafe class Arm64LinearScanConstructionTests
         bool debugEnC, bool hasPatchpoint, Action<Compiler, CodeGen> action,
         bool minOpts = true, bool captureAssertions = false)
     {
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(captureAssertions ? &ee : null);
+        ICorJitInfo ee = default;
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+            ee.lpVtbl = &vtable;
+        }
+
+        using var tls = TestConfiguration.IsDebug
+            ? TestConfiguration.CreateJitTls(captureAssertions ? &ee : null)
+            : null;
         var previousConfig = JitConfig;
-        if (captureAssertions)
+        if (TestConfiguration.IsDebug && captureAssertions)
         {
             JitConfig = new JitConfigValues();
             AltJitSkipOnAssert(ref JitConfig) = 1;
             s_assertions.Clear();
         }
-#endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -1148,12 +1151,10 @@ internal static unsafe class Arm64LinearScanConstructionTests
         {
             flags.Set(JitFlags.JIT_FLAG_DEBUG_EnC);
         }
-#if DEBUG
-        if (captureAssertions)
+        if (TestConfiguration.IsDebug && captureAssertions)
         {
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
         }
-#endif
 
         JitTls.Compiler = compiler;
         try
@@ -1166,12 +1167,10 @@ internal static unsafe class Arm64LinearScanConstructionTests
         finally
         {
             JitTls.Compiler = previous;
-#if DEBUG
-            if (captureAssertions)
+            if (TestConfiguration.IsDebug && captureAssertions)
             {
                 JitConfig = previousConfig;
             }
-#endif
         }
     }
 }

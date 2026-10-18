@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -20,6 +19,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64SveRegisterPairRecordingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V31, IF_ARM64_SVE_AU_3A)]
     [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_Q, REG_ARM64_V0, REG_ARM64_V31, IF_ARM64_SVE_AU_3A)]
     [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_P15, IF_ARM64_SVE_CZ_4A_L)]
@@ -439,20 +444,23 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [TestCase(3, 0)]
     public static void RotationDecoderPreservesNativeReturns(int encoded, int expected)
     {
-#if DEBUG
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
-            Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)expected)));
-        Assert.That(assertions, Is.Empty);
-#else
-        Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)expected));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
+                Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)expected)));
+            Assert.That(assertions, Is.Empty);
+        }
+        else
+        {
+            Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)expected));
+        }
     }
 
-#if DEBUG
     [TestCase(-1)]
     [TestCase(4)]
     public static void ContinuingEeKeepsDecoderAssertionAndZeroReturn(int encoded)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
             Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)0)));
         Assert.That(assertions, Is.EqualTo<string[]>(["emitIsValidEncodedRotationImm0_to_270(imm)"]));
@@ -462,6 +470,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [TestCase(-129, -1)]
     public static void ContinuingEePreservesFailedMultipleAssertionAndArithmeticReduction(int immediate, int reduced)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
@@ -478,6 +487,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [TestCase(INS_sve_sqrshrn, true)]
     public static void ContinuingEeKeepsRecorderThenSanityEvenRegisterAssertions(instruction ins, bool immediate)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
@@ -500,6 +510,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [TestCase(3)]
     public static void RotationDecoderAllowsNativeZeroResultButDescriptorSanityRejectsEncoding(int immediate)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
@@ -515,6 +526,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [TestCase(true)]
     public static void DisplayPrintsPreparedDescriptorBeforeAppending(bool immediate)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only output and assertions.");
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
@@ -548,17 +560,19 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
             }
         });
     }
-#endif
-
     private static Emitter.instrDesc Record(Emitter emitter, Action record, int expectedSize = 4)
     {
-#if DEBUG
-        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
-        Assert.That(assertions, Is.Empty);
-        Assert.That(output, Is.Empty);
-#else
-        record();
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
+            Assert.That(assertions, Is.Empty);
+            Assert.That(output, Is.Empty);
+        }
+        else
+        {
+            record();
+        }
+
         Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
         var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
         Assert.That(id.idCodeSize(), Is.EqualTo(4u));
@@ -568,13 +582,16 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
 
     private static void ExpectFailure(Action record)
     {
-#if DEBUG
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-            () => Assert.Throws<FatalJitException>(() => record()));
-        Assert.That(assertions, Is.Empty);
-#else
-        Assert.Throws<FatalJitException>(() => record());
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+                () => Assert.Throws<FatalJitException>(() => record()));
+            Assert.That(assertions, Is.Empty);
+        }
+        else
+        {
+            _ = Assert.Throws<FatalJitException>(() => record());
+        }
     }
 
     private static void AssertConstant(Emitter.instrDesc id, nint immediate, bool shifted)
@@ -617,11 +634,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
             CodeGenEmitter(codeGen) = emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(emitter);
         }
         finally
@@ -642,4 +655,3 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitDecodeRotationImm90_or_270")]
     private static extern nint DecodeRotation(Emitter? emitter, nint encoded);
 }
-#endif

@@ -172,10 +172,10 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void GatherDisassemblyRecordsNativeOperands()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug disassembly recording.");
         WithEmitter((compiler, emitter) =>
         {
             TestConfiguration.SetDspCode(compiler, true);
@@ -190,7 +190,6 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             Assert.That(diagnostic, Does.Contain("vgatherdps"));
         });
     }
-#endif
 
     [Test]
     public static void MaskStoresPreserveMaskAndDataRegisterOrder(
@@ -255,10 +254,10 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void MaskStoreDisassemblyRecordsNativeOperands()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug disassembly recording.");
         WithEmitter((compiler, emitter) =>
         {
             TestConfiguration.SetDspCode(compiler, true);
@@ -273,7 +272,6 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             Assert.That(diagnostic, Does.Contain("vmaskmovps"));
         });
     }
-#endif
 
     [TestCase(INS_vpermi2b, true)]
     [TestCase(INS_vpermi2d, true)]
@@ -620,11 +618,11 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsSimdFamiliesAndRequiredCopies(
         [Values(0, 1, 2, 3)] int kind, [Values(0, 1, 2)] int family)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug disassembly recording.");
         WithEmitter((compiler, emitter) =>
         {
             TestConfiguration.SetDspCode(compiler, true);
@@ -665,7 +663,6 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             }));
         });
     }
-#endif
 
     private static void EmitRmw(Compiler compiler, Emitter emitter, int kind, instruction ins,
         emitAttr attr, regNumber first, insOpts options)
@@ -809,13 +806,11 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             {
                 Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
                 Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo((uint)offset));
-#if DEBUG
-                if (id.idInsFmt() == IF_XARCH_RWR_RRD_SRD_RRD || immediate)
+                if (TestConfiguration.IsDebug && (id.idInsFmt() == IF_XARCH_RWR_RRD_SRD_RRD || immediate))
                 {
                     var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
                     Assert.That(info.idVarRefOffs, Is.EqualTo(immediate ? 0x1234u : 0u));
                 }
-#endif
                 break;
             }
         }
@@ -830,11 +825,12 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             var id = Instructions(emitter)[i];
             codeSize += (int)id.idCodeSize();
             logicalSize += (nuint)id.NativeLogicalSize;
-#if DEBUG
-            var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-            Assert.That(info.idSize, Is.EqualTo((nuint)id.NativeLogicalSize));
-            logicalSize += (nuint)IntPtr.Size;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
+                Assert.That(info.idSize, Is.EqualTo((nuint)id.NativeLogicalSize));
+                logicalSize += (nuint)IntPtr.Size;
+            }
         }
 
         Assert.That(CurrentSize(emitter), Is.EqualTo(codeSize));
@@ -869,10 +865,11 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             compiler.info.compMatchedVM = true;
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-            codeGen.Emitter.emitVarRefOffs = 0x1234;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.opts.compEnablePCRelAddr = true;
+                codeGen.Emitter.emitVarRefOffs = 0x1234;
+            }
             action(compiler, codeGen.Emitter);
         });
     }

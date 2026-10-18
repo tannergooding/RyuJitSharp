@@ -202,9 +202,10 @@ internal static unsafe class CompilerTargetConfigurationTests
                 original.Flags |= GTF_ICON_STATIC_HDL;
             }
 
-#if DEBUG
-            original.TargetHandle = 789;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                original.TargetHandle = 789;
+            }
 
             var copy = compiler.gtCloneCnsInt(original);
 
@@ -216,10 +217,11 @@ internal static unsafe class CompilerTargetConfigurationTests
             Assert.That(copy.IsIconHandle(), Is.EqualTo(preservesHandle));
             Assert.That(copy.IconHandleFlag, Is.EqualTo(preservesHandle ? original.IconHandleFlag : GenTreeFlags.GTF_EMPTY));
 
-#if DEBUG
-            var expectedTargetHandle = (Configuration.LATE_DISASM && isHandle) ? 0 : original.TargetHandle;
-            Assert.That(copy.TargetHandle, Is.EqualTo(expectedTargetHandle));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var expectedTargetHandle = (Configuration.LATE_DISASM && isHandle) ? 0 : original.TargetHandle;
+                Assert.That(copy.TargetHandle, Is.EqualTo(expectedTargetHandle));
+            }
         });
     }
 

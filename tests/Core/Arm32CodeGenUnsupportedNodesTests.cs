@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -26,6 +25,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM32 target.");
+    }
+
     [TestCase(INS_b, emitJumpKind.EJ_jmp, emitJumpKind.EJ_jmp)]
     [TestCase(INS_beq, emitJumpKind.EJ_ARMARCH_eq, emitJumpKind.EJ_ARMARCH_ne)]
     [TestCase(INS_bne, emitJumpKind.EJ_ARMARCH_ne, emitJumpKind.EJ_ARMARCH_eq)]
@@ -98,6 +103,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static IEnumerable<TestCaseData> RegisterImmediateInstructionCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(INS_add, REG_R3, 7, INS_FLAGS_SET, INS_add, IF_ARM32_T1_J0, 7, INS_FLAGS_SET);
         yield return new TestCaseData(INS_add, REG_R3, -7, INS_FLAGS_SET, INS_sub, IF_ARM32_T1_J0, 7, INS_FLAGS_SET);
         yield return new TestCaseData(
@@ -129,6 +139,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static IEnumerable<TestCaseData> RegisterMoveRecordingCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(INS_mov, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T1_E, INS_FLAGS_SET);
         yield return new TestCaseData(
             INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_D0, INS_FLAGS_NOT_SET);
@@ -180,6 +195,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static IEnumerable<TestCaseData> RegisterRegisterInstructionCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(INS_cmp, REG_R3, REG_R4, IF_ARM32_T1_E, INS_FLAGS_SET);
         yield return new TestCaseData(INS_clz, REG_R8, REG_R9, IF_ARM32_T2_C10, INS_FLAGS_NOT_SET);
     }
@@ -222,6 +242,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static IEnumerable<TestCaseData> ThreeRegisterInstructionCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(INS_add, REG_R0, REG_R1, REG_R2, IF_ARM32_T1_H, INS_FLAGS_SET);
         yield return new TestCaseData(INS_vadd, REG_F0, REG_F1, REG_F2, IF_ARM32_T2_VFP3, INS_FLAGS_NOT_SET);
     }
@@ -249,6 +274,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static IEnumerable<TestCaseData> ThreeRegisterImmediateInstructionCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(
             INS_add, REG_R0, REG_R1, REG_R2, 1, INS_FLAGS_SET, INS_OPTS_LSL, IF_ARM32_T2_C0, INS_FLAGS_SET);
         yield return new TestCaseData(
@@ -528,6 +558,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static IEnumerable<TestCaseData> SingleRegisterRsbAndMvnCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(INS_rsb, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET);
         yield return new TestCaseData(INS_rsb, REG_R8, IF_ARM32_T2_L0, INS_FLAGS_NOT_SET);
         yield return new TestCaseData(INS_mvn, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET);
@@ -554,17 +589,20 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
     private static void RecordArm32Instructions(TestDelegate action)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                action();
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             action();
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        action();
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
@@ -652,6 +690,12 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 [NonParallelizable]
 internal static unsafe class Arm32CkfiniteCodeGenTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM32 target.");
+    }
+
     [TestCase(NI_System_Math_Abs)]
     [TestCase(NI_System_Math_Sqrt)]
     public static void FloatingMathIntrinsicsUseArm32UnaryEmitters(NamedIntrinsic intrinsic)
@@ -727,25 +771,29 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
             Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
-#if !DEBUG
-            Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
+            }
         });
     }
 
     private static void RecordArm32Instructions(TestDelegate action)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                action();
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             action();
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        action();
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
@@ -754,4 +802,3 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int GroupSize(Emitter emitter);
 }
-#endif

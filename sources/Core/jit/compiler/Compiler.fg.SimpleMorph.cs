@@ -328,7 +328,7 @@ public partial class Compiler
                     {
                         value = fgMorphRetInd(tree.AsUnOp());
                     }
-                    fgTryReplaceStructLocalWithFields(ref value);
+                    _ = fgTryReplaceStructLocalWithFields(ref value);
                 }
                 if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (value is not null)
                     && (value.Type is not TYP_VOID) && fgCastNeeded(value, info.compRetType))
@@ -605,9 +605,10 @@ public partial class Compiler
             {
                 if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (type is TYP_LONG))
                 {
-#if DEBUG
-                    tree.AsOp().DebugCheckLongMul();
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        tree.AsOp().DebugCheckLongMul();
+                    }
                     return tree;
                 }
                 goto case GT_ADD;
@@ -911,7 +912,7 @@ public partial class Compiler
                 if (fgGlobalMorph)
                 {
                     var visitor = new MarkColonCondVisitor();
-                    visitor.WalkTree(ref tree, null);
+                    _ = visitor.WalkTree(ref tree, null);
                 }
                 fgRemoveRestOfBlock = false;
                 break;

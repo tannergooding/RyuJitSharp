@@ -845,11 +845,11 @@ internal static unsafe class CallArgumentMorphTests
         }, minOpts);
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void FastTailCallReportsPreserveNativeText(bool enabled)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only fast-tail-call diagnostics.");
         WithCompiler(compiler => {
             compiler.opts.compFastTailCalls = enabled;
             compiler.lvaParameterStackSize = 32;
@@ -884,7 +884,6 @@ internal static unsafe class CallArgumentMorphTests
                 $" (CallerArgStackSize: 32, CalleeArgStackSize: 32){Environment.NewLine}{Environment.NewLine}"));
         });
     }
-#endif
 
     private static GenTreeOp NewOverflowingAdd(Compiler compiler)
     {

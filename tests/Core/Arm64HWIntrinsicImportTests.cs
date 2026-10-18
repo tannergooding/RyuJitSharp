@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -20,6 +19,15 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64HWIntrinsicImportTests
 {
+    [SetUp]
+    public static void RequireArm64IntrinsicSupport()
+    {
+        Assume.That(Configuration.TARGET_ARM64
+            && Configuration.FEATURE_HW_INTRINSICS
+            && Configuration.FEATURE_SIMD,
+            "This fixture requires ARM64 hardware-intrinsic and SIMD support.");
+    }
+
     private static readonly int[] s_argumentQueriesOne = [1];
     private static readonly int[] s_argumentQueriesOneThenZero = [1, 0];
     private static readonly int[] s_argumentQueriesZeroThenOne = [0, 1];
@@ -303,11 +311,12 @@ internal static unsafe class Arm64HWIntrinsicImportTests
         });
     }
 
-#if !DEBUG
     [TestCase(0)]
     [TestCase(31)]
     public static void ReleaseScalableTrueMaskBranchKeepsTheNativeRepeatedConstant(int pattern)
     {
+        Assume.That(!TestConfiguration.IsDebug, "This test validates Release-only behavior.");
+
         WithImporter(compiler =>
         {
             Push(compiler, compiler.gtNewIconNode(TYP_INT, pattern));
@@ -321,7 +330,6 @@ internal static unsafe class Arm64HWIntrinsicImportTests
             Assert.That(node.AsVecCon().SimdScalableVal.Index.u64[0], Is.EqualTo(0xffffffffUL));
         });
     }
-#endif
 
     [TestCase(TYP_UBYTE, 31, 0xffffUL)]
     [TestCase(TYP_INT, 31, 0x1111UL)]
@@ -1062,4 +1070,3 @@ internal static unsafe class Arm64HWIntrinsicImportTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "simdAllBitsSetForElementTypeArm64")]
     private static extern ulong ElementBits(Compiler? compiler, var_types type);
 }
-#endif

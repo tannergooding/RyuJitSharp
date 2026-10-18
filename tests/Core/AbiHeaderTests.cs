@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -8,44 +9,36 @@ using static RyuJitSharp.CorInfoGCType;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
-#if TARGET_RISCV64
-using PlatformClassifier = RyuJitSharp.RiscV64Classifier;
-#elif TARGET_LOONGARCH64
-using PlatformClassifier = RyuJitSharp.LoongArch64Classifier;
-#endif
-
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class AbiHeaderTests
 {
-#if DEBUG
-    private static JitTls? _tls;
-#else
-    private static Compiler? _previousCompiler;
-#endif
+    private static IDisposable? s_tls;
+    private static Compiler? s_previousCompiler;
 
     [SetUp]
     public static void SetUp()
     {
-#if DEBUG
-        _tls = new JitTls(null);
-#else
-        _previousCompiler = JitTls.Compiler;
-#endif
+        s_previousCompiler = TestConfiguration.IsDebug ? null : JitTls.Compiler;
+        s_tls = TestConfiguration.CreateJitTls();
     }
 
     [TearDown]
     public static void TearDown()
     {
-#if DEBUG
-        assert(_tls is not null);
-        _tls.Dispose();
-        _tls = null;
-#else
-        JitTls.Compiler = _previousCompiler;
-        _previousCompiler = null;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(s_tls, Is.Not.Null);
+            s_tls?.Dispose();
+        }
+        else
+        {
+            JitTls.Compiler = s_previousCompiler;
+        }
+
+        s_tls = null;
+        s_previousCompiler = null;
     }
 
     [Test]
@@ -133,7 +126,6 @@ internal static unsafe class AbiHeaderTests
         Assert.That(queue.Count, Is.Zero);
     }
 
-#if TARGET_X86
     [TestCase(CorInfoCallConvExtension.Managed, false, false, false, 2)]
     [TestCase(CorInfoCallConvExtension.Managed, true, false, false, 0)]
     [TestCase(CorInfoCallConvExtension.Managed, true, true, false, 1)]
@@ -147,6 +139,8 @@ internal static unsafe class AbiHeaderTests
     public static void X86ConventionsSelectTheNativeRegisterCount(
         CorInfoCallConvExtension callConv, bool varArgs, bool hasThis, bool hasRetBuff, int registerCount)
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires the x86 target.");
+
         var compiler = NewCompiler();
         var info = new ClassifierInfo {
             CallConv = callConv,
@@ -175,6 +169,8 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void X86TailCallAndFloatingArgumentsDoNotConsumeIntegerRegisters()
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires the x86 target.");
+
         var compiler = NewCompiler();
         var classifier = new X86Classifier(new ClassifierInfo());
         var tailCallArg = classifier.Classify(compiler, TYP_INT, null, WellKnownArg.X86TailCallSpecialArg);
@@ -198,6 +194,8 @@ internal static unsafe class AbiHeaderTests
         int classSize, CorInfoType fieldType, int fieldCount, CorInfoType nestedFieldType,
         bool nestedValueClass, bool expectedRegister)
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires the x86 target.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.isValueClass = &X86IsValueClass;
         vtable.Base.Base.getClassSize = &X86GetClassSize;
@@ -275,9 +273,7 @@ internal static unsafe class AbiHeaderTests
         public CorInfoType NestedFieldType;
         public bool NestedValueClass;
     }
-#endif
 
-#if TARGET_ARM
     [TestCase(CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT, 4, 3, 13, false)]
     [TestCase(CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT, 4, 3, 14, true)]
     [TestCase(CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE, 8, 2, 12, false)]
@@ -285,6 +281,7 @@ internal static unsafe class AbiHeaderTests
     public static void Arm32HfasRequireConsecutiveRegistersAndSpillAsAWhole(
         CorInfoHFAElemType kind, int elementSize, int count, int preceding, bool spill)
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
         Assume.That(Configuration.CONFIGURABLE_ARM_ABI || !Configuration.ARM_SOFTFP);
 
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -358,6 +355,7 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void Arm32FloatingAllocationBackfillsTheHoleSkippedByADouble()
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
         Assume.That(Configuration.CONFIGURABLE_ARM_ABI || !Configuration.ARM_SOFTFP);
 
         var compiler = NewCompiler();
@@ -378,6 +376,7 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void Arm32DoubleAlignmentSkipsTheOddIntegerRegister()
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
         Assume.That(Configuration.CONFIGURABLE_ARM_ABI || Configuration.ARM_SOFTFP);
 
         var compiler = NewCompiler();
@@ -400,6 +399,8 @@ internal static unsafe class AbiHeaderTests
     public static void Arm32SoftFpStructsSplitInOrder(
         int preceding, int size, int registerCount, int stackSize)
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires the ARM32 target.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getClassAlignmentRequirement =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool, int>)
@@ -438,12 +439,13 @@ internal static unsafe class AbiHeaderTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int FourByteAlignment(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle, byte hint) => 4;
-#endif
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
     [Test]
     public static void HardwareFloatingAbiFallsBackToIntegerRegistersThenStack()
     {
+        Assume.That(Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64,
+            "This test requires a RISC-V64 or LoongArch64 target.");
+
         var compiler = NewCompiler();
         var classifier = new PlatformClassifier(new ClassifierInfo());
 
@@ -469,6 +471,9 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void OversizedStructsConsumeOneImplicitReferenceSlot()
     {
+        Assume.That(Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64,
+            "This test requires a RISC-V64 or LoongArch64 target.");
+
         var compiler = NewCompiler();
         var classifier = new PlatformClassifier(new ClassifierInfo());
         var result = classifier.Classify(compiler, TYP_STRUCT, new ClassLayout(24), WellKnownArg.None);
@@ -481,6 +486,9 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void FloatingStructLoweringPreservesClassifierAndReturnMetadata()
     {
+        Assume.That(Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64,
+            "This test requires a RISC-V64 or LoongArch64 target.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getClassSize = &GetFpStructClassSize;
         vtable.Base.Base.getClassGClayout = &GetFpStructGcLayout;
@@ -559,14 +567,14 @@ internal static unsafe class AbiHeaderTests
         public CorInfoGCType GcType0;
         public CorInfoGCType GcType1;
     }
-#endif
 
-#if TARGET_RISCV64
     [TestCase(6, false)]
     [TestCase(7, true)]
     [TestCase(8, false)]
     public static void RiscV64BlockStructsUseTheRemainingRegistersAndSplitTheirTail(int preceding, bool split)
     {
+        Assume.That(Configuration.TARGET_RISCV64, "This test requires the RISC-V64 target.");
+
         var compiler = NewCompiler();
         var classifier = new RiscV64Classifier(new ClassifierInfo());
 
@@ -586,26 +594,26 @@ internal static unsafe class AbiHeaderTests
             Assert.That(result.Segments[1].Size, Is.EqualTo(4));
         }
     }
-#endif
 
-#if TARGET_WASM
     [TestCase(TYP_LONG, 4, TYP_INT)]
     [TestCase(TYP_DOUBLE, 4, TYP_FLOAT)]
     [TestCase(TYP_SIMD16, 12, TYP_SIMD16)]
     public static void WasmSegmentTypesFollowNativeSizeAndRegisterBank(
         var_types registerType, int segmentSize, var_types expectedType)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the Wasm target.");
+
         var register = regNumberExtensions.MakeWasmReg(0, registerType);
         var segment = AbiPassingSegment.InRegister(register, 0, segmentSize);
 
         Assert.That(segment.GetRegisterType(), Is.EqualTo(expectedType));
     }
-#endif
 
-#if SWIFT_SUPPORT
     [Test]
     public static void SwiftParameterDispatcherClassifiesSpecialAndOrdinaryArguments()
     {
+        Assume.That(Configuration.SWIFT_SUPPORT, "This test requires Swift ABI support.");
+
         var compiler = NewCompiler();
         compiler.info.compCallConv = CorInfoCallConvExtension.Swift;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
@@ -646,6 +654,8 @@ internal static unsafe class AbiHeaderTests
     [TestCase(WellKnownArg.SwiftError)]
     public static void SwiftSpecialArgumentsDoNotConsumeTheOrdinaryQueues(WellKnownArg argument)
     {
+        Assume.That(Configuration.SWIFT_SUPPORT, "This test requires Swift ABI support.");
+
         var compiler = NewCompiler();
         var info = new ClassifierInfo { CallConv = CorInfoCallConvExtension.Swift };
         var classifier = new SwiftABIClassifier(info);
@@ -667,6 +677,8 @@ internal static unsafe class AbiHeaderTests
     public static void SwiftStructLoweringPreservesOffsetsTailSizesAndReferencePassing(
         bool byReference, bool spill)
     {
+        Assume.That(Configuration.SWIFT_SUPPORT, "This test requires Swift ABI support.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getSwiftLowering = &GetSwiftLowering;
         LoweringState state = new() {
@@ -709,6 +721,8 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void EmptySwiftLoweringProducesNoSegmentsWithoutConsumingRegisters()
     {
+        Assume.That(Configuration.SWIFT_SUPPORT, "This test requires Swift ABI support.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getSwiftLowering = &GetEmptySwiftLowering;
         ICorJitInfo runtime = new() { lpVtbl = &vtable };
@@ -748,8 +762,6 @@ internal static unsafe class AbiHeaderTests
         public ICorJitInfo Runtime;
         public bool ByReference;
     }
-#endif
-
     private static Compiler NewCompiler()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -761,21 +773,26 @@ internal static unsafe class AbiHeaderTests
 
     private static regNumber IntRegister(int index)
     {
-#if TARGET_WASM
-        return regNumberExtensions.MakeWasmReg((uint)index, TYP_INT);
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            return regNumberExtensions.MakeWasmReg((uint)index, TYP_INT);
+        }
+
         return IntArgRegs[index];
-#endif
     }
 
     private static regNumber FloatRegister(int index)
     {
-#if TARGET_WASM
-        return regNumberExtensions.MakeWasmReg((uint)index, TYP_FLOAT);
-#elif TARGET_X86
-        return (regNumber)((int)REG_XMM0 + index);
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            return regNumberExtensions.MakeWasmReg((uint)index, TYP_FLOAT);
+        }
+
+        if (Configuration.TARGET_X86)
+        {
+            return (regNumber)((int)REG_XMM0 + index);
+        }
+
         return FltArgRegs[index];
-#endif
     }
 }

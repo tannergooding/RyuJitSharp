@@ -3,13 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeCallFlags;
 using static RyuJitSharp.GenTreeFlags;
@@ -26,6 +23,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ArmLinearScanNodeBuildingTests
 {
+    [SetUp]
+    public static void RequireArmTarget()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM32 target.");
+    }
+
     [TestCase(TYP_INT, 0)]
     [TestCase(TYP_FLOAT, 1)]
     [TestCase(TYP_DOUBLE, 2)]
@@ -118,7 +121,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             var right = compiler.gtNewIconNode(TYP_INT, 3);
             _ = Build(allocator, left);
             _ = Build(allocator, right);
-            GenTreeOp node = definitionCount == 2
+            var node = definitionCount == 2
                 ? new GenTreeMultiRegOp(operation, TYP_LONG, left, right)
                 : compiler.gtNewBinaryNode(operation, TYP_INT, left, right);
             if (overflow)
@@ -227,10 +230,20 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
         });
     }
 
-    [TestCase(GT_JMPTABLE, REG_NA)]
-    [TestCase(GT_CATCH_ARG, REG_EXCEPTION_OBJECT)]
-    [TestCase(GT_ASYNC_CONTINUATION, REG_ASYNC_CONTINUATION_RET)]
-    [TestCase(GT_SETCC, REG_NA)]
+    private static IEnumerable<TestCaseData> ValueLeafCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(GT_JMPTABLE, REG_NA);
+        yield return new TestCaseData(GT_CATCH_ARG, REG_EXCEPTION_OBJECT);
+        yield return new TestCaseData(GT_ASYNC_CONTINUATION, REG_ASYNC_CONTINUATION_RET);
+        yield return new TestCaseData(GT_SETCC, REG_NA);
+    }
+
+    [TestCaseSource(nameof(ValueLeafCases))]
     public static void ValueLeavesRetainFixedDestinationCandidates(genTreeOps operation, regNumber register)
     {
         WithAllocator((_, allocator) => {
@@ -244,7 +257,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             Assert.That(allocator.refPositions, Has.Count.EqualTo(1));
             Assert.That(allocator.refPositions[0].treeNode, Is.SameAs(node));
             Assert.That(allocator.refPositions[0].registerAssignment,
-                Is.EqualTo(register is REG_NA ? AvailableIntRegs(allocator) : genSingleTypeRegMask(register)));
+                Is.EqualTo(register == REG_NA ? AvailableIntRegs(allocator) : genSingleTypeRegMask(register)));
         });
     }
 
@@ -446,10 +459,20 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
         });
     }
 
-    [TestCase(false, REG_COUNT)]
-    [TestCase(false, REG_F0)]
-    [TestCase(true, REG_COUNT)]
-    [TestCase(true, REG_F0)]
+    private static IEnumerable<TestCaseData> BitcastRegisterCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(false, REG_COUNT);
+        yield return new TestCaseData(false, regNumber.REG_ARM32_F0);
+        yield return new TestCaseData(true, REG_COUNT);
+        yield return new TestCaseData(true, regNumber.REG_ARM32_F0);
+    }
+
+    [TestCaseSource(nameof(BitcastRegisterCases))]
     public static void BitcastsRetainOptionalInputAndExplicitDestinationMask(bool contained, regNumber register)
     {
         WithAllocator((compiler, allocator) => {
@@ -466,7 +489,9 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             Assert.That(allocator.refPositions.Count - start, Is.EqualTo(contained ? 1 : 2));
             Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(node));
             Assert.That(allocator.refPositions[^1].registerAssignment,
-                Is.EqualTo(register is REG_COUNT ? AvailableFloatRegs(allocator) : genSingleTypeRegMask(REG_F0)));
+                Is.EqualTo(register == REG_COUNT
+                    ? AvailableFloatRegs(allocator)
+                    : genSingleTypeRegMask(regNumber.REG_ARM32_F0)));
         });
     }
 
@@ -748,7 +773,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             {
                 _ = Build(allocator, value);
             }
-            GenTreeIndir node = store
+            var node = store
                 ? new GenTreeStoreInd(type, address, value)
                 : new GenTreeIndir(GT_IND, type, address);
             if (unaligned)
@@ -961,10 +986,20 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
         });
     }
 
-    [TestCase(TYP_VOID, REG_NA)]
-    [TestCase(TYP_INT, REG_R0)]
-    [TestCase(TYP_FLOAT, REG_F0)]
-    [TestCase(TYP_DOUBLE, REG_F0)]
+    private static IEnumerable<TestCaseData> DirectCallReturnRegisterCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(TYP_VOID, REG_NA);
+        yield return new TestCaseData(TYP_INT, regNumber.REG_ARM32_R0);
+        yield return new TestCaseData(TYP_FLOAT, regNumber.REG_ARM32_F0);
+        yield return new TestCaseData(TYP_DOUBLE, regNumber.REG_ARM32_F0);
+    }
+
+    [TestCaseSource(nameof(DirectCallReturnRegisterCases))]
     public static void DirectCallsBuildOneTargetTemporaryAndTheirAbiResult(var_types type, regNumber returnRegister)
     {
         WithAllocator((_, allocator) => {
@@ -1095,7 +1130,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
     public static void AsyncCallsKeepTheContinuationRegisterBusyUntilTheFollowingNode()
     {
         WithAllocator((compiler, allocator) => {
-            compiler.compIsAsync = true;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_ASYNC);
             var node = new GenTreeCall(TYP_VOID);
             node._callMoreFlags |= GTF_CALL_M_ASYNC;
             node.Next = new GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
@@ -1188,25 +1223,24 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             var node = new GenTreeOp(GT_MOD, TYP_INT, value, value);
 
             var exception = Assert.Throws<FatalJitException>(() => Build(allocator, node));
-#if DEBUG
-            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-#else
-            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
-#endif
+            Assert.That(exception?.Result, Is.EqualTo(TestConfiguration.IsDebug
+                ? CorJitResult.CORJIT_SKIPPED
+                : CorJitResult.CORJIT_RECOVERABLEERROR));
             Assert.That(allocator.refPositions, Is.Empty);
         }, captureAssertions: true);
     }
 
-#if DEBUG
     [Test]
     public static void UnexpectedInitValuePreservesItsAssertionAndContinuingEePath()
     {
+        Assume.That(TestConfiguration.IsDebug, "Arm32 LSRA assertion behavior is available only in Debug.");
+
         WithAllocator((compiler, allocator) => {
             var value = compiler.gtNewIconNode(TYP_INT, 23);
             var node = new GenTreeUnOp(GT_INIT_VAL, TYP_INT, value);
 
             Assert.That(Build(allocator, node), Is.Zero);
-            Assert.That(s_assertions, Is.EqualTo(new[] { "!\"INIT_VAL should always be contained\"" }));
+            Assert.That(s_assertions, Is.EqualTo(s_initValueAssertions));
             Assert.That(allocator.refPositions, Is.Empty);
         }, captureAssertions: true);
     }
@@ -1214,6 +1248,8 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
     [Test]
     public static void UnexpectedNullCheckAssertsBeforeBuildingOnlyItsAddressUse()
     {
+        Assume.That(TestConfiguration.IsDebug, "Arm32 LSRA assertion behavior is available only in Debug.");
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_BYREF, 32);
             _ = Build(allocator, address);
@@ -1221,7 +1257,7 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
             var start = allocator.refPositions.Count;
 
             Assert.That(Build(allocator, node), Is.EqualTo(1));
-            Assert.That(s_assertions, Is.EqualTo(new[] { "!\"Should never see GT_NULLCHECK on Arm/32\"" }));
+            Assert.That(s_assertions, Is.EqualTo(s_nullCheckAssertions));
             Assert.That(allocator.refPositions.Count - start, Is.EqualTo(1));
             Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(address));
             Assert.That(allocator.refPositions[^1].refType, Is.EqualTo(RefType.RefTypeUse));
@@ -1229,6 +1265,8 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
     }
 
     private static readonly List<string> s_assertions = [];
+    private static readonly string[] s_initValueAssertions = ["!\"INIT_VAL should always be contained\""];
+    private static readonly string[] s_nullCheckAssertions = ["!\"Should never see GT_NULLCHECK on Arm/32\""];
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
@@ -1239,7 +1277,6 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
     private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
-#endif
 
     private static int Build(LinearScan allocator, GenTree node)
     {
@@ -1298,32 +1335,35 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
     private static void WithAllocator(
         Action<Compiler, LinearScan> action, bool captureAssertions = false, int outgoingArgSpace = 0)
     {
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(captureAssertions ? &ee : null);
+        ICorJitInfo ee = default;
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+            ee.lpVtbl = &vtable;
+        }
+
+        using var tls = TestConfiguration.IsDebug
+            ? TestConfiguration.CreateJitTls(captureAssertions ? &ee : null)
+            : null;
         var previousConfig = JitConfig;
-        if (captureAssertions)
+        if (TestConfiguration.IsDebug && captureAssertions)
         {
             JitConfig = new JitConfigValues();
             AltJitSkipOnAssert(ref JitConfig) = 1;
             s_assertions.Clear();
         }
-#endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
         compiler.lvaOutgoingArgSpaceSize.Value = outgoingArgSpace;
-#if DEBUG
-        compiler.info.compFullName = nameof(ArmLinearScanNodeBuildingTests);
-        if (captureAssertions)
+        TestConfiguration.SetCompilerFullName(compiler, nameof(ArmLinearScanNodeBuildingTests));
+        if (TestConfiguration.IsDebug && captureAssertions)
         {
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
         }
-#endif
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
@@ -1348,13 +1388,10 @@ internal static unsafe class ArmLinearScanNodeBuildingTests
         finally
         {
             JitTls.Compiler = previous;
-#if DEBUG
-            if (captureAssertions)
+            if (TestConfiguration.IsDebug && captureAssertions)
             {
                 JitConfig = previousConfig;
             }
-#endif
         }
     }
 }
-#endif

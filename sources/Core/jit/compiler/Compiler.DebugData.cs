@@ -27,6 +27,7 @@ public partial class Compiler
         internal bool ImplicitByRefLclFldsStale;
         internal bool CompDebugBreak;
         internal bool JitFallbackCompile;
+        internal bool PgoDeferredInconsistency;
         internal int MorphNum;
         internal bool SafeBasicBlockCreation = true;
         internal bool SafeFlowEdgeCreation = true;
@@ -151,6 +152,36 @@ public partial class Compiler
             else if (GetExistingDebugData() is { } data)
             {
                 data.CompDebugBreak = false;
+            }
+        }
+    }
+
+    public bool fgPgoDeferredInconsistency
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Deferred profile inconsistency state is only available in Debug builds.");
+            }
+
+            return GetExistingDebugData()?.PgoDeferredInconsistency ?? false;
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Deferred profile inconsistency state is only available in Debug builds.");
+            }
+
+            if (value)
+            {
+                GetDebugData().PgoDeferredInconsistency = true;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.PgoDeferredInconsistency = false;
             }
         }
     }

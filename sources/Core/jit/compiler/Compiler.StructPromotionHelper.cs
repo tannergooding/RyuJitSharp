@@ -492,15 +492,16 @@ public partial class Compiler
             varDsc.lvPromoted = true;
             varDsc.lvContainsHoles = structPromotionInfo.containsHoles;
 
-#if DEBUG
-            // Don't stress this in LCL_FLD stress.
-            varDsc.lvKeepType = true;
-
-            if (_compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                jitprintf($"\nPromoting struct local V{lclNum:D2} ({varDsc.Layout.ClassName}):");
+                // Don't stress this in LCL_FLD stress.
+                varDsc.lvKeepType = true;
+
+                if (_compiler.verbose)
+                {
+                    jitprintf($"\nPromoting struct local V{lclNum:D2} ({varDsc.Layout.ClassName}):");
+                }
             }
-#endif
 
             SortStructFields();
 
@@ -518,7 +519,7 @@ public partial class Compiler
                 }
 
                 // Now grab the temp for the field local.
-                var reason = "";
+                string reason;
 
                 if (Configuration.DEBUG)
                 {
@@ -529,6 +530,10 @@ public partial class Compiler
                     {
                         noway_assert(fieldInfo.fldOffset > Unsafe.Subtract(ref fieldInfo, 1).fldOffset);
                     }
+                }
+                else
+                {
+                    reason = string.Empty;
                 }
 
                 // Lifetime of field locals might span multiple BBs, so they must be long lifetime temps.
@@ -586,11 +591,12 @@ public partial class Compiler
                         }
                     }
                 }
-#if DEBUG
-                // This temporary should not be converted to a double in stress mode,
-                // because we introduce assigns to it after the stress conversion
-                fieldVarDsc.lvKeepType = true;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    // This temporary should not be converted to a double in stress mode,
+                    // because we introduce assigns to it after the stress conversion
+                    fieldVarDsc.lvKeepType = true;
+                }
             }
 
             if (Configuration.TARGET_ARM && varDsc.lvIsParam)

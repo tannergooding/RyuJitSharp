@@ -175,15 +175,16 @@ internal static class CodeGenAvxFamilyTests
             }
             Assert.That(descriptors[0].idGetEvexbContext(), Is.EqualTo(1u));
             Assert.That(descriptors[1].idGetEvexbContext(), Is.EqualTo(2u));
-#if DEBUG
-            Assert.That(node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo((GenTreeDebugFlags)0));
-            foreach (var operand in node.Operands)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(operand._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                Assert.That(node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
                     Is.EqualTo((GenTreeDebugFlags)0));
+                foreach (var operand in node.Operands)
+                {
+                    Assert.That(operand._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                        Is.EqualTo((GenTreeDebugFlags)0));
+                }
             }
-#endif
         });
     }
 
@@ -610,10 +611,10 @@ internal static class CodeGenAvxFamilyTests
         }
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsGatherAndConsumesScratchMask()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only code generation diagnostics.");
         WithHardware((compiler, codeGen) =>
         {
             var scale = compiler.gtNewIconNode(TYP_INT, 4);
@@ -640,6 +641,7 @@ internal static class CodeGenAvxFamilyTests
     [TestCase(3)]
     public static void DisassemblyRecordsAvxInstructionsAndConsumesOperands(int entry)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only disassembly and node diagnostics.");
         WithHardware((compiler, codeGen) =>
         {
             var node = entry == 3
@@ -688,8 +690,6 @@ internal static class CodeGenAvxFamilyTests
             }
         }
     }
-#endif
-
     private static GenTreePhysReg Vector(regNumber reg, var_types type = TYP_SIMD16)
         => new(reg, type) { RegNum = reg };
 
@@ -708,10 +708,11 @@ internal static class CodeGenAvxFamilyTests
 
     private static void AssertProduced(GenTree node)
     {
-#if DEBUG
-        Assert.That(node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-            Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+        }
     }
 
     private static void WithHardware(Action<Compiler, CodeGen> action)

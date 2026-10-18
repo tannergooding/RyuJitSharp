@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LinearScanIntervalDiagnosticsTests
 {
+    [SetUp]
+    public static void RequireDebugConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture validates Debug-only allocation diagnostics.");
+    }
+
     [Test]
     public static void EmptyBlocksRetainNativeHeadersSeparatorsAndTrailingLines()
     {
@@ -153,7 +158,7 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
     public static void DefinitionListPreservesUnsignedSequenceNumbersAndVerboseOrdering(bool verbose)
     {
         WithAllocator((compiler, allocator) => {
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
             var first = compiler.gtNewIconNode(TYP_INT, 7);
             first._seqNum = -1;
             var second = compiler.gtNewIconNode(TYP_INT, 9);
@@ -720,4 +725,3 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
         }
     }
 }
-#endif

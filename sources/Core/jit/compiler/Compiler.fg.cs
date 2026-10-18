@@ -2183,10 +2183,6 @@ public partial class Compiler
 
     public bool fgPgoSingleEdge;
 
-#if DEBUG
-    public bool fgPgoDeferredInconsistency;
-#endif
-
     private hashBv? fgAvailableOutgoingArgTemps;
 
     private Stack<int>? fgUsedSharedTemps;
@@ -3405,9 +3401,14 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Profile checks are only available in Debug builds.");
+        }
+
         var configEnabled = (JitConfig.JitProfileChecks >= 0) && fgHaveProfileWeights && fgPredsComputed;
         assert(checks != PhaseChecks.CHECK_NONE);
 
@@ -3435,6 +3436,11 @@ public partial class Compiler
 
     public bool fgDebugCheckProfileWeights(ProfileChecks checks, bool dump = false)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Profile weight checks are only available in Debug builds.");
+        }
+
         var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
         var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
         var verifyLikelihoodSum = (checks & ProfileChecks.CHECK_LIKELIHOODSUM) != 0;
@@ -3444,17 +3450,17 @@ public partial class Compiler
 
         if (!verifyLikelyWeights && !verifyHasLikelihood)
         {
-            JITDUMP("[profile weight checks disabled]\n");
+            fgProfileDump("[profile weight checks disabled]\n", dump);
             return true;
         }
 
         if (fgPgoDeferredInconsistency)
         {
-            JITDUMP("[deferred prior check failed -- skipping this check]\n");
+            fgProfileDump("[deferred prior check failed -- skipping this check]\n", dump);
             return false;
         }
 
-        JITDUMP($"Checking Profile Weights (flags:0x{(uint)checks:x})\n");
+        fgProfileDump($"Checking Profile Weights (flags:0x{(uint)checks:x})\n", dump);
         var problemBlocks = 0;
         var unprofiledBlocks = 0;
         var profiledBlocks = 0;
@@ -3532,12 +3538,12 @@ public partial class Compiler
 
             if (verifyIncoming)
             {
-                incomingConsistent = fgDebugCheckIncomingProfileData(block, checks);
+                incomingConsistent = fgDebugCheckIncomingProfileData(block, checks, dump);
             }
 
             if (verifyOutgoing)
             {
-                outgoingConsistent = fgDebugCheckOutgoingProfileData(block, checks);
+                outgoingConsistent = fgDebugCheckOutgoingProfileData(block, checks, dump);
             }
 
             if (!incomingConsistent || !outgoingConsistent)
@@ -3552,12 +3558,16 @@ public partial class Compiler
 
             if (fgFirstBB.bbRefs > 1)
             {
-                JITDUMP($"  Method entry {FMT_BB(fgFirstBB.bbNum)} is loop head, can't check entry/exit balance\n");
+                fgProfileDump(
+                    $"  Method entry {FMT_BB(fgFirstBB.bbNum)} is loop head, can't check entry/exit balance\n",
+                    dump);
             }
             else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
             {
                 problemBlocks++;
-                JITDUMP($"  Method entry {FMT_WT(entryWeight)} method exit {FMT_WT(exitWeight)} weight mismatch\n");
+                fgProfileDump(
+                    $"  Method entry {FMT_WT(entryWeight)} method exit {FMT_WT(exitWeight)} weight mismatch\n",
+                    dump);
             }
         }
 
@@ -3565,46 +3575,62 @@ public partial class Compiler
         {
             if (profiledBlocks == 0)
             {
-                JITDUMP("No blocks were profiled, so nothing to check\n");
+                fgProfileDump("No blocks were profiled, so nothing to check\n", dump);
             }
             else if (verifyLikelyWeights)
             {
-                JITDUMP($"Profile is self-consistent ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n");
+                fgProfileDump($"Profile is self-consistent ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n", dump);
             }
             else if (verifyLikelihoodSum)
             {
-                JITDUMP("All block successor flow edge likelihoods sum to 1.0\n");
+                fgProfileDump("All block successor flow edge likelihoods sum to 1.0\n", dump);
             }
             else if (verifyHasLikelihood)
             {
-                JITDUMP("All flow edges have likelihoods\n");
+                fgProfileDump("All flow edges have likelihoods\n", dump);
             }
         }
         else
         {
-            JITDUMP($"Profile is NOT self-consistent, found {problemBlocks} problems ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n");
+            fgProfileDump(
+                $"Profile is NOT self-consistent, found {problemBlocks} problems ({profiledBlocks} profiled blocks, {unprofiledBlocks} unprofiled)\n",
+                dump);
 
             if (assertOnFailure && !dump)
             {
-                var wasVerbose = verbose;
-                verbose = true;
                 _ = fgDebugCheckProfileWeights(checks, dump: true);
-                verbose = wasVerbose;
                 assert(false, "Inconsistent profile data");
             }
         }
 
         if ((unflaggedBlocks > 0) && !dump)
         {
-            JITDUMP($"{unflaggedBlocks} blocks are missing BBF_PROF_WEIGHT flag.\n");
+            fgProfileDump($"{unflaggedBlocks} blocks are missing BBF_PROF_WEIGHT flag.\n", dump);
             assert(false, "Missing BBF_PROF_WEIGHT flag");
         }
 
         return problemBlocks == 0;
     }
 
-    public bool fgDebugCheckIncomingProfileData(BasicBlock block, ProfileChecks checks)
+    private void fgProfileDump(string message, bool forceVerbose)
     {
+        if (forceVerbose)
+        {
+            logf(message);
+        }
+        else
+        {
+            JITDUMP(message);
+        }
+    }
+
+    public bool fgDebugCheckIncomingProfileData(BasicBlock block, ProfileChecks checks, bool dump = false)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Incoming profile checks are only available in Debug builds.");
+        }
+
         var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
         var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
 
@@ -3626,7 +3652,9 @@ public partial class Compiler
             }
             else
             {
-                JITDUMP($"Missing likelihood on {fgFormatProfileEdgeAddress(predEdge)} {FMT_BB(predEdge.SourceBlock.bbNum)}->{FMT_BB(block.bbNum)}\n");
+                fgProfileDump(
+                    $"Missing likelihood on {fgFormatProfileEdgeAddress(predEdge)} {FMT_BB(predEdge.SourceBlock.bbNum)}->{FMT_BB(block.bbNum)}\n",
+                    dump);
                 missingLikelyWeight++;
             }
 
@@ -3639,13 +3667,15 @@ public partial class Compiler
         {
             if (verifyLikelyWeights && !fgProfileWeightsConsistentOrSmall(blockWeight, incomingLikelyWeight))
             {
-                JITDUMP($"  {FMT_BB(block.bbNum)} - block weight {FMT_WT(blockWeight)} inconsistent with incoming likely weight {FMT_WT(incomingLikelyWeight)}\n");
+                fgProfileDump(
+                    $"  {FMT_BB(block.bbNum)} - block weight {FMT_WT(blockWeight)} inconsistent with incoming likely weight {FMT_WT(incomingLikelyWeight)}\n",
+                    dump);
                 likelyWeightsValid = false;
             }
 
             if (verifyHasLikelihood && (missingLikelyWeight > 0))
             {
-                JITDUMP($"  {FMT_BB(block.bbNum)} -- {missingLikelyWeight} incoming edges are missing likely weights\n");
+                fgProfileDump($"  {FMT_BB(block.bbNum)} -- {missingLikelyWeight} incoming edges are missing likely weights\n", dump);
                 likelyWeightsValid = false;
             }
         }
@@ -3653,8 +3683,13 @@ public partial class Compiler
         return likelyWeightsValid;
     }
 
-    public bool fgDebugCheckOutgoingProfileData(BasicBlock block, ProfileChecks checks)
+    public bool fgDebugCheckOutgoingProfileData(BasicBlock block, ProfileChecks checks, bool dump = false)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Outgoing profile checks are only available in Debug builds.");
+        }
+
         var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
         var verifyLikelihoodSum = (checks & ProfileChecks.CHECK_LIKELIHOODSUM) != 0;
 
@@ -3679,30 +3714,32 @@ public partial class Compiler
                 }
                 else
                 {
-                    JITDUMP($"Missing likelihood on {fgFormatProfileEdgeAddress(succEdge)} {FMT_BB(block.bbNum)}->{FMT_BB(succEdge.DestinationBlock.bbNum)}\n");
+                    fgProfileDump(
+                        $"Missing likelihood on {fgFormatProfileEdgeAddress(succEdge)} {FMT_BB(block.bbNum)}->{FMT_BB(succEdge.DestinationBlock.bbNum)}\n",
+                        dump);
                     missingLikelihood++;
                 }
             }
 
             if (verifyHasLikelihood && (missingLikelihood > 0))
             {
-                JITDUMP($"  {FMT_BB(block.bbNum)} - missing likelihood on {missingLikelihood} successor edges\n");
+                fgProfileDump($"  {FMT_BB(block.bbNum)} - missing likelihood on {missingLikelihood} successor edges\n", dump);
                 likelyWeightsValid = false;
             }
 
             if (verifyLikelihoodSum && !fgProfileWeightsConsistent(outgoingLikelihood, 1.0))
             {
-                JITDUMP($"  {FMT_BB(block.bbNum)} - outgoing likelihood {FMT_WT(outgoingLikelihood)} should be 1.0\n");
+                fgProfileDump($"  {FMT_BB(block.bbNum)} - outgoing likelihood {FMT_WT(outgoingLikelihood)} should be 1.0\n", dump);
 
                 if (block == fgOSREntryBB)
                 {
-                    JITDUMP("   ignoring this as block is the OSR entry\n");
+                    fgProfileDump("   ignoring this as block is the OSR entry\n", dump);
                 }
                 else
                 {
                     likelyWeightsValid = false;
 
-                    if (verbose)
+                    if (dump || verbose)
                     {
                         foreach (var succEdge in block.Succs.Edges)
                         {
@@ -3725,11 +3762,14 @@ public partial class Compiler
 
     private static unsafe string fgFormatProfileEdgeAddress(FlowEdge edge)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Profile edge formatting is only available in Debug builds.");
+        }
+
         // Snapshot for diagnostics only; never dereference or retain the address across a GC.
         return FMT_PTR((void*)Unsafe.As<FlowEdge, nint>(ref edge));
     }
-
-#endif
 
 #if DEBUG
     /// <summary>Dump all basic blocks in the function.</summary>
@@ -13561,12 +13601,13 @@ public partial class Compiler
         //
         if (fgPgoSynthesized && fgPgoConsistent)
         {
-#if DEBUG
-            assert(!fgPgoDeferredInconsistency);
+            if (Configuration.DEBUG)
+            {
+                assert(!fgPgoDeferredInconsistency);
 
-            // Reset this as it is a one-shot thing.
-            fgPgoDeferredInconsistency = false;
-#endif
+                // Reset this as it is a one-shot thing.
+                fgPgoDeferredInconsistency = false;
+            }
         }
 
         fgImportDone = true;
