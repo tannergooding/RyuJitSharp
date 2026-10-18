@@ -184,7 +184,7 @@ internal static unsafe class EmitterStackStoreTests
         emitter.UseEvexEncodings = true;
         if (TestConfiguration.IsDebug)
         {
-            VarRefOffset(emitter) = emitVarRefOffset;
+            emitter.emitVarRefOffs = emitVarRefOffset;
         }
         return emitter;
     }
@@ -201,6 +201,4 @@ internal static unsafe class EmitterStackStoreTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeNext")]
     private static extern ref nuint Used(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
-    private static extern ref int VarRefOffset(Emitter emitter);
 }

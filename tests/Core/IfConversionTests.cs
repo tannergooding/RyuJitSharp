@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
@@ -387,14 +388,7 @@ internal static unsafe class IfConversionTests
         });
     }
 
-#if TARGET_RISCV64
-    [TestCase(-2048L, 1)]
-    [TestCase(2047L, 1)]
-    [TestCase(-2049L, 2)]
-    [TestCase(2048L, 2)]
-    [TestCase(4096L, 1)]
-    [TestCase(0x80000000L, 2)]
-    [TestCase(long.MinValue, 2)]
+    [TestCaseSource(nameof(RiscVImmediateLoadCases))]
     public static void RiscVImmediateLoadCountsMatchInstructionSelection(long immediate, int expectedCount)
     {
         var instructionCount = Emitter.emitLoadImmediate(
@@ -402,9 +396,7 @@ internal static unsafe class IfConversionTests
         Assert.That(instructionCount, Is.EqualTo(expectedCount));
     }
 
-    [TestCase(6L, 5L, GT_ADD, false)]
-    [TestCase(8L, 4L, GT_LSH, false)]
-    [TestCase(8L, 0L, GT_LSH, true)]
+    [TestCaseSource(nameof(RiscVConstantSelectCases))]
     public static void RiscVConstantSelectArithmeticUsesCondition(
         long trueValue, long falseValue, genTreeOps expectedOper, bool usesBitIndex)
     {
@@ -446,6 +438,8 @@ internal static unsafe class IfConversionTests
     [Test]
     public static void RiscVSelectLocalOperationReusesAndUpdatesNode()
     {
+        Assume.That(Configuration.TARGET_RISCV64);
+
         WithCompiler(compiler => {
             EnableZicond(compiler);
             var (start, thenBlock, _) = CreateIf(compiler, withElse: true);
@@ -468,6 +462,8 @@ internal static unsafe class IfConversionTests
     [Test]
     public static void RiscVSelectConditionOperationReusesAndUpdatesNode()
     {
+        Assume.That(Configuration.TARGET_RISCV64);
+
         WithCompiler(compiler => {
             EnableZicond(compiler);
             var (start, thenBlock, _) = CreateIf(compiler, withElse: true);
@@ -490,6 +486,8 @@ internal static unsafe class IfConversionTests
     [Test]
     public static void RiscVSelectRequiresZicond()
     {
+        Assume.That(Configuration.TARGET_RISCV64);
+
         WithCompiler(compiler => {
             compiler.opts.compSupportsISA = default;
             compiler.opts.compSupportsISAExactly = default;
@@ -506,7 +504,6 @@ internal static unsafe class IfConversionTests
             Assert.That(elseBlock.FirstStmt, Is.Not.Null);
         });
     }
-#endif
 
     [Test]
     public static void DisabledPhaseDoesNotClearReachabilityTraits()
@@ -571,14 +568,36 @@ internal static unsafe class IfConversionTests
         compiler.fgSetStmtSeq(statement);
     }
 
-#if TARGET_RISCV64
     private static void EnableZicond(Compiler compiler)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zicond);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zicond);
         compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zicond);
     }
-#endif
+
+    private static IEnumerable<TestCaseData> RiscVImmediateLoadCases()
+    {
+        if (Configuration.TARGET_RISCV64)
+        {
+            yield return new TestCaseData(-2048L, 1);
+            yield return new TestCaseData(2047L, 1);
+            yield return new TestCaseData(-2049L, 2);
+            yield return new TestCaseData(2048L, 2);
+            yield return new TestCaseData(4096L, 1);
+            yield return new TestCaseData(0x80000000L, 2);
+            yield return new TestCaseData(long.MinValue, 2);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> RiscVConstantSelectCases()
+    {
+        if (Configuration.TARGET_RISCV64)
+        {
+            yield return new TestCaseData(6L, 5L, GT_ADD, false);
+            yield return new TestCaseData(8L, 4L, GT_LSH, false);
+            yield return new TestCaseData(8L, 0L, GT_LSH, true);
+        }
+    }
 
     private static void WithCompiler(Action<Compiler> action, bool optimized = true)
     {
@@ -599,9 +618,10 @@ internal static unsafe class IfConversionTests
         compiler.lvaCount = 4;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.fgCalledCount = BB_UNITY_WEIGHT;
-#if TARGET_RISCV64
-        EnableZicond(compiler);
-#endif
+        if (Configuration.TARGET_RISCV64)
+        {
+            EnableZicond(compiler);
+        }
         if (TestConfiguration.IsDebug)
         {
             TestConfiguration.EnableSafeBasicBlockCreation(compiler);

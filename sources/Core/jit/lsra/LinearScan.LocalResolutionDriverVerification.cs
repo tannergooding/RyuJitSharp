@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 
@@ -11,6 +11,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
+    [Conditional("DEBUG")]
     private void verifyFinalAllocationWithLocals()
     {
         assert(_enregisterLocalVars);
@@ -482,4 +483,3 @@ public sealed partial class LinearScan
         }
     }
 }
-#endif

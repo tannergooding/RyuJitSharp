@@ -115,10 +115,8 @@ public partial class Compiler
         {
             fgValueNumberBlocks(_dfsTree.GetPostOrder(index - 1), visitedBlocks, traits);
         }
-#if DEBUG
         JitTestCheckVN();
         fgDebugCheckExceptionSets();
-#endif
         fgVNPassesCompleted++;
         vnState = null;
 

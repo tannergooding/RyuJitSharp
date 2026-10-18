@@ -1,7 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
@@ -14,8 +15,22 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class SimdPairConstructionTests
+[TestFixtureSource(nameof(ApplicableTargets))]
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
+internal sealed unsafe class SimdPairConstructionTests
 {
+    public SimdPairConstructionTests()
+    {
+    }
+
+    private static IEnumerable<TestFixtureData> ApplicableTargets()
+    {
+        if (Configuration.FEATURE_HW_INTRINSICS)
+        {
+            yield return new TestFixtureData();
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void WideningSelectsTheTargetIntrinsic(bool upper)
@@ -96,15 +111,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-#if TARGET_XARCH
-    [TestCase(TYP_BYTE, (byte)16, 0x00FF00FF00FF00FFUL)]
-    [TestCase(TYP_UBYTE, (byte)16, 0x00FF00FF00FF00FFUL)]
-    [TestCase(TYP_SHORT, (byte)16, 0x0000FFFF0000FFFFUL)]
-    [TestCase(TYP_USHORT, (byte)16, 0x0000FFFF0000FFFFUL)]
-    [TestCase(TYP_BYTE, (byte)32, 0x00FF00FF00FF00FFUL)]
-    [TestCase(TYP_UBYTE, (byte)32, 0x00FF00FF00FF00FFUL)]
-    [TestCase(TYP_SHORT, (byte)32, 0x0000FFFF0000FFFFUL)]
-    [TestCase(TYP_USHORT, (byte)32, 0x0000FFFF0000FFFFUL)]
+    [TestCaseSource(nameof(PackedNarrowCases))]
     public static void PackedNarrowTruncatesBeforeUnsignedSaturationAndOwnsDistinctMasks(
         var_types baseType, byte size, ulong mask)
     {
@@ -139,12 +146,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase(TYP_BYTE, TYP_SHORT, NI_AVX512_ConvertToVector128SByte)]
-    [TestCase(TYP_UBYTE, TYP_USHORT, NI_AVX512_ConvertToVector128Byte)]
-    [TestCase(TYP_SHORT, TYP_INT, NI_AVX512_ConvertToVector128Int16)]
-    [TestCase(TYP_USHORT, TYP_UINT, NI_AVX512_ConvertToVector128UInt16)]
-    [TestCase(TYP_INT, TYP_LONG, NI_AVX512_ConvertToVector128Int32)]
-    [TestCase(TYP_UINT, TYP_ULONG, NI_AVX512_ConvertToVector128UInt32)]
+    [TestCaseSource(nameof(Avx512NarrowCases))]
     public static void Avx512NarrowConvertsBothSourcesBeforeJoiningTheirLowHalves(
         var_types destination, var_types source, NamedIntrinsic conversion)
     {
@@ -165,11 +167,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase((byte)16, false, NI_X86Base_ConvertToVector128Single)]
-    [TestCase((byte)16, true, NI_X86Base_ConvertToVector128Single)]
-    [TestCase((byte)32, false, NI_AVX_ConvertToVector128Single)]
-    [TestCase((byte)32, true, NI_AVX_ConvertToVector128Single)]
-    [TestCase((byte)64, true, NI_AVX512_ConvertToVector256Single)]
+    [TestCaseSource(nameof(FloatingNarrowCases))]
     public static void FloatingNarrowRetainsDoubleConversionAndSourceIdentity(
         byte size, bool avx512, NamedIntrinsic conversion)
     {
@@ -201,14 +199,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase((byte)32, TYP_BYTE, false, NI_AVX512v2_PermuteVar32x8x2)]
-    [TestCase((byte)32, TYP_USHORT, true, NI_AVX512_PermuteVar16x16x2)]
-    [TestCase((byte)32, TYP_FLOAT, false, NI_AVX512_PermuteVar8x32x2)]
-    [TestCase((byte)32, TYP_LONG, true, NI_AVX512_PermuteVar4x64x2)]
-    [TestCase((byte)64, TYP_UBYTE, true, NI_AVX512v2_PermuteVar64x8x2)]
-    [TestCase((byte)64, TYP_SHORT, false, NI_AVX512_PermuteVar32x16x2)]
-    [TestCase((byte)64, TYP_UINT, true, NI_AVX512_PermuteVar16x32x2)]
-    [TestCase((byte)64, TYP_DOUBLE, false, NI_AVX512_PermuteVar8x64x2)]
+    [TestCaseSource(nameof(WideZipCases))]
     public static void WideZipSelectsEveryLaneFromTheRequestedSourceHalves(
         byte size, var_types baseType, bool upper, NamedIntrinsic intrinsic)
     {
@@ -240,8 +231,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase((byte)32, false)]
-    [TestCase((byte)32, true)]
+    [TestCaseSource(nameof(RecursiveZipCases))]
     public static void RecursiveZipSharesTheSelectedHalvesWithoutReevaluatingSources(byte size, bool upper)
     {
         WithCompiler(compiler =>
@@ -267,8 +257,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase((byte)16)]
-    [TestCase((byte)32)]
+    [TestCaseSource(nameof(ConcatUpperUpperCases))]
     public static void ConcatUpperUpperCapturesLeftBeforeTheRightOperandChangesItsLocal(byte size)
     {
         WithCompiler(compiler =>
@@ -287,24 +276,8 @@ internal static unsafe class SimdPairConstructionTests
             Assert.That((result.Flags & GTF_REVERSE_OPS) != 0, Is.False);
         });
     }
-#endif
 
-#if TARGET_XARCH || TARGET_ARM64
-#if TARGET_XARCH
-    [TestCase((byte)32, false, false)]
-    [TestCase((byte)32, false, true)]
-    [TestCase((byte)32, true, false)]
-    [TestCase((byte)32, true, true)]
-    [TestCase((byte)64, false, false)]
-    [TestCase((byte)64, false, true)]
-    [TestCase((byte)64, true, false)]
-    [TestCase((byte)64, true, true)]
-#else
-    [TestCase((byte)16, false, false)]
-    [TestCase((byte)16, false, true)]
-    [TestCase((byte)16, true, false)]
-    [TestCase((byte)16, true, true)]
-#endif
+    [TestCaseSource(nameof(WideConcatCases))]
     public static void WideConcatKeepsExactHalfExtractionAndInsertion(byte size, bool leftUpper, bool rightUpper)
     {
         WithCompiler(compiler =>
@@ -332,12 +305,10 @@ internal static unsafe class SimdPairConstructionTests
             else
             {
                 var widened = result.GetOp(1).AsHWIntrinsic();
-#if TARGET_XARCH
-                Assert.That(widened.HWIntrinsicId, Is.EqualTo(size == 64
-                    ? NI_Vector_ToVector512Unsafe : NI_Vector_ToVector256Unsafe));
-#else
-                Assert.That(widened.HWIntrinsicId, Is.EqualTo(NI_Vector_ToVector128Unsafe));
-#endif
+                var expectedWidening = Configuration.TARGET_XARCH
+                    ? size == 64 ? NI_Vector_ToVector512Unsafe : NI_Vector_ToVector256Unsafe
+                    : NI_Vector_ToVector128Unsafe;
+                Assert.That(widened.HWIntrinsicId, Is.EqualTo(expectedWidening));
                 Assert.That(widened.SimdSize, Is.EqualTo(size / 2));
                 Assert.That(widened.GetOp(1).AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_Vector_GetUpper));
                 Assert.That(widened.GetOp(1).AsHWIntrinsic().GetOp(1), Is.SameAs(left));
@@ -350,6 +321,7 @@ internal static unsafe class SimdPairConstructionTests
     [Test]
     public static void SingleLaneZipDropsOnlyAnUnobservableRightOperand()
     {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD8);
@@ -359,8 +331,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
+    [TestCaseSource(nameof(XarchOrArm64BooleanCases))]
     public static void SingleLaneZipPreservesObservableRightOperandAndCapturesLeftFirst(bool invariant)
     {
         WithCompiler(compiler =>
@@ -391,13 +362,8 @@ internal static unsafe class SimdPairConstructionTests
             Assert.That(CountReferences(result, right), Is.EqualTo(1));
         });
     }
-#endif
 
-#if TARGET_ARM64
-    [TestCase((byte)8, TYP_FLOAT, NI_AdvSimd_Arm64_ConvertToSingleLower)]
-    [TestCase((byte)16, TYP_FLOAT, NI_AdvSimd_Arm64_ConvertToSingleUpper)]
-    [TestCase((byte)8, TYP_UBYTE, NI_AdvSimd_ExtractNarrowingLower)]
-    [TestCase((byte)16, TYP_USHORT, NI_AdvSimd_ExtractNarrowingUpper)]
+    [TestCaseSource(nameof(Arm64NarrowCases))]
     public static void Arm64NarrowKeepsNativeLowerUpperConstruction(
         byte size, var_types baseType, NamedIntrinsic intrinsic)
     {
@@ -426,10 +392,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase(false, false)]
-    [TestCase(false, true)]
-    [TestCase(true, false)]
-    [TestCase(true, true)]
+    [TestCaseSource(nameof(Arm64ConcatCases))]
     public static void Arm64EightByteConcatUsesUInt32LaneInsertion(bool leftUpper, bool rightUpper)
     {
         WithCompiler(compiler =>
@@ -457,8 +420,7 @@ internal static unsafe class SimdPairConstructionTests
         });
     }
 
-    [TestCase(false, NI_AdvSimd_Arm64_ZipLow)]
-    [TestCase(true, NI_AdvSimd_Arm64_ZipHigh)]
+    [TestCaseSource(nameof(Arm64ZipCases))]
     public static void Arm64ZipUsesTheNativeHalfIntrinsic(bool upper, NamedIntrinsic intrinsic)
     {
         WithCompiler(compiler =>
@@ -471,12 +433,8 @@ internal static unsafe class SimdPairConstructionTests
             Assert.That(result.GetOp(2), Is.SameAs(right));
         });
     }
-#endif
 
-#if TARGET_WASM
-    [TestCase(0)]
-    [TestCase(1)]
-    [TestCase(2)]
+    [TestCaseSource(nameof(WasmCases))]
     public static void WasmCallersComposeTheExactTwoSourceByteSelectors(int operation)
     {
         WithCompiler(compiler =>
@@ -518,7 +476,157 @@ internal static unsafe class SimdPairConstructionTests
             }
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> PackedNarrowCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData(TYP_BYTE, (byte)16, 0x00FF00FF00FF00FFUL);
+            yield return new TestCaseData(TYP_UBYTE, (byte)16, 0x00FF00FF00FF00FFUL);
+            yield return new TestCaseData(TYP_SHORT, (byte)16, 0x0000FFFF0000FFFFUL);
+            yield return new TestCaseData(TYP_USHORT, (byte)16, 0x0000FFFF0000FFFFUL);
+            yield return new TestCaseData(TYP_BYTE, (byte)32, 0x00FF00FF00FF00FFUL);
+            yield return new TestCaseData(TYP_UBYTE, (byte)32, 0x00FF00FF00FF00FFUL);
+            yield return new TestCaseData(TYP_SHORT, (byte)32, 0x0000FFFF0000FFFFUL);
+            yield return new TestCaseData(TYP_USHORT, (byte)32, 0x0000FFFF0000FFFFUL);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Avx512NarrowCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData(TYP_BYTE, TYP_SHORT, NI_AVX512_ConvertToVector128SByte);
+            yield return new TestCaseData(TYP_UBYTE, TYP_USHORT, NI_AVX512_ConvertToVector128Byte);
+            yield return new TestCaseData(TYP_SHORT, TYP_INT, NI_AVX512_ConvertToVector128Int16);
+            yield return new TestCaseData(TYP_USHORT, TYP_UINT, NI_AVX512_ConvertToVector128UInt16);
+            yield return new TestCaseData(TYP_INT, TYP_LONG, NI_AVX512_ConvertToVector128Int32);
+            yield return new TestCaseData(TYP_UINT, TYP_ULONG, NI_AVX512_ConvertToVector128UInt32);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> FloatingNarrowCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData((byte)16, false, NI_X86Base_ConvertToVector128Single);
+            yield return new TestCaseData((byte)16, true, NI_X86Base_ConvertToVector128Single);
+            yield return new TestCaseData((byte)32, false, NI_AVX_ConvertToVector128Single);
+            yield return new TestCaseData((byte)32, true, NI_AVX_ConvertToVector128Single);
+            yield return new TestCaseData((byte)64, true, NI_AVX512_ConvertToVector256Single);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> WideZipCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData((byte)32, TYP_BYTE, false, NI_AVX512v2_PermuteVar32x8x2);
+            yield return new TestCaseData((byte)32, TYP_USHORT, true, NI_AVX512_PermuteVar16x16x2);
+            yield return new TestCaseData((byte)32, TYP_FLOAT, false, NI_AVX512_PermuteVar8x32x2);
+            yield return new TestCaseData((byte)32, TYP_LONG, true, NI_AVX512_PermuteVar4x64x2);
+            yield return new TestCaseData((byte)64, TYP_UBYTE, true, NI_AVX512v2_PermuteVar64x8x2);
+            yield return new TestCaseData((byte)64, TYP_SHORT, false, NI_AVX512_PermuteVar32x16x2);
+            yield return new TestCaseData((byte)64, TYP_UINT, true, NI_AVX512_PermuteVar16x32x2);
+            yield return new TestCaseData((byte)64, TYP_DOUBLE, false, NI_AVX512_PermuteVar8x64x2);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> RecursiveZipCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData((byte)32, false);
+            yield return new TestCaseData((byte)32, true);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> ConcatUpperUpperCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData((byte)16);
+            yield return new TestCaseData((byte)32);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> WideConcatCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            foreach (var rawSize in new[] { 32, 64 })
+            {
+                var size = (byte)rawSize;
+                yield return new TestCaseData(size, false, false);
+                yield return new TestCaseData(size, false, true);
+                yield return new TestCaseData(size, true, false);
+                yield return new TestCaseData(size, true, true);
+            }
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            foreach (var leftUpper in new[] { false, true })
+            {
+                foreach (var rightUpper in new[] { false, true })
+                {
+                    yield return new TestCaseData((byte)16, leftUpper, rightUpper);
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<TestCaseData> XarchOrArm64BooleanCases()
+    {
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData(false);
+            yield return new TestCaseData(true);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Arm64NarrowCases()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData((byte)8, TYP_FLOAT, NI_AdvSimd_Arm64_ConvertToSingleLower);
+            yield return new TestCaseData((byte)16, TYP_FLOAT, NI_AdvSimd_Arm64_ConvertToSingleUpper);
+            yield return new TestCaseData((byte)8, TYP_UBYTE, NI_AdvSimd_ExtractNarrowingLower);
+            yield return new TestCaseData((byte)16, TYP_USHORT, NI_AdvSimd_ExtractNarrowingUpper);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Arm64ConcatCases()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            foreach (var leftUpper in new[] { false, true })
+            {
+                foreach (var rightUpper in new[] { false, true })
+                {
+                    yield return new TestCaseData(leftUpper, rightUpper);
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Arm64ZipCases()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData(false, NI_AdvSimd_Arm64_ZipLow);
+            yield return new TestCaseData(true, NI_AdvSimd_Arm64_ZipHigh);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> WasmCases()
+    {
+        if (Configuration.TARGET_WASM)
+        {
+            yield return new TestCaseData(0);
+            yield return new TestCaseData(1);
+            yield return new TestCaseData(2);
+        }
+    }
 
     private static bool Contains(GenTree tree, GenTree value) => CountReferences(tree, value) != 0;
 
@@ -574,4 +682,3 @@ internal static unsafe class SimdPairConstructionTests
         }
     }
 }
-#endif

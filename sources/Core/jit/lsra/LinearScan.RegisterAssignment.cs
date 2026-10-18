@@ -316,12 +316,10 @@ public sealed partial class LinearScan
                 other.previousInterval = null;
             }
 
-#if DEBUG
-            if (VERBOSE)
+            if (Configuration.DEBUG && VERBOSE)
             {
                 dumpRegisterAssignmentRestore(register, spill);
             }
-#endif
         }
         else
         {
@@ -458,12 +456,10 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             dumpRegisterAssignmentSpill(interval);
         }
-#endif
 
         if (Configuration.TRACK_LSRA_STATS)
         {
@@ -485,7 +481,7 @@ public sealed partial class LinearScan
         }
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpRegisterAssignmentSpill(Interval interval)
     {
         var register = interval.assignedReg
@@ -499,6 +495,7 @@ public sealed partial class LinearScan
         dumpAllocationRegisterRecords();
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpRegisterAssignmentRestore(regNumber register, bool spilled)
     {
         initializeAllocationDumpFormat();
@@ -508,5 +505,4 @@ public sealed partial class LinearScan
         jitprintf($"{(spilled ? "SRstr" : "Restr")}    {register.Name,-4} ");
         dumpAllocationRegisterRecords();
     }
-#endif
 }

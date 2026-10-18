@@ -444,11 +444,9 @@ public partial class Compiler
         if (Configuration.DEBUG && verbose)
         {
             jitprintf("GenTreeNode creates assertion:\n");
-#if DEBUG
             assert(optAssertionPropCurrentTree is not null);
             assert(compCurBB is not null);
             gtDispTree(optAssertionPropCurrentTree, topOnly: true);
-#endif
             jitprintf($"In {FMT_BB(compCurBB.bbNum)} New {(optLocalAssertionProp ? "Local" : "Global")} ");
             optPrintAssertion(newAssertion, optAssertionCount);
         }
@@ -658,7 +656,7 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public unsafe void optPrintAssertion(AssertionDsc assertion, AssertionIndex assertionIndex = 0)
     {
         if (assertionIndex > 0)
@@ -790,11 +788,6 @@ public partial class Compiler
 
         jitprintf("\n");
     }
-#else
-    public void optPrintAssertion(AssertionDsc assertion, AssertionIndex assertionIndex = 0)
-    {
-    }
-#endif
 
     public static void optPrintAssertionIndex(AssertionIndex index)
     {

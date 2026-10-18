@@ -3,7 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -16,6 +17,7 @@ public sealed partial class CodeGen
         }
     }
 
+    [Conditional("DEBUG")]
     public void genAmd64EmitterUnitTestsSse2()
     {
         requireAmd64EmitterUnitTestTarget();
@@ -59,6 +61,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2);
     }
 
+    [Conditional("DEBUG")]
     public void genAmd64EmitterUnitTestsApx()
     {
         requireAmd64EmitterUnitTestTarget();
@@ -410,6 +413,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_AR(INS_crc32_apx, EA_4BYTE, REG_X64_R17, REG_X64_EAX, 0x14);
     }
 
+    [Conditional("DEBUG")]
     public void genAmd64EmitterUnitTestsAvx10v2()
     {
         requireAmd64EmitterUnitTestTarget();
@@ -564,6 +568,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_vmovw_simd, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1);
     }
 
+    [Conditional("DEBUG")]
     public void genAmd64EmitterUnitTestsCFCMOV()
     {
         requireAmd64EmitterUnitTestTarget();
@@ -660,6 +665,7 @@ public sealed partial class CodeGen
         }
     }
 
+    [Conditional("DEBUG")]
     public unsafe void genAmd64EmitterUnitTestsCCMP()
     {
         requireAmd64EmitterUnitTestTarget();
@@ -741,6 +747,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_X64_RAX, hnd, 4, INS_OPTS_EVEX_dfv_cf);
     }
 
+    [Conditional("DEBUG")]
     public void genAmd64EmitterUnitTestsCTEST()
     {
         requireAmd64EmitterUnitTestTarget();
@@ -816,4 +823,3 @@ public sealed partial class CodeGen
         theEmitter.emitIns_I_AR(INS_cteste, EA_8BYTE, 123, REG_X64_R18, 2, INS_OPTS_EVEX_dfv_cf);
     }
 }
-#endif

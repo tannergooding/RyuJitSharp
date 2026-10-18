@@ -49,16 +49,12 @@ public partial class Compiler
     {
         public readonly struct AssertionDscOp1
         {
-#if DEBUG
             private readonly Compiler _compiler;
-#endif
             private readonly int _value;
 
             internal AssertionDscOp1(Compiler compiler, optOp1Kind kind, int value)
             {
-#if DEBUG
-                _compiler = compiler;
-#endif
+                _compiler = Configuration.DEBUG ? compiler : null!;
                 Kind = kind;
                 _value = value;
             }
@@ -76,9 +72,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(!_compiler.optLocalAssertionProp);
-#endif
                     assert(KindIs(optOp1Kind.O1K_VN, optOp1Kind.O1K_EXACT_TYPE, optOp1Kind.O1K_SUBTYPE));
                     assert(_value != ValueNumStore.NoVN);
                     return _value;
@@ -89,9 +83,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(_compiler.optLocalAssertionProp);
-#endif
                     assert(_value != BAD_VAR_NUM);
                     assert(KindIs(optOp1Kind.O1K_LCLVAR));
                     return _value;
@@ -101,9 +93,7 @@ public partial class Compiler
 
         public struct AssertionDscOp2
         {
-#if DEBUG
             private readonly Compiler _compiler;
-#endif
             private readonly ValueNum _vn;
             private readonly nint _iconVal;
             private readonly double _dconVal;
@@ -119,9 +109,7 @@ public partial class Compiler
                 byte[]? simdValue = null, bool isVNNeverNegative = false,
                 GenTreeFlags iconFlags = GTF_EMPTY, FieldSeq? fieldSeq = null)
             {
-#if DEBUG
-                _compiler = compiler;
-#endif
+                _compiler = Configuration.DEBUG ? compiler : null!;
                 Kind = kind;
                 _vn = vn;
                 _iconVal = iconVal;
@@ -154,9 +142,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(_compiler.optLocalAssertionProp);
-#endif
                     assert(KindIs(optOp2Kind.O2K_LCLVAR_COPY));
                     return _lclNum;
                 }
@@ -196,9 +182,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(_compiler.optLocalAssertionProp);
-#endif
                     assert(KindIs(optOp2Kind.O2K_SUBRANGE));
                     return _range;
                 }
@@ -211,9 +195,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(!_compiler.optLocalAssertionProp);
-#endif
                     assert(IsConstant || KindIs(optOp2Kind.O2K_VN_ADD_CNS));
                     assert(_vn != ValueNumStore.NoVN);
                     return _vn;
@@ -224,9 +206,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(!_compiler.optLocalAssertionProp);
-#endif
                     assert(KindIs(optOp2Kind.O2K_VN_ADD_CNS));
                     assert(FitsInI32(_iconVal));
                     return (int)_iconVal;
@@ -237,9 +217,7 @@ public partial class Compiler
             {
                 get
                 {
-#if DEBUG
                     assert(!_compiler.optLocalAssertionProp);
-#endif
                     assert(KindIs(optOp2Kind.O2K_VN_ADD_CNS));
                     return _isVNNeverNegative;
                 }

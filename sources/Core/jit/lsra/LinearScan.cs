@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace RyuJitSharp;
@@ -63,13 +64,6 @@ public sealed partial class LinearScan : IRegAlloc
     internal readonly RegRecord[] physRegs;
 
     private int _lsraStressMask;
-
-#if DEBUG
-    private uint _maxNodeLocation;
-    private uint _consecutiveRegistersLocation;
-    private RefPosition? _activeRefPosition;
-    private static ConfigMethodRange s_jitStressRegsRange;
-#endif
 
     public LinearScan(Compiler compiler)
     {
@@ -150,9 +144,7 @@ public sealed partial class LinearScan : IRegAlloc
 
         _firstColdLocation = MaxLocation;
 
-#if DEBUG
         initializeDebugState();
-#endif
 
         // Lowering runs after this constructor and may add tracked locals.
         _enregisterLocalVars = compiler.compEnregLocals;
@@ -266,7 +258,7 @@ public sealed partial class LinearScan : IRegAlloc
         }
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     private unsafe void initializeDebugState()
     {
         _maxNodeLocation = 0;
@@ -277,8 +269,8 @@ public sealed partial class LinearScan : IRegAlloc
 
         if (_lsraStressMask != 0)
         {
-            s_jitStressRegsRange.EnsureInit(JitConfig.JitStressRegsRange);
-            if (!s_jitStressRegsRange.Contains(_compiler.info.compMethodHash()))
+            AllocationDebugDataStorage.StressRegsRange.EnsureInit(JitConfig.JitStressRegsRange);
+            if (!AllocationDebugDataStorage.StressRegsRange.Contains(_compiler.info.compMethodHash()))
             {
                 JITDUMP($"*** JitStressRegs = 0x{_lsraStressMask:x} -- disabled by JitStressRegsRange\n");
                 _lsraStressMask = 0;
@@ -289,7 +281,6 @@ public sealed partial class LinearScan : IRegAlloc
             }
         }
     }
-#endif
 
     private void initializeRegisterSets(ICodeGen codeGen)
     {
@@ -383,19 +374,15 @@ public sealed partial class LinearScan : IRegAlloc
         {
             buildIntervalsMinimal();
         }
-#if DEBUG
         if (VERBOSE)
         {
             tupleStyleDump(LsraTupleDumpMode.LSRA_DUMP_REFPOS);
         }
-#endif
         _compiler.EndPhase(PHASE_LINEAR_SCAN_BUILD);
-#if DEBUG
         if (VERBOSE)
         {
             dumpLsraIntervals("after buildIntervals");
         }
-#endif
 
         initVarRegMaps();
         if (Configuration.TARGET_ARM64 && _compiler.info.compNeedsConsecutiveRegisters)
@@ -432,12 +419,10 @@ public sealed partial class LinearScan : IRegAlloc
         {
             dumpLsraStats(jitstdout());
         }
-#if DEBUG
         if (VERBOSE)
         {
             tupleStyleDump(LsraTupleDumpMode.LSRA_DUMP_POST);
         }
-#endif
         _compiler.compRegAllocDone = true;
 
         if (_compiler.fgBBcount != _blockSequenceCount)

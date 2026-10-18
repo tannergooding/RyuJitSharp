@@ -169,9 +169,7 @@ public partial class Compiler
         }
 
         JITDUMP($"Created EH descriptor EH#{XTnew} for try/fault wrapping body to save/restore async contexts\n");
-#if DEBUG
         fgVerifyHandlerTab();
-#endif
 
         ref var asyncInfo = ref eeGetAsyncInfo();
 

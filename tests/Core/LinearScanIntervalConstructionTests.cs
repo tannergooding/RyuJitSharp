@@ -20,11 +20,14 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class LinearScanIntervalConstructionTests
 {
     [TestCase(false)]
-#if DEBUG
     [TestCase(true)]
-#endif
     public static void ConstructedIntervalsAllocateAndResolveWithNativeSpillPolicy(bool stressSpills)
     {
+        if (stressSpills)
+        {
+            Assume.That(TestConfiguration.IsDebug);
+        }
+
         WithAllocator((compiler, allocator) => {
             var returnType = new ReturnTypeDesc();
             returnType.InitializeReturnType(compiler, TYP_INT, null, CorInfoCallConvExtension.Managed);
@@ -38,12 +41,10 @@ internal static unsafe class LinearScanIntervalConstructionTests
             block.InsertAtEnd(right);
             block.InsertAtEnd(add);
             block.InsertAtEnd(ret);
-#if DEBUG
-            if (stressSpills)
+            if (TestConfiguration.IsDebug && stressSpills)
             {
                 StressMask(allocator) = 0xc00;
             }
-#endif
 
             var status = allocator.DoRegisterAllocation();
 
@@ -75,11 +76,12 @@ internal static unsafe class LinearScanIntervalConstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void MinimalVectorSpillOrMoveMarksAvxInstructionWidth(bool spill)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
             compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
@@ -127,7 +129,6 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(emitter.Contains256BitOrMoreAvxInstruction, Is.True);
         }, trackedLocal: true);
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -358,10 +359,11 @@ internal static unsafe class LinearScanIntervalConstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void MinimalIntervalsDumpTrackedLivenessInLocalNumberOrder()
     {
+        Assume.That(TestConfiguration.IsDebug, "Liveness diagnostics require a Debug build.");
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [
                 new() { Type = TYP_INT, lvTracked = true, _varIndex = 2, lvOnFrame = true },
@@ -402,6 +404,8 @@ internal static unsafe class LinearScanIntervalConstructionTests
     [NonParallelizable]
     public static void MinimalIntervalsActivateInitialParameterStressWithoutCandidateParameters()
     {
+        Assume.That(TestConfiguration.IsDebug, "Compiler stress diagnostics require a Debug build.");
+
         WithAllocator((compiler, allocator) => {
             compiler.compAllowStress = true;
             compiler.info.compMethodName = nameof(MinimalIntervalsActivateInitialParameterStressWithoutCandidateParameters);
@@ -420,7 +424,8 @@ internal static unsafe class LinearScanIntervalConstructionTests
 
                     var output = CodeGenLifeTransitionTests.Capture(() => BuildIntervals(allocator));
 
-                    Assert.That(compiler.compActiveStressModes[(int)Compiler.compStressArea.STRESS_INITIAL_PARAM_REG], Is.EqualTo(1));
+                    Assert.That(TestConfiguration.GetActiveStressMode(compiler,
+                        Compiler.compStressArea.STRESS_INITIAL_PARAM_REG), Is.EqualTo(1));
                     Assert.That(output, Does.Contain("*** JitStress: STRESS_INITIAL_PARAM_REG ***"));
                     Assert.That(allocator.refPositions.Exists(
                         reference => reference.refType is RefType.RefTypeParamDef), Is.False);
@@ -433,8 +438,6 @@ internal static unsafe class LinearScanIntervalConstructionTests
             }
         });
     }
-#endif
-
     [TestCase(false)]
     [TestCase(true)]
     public static void AFinalBackedgeGetsItsOwnBoundaryAndPreservesRegisterClasses(bool floating)
@@ -670,7 +673,6 @@ internal static unsafe class LinearScanIntervalConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocalVars(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
 
@@ -679,7 +681,6 @@ internal static unsafe class LinearScanIntervalConstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNamesOnly")]
     private static extern ref int StressNamesOnly(ref JitConfigValues config);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_firstColdLocation")]
     private static extern ref uint FirstColdLocation(LinearScan allocator);

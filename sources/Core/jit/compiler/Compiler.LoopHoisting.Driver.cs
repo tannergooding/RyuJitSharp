@@ -43,8 +43,7 @@ public partial class Compiler
             modified |= optHoistThisLoop(loop, context);
         }
 
-#if DEBUG
-        if (_nodeTestData is not null)
+        if (Configuration.DEBUG && (_nodeTestData is not null))
         {
             foreach (var (node, annotation) in _nodeTestData)
             {
@@ -63,7 +62,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
         return modified ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 

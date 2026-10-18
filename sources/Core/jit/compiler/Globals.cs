@@ -410,9 +410,7 @@ public partial class Globals
                     previousCompiler = JitTls.Compiler;
                     JitTls.Compiler = compiler;
 
-#if DEBUG
                     compiler.jitFallbackCompile = jitFallbackCompile;
-#endif
 
                     // Now generate the code
                     result = compiler.compCompileAfterInit(classHandle, out methodCodePtr, out methodCodeSize, jitFlags);

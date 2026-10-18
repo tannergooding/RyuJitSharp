@@ -538,7 +538,7 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
                 emitter.emitInsSve_R_R_R(
                     INS_sve_add, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V31, INS_OPTS_SCALABLE_B));

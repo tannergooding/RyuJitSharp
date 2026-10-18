@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -13,21 +15,91 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && (TARGET_XARCH || TARGET_ARM64)
-[NonParallelizable]
-internal static unsafe class HWIntrinsicDispatchTests
+internal static class HWIntrinsicDispatchTestTargets
 {
+    public static IEnumerable<TestFixtureData> ApplicableTargets()
+    {
+        if (Configuration.FEATURE_HW_INTRINSICS &&
+            Configuration.FEATURE_SIMD &&
+            (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64))
+        {
+            yield return new TestFixtureData();
+        }
+    }
+}
+
+[NonParallelizable]
+[TestFixtureSource(typeof(HWIntrinsicDispatchTestTargets),
+    nameof(HWIntrinsicDispatchTestTargets.ApplicableTargets))]
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
+internal sealed unsafe class HWIntrinsicDispatchTests
+{
+    public HWIntrinsicDispatchTests()
+    {
+    }
+
     private static readonly CorInfoType[] s_argumentTypes = new CorInfoType[4];
     private static readonly CORINFO_CLASS_STRUCT_*[] s_argumentClasses = new CORINFO_CLASS_STRUCT_*[4];
     private static readonly System.Collections.Generic.List<int> s_argumentQueries = [];
-#if TARGET_XARCH
-    private static readonly int[] s_oneArgument = [0];
-    private static readonly int[] s_twoArguments = [0, 1];
-    private static readonly int[] s_threeArguments = [0, 1, 2];
-#endif
+    private static int[] s_oneArgument => XarchArgumentSets.OneArgument;
+    private static int[] s_twoArguments => XarchArgumentSets.TwoArguments;
+    private static int[] s_threeArguments => XarchArgumentSets.ThreeArguments;
 
-#if TARGET_XARCH
-    [Test]
+    private static class XarchArgumentSets
+    {
+        internal static readonly int[] OneArgument = [0];
+        internal static readonly int[] TwoArguments = [0, 1];
+        internal static readonly int[] ThreeArguments = [0, 1, 2];
+    }
+
+    private static IEnumerable<TestCaseData> XarchCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData();
+        }
+    }
+
+    private static IEnumerable<TestCaseData> XarchBooleanCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            yield return new TestCaseData(false);
+            yield return new TestCaseData(true);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Arm64MetadataCases()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData(NI_Sve_ConditionalExtractLastActiveElement, true, false);
+            yield return new TestCaseData(NI_Sve_ConditionalExtractLastActiveElementScalar, false, false);
+            yield return new TestCaseData(NI_AdvSimd_Store, false, true);
+            yield return new TestCaseData(NI_AdvSimd_Add, false, false);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Arm64IntrinsicCases()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData(NI_AdvSimd_Add);
+            yield return new TestCaseData(NI_AdvSimd_Insert);
+            yield return new TestCaseData(NI_Sve_ConvertToSingle);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> Arm64VectorSizeCases()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData(8);
+            yield return new TestCaseData(16);
+        }
+    }
+
+    [TestCaseSource(nameof(XarchCases))]
     public static void NextCallRetAddrDoesNotConsumeOperandsUnlessExpansionIsRequired()
     {
         WithImporter(compiler => {
@@ -51,7 +123,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void ZeroAndOneOperandImportsKeepTheirSignatureShape()
     {
         WithImporter(compiler => {
@@ -76,7 +148,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void ScalarIntrinsicImportsWhenSimdIsDisabled()
     {
         var featureName = $"RyuJitSharp.{nameof(Configuration.FEATURE_SIMD)}";
@@ -114,7 +186,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         }
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void CrcUsesPreciseSecondArgumentTypeAndSignatureOrder()
     {
         WithImporter(compiler => {
@@ -139,7 +211,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void VectorBinaryAndFourOperandSpecialImportPreserveArguments()
     {
         WithImporter(compiler => {
@@ -191,7 +263,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void GatherImmediateRejectsInvalidScaleWithoutPopping()
     {
         WithImporter(compiler => {
@@ -218,8 +290,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         }, minOpts: true);
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
+    [TestCaseSource(nameof(XarchBooleanCases))]
     public static void NonconstantShiftUsesVariableCountFallbackEvenWhenExpansionIsRequired(bool mustExpand)
     {
         WithImporter(compiler => {
@@ -251,7 +322,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void UnknownImmediateDefersOnlyWithOptimizations()
     {
         WithImporter(compiler => {
@@ -312,7 +383,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         }, minOpts: true);
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void PortableAndSpecialDispatchKeepTheirOwnNodeSemantics()
     {
         WithImporter(compiler => {
@@ -356,7 +427,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [Test]
+    [TestCaseSource(nameof(XarchCases))]
     public static void InvalidNodeIdWithoutSpecialImportRoutesVectorAdditionToPortableImporter()
     {
         WithImporter(compiler => {
@@ -392,11 +463,8 @@ internal static unsafe class HWIntrinsicDispatchTests
             }
         });
     }
-#elif TARGET_ARM64
-    [TestCase(NI_Sve_ConditionalExtractLastActiveElement, true, false)]
-    [TestCase(NI_Sve_ConditionalExtractLastActiveElementScalar, false, false)]
-    [TestCase(NI_AdvSimd_Store, false, true)]
-    [TestCase(NI_AdvSimd_Add, false, false)]
+
+    [TestCaseSource(nameof(Arm64MetadataCases))]
     public static void ScalarInputAndTupleFlagsKeepTheirIndependentNativeBits(
         NamedIntrinsic intrinsic, bool hasScalarInputVariant, bool baseTypeFromTuple)
     {
@@ -407,6 +475,8 @@ internal static unsafe class HWIntrinsicDispatchTests
     [Test]
     public static void NextCallRetAddrReturnsBeforeTargetMetadataOrOperands()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             var operand = new GenTreeLclVar(TYP_INT, 0);
             Push(compiler, operand);
@@ -421,9 +491,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [TestCase(NI_AdvSimd_Add)]
-    [TestCase(NI_AdvSimd_Insert)]
-    [TestCase(NI_Sve_ConvertToSingle)]
+    [TestCaseSource(nameof(Arm64IntrinsicCases))]
     public static void UnsupportedStructResultReturnsBeforeArgumentBaseTypeOrImmediates(NamedIntrinsic intrinsic)
     {
         WithImporter(compiler => {
@@ -449,8 +517,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         });
     }
 
-    [TestCase(8)]
-    [TestCase(16)]
+    [TestCaseSource(nameof(Arm64VectorSizeCases))]
     public static void TupleArgumentExtractsFirstVectorBeforeTheUnportedImmediateDependency(int vectorSize)
     {
         WithImporter(compiler => {
@@ -492,8 +559,6 @@ internal static unsafe class HWIntrinsicDispatchTests
             }
         });
     }
-#endif
-
     private static void WithImporter(Action<Compiler> test, bool minOpts = false)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -505,11 +570,12 @@ internal static unsafe class HWIntrinsicDispatchTests
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeArgument;
         vtable.Base.Base.getArgType = &GetArgumentType;
         vtable.Base.Base.getArgNext = &GetNextArgument;
-#if TARGET_ARM64
-        vtable.Base.Base.getClassNumInstanceFields = &GetInstanceFieldCount;
-        vtable.Base.Base.getFieldInClass = &GetFirstField;
-        vtable.Base.Base.getFieldType = &GetFieldType;
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            vtable.Base.Base.getClassNumInstanceFields = &GetInstanceFieldCount;
+            vtable.Base.Base.getFieldInClass = &GetFirstField;
+            vtable.Base.Base.getFieldType = &GetFieldType;
+        }
         vtable.Base.notifyInstructionSetUsage =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
@@ -535,13 +601,15 @@ internal static unsafe class HWIntrinsicDispatchTests
         Array.Fill(s_argumentTypes, CORINFO_TYPE_UNDEF);
         Array.Clear(s_argumentClasses);
         s_vectorElementType = CORINFO_TYPE_INT;
-#if TARGET_ARM64
-        s_fieldQueries = 0;
-        s_fieldTypeQueries = 0;
-        s_lastFieldClass = null;
-        var previousConfig = JitConfig;
-        AltJitAssertOnNyi(ref JitConfig) = 0;
-#endif
+        JitConfigValues previousConfig = default;
+        if (Configuration.TARGET_ARM64)
+        {
+            s_fieldQueries = 0;
+            s_fieldTypeQueries = 0;
+            s_lastFieldClass = null;
+            previousConfig = JitConfig;
+            AltJitAssertOnNyi(ref JitConfig) = 0;
+        }
         JitTls.Compiler = compiler;
         TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
@@ -551,9 +619,10 @@ internal static unsafe class HWIntrinsicDispatchTests
         finally
         {
             JitTls.Compiler = previous;
-#if TARGET_ARM64
-            JitConfig = previousConfig;
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                JitConfig = previousConfig;
+            }
         }
     }
 
@@ -569,25 +638,20 @@ internal static unsafe class HWIntrinsicDispatchTests
         in CORINFO_SIG_INFO sig, bool mustExpand = false, CORINFO_METHOD_STRUCT_* method = null)
         => compiler.impHWIntrinsic(intrinsic, null, method, in sig, default, mustExpand);
 
-#if TARGET_XARCH
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "impIsTableDrivenHWIntrinsic")]
     private static extern bool IsTableDriven(Compiler? _, NamedIntrinsic intrinsic,
         HWIntrinsicCategory category);
-#endif
 
     private struct ClassInfo
     {
         public byte* Name;
         public byte* Namespace;
         public int Size;
-#if TARGET_ARM64
         public CORINFO_CLASS_STRUCT_* FirstFieldClass;
-#endif
     }
 
     private static CorInfoType s_vectorElementType = CORINFO_TYPE_INT;
 
-#if TARGET_ARM64
     private static int s_fieldQueries;
     private static int s_fieldTypeQueries;
     private static CORINFO_CLASS_STRUCT_* s_lastFieldClass;
@@ -615,7 +679,6 @@ internal static unsafe class HWIntrinsicDispatchTests
         *type = *(CORINFO_CLASS_STRUCT_**)field;
         return CORINFO_TYPE_VALUECLASS;
     }
-#endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression) => 0;
@@ -661,4 +724,3 @@ internal static unsafe class HWIntrinsicDispatchTests
     private static CORINFO_ARG_LIST_STRUCT_* GetNextArgument(ICorJitInfo* self,
         CORINFO_ARG_LIST_STRUCT_* argument) => (CORINFO_ARG_LIST_STRUCT_*)((nuint)argument + 1);
 }
-#endif

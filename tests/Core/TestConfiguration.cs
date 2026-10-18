@@ -14,20 +14,8 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verboseSsa")]
     private static extern ref bool VerboseSsa(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspMetrics")]
-    private static extern ref bool DspMetrics(ref Compiler.Options options);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspCode")]
-    private static extern ref bool DspCode(ref Compiler.Options options);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspEHTable")]
-    private static extern ref bool DspEHTable(ref Compiler.Options options);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
     private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
-    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgNormalizeEHDone")]
     private static extern ref bool EhNormalizationDone(Compiler compiler);
@@ -144,7 +132,7 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            DspMetrics(ref compiler.opts) = enabled;
+            compiler.opts.dspMetrics = enabled;
         }
     }
 
@@ -152,7 +140,7 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            DspCode(ref compiler.opts) = enabled;
+            compiler.opts.dspCode = enabled;
         }
     }
 
@@ -168,7 +156,7 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            DspEHTable(ref compiler.opts) = enabled;
+            compiler.opts.dspEHTable = enabled;
         }
     }
 
@@ -183,7 +171,7 @@ internal static partial class TestConfiguration
     [Conditional("DEBUG")]
     public static void EnableEmitterIssuing(Emitter emitter)
     {
-        EmitIssuing(emitter) = true;
+        emitter.emitIssuing = true;
     }
 
     public static void SetMinimumRegisterCandidateCount(RefPosition reference, uint count)

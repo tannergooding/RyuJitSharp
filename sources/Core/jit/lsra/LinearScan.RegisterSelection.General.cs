@@ -55,9 +55,10 @@ public sealed partial class LinearScan
                 _preferences = _candidates;
             }
             _candidates = _linearScan.getAvailableGPRsForType(_candidates, _regType);
-#if DEBUG
-            _candidates = _linearScan.stressLimitRegs(refPosition, _regType, _candidates);
-#endif
+            if (Configuration.DEBUG)
+            {
+                _candidates = _linearScan.stressLimitRegs(refPosition, _regType, _candidates);
+            }
             assert(_candidates != SRBM_NONE);
 
             var nextRelatedInterval = _relatedInterval;

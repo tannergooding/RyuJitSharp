@@ -81,7 +81,7 @@ internal static unsafe class SysVX64EmitterCallTests
             ThisByrefs(emitter) = SRBM_NONE;
             if (TestConfiguration.IsDebug)
             {
-                EmitIssuing(emitter) = true;
+                TestConfiguration.EnableEmitterIssuing(emitter);
             }
             SyncThisRegister(emitter) = REG_NA;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -223,9 +223,6 @@ internal static unsafe class SysVX64EmitterCallTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
     private static extern ref regNumber SyncThisRegister(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
-    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [System.Runtime.InteropServices.UnmanagedCallersOnly(
         CallConvs = [typeof(System.Runtime.CompilerServices.CallConvMemberFunction)])]

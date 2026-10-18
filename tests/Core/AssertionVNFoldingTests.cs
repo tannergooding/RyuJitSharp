@@ -374,8 +374,7 @@ internal static unsafe class AssertionVNFoldingTests
         });
     }
 
-#if FEATURE_SIMD
-    [Test]
+    [TestCaseSource(nameof(SimdFeatureCases))]
     public static void VectorConstantPreservesAllLaneBytes()
     {
         WithCompiler("SequenceEqual", (compiler, store) =>
@@ -392,10 +391,8 @@ internal static unsafe class AssertionVNFoldingTests
             Assert.That(result?.AsVecCon().SimdVal.u64[1], Is.EqualTo(value.u64[1]));
         });
     }
-#endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
-    [Test]
+    [TestCaseSource(nameof(MaskedIntrinsicFeatureCases))]
     public static void MaskConstantPreservesRawBits()
     {
         WithCompiler("SequenceEqual", (compiler, store) =>
@@ -410,7 +407,6 @@ internal static unsafe class AssertionVNFoldingTests
             Assert.That(result?.AsMskCon().SimdMaskVal.RawBits, Is.EqualTo(mask.RawBits));
         });
     }
-#endif
 
     [TestCase(false, GT_NE)]
     [TestCase(true, GT_EQ)]
@@ -493,6 +489,22 @@ internal static unsafe class AssertionVNFoldingTests
                 Assert.That(result?.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)7));
             }
         });
+    }
+
+    private static IEnumerable<TestCaseData> SimdFeatureCases()
+    {
+        if (Configuration.FEATURE_SIMD)
+        {
+            yield return new TestCaseData();
+        }
+    }
+
+    private static IEnumerable<TestCaseData> MaskedIntrinsicFeatureCases()
+    {
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            yield return new TestCaseData();
+        }
     }
 
     private static int CountStores(GenTree? tree)

@@ -38,9 +38,10 @@ internal static unsafe class LoopCloningTests
             compiler._loops = loops;
             Assert.That(loops.GetLoopByIndex(0).AnalyzeIteration(out var iter, true), Is.True);
             Assert.That(iter.NeedsZeroTripGuard, Is.False);
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(JitConfig.JitCloneLoops, Is.EqualTo(1));
-#endif
+            }
             var configuration = JitConfig;
             SetConfig(ref configuration, "_jitCloneLoopsSizeLimit", sizeLimit);
             SetConfig(ref configuration, "_jitCloneLoopsMinPerCallRatio", minimumRatio);
@@ -100,17 +101,20 @@ internal static unsafe class LoopCloningTests
                 compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0))));
             AddCountedLatch(compiler, latch, 4);
             compiler._loops = FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(compiler.optCloneLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
-            Assert.That(output, Does.Contain("*************** In optCloneLoops()"));
-            Assert.That(output, Does.Contain("Considering loop L00 to clone for optimizations."));
-            Assert.That(output, Does.Contain("Not checking loop L00 -- no array bounds or type tests in this method"));
-            Assert.That(output, Does.Contain("  No clonable loops"));
-#else
-            Assert.That(compiler.optCloneLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(compiler.optCloneLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
+                Assert.That(output, Does.Contain("*************** In optCloneLoops()"));
+                Assert.That(output, Does.Contain("Considering loop L00 to clone for optimizations."));
+                Assert.That(output, Does.Contain("Not checking loop L00 -- no array bounds or type tests in this method"));
+                Assert.That(output, Does.Contain("  No clonable loops"));
+            }
+            else
+            {
+                Assert.That(compiler.optCloneLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            }
             Assert.That(compiler.Metrics.LoopsCloned, Is.Zero);
         });
     }
@@ -209,10 +213,11 @@ internal static unsafe class LoopCloningTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void SpanCandidateAndConditionDumpsFollowNativeOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithLoop((compiler, preheader, header, latch, unusedExit) => {
             compiler.fgInsertStmtAtEnd(preheader, compiler.gtNewStmt(
                 compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0))));
@@ -247,7 +252,6 @@ internal static unsafe class LoopCloningTests
             Assert.That(derefs, Is.GreaterThan(conditions));
         });
     }
-#endif
 
     [Test]
     public static void UnknownEntryForNotEqualLoopRequiresOrderedEntryAndWrapGuards()
@@ -297,17 +301,20 @@ internal static unsafe class LoopCloningTests
             Assert.That(ObtainCandidates(compiler, context), Is.True);
             var loop = compiler._loops.GetLoopByIndex(0);
             Assert.That(context.GetLoopOptInfo(loop.Index), Has.Count.EqualTo(1));
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected)));
-            if (!expected)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(output, Does.Contain("exceeds overflow bound"));
+                TestConfiguration.EnableVerbose(compiler);
+                var output = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected)));
+                if (!expected)
+                {
+                    Assert.That(output, Does.Contain("exceeds overflow bound"));
+                }
             }
-#else
-            Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected));
-#endif
+            else
+            {
+                Assert.That(DeriveConditions(compiler, loop, context), Is.EqualTo(expected));
+            }
         });
     }
 
@@ -421,11 +428,12 @@ internal static unsafe class LoopCloningTests
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var config = new JitConfigValues();
-#if DEBUG
-        SetConfig(ref config, "_jitCloneLoops", 1);
-        SetConfig(ref config, "_jitCloneLoopsWithEH", 1);
-        SetConfig(ref config, "_jitCloneLoopsWithGdvTests", 1);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            SetConfig(ref config, "_jitCloneLoops", 1);
+            SetConfig(ref config, "_jitCloneLoopsWithEH", 1);
+            SetConfig(ref config, "_jitCloneLoopsWithGdvTests", 1);
+        }
         SetConfig(ref config, "_jitCloneLoopsSizeLimit", 400);
         JitConfig = config;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

@@ -290,10 +290,11 @@ public sealed partial class IndirectCallTransformer
             var call = _compiler.gtCloneCandidateCall(_origCall);
             assert(call.Args.ThisArg is not null);
             call.Args.ThisArg.EarlyNode = _compiler.gtNewLclvNode(TYP_REF, thisTemp);
-#if DEBUG
-            call.IsGuarded = true;
+            if (Configuration.DEBUG)
+            {
+                call.IsGuarded = true;
+            }
             JITDUMP($"Direct call [{call.TreeId:D6}] in block {FMT_BB(block.bbNum)}\n");
-#endif
 
             var methodHnd = inlineInfo.guardedMethodHandle;
             var thisObj = clsHnd != NO_CLASS_HANDLE ? call.Args.ThisArg.EarlyNode : newThisObj;
@@ -456,10 +457,11 @@ public sealed partial class IndirectCallTransformer
             var call = _origCall;
             var newStmt = _compiler.gtNewStmt(call, _stmt.DebugInfo);
             call.Flags &= ~GTF_CALL_INLINE_CANDIDATE;
-#if DEBUG
-            call.IsGuarded = true;
+            if (Configuration.DEBUG)
+            {
+                call.IsGuarded = true;
+            }
             JITDUMP($"Residual call [{call.TreeId:D6}] moved to block {FMT_BB(_elseBlock.bbNum)}\n");
-#endif
             if (_returnTemp != BAD_VAR_NUM)
             {
                 newStmt.RootNode = _compiler.gtNewTempStore(_returnTemp, call);
@@ -623,9 +625,7 @@ public sealed partial class IndirectCallTransformer
                     var retExpr = node.AsRetExpr();
                     if (retExpr.SubstExpr is not null)
                     {
-#if DEBUG
                         assert(retExpr.InlineCandidate.AsCall().IsGuarded);
-#endif
                         use = retExpr.SubstExpr;
                         return Compiler.WALK_CONTINUE;
                     }
@@ -684,9 +684,10 @@ public sealed partial class IndirectCallTransformer
         private GenTreeIntCon CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, in CORINFO_CONST_LOOKUP lookup)
         {
             var con = _compiler.gtNewIconHandleNode((nint)lookup.addr, GTF_ICON_FTN_ADDR);
-#if DEBUG
-            con.TargetHandle = (nint)methHnd;
-#endif
+            if (Configuration.DEBUG)
+            {
+                con.TargetHandle = (nint)methHnd;
+            }
             return con;
         }
     }

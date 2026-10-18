@@ -106,25 +106,6 @@ public partial class Compiler
 
     public bool compAllowStress = true;
 
-#if DEBUG
-    // State information - which phases have completed?
-    // These are kept together for easy discoverability
-
-    public bool compCodeGenDone;
-
-    /// <summary># of links traversed while doing debug checks</summary>
-    public long compNumStatementLinksTraversed;
-
-    /// <summary>The estimated size of the method as per `gtSetEvalOrder`.</summary>
-    public nint compSizeEstimate;
-
-    /// <summary>The estimated cycle count of the method as per `gtSetEvalOrder`</summary>
-    public nint compCycleEstimate;
-
-    /// <summary>Importer inserted IR before returns to poison implicit byrefs</summary>
-    public bool compPoisoningAnyImplicitByrefs;
-#endif
-
     public bool compPostImportationCleanupDone;
 
     public bool compRegAllocDone;
@@ -275,10 +256,6 @@ public partial class Compiler
 
     /// <summary>Whether compProfilerHandle is pointer to the handle or is an actual handle</summary>
     protected internal bool compProfilerMethHndIndirected;
-
-#if DEBUG
-    public bool compDebugBreak;
-#endif
 
     /// <summary>Timer data structure (by phases) for current compilation.</summary>
     private unsafe JitTimer? compJitTimer;
@@ -3800,23 +3777,22 @@ public partial class Compiler
             DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, fgRepairProfile);
         }
 
-#if DEBUG
         // Stash the current estimate of the function's size if necessary.
-        if (verbose && opts.OptimizationEnabled)
+        if (Configuration.DEBUG && verbose && opts.OptimizationEnabled)
         {
-            compSizeEstimate = 0;
-            compCycleEstimate = 0;
+            var debugData = GetDebugData();
+            debugData.SizeEstimate = 0;
+            debugData.CycleEstimate = 0;
 
             foreach (var block in Blocks)
             {
                 foreach (var stmt in block.Statements)
                 {
-                    compSizeEstimate += stmt.CostSz;
-                    compCycleEstimate += stmt.CostEx;
+                    debugData.SizeEstimate += stmt.CostSz;
+                    debugData.CycleEstimate += stmt.CostEx;
                 }
             }
         }
-#endif
 
         activePhaseChecks |= PhaseChecks.CHECK_LIR_UNUSED_VALUES;
 

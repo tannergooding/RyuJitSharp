@@ -449,9 +449,10 @@ public partial struct CallArgs
         {
             assert(call._entryPoint.addr is not null);
             var address = compiler.gtNewIconHandleNode((nint)call._entryPoint.addr, GTF_ICON_FTN_ADDR);
-#if DEBUG
-            address.TargetHandle = (nint)call._callMethHnd;
-#endif
+            if (Configuration.DEBUG)
+            {
+                address.TargetHandle = (nint)call._callMethHnd;
+            }
             if (Configuration.TARGET_ARM)
             {
                 // LSRA does not yet account for this register kill on non-VSD calls.

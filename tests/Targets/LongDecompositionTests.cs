@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM || TARGET_X86
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -15,9 +14,27 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-[NonParallelizable]
-internal static unsafe class LongDecompositionTests
+internal static class LongDecompositionTestTargets
 {
+    public static IEnumerable<TestFixtureData> ApplicableTargets()
+    {
+        if (Configuration.TARGET_ARM || Configuration.TARGET_X86)
+        {
+            yield return new TestFixtureData();
+        }
+    }
+}
+
+[NonParallelizable]
+[TestFixtureSource(typeof(LongDecompositionTestTargets),
+    nameof(LongDecompositionTestTargets.ApplicableTargets))]
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
+internal sealed unsafe class LongDecompositionTests
+{
+    public LongDecompositionTests()
+    {
+    }
+
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
         DynamicallyAccessedMemberTypes.PublicMethods)]
     private static readonly Type s_decomposerType = typeof(Lowering).GetNestedType("DecomposeLongs",
@@ -38,9 +55,7 @@ internal static unsafe class LongDecompositionTests
         WithLowering((compiler, block, lowering) =>
         {
             var constant = compiler.gtNewLconNode(value);
-#if DEBUG
-            var originalId = constant.TreeId;
-#endif
+            var originalId = TestConfiguration.IsDebug ? constant.TreeId : 0;
             constant.IsUnusedValue = true;
             block.InsertAtEnd(constant);
 
@@ -52,9 +67,10 @@ internal static unsafe class LongDecompositionTests
             Assert.That(result.IsUnusedValue, Is.True);
             Assert.That(result.Op1.IsUnusedValue, Is.False);
             Assert.That(result.Op2.IsUnusedValue, Is.False);
-#if DEBUG
-            Assert.That(result.Op1.TreeId, Is.EqualTo(originalId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(result.Op1.TreeId, Is.EqualTo(originalId));
+            }
             Assert.That(block.ToArray(), Is.EqualTo([result.Op1, result.Op2, result]));
             CheckLir(compiler, block);
         });
@@ -140,20 +156,23 @@ internal static unsafe class LongDecompositionTests
             var result = RequireLong(block.LastNode);
             Assert.That(result.Op1, Is.SameAs(negation));
             Assert.That(negation.Flags & GTF_SET_FLAGS, Is.EqualTo(GTF_SET_FLAGS));
-#if TARGET_ARM
-            var high = result.Op2.AsOp();
-            Assert.That(high.Oper, Is.EqualTo(GT_SUB_HI));
-            Assert.That(high.Op1.IsIntegralConst(0), Is.True);
-            Assert.That(high.Op1.Next, Is.SameAs(negation));
-            Assert.That(negation.Next, Is.SameAs(high));
-#else
-            Assert.That(result.Op2.Oper, Is.EqualTo(GT_NEG));
-            var high = result.Op2.AsUnOp().Op1.AsOp();
-            Assert.That(high.Oper, Is.EqualTo(GT_ADD_HI));
-            Assert.That(high.Op2.IsIntegralConst(0), Is.True);
-            Assert.That(negation.Next, Is.SameAs(high.Op2));
-            Assert.That(high.Next, Is.SameAs(result.Op2));
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                var high = result.Op2.AsOp();
+                Assert.That(high.Oper, Is.EqualTo(GT_SUB_HI));
+                Assert.That(high.Op1.IsIntegralConst(0), Is.True);
+                Assert.That(high.Op1.Next, Is.SameAs(negation));
+                Assert.That(negation.Next, Is.SameAs(high));
+            }
+            else
+            {
+                Assert.That(result.Op2.Oper, Is.EqualTo(GT_NEG));
+                var high = result.Op2.AsUnOp().Op1.AsOp();
+                Assert.That(high.Oper, Is.EqualTo(GT_ADD_HI));
+                Assert.That(high.Op2.IsIntegralConst(0), Is.True);
+                Assert.That(negation.Next, Is.SameAs(high.Op2));
+                Assert.That(high.Next, Is.SameAs(result.Op2));
+            }
             CheckLir(compiler, block);
         });
     }
@@ -393,9 +412,7 @@ internal static unsafe class LongDecompositionTests
                 : new GenTreeCast(TYP_LONG, compiler.gtNewLclvNode(TYP_INT, 0), false, TYP_LONG);
             var multiply = compiler.gtNewBinaryNode(GT_MUL, TYP_LONG, firstCast, second);
             multiply.Flags |= GTF_MUL_64RSLT;
-#if DEBUG
-            var multiplyTreeId = multiply.TreeId;
-#endif
+            var multiplyTreeId = TestConfiguration.IsDebug ? multiply.TreeId : 0;
             var destination = compiler.lvaGrabTemp(false, "long multiply destination");
             compiler.lvaGetDesc(destination).Type = TYP_LONG;
             var store = compiler.gtNewStoreLclVarNode(destination, multiply);
@@ -419,9 +436,10 @@ internal static unsafe class LongDecompositionTests
             Assert.That(multiRegMultiply.Op2.Type, Is.EqualTo(TYP_INT));
             Assert.That(multiRegMultiply.Is64RsltMul, Is.True);
             Assert.That(store.Op1, Is.SameAs(multiRegMultiply));
-#if DEBUG
-            Assert.That(multiRegMultiply.TreeId, Is.EqualTo(multiplyTreeId));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(multiRegMultiply.TreeId, Is.EqualTo(multiplyTreeId));
+            }
             Assert.That(compiler.lvaGetDesc(destination).IsMultiRegDest, Is.True);
             Assert.That(block.Any(node => node == firstCast), Is.False);
             CheckLir(compiler, block);
@@ -616,20 +634,23 @@ internal static unsafe class LongDecompositionTests
             compiler.lvaGetDesc(0).lvIsParam = true;
             compiler.lvaGetDesc(0).lvIsRegArg = true;
             Prepare(compiler, lowering);
-#if TARGET_ARM
-            Assert.That(compiler.lvaGetDesc(0).lvPromoted, Is.True);
-            Assert.That(compiler.lvaGetDesc(0).lvDoNotEnregister, Is.True);
-            for (var index = 1; index < 3; index++)
+            if (Configuration.TARGET_ARM)
             {
-                ref var field = ref compiler.lvaGetDesc(index);
-                Assert.That(field.lvIsParam, Is.True);
-                Assert.That(field.lvIsRegArg, Is.True);
-                Assert.That(field.lvDoNotEnregister, Is.True);
+                Assert.That(compiler.lvaGetDesc(0).lvPromoted, Is.True);
+                Assert.That(compiler.lvaGetDesc(0).lvDoNotEnregister, Is.True);
+                for (var index = 1; index < 3; index++)
+                {
+                    ref var field = ref compiler.lvaGetDesc(index);
+                    Assert.That(field.lvIsParam, Is.True);
+                    Assert.That(field.lvIsRegArg, Is.True);
+                    Assert.That(field.lvDoNotEnregister, Is.True);
+                }
             }
-#else
-            Assert.That(compiler.lvaGetDesc(0).lvPromoted, Is.False);
-            Assert.That(compiler.lvaCount, Is.EqualTo(1));
-#endif
+            else
+            {
+                Assert.That(compiler.lvaGetDesc(0).lvPromoted, Is.False);
+                Assert.That(compiler.lvaCount, Is.EqualTo(1));
+            }
         });
     }
 
@@ -755,4 +776,3 @@ if (TestConfiguration.IsDebug)
         }
     }
 }
-#endif

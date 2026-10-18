@@ -71,18 +71,15 @@ internal static class CodeGenOperandAdapterTests
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             var address = new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 0);
-            EmitVarRefOffset(codeGen.Emitter) = 0x24;
+            codeGen.Emitter.emitVarRefOffs = 0x24;
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.inst_set_SV_var(address));
 
             Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
-            Assert.That(EmitVarRefOffset(codeGen.Emitter), Is.EqualTo(0x24));
+            Assert.That(codeGen.Emitter.emitVarRefOffs, Is.EqualTo(0x24));
             Assert.That(Descriptors(codeGen), Is.Empty);
         });
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
-    private static extern ref int EmitVarRefOffset(Emitter emitter);
 
     [TestCase(-128)]
     [TestCase(0)]

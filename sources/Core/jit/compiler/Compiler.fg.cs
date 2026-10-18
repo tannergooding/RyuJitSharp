@@ -909,10 +909,8 @@ public partial class Compiler
         // Update no-return call count
         optNoReturnCallCount += InlineeCompiler.optNoReturnCallCount;
 
-#if DEBUG
         // Update metrics
         Metrics.mergeToRoot(InlineeCompiler);
-#endif
 
         // Update optMethodFlags
 
@@ -2109,11 +2107,6 @@ public partial class Compiler
     public bool fgGlobalMorph;
 
     public bool fgGlobalMorphDone;
-
-#if DEBUG
-    // Retyping implicit byref parameters temporarily leaves field accesses using their old struct types.
-    public bool fgImplicitByRefLclFldsStale;
-#endif
 
 #if DEBUG
     public bool fgPrintInlinedMethods;

@@ -4,9 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if DEBUG
 using System.Numerics;
-#endif
 
 namespace RyuJitSharp;
 
@@ -17,7 +15,6 @@ public sealed partial class LinearScan
     private static SingleTypeRegSet getRegSetForType(regMaskTP registers, RegisterType registerType) =>
         registers.GetRegSetForType(registerType);
 
-#if DEBUG
     private SingleTypeRegSet getConstrainedRegMask(
         RefPosition? refPosition, RegisterType registerType, SingleTypeRegSet actualMask,
         SingleTypeRegSet constraintMask, uint minimumCount)
@@ -337,7 +334,6 @@ public sealed partial class LinearScan
             TYP_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS => maskRegisters,
             _ => throw new FatalJitException($"Unsupported LSRA register type: {registerType}."),
         };
-#endif
 
     private void resolveConflictingDefAndUse(Interval interval, RefPosition defRefPosition)
     {
@@ -363,9 +359,7 @@ public sealed partial class LinearScan
         var inUse = _regsBusyUntilKill | _regsInUseThisLocation;
         var busyRegs = getRegSetForType(inUse, interval.registerType);
         var useRegConflict = (useRegAssignment & ~busyRegs) == SRBM_NONE;
-#if DEBUG
         dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_CONFLICT, null, defRefPosition);
-#endif
 
         // Changing multi-register assignments can introduce cyclic parallel copies in codegen.
         var defTree = defRefPosition.treeNode
@@ -380,9 +374,7 @@ public sealed partial class LinearScan
 
         if (!canChangeDef)
         {
-#if DEBUG
             dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_COPY, interval, defRefPosition);
-#endif
             return;
         }
 
@@ -411,9 +403,7 @@ public sealed partial class LinearScan
 
                 if (!useRegConflict)
                 {
-#if DEBUG
                     dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_DEF_IN_FIXED_USE, interval, defRefPosition);
-#endif
                     defRefPosition.registerAssignment = useRegAssignment;
                     return;
                 }
@@ -428,9 +418,7 @@ public sealed partial class LinearScan
         {
             if (!useRegConflict)
             {
-#if DEBUG
                 dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_DEF_IN_USE, interval, defRefPosition);
-#endif
                 defRefPosition.registerAssignment = useRegAssignment;
                 defRefPosition.isFixedRegRef = false;
                 return;
@@ -441,18 +429,14 @@ public sealed partial class LinearScan
                 var registerType = interval.registerType;
                 assert(getRegisterType(interval, defRefPosition) == registerType);
                 assert(getRegisterType(interval, useRefPosition) == registerType);
-#if DEBUG
                 dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_ANY_DEF, interval, defRefPosition);
-#endif
                 defRefPosition.registerAssignment = allRegs(registerType);
                 defRefPosition.isFixedRegRef = false;
                 return;
             }
         }
 
-#if DEBUG
         dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_COPY, interval, defRefPosition);
-#endif
     }
 
     private void clearAllNextIntervalRef() => Array.Fill(_nextIntervalRef, MaxLocation);

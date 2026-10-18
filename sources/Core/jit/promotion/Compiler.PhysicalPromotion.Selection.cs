@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -138,7 +139,6 @@ public partial class Compiler
         public weight_t CountStoredFromCallWtd;
         public weight_t CountCallArgsWtd;
         public weight_t CountRegCallArgsWtd;
-#if DEBUG
         public int CountStoreSource;
         public int CountStoreDestination;
         public int CountReturns;
@@ -147,7 +147,6 @@ public partial class Compiler
         public weight_t CountStoreDestinationWtd;
         public weight_t CountReturnsWtd;
         public weight_t CountPassedAsRetbufWtd;
-#endif
 
         public int GetAccessSize() => AccessType is TYP_STRUCT
             ? checked((int)(Layout ?? throw new InvalidOperationException("Struct access requires layout.")).Size)
@@ -221,36 +220,42 @@ public partial class Compiler
                 access.CountStoredFromCallWtd += weight;
             }
 
-#if DEBUG
-            if ((flags & PhysicalPromotionAccessKindFlags.IsCallRetBuf) != 0)
+            if (Configuration.DEBUG)
             {
-                access.CountPassedAsRetbuf++;
-                access.CountPassedAsRetbufWtd += weight;
-            }
+                if ((flags & PhysicalPromotionAccessKindFlags.IsCallRetBuf) != 0)
+                {
+                    access.CountPassedAsRetbuf++;
+                    access.CountPassedAsRetbufWtd += weight;
+                }
 
-            if ((flags & PhysicalPromotionAccessKindFlags.IsStoreSource) != 0)
-            {
-                access.CountStoreSource++;
-                access.CountStoreSourceWtd += weight;
-            }
+                if ((flags & PhysicalPromotionAccessKindFlags.IsStoreSource) != 0)
+                {
+                    access.CountStoreSource++;
+                    access.CountStoreSourceWtd += weight;
+                }
 
-            if ((flags & PhysicalPromotionAccessKindFlags.IsStoreDestination) != 0)
-            {
-                access.CountStoreDestination++;
-                access.CountStoreDestinationWtd += weight;
-            }
+                if ((flags & PhysicalPromotionAccessKindFlags.IsStoreDestination) != 0)
+                {
+                    access.CountStoreDestination++;
+                    access.CountStoreDestinationWtd += weight;
+                }
 
-            if ((flags & PhysicalPromotionAccessKindFlags.IsReturned) != 0)
-            {
-                access.CountReturns++;
-                access.CountReturnsWtd += weight;
+                if ((flags & PhysicalPromotionAccessKindFlags.IsReturned) != 0)
+                {
+                    access.CountReturns++;
+                    access.CountReturnsWtd += weight;
+                }
             }
-#endif
         }
 
-#if DEBUG
+        [Conditional("DEBUG")]
         public void DumpAccesses(int lclNum)
         {
+            if (!Configuration.DEBUG)
+            {
+                return;
+            }
+
             if (_accesses.Count == 0)
             {
                 return;
@@ -287,8 +292,14 @@ public partial class Compiler
             }
         }
 
+        [Conditional("DEBUG")]
         public void DumpInducedAccesses(int lclNum)
         {
+            if (!Configuration.DEBUG)
+            {
+                return;
+            }
+
             if (_inducedAccesses.Count == 0)
             {
                 return;
@@ -301,8 +312,6 @@ public partial class Compiler
                 jitprintf($"    #: ({access.Count}, {FMT_WT(access.CountWtd)})\n");
             }
         }
-#endif
-
         public void RecordInducedAccess(int offset, var_types type, weight_t weight)
         {
             var index = LowerBound(_inducedAccesses, offset, static access => access.Offset);

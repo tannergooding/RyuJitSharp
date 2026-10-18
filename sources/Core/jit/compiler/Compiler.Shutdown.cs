@@ -15,9 +15,7 @@ public partial class Compiler
     public static unsafe void compShutdown()
     {
         s_pAltJitExcludeAssembliesList = null;
-#if DEBUG
         s_pJitDisasmIncludeAssembliesList = null;
-#endif
 
 #if MEASURE_NOWAY
         DisplayNowayAssertMap();

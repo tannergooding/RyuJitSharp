@@ -105,7 +105,7 @@ public sealed partial class LinearScan
         return current;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpLocalResolutionBoundaries()
     {
         jitprintf("-----------------------\nRESOLVING BB BOUNDARIES\n-----------------------\n");
@@ -138,5 +138,4 @@ public sealed partial class LinearScan
         }
         jitprintf("\n\n");
     }
-#endif
 }

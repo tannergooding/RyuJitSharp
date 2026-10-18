@@ -5240,6 +5240,8 @@ public static partial class JitMetadata
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public partial struct JitMetrics
@@ -5251,7 +5253,7 @@ public partial struct JitMetrics
     {
 {{reportBuilder}}    }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void dump()
     {
         const int NameMaxWidth = {{nameMaxWidth}};
@@ -5260,12 +5262,12 @@ public partial struct JitMetrics
 
     /// <summary>Merge inlinee compiler metrics to root compiler instance</summary>
     /// <param name="inlineeCompiler">inlinee compiler instance</param>
+    [Conditional("DEBUG")]
     public readonly void mergeToRoot(Compiler inlineeCompiler)
     {
         var root = inlineeCompiler.impInlineRoot;
 
 {{mergeToRootBuilder}}    }
-#endif
 }
 """);
     }

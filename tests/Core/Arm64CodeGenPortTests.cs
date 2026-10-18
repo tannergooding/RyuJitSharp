@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +19,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64CodeGenPortTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(NI_System_Math_Abs, INS_fabs)]
     [TestCase(NI_System_Math_Ceiling, INS_frintp)]
     [TestCase(NI_System_Math_Floor, INS_frintm)]
@@ -411,11 +416,11 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
-#if !DEBUG
     // The pinned emitter's DEBUG assertions reject SP operands for MSub.
     [Test]
     public static void UnknownSizeFrameUsesRdvlAndMsubAboveTheImmediateLimit()
     {
+        Assume.That(!TestConfiguration.IsDebug, "The pinned emitter's DEBUG assertions reject SP operands for MSub.");
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compLocallocUsed = true;
@@ -447,6 +452,7 @@ internal static unsafe class Arm64CodeGenPortTests
     [TestCase(uint.MaxValue)]
     public static void UnknownSizeFrameCountMaterializationMatchesTheArm64Emitter(uint count)
     {
+        Assume.That(!TestConfiguration.IsDebug, "The pinned emitter's DEBUG assertions reject SP operands for MSub.");
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compLocallocUsed = true;
@@ -477,7 +483,6 @@ internal static unsafe class Arm64CodeGenPortTests
             });
         });
     }
-#endif
 
     [Test]
     public static void UnknownSizeFrameInitializationUnrollsFiveVectorStores()
@@ -559,4 +564,3 @@ internal static unsafe class Arm64CodeGenPortTests
         return node;
     }
 }
-#endif

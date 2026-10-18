@@ -500,10 +500,11 @@ internal static unsafe class LivenessFixedPointTests
         Assert.That(copy.lvPinned, Is.True);
     }
 
-#if DEBUG
     [Test]
     public static void SolverAndBothDumpOverloadsPreserveExactNativeFormatting()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(1, compiler => {
             var block = Blocks(compiler, 1)[0];
             Append(compiler, block, new GenTreeLclVar(TYP_INT, 0));
@@ -538,7 +539,6 @@ internal static unsafe class LivenessFixedPointTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     private static int Count(Compiler compiler, nint[] set) => (int)SetOps.Count(compiler, set);
 

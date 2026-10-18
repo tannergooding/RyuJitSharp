@@ -65,10 +65,6 @@ public partial class Compiler
     public bool verboseSsa => false;
 #endif
 
-#if DEBUG
-    public int expensiveDebugCheckLevel;
-#endif
-
     // This table is useful for memoization of BlockDominancePreds.
     public BlockToFlowEdgeMap? _blockToEHPreds;
 
@@ -139,11 +135,8 @@ public partial class Compiler
 
     public BlockReachabilitySets? _reachabilitySets;
 
-#if DEBUG
     /// <summary>Are we doing a fallback compile?</summary>
     /// <remarks>That is, have we executed a NO_WAY assert, and we are trying to compile again in a "safer", minopts mode?</remarks>
-    public bool jitFallbackCompile;
-#endif
 
     /// <summary>This field keep the R2R helper call that would be inserted to trigger the constructor of the static class.</summary>
     /// <remarks>It is set as nongc or gc static base if they are imported, so CSE can eliminate the repeated call, or the chepeast helper function that triggers it.</remarks>
@@ -243,11 +236,11 @@ public partial class Compiler
 
     public static AssemblyNamesList2? s_pAltJitExcludeAssembliesList;
 
-#if DEBUG
     public static bool s_pJitDisasmIncludeAssembliesListInitialized;
 
     public static AssemblyNamesList2? s_pJitDisasmIncludeAssembliesList;
 
+#if DEBUG
     public static bool s_pJitFunctionFileInitialized;
 
     public static MethodSet2? s_pJitMethodSet;
@@ -314,15 +307,7 @@ public partial class Compiler
 
     public int gsShadowVarInfoCount;
 
-#if DEBUG
-    private NodeToTestDataMap? _nodeTestData;
-
     private const int FIRST_LOOP_HOIST_CSE_CLASS = 1000;
-
-    /// <summary>LoopHoist test annotations turn into CSE requirements</summary>
-    /// <remarks>we label them with CSE Class #'s starting at FIRST_LOOP_HOIST_CSE_CLASS. Current kept in this.</remarks>
-    private int _loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
-#endif
 
     public FieldSeqStore? _fieldSeqStore;
 
@@ -813,7 +798,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     public NodeToTestDataMap NodeTestData
     {
         get
@@ -828,7 +812,6 @@ public partial class Compiler
             return nodeTestData;
         }
     }
-#endif
 
     public bool PreciseRefCountsRequired =>  opts.OptimizationEnabled;
 

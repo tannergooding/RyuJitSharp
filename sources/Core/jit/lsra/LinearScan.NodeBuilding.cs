@@ -721,13 +721,14 @@ public sealed partial class LinearScan
             local.ClearMultiReg();
         }
 
-#if DEBUG
-        for (var index = 0; index < descriptor.lvFieldCnt; index++)
+        if (Configuration.DEBUG)
         {
-            ref var field = ref _compiler.lvaGetDesc(descriptor.lvFieldLclStart + index);
-            assert(field.lvLRACandidate == isMultiReg);
+            for (var index = 0; index < descriptor.lvFieldCnt; index++)
+            {
+                ref var field = ref _compiler.lvaGetDesc(descriptor.lvFieldLclStart + index);
+                assert(field.lvLRACandidate == isMultiReg);
+            }
         }
-#endif
         return isMultiReg;
     }
 

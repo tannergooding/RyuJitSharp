@@ -18,10 +18,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LateDisassemblyBackendTests
 {
-#if DEBUG
     [Test]
     public static void DebugLateDisassemblyOutputUsesUtf8PathAndAppendMode()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var path = Path.Combine(Path.GetTempPath(), $"ryujitsharp-{Guid.NewGuid():N}-é.txt");
         var fileName = Encoding.UTF8.GetBytes(path + '\0');
 
@@ -49,7 +50,6 @@ internal static unsafe class LateDisassemblyBackendTests
             File.Delete(path);
         }
     }
-#endif
 
     private static readonly List<(nuint Address, nuint Bytes, nuint Size)> s_calls = [];
     private static bool s_failDecode;

@@ -123,8 +123,8 @@ public partial class Compiler
             jitprintf("\n");
         }
 
-#if DEBUG
-        if (_nodeTestData is not null && _nodeTestData.TryGetValue(origExpr, out var annotation) &&
+        if (Configuration.DEBUG && (_nodeTestData is not null) &&
+            _nodeTestData.TryGetValue(origExpr, out var annotation) &&
             annotation._tl is TL_LoopHoist)
         {
             var depth = loop.GetDepth();
@@ -149,7 +149,6 @@ public partial class Compiler
             annotation._num = _loopHoistCSEClass++;
             _nodeTestData.Add(hoistExpr, annotation);
         }
-#endif
 #if LOOP_HOIST_STATS
         if (!_curLoopHasHoistedExpression)
         {

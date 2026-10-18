@@ -310,12 +310,10 @@ public sealed partial class LinearScan
             processBlockEndLocations(block);
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             dumpLocalResolutionBoundaries();
         }
-#endif
         resolveEdges();
         finalizeLocalRegisterAssignments();
 
@@ -324,9 +322,7 @@ public sealed partial class LinearScan
             jitprintf("Trees after linear scan register allocator (LSRA)\n");
             _compiler.fgDispBasicBlocks(true);
         }
-#if DEBUG
         verifyFinalAllocationWithLocals();
-#endif
         _compiler.raMarkStkVars();
         recordMaxSpill();
     }

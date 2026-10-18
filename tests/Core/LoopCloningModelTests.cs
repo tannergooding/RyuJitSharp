@@ -43,11 +43,8 @@ internal static unsafe class LoopCloningModelTests
                 new LcJaggedArrayOptInfo(bounds, 1, statement),
                 new LcSpanOptInfo(span, statement),
                 new LcTypeTestOptInfo(block, statement, indir, 0, (CORINFO_CLASS_STRUCT_*)1),
-                new LcMethodAddrTestOptInfo(block, statement, indir, 0, (void*)2, true
-#if DEBUG
-                , (CORINFO_METHOD_STRUCT_*)3
-#endif
-                ),
+                new LcMethodAddrTestOptInfo(
+                    block, statement, indir, 0, (void*)2, true, (CORINFO_METHOD_STRUCT_*)3),
             };
             Assert.That(candidates, Has.Length.EqualTo(4));
             Assert.That(((LcTypeTestOptInfo)candidates[2]).MethodTableIndir, Is.SameAs(indir));
@@ -127,15 +124,8 @@ internal static unsafe class LoopCloningModelTests
         Assert.That(LC_Ident.CreateNull(TYP_REF).Matches(LC_Ident.CreateNull(TYP_BYREF)), Is.True);
         Assert.That(LC_Ident.CreateClassHandle((CORINFO_CLASS_STRUCT_*)1)
             .Matches(LC_Ident.CreateClassHandle((CORINFO_CLASS_STRUCT_*)2)), Is.False);
-        Assert.That(LC_Ident.CreateMethodAddr((void*)4
-#if DEBUG
-            , null
-#endif
-            ).Matches(LC_Ident.CreateIndirMethodAddrSlot((void*)4
-#if DEBUG
-            , null
-#endif
-            )), Is.False);
+        Assert.That(LC_Ident.CreateMethodAddr((void*)4, null)
+            .Matches(LC_Ident.CreateIndirMethodAddrSlot((void*)4, null)), Is.False);
         var spanA = new LC_Span(new SpanIndex { LenLcl = 2, IndLcl = 3 });
         var spanB = new LC_Span(new SpanIndex { LenLcl = 2, IndLcl = 4 });
         Assert.That(LC_Ident.CreateSpanAccess(spanA).Matches(LC_Ident.CreateSpanAccess(spanB)), Is.False);
@@ -248,11 +238,8 @@ internal static unsafe class LoopCloningModelTests
 
             var classHandle = LC_Ident.CreateClassHandle((CORINFO_CLASS_STRUCT_*)1).ToGenTree(compiler, block);
             Assert.That((classHandle.Flags & GTF_ICON_CLASS_HDL) != 0, Is.True);
-            var slot = LC_Ident.CreateIndirMethodAddrSlot((void*)2
-#if DEBUG
-                , (CORINFO_METHOD_STRUCT_*)3
-#endif
-                ).ToGenTree(compiler, block);
+            var slot = LC_Ident.CreateIndirMethodAddrSlot((void*)2, (CORINFO_METHOD_STRUCT_*)3)
+                .ToGenTree(compiler, block);
             Assert.That(slot.Oper, Is.EqualTo(GT_IND));
             Assert.That(slot.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT),
                 Is.EqualTo(GTF_IND_NONFAULTING | GTF_IND_INVARIANT));

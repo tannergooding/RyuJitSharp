@@ -355,11 +355,7 @@ public partial class Emitter
                 case IF_XARCH_SWR:
                 case IF_XARCH_SWR_RRD:
                 {
-                    emitGCvarLiveUpd(adr, varNum, id.idGCref(), dst
-#if DEBUG
-                        , unchecked((uint)varNum)
-#endif
-                        );
+                    emitGCvarLiveUpd(adr, varNum, id.idGCref(), dst, unchecked((uint)varNum));
                     break;
                 }
 

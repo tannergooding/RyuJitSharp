@@ -10,10 +10,6 @@ namespace RyuJitSharp;
 
 public sealed partial class UnwindInfo
 {
-#if DEBUG
-    public bool uwiAddingNOP;
-#endif
-
     private static ReadOnlySpan<byte> s_UnwindSize =>
     [
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

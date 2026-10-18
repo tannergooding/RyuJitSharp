@@ -209,12 +209,10 @@ public sealed partial class LinearScan
                 }
 
                 JITDUMP("  ");
-#if DEBUG
-                if (VERBOSE)
+                if (Configuration.DEBUG && VERBOSE)
                 {
                     dumpInterval(interval);
                 }
-#endif
             }
         }
 

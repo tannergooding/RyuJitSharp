@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,10 +16,27 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if TARGET_AMD64
-[NonParallelizable]
-internal static unsafe class BinaryArithmeticLoweringTests
+internal static class BinaryArithmeticLoweringTestTargets
 {
+    public static IEnumerable<TestFixtureData> ApplicableTargets()
+    {
+        if (Configuration.TARGET_AMD64)
+        {
+            yield return new TestFixtureData();
+        }
+    }
+}
+
+[NonParallelizable]
+[TestFixtureSource(typeof(BinaryArithmeticLoweringTestTargets),
+    nameof(BinaryArithmeticLoweringTestTargets.ApplicableTargets))]
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
+internal sealed unsafe class BinaryArithmeticLoweringTests
+{
+    public BinaryArithmeticLoweringTests()
+    {
+    }
+
     private static IEnumerable<TestCaseData> Conditions()
     {
         foreach (var operation in new[] { GT_AND, GT_OR })
@@ -740,4 +758,3 @@ internal static unsafe class BinaryArithmeticLoweringTests
         }
     }
 }
-#endif

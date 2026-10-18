@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace RyuJitSharp;
@@ -20,7 +21,7 @@ public partial class Emitter
         return $"G_M{unchecked((uint)compiler.compMethodID):D3}_IG{ig.GetDisplayId():D2}";
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void emitDispIGflags(InsGroupFlags flags)
     {
         if ((flags & InsGroupFlags.GCVars) != 0)
@@ -65,6 +66,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     public unsafe void emitDispIG(insGroup ig, bool displayFunc = false, bool displayInstructions = false, bool displayLocation = true)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction-group diagnostics require an active compiler.");
@@ -248,6 +250,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     public void emitDispIGlist(bool displayInstructions = false)
     {
         insGroup? previous = null;
@@ -266,6 +269,7 @@ public partial class Emitter
         }
     }
 
+    [Conditional("DEBUG")]
     public void emitDispJumpList()
     {
         jitprintf("Emitter Jump List:\n");
@@ -319,5 +323,4 @@ public partial class Emitter
 
         jitprintf($"  total jump count: {jumpCount}\n");
     }
-#endif
 }

@@ -281,7 +281,7 @@ public partial class Compiler
 
                 if (block.CountOfInEdges == 0)
                 {
-                    fgRemoveBlock(block, unreachable: true);
+                    _ = fgRemoveBlock(block, unreachable: true);
                     change = true;
                     modified = true;
                     continue;
@@ -294,7 +294,7 @@ public partial class Compiler
                         {
                             if ((block.TrueTarget == block) || (block.FalseTarget == block))
                             {
-                                fgRemoveBlock(block, unreachable: true);
+                                _ = fgRemoveBlock(block, unreachable: true);
                                 change = true;
                                 modified = true;
                                 continue;
@@ -306,7 +306,7 @@ public partial class Compiler
                         {
                             if (block.Target == block)
                             {
-                                fgRemoveBlock(block, unreachable: true);
+                                _ = fgRemoveBlock(block, unreachable: true);
                                 change = true;
                                 modified = true;
                                 continue;
@@ -351,14 +351,12 @@ public partial class Compiler
             fgDispHandlerTab();
         }
 
-#if DEBUG
         if (!isPhase)
         {
             fgVerifyHandlerTab();
             fgDebugCheckBBlist();
             fgDebugCheckUpdate();
         }
-#endif
         return modified;
     }
 

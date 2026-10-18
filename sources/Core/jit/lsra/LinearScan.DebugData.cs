@@ -12,12 +12,72 @@ public sealed partial class LinearScan
 {
     private sealed class AllocationDebugData
     {
+        internal uint MaxNodeLocation;
+        internal uint ConsecutiveRegistersLocation;
+        internal RefPosition? ActiveRefPosition;
         internal regMaskTP Registers;
+        internal bool DumpFormatInitialized;
+        internal regMaskTP LastDumpRegisters;
+        internal RefPosition? LastDumpRefPosition;
+        internal int DumpLastUsedRegNumIndex;
+        internal int DumpRegColumnWidth;
+        internal int DumpNodeLocationWidth;
+        internal int DumpRefPositionWidth;
+        internal int DumpShortRefPositionWidth;
+        internal int DumpTableIndent;
+        internal int DumpBbNumWidth;
+        internal int DumpPredBbNumWidth;
+        internal int DumpRowsSinceTitle;
+        internal string DumpColumnSeparator = "";
+        internal string DumpLine = "";
+        internal string DumpMiddleBox = "";
+        internal string DumpRightBox = "";
     }
 
     private static class AllocationDebugDataStorage
     {
         internal static readonly ConditionalWeakTable<LinearScan, AllocationDebugData> Table = [];
+        internal static int EmptyColumnWidth;
+        internal static ConfigMethodRange StressRegsRange;
+    }
+
+    private uint _maxNodeLocation
+    {
+        get
+        {
+            return GetAllocationDebugData().MaxNodeLocation;
+        }
+
+        set
+        {
+            GetAllocationDebugData().MaxNodeLocation = value;
+        }
+    }
+
+    private RefPosition? _activeRefPosition
+    {
+        get
+        {
+            return GetAllocationDebugData().ActiveRefPosition;
+        }
+
+        set
+        {
+            GetAllocationDebugData().ActiveRefPosition = value;
+        }
+    }
+
+    private uint _consecutiveRegistersLocation
+    {
+        get
+        {
+            return GetAllocationDebugData().ConsecutiveRegistersLocation;
+        }
+
+        set
+        {
+            GetAllocationDebugData().ConsecutiveRegistersLocation = value;
+        }
     }
 
     private regMaskTP _allocationDumpRegisters
@@ -30,6 +90,227 @@ public sealed partial class LinearScan
         set
         {
             GetAllocationDebugData().Registers = value;
+        }
+    }
+
+    private bool _allocationDumpFormatInitialized
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpFormatInitialized;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpFormatInitialized = value;
+        }
+    }
+
+    private regMaskTP _lastAllocationDumpRegisters
+    {
+        get
+        {
+            return GetAllocationDebugData().LastDumpRegisters;
+        }
+
+        set
+        {
+            GetAllocationDebugData().LastDumpRegisters = value;
+        }
+    }
+
+    private RefPosition? _lastAllocationDumpRefPosition
+    {
+        get
+        {
+            return GetAllocationDebugData().LastDumpRefPosition;
+        }
+
+        set
+        {
+            GetAllocationDebugData().LastDumpRefPosition = value;
+        }
+    }
+
+    private int _allocationDumpLastUsedRegNumIndex
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpLastUsedRegNumIndex;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpLastUsedRegNumIndex = value;
+        }
+    }
+
+    private int _allocationDumpRegColumnWidth
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpRegColumnWidth;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpRegColumnWidth = value;
+        }
+    }
+
+    private int _allocationDumpNodeLocationWidth
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpNodeLocationWidth;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpNodeLocationWidth = value;
+        }
+    }
+
+    private int _allocationDumpRefPositionWidth
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpRefPositionWidth;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpRefPositionWidth = value;
+        }
+    }
+
+    private int _allocationDumpShortRefPositionWidth
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpShortRefPositionWidth;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpShortRefPositionWidth = value;
+        }
+    }
+
+    private int _allocationDumpTableIndent
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpTableIndent;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpTableIndent = value;
+        }
+    }
+
+    private int _allocationDumpBbNumWidth
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpBbNumWidth;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpBbNumWidth = value;
+        }
+    }
+
+    private int _allocationDumpPredBbNumWidth
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpPredBbNumWidth;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpPredBbNumWidth = value;
+        }
+    }
+
+    private int _allocationDumpRowsSinceTitle
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpRowsSinceTitle;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpRowsSinceTitle = value;
+        }
+    }
+
+    private string _allocationDumpColumnSeparator
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpColumnSeparator;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpColumnSeparator = value;
+        }
+    }
+
+    private string _allocationDumpLine
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpLine;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpLine = value;
+        }
+    }
+
+    private string _allocationDumpMiddleBox
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpMiddleBox;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpMiddleBox = value;
+        }
+    }
+
+    private string _allocationDumpRightBox
+    {
+        get
+        {
+            return GetAllocationDebugData().DumpRightBox;
+        }
+
+        set
+        {
+            GetAllocationDebugData().DumpRightBox = value;
+        }
+    }
+
+    private static int s_allocationDumpEmptyColumnWidth
+    {
+        get
+        {
+            return AllocationDebugDataStorage.EmptyColumnWidth;
+        }
+
+        set
+        {
+            AllocationDebugDataStorage.EmptyColumnWidth = value;
         }
     }
 

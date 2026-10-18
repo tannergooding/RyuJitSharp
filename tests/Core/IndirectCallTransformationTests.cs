@@ -557,20 +557,19 @@ internal static unsafe partial class IndirectCallTransformationTests
         compiler.eeInfo.offsetOfDelegateInstance = 8;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-#if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        using var jitTls = new JitTls(&jitInfo);
-#endif
+        using var jitTls = TestConfiguration.CreateJitTls(&jitInfo);
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitTls.Compiler = compiler;
         JitConfig = new JitConfigValues();
         ChainLikelihood(ref JitConfig) = 101;
         ChainStatements(ref JitConfig) = 1;
-#if DEBUG
-        PrintDevirtualizedMethods(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            PrintDevirtualizedMethods(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
+        }
 
         try
         {

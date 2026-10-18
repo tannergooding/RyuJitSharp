@@ -14,9 +14,7 @@ public sealed partial class ValueNumStore
 
     private readonly Dictionary<(ValueNum Map, ValueNum Index), MapSelectWorkCacheEntry> _mapSelectWorkCache = [];
     private readonly List<(ValueNum Map, ValueNum Index)> _fixedPointMapSels = [];
-#if DEBUG
     private uint _numMapSels;
-#endif
 
     private sealed class SmallValueNumSet
     {
@@ -175,11 +173,13 @@ public sealed partial class ValueNumStore
             assert((map == VNNormalValue(map)) && (index == VNNormalValue(index)));
             usedRecursiveVN = false;
 
-#if DEBUG
-            _numMapSels++;
-            var limit = JitConfig.JitVNMapSelLimit;
-            assert((limit == 0) || (_numMapSels < limit));
-#endif
+            if (Configuration.DEBUG)
+            {
+                _numMapSels++;
+                var limit = JitConfig.JitVNMapSelLimit;
+                assert((limit == 0) || (_numMapSels < limit));
+            }
+
             var key = (Map: map, Index: index);
             if (_mapSelectWorkCache.TryGetValue(key, out var entry))
             {

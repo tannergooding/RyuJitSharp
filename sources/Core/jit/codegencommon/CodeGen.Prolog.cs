@@ -16,13 +16,11 @@ public sealed partial class CodeGen
             RequireSupportedRootPrologAbi();
         }
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** Before prolog / epilog generation\n");
             Emitter.emitDispIGlist(displayInstructions: false);
         }
-#endif
         assert(_compiler.RegisterAllocator is not null);
         assert(_compiler.fgFirstBB is not null);
         _compiler.RegisterAllocator.recordVarLocationsAtStartOfBB(_compiler.fgFirstBB);
@@ -34,13 +32,11 @@ public sealed partial class CodeGen
         Emitter.emitGeneratePrologEpilog();
         Emitter.emitFinishPrologEpilogGeneration();
         _compiler.compCurBB = null;
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** After prolog / epilog generation\n");
             Emitter.emitDispIGlist(displayInstructions: false);
         }
-#endif
     }
 
     public void genFnProlog()

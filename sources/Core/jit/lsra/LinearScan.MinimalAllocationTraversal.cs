@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -33,12 +34,10 @@ public sealed partial class LinearScan
         }
 
         JITDUMP("*************** In LinearScan::allocateRegistersMinimal()\n");
-#if DEBUG
         if (VERBOSE)
         {
             dumpLsraIntervals("before allocateRegistersMinimal");
         }
-#endif
 
         foreach (var interval in intervals)
         {
@@ -58,14 +57,12 @@ public sealed partial class LinearScan
             assert(register.assignedInterval is null);
         }
 
-#if DEBUG
         if (VERBOSE)
         {
             dumpRefPositions("BEFORE ALLOCATION");
             dumpVarRefPositions("BEFORE ALLOCATION");
             initializeAllocationDumpFormat();
         }
-#endif
 
         BasicBlock? currentBlock = null;
         var nextKill = _killHead;
@@ -100,21 +97,22 @@ public sealed partial class LinearScan
                 delayedRegistersToMakeInactive = RBM_NONE;
             }
 
-#if DEBUG
-            _activeRefPosition = null;
+            if (Configuration.DEBUG)
+            {
+                _activeRefPosition = null;
+            }
+
             if (VERBOSE)
             {
                 dumpAllocationRegisterRecords();
             }
-#endif
 
             var currentReferent = currentRefPosition.referent;
             var refType = currentRefPosition.refType;
             assert(refType is not RefType.RefTypeDummyDef and not RefType.RefTypeParamDef and
                 not RefType.RefTypeZeroInit and not RefType.RefTypeExpUse);
 
-#if DEBUG
-            if (spillAlways() && (lastAllocatedRefPosition is not null) &&
+            if (Configuration.DEBUG && spillAlways() && (lastAllocatedRefPosition is not null) &&
                 !lastAllocatedRefPosition.IsPhysRegRef() &&
                 !lastAllocatedRefPosition.getInterval().isInternal &&
                 (!lastAllocatedRefPosition.RegOptional() ||
@@ -130,7 +128,6 @@ public sealed partial class LinearScan
                 _activeRefPosition = null;
                 lastAllocatedRefPosition = null;
             }
-#endif
 
             if (currentLocation > previousLocation)
             {
@@ -174,13 +171,15 @@ public sealed partial class LinearScan
                 assert(refType is RefType.RefTypeBB or RefType.RefTypeKill or RefType.RefTypeKillGCRefs);
             }
 
-#if DEBUG
-            _activeRefPosition = currentRefPosition;
+            if (Configuration.DEBUG)
+            {
+                _activeRefPosition = currentRefPosition;
+            }
+
             if ((refType is RefType.RefTypeBB) && handledBlockEnd && VERBOSE)
             {
                 dumpMinimalNewBlock(currentBlock, currentLocation, currentRefPosition);
             }
-#endif
 
             if (!handledBlockEnd && (refType is RefType.RefTypeBB))
             {
@@ -194,19 +193,15 @@ public sealed partial class LinearScan
                 if (currentBlock is null)
                 {
                     currentBlock = startBlockSequence();
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.START_BB, currentRefPosition, block: currentBlock);
-#endif
                 }
                 else
                 {
                     processBlockEndAllocation(currentBlock);
                     currentBlock = moveToNextBlock();
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.START_BB, currentRefPosition, block: currentBlock);
-#endif
                 }
             }
 
@@ -252,10 +247,8 @@ public sealed partial class LinearScan
 
                 _regsInUseThisLocation |=
                     createRegisterMask(currentRefPosition.registerAssignment, register.registerType);
-#if DEBUG
                 dumpMinimalAllocationEvent(
                     MinimalAllocationEvent.FIXED_REG, currentRefPosition, register: currentRefPosition.assignedReg());
-#endif
 
                 if (Configuration.SWIFT_SUPPORT && currentRefPosition.delayRegFree)
                 {
@@ -293,10 +286,8 @@ public sealed partial class LinearScan
                         clearConstantReg(assignedRegister, assignedInterval.registerType);
                     }
 
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.NO_REG_ALLOCATED, currentRefPosition, currentInterval);
-#endif
                 }
 
                 currentRefPosition.registerAssignment = SRBM_NONE;
@@ -306,10 +297,8 @@ public sealed partial class LinearScan
             if ((assignedRegister == REG_NA) && RefTypeIsUse(refType))
             {
                 currentRefPosition.reload = true;
-#if DEBUG
                 dumpMinimalAllocationEvent(
                     MinimalAllocationEvent.RELOAD, currentRefPosition, currentInterval, assignedRegister);
-#endif
             }
 
             var assignedRegisterMask = SRBM_NONE;
@@ -360,10 +349,8 @@ public sealed partial class LinearScan
                     assignedRegister = REG_NA;
                     currentRefPosition.registerAssignment &= ~assignedRegisterMask;
                     setIntervalAsSplitMinimal(currentInterval);
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.MOVE_REG, currentRefPosition, currentInterval, assignedRegister);
-#endif
                 }
                 else if ((assignedRegisterMask & currentRefPosition.registerAssignment) != SRBM_NONE)
                 {
@@ -372,10 +359,8 @@ public sealed partial class LinearScan
                     {
                         currentRefPosition.reload = true;
                     }
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.KEPT_ALLOCATION, currentRefPosition, currentInterval, assignedRegister);
-#endif
                 }
                 else if (!RefTypeIsDef(refType))
                 {
@@ -406,10 +391,8 @@ public sealed partial class LinearScan
                 }
                 else
                 {
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.NEEDS_NEW_REG, currentRefPosition, register: assignedRegister);
-#endif
                     registersToFree |=
                         createRegisterMask(getSingleTypeRegMask(assignedRegister, currentInterval.registerType),
                             currentInterval.registerType);
@@ -441,12 +424,10 @@ public sealed partial class LinearScan
                         allocate = false;
                     }
 
-#if DEBUG
                     if (allocate && regOptionalNoAlloc())
                     {
                         allocate = false;
                     }
-#endif
                 }
 
                 if (allocate)
@@ -467,17 +448,14 @@ public sealed partial class LinearScan
                 if (assignedRegister == REG_NA)
                 {
                     assert(currentRefPosition.RegOptional());
-#if DEBUG
                     dumpMinimalAllocationEvent(
                         MinimalAllocationEvent.NO_REG_ALLOCATED, currentRefPosition, currentInterval);
-#endif
                     currentRefPosition.registerAssignment = SRBM_NONE;
                     currentRefPosition.reload = false;
                     currentInterval.isActive = false;
                     setIntervalAsSpilled(currentInterval);
                 }
-#if DEBUG
-                else if (VERBOSE)
+                else if (Configuration.DEBUG && VERBOSE)
                 {
                     var allocationEvent = (currentInterval.isConstant &&
                         (currentRefPosition.treeNode is not null) &&
@@ -488,7 +466,6 @@ public sealed partial class LinearScan
                         allocationEvent, currentRefPosition, currentInterval, assignedRegister,
                         selectionScore: selectionScore);
                 }
-#endif
 
                 if ((assignedRegister != REG_NA) && RefTypeIsUse(refType) && !isInRegister)
                 {
@@ -543,17 +520,13 @@ public sealed partial class LinearScan
                     if (currentRefPosition.delayRegFree)
                     {
                         delayedRegistersToFree |= assignedRegisterMaskTP;
-#if DEBUG
                         dumpMinimalAllocationEvent(
                             MinimalAllocationEvent.LAST_USE_DELAYED, currentRefPosition);
-#endif
                     }
                     else
                     {
                         registersToFree |= assignedRegisterMaskTP;
-#if DEBUG
                         dumpMinimalAllocationEvent(MinimalAllocationEvent.LAST_USE, currentRefPosition);
-#endif
                     }
                 }
                 else
@@ -566,8 +539,7 @@ public sealed partial class LinearScan
             lastAllocatedRefPosition = currentRefPosition;
         }
 
-#if DEBUG
-        if (extendLifetimes())
+        if (Configuration.DEBUG && extendLifetimes())
         {
             for (var index = 0; index <= (int)TargetRuntimeMetadata.FloatingRegisterLast; index++)
             {
@@ -581,13 +553,11 @@ public sealed partial class LinearScan
             }
         }
         else
-#endif
         {
             freeRegisters(registersToFree | delayedRegistersToFree);
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             dumpAllocationRegisterRecords();
             jitprintf("\n");
@@ -595,7 +565,6 @@ public sealed partial class LinearScan
             dumpVarRefPositions("AFTER ALLOCATION");
             dumpActiveIntervalsAtEnd();
         }
-#endif
     }
 
     private void resetRegStateMinimal()
@@ -683,9 +652,9 @@ public sealed partial class LinearScan
         return false;
     }
 
-#if DEBUG
-    private bool regOptionalNoAlloc() => (_lsraStressMask & 0x1000) != 0;
+    private bool regOptionalNoAlloc() => Configuration.DEBUG && ((_lsraStressMask & 0x1000) != 0);
 
+    [Conditional("DEBUG")]
     private void dumpMinimalNewBlock(
         BasicBlock? block, LsraLocation location, RefPosition refPosition)
     {
@@ -704,6 +673,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpMinimalAllocationEvent(
         MinimalAllocationEvent allocationEvent,
         RefPosition refPosition,
@@ -714,6 +684,7 @@ public sealed partial class LinearScan
         dumpMinimalAllocationEvent(allocationEvent, refPosition, interval, REG_NA, block, selectionScore);
     }
 
+    [Conditional("DEBUG")]
     private void dumpMinimalAllocationEvent(
         MinimalAllocationEvent allocationEvent,
         RefPosition refPosition,
@@ -725,6 +696,7 @@ public sealed partial class LinearScan
         dumpMinimalAllocationEvent(allocationEvent, refPosition, interval, register, block, selectionScore);
     }
 
+    [Conditional("DEBUG")]
     private void dumpMinimalAllocationEvent(
         MinimalAllocationEvent allocationEvent,
         RefPosition refPosition,
@@ -815,7 +787,4 @@ public sealed partial class LinearScan
             }
         }
     }
-#else
-    private static bool regOptionalNoAlloc() => false;
-#endif
 }

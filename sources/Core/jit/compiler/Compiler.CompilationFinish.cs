@@ -104,9 +104,7 @@ public partial class Compiler
             }
             if (verbose)
             {
-#if DEBUG
                 Metrics.dump();
-#endif
                 jitprintf($"\n****** DONE compiling {info.compFullName}\n");
                 jitstdout().Flush();
             }

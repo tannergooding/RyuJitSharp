@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -14,6 +13,11 @@ public partial class Compiler
     // even when their original nodes are no longer in the statement's threaded tree list.
     public NodeToIntMap FindReachableNodesInNodeTestData()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Node test data is only available in Debug builds.");
+        }
+
         NodeToIntMap reachable = [];
         if (_nodeTestData is null)
         {
@@ -49,6 +53,7 @@ public partial class Compiler
         return reachable;
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void JitTestCheckSSA()
     {
         if (_nodeTestData is null)
@@ -149,4 +154,3 @@ public partial class Compiler
         }
     }
 }
-#endif

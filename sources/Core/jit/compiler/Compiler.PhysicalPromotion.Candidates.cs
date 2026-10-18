@@ -321,12 +321,10 @@ public partial class Compiler
             {
                 if (_uses[lclNum] is PhysicalPromotionLocalUses uses)
                 {
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler.verbose)
                     {
                         uses.DumpAccesses(lclNum);
                     }
-#endif
                     total += uses.PickPromotions(_compiler, lclNum, aggregates);
                     if (total >= limit)
                     {
@@ -378,12 +376,10 @@ public partial class Compiler
                             continue;
                         }
 
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             uses.DumpInducedAccesses(lclNum);
                         }
-#endif
                         var num = uses.PickInducedPromotions(_compiler, lclNum, aggregates);
                         again |= num > 0;
                         total += num;

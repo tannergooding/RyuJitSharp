@@ -10,7 +10,70 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Begin packet 309 from the reconciled Pending queue in pinned source-size order, starting with sources\\Core\\jit\\emitxarch\\Emitter.StackOutput.cs (13,970 bytes). Select about 300 candidates at complete-file boundaries, classify the 181 generic entries in that size window before implementation, and leave the 84 concrete Deferred rows, CFG-0001 exception, and open-revalidation row unresolved until their named prerequisites are addressed.",
+    "nextAction": "Start the next size-ranked packet at tests\\Core\\CallFoldingTests.cs (32,557 bytes), selecting complete-file groups to approximately 300 Pending candidates and preserving Deferred rows. Packet 309 is accepted: 229 Converted and 74 Deferred; acceptance evidence is artifacts\\conditional-cleanup\\batch-309-8fc74a16\\validation\\packet-reconciliation.json. Keep the remaining G1/G2 gates, B209 closure, and one open-revalidation row unresolved.",
+    "activeBatch": {
+      "batch": "conditional-cleanup-309-8fc74a16",
+      "baselineCommit": "8fc74a166647f42111f07e58fef11753634ea428",
+      "sourceSnapshotCommit": "5a7c8fd5785e1672a08f25a771cabda0a0a112cb",
+      "scope": {
+        "candidateCount": 303,
+        "completeFileCount": 88,
+        "genericRowsClassified": 187,
+        "nonGatedCandidates": 242,
+        "preconvertedAwaitingRevalidation": 12,
+        "remainingImplementationCandidates": 230,
+        "implementedUnvalidatedCandidates": 5,
+        "firstFile": "sources\\Core\\jit\\emitxarch\\Emitter.StackOutput.cs",
+        "firstFilePinnedSizeBytes": 13970,
+        "lastFile": "tests\\Core\\CompilerTimingTests.cs",
+        "lastFilePinnedSizeBytes": 32479,
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "packetDirectory": "artifacts\\conditional-cleanup\\batch-309-8fc74a16"
+      },
+      "completionCondition": "Every selected ID has an evidence-backed Converted or concrete Deferred disposition; zero selected IDs remain Pending or Retained; every eligible selected guard and dependent surface is resolved and combined acceptance is met.",
+      "validation": {
+        "core": "Full-analysis Core Debug and Release builds plus one combined focused fixture selection per configuration covering all changed Core tests and source contracts.",
+        "targets": "For changed target-specific source or Target fixtures, run the combined affected Target Debug and Release selections on the win-x64 host with each relevant TargetRuntimeIdentifier.",
+        "gatedModes": "Do not change G1/G2 behavior before approval; if still gated at packet acceptance, verify their source guards remain intact and record concrete Deferred dispositions."
+      },
+      "deferrals": [
+        {
+          "gate": "G1",
+          "count": 1,
+          "candidateIdsArtifact": "artifacts\\conditional-cleanup\\batch-309-8fc74a16\\classification-preflight.json#/gated_ids/G1",
+          "nextAction": "Present the bounded OPT_CONFIG/build-mode proposal and obtain the user decision before changing its behavior."
+        },
+        {
+          "gate": "G2",
+          "count": 60,
+          "candidateIdsArtifact": "artifacts\\conditional-cleanup\\batch-309-8fc74a16\\classification-preflight.json#/gated_ids/G2",
+          "nextAction": "Present the grouped optional-mode proposal and obtain the user decision before changing defaults, opt-ins, lifecycle, output, or Release rooting."
+        },
+        {
+          "gate": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
+          "candidateIds": [
+            "ABI-0001",
+            "CCB-0910",
+            "CCB-1058",
+            "CCB-1062"
+          ],
+          "nextAction": "Port and test the target-width table/emitter dependency closure before re-evaluating these candidates."
+        }
+      ],
+      "outsideBatchBoundaries": [
+        "CFG-0001 remains the sole approved exception for Configuration.DEBUG.",
+        "The existing concrete Deferred rows and open-revalidation row remain unresolved outside this packet."
+      ],
+      "sourceDriftReconciliation": {
+        "artifact": "artifacts\\conditional-cleanup\\batch-309-8fc74a16\\validation\\source-reconciliation.json",
+        "mismatchedPinnedBranches": 39,
+        "alreadyConvertedNonGatedAwaitingRevalidation": 12,
+        "priorOptionalModeConversionsStillDeferred": 6,
+        "optionalModeGuardsStillPresentAndDeferred": 6,
+        "otherGuardsStillPresentAndPending": 15
+      },
+      "status": "accepted-with-known-baseline-target-failures"
+    },
 
     "unresolvedConditionalCleanup": [
       {

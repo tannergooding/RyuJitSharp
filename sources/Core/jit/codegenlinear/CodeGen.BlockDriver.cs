@@ -35,13 +35,11 @@ public sealed partial class CodeGen
         genUpdateLife(VarSetOps.MakeEmpty(_compiler));
         _regSet.rsSpillEnd();
         _regSet.tmpEnd();
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"\n# compCycleEstimate = {unchecked((nuint)_compiler.compCycleEstimate),6}, " +
                 $"compSizeEstimate = {unchecked((nuint)_compiler.compSizeEstimate),5} {_compiler.info.compFullName}\n");
         }
-#endif
     }
 
     public void genCodeForFunclet(in FuncInfoDsc funcInfo)
@@ -261,19 +259,20 @@ public sealed partial class CodeGen
                 {
                     genAddRichIPMappingHere(in ilOffset.StmtDebugInfo);
                 }
-#if DEBUG
-                assert((ilOffset.StmtLastILOffset <= _compiler.info.compILCodeSize) ||
-                    (ilOffset.StmtLastILOffset == BAD_IL_OFFSET));
-                if (_compiler.opts.dspCode && _compiler.opts.dspInstrs &&
-                    ilOffset.StmtLastILOffset != BAD_IL_OFFSET)
+                if (Configuration.DEBUG)
                 {
-                    while (_genCurDispOffset <= ilOffset.StmtLastILOffset)
+                    assert((ilOffset.StmtLastILOffset <= _compiler.info.compILCodeSize) ||
+                        (ilOffset.StmtLastILOffset == BAD_IL_OFFSET));
+                    if (_compiler.opts.dspCode && _compiler.opts.dspInstrs &&
+                        ilOffset.StmtLastILOffset != BAD_IL_OFFSET)
                     {
-                        _genCurDispOffset = unchecked(_genCurDispOffset +
-                            (uint)dumpSingleInstr(_compiler.info.compCode, (IL_OFFSET)_genCurDispOffset, ">    "));
+                        while (_genCurDispOffset <= ilOffset.StmtLastILOffset)
+                        {
+                            _genCurDispOffset = unchecked(_genCurDispOffset +
+                                (uint)dumpSingleInstr(_compiler.info.compCode, (IL_OFFSET)_genCurDispOffset, ">    "));
+                        }
                     }
                 }
-#endif
             }
             if (Configuration.TARGET_WASM)
             {
@@ -334,12 +333,10 @@ public sealed partial class CodeGen
                 noway_assert(nonVarPtrRegs.IsEmpty);
             }
         }
-#if DEBUG
         if (block.IsLast)
         {
             genEmitterUnitTests();
         }
-#endif
         genEnsureCodeEmitted(in currentDI);
         var isLastBlockProcessed = block.IsLast;
         if (block.isBBCallFinallyPair)

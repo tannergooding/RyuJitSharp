@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace RyuJitSharp;
 
@@ -18,14 +19,26 @@ public partial class Compiler
         internal long CompCyclesAtEndOfInlining;
         internal long CompCycles;
         internal int InlineMethodXmlFilePosition;
+        internal int ExpensiveDebugCheckLevel;
         internal Dictionary<int, LocalDebugData>? LocalVariables;
         internal GenTree? LastConsumedNode;
         internal bool TreesBeforeAfterMorph;
+        internal int BlockTraversalLabel = 1;
+        internal bool ImplicitByRefLclFldsStale;
+        internal bool CompDebugBreak;
+        internal bool JitFallbackCompile;
         internal int MorphNum;
         internal bool SafeBasicBlockCreation = true;
         internal bool SafeFlowEdgeCreation = true;
         internal bool StackCheckOnRet;
         internal bool StackCheckOnCall;
+        internal bool CodeGenDone;
+        internal NodeToTestDataMap? NodeTestData;
+        internal int LoopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
+        internal long NumStatementLinksTraversed;
+        internal nint SizeEstimate;
+        internal nint CycleEstimate;
+        internal bool PoisoningAnyImplicitByrefs;
         internal int ReturnSpCheck = BAD_VAR_NUM;
         internal int CallSpCheck = BAD_VAR_NUM;
     }
@@ -86,6 +99,168 @@ public partial class Compiler
             if (Configuration.DEBUG)
             {
                 GetDebugData().MorphNum = value;
+            }
+        }
+    }
+
+    public int expensiveDebugCheckLevel
+    {
+        get
+        {
+            return GetExistingDebugData()?.ExpensiveDebugCheckLevel ?? 0;
+        }
+
+        set
+        {
+            GetDebugData().ExpensiveDebugCheckLevel = value;
+        }
+    }
+
+    /// <summary>Indicates that code generation has completed for the method.</summary>
+    public bool compCodeGenDone
+    {
+        get
+        {
+            return GetExistingDebugData()?.CodeGenDone ?? false;
+        }
+
+        set
+        {
+            GetDebugData().CodeGenDone = value;
+        }
+    }
+
+    public bool compDebugBreak
+    {
+        get
+        {
+            return Configuration.DEBUG && (GetExistingDebugData()?.CompDebugBreak ?? false);
+        }
+
+        set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Compiler debug-break state is only available in Debug builds.");
+            }
+
+            if (value)
+            {
+                GetDebugData().CompDebugBreak = true;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.CompDebugBreak = false;
+            }
+        }
+    }
+
+    /// <summary>Are we doing a fallback compile?</summary>
+    public bool jitFallbackCompile
+    {
+        get
+        {
+            return Configuration.DEBUG && (GetExistingDebugData()?.JitFallbackCompile ?? false);
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().JitFallbackCompile = value;
+            }
+        }
+    }
+
+    private NodeToTestDataMap? _nodeTestData
+    {
+        get
+        {
+            return GetExistingDebugData()?.NodeTestData;
+        }
+
+        set
+        {
+            GetDebugData().NodeTestData = value;
+        }
+    }
+
+    private int _loopHoistCSEClass
+    {
+        get
+        {
+            return GetExistingDebugData()?.LoopHoistCSEClass ?? FIRST_LOOP_HOIST_CSE_CLASS;
+        }
+
+        set
+        {
+            GetDebugData().LoopHoistCSEClass = value;
+        }
+    }
+
+    /// <summary>Number of statement links traversed while performing debug checks.</summary>
+    public ref long compNumStatementLinksTraversed => ref GetDebugData().NumStatementLinksTraversed;
+
+    /// <summary>The estimated size of the method as per `gtSetEvalOrder`.</summary>
+    public nint compSizeEstimate
+    {
+        get
+        {
+            return GetExistingDebugData()?.SizeEstimate ?? 0;
+        }
+
+        set
+        {
+            GetDebugData().SizeEstimate = value;
+        }
+    }
+
+    /// <summary>The estimated cycle count of the method as per `gtSetEvalOrder`.</summary>
+    public nint compCycleEstimate
+    {
+        get
+        {
+            return GetExistingDebugData()?.CycleEstimate ?? 0;
+        }
+
+        set
+        {
+            GetDebugData().CycleEstimate = value;
+        }
+    }
+
+    /// <summary>Importer inserted IR before returns to poison implicit byrefs.</summary>
+    public bool compPoisoningAnyImplicitByrefs
+    {
+        get
+        {
+            return GetExistingDebugData()?.PoisoningAnyImplicitByrefs ?? false;
+        }
+
+        set
+        {
+            GetDebugData().PoisoningAnyImplicitByrefs = value;
+        }
+    }
+
+    private int NextBlockTraversalLabel => Interlocked.Increment(ref GetDebugData().BlockTraversalLabel);
+
+    public bool fgImplicitByRefLclFldsStale
+    {
+        get
+        {
+            return GetExistingDebugData()?.ImplicitByRefLclFldsStale ?? false;
+        }
+
+        set
+        {
+            if (value)
+            {
+                GetDebugData().ImplicitByRefLclFldsStale = true;
+            }
+            else if (GetExistingDebugData() is { } data)
+            {
+                data.ImplicitByRefLclFldsStale = false;
             }
         }
     }
@@ -317,6 +492,19 @@ public partial class Compiler
         set
         {
             GetDebugData().CompCycles = value;
+        }
+    }
+
+    internal long InlineDiagnosticCompCyclesAtEndOfInlining
+    {
+        get
+        {
+            return GetDebugData().CompCyclesAtEndOfInlining;
+        }
+
+        set
+        {
+            GetDebugData().CompCyclesAtEndOfInlining = value;
         }
     }
 

@@ -7,9 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GenTreeCallFlags;
@@ -460,29 +458,27 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     }
 
     // Recording-only fixtures lack the instruction descriptors needed by the debug size cross-check.
-#if DEBUG
     internal static void WithUnwindSizeCheckSkipped(UnwindInfo unwindInfo, Action action)
     {
-        var previous = unwindInfo.uwiAddingNOP;
-        unwindInfo.uwiAddingNOP = true;
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            var previous = unwindInfo.uwiAddingNOP;
+            unwindInfo.uwiAddingNOP = true;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                unwindInfo.uwiAddingNOP = previous;
+            }
+        }
+        else
         {
             action();
         }
-        finally
-        {
-            unwindInfo.uwiAddingNOP = previous;
-        }
     }
 
-#else
-    internal static void WithUnwindSizeCheckSkipped(UnwindInfo unwindInfo, Action action)
-    {
-        action();
-    }
-#endif
-
-#if DEBUG
     private static IEnumerable<TestCaseData> PInvokeCalleeSavedRootCases()
     {
         if (!Configuration.TARGET_ARM)
@@ -502,6 +498,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         var_types type, regNumber reg, bool unmanaged, bool hasRoot, int expectedAssertions,
         bool expectedCalleeSavedAssertion)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithCodeGen((compiler, codeGen) =>
         {
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
@@ -511,9 +508,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             compiler.fgFirstBB = block;
             compiler.fgLastBB = block;
             compiler.compCurBB = block;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = false;
-#endif
+            TestConfiguration.DisableSafeBasicBlockCreation(compiler);
 
             var call = new GenTreeCall(TYP_VOID)
             {
@@ -556,6 +551,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [TestCase(false)]
     public static void FloatMaskGapsKeepTheNativeContiguityAssertion(bool push)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithCodeGen((_, codeGen) =>
         {
             var mask = new regMaskTP(SRBM_F16 | SRBM_F18);
@@ -577,6 +573,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [Test]
     public static void PushFloatsRequiresF16ButPopFloatsDoesNot()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithCodeGen((_, codeGen) =>
         {
             var mask = FloatMask(REG_F8, 2);
@@ -596,6 +593,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [Test]
     public static void PushCountMismatchAssertsAfterSavingTheOwnerMask()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithCodeGen((compiler, codeGen) =>
         {
             SetPhase(codeGen, InsGroupFlags.Prolog);
@@ -615,6 +613,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [Test]
     public static void NullCheckNodesRetainTheUnsupportedAssertion()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only assertions.");
         WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 7);
@@ -641,7 +640,6 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
     private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
-#endif
 
     [Test]
     public static void ReleasePushCountMismatchStillEmitsTheSaveSequence()
@@ -690,17 +688,20 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
     private static void RecordArm32Instructions(TestDelegate action)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                action();
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             action();
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        action();
-#endif
     }
 
     private static void AssertFailure(TestDelegate action, string? message)
@@ -761,19 +762,24 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     internal static void WithCodeGen(
         Action<Compiler, CodeGen> action, bool captureAssertions = false, bool minOpts = true)
     {
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(captureAssertions ? &ee : null);
-        var previousConfig = JitConfig;
-        if (captureAssertions)
+        ICorJitInfo ee = default;
+        var previousConfig = default(JitConfigValues);
+        if (TestConfiguration.IsDebug)
         {
-            JitConfig = new JitConfigValues();
-            AltJitSkipOnAssert(ref JitConfig) = 1;
-            s_assertions.Clear();
+            vtable.doAssert = &RecordAssertion;
+            ee = new ICorJitInfo { lpVtbl = &vtable };
+            previousConfig = JitConfig;
+            if (captureAssertions)
+            {
+                JitConfig = new JitConfigValues();
+                AltJitSkipOnAssert(ref JitConfig) = 1;
+                s_assertions.Clear();
+            }
         }
-#endif
+
+        using var tls = TestConfiguration.CreateJitTls(
+            TestConfiguration.IsDebug && captureAssertions ? &ee : null);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -792,13 +798,14 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         compiler.fgFuncletsCreated = true;
         compiler.lvaOutgoingArgSpaceSize.Value = 0;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
-#if DEBUG
-        compiler.info.compFullName = nameof(ArmCalleeSavedRegisterTests);
-        if (captureAssertions)
+        if (TestConfiguration.IsDebug)
         {
-            flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
+            compiler.info.compFullName = nameof(ArmCalleeSavedRegisterTests);
+            if (captureAssertions)
+            {
+                flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
+            }
         }
-#endif
         JitTls.Compiler = compiler;
         try
         {
@@ -809,23 +816,17 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             unwindInfo.CaptureLocation();
             action(compiler, codeGen);
         }
         finally
         {
             JitTls.Compiler = previous;
-#if DEBUG
-            if (captureAssertions)
+            if (TestConfiguration.IsDebug && captureAssertions)
             {
                 JitConfig = previousConfig;
             }
-#endif
         }
     }
 

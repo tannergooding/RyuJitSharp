@@ -214,7 +214,7 @@ internal static unsafe class EmitterInstructionCallOutputTests
             emitter.emitCurStackLvl = 0;
             if (TestConfiguration.IsDebug)
             {
-                EmitIssuing(emitter) = true;
+                TestConfiguration.EnableEmitterIssuing(emitter);
             }
             GCrefRegs(emitter) = SRBM_RBX;
             ByrefRegs(emitter) = large ? SRBM_R12 : SRBM_NONE;
@@ -294,9 +294,6 @@ internal static unsafe class EmitterInstructionCallOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
     private static extern ref regNumber SyncThisRegister(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
-    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask GCrefRegs(Emitter emitter);

@@ -94,10 +94,11 @@ internal static unsafe class ValueNumBinaryInterningTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void ComponentTestsPreserveNativeCanonicalizationAssertion()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
@@ -109,7 +110,6 @@ internal static unsafe class ValueNumBinaryInterningTests
         Assert.That(s_assertions, Is.EqualTo(1), s_lastAssertion);
         Assert.That(s_lastAssertion, Does.Contain("application.GetArg(0) == one"));
     }
-#endif
 
     [Test]
     public static void EqualityRetainsOperandOrder()

@@ -91,9 +91,6 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
     private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compCodeGenDone")]
-    private static extern ref bool CodeGenDone(Compiler compiler);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_NodeTestData")]
     private static extern Dictionary<GenTree, TestLabelAndNum> NodeTestData(Compiler compiler);
 
@@ -185,7 +182,7 @@ internal static partial class TestConfiguration
             throw new InvalidOperationException("Code-generation phase state is only available in Debug builds.");
         }
 
-        return CodeGenDone(compiler);
+        return compiler.compCodeGenDone;
     }
 
     public static void SetCodeGenDone(Compiler compiler, bool value)
@@ -195,7 +192,7 @@ internal static partial class TestConfiguration
             throw new InvalidOperationException("Code-generation phase state is only available in Debug builds.");
         }
 
-        CodeGenDone(compiler) = value;
+        compiler.compCodeGenDone = value;
     }
 
     public static Dictionary<GenTree, TestLabelAndNum> GetNodeTestData(Compiler compiler)

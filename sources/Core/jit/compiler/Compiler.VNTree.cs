@@ -617,8 +617,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose && (tree._vnPair.Liberal != ValueNumStore.NoVN))
+        if (Configuration.DEBUG && verbose && (tree._vnPair.Liberal != ValueNumStore.NoVN))
         {
             var indent = default(IndentStack);
             jitprintf($"N{tree._seqNum:D3} ");
@@ -637,6 +636,5 @@ public partial class Compiler
             vnpPrint(tree._vnPair, 1);
             jitprintf("\n");
         }
-#endif
     }
 }

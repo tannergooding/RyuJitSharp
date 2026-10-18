@@ -626,7 +626,6 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         }
     }
 
-#if DEBUG
     internal void init(JitStdAllocator<T> allocator)
     {
         _head = null;
@@ -635,7 +634,6 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         _allocator = allocator;
         _isDisposed = false;
     }
-#endif
 
     internal void resize(nuint newSize)
     {

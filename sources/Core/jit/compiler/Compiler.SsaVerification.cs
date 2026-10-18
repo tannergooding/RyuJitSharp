@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -409,6 +409,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckSsa()
     {
         if (!fgSsaValid)
@@ -441,4 +442,3 @@ public partial class Compiler
         }
     }
 }
-#endif

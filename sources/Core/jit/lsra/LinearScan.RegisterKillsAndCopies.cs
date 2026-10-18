@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -162,8 +163,13 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     partial void dumpKilledRegistersEvent(RefPosition killRefPosition, regMaskTP killedRegisters);
+
+    [Conditional("DEBUG")]
     partial void dumpGCRefSpillEvent(RefPosition killRefPosition, bool killedAny);
+
+    [Conditional("DEBUG")]
     partial void dumpCopyRegisterEvent(
         RefPosition refPosition, regNumber register, RegisterScore selectionScore);
 }

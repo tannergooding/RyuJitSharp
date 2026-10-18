@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using static RyuJitSharp.insBarrier;
@@ -18,6 +18,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    [Conditional("DEBUG")]
     public unsafe void genEmitterUnitTests()
     {
         if (!JitConfig.JitEmitUnitTests.contains(_compiler.info.compMethodHnd, _compiler.info.compClassHnd,
@@ -8190,4 +8191,3 @@ public sealed partial class CodeGen
         testUnaryV128(emitter, v128Ones, INS_i32x4_trunc_sat_s_f32x4);
     }
 }
-#endif

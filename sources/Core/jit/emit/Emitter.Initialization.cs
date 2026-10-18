@@ -21,6 +21,12 @@ public partial class Emitter
         internal regMaskTP debugPrevGCrefRegs;
 
         internal regMaskTP debugPrevByrefRegs;
+
+        internal int VarRefOffs;
+
+        internal bool EmitIssuing;
+
+        internal bool CheckAlignment;
     }
 
     private static class DebugDataStorage
@@ -81,6 +87,11 @@ public partial class Emitter
         }
 
         return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+    }
+
+    private DebugData? GetExistingDebugData()
+    {
+        return DebugDataStorage.Table.TryGetValue(this, out var debugData) ? debugData : null;
     }
 
     public void Init()

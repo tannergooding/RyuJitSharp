@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -56,6 +56,7 @@ public sealed partial class LinearScan
         return result.ToString();
     }
 
+    [Conditional("DEBUG")]
     private void lsraDispNode(GenTree tree, LsraTupleDumpMode mode, bool hasDestination)
     {
         var spillChar = ' ';
@@ -134,6 +135,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpOperandDefs(GenTree operand, ref bool first, LsraTupleDumpMode mode)
     {
         var destinationCount = computeOperandDstCount(operand);
@@ -156,6 +158,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpVarToRegMap(regNumberSmall[]? map)
     {
         var printed = false;
@@ -184,12 +187,14 @@ public sealed partial class LinearScan
         jitprintf("\n");
     }
 
+    [Conditional("DEBUG")]
     private void dumpInVarToRegMap(BasicBlock block)
     {
         jitprintf($"Var=Reg beg of {FMT_BB(block.bbNum)}: ");
         dumpVarToRegMap(getInVarToRegMap((uint)block.bbNum));
     }
 
+    [Conditional("DEBUG")]
     private void dumpOutVarToRegMap(BasicBlock block)
     {
         jitprintf($"Var=Reg end of {FMT_BB(block.bbNum)}: ");
@@ -224,6 +229,7 @@ public sealed partial class LinearScan
         return REG_STK;
     }
 
+    [Conditional("DEBUG")]
     private void dumpIncomingParameters(LsraTupleDumpMode mode, ref int referenceIndex)
     {
         jitprintf("Incoming Parameters: ");
@@ -264,6 +270,7 @@ public sealed partial class LinearScan
         jitprintf("\n");
     }
 
+    [Conditional("DEBUG")]
     private void dumpBlockBoundaryRefPositions(BasicBlock block, ref int referenceIndex)
     {
         var printedBlockHeader = false;
@@ -310,6 +317,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpNodeRefPositions(GenTree tree, ref int referenceIndex)
     {
         var killPrinted = false;
@@ -419,8 +427,10 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void tupleStyleDumpPre() => tupleStyleDump(LsraTupleDumpMode.LSRA_DUMP_PRE);
 
+    [Conditional("DEBUG")]
     private void tupleStyleDump(LsraTupleDumpMode mode)
     {
         switch (mode)
@@ -530,4 +540,3 @@ public sealed partial class LinearScan
         jitprintf("\n\n");
     }
 }
-#endif

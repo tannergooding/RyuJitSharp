@@ -416,12 +416,21 @@ public partial class Emitter
 
         assert(emitLastIns is not null);
         var prevReg1 = emitLastIns.idReg1();
-#if DEBUG
-        var previousDebugInfo = emitLastIns.idDebugOnlyInfo();
-        assert(previousDebugInfo is not null);
-        var prevVarRefsOffs = previousDebugInfo.idVarRefOffs;
-        var newVarRefsOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        var previousDebugInfo = Configuration.DEBUG ? emitLastIns.idDebugOnlyInfo() : null;
+        if (!Configuration.DEBUG)
+        {
+            _ = previousDebugInfo;
+        }
+        if (Configuration.DEBUG)
+        {
+            assert(previousDebugInfo is not null);
+        }
+        var prevVarRefsOffs = Configuration.DEBUG
+            ? previousDebugInfo!.idVarRefOffs
+            : unchecked((uint)BAD_IL_OFFSET);
+        var newVarRefsOffs = Configuration.DEBUG
+            ? unchecked((uint)emitVarRefOffs)
+            : unchecked((uint)BAD_IL_OFFSET);
 
         var prevImm = emitGetInsSC(emitLastIns);
         var optIns = (ins == INS_ldr) ? INS_ldp : INS_stp;
@@ -476,20 +485,12 @@ public partial class Emitter
         if (optimizationOrder == RegisterOrder.eRO_ascending)
         {
             emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize,
-                prevLclVarNum, varx, prevOffset, offs
-#if DEBUG
-                , prevVarRefsOffs, newVarRefsOffs
-#endif
-            );
+                prevLclVarNum, varx, prevOffset, offs, prevVarRefsOffs, newVarRefsOffs);
         }
         else
         {
             emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize,
-                varx, prevLclVarNum, offs, prevOffset
-#if DEBUG
-                , newVarRefsOffs, prevVarRefsOffs
-#endif
-            );
+                varx, prevLclVarNum, offs, prevOffset, newVarRefsOffs, prevVarRefsOffs);
         }
 
         return true;

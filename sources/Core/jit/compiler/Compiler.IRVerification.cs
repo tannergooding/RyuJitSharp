@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Numerics;
 using static RyuJitSharp.GenTreeDebugFlags;
 
@@ -11,6 +11,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    [Conditional("DEBUG")]
     public void fgDebugCheckLinks()
     {
         if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
@@ -35,6 +36,7 @@ public partial class Compiler
         fgDebugCheckSsa();
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckStmtsList(BasicBlock block)
     {
         foreach (var stmt in block.Statements)
@@ -80,6 +82,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckFlagsAndTypes(GenTree tree, BasicBlock block)
     {
         fgDebugCheckType(tree);
@@ -277,6 +280,7 @@ public partial class Compiler
         fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckType(GenTree node)
     {
         if (node.Type is TYP_ULONG or TYP_UINT)
@@ -346,6 +350,7 @@ public partial class Compiler
         return false;
     }
 
+    [Conditional("DEBUG")]
     private static void fgDebugCheckDispFlags(GenTree tree, GenTreeFlags dispFlags)
     {
         if (tree.Oper is GT_IND)
@@ -358,6 +363,7 @@ public partial class Compiler
         _ = GenTree.gtDispFlags(dispFlags);
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckFlagsHelper(GenTree tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags)
     {
         if ((expectedFlags & ~actualFlags) != 0)
@@ -413,4 +419,3 @@ public partial class Compiler
         }
     }
 }
-#endif

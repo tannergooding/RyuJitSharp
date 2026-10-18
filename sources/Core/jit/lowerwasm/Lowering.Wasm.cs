@@ -182,11 +182,7 @@ public sealed partial class Lowering
             {
                 JITDUMP("Transferring multiply-used flag from old node to new temporary.\n");
                 node._lirFlags &= ~LIR.Flags.MultiplyUsed;
-                SetMultiplyUsed(localNode
-#if DEBUG
-                    , "Transferred flag during stackification"
-#endif
-                );
+                SetMultiplyUsed(localNode, Configuration.DEBUG ? "Transferred flag during stackification" : null);
             }
 
             return localNode;
@@ -324,11 +320,7 @@ public sealed partial class Lowering
 
         if (node.IsMemoryLoad(out var address) || node.IsMemoryStore(out address))
         {
-            SetMultiplyUsed(address
-#if DEBUG
-                , "LowerHWIntrinsic memory address (null check)"
-#endif
-            );
+            SetMultiplyUsed(address, Configuration.DEBUG ? "LowerHWIntrinsic memory address (null check)" : null);
         }
 
         switch (intrinsic)
@@ -447,11 +439,7 @@ public sealed partial class Lowering
             for (var operandIndex = 1; operandIndex <= node.Operands.Length; operandIndex++)
             {
                 var operand = node.GetOp(operandIndex);
-                SetMultiplyUsed(operand
-#if DEBUG
-                    , "Non-constant imm op needs jump table fallback"
-#endif
-                );
+                SetMultiplyUsed(operand, Configuration.DEBUG ? "Non-constant imm op needs jump table fallback" : null);
             }
         }
 
@@ -482,11 +470,7 @@ public sealed partial class Lowering
             if (allInRange)
             {
                 MakeSrcContained(node, maskNode);
-                SetMultiplyUsed(source
-#if DEBUG
-                    , "i8x16.shuffle reuses the source as both operands"
-#endif
-                );
+                SetMultiplyUsed(source, Configuration.DEBUG ? "i8x16.shuffle reuses the source as both operands" : null);
             }
         }
 

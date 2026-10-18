@@ -70,11 +70,21 @@ public partial class Emitter
 
     protected int emitInsCount;
 
-#if DEBUG
-    protected internal int emitVarRefOffs;
-#else
-    protected const int emitVarRefOffs = 0;
-#endif
+    protected internal int emitVarRefOffs
+    {
+        get
+        {
+            return Configuration.DEBUG ? (GetExistingDebugData()?.VarRefOffs ?? 0) : 0;
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().VarRefOffs = value;
+            }
+        }
+    }
 
     protected emitLocation emitPrologEndPos;
 
@@ -99,12 +109,22 @@ public partial class Emitter
     /// <summary>per method epilog list - tail</summary>
     protected EpilogList? emitEpilogLast;
 
-#if DEBUG
     /// <summary>If we have started issuing instructions from the list of instrDesc, this is set</summary>
-    public bool emitIssuing;
-#else
-    public bool emitIssuing => false;
-#endif
+    public bool emitIssuing
+    {
+        get
+        {
+            return Configuration.DEBUG && (GetExistingDebugData()?.EmitIssuing ?? false);
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().EmitIssuing = value;
+            }
+        }
+    }
 
     /// <summary>Hot code block</summary>
     public unsafe byte* emitCodeBlock;
@@ -129,12 +149,22 @@ public partial class Emitter
 
     public bool emitHasFramePtr;
 
-#if DEBUG
     /// <summary>perform some alignment checks</summary>
-    public bool emitChkAlign;
-#else
-    public bool emitChkAlign => false;
-#endif
+    public bool emitChkAlign
+    {
+        get
+        {
+            return Configuration.DEBUG && (GetExistingDebugData()?.CheckAlignment ?? false);
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().CheckAlignment = value;
+            }
+        }
+    }
 
     public insGroup? emitCurIG;
 

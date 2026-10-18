@@ -430,11 +430,8 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_I_I")]
     private static extern void RecordShifted(Emitter emitter, instruction ins, emitAttr attr,
-        regNumber reg, nint imm1, nint imm2, insOpts opt
-#if DEBUG
-        , nuint targetHandle = 0, GenTreeFlags gtFlags = GenTreeFlags.GTF_EMPTY
-#endif
-        );
+        regNumber reg, nint imm1, nint imm2, insOpts opt,
+        nuint targetHandle = 0, GenTreeFlags gtFlags = GenTreeFlags.GTF_EMPTY);
 
     [TestCase(INS_lsl, EA_8BYTE, 63, INS_OPTS_NONE, IF_ARM64_DI_2D)]
     [TestCase(INS_lsr, EA_4BYTE, 31, INS_OPTS_NONE, IF_ARM64_DI_2D)]
@@ -1395,11 +1392,9 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_I_LdStPair")]
     private static extern void RecordLocalPair(Emitter emitter, instruction ins, emitAttr size, emitAttr size2,
-        regNumber reg1, regNumber reg2, regNumber reg3, nint imm, int var1, int var2, int offs1, int offs2
-#if DEBUG
-        , uint var1RefsOffs, uint var2RefsOffs
-#endif
-        );
+        regNumber reg1, regNumber reg2, regNumber reg3, nint imm, int var1, int var2, int offs1, int offs2,
+        uint var1RefsOffs = unchecked((uint)BAD_IL_OFFSET),
+        uint var2RefsOffs = unchecked((uint)BAD_IL_OFFSET));
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrLclVarPair")]
     private static extern Emitter.instrDesc AllocateLocalPair(Emitter emitter, emitAttr attr, nint cns);
@@ -2763,7 +2758,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
         compiler.lvaDoneFrameLayout = Compiler.REGALLOC_FRAME_LAYOUT;
 #if DEBUG
-        LocalReferenceOffset(emitter) = 123;
+        emitter.emitVarRefOffs = 123;
 #endif
         return emitter;
     }
@@ -2793,11 +2788,6 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cgEmitter")]
     private static extern ref Emitter CodeGenEmitter(CodeGen codeGen);
-
-#if DEBUG
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
-    private static extern ref int LocalReferenceOffset(Emitter emitter);
-#endif
 
     private static RecordingEmitter CreateEmitter(bool optimized = false, bool reloc = false)
     {

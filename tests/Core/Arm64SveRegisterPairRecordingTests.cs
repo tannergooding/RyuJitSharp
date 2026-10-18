@@ -518,7 +518,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
             {
                 if (immediate)

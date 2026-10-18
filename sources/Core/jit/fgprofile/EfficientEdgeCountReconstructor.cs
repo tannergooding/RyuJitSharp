@@ -141,11 +141,9 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
 
     public void Prepare()
     {
-#if DEBUG
         uint nReturns = 0;
         uint nZeroReturns = 0;
 
-#endif
         foreach (var block in _compiler.Blocks)
         {
             var key = EfficientEdgeCountBlockToKey(block);
@@ -155,12 +153,10 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             _blocks++;
             _unknownBlocks++;
 
-#if DEBUG
-            if (block.Kind is BBJ_RETURN)
+            if (Configuration.DEBUG && (block.Kind is BBJ_RETURN))
             {
                 nReturns++;
             }
-#endif
         }
 
         for (var iSchema = 0; iSchema < _compiler.fgPgoSchemaCount; iSchema++)
@@ -192,8 +188,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 ? *(uint*)(_compiler.fgPgoData + schemaEntry.Offset)
                 : *(ulong*)(_compiler.fgPgoData + schemaEntry.Offset);
 
-#if DEBUG
-            if ((JitConfig.JitRandomEdgeCounts != 0) && (nReturns > 0))
+            if (Configuration.DEBUG && (JitConfig.JitRandomEdgeCounts != 0) && (nReturns > 0))
             {
                 var strategy = _compiler.impInlineRoot._inlineStrategy;
                 assert(strategy is not null);
@@ -229,7 +224,6 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
                 }
             }
 
-#endif
             var weight = (weight_t)profileCount;
             _allWeightsZero &= profileCount == 0;
             var edge = new Edge(sourceBlock, targetBlock) { WeightKnown = true, Weight = weight };
@@ -541,10 +535,7 @@ public sealed unsafe class EfficientEdgeCountReconstructor : SpanningTreeVisitor
             var flowEdge = _compiler.fgGetPredForBlock(edge.TargetBlock, block);
             assert(flowEdge is not null);
 
-#if DEBUG
             assert(flowEdge.hasLikelihood);
-
-#endif
             if (nEdges == 1)
             {
                 JITDUMP($"Setting likelihood of {FMT_BB(block.bbNum)} -> {FMT_BB(edge.TargetBlock.bbNum)} to {FMT_WT(1.0)} (uniq)\n");

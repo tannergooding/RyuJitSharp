@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG && TARGET_AMD64
 using System;
 using System.Globalization;
 using System.IO;
@@ -18,6 +17,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
 {
+    [SetUp]
+    public static void RequireDebugAmd64Target()
+    {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+    }
+
     [TestCase("DEFUSE_CONFLICT", "DUconflict    ", true)]
     [TestCase("NEEDS_NEW_REG", "Free  rax  ", true)]
     [TestCase("ZERO_REF", "NoRef      ", true)]
@@ -43,7 +48,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             interval.varNum = 0;
             interval.recentRefPosition = reference;
             var prefix = Capture(() => DumpReference(allocator, reference));
-            LastReference(allocator) = null;
+            SetLastReference(allocator, null);
 
             var output = Capture(() => DumpEvent(allocator, name, interval, reference));
 
@@ -93,7 +98,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         WithAllocator((_, allocator, interval, reference) => {
             interval.assignedReg = allocator.physRegs[(int)regNumber.REG_X64_RCX];
             var prefix = Capture(() => DumpReference(allocator, reference));
-            LastReference(allocator) = null;
+            SetLastReference(allocator, null);
 
             var output = Capture(() => DumpEvent(allocator, "SPILL", interval, reference));
 
@@ -118,7 +123,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             var prefix = referenceKind == "definition"
                 ? Capture(() => DumpReference(allocator, reference))
                 : new string(' ', TableIndent(allocator) - 14);
-            LastReference(allocator) = null;
+            SetLastReference(allocator, null);
             var output = Capture(() => DumpEvent(
                 allocator,
                 spilled ? "RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL" : "RESTORE_PREVIOUS_INTERVAL",
@@ -145,7 +150,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             AllocationPassComplete(allocator) = completed;
             interval.recentRefPosition = reference;
             var prefix = Capture(() => DumpReference(allocator, reference));
-            LastReference(allocator) = null;
+            SetLastReference(allocator, null);
             var expected = completed
                 ? (name == "COPY_REG" ? "Copy " : name == "ALLOC_REG" ? "Alloc" : "Reuse") + "    rax  "
                 : $"COVRS({suffix}) rax  ";
@@ -183,7 +188,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             var prefix = dummyDefinition
                 ? new string(' ', TableIndent(allocator) - 14) + "DDefs        "
                 : Capture(() => DumpReference(allocator, reference));
-            LastReference(allocator) = null;
+            SetLastReference(allocator, null);
 
             var output = Capture(() => DumpEvent(allocator, "START_BB", interval, reference));
 
@@ -199,7 +204,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             var mask = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RCX);
             var prefix = Capture(() => DumpReference(allocator, reference));
             var maskText = Capture(() => compiler.dumpRegMask(mask));
-            LastReference(allocator) = null;
+            SetLastReference(allocator, null);
 
             var output = Capture(() => DumpEvent(allocator, "KILL_REGS", interval, reference, mask: mask));
 
@@ -224,9 +229,9 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void EveryEventReturnsBeforeInitializationOrDereferencesWhenNotVerbose()
     {
         WithAllocator((compiler, allocator, _, _) => {
-            compiler.verbose = false;
-            FormatInitialized(allocator) = false;
-            MaxNodeLocation(allocator) = 0;
+            TestConfiguration.SetVerbose(compiler, false);
+            SetFormatInitialized(allocator, false);
+            SetMaxNodeLocation(allocator, 0);
             var method = EventMethod();
             var eventType = method.GetParameters()[0].ParameterType;
             var output = Capture(() => {
@@ -270,7 +275,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     {
         WithAllocator((compiler, allocator, _, _) => {
             BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
             Assert.That(Capture(() => DumpRecords(allocator)),
                 Is.EqualTo(separator + separator + Environment.NewLine));
 
@@ -282,7 +287,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
 
             var widerAllocator = CreateAllocator(compiler, 1000, 1, 1);
             _ = Capture(() => DumpHeader(widerAllocator));
-            FormatInitialized(widerAllocator) = true;
+            SetFormatInitialized(widerAllocator, true);
             BusyUntilKill(widerAllocator) = new regMaskTP(SRBM_X64_RAX);
             Assert.That(ColumnWidth(widerAllocator), Is.EqualTo(6));
             Assert.That(Capture(() => DumpRecords(widerAllocator)),
@@ -303,28 +308,27 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         WithAllocator((compiler, allocator, interval, _) => {
             interval.isActive = active;
             allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = interval;
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             Assert.That(Capture(() => DumpRecords(allocator)),
                 Is.EqualTo($"{separator}I0 {(active ? 'a' : 'i')}{separator}{Environment.NewLine}"));
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void PartialSpillOverridesTheActiveRecordCharacter()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
         WithAllocator((compiler, allocator, interval, _) => {
             interval.isActive = true;
             interval.isPartiallySpilled = true;
             allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = interval;
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             Assert.That(Capture(() => DumpRecords(allocator)),
                 Is.EqualTo($"{separator}I0 p{separator}{Environment.NewLine}"));
         });
     }
-#endif
 
     [TestCase(99, 9, 9u, 4, 1, 1)]
     [TestCase(100, 10, 10u, 5, 2, 2)]
@@ -337,9 +341,10 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             var allocator = CreateAllocator(compiler, intervals, references, location);
             var output = Capture(() => DumpHeader(allocator));
             var indent = 34 + locationWidth + referenceWidth + columnWidth;
-            var line = compiler.ShouldDumpAsciiTrees ? "-" : "─";
-            var middle = compiler.ShouldDumpAsciiTrees ? "+" : "┼";
-            var right = compiler.ShouldDumpAsciiTrees ? "+" : "┤";
+            var useAscii = TestConfiguration.ShouldDumpAsciiTrees(compiler);
+            var line = useAscii ? "-" : "─";
+            var middle = useAscii ? "+" : "┼";
+            var right = useAscii ? "+" : "┤";
 
             Assert.That(ColumnWidth(allocator), Is.EqualTo(columnWidth));
             Assert.That(NodeLocationWidth(allocator), Is.EqualTo(locationWidth));
@@ -355,7 +360,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void HeaderNormalizesTheStoredZeroNodeLocation()
     {
         WithAllocator((_, allocator, _, _) => {
-            MaxNodeLocation(allocator) = 0;
+            SetMaxNodeLocation(allocator, 0);
 
             _ = Capture(() => DumpHeader(allocator));
 
@@ -369,7 +374,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void TitleRepetitionUsesAStrictGreaterThanFiftyRowBoundary(int rows, bool repeats)
     {
         WithAllocator((_, allocator, _, _) => {
-            RowsSinceTitle(allocator) = rows;
+            SetRowsSinceTitle(allocator, rows);
 
             var output = Capture(() => DumpTitleIfNeeded(allocator));
 
@@ -382,8 +387,8 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void ANewRegisterRepeatsTheTitleAndUpdatesTheLastDumpedSet()
     {
         WithAllocator((compiler, allocator, _, _) => {
-            DumpRegisters(allocator) |= new regMaskTP(SRBM_X64_RCX);
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            SetDumpRegisters(allocator, DumpRegisters(allocator) | new regMaskTP(SRBM_X64_RCX));
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             var output = Capture(() => DumpTitleIfNeeded(allocator));
 
@@ -394,16 +399,16 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         });
     }
 
-#if HAS_MORE_THAN_64_REGISTERS && FEATURE_MASKED_HW_INTRINSICS
     [TestCase(false)]
     [TestCase(true)]
     public static void TitleIncludesFloatingAndMaskBanksOnlyWhenFloatingPointWasUsed(bool floatingPointUsed)
     {
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS && Configuration.FEATURE_MASKED_HW_INTRINSICS);
         WithAllocator((compiler, allocator, _, _) => {
             compiler.compFloatingPointUsed = floatingPointUsed;
-            DumpRegisters(allocator) |= new regMaskTP(SRBM_XMM0) |
-                regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, genSingleTypeRegMask(regNumber.REG_X64_K1));
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            SetDumpRegisters(allocator, DumpRegisters(allocator) | new regMaskTP(SRBM_XMM0) |
+                regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, genSingleTypeRegMask(regNumber.REG_X64_K1)));
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             var output = Capture(() => DumpTitleIfNeeded(allocator));
 
@@ -415,23 +420,23 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
                 floatingPointUsed ? (int)regNumber.REG_X64_K1 : (int)regNumber.REG_X64_RAX));
         });
     }
-#endif
 
     [Test]
     public static void InitialRegisterSetUsesTheNativeTargetSpecificCalleeSavedRegisters()
     {
         WithAllocator((compiler, allocator, _, _) => {
-            FormatInitialized(allocator) = false;
+            SetFormatInitialized(allocator, false);
             compiler.compFloatingPointUsed = false;
 
             _ = Capture(() => InitializeFormat(allocator));
 
-#if UNIX_AMD64_ABI
-            var expected = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_R13;
-            Assert.That(LastRegisterIndex(allocator), Is.EqualTo((int)regNumber.REG_R13));
-#else
-            var expected = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_X64_RDI;
-#endif
+            var expected = Configuration.UNIX_AMD64_ABI
+                ? SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_R13
+                : SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_X64_RDI;
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                Assert.That(LastRegisterIndex(allocator), Is.EqualTo((int)regNumber.REG_X64_R13));
+            }
             expected |= SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_X64_XMM6 | SRBM_XMM7 | SRBM_ARG_REGS;
             Assert.That(DumpRegisters(allocator), Is.EqualTo(new regMaskTP(expected)));
         });
@@ -470,7 +475,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     private static LinearScan CreateAllocator(Compiler compiler, int intervalCount, int referenceCount, uint location)
     {
         var previousVerbose = compiler.verbose;
-        compiler.verbose = false;
+        TestConfiguration.SetVerbose(compiler, false);
         try
         {
             var allocator = new LinearScan(compiler);
@@ -493,13 +498,13 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
                     referencedInterval, location, RefType.RefTypeDef, null, SRBM_X64_RAX | SRBM_X64_RCX);
             }
 
-            MaxNodeLocation(allocator) = location;
-            DumpRegisters(allocator) = new regMaskTP(SRBM_X64_RAX);
+            SetMaxNodeLocation(allocator, location);
+            SetDumpRegisters(allocator, new regMaskTP(SRBM_X64_RAX));
             return allocator;
         }
         finally
         {
-            compiler.verbose = previousVerbose;
+            TestConfiguration.SetVerbose(compiler, previousVerbose);
         }
     }
 
@@ -507,7 +512,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     {
         using var tls = new JitTls(null);
         var previousCompiler = JitTls.Compiler;
-        var previousColumnWidth = EmptyColumnWidth(null);
+        var previousColumnWidth = GetEmptyColumnWidth();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
@@ -525,10 +530,10 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
             codeGen.CopyRegisterInfo();
-            EmptyColumnWidth(null) = 0;
+            SetEmptyColumnWidth(0);
             var allocator = CreateAllocator(compiler, 1, 1, 1);
             _ = Capture(() => DumpHeader(allocator));
-            FormatInitialized(allocator) = true;
+            SetFormatInitialized(allocator, true);
             TestConfiguration.EnableVerbose(compiler);
             var interval = allocator.intervals[0];
             var reference = interval.firstRefPosition
@@ -537,7 +542,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         }
         finally
         {
-            EmptyColumnWidth(null) = previousColumnWidth;
+            SetEmptyColumnWidth(previousColumnWidth);
             JitTls.Compiler = previousCompiler;
         }
     }
@@ -579,41 +584,61 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpRefPositionShort")]
     private static extern void DumpReference(LinearScan allocator, RefPosition? reference, BasicBlock? block = null);
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_allocationDumpEmptyColumnWidth")]
-    private static extern ref int EmptyColumnWidth(LinearScan? allocator);
+    private static readonly FieldInfo s_emptyColumnWidthField =
+        typeof(LinearScan).GetNestedType("AllocationDebugDataStorage", BindingFlags.NonPublic)
+            ?.GetField("EmptyColumnWidth", BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new AssertionException("Missing allocation dump empty-column width.");
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpFormatInitialized")]
-    private static extern ref bool FormatInitialized(LinearScan allocator);
+    private static int GetEmptyColumnWidth() =>
+        (int)(s_emptyColumnWidthField.GetValue(null)
+            ?? throw new AssertionException("Missing allocation dump empty-column width value."));
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRegisters")]
-    private static extern ref regMaskTP DumpRegisters(LinearScan allocator);
+    private static void SetEmptyColumnWidth(int value) => s_emptyColumnWidthField.SetValue(null, value);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lastAllocationDumpRegisters")]
-    private static extern ref regMaskTP LastDumpedRegisters(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpFormatInitialized")]
+    private static extern bool FormatInitialized(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lastAllocationDumpRefPosition")]
-    private static extern ref RefPosition? LastReference(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__allocationDumpFormatInitialized")]
+    private static extern void SetFormatInitialized(LinearScan allocator, bool value);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRowsSinceTitle")]
-    private static extern ref int RowsSinceTitle(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRegisters")]
+    private static extern regMaskTP DumpRegisters(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRegColumnWidth")]
-    private static extern ref int ColumnWidth(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__allocationDumpRegisters")]
+    private static extern void SetDumpRegisters(LinearScan allocator, regMaskTP value);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpNodeLocationWidth")]
-    private static extern ref int NodeLocationWidth(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__lastAllocationDumpRegisters")]
+    private static extern regMaskTP LastDumpedRegisters(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRefPositionWidth")]
-    private static extern ref int ReferenceWidth(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__lastAllocationDumpRefPosition")]
+    private static extern RefPosition? LastReference(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpTableIndent")]
-    private static extern ref int TableIndent(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__lastAllocationDumpRefPosition")]
+    private static extern void SetLastReference(LinearScan allocator, RefPosition? value);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpColumnSeparator")]
-    private static extern ref string ColumnSeparator(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRowsSinceTitle")]
+    private static extern int RowsSinceTitle(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpLastUsedRegNumIndex")]
-    private static extern ref int LastRegisterIndex(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__allocationDumpRowsSinceTitle")]
+    private static extern void SetRowsSinceTitle(LinearScan allocator, int value);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRegColumnWidth")]
+    private static extern int ColumnWidth(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpNodeLocationWidth")]
+    private static extern int NodeLocationWidth(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRefPositionWidth")]
+    private static extern int ReferenceWidth(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpTableIndent")]
+    private static extern int TableIndent(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpColumnSeparator")]
+    private static extern string ColumnSeparator(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpLastUsedRegNumIndex")]
+    private static extern int LastRegisterIndex(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regsBusyUntilKill")]
     private static extern ref regMaskTP BusyUntilKill(LinearScan allocator);
@@ -621,8 +646,11 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationPassComplete")]
     private static extern ref bool AllocationPassComplete(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_maxNodeLocation")]
-    private static extern ref uint MaxNodeLocation(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__maxNodeLocation")]
+    private static extern uint MaxNodeLocation(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__maxNodeLocation")]
+    private static extern void SetMaxNodeLocation(LinearScan allocator, uint value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
@@ -636,4 +664,3 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "regIntLast")]
     private static extern ref regNumber CompilerLastIntRegister(Compiler compiler);
 }
-#endif

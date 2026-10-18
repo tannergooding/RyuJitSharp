@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -50,6 +50,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void verifyFinalAllocationMinimal()
     {
         if (_enregisterLocalVars)
@@ -411,6 +412,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpVerificationEvent(
         RefPosition reference,
         string action,
@@ -421,6 +423,7 @@ public sealed partial class LinearScan
         dumpVerificationEvent(reference, action, interval, REG_NA, printRecords, registerMask);
     }
 
+    [Conditional("DEBUG")]
     private void dumpVerificationEvent(RefPosition reference, string action, Interval? interval,
         regNumber register, bool printRecords = false, regMaskTP registerMask = default)
     {
@@ -450,10 +453,10 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpVerificationIndentedEvent(string action)
     {
         dumpRefPositionShort(null);
         jitprintf(action);
     }
 }
-#endif

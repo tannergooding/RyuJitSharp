@@ -56,13 +56,11 @@ public partial class Compiler
             return null;
         }
 
-#if DEBUG
-        if (opts.compGcChecks && (info.compRetType is TYP_REF))
+        if (Configuration.DEBUG && opts.compGcChecks && (info.compRetType is TYP_REF))
         {
             FailTailCall("DOTNET_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, invalidating tailcall opportunity");
             return null;
         }
-#endif
         if (compIsAsync != call.IsAsync)
         {
             FailTailCall("Caller and callee do not agree on async-ness");
@@ -90,13 +88,11 @@ public partial class Compiler
             return null;
         }
 
-#if DEBUG
-        if (isImplicitOrStressTailCall && compPoisoningAnyImplicitByrefs)
+        if (Configuration.DEBUG && isImplicitOrStressTailCall && compPoisoningAnyImplicitByrefs)
         {
             FailTailCall("STRESS_POISON_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
             return null;
         }
-#endif
         var hasStructParam = false;
         for (var localNumber = 0; localNumber < lvaCount; localNumber++)
         {

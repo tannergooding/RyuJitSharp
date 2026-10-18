@@ -118,12 +118,9 @@ public partial class Emitter
             var address = compiler.lvaFrameAddress(varNum, out _);
             if (id.idGCref() != GCT_NONE)
             {
-#if DEBUG
                 emitGCvarLiveUpd(unchecked(address + (int)offset), varNum, id.idGCref(),
-                    dstRW2 - writeableOffset, unchecked((uint)varNum));
-#else
-                emitGCvarLiveUpd(unchecked(address + (int)offset), varNum, id.idGCref(), dstRW2 - writeableOffset);
-#endif
+                    dstRW2 - writeableOffset,
+                    Configuration.DEBUG ? unchecked((uint)varNum) : 0);
             }
             else
             {
@@ -133,12 +130,8 @@ public partial class Emitter
                         ?? throw new FatalJitException("The LoongArch64 spill temporary must exist.")).tdTempType;
                 if (type is TYP_REF or TYP_BYREF)
                 {
-#if DEBUG
                     emitGCvarDeadUpd(unchecked(address + (int)offset), dstRW2 - writeableOffset,
-                        unchecked((uint)varNum));
-#else
-                    emitGCvarDeadUpd(unchecked(address + (int)offset), dstRW2 - writeableOffset);
-#endif
+                        Configuration.DEBUG ? unchecked((uint)varNum) : 0);
                 }
             }
         }
@@ -156,8 +149,7 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (compiler.compDebugBreak)
+        if (Configuration.DEBUG && compiler.compDebugBreak)
         {
             var debugInfo = id.idDebugOnlyInfo()
                 ?? throw new FatalJitException("LoongArch64 instruction output requires debug descriptor information.");
@@ -167,11 +159,10 @@ public partial class Emitter
             }
         }
 
-        if (compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && compiler.opts.disasmWithGC)
         {
             emitDispGCInfoDelta();
         }
-#endif
 
         assert(dstRW != dst + writeableOffset);
         *dp = dstRW - writeableOffset;

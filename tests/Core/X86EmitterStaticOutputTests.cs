@@ -108,14 +108,11 @@ internal static unsafe class X86EmitterStaticOutputTests
     [Conditional("DEBUG")]
     internal static void SetEmitIssuing(Emitter emitter)
     {
-        EmitIssuing(emitter) = true;
+        TestConfiguration.EnableEmitterIssuing(emitter);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrDsp")]
     private static extern Emitter.instrDesc NewInstructionDisplacement(Emitter emitter, emitAttr attr, nint displacement);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
-    private static extern ref bool EmitIssuing(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask ReferenceRegs(Emitter emitter);

@@ -179,7 +179,6 @@ internal static unsafe class ProfileInstrumentationTests
         }
     }
 
-#if DEBUG
     [TestCase(false, 4294967295.0, 4294967295UL)]
     [TestCase(false, 4294967296.0, 0UL)]
     [TestCase(false, 4294967297.0, 1UL)]
@@ -189,6 +188,8 @@ internal static unsafe class ProfileInstrumentationTests
     [TestCase(true, 18446744073709551616.0, 9223372036854775808UL)]
     public static void SynthesizedBlockCountsUseNativeIntegerConversion(bool wide, double weight, ulong expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithSynthesizedCountConfig(() =>
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
                 var block = BasicBlock.New(compiler, BBJ_RETURN);
@@ -215,6 +216,8 @@ internal static unsafe class ProfileInstrumentationTests
     [TestCase(true, 18446744073709551616.0, 9223372036854775808UL)]
     public static void SynthesizedEdgeCountsUseNativeIntegerConversion(bool wide, double weight, ulong expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithSynthesizedCountConfig(() =>
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
                 var entry = BasicBlock.New(compiler, BBJ_COND);
@@ -271,7 +274,6 @@ internal static unsafe class ProfileInstrumentationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitPropagateSynthesizedCountsToProfileData")]
     private static extern ref int PropagateSynthesizedCounts(ref JitConfigValues config);
-#endif
 
     [Test]
     public static void InterfaceCallHistogramPreservesPairOrderAndObjectEvaluation()

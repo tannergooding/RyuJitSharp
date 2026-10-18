@@ -274,18 +274,44 @@ public partial class Compiler
         public bool compProcedureSplittingEH;
 
         /// <summary>Display native code generated</summary>
-#if DEBUG
-        public bool dspCode;
-#else
-        public readonly bool dspCode => false;
-#endif
+        private bool _dspCode;
+        public bool dspCode
+        {
+            readonly get
+            {
+                return Configuration.DEBUG && _dspCode;
+            }
+
+            set
+            {
+                if (!Configuration.DEBUG)
+                {
+                    throw new System.InvalidOperationException("Compiler display options are only available in Debug builds.");
+                }
+
+                _dspCode = value;
+            }
+        }
 
         /// <summary>Display the EH table reported to the VM</summary>
-#if DEBUG
-        public bool dspEHTable;
-#else
-        public readonly bool dspEHTable => false;
-#endif
+        private bool _dspEHTable;
+        public bool dspEHTable
+        {
+            readonly get
+            {
+                return Configuration.DEBUG && _dspEHTable;
+            }
+
+            set
+            {
+                if (!Configuration.DEBUG)
+                {
+                    throw new System.InvalidOperationException("Compiler display options are only available in Debug builds.");
+                }
+
+                _dspEHTable = value;
+            }
+        }
 
         /// <summary>Display the Debug info reported to the VM</summary>
         public bool dspDebugInfo;
@@ -324,11 +350,24 @@ public partial class Compiler
         public bool dspGCtbls;
 
         /// <summary>Display metrics</summary>
-#if DEBUG
-        public bool dspMetrics;
-#else
-        public readonly bool dspMetrics => false;
-#endif
+        private bool _dspMetrics;
+        public bool dspMetrics
+        {
+            readonly get
+            {
+                return Configuration.DEBUG && _dspMetrics;
+            }
+
+            set
+            {
+                if (!Configuration.DEBUG)
+                {
+                    throw new System.InvalidOperationException("Compiler display options are only available in Debug builds.");
+                }
+
+                _dspMetrics = value;
+            }
+        }
 
         private bool _compJitAlignLoopForJcc;
 

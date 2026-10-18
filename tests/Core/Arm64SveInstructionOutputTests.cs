@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -14,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64SveInstructionOutputTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(REG_ARM64_V0, 4, 0, 0u)]
     [TestCase(REG_ARM64_V31, 4, 0, 31u)]
     [TestCase(REG_ARM64_V31, 18, 16, 0x70000u)]
@@ -368,24 +373,28 @@ internal static unsafe class Arm64SveInstructionOutputTests
         var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
         byte* end = null;
-#if DEBUG
-        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() => end = Output(emitter, buffer + 4, id));
-        Assert.That(assertions, Is.EqualTo<string[]>(["!\"Unexpected format\""]));
-        Assert.That(output, Is.Empty);
-#else
-        end = Output(emitter, buffer + 4, id);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (output, assertions) = Arm64SveInstructionSanityTests.Capture(
+                () => end = Output(emitter, buffer + 4, id));
+            Assert.That(assertions, Is.EqualTo<string[]>(["!\"Unexpected format\""]));
+            Assert.That(output, Is.Empty);
+        }
+        else
+        {
+            end = Output(emitter, buffer + 4, id);
+        }
         Assert.That((nuint)end, Is.EqualTo((nuint)(buffer + 4)));
         Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
     }
 
-#if DEBUG
     [TestCase((emitAttr)3, 0, 0x10000u)]
     [TestCase((emitAttr)6, 0, 0x20000u)]
     [TestCase((emitAttr)12, 1, 0xC0000u)]
     public static void IndexedDupKeepsNativeLowBitSelectionAfterInvalidLaneSizeAssertion(
         emitAttr size, int index, uint expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = BroadcastIndex(null, size, index));
         Assert.That(assertions, Is.EqualTo<string[]>(["genExactlyOneBit(value)"]));
@@ -395,6 +404,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void ZeroIndexedDupLaneSizePreservesBothNativeAssertionsInOrder()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => BroadcastIndex(null, (emitAttr)0, 0));
         Assert.That(assertions, Is.EqualTo<string[]>(["genExactlyOneBit(value)", "value != 0"]));
     }
@@ -402,6 +412,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void UnsignedOverflowAssertsThenPreservesNativeUnmaskedContinuation()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Unsigned(null, -1, 20, 16));
         Assert.That(assertions, Is.EqualTo<string[]>(["imm < imm_max", "(result >> lo) == imm"]));
@@ -411,6 +422,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void SignedOverflowAssertsThenMasksTheField()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Signed(null, 16, 20, 16));
         Assert.That(assertions, Is.EqualTo<string[]>(["imm_min <= imm && imm < imm_max"]));
@@ -420,6 +432,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void OddPairRegisterAssertsBeforeNativeDivision()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = EvenVector(null, REG_ARM64_V31));
         Assert.That(assertions, Is.EqualTo<string[]>(["ureg % 2 == 0"]));
@@ -429,6 +442,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void InvalidWordDtypeSizePreservesBothNativeAssertionsAndTheOriginalCode()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = DtypeWord(null, INS_sve_ld1w, IF_ARM64_SVE_IH_3A_F, EA_1BYTE, 0xA5000001));
@@ -441,6 +455,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void InvalidOutputShiftKeepsNativeAssertionOrderThroughEncoding()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test validates Debug-only encoder assertions.");
         var id = OutputEmitter.Descriptor(IF_ARM64_SVE_GA_2A);
         var emitter = NewEmitter();
         var buffer = stackalloc byte[4];
@@ -459,8 +474,6 @@ internal static unsafe class Arm64SveInstructionOutputTests
         Assert.That((nuint)end, Is.EqualTo((nuint)(buffer + 4)));
         Assert.That(Unsafe.ReadUnaligned<uint>(buffer), Is.EqualTo(uint.MaxValue));
     }
-#endif
-
     private static Emitter NewEmitter()
     {
         return (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
@@ -563,4 +576,3 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "insEncodeSveElemsize_dtypeh_dtypel")]
     private static extern uint DtypeSplit(Emitter? emitter, instruction ins, Emitter.insFormat fmt, emitAttr size, uint code);
 }
-#endif

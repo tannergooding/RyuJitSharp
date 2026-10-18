@@ -572,12 +572,13 @@ internal static unsafe class LivenessUseDefTests
         });
     }
 
-#if DEBUG
     [TestCase(0, "{        V00}")]
     [TestCase(1, "{    V01    }")]
     [TestCase(2, "{V02        }")]
     public static void VariableSetDumpsPreserveTrackedIndexOrderAndAlignment(int local, string aligned)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(3, false, compiler => {
             _ = Block(compiler);
             _ = Prepare<LirPolicy>(compiler);
@@ -592,6 +593,8 @@ internal static unsafe class LivenessUseDefTests
     [Test]
     public static void VerboseBlockDumpIncludesAlignedLocalsMemoryAndHavoc()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(1, false, compiler => {
             var block = Block(compiler);
             Append(compiler, block, new GenTreeLclVar(TYP_INT, 0));
@@ -626,7 +629,6 @@ internal static unsafe class LivenessUseDefTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     private static GenTreeLclVar Store(Compiler compiler, int local)
     {

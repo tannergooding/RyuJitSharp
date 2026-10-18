@@ -100,7 +100,7 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             _ = AddReference(allocator, RefType.RefTypeBB, 10);
-            MaxNodeLocation(allocator) = 8;
+            SetMaxNodeLocation(allocator, 8);
             TestConfiguration.EnableVerbose(compiler);
 
             var output = Capture(() => VerifyFinalAllocation(allocator));
@@ -393,8 +393,11 @@ internal static unsafe class LinearScanFinalVerificationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocalVars(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_maxNodeLocation")]
-    private static extern ref uint MaxNodeLocation(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__maxNodeLocation")]
+    private static extern uint MaxNodeLocation(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__maxNodeLocation")]
+    private static extern void SetMaxNodeLocation(LinearScan allocator, uint value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint BbNumMaxBeforeResolution(LinearScan allocator);

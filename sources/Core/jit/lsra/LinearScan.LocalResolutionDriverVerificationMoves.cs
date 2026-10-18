@@ -3,11 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
+    [Conditional("DEBUG")]
     private void verifyResolutionMoveWithLocals(GenTree destination, LsraLocation location)
     {
         assert(isResolutionMove(destination));
@@ -87,6 +89,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpVerificationResolutionMove(Interval interval, regNumber register,
         LsraLocation location, string action)
     {
@@ -97,4 +100,3 @@ public sealed partial class LinearScan
         dumpAllocationRegisterRecords();
     }
 }
-#endif

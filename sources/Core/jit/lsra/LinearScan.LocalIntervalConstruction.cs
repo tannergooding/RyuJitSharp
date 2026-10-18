@@ -49,12 +49,10 @@ public sealed partial class LinearScan
             _lowGprRegs = _availableIntRegs;
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             tupleStyleDumpPre();
         }
-#endif
 
         JITDUMP("\nbuildIntervals second part ========\n");
         _referenceBuildLocation = MinLocation;
@@ -269,12 +267,10 @@ public sealed partial class LinearScan
                     node.RegNum = node.Reg;
                 }
                 buildRefPositionsForNode(node, _referenceBuildLocation);
-#if DEBUG
-                if (_referenceBuildLocation > _maxNodeLocation)
+                if (Configuration.DEBUG && _referenceBuildLocation > _maxNodeLocation)
                 {
                     _maxNodeLocation = _referenceBuildLocation;
                 }
-#endif
                 _referenceBuildLocation += 2;
             }
 
@@ -368,9 +364,8 @@ public sealed partial class LinearScan
                 return true;
             });
 
-#if DEBUG
             checkLastUses(block);
-            if (VERBOSE)
+            if (Configuration.DEBUG && VERBOSE)
             {
                 jitprintf("use: ");
                 dumpConvertedVarSet(_compiler, block.bbVarUse);
@@ -378,7 +373,6 @@ public sealed partial class LinearScan
                 dumpConvertedVarSet(_compiler, block.bbVarDef);
                 jitprintf("\n");
             }
-#endif
             previousBlock = block;
         }
 
@@ -499,14 +493,12 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             dumpLsraIntervals("BEFORE VALIDATING INTERVALS");
             dumpRefPositions("BEFORE VALIDATING INTERVALS");
         }
         validateIntervals();
-#endif
     }
 
     private void resetRegStateWithLocals()

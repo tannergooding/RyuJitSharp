@@ -432,11 +432,8 @@ internal static unsafe class CompilerTimingTests
         summary.AddInfo(new CompTimeInfo(1), includePhases: true);
 
         var output = PrintSummary(summary);
-#if HOST_WINDOWS
-        Assert.That(output, Does.Contain("-nan(ind)%"));
-#else
-        Assert.That(output, Does.Contain("nan%"));
-#endif
+        var expected = OperatingSystem.IsWindows() ? "-nan(ind)%" : "nan%";
+        Assert.That(output, Does.Contain(expected));
         Assert.That(output, Does.Not.Contain("End phase slop"));
         summary.Print(null);
     }
@@ -449,11 +446,8 @@ internal static unsafe class CompilerTimingTests
         FilteredInfo(ref summary) = new CompTimeInfo(1);
 
         var output = PrintSummary(summary);
-#if HOST_WINDOWS
-        Assert.That(output, Does.Contain("-nan(ind)%"));
-#else
-        Assert.That(output, Does.Contain("nan%"));
-#endif
+        var expected = OperatingSystem.IsWindows() ? "-nan(ind)%" : "nan%";
+        Assert.That(output, Does.Contain(expected));
     }
 
     [Test]
@@ -641,10 +635,11 @@ internal static unsafe class CompilerTimingTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void CsvMethodRowIncludesManagedAllocationAndSixDecimalCycleFrequency()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var path = Path.Combine(Path.GetTempPath(), $"ryujit-timing-row-{Guid.NewGuid():N}.csv");
         ICorJitHost.Vtbl vtable = default;
         vtable.getIntConfigValue = &GetSpmiIndex;
@@ -705,7 +700,6 @@ internal static unsafe class CompilerTimingTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetSpmiIndex(ICorJitHost* host, byte* name, int defaultValue) => defaultValue;
-#endif
 
     private static string ReadSharedCsv(string path)
     {
@@ -785,26 +779,28 @@ internal static unsafe class CompilerTimingTests
         RecordCompilation(compiler);
 
         Assert.That(compiler.fgSsaPassesCompleted, Is.EqualTo(3));
-#if !DEBUG
-        Assert.That(typeof(Compiler).GetField("_compCycles", BindingFlags.NonPublic | BindingFlags.Instance), Is.Null);
-        Assert.That(typeof(Compiler).GetField("_compCyclesAtEndOfInlining", BindingFlags.NonPublic | BindingFlags.Instance), Is.Null);
-#endif
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.That(typeof(Compiler).GetField("_compCycles", BindingFlags.NonPublic | BindingFlags.Instance), Is.Null);
+            Assert.That(typeof(Compiler).GetField("_compCyclesAtEndOfInlining", BindingFlags.NonPublic | BindingFlags.Instance), Is.Null);
+        }
     }
 
-#if DEBUG
     [Test]
     public static void InliningRecordsAndReplacesTheCurrentCounter()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         for (var iteration = 0; iteration < 2; iteration++)
         {
-            InliningCycles(compiler) = -1;
+            compiler.InlineDiagnosticCompCyclesAtEndOfInlining = -1;
             var before = Stopwatch.GetTimestamp();
 
             RecordInlining(compiler);
 
             var after = Stopwatch.GetTimestamp();
-            Assert.That(InliningCycles(compiler), Is.InRange(before, after));
+            Assert.That(compiler.InlineDiagnosticCompCyclesAtEndOfInlining, Is.InRange(before, after));
         }
     }
 
@@ -813,40 +809,37 @@ internal static unsafe class CompilerTimingTests
     [TestCase(60)]
     public static void CompilationRecordsIntegerMicroseconds(int elapsedSeconds)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var elapsedTicks = elapsedSeconds * Stopwatch.Frequency;
         var start = Stopwatch.GetTimestamp() - elapsedTicks;
-        InliningCycles(compiler) = start;
-        CompilationCycles(compiler) = -1;
+        compiler.InlineDiagnosticCompCyclesAtEndOfInlining = start;
+        compiler.InlineDiagnosticCompCycles = -1;
 
         RecordCompilation(compiler);
 
         var after = Stopwatch.GetTimestamp();
         var minimum = elapsedTicks * 1000000 / Stopwatch.Frequency;
         var maximum = (after - start) * 1000000 / Stopwatch.Frequency;
-        Assert.That(CompilationCycles(compiler), Is.InRange(minimum, maximum));
-        Assert.That(InliningCycles(compiler), Is.EqualTo(start));
+        Assert.That(compiler.InlineDiagnosticCompCycles, Is.InRange(minimum, maximum));
+        Assert.That(compiler.InlineDiagnosticCompCyclesAtEndOfInlining, Is.EqualTo(start));
     }
 
     [Test]
     public static void NonpositiveIntervalClearsPreviousElapsedTime()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        InliningCycles(compiler) = long.MaxValue;
-        CompilationCycles(compiler) = 91;
+        compiler.InlineDiagnosticCompCyclesAtEndOfInlining = long.MaxValue;
+        compiler.InlineDiagnosticCompCycles = 91;
 
         RecordCompilation(compiler);
 
-        Assert.That(CompilationCycles(compiler), Is.Zero);
-        Assert.That(InliningCycles(compiler), Is.EqualTo(long.MaxValue));
+        Assert.That(compiler.InlineDiagnosticCompCycles, Is.Zero);
+        Assert.That(compiler.InlineDiagnosticCompCyclesAtEndOfInlining, Is.EqualTo(long.MaxValue));
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compCyclesAtEndOfInlining")]
-    private static extern ref long InliningCycles(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compCycles")]
-    private static extern ref long CompilationCycles(Compiler compiler);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RecordStateAtEndOfInlining")]
     private static extern void RecordInlining(Compiler compiler);

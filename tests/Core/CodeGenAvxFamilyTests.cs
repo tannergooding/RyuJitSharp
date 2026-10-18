@@ -625,7 +625,7 @@ internal static class CodeGenAvxFamilyTests
                 AuxiliaryType = TYP_INT,
             };
             codeGen.InternalRegisters.Add(node, Mask(REG_X64_XMM5));
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
@@ -650,7 +650,7 @@ internal static class CodeGenAvxFamilyTests
                     entry == 2 ? TYP_INT : TYP_FLOAT, 16, Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), Vector(REG_X64_XMM3));
             node.RegNum = entry == 3 ? REG_X64_RAX : REG_X64_XMM1;
             var before = Descriptors(codeGen).Count;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => EmitEntry(codeGen, node, entry));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(before + 1));
             foreach (var operand in node.Operands)

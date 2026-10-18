@@ -134,18 +134,20 @@ public partial class Globals
 
     public const int CLFLG_MINOPT = CLFLG_TREETRANS;
 
-#if DEBUG
     public static bool VERBOSE
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
+            if (!Configuration.DEBUG)
+            {
+                return false;
+            }
+
             var compiler = JitTls.Compiler;
             return (compiler is not null) && compiler.verbose;
         }
     }
-#else
-    public const bool VERBOSE = false;
-#endif
 
     [Conditional("DEBUG")]
     public static void DISPNODE(GenTree? tree)
@@ -246,11 +248,11 @@ public partial class Globals
         return unchecked((nint)ptr);
     }
 
-#if DEBUG
     /// <summary>Helper for <see cref="dumpSingleInstr" /> to dump hex bytes of an IL stream, aligning up to a minimum alignment width.</summary>
     /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
     /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
     /// <param name="alignSize">Pad out to this many characters, if fewer than this were written.</param>
+    [Conditional("DEBUG")]
     public static unsafe void dumpILBytes(byte* codeAddr, int codeSize, int alignSize)
     {
         for (var offs = 0; offs < codeSize; offs++)
@@ -269,6 +271,7 @@ public partial class Globals
     /// <summary>Display a range of IL instructions from an IL instruction stream.</summary>
     /// <param name="codeAddr">Pointer to IL byte stream to display.</param>
     /// <param name="codeSize">Number of bytes of IL byte stream to display.</param>
+    [Conditional("DEBUG")]
     public static unsafe void dumpILRange(byte* codeAddr, int codeSize)
     {
         var offs = 0;
@@ -287,6 +290,11 @@ public partial class Globals
     /// <returns>Size of the displayed IL instruction in the instruction stream, in bytes. (Add this to 'offs' to get to the next instruction.)</returns>
     public static unsafe int dumpSingleInstr(byte* codeAddr, IL_OFFSET offs, string prefix = "")
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("IL instruction dumping is only available in Debug builds.");
+        }
+
         // assume 3 characters * (1 byte opcode + 4 bytes data + 1 prefix byte) for most things
         const int ALIGN_WIDTH = 3 * 6;
 
@@ -430,8 +438,6 @@ public partial class Globals
         return (IL_OFFSET)(opcodePtr - startOpcodePtr);
     }
 
-#endif
-
     internal static string formatFloat(double value, string format)
     {
         // Preserve CRT spellings independently of the finite-number precision.
@@ -500,45 +506,48 @@ public partial class Globals
     [Conditional("DEBUG")]
     public static void LABELEDDISPTREERANGE(string label, LIR.Range range, GenTree tree)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            logf($"{label}:\n");
-            compiler.gtDispTreeRange(range, tree);
-            logf("\n");
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                logf($"{label}:\n");
+                compiler.gtDispTreeRange(range, tree);
+                logf("\n");
+            }
         }
-#endif
     }
 
     [Conditional("DEBUG")]
     public static void DISPBLOCK(BasicBlock block)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            compiler.fgTableDispBasicBlock(block);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                compiler.fgTableDispBasicBlock(block);
+            }
         }
-#endif
     }
 
     [Conditional("DEBUG")]
     public static void JITDUMP(string message)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            logf(message);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.verbose)
+            {
+                logf(message);
+            }
         }
-#endif
     }
 
     /// <summary>find class profile data for an IL offset, and return the most likely classes</summary>

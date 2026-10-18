@@ -5,14 +5,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public void fgPrintEdgeWeights()
     {
         foreach (var destination in Blocks)
@@ -36,6 +36,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckNodeLinks(BasicBlock block, Statement stmt)
     {
         assert(fgNodeThreading is not NodeThreading.None);
@@ -111,9 +112,8 @@ public partial class Compiler
         }
     }
 
-    private static int bbTraverseLabel = 1;
-
     // Check that bbNum, bbRefs, and bbPreds are consistent with the block list.
+    [Conditional("DEBUG")]
     public unsafe void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true)
     {
         if (verbose)
@@ -141,7 +141,7 @@ public partial class Compiler
             assert(bbIsFuncletBeg(fgFirstFuncletBB));
         }
 
-        var curTraversalStamp = Interlocked.Increment(ref bbTraverseLabel);
+        var curTraversalStamp = NextBlockTraversalLabel;
 
         foreach (var block in Blocks)
         {
@@ -333,6 +333,7 @@ public partial class Compiler
     }
 
     // Ensure that the forward and reverse block links and switch successor tables agree.
+    [Conditional("DEBUG")]
     public void fgDebugCheckBlockLinks()
     {
         assert(fgFirstBB is not null);
@@ -688,5 +689,4 @@ public partial class Compiler
             return found;
         }
     }
-#endif
 }

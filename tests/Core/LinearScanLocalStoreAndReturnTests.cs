@@ -18,9 +18,7 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanLocalStoreAndReturnTests
 {
-#if TARGET_X86
-    [TestCase(false)]
-    [TestCase(true)]
+    [TestCaseSource(nameof(X86CandidateCases))]
     public static void ByteLocalStoreConstrainsSourceAndCandidateDefinition(bool candidate)
     {
         WithAllocator((compiler, allocator) => {
@@ -51,6 +49,8 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
     [Test]
     public static void ContainedLongLocalStoreConsumesBothHalves()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             SetLocals(compiler, allocator, new LclVarDsc { Type = TYP_LONG });
             var low = compiler.gtNewIconNode(TYP_INT, 17);
@@ -71,6 +71,8 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
     [Test]
     public static void MultiRegisterLocalStoreRestrictsItsByteField()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaEnregMultiRegVars = true;
             var layout = new ClassLayout(8);
@@ -99,7 +101,6 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
                 Is.EqualTo(AvailableIntRegs(allocator)));
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -160,8 +161,7 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    [Test]
+    [TestCaseSource(nameof(PartialSimdCalleeSaveCases))]
     public static void WriteThroughVectorStoreDefinesAnOptionalRegisterAndClearsPartialSpill()
     {
         WithAllocator((compiler, allocator) => {
@@ -183,7 +183,6 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             Assert.That(destination.isPartiallySpilled, Is.False);
         });
     }
-#endif
 
     [Test]
     public static void NonCandidateContainedConstantDoesNotDefineARegister()
@@ -373,10 +372,11 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
         });
     }
 
-#if TARGET_X86
     [Test]
     public static void ContainedLongReturnConsumesBothAbiRegisters()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             InitializeReturnDescriptor(compiler, TYP_LONG);
             var low = compiler.gtNewIconNode(TYP_INT, 17);
@@ -393,7 +393,6 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             Assert.That(highDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EDX));
         });
     }
-#endif
 
     [Test]
     public static void SwiftErrorReturnUsesItsSecondOperandAsTheReturnValue()
@@ -545,6 +544,23 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
         descriptor.InitializeReturnType(compiler, type, null, CorInfoCallConvExtension.Managed);
         compiler.compRetTypeDesc = descriptor;
         compiler.info.compCallConv = CorInfoCallConvExtension.Managed;
+    }
+
+    private static IEnumerable<TestCaseData> X86CandidateCases()
+    {
+        if (Configuration.TARGET_X86)
+        {
+            yield return new TestCaseData(false);
+            yield return new TestCaseData(true);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> PartialSimdCalleeSaveCases()
+    {
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            yield return new TestCaseData();
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildStoreLoc")]

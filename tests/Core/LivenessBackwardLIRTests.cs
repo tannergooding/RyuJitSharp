@@ -621,10 +621,11 @@ internal static unsafe class LivenessBackwardLIRTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DeadNodeDiagnosticsUseNativeTopOnlyTreeFormatting()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(0, compiler => {
             var node = compiler.gtNewIconNode(TYP_INT, 42);
             node.IsUnusedValue = true;
@@ -659,7 +660,6 @@ internal static unsafe class LivenessBackwardLIRTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]

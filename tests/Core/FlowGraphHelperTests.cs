@@ -54,11 +54,12 @@ internal static unsafe class FlowGraphHelperTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void MorphInitializationPrependsGcChecksInNativeOrder(bool initializeClass)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithClassInitializationCompiler((compiler, ee) => {
             PrepareMorphInitialization(compiler);
             compiler.lvaTable = [
@@ -100,6 +101,8 @@ internal static unsafe class FlowGraphHelperTests
     [Test]
     public static void MorphInitializationKeepsReturnStackCheckLocalAlive()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithClassInitializationCompiler((compiler, ee) => {
             PrepareMorphInitialization(compiler);
             compiler.compStackCheckOnRet = true;
@@ -112,7 +115,6 @@ internal static unsafe class FlowGraphHelperTests
             Assert.That(local.DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.ReturnSpCheck));
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]

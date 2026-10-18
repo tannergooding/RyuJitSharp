@@ -390,7 +390,7 @@ internal static unsafe class EmitterMemoryOperandTests
             if (TestConfiguration.IsDebug)
             {
                 TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
-                VarRefOffset(codeGen.Emitter) = 0x1234;
+                codeGen.Emitter.emitVarRefOffs = 0x1234;
             }
             action(compiler, codeGen.Emitter);
         });
@@ -411,9 +411,6 @@ internal static unsafe class EmitterMemoryOperandTests
             _ = id;
         }
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
-    private static extern ref int VarRefOffset(Emitter emitter);
 
     private static Emitter.instrDesc Last(Emitter emitter)
     {

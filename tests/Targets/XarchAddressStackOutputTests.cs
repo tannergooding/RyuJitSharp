@@ -33,7 +33,7 @@ internal static unsafe class XarchAddressStackOutputTests
             var buffer = stackalloc byte[32];
             if (TestConfiguration.IsDebug)
             {
-                EmitIssuing(emitter) = true;
+                TestConfiguration.EnableEmitterIssuing(emitter);
             }
             var end = emitter.emitOutputSV(buffer, id, (ulong)insCodeRM(INS_mov), null);
 
@@ -54,7 +54,7 @@ internal static unsafe class XarchAddressStackOutputTests
             var buffer = stackalloc byte[32];
             if (TestConfiguration.IsDebug)
             {
-                EmitIssuing(emitter) = true;
+                TestConfiguration.EnableEmitterIssuing(emitter);
             }
             var end = emitter.emitOutputAM(buffer, id, (ulong)insCodeRM(INS_mov), null);
 
@@ -67,6 +67,4 @@ internal static unsafe class XarchAddressStackOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
-    private static extern ref bool EmitIssuing(Emitter emitter);
 }

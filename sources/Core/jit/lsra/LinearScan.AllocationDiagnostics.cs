@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
@@ -37,7 +38,6 @@ internal enum LsraStat
 
 public sealed partial class LinearScan
 {
-#if DEBUG
     private enum LsraDumpEvent
     {
         DEFUSE_CONFLICT,
@@ -126,25 +126,7 @@ public sealed partial class LinearScan
         }
     }
 
-    private static int s_allocationDumpEmptyColumnWidth;
-
-    private bool _allocationDumpFormatInitialized;
-    private regMaskTP _lastAllocationDumpRegisters;
-    private RefPosition? _lastAllocationDumpRefPosition;
-    private int _allocationDumpLastUsedRegNumIndex;
-    private int _allocationDumpRegColumnWidth;
-    private int _allocationDumpNodeLocationWidth;
-    private int _allocationDumpRefPositionWidth;
-    private int _allocationDumpShortRefPositionWidth;
-    private int _allocationDumpTableIndent;
-    private int _allocationDumpBbNumWidth;
-    private int _allocationDumpPredBbNumWidth;
-    private int _allocationDumpRowsSinceTitle;
-    private string _allocationDumpColumnSeparator = "";
-    private string _allocationDumpLine = "";
-    private string _allocationDumpMiddleBox = "";
-    private string _allocationDumpRightBox = "";
-
+    [Conditional("DEBUG")]
     private void dumpLsraAllocationEvent(
         LsraDumpEvent dumpEvent,
         Interval? interval,
@@ -156,6 +138,7 @@ public sealed partial class LinearScan
         dumpLsraAllocationEvent(dumpEvent, interval, activeRefPosition, REG_NA, currentBlock, registerScore, registerMask);
     }
 
+    [Conditional("DEBUG")]
     private void dumpLsraAllocationEvent(
         LsraDumpEvent dumpEvent,
         Interval? interval,
@@ -444,6 +427,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void initializeAllocationDumpFormat()
     {
         if (_allocationDumpFormatInitialized)
@@ -507,6 +491,7 @@ public sealed partial class LinearScan
         dumpAllocationIndentedText("");
     }
 
+    [Conditional("DEBUG")]
     private void dumpRegRecordHeader()
     {
         jitprintf(
@@ -538,10 +523,10 @@ public sealed partial class LinearScan
         _allocationDumpPredBbNumWidth = _allocationDumpTableIndent -
             (_allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1) -
             _allocationDumpBbNumWidth - 9 - 9;
-        _allocationDumpLine = _compiler.ShouldDumpAsciiTrees ? "-" : "─";
-        _allocationDumpMiddleBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┼";
-        _allocationDumpRightBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┤";
-        _allocationDumpColumnSeparator = _compiler.ShouldDumpAsciiTrees ? "|" : "│";
+        _allocationDumpLine = _compiler.asciiTrees ? "-" : "─";
+        _allocationDumpMiddleBox = _compiler.asciiTrees ? "+" : "┼";
+        _allocationDumpRightBox = _compiler.asciiTrees ? "+" : "┤";
+        _allocationDumpColumnSeparator = _compiler.asciiTrees ? "|" : "│";
         _lastAllocationDumpRegisters = RBM_NONE;
         dumpAllocationRegisterTitleIfNeeded();
     }
@@ -558,6 +543,7 @@ public sealed partial class LinearScan
         return width;
     }
 
+    [Conditional("DEBUG")]
     private void dumpAllocationRegisterTitleIfNeeded()
     {
         if ((_lastAllocationDumpRegisters == _allocationDumpRegisters) && (_allocationDumpRowsSinceTitle <= 50))
@@ -581,6 +567,7 @@ public sealed partial class LinearScan
         _lastAllocationDumpRegisters = _allocationDumpRegisters;
     }
 
+    [Conditional("DEBUG")]
     private void dumpAllocationRegisterTitle()
     {
         dumpAllocationRegisterTitleLines();
@@ -608,6 +595,7 @@ public sealed partial class LinearScan
     private static string padOrTruncate(string text, int width) =>
         text.Length > width ? text[..width] : text.PadRight(width);
 
+    [Conditional("DEBUG")]
     private void dumpAllocationRegisterTitleLines()
     {
         for (var index = 0; index < _allocationDumpTableIndent; index++)
@@ -630,6 +618,7 @@ public sealed partial class LinearScan
         jitprintf(_allocationDumpRightBox + "\n");
     }
 
+    [Conditional("DEBUG")]
     private void dumpAllocationRegisterRecords()
     {
         for (var registerIndex = 0; registerIndex <= _allocationDumpLastUsedRegNumIndex; registerIndex++)
@@ -703,11 +692,13 @@ public sealed partial class LinearScan
         return prefixAndNumber.PadRight(_allocationDumpRegColumnWidth - 1);
     }
 
+    [Conditional("DEBUG")]
     private void dumpAllocationIndentedText(string text)
     {
         jitprintf(text.PadRight(_allocationDumpTableIndent));
     }
 
+    [Conditional("DEBUG")]
     private void dumpAllocationLocation(LsraLocation location, uint referenceNumber)
     {
         jitprintf(
@@ -717,6 +708,7 @@ public sealed partial class LinearScan
             " ");
     }
 
+    [Conditional("DEBUG")]
     private void dumpAllocationNewBlock(BasicBlock? block, LsraLocation location, RefPosition reference)
     {
         if (!VERBOSE)
@@ -758,6 +750,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [Conditional("DEBUG")]
     private void dumpRefPositionShort(RefPosition? refPosition, BasicBlock? block = null)
     {
         if ((refPosition is null) || ReferenceEquals(refPosition, _lastAllocationDumpRefPosition))
@@ -821,8 +814,6 @@ public sealed partial class LinearScan
         RefType.RefTypeKillGCRefs => "KlGC",
         _ => null,
     };
-#endif
-
     private static string getStatName(uint stat)
     {
         assert(stat != (uint)LsraStat.COUNT);

@@ -31,7 +31,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var allocator = CreateAllocator(compiler);
             _ = NewInterval(allocator, TYP_INT);
             _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
-            MaxNodeLocation(allocator) = 10;
+            SetMaxNodeLocation(allocator, 10);
             TestConfiguration.EnableVerbose(compiler);
             var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
@@ -275,8 +275,11 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__allocationDumpRegisters")]
     private static extern void SetAllocationDumpRegisters(LinearScan allocator, regMaskTP value);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_maxNodeLocation")]
-    private static extern ref uint MaxNodeLocation(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__maxNodeLocation")]
+    private static extern uint MaxNodeLocation(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__maxNodeLocation")]
+    private static extern void SetMaxNodeLocation(LinearScan allocator, uint value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
     private static extern ref uint[]?[]? BlockStats(LinearScan allocator);

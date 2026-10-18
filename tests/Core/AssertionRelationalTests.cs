@@ -1,14 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-#if DEBUG
 using System.IO;
-#endif
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -341,7 +337,6 @@ internal static unsafe class AssertionRelationalTests
         });
     }
 
-#if DEBUG
     [TestCase(TYP_FLOAT, true)]
     [TestCase(TYP_FLOAT, false)]
     [TestCase(TYP_DOUBLE, true)]
@@ -349,6 +344,8 @@ internal static unsafe class AssertionRelationalTests
     public static void VerboseFloatingAssertionReportsDirectFold(
         var_types type, bool positive)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler((compiler, store) =>
         {
             compiler.lvaTable = [new LclVarDsc { Type = type }, new LclVarDsc { Type = type }];
@@ -389,14 +386,13 @@ internal static unsafe class AssertionRelationalTests
             finally
             {
                 Globals.s_jitstdout = originalStream;
-                compiler.verbose = false;
+                TestConfiguration.SetVerbose(compiler, false);
             }
 
             Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
                 Does.Contain($"Found matching assertion #{index:D2} for tree {relop.TreeId:D6}.. Folded into:"));
         });
     }
-#endif
 
     [TestCase(TYP_FLOAT, 0x7FC01234L)]
     [TestCase(TYP_FLOAT, 0xFFC05678L)]

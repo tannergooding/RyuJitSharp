@@ -121,14 +121,15 @@ public sealed partial class LinearScan
             if (!_allocationPassComplete)
             {
                 targetReg = leaveOnStack ? REG_STK : getVarReg(predecessorMap, trackedIndex);
-#if DEBUG
-                var rotated = rotateBlockStartLocation(interval, targetReg, ~liveRegs | inactiveRegs);
-                if (rotated != targetReg)
+                if (Configuration.DEBUG)
                 {
-                    targetReg = rotated;
-                    setIntervalAsSplitMinimal(interval);
+                    var rotated = rotateBlockStartLocation(interval, targetReg, ~liveRegs | inactiveRegs);
+                    if (rotated != targetReg)
+                    {
+                        targetReg = rotated;
+                        setIntervalAsSplitMinimal(interval);
+                    }
                 }
-#endif
                 setVarReg(inMap, trackedIndex, targetReg);
             }
             else

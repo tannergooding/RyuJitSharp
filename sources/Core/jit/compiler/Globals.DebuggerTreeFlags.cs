@@ -3,15 +3,22 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if DEBUG
     private static uint s_cTreeFlagsSequence;
 
+    [Conditional("DEBUG")]
     public static void cTreeFlags(Compiler comp, GenTree tree)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         jitprintf($"===================================================================== *TreeFlags {unchecked(s_cTreeFlagsSequence++)}\n");
 
         if (tree.Flags is not 0)
@@ -438,5 +445,4 @@ public static partial class Globals
             }
         }
     }
-#endif
 }

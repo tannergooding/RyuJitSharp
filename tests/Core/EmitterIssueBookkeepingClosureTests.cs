@@ -266,10 +266,7 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
 
         public static void SetIssuing(Emitter emitter)
         {
-            EmitIssuing(emitter) = true;
+            TestConfiguration.EnableEmitterIssuing(emitter);
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
-        private static extern ref bool EmitIssuing(Emitter emitter);
     }
 }

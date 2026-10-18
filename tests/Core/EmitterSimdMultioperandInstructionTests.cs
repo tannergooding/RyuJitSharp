@@ -178,7 +178,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
                 emitter.emitIns_R_AR_R(INS_vgatherdps, EA_32BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_RAX, REG_X64_XMM3, 4, 0));
@@ -261,7 +261,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
                 emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_32BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_RAX, 0));
@@ -627,7 +627,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {

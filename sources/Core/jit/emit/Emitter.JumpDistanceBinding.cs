@@ -37,15 +37,17 @@ public partial class Emitter
             smallLabelSize = 4;
             smallConstantSize = 4;
         }
-        var interestingJumpNumber = -1;
-#if DEBUG
-        var compiler = _compiler ?? throw new FatalJitException("Jump distance binding requires an active compiler.");
-        if (compiler.verbose)
+        int interestingJumpNumber;
+        if (Configuration.DEBUG)
         {
-            jitprintf("*************** In emitJumpDistBind()\n");
-            emitDispJumpList();
+            interestingJumpNumber = -1;
+            var compiler = _compiler ?? throw new FatalJitException("Jump distance binding requires an active compiler.");
+            if (compiler.verbose)
+            {
+                jitprintf("*************** In emitJumpDistBind()\n");
+                emitDispJumpList();
+            }
         }
-#endif
         for (var fixedJump = emitFixedSizeJumpList; fixedJump is not null; fixedJump = fixedJump.idjNext)
         {
             if (!fixedJump.idIsBound())
@@ -54,12 +56,21 @@ public partial class Emitter
             }
         }
 
-        var iteration = 1;
+        int iteration;
+        if (Configuration.DEBUG)
+        {
+            iteration = 1;
+        }
         while (true)
         {
             emitCheckIGList();
-            insGroup? lastIG = null;
-            instrDescJmp? lastJump = null;
+            insGroup? lastIG;
+            instrDescJmp? lastJump;
+            if (Configuration.DEBUG)
+            {
+                lastIG = null;
+                lastJump = null;
+            }
             insGroup? previousJumpIG = null;
             uint groupAdjustment = 0;
             uint localAdjustment = 0;
@@ -70,7 +81,7 @@ public partial class Emitter
             {
                 var jumpIG = jump.idjIG ?? throw new FatalJitException("A saved jump requires an instruction group.");
                 var size = jump.idCodeSize();
-                instrDescDebugInfo? debugInfo = null;
+                instrDescDebugInfo? debugInfo;
                 if (Configuration.DEBUG)
                 {
                     debugInfo = jump.idDebugOnlyInfo();

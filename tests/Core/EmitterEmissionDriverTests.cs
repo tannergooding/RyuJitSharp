@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -25,13 +24,20 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class EmitterEmissionDriverTests
 {
-#if DEBUG
+    [SetUp]
+    public static void RequireApplicableConfiguration()
+    {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+    }
+
     [Test]
     public static void DspCodePrintsWhileRecordingWithoutChangingEmittedBytes()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test exercises Debug-only diagnostics.");
+
         WithDriver((compiler, _, emitter, allocation) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var recording = Capture(() => emitter.emitIns(INS_ret));
             Assert.That(recording, Does.Contain("ret"));
             FinishRecording(compiler, emitter);
@@ -43,14 +49,13 @@ internal static unsafe class EmitterEmissionDriverTests
             Assert.That(compiler.Metrics.ActualCodeBytes, Is.EqualTo(2));
         });
     }
-#endif
 
     [TestCase(true, false)]
-#if DEBUG
     [TestCase(false, true)]
-#endif
     public static void DiagnosticIssuingRetainsFastLoopBytesAndMetrics(bool disassembly, bool verbose)
     {
+        Assume.That(!verbose || TestConfiguration.IsDebug, "Verbose diagnostics require a Debug build.");
+
         var (fastBytes, fastSize, fastAllocated, fastActual, fastPerfScore, _) =
             RunSmallMethod(disassembly: false, verbose: false);
         var (diagnosticBytes, diagnosticSize, diagnosticAllocated, diagnosticActual, diagnosticPerfScore, diagnostics) =
@@ -90,9 +95,11 @@ internal static unsafe class EmitterEmissionDriverTests
             Assert.That(result.Actual, Is.EqualTo(2u));
             Assert.That(result.Prolog, Is.EqualTo(1u));
             Assert.That(result.Epilog, Is.Zero);
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(result.Instructions, Is.EqualTo(2u));
-#endif
+            }
+
             Assert.That((nuint)result.Hot, Is.EqualTo((nuint)allocation->HotExec));
             Assert.That((nuint)result.HotRW, Is.EqualTo((nuint)allocation->HotRW));
             Assert.That((nuint)result.Cold, Is.EqualTo((nuint)0));
@@ -161,9 +168,11 @@ internal static unsafe class EmitterEmissionDriverTests
             Assert.That(new ReadOnlySpan<byte>(allocation->HotRW, 7).ToArray(),
                 Is.EqualTo(Convert.FromHexString("9075030F1F00C3")));
             Assert.That(allocation->HotExec[1], Is.EqualTo(0xA5));
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(result.Instructions, Is.EqualTo(4u));
-#endif
+            }
+
             Assert.That(compiler.Metrics.ActualCodeBytes, Is.EqualTo(7));
         });
     }
@@ -347,9 +356,8 @@ internal static unsafe class EmitterEmissionDriverTests
             emitter.emitIns(INS_ret);
             FinishRecording(compiler, emitter);
             compiler.opts.disAsm = disassembly;
-#if DEBUG
-            compiler.verbose = verbose;
-#endif
+            TestConfiguration.SetVerbose(compiler, verbose);
+
             EndResult end = default;
             var diagnostics = Capture(() => end = End(compiler, emitter));
             Assert.That(allocation->Collections, Is.EqualTo(1));
@@ -392,11 +400,7 @@ internal static unsafe class EmitterEmissionDriverTests
         var actual = emitter.emitEndCodeGen(compiler, contiguousPointerLocals, fullyInterruptible, fullPtrMap, exceptions,
             &prolog, &epilog, &hot, &hotRW, &cold, &coldRW,
             TestConfiguration.IsDebug ? &instructions : null);
-        return new EndResult(actual, prolog, epilog, hot, hotRW, cold, coldRW
-#if DEBUG
-            , instructions
-#endif
-            );
+        return new EndResult(actual, prolog, epilog, hot, hotRW, cold, coldRW, instructions);
     }
 
     private static void WithDriver(DriverAction action)
@@ -562,16 +566,10 @@ internal static unsafe class EmitterEmissionDriverTests
         public readonly void* HotRW;
         public readonly void* Cold;
         public readonly void* ColdRW;
-#if DEBUG
         public readonly uint Instructions;
-#endif
 
-        public EndResult(uint actual, uint prolog, uint epilog,
-            void* hot, void* hotRW, void* cold, void* coldRW
-#if DEBUG
-            , uint instructions
-#endif
-            )
+        public EndResult(uint actual, uint prolog, uint epilog, void* hot, void* hotRW, void* cold, void* coldRW,
+            uint instructions)
         {
             Actual = actual;
             Prolog = prolog;
@@ -580,9 +578,7 @@ internal static unsafe class EmitterEmissionDriverTests
             HotRW = hotRW;
             Cold = cold;
             ColdRW = coldRW;
-#if DEBUG
             Instructions = instructions;
-#endif
         }
     }
 
@@ -628,4 +624,3 @@ internal static unsafe class EmitterEmissionDriverTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
     private static extern ref GCInfo.regPtrDsc? RegisterPointerList(ref GCInfo info);
 }
-#endif

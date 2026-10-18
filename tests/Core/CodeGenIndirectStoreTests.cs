@@ -394,7 +394,7 @@ internal static unsafe class CodeGenIndirectStoreTests
                     new GenTreeVecCon(TYP_SIMD32) { RegNum = REG_XMM1 }, immediate) { IsContained = true },
             };
             var store = new GenTreeStoreInd(type, address, data);
-            DspCode(ref compiler.opts) = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = TestConfiguration.CaptureDebugOutput(() => codeGen.genCodeForStoreInd(store));
             Assert.That(store.Addr, Is.Not.Null);
@@ -415,9 +415,6 @@ internal static unsafe class CodeGenIndirectStoreTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
     private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "dspCode")]
-    private static extern ref bool DspCode(ref Compiler.Options options);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,

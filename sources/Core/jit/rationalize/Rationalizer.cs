@@ -30,9 +30,7 @@ public sealed partial class Rationalizer : Phase
 
     protected override PhaseStatus DoPhase()
     {
-#if DEBUG
         SanityCheck();
-#endif
 
         var compiler = CompilerInstance;
         var mapParameters = compiler.opts.OptimizationEnabled && !compiler.opts.IsOSR && (compiler.info.compArgsCount > 0);
@@ -690,8 +688,8 @@ public sealed partial class Rationalizer : Phase
         return Compiler.WALK_CONTINUE;
     }
 
-#if DEBUG
     // general purpose sanity checking of de facto standard GenTree
+    [System.Diagnostics.Conditional("DEBUG")]
     public void SanityCheck()
     {
         foreach (var block in CompilerInstance.Blocks)
@@ -704,16 +702,17 @@ public sealed partial class Rationalizer : Phase
     }
 
     // sanity checking of rationalized IR
+    [System.Diagnostics.Conditional("DEBUG")]
     public void SanityCheckRational()
     {
         SanityCheck();
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void ValidateStatement(Statement stmt, BasicBlock block)
     {
         var compiler = JitTls.Compiler;
         assert(compiler is not null);
         compiler.fgDebugCheckNodeLinks(block, stmt);
     }
-#endif
 }

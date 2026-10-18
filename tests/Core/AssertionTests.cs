@@ -2283,6 +2283,58 @@ internal static unsafe class AssertionTests
         }, local: false);
     }
 
+    [Test]
+    public static void AssertionOperandCopiesRetainLiveCompilerModeChecks()
+    {
+        WithCompiler(compiler => {
+            LocalAssertionMode(compiler) = false;
+            var global = AssertionDsc.CreateNoThrowArrBnd(compiler, 101, 202);
+            var globalOp1 = global.Op1;
+            var globalOp2 = global.Op2;
+            var reversed = global.Reverse();
+
+            LocalAssertionMode(compiler) = true;
+            var localCopy = AssertionDsc.CreateLclvarCopy(compiler, 0, 1, true);
+            var localSubrange = AssertionDsc.CreateSubrange(compiler, 0, new(Zero, One));
+            var localOp1 = localCopy.Op1;
+            var localOp2 = localCopy.Op2;
+            var rangeOp2 = localSubrange.Op2;
+
+            if (TestConfiguration.IsDebug)
+            {
+                var globalAssertions = TestConfiguration.CaptureDebugAssertions(() => {
+                    _ = globalOp1.VN;
+                    _ = globalOp2.VN;
+                    _ = globalOp2.Cns;
+                    _ = globalOp2.IsVNNeverNegative;
+                    _ = reversed.Op1.VN;
+                }).Assertions;
+                Assert.That(globalAssertions, Has.Length.EqualTo(5));
+                Assert.That(globalAssertions, Has.All.EqualTo("!_compiler.optLocalAssertionProp"));
+
+                LocalAssertionMode(compiler) = false;
+                var localAssertions = TestConfiguration.CaptureDebugAssertions(() => {
+                    _ = localOp1.LclNum;
+                    _ = localOp2.LclNum;
+                    _ = rangeOp2.Range;
+                }).Assertions;
+                Assert.That(localAssertions, Has.Length.EqualTo(3));
+                Assert.That(localAssertions, Has.All.EqualTo("_compiler.optLocalAssertionProp"));
+            }
+            else
+            {
+                Assert.That(globalOp1.VN, Is.EqualTo(101));
+                Assert.That(globalOp2.VN, Is.EqualTo(202));
+                Assert.That(globalOp2.Cns, Is.Zero);
+                Assert.That(globalOp2.IsVNNeverNegative, Is.True);
+                Assert.That(reversed.Op1.VN, Is.EqualTo(101));
+                Assert.That(localOp1.LclNum, Is.Zero);
+                Assert.That(localOp2.LclNum, Is.EqualTo(1));
+                Assert.That(rangeOp2.Range, Is.EqualTo(new IntegralRange(Zero, One)));
+            }
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void AssertionDumpsMatchNativeFormattingAndIndexOrder()
@@ -2324,6 +2376,9 @@ internal static unsafe class AssertionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMaxUncheckedOffsetForNullObject")]
     private static extern ref int MaxUncheckedOffset(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optLocalAssertionProp")]
+    private static extern ref bool LocalAssertionMode(Compiler compiler);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optAssertionPropagated")]
     private static extern ref bool AssertionPropagated(Compiler compiler);
