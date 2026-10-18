@@ -10,9 +10,9 @@ namespace RyuJitSharp;
 
 public sealed partial class RefPosition
 {
-#if DEBUG
     private static string? getRefTypeName(RefType refType) => Enum.GetName(refType);
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void dump(LinearScan linearScan)
     {
         jitprintf($"<RefPosition #{rpNum,-3} @{nodeLocation,-3}");
@@ -109,5 +109,4 @@ public sealed partial class RefPosition
 
         jitprintf(">\n");
     }
-#endif
 }

@@ -82,11 +82,12 @@ public partial class Emitter
         emitThisGCrefVset = false;
     }
 
-    private unsafe void emitGCvarLiveUpd(int offs, int varNum, GCInfo.GCtype gcType, byte* addr
-#if DEBUG
-        , uint actualVarNum
-#endif
-        )
+    private unsafe void emitGCvarLiveUpd(int offs, int varNum, GCInfo.GCtype gcType, byte* addr)
+    {
+        emitGCvarLiveUpd(offs, varNum, gcType, addr, 0);
+    }
+
+    private unsafe void emitGCvarLiveUpd(int offs, int varNum, GCInfo.GCtype gcType, byte* addr, uint actualVarNum)
     {
         assert(_compiler is not null);
         assert((offs % sizeof(int)) == 0);
@@ -134,23 +135,24 @@ public partial class Emitter
                 if (emitGCrFrameLiveTab[disp] is null)
                 {
                     emitGCvarLiveSet(offs, gcType, addr, disp);
-#if DEBUG
-                    if ((_compiler.verbose || _compiler.opts.disasmWithGC) && (actualVarNum < _compiler.lvaCount)
-                        && _compiler.lvaGetDesc((int)actualVarNum).lvTracked)
+                    if (Configuration.DEBUG &&
+                        (_compiler.verbose || _compiler.opts.disasmWithGC) &&
+                        (actualVarNum < _compiler.lvaCount) &&
+                        _compiler.lvaGetDesc((int)actualVarNum).lvTracked)
                     {
                         VarSetOps.AddElemD(_compiler, debugThisGCrefVars, _compiler.lvaGetDesc((int)actualVarNum)._varIndex);
                     }
-#endif
                 }
             }
         }
     }
 
-    private unsafe void emitGCvarDeadUpd(int offs, byte* addr
-#if DEBUG
-        , uint varNum
-#endif
-        )
+    private unsafe void emitGCvarDeadUpd(int offs, byte* addr)
+    {
+        emitGCvarDeadUpd(offs, addr, 0);
+    }
+
+    private unsafe void emitGCvarDeadUpd(int offs, byte* addr, uint varNum)
     {
         if (Configuration.DEBUG)
         {
@@ -167,13 +169,13 @@ public partial class Emitter
             {
                 assert(!_compiler.lvaKeepAliveAndReportThis() || (offs != emitSyncThisObjOffs));
                 emitGCvarDeadSet(offs, addr, disp);
-#if DEBUG
-                if ((_compiler.verbose || _compiler.opts.disasmWithGC) && (varNum < _compiler.lvaCount)
-                    && _compiler.lvaGetDesc((int)varNum).lvTracked)
+                if (Configuration.DEBUG &&
+                    (_compiler.verbose || _compiler.opts.disasmWithGC) &&
+                    (varNum < _compiler.lvaCount) &&
+                    _compiler.lvaGetDesc((int)varNum).lvTracked)
                 {
                     VarSetOps.RemoveElemD(_compiler, debugThisGCrefVars, _compiler.lvaGetDesc((int)varNum)._varIndex);
                 }
-#endif
             }
         }
     }

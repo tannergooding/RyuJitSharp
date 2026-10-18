@@ -29,9 +29,6 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
     private static extern ref bool EmitIssuing(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "minRegCandidateCount")]
-    private static extern ref uint MinRegCandidateCount(RefPosition reference);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgNormalizeEHDone")]
     private static extern ref bool EhNormalizationDone(Compiler compiler);
 
@@ -193,7 +190,7 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            MinRegCandidateCount(reference) = count;
+            reference.minRegCandidateCount = count;
         }
     }
 

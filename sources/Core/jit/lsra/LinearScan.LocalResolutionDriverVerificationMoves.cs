@@ -58,7 +58,6 @@ public sealed partial class LinearScan
                 destinationReg = REG_STK;
             }
         }
-
         var interval = getIntervalForLocalVarNode(localNode);
         assert(interval.physReg == sourceReg ||
             (sourceReg == REG_STK && interval.physReg == REG_NA));

@@ -19,7 +19,7 @@ public partial class Emitter
 
         if (emitInsIsArmLoadOrStore(ins))
         {
-            if (emitInsIsLoad(ins))
+            if (emitInsIsLoadArm64(ins))
             {
                 if (emitInsIsStore(ins))
                 {

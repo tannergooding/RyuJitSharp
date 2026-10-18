@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
@@ -27,16 +27,16 @@ internal static class IRVerificationTests
     public static void VoidOperatorsRejectOtherTypes(genTreeOps oper)
     {
         SsaLivenessTests.WithCompiler(0, compiler =>
-            Assert.That(() => compiler.fgDebugCheckType(new GenTree(oper, TYP_INT)), Throws.Exception));
+            Assert.That(() => CheckType(compiler, new GenTree(oper, TYP_INT)), Throws.Exception));
     }
 
     [Test]
     public static void UnsupportedSmallTypeAndUnsignedTypeFail()
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
-            Assert.That(() => compiler.fgDebugCheckType(new GenTree(GT_NO_OP, TYP_BYTE)), Throws.Exception);
-            Assert.That(() => compiler.fgDebugCheckType(new GenTree(GT_NO_OP, TYP_UINT)), Throws.Exception);
-            Assert.That(() => compiler.fgDebugCheckType(new GenTreeLclVar(TYP_BYTE, 0)), Throws.Nothing);
+            Assert.That(() => CheckType(compiler, new GenTree(GT_NO_OP, TYP_BYTE)), Throws.Exception);
+            Assert.That(() => CheckType(compiler, new GenTree(GT_NO_OP, TYP_UINT)), Throws.Exception);
+            Assert.That(() => CheckType(compiler, new GenTreeLclVar(TYP_BYTE, 0)), Throws.Nothing);
         });
     }
 
@@ -50,7 +50,7 @@ internal static class IRVerificationTests
             tree.Flags &= ~GTF_ORDER_SIDEEFF;
 
             var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(tree, block), Throws.Exception));
+                Assert.That(() => CheckFlagsAndTypes(compiler, tree, block), Throws.Exception));
 
             Assert.That(output, Does.Contain($"Missing flags on tree [{tree.TreeId:D6}]: "));
             Assert.That(compiler.Metrics.IRExtraFlags, Is.Zero);
@@ -69,22 +69,22 @@ internal static class IRVerificationTests
 
             if (Configuration.TARGET_WASM)
             {
-                Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Exception);
+                Assert.That(() => CheckFlagsAndTypes(compiler, addition, block), Throws.Exception);
             }
             else
             {
-                Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Nothing);
+                Assert.That(() => CheckFlagsAndTypes(compiler, addition, block), Throws.Nothing);
             }
 
             var comma = new GenTreeOp(GT_COMMA, TYP_INT,
                 compiler.gtNewIconNode(TYP_INT, 1),
                 compiler.gtNewIconNode(TYP_INT, 2));
             comma.Flags |= GTF_REVERSE_OPS;
-            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(comma, block), Throws.Exception);
+            Assert.That(() => CheckFlagsAndTypes(compiler, comma, block), Throws.Exception);
 
             var negation = new GenTreeUnOp(GT_NEG, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1));
             negation.Flags |= GTF_REVERSE_OPS;
-            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(negation, block), Throws.Exception);
+            Assert.That(() => CheckFlagsAndTypes(compiler, negation, block), Throws.Exception);
         });
     }
 
@@ -160,13 +160,13 @@ internal static class IRVerificationTests
             tree.Flags |= GTF_ASG | GTF_CALL;
             compiler.activePhaseChecks = PhaseChecks.CHECK_IR | PhaseChecks.CHECK_IR_RELAXED;
 
-            Assert.That(() => compiler.fgDebugCheckFlagsHelper(tree, tree.Flags & GTF_ALL_EFFECT, GTF_EMPTY),
+            Assert.That(() => CheckFlags(compiler, tree, tree.Flags & GTF_ALL_EFFECT, GTF_EMPTY),
                 Throws.Nothing);
             Assert.That(compiler.Metrics.IRExtraFlags, Is.EqualTo(2));
 
             compiler.activePhaseChecks = PhaseChecks.CHECK_IR;
             var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckFlagsHelper(tree, tree.Flags & GTF_ALL_EFFECT, GTF_EMPTY),
+                Assert.That(() => CheckFlags(compiler, tree, tree.Flags & GTF_ALL_EFFECT, GTF_EMPTY),
                     Throws.Exception));
 
             Assert.That(output, Does.Contain($"Extra flags on tree [{tree.TreeId:D6}]: "));
@@ -182,10 +182,10 @@ internal static class IRVerificationTests
             compiler.fgNodeThreading = NodeThreading.None;
             var stmt = new Statement(new GenTree(GT_NO_OP, TYP_VOID), 0);
             compiler.fgInsertStmtAtEnd(block, stmt);
-            Assert.That(() => compiler.fgDebugCheckStmtsList(block), Throws.Nothing);
+            Assert.That(() => CheckStatements(compiler, block), Throws.Nothing);
 
             stmt.PrevStmt = null;
-            Assert.That(() => compiler.fgDebugCheckStmtsList(block), Throws.Exception);
+            Assert.That(() => CheckStatements(compiler, block), Throws.Exception);
         });
     }
 
@@ -198,7 +198,7 @@ internal static class IRVerificationTests
             compiler.fgInsertStmtAtEnd(block, stmt);
             compiler.fgInsertStmtAtEnd(block, new Statement(new GenTree(GT_NO_OP, TYP_VOID), 1));
 
-            Assert.That(() => compiler.fgDebugCheckStmtsList(block), Throws.Exception);
+            Assert.That(() => CheckStatements(compiler, block), Throws.Exception);
         });
     }
 
@@ -215,11 +215,11 @@ internal static class IRVerificationTests
             compiler.fgSsaValid = true;
             TestConfiguration.EnableVerbose(compiler);
 
-            var output = CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckLinks);
+            var output = CodeGenLifeTransitionTests.Capture(() => CheckLinks(compiler));
             Assert.That(output, Does.Contain($"SSA checks completed successfully{Environment.NewLine}"));
 
             tree.Flags |= GTF_CALL;
-            Assert.That(() => compiler.fgDebugCheckLinks(), Throws.Exception);
+            Assert.That(() => CheckLinks(compiler), Throws.Exception);
         });
     }
 
@@ -228,9 +228,9 @@ internal static class IRVerificationTests
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
             compiler.fgBBcount = 10001;
-            compiler.expensiveDebugCheckLevel = 0;
+            ExpensiveDebugCheckLevel(compiler) = 0;
 
-            Assert.That(() => compiler.fgDebugCheckLinks(), Throws.Nothing);
+            Assert.That(() => CheckLinks(compiler), Throws.Nothing);
         });
     }
 
@@ -244,10 +244,10 @@ internal static class IRVerificationTests
             block.InsertAtEnd(node);
             compiler.activePhaseChecks = PhaseChecks.CHECK_IR | PhaseChecks.CHECK_LIR_UNUSED_VALUES;
 
-            Assert.That(() => compiler.fgDebugCheckLinks(), Throws.Exception);
+            Assert.That(() => CheckLinks(compiler), Throws.Exception);
 
             node.IsUnusedValue = true;
-            Assert.That(() => compiler.fgDebugCheckLinks(), Throws.Nothing);
+            Assert.That(() => CheckLinks(compiler), Throws.Nothing);
         });
     }
 
@@ -258,5 +258,23 @@ internal static class IRVerificationTests
         compiler.fgLastBB = block;
         return block;
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckType")]
+    private static extern void CheckType(Compiler compiler, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckFlagsAndTypes")]
+    private static extern void CheckFlagsAndTypes(Compiler compiler, GenTree tree, BasicBlock block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckFlagsHelper")]
+    private static extern void CheckFlags(Compiler compiler, GenTree tree, GenTreeFlags actualFlags,
+        GenTreeFlags expectedFlags);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckStmtsList")]
+    private static extern void CheckStatements(Compiler compiler, BasicBlock block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckLinks")]
+    private static extern void CheckLinks(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "expensiveDebugCheckLevel")]
+    private static extern ref int ExpensiveDebugCheckLevel(Compiler compiler);
 }
-#endif

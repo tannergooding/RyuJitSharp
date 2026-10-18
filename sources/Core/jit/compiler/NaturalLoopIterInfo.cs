@@ -9,9 +9,7 @@ public sealed class NaturalLoopIterInfo
 {
     public int IterVar = BAD_VAR_NUM;
     public int LimitVar = BAD_VAR_NUM;
-#if DEBUG
     public GenTree? InitTree;
-#endif
     public int ConstInitValue;
     public GenTree? TestTree;
     public BasicBlock? TestBlock;

@@ -200,9 +200,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
 
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
-#if FUNC_INFO_LOGGING
         var previousFunctionLog = Compiler.compJitFuncInfoFile;
-#endif
 #if MEASURE_FATAL
         var previousNyiCount = s_fatalNyiCount;
 #endif
@@ -219,9 +217,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         {
             JitConfig = default;
             JitTls.Compiler = compiler;
-#if FUNC_INFO_LOGGING
             Compiler.compJitFuncInfoFile = null;
-#endif
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
             action(codeGen);
@@ -230,9 +226,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         {
             JitTls.Compiler = previousCompiler;
             JitConfig = previousConfig;
-#if FUNC_INFO_LOGGING
             Compiler.compJitFuncInfoFile = previousFunctionLog;
-#endif
 #if MEASURE_FATAL
             s_fatalNyiCount = previousNyiCount;
 #endif

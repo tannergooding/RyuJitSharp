@@ -82,25 +82,21 @@ public partial class Emitter
         {
             emitCurIG.igLastIns = id;
         }
-#if EMIT_BACKWARDS_NAVIGATION
-        else
+        else if (Configuration.EMIT_BACKWARDS_NAVIGATION)
         {
             emitCurIG.igLastIns = id;
         }
-#endif
         assert(size >= (nuint)nint.Size);
         if (Configuration.TARGET_XARCH)
         {
             id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
             emitLastInsFullSize = (int)fullSize;
         }
-#if EMIT_BACKWARDS_NAVIGATION
-        else
+        else if (Configuration.EMIT_BACKWARDS_NAVIGATION)
         {
             id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
             emitLastInsFullSize = (int)fullSize;
         }
-#endif
         emitLastInsIG = emitCurIG;
 
         id.StorageGroup = emitCurIG;
@@ -159,8 +155,7 @@ public partial class Emitter
         }
         emitCurIGinsCnt++;
 
-#if DEBUG
-        if (_compiler.compCurBB != emitCurIG.lastGeneratedBlock)
+        if (Configuration.DEBUG && (_compiler.compCurBB != emitCurIG.lastGeneratedBlock))
         {
             assert(_compiler.compCurBB is not null);
             emitCurIG.igBlocks.Add(_compiler.compCurBB);
@@ -171,7 +166,6 @@ public partial class Emitter
                 jitprintf($"Mapped {Globals.FMT_BB(_compiler.compCurBB.bbNum)} to {emitLabelString(emitCurIG)}\n");
             }
         }
-#endif
 
         return id;
     }

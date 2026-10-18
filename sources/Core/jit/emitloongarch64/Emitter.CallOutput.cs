@@ -40,12 +40,10 @@ public partial class Emitter
         }
 
         emitUpdateLiveGCvars(gcVars, dst);
-#if DEBUG
-        if (compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && compiler.opts.disasmWithGC)
         {
             emitDispGCVarDelta();
         }
-#endif
 
         assert(id.idIns() == INS_jirl);
         var originalDst = dst;

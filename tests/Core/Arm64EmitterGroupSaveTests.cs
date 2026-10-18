@@ -46,9 +46,10 @@ internal sealed unsafe class Arm64EmitterGroupSaveTests
         Assert.That(Used(emitter), Is.EqualTo((nuint)0));
         Assert.That(LastInstruction(emitter), Is.SameAs(branch));
         Assert.That(LastInstructionGroup(emitter), Is.SameAs(group));
-#if EMIT_BACKWARDS_NAVIGATION
-        Assert.That(group.igLastIns, Is.SameAs(branch));
-#endif
+        if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+        {
+            Assert.That(group.igLastIns, Is.SameAs(branch));
+        }
     }
 
     [Test]

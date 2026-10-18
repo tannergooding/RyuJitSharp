@@ -11,7 +11,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm32UnwindTests
 {
-#if DEBUG
     [TestCase(0x7F, 2u)]
     [TestCase(0x80, 4u)]
     [TestCase(0xBF, 4u)]
@@ -30,7 +29,7 @@ internal static unsafe class Arm32UnwindTests
     [TestCase(0xFC, 4u)]
     public static void DiagnosticInstructionSizesMatchThumbEncoding(byte header, uint expectedSize)
     {
-        Assume.That(Configuration.TARGET_ARM);
+        Assume.That(Configuration.TARGET_ARM && TestConfiguration.IsDebug);
         var codes = CreateCodes(header);
         fixed (byte* pointer = codes)
         {
@@ -46,7 +45,7 @@ internal static unsafe class Arm32UnwindTests
     [TestCase(0xFF, false, 0u)]
     public static void EpilogEndCodesCountTheirThumbPadding(byte endCode, bool isProlog, uint expectedSize)
     {
-        Assume.That(Configuration.TARGET_ARM);
+        Assume.That(Configuration.TARGET_ARM && TestConfiguration.IsDebug);
         byte[] codes = [endCode];
         fixed (byte* pointer = codes)
         {
@@ -54,8 +53,6 @@ internal static unsafe class Arm32UnwindTests
             Assert.That(source.GetCodeSizeFromUnwindCodes(isProlog), Is.EqualTo(expectedSize));
         }
     }
-#endif
-
     [Test]
     public static void IntegerPushMaskRecordsExtendedThumbInstruction()
     {
@@ -117,7 +114,6 @@ internal static unsafe class Arm32UnwindTests
         }, nativeAot: true);
     }
 
-#if DEBUG
     private static byte[] CreateCodes(byte header)
     {
         var codeSize = unchecked((int)UnwindInfo.GetUnwindCodeSize(header));
@@ -134,7 +130,6 @@ internal static unsafe class Arm32UnwindTests
             return codes;
         }
     }
-#endif
 
     private static void WithProlog(Action<Compiler, Emitter> action, bool nativeAot = false)
     {

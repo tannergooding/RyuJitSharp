@@ -41,9 +41,10 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
     public static void AbsoluteAddressesAreContainedWithoutChangingTheirOwner()
     {
         WithCompiler(compiler => {
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.opts.compEnablePCRelAddr = true;
+            }
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
             var intrinsic = Load(address);
             var block = NewBlock(address, intrinsic);

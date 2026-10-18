@@ -164,23 +164,30 @@ public partial class Emitter
 
         var alignInstr = id as instrDescAlign
             ?? throw new FatalJitException("Loop alignment requires an alignment descriptor.");
+        if (!Configuration.DEBUG)
+        {
+            _ = alignInstr;
+        }
         var compiler = _compiler ?? throw new FatalJitException("Loop alignment requires an active compiler.");
-#if DEBUG
-        var offset = compiler.IsAot ? (nuint)emitCurCodeOffs(dst) : (nuint)dst;
-        var validatePadding = !alignInstr.isPlacedAfterJmp;
-#endif
+        nuint offset;
+        bool validatePadding;
+        if (Configuration.DEBUG)
+        {
+            offset = compiler.IsAot ? (nuint)emitCurCodeOffs(dst) : (nuint)dst;
+            validatePadding = !alignInstr.isPlacedAfterJmp;
+        }
         assert(codeGen.ShouldAlignLoops);
         assert(ig.endsWithAlignInstr());
 
         var paddingToAdd = id.idCodeSize();
-#if DEBUG
-        assert(!validatePadding || (paddingToAdd == 0) ||
-            ((offset & (uint)(compiler.opts.compJitAlignLoopBoundary - 1)) != 0));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!validatePadding || (paddingToAdd == 0) ||
+                ((offset & (uint)(compiler.opts.compJitAlignLoopBoundary - 1)) != 0));
+        }
         assert(paddingToAdd < compiler.opts.compJitAlignLoopBoundary);
 
-#if DEBUG
-        if (validatePadding)
+        if (Configuration.DEBUG && validatePadding)
         {
             var loopHead = alignInstr.idaIG?.igNext
                 ?? throw new FatalJitException("An alignment descriptor requires a following loop group.");
@@ -195,7 +202,7 @@ public partial class Emitter
                 assert(paddingToAdd == paddingNeeded);
             }
         }
-#endif
+
         compiler.Metrics.LoopsAligned++;
 
         if (Configuration.DEBUG && compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 50)

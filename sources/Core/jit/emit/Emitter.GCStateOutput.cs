@@ -26,12 +26,10 @@ public partial class Emitter
             return;
         }
 
-#if DEBUG
-        if (_compiler.verbose || _compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
         {
             VarSetOps.Assign(_compiler, ref debugThisGCrefVars, vars);
         }
-#endif
         VarSetOps.Assign(_compiler, ref emitThisGCrefVars, vars);
         if (emitGCrFrameOffsCnt != 0)
         {
@@ -44,19 +42,11 @@ public partial class Emitter
                     if (VarSetOps.IsMember(_compiler, vars, num))
                     {
                         var gcType = (val & byref_OFFSET_FLAG) != 0 ? GCT_BYREF : GCT_GCREF;
-                        emitGCvarLiveUpd(offs, int.MaxValue, gcType, addr
-#if DEBUG
-                            , (uint)num
-#endif
-                            );
+                        emitGCvarLiveUpd(offs, int.MaxValue, gcType, addr, (uint)num);
                     }
                     else
                     {
-                        emitGCvarDeadUpd(offs, addr
-#if DEBUG
-                            , (uint)num
-#endif
-                            );
+                        emitGCvarDeadUpd(offs, addr, (uint)num);
                     }
                 }
             }

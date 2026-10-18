@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -11,6 +10,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SsaDiagnosticsTests
 {
+    [SetUp]
+    public static void RequireDebugConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture exercises Debug-only SSA diagnostics.");
+    }
+
     [Test]
     public static void SummaryFollowsLocalAndDefinitionOrder()
     {
@@ -40,9 +45,11 @@ internal static class SsaDiagnosticsTests
     public static void MissingAnnotationsReturnWithoutGraph()
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
-            var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckSSA);
+            var text = CodeGenLifeTransitionTests.Capture(
+                () => TestConfiguration.CheckSsaTestConstraints(compiler));
             Assert.That(text, Is.Empty);
-            Assert.That(CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckVN), Is.Empty);
+            Assert.That(CodeGenLifeTransitionTests.Capture(
+                () => TestConfiguration.CheckValueNumberTestConstraints(compiler)), Is.Empty);
         });
     }
 
@@ -61,11 +68,12 @@ internal static class SsaDiagnosticsTests
             first._vnPair = new ValueNumPair(store.VNWithExc(value, exceptions), store.VNForIntCon(1));
             second._vnPair = new ValueNumPair(value, store.VNForIntCon(2));
             var label = normalize ? TestLabel.TL_VNNorm : TestLabel.TL_VN;
-            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = label, _num = 10 });
-            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = label, _num = normalize ? 10 : 11 });
+            TestConfiguration.GetNodeTestData(compiler).Add(first, new TestLabelAndNum { _tl = label, _num = 10 });
+            TestConfiguration.GetNodeTestData(compiler).Add(second, new TestLabelAndNum { _tl = label, _num = normalize ? 10 : 11 });
             TestConfiguration.EnableVerbose(compiler);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckVN);
+            var text = CodeGenLifeTransitionTests.Capture(
+                () => TestConfiguration.CheckValueNumberTestConstraints(compiler));
 
             Assert.That(text, Does.Contain("Jit Testing: Value numbering."));
             Assert.That(text.Contains("Already in hash tables.", StringComparison.Ordinal), Is.EqualTo(normalize));
@@ -84,11 +92,13 @@ internal static class SsaDiagnosticsTests
             compiler.vnStore = store;
             first._vnPair.SetBoth(store.VNForIntCon(17));
             second._vnPair.SetBoth(store.VNForIntCon(sameLabel ? 18 : 17));
-            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 10 });
-            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = sameLabel ? 10 : 11 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                first, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 10 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                second, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = sameLabel ? 10 : 11 });
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.JitTestCheckVN(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckValueNumberTestConstraints(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain(sameLabel
                 ? "previously bound to a different value number"
@@ -102,9 +112,9 @@ internal static class SsaDiagnosticsTests
         SsaLivenessTests.WithCompiler(1, compiler =>
         {
             var node = new GenTreeLclVar(TYP_INT, 0);
-            compiler.NodeTestData.Add(node, new TestLabelAndNum { _tl = TestLabel.TL_VN });
+            TestConfiguration.GetNodeTestData(compiler).Add(node, new TestLabelAndNum { _tl = TestLabel.TL_VN });
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.JitTestCheckVN(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckValueNumberTestConstraints(compiler), Throws.Exception));
             Assert.That(text, Does.Contain("has become unreachable at the time the constraint is tested."));
         });
     }
@@ -116,12 +126,16 @@ internal static class SsaDiagnosticsTests
             var first = AddLocal(compiler, 0, 3);
             var second = AddLocal(compiler, 0, 3);
             var third = AddLocal(compiler, 1, 4);
-            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
-            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
-            compiler.NodeTestData.Add(third, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 10 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                third, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 10 });
             TestConfiguration.EnableVerbose(compiler);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckSSA);
+            var text = CodeGenLifeTransitionTests.Capture(
+                () => TestConfiguration.CheckSsaTestConstraints(compiler));
 
             Assert.That(text, Does.Contain("Jit Testing: SSA names."));
             Assert.That(text, Does.Contain("      added to hash tables."));
@@ -137,11 +151,14 @@ internal static class SsaDiagnosticsTests
             var wideLabel = unchecked((nint)((1L << 32) + 7));
             var first = AddLocal(compiler, 0, 3);
             var second = AddLocal(compiler, 1, 4);
-            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 7 });
-            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = wideLabel });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 7 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = wideLabel });
             TestConfiguration.EnableVerbose(compiler);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckSSA);
+            var text = CodeGenLifeTransitionTests.Capture(
+                () => TestConfiguration.CheckSsaTestConstraints(compiler));
 
             Assert.That(text.Split(" -- SSA name class 7.", StringSplitOptions.None).Length - 1, Is.EqualTo(2));
             Assert.That(text, Does.Not.Contain("Already in hash tables."));
@@ -157,11 +174,13 @@ internal static class SsaDiagnosticsTests
             var wideLabel = unchecked((nint)((1L << 32) + 7));
             var first = AddLocal(compiler, 0, 3);
             var second = AddLocal(compiler, sameLabel ? 1 : 0, sameLabel ? 4 : 3);
-            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = wideLabel });
-            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = sameLabel ? wideLabel : 8 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = wideLabel });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = sameLabel ? wideLabel : 8 });
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.JitTestCheckSSA(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsaTestConstraints(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain($"was declared in SSA name class {(sameLabel ? 7 : 8)},"));
             Assert.That(text, Does.Contain(sameLabel
@@ -178,11 +197,13 @@ internal static class SsaDiagnosticsTests
         SsaLivenessTests.WithCompiler(2, compiler => {
             var first = AddLocal(compiler, 0, 3);
             var second = AddLocal(compiler, sameLabel ? 1 : 0, sameLabel ? 4 : 3);
-            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
-            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = sameLabel ? 10 : 11 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                first, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = 10 });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                second, new TestLabelAndNum { _tl = TestLabel.TL_SsaName, _num = sameLabel ? 10 : 11 });
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.JitTestCheckSSA(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsaTestConstraints(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain(reason));
         });
@@ -193,9 +214,10 @@ internal static class SsaDiagnosticsTests
     {
         SsaLivenessTests.WithCompiler(1, compiler => {
             var unreachable = new GenTreeLclVar(TYP_INT, 0);
-            compiler.NodeTestData.Add(unreachable, new TestLabelAndNum { _tl = TestLabel.TL_SsaName });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                unreachable, new TestLabelAndNum { _tl = TestLabel.TL_SsaName });
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.JitTestCheckSSA(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsaTestConstraints(compiler), Throws.Exception));
             Assert.That(text, Does.Contain("has become unreachable at the time the constraint is tested."));
         });
 
@@ -204,9 +226,10 @@ internal static class SsaDiagnosticsTests
             compiler.fgFirstBB = block;
             compiler.fgLastBB = block;
             var nonLocal = compiler.gtNewIconNode(TYP_INT, 1);
-            compiler.NodeTestData.Add(nonLocal, new TestLabelAndNum { _tl = TestLabel.TL_SsaName });
+            TestConfiguration.GetNodeTestData(compiler).Add(
+                nonLocal, new TestLabelAndNum { _tl = TestLabel.TL_SsaName });
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.JitTestCheckSSA(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsaTestConstraints(compiler), Throws.Exception));
             Assert.That(text, Does.Contain("SSAName constraint put on non-lcl-var expression"));
             Assert.That(text, Does.Contain("(of type int)."));
         });
@@ -239,4 +262,3 @@ internal static class SsaDiagnosticsTests
         return node;
     }
 }
-#endif

@@ -193,9 +193,10 @@ public partial class Compiler
             }
         }
 
-#if CALL_ARG_STATS
-        compDispCallArgStats(jitstdout());
-#endif
+        if (Configuration.CALL_ARG_STATS)
+        {
+            compDispCallArgStats(jitstdout());
+        }
 
         if (Configuration.COUNT_BASIC_BLOCKS)
         {

@@ -17,7 +17,7 @@ public partial class Emitter
         assert(_compiler.compCurBB is not null);
         assert(dst.HasFlag(BBF_HAS_LABEL));
 
-        var format = IF_NONE;
+        Emitter.insFormat format;
         instrDescJmp id;
         switch (ins)
         {
@@ -84,9 +84,10 @@ public partial class Emitter
             id.idSetRelocFlags(attr);
         }
 
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
 
         dispIns(id);
         appendToCurIG(id);

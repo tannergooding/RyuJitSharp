@@ -64,12 +64,10 @@ public partial class Compiler
 
                 candidate = _scevContext.Simplify(candidate, _assumptions);
                 JITDUMP("  => ");
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     candidate.Dump(_compiler);
                 }
-#endif
                 JITDUMP("\n");
                 if (candidate is not ScevAddRec primaryIV)
                 {
@@ -101,12 +99,10 @@ public partial class Compiler
                     }
 
                     JITDUMP("  Next IV is: ");
-#if DEBUG
-                    if (_compiler.verbose)
+                    if (Configuration.DEBUG && _compiler.verbose)
                     {
                         nextIV.Dump(_compiler);
                     }
-#endif
                     JITDUMP("\n");
                     if (varTypeIsGC(nextIV.Type))
                     {
@@ -135,12 +131,10 @@ public partial class Compiler
 
                 JITDUMP($"  All uses of primary IV V{primaryLocal.LclNum:D2} " +
                     $"are used to compute a {derivedLevel}-derived IV ");
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     currentIV.Dump(_compiler);
                 }
-#endif
                 JITDUMP("\n");
                 if (!StressProfitability())
                 {
@@ -177,8 +171,7 @@ public partial class Compiler
                 }
             });
             _assumptions = new SimplificationAssumptions([.. _backEdgeBounds]);
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("  Bound on backedge taken count is ");
                 if (_backEdgeBounds.Count == 0)
@@ -193,7 +186,6 @@ public partial class Compiler
                 }
                 jitprintf(_backEdgeBounds.Count > 1 ? ")\n" : "\n");
             }
-#endif
         }
     }
 }

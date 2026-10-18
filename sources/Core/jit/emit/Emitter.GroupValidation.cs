@@ -13,11 +13,7 @@ public partial class Emitter
     [System.Diagnostics.Conditional("DEBUG")]
     private void emitCheckIGList()
     {
-#if EMIT_BACKWARDS_NAVIGATION
-        const bool checkBackwardNavigation = true;
-#else
-        var checkBackwardNavigation = Configuration.TARGET_XARCH;
-#endif
+        var checkBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_XARCH;
         List<(insGroup Group, instrDesc Descriptor)>? instructions =
             checkBackwardNavigation ? [] : null;
         nuint currentOffset = 0;

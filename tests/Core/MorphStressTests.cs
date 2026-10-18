@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -14,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class MorphStressTests
 {
+    [SetUp]
+    public static void RequireDebugConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture exercises Debug stress behavior.");
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
     private static extern ref byte* StressNames(ref JitConfigValues config);
 
@@ -27,8 +32,8 @@ internal static unsafe class MorphStressTests
                 compiler.gtNewLclvNode(TYP_INT, 2), compiler.gtNewIconNode(TYP_INT, 3));
             var statement = Append(compiler, block, multiply);
 
-            compiler.lvaStressLclFld();
-            compiler.fgStress64RsltMul();
+            TestConfiguration.ApplyLocalFieldStress(compiler);
+            TestConfiguration.ApplyWideMultiplyStress(compiler);
 
             Assert.That(statement.RootNode, Is.SameAs(multiply));
             Assert.That(multiply.Op1.Oper, Is.EqualTo(GT_LCL_VAR));
@@ -54,7 +59,7 @@ internal static unsafe class MorphStressTests
             }
             var statement = Append(compiler, block, tree);
 
-            compiler.fgStress64RsltMul();
+            TestConfiguration.ApplyWideMultiplyStress(compiler);
 
             if (!transforms)
             {
@@ -93,7 +98,7 @@ internal static unsafe class MorphStressTests
             }
             _ = Append(compiler, block, outer);
 
-            compiler.fgStress64RsltMul();
+            TestConfiguration.ApplyWideMultiplyStress(compiler);
 
             Assert.That(inner.Type, Is.EqualTo(checkedParent ? TYP_LONG : TYP_INT));
             Assert.That(outer.Type, Is.EqualTo(checkedParent ? TYP_INT : TYP_LONG));
@@ -116,7 +121,7 @@ internal static unsafe class MorphStressTests
             var storeStatement = Append(compiler, block, store);
             var loadStatement = Append(compiler, block, load);
 
-            compiler.lvaStressLclFld();
+            TestConfiguration.ApplyLocalFieldStress(compiler);
 
             var padding = varTypeIsGC(type) ? TARGET_POINTER_SIZE : 2;
             var layout = compiler.lvaTable[2].Layout ?? throw new InvalidOperationException("Expected a padded layout.");
@@ -228,10 +233,10 @@ internal static unsafe class MorphStressTests
                 }
             }
 
-            compiler.lvaStressLclFld();
+            TestConfiguration.ApplyLocalFieldStress(compiler);
 
             Assert.That(statement.RootNode, Is.SameAs(local));
-            Assert.That(compiler.lvaTable[number].lvNoLclFldStress, Is.True);
+            Assert.That(TestConfiguration.GetNoLocalFieldStress(compiler.lvaTable, number), Is.True);
             Assert.That(compiler.lvaTable[number].Type, Is.Not.EqualTo(TYP_STRUCT));
         });
     }
@@ -262,4 +267,3 @@ internal static unsafe class MorphStressTests
         });
     }
 }
-#endif

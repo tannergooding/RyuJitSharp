@@ -14,10 +14,15 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if CALL_ARG_STATS
 [NonParallelizable]
 internal static unsafe class CompilerCallArgumentStatisticsTests
 {
+    [SetUp]
+    public static void RequireCallArgumentStatistics()
+    {
+        Assume.That(Configuration.CALL_ARG_STATS, "Call-argument statistics are disabled.");
+    }
+
     [Test]
     public static void CallStatisticsCountTheLirCallKinds()
     {
@@ -230,4 +235,3 @@ internal static unsafe class CompilerCallArgumentStatisticsTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte False(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* clsHnd) => 0;
 }
-#endif

@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void checkLastUses(BasicBlock block)
     {
         if (VERBOSE)
@@ -103,7 +103,6 @@ public sealed partial class LinearScan
         });
         assert(!foundDifference);
     }
-#endif
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void stressSetRandomParameterPreferences()
@@ -164,7 +163,7 @@ public sealed partial class LinearScan
         }
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void validateIntervals()
     {
         if (!_enregisterLocalVars)
@@ -221,5 +220,4 @@ public sealed partial class LinearScan
             }
         }
     }
-#endif
 }

@@ -54,19 +54,15 @@ public partial class Compiler
                     LC_Ident address;
                     if (method.IsSlot)
                     {
-                        address = LC_Ident.CreateIndirMethodAddrSlot(method.MethAddr
-#if DEBUG
-                            , method.TargetMethHnd
-#endif
-                        );
+                        address = LC_Ident.CreateIndirMethodAddrSlot(
+                            method.MethAddr,
+                            method.TargetMethHnd);
                     }
                     else
                     {
-                        address = LC_Ident.CreateMethodAddr(method.MethAddr
-#if DEBUG
-                            , method.TargetMethHnd
-#endif
-                        );
+                        address = LC_Ident.CreateMethodAddr(
+                            method.MethAddr,
+                            method.TargetMethHnd);
                     }
                     context.EnsureObjDerefs(loopNum).Add(deref);
                     context.EnsureConditions(loopNum).Add(new LC_Condition(GT_EQ,

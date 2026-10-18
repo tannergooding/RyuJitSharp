@@ -103,14 +103,19 @@ public partial class GenTree
     }
 #endif
 
-#if COUNT_AST_OPERS
-    private static readonly uint[] s_gtNodeCounts = new uint[(int)GT_COUNT + 1];
+    private static readonly uint[] s_gtNodeCounts = Configuration.COUNT_AST_OPERS
+        ? new uint[(int)GT_COUNT + 1]
+        : [];
 
     internal static ref uint GetNodeCount(uint op)
     {
+        if (!Configuration.COUNT_AST_OPERS)
+        {
+            throw new System.InvalidOperationException("GenTree operator counts are not enabled.");
+        }
+
         return ref s_gtNodeCounts[(int)op];
     }
-#endif
 
     internal static byte GetTrueSize(uint op)
     {

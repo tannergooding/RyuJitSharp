@@ -153,12 +153,10 @@ public abstract class GenTreeIntConCommon : GenTree
             throw new FatalJitException("Address-base fit checks are unsupported on this target.");
         }
 
-#if DEBUG
-        if (!comp.opts.compEnablePCRelAddr)
+        if (Configuration.DEBUG && !comp.opts.compEnablePCRelAddr)
         {
             return false;
         }
-#endif
         if (Configuration.TARGET_X86)
         {
             return Oper.IsCnsIntOrI;

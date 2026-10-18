@@ -75,18 +75,18 @@ internal static unsafe class EmitterInitializationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefVars")]
     private static extern ref nint[] ThisVars(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevGCrefVars")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugPrevGCrefVars")]
     private static extern ref nint[] DebugPrevVars(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugThisGCrefVars")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugThisGCrefVars")]
     private static extern ref nint[] DebugThisVars(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevRegPtrDsc")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugPrevRegPtrDsc")]
     private static extern ref GCInfo.regPtrDsc? DebugPrevRegPtr(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevGCrefRegs")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugPrevGCrefRegs")]
     private static extern ref regMaskTP DebugPrevGCrefRegs(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevByrefRegs")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugPrevByrefRegs")]
     private static extern ref regMaskTP DebugPrevByrefRegs(Emitter emitter);
 }

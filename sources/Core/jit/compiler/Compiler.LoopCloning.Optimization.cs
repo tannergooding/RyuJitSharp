@@ -12,10 +12,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private void optDebugLogLoopCloning(BasicBlock block, Statement insertBefore)
     {
-        if (JitConfig.JitDebugLogLoopCloning == 0)
+        if (!Configuration.DEBUG || (JitConfig.JitDebugLogLoopCloning == 0))
         {
             return;
         }
@@ -24,7 +23,6 @@ public partial class Compiler
         fgInsertStmtBefore(block, insertBefore, stmt);
         _ = fgMorphBlockStmt(block, stmt, message: "Debug log loop cloning");
     }
-#endif
 
     private void optPerformStaticOptimizations(FlowGraphNaturalLoop loop,
         LoopCloneContext context, bool dynamicPath)
@@ -61,12 +59,10 @@ public partial class Compiler
                             assert(comma.AsOp().Op1.Oper is GT_NOP);
                         }
                     }
-#if DEBUG
-                    if (dynamicPath)
+                    if (Configuration.DEBUG && dynamicPath)
                     {
                         optDebugLogLoopCloning(block, array.Stmt);
                     }
-#endif
                     break;
                 }
                 case LcSpanOptInfo span:
@@ -94,12 +90,10 @@ public partial class Compiler
                         JITDUMP("  Bounds check already removed\n");
                         assert(comma.AsOp().Op1.Oper is GT_NOP);
                     }
-#if DEBUG
-                    if (dynamicPath)
+                    if (Configuration.DEBUG && dynamicPath)
                     {
                         optDebugLogLoopCloning(block, span.Stmt);
                     }
-#endif
                     break;
                 }
                 case LcMdArrayOptInfo:

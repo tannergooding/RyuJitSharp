@@ -75,6 +75,57 @@ public sealed partial class LinearScan
         REUSE_REG,
     }
 
+    partial void dumpKilledRegistersEvent(RefPosition killRefPosition, regMaskTP killedRegisters)
+    {
+        if (!VERBOSE)
+        {
+            return;
+        }
+
+        initializeAllocationDumpFormat();
+        dumpRefPositionShort(killRefPosition);
+        jitprintf("None     ");
+        _compiler.dumpRegMask(killedRegisters);
+        jitprintf("\n");
+        dumpRefPositionShort(killRefPosition);
+        jitprintf("              ");
+    }
+
+    partial void dumpGCRefSpillEvent(RefPosition killRefPosition, bool killedAny)
+    {
+        if (!VERBOSE)
+        {
+            return;
+        }
+
+        initializeAllocationDumpFormat();
+        dumpRefPositionShort(killRefPosition);
+        jitprintf(killedAny ? "Done          " : "None          ");
+    }
+
+    partial void dumpCopyRegisterEvent(
+        RefPosition refPosition, regNumber register, RegisterScore selectionScore)
+    {
+        if (!VERBOSE)
+        {
+            return;
+        }
+
+        initializeAllocationDumpFormat();
+        _allocationDumpRegisters |=
+            regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
+        dumpAllocationRegisterTitleIfNeeded();
+        dumpRefPositionShort(refPosition);
+        if (_allocationPassComplete || (selectionScore is RegisterScore.NONE))
+        {
+            jitprintf($"Copy     {register.Name,-4} ");
+        }
+        else
+        {
+            jitprintf($"{getScoreName(selectionScore),-5}(C) {register.Name,-4} ");
+        }
+    }
+
     private static int s_allocationDumpEmptyColumnWidth;
 
     private bool _allocationDumpFormatInitialized;

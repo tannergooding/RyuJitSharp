@@ -51,7 +51,7 @@ public partial class Compiler
                 unrollCount++;
                 for (var ancestor = loop.Parent; ancestor is not null; ancestor = ancestor.Parent)
                 {
-                    loopsWithUnrolledDescendant.Add(ancestor.Index);
+                    _ = loopsWithUnrolledDescendant.Add(ancestor.Index);
                 }
             }
 
@@ -275,15 +275,13 @@ public partial class Compiler
 
         optRedirectPrevUnrollIteration(loop, prevTestBlock, exit);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("Whole unrolled loop:\n");
             gtDispTree(iterInfo.InitTree);
             jitprintf("\n");
             fgDumpTrees(bottom.Next, insertAfter);
         }
-#endif
 
         return true;
     }

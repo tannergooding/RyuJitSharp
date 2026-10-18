@@ -6,9 +6,7 @@ using System.Diagnostics;
 
 namespace RyuJitSharp;
 
-#if DEBUG
 [DebuggerDisplay("{Type}")]
-#endif
 public abstract unsafe class LcOptInfo
 {
     public enum OptType
@@ -118,16 +116,16 @@ public sealed unsafe class LcMethodAddrTestOptInfo : LcOptInfo
     public readonly int DelegateLclNum;
     public readonly void* MethAddr;
     public readonly bool IsSlot;
-#if DEBUG
     public readonly CORINFO_METHOD_HANDLE TargetMethHnd;
-#endif
 
-    public LcMethodAddrTestOptInfo(BasicBlock block, Statement stmt, GenTreeIndir delegateAddressIndir,
-        int delegateLclNum, void* methAddr, bool isSlot
-#if DEBUG
-        , CORINFO_METHOD_HANDLE targetMethHnd
-#endif
-        ) : base(OptType.LcMethodAddrTest)
+    public LcMethodAddrTestOptInfo(
+        BasicBlock block,
+        Statement stmt,
+        GenTreeIndir delegateAddressIndir,
+        int delegateLclNum,
+        void* methAddr,
+        bool isSlot,
+        CORINFO_METHOD_HANDLE targetMethHnd = default) : base(OptType.LcMethodAddrTest)
     {
         Block = block;
         Stmt = stmt;
@@ -135,8 +133,6 @@ public sealed unsafe class LcMethodAddrTestOptInfo : LcOptInfo
         DelegateLclNum = delegateLclNum;
         MethAddr = methAddr;
         IsSlot = isSlot;
-#if DEBUG
         TargetMethHnd = targetMethHnd;
-#endif
     }
 }

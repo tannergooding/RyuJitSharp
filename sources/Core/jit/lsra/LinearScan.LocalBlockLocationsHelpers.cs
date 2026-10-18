@@ -49,7 +49,6 @@ public sealed partial class LinearScan
         return ReferenceEquals(getRegisterRecord(second), record);
     }
 
-#if DEBUG
     private regNumber rotateBlockStartLocation(Interval interval, regNumber targetReg, regMaskTP availableRegs)
     {
         if ((targetReg != REG_STK) && ((_lsraStressMask & 0x300) == 0x200))
@@ -87,7 +86,6 @@ public sealed partial class LinearScan
         }
         return targetReg;
     }
-#endif
 
     private void unassignIntervalBlockStart(RegRecord record, regNumberSmall[]? inMap)
     {

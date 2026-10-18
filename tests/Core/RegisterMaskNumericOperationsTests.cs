@@ -1,11 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-#if DEBUG && !REGMASK_BITS_32
-using System;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.regMask;
 
@@ -32,12 +30,15 @@ internal static unsafe class RegisterMaskNumericOperationsTests
         }
 
         var mask = CreateMask(lower, upper);
-#if DEBUG && !REGMASK_BITS_32
-        WithAssertionRecorder(() => Assert.That(checked((uint)mask), Is.EqualTo(expected)));
-        Assert.That(s_assertions, Is.Zero);
-#else
-        Assert.That(checked((uint)mask), Is.EqualTo(expected));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            WithAssertionRecorder(() => Assert.That(checked((uint)mask), Is.EqualTo(expected)));
+            Assert.That(s_assertions, Is.Zero);
+        }
+        else
+        {
+            Assert.That(checked((uint)mask), Is.EqualTo(expected));
+        }
     }
 
     [TestCaseSource(nameof(IntegerFactoryCases))]
@@ -197,7 +198,6 @@ internal static unsafe class RegisterMaskNumericOperationsTests
 #endif
     }
 
-#if DEBUG && !REGMASK_BITS_32
     private static int s_assertions;
 
     private static void WithAssertionRecorder(Action action)
@@ -205,7 +205,7 @@ internal static unsafe class RegisterMaskNumericOperationsTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
+        using var tls = TestConfiguration.CreateJitTls(&ee);
         var previous = JitTls.Compiler;
         JitTls.Compiler = null;
         s_assertions = 0;
@@ -226,5 +226,4 @@ internal static unsafe class RegisterMaskNumericOperationsTests
 
         return 0;
     }
-#endif
 }

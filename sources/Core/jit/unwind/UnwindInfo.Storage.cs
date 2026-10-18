@@ -345,7 +345,6 @@ public sealed partial class UnwindInfo
         uwiFragmentLast = newFragment;
     }
 
-#if DEBUG
     internal static uint GetUnwindCodeSize(byte header)
     {
         RequireUnwindStorageTarget();
@@ -372,9 +371,7 @@ public sealed partial class UnwindInfo
 
         return Globals.GetUnwindSizeFromUnwindHeader(header);
     }
-#endif
 
-#if DEBUG
     internal static uint GetArmOpcodeSize(byte header)
     {
         var size = header switch
@@ -397,7 +394,6 @@ public sealed partial class UnwindInfo
         assert(size == 2 || size == 4);
         return unchecked((uint)size);
     }
-#endif
 
     private abstract class UnwindCodesStorage
     {

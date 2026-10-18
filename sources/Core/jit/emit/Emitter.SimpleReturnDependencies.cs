@@ -34,20 +34,19 @@ public partial class Emitter
             id.idjTarget = target;
 
             id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
-#if DEBUG
-            if (compiler.opts.compLongAddress)
+            if (Configuration.DEBUG && compiler.opts.compLongAddress)
             {
                 id.idjKeepLong = true;
             }
-#endif
 
             id.idjIG = emitCurIG;
             id.idjOffs = unchecked((uint)emitCurIGsize);
             id.idjNext = emitCurIGjmpList;
             emitCurIGjmpList = id;
-#if EMITTER_STATS
-            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+            if (Configuration.EMITTER_STATS)
+            {
+                emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+            }
 
             id.idCodeSize(4);
             appendToCurIG(id);
@@ -117,12 +116,10 @@ public partial class Emitter
             return true;
         }
 
-#if DEBUG
-        if (!compiler.opts.compEnablePCRelAddr)
+        if (Configuration.DEBUG && !compiler.opts.compEnablePCRelAddr)
         {
             return false;
         }
-#endif
 
         return compiler.eeGetRelocTypeHint(addr) is CorInfoReloc.RELATIVE32;
     }

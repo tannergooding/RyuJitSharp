@@ -31,7 +31,6 @@ internal static unsafe class ArmUnwindPortTests
         Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
     }
 
-#if DEBUG
     [TestCase(0xFFFFFFFFu, 28u, 4u, 15u)]
     [TestCase(0xFFFFFFFFu, 0u, 18u, 0x3FFFFu)]
     [TestCase(0x80000000u, 31u, 1u, 1u)]
@@ -40,6 +39,8 @@ internal static unsafe class ArmUnwindPortTests
     public static void HeaderBitExtractionPreservesUnsignedFields(
         uint word, uint start, uint length, uint expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         Assert.That(ExtractBits(word, start, length), Is.EqualTo(expected));
     }
 
@@ -68,6 +69,8 @@ internal static unsafe class ArmUnwindPortTests
     [TestCase(new byte[] { 0xFF }, "end")]
     public static void UnalignedHeaderDecoderFormatsEveryArmOpcode(byte[] codes, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var text = Dump((1u << 28) | 2u, [], codes, 0, 4);
 
         var opsizeSeparator = expected.IndexOf("; opsize ", StringComparison.Ordinal);
@@ -98,6 +101,8 @@ internal static unsafe class ArmUnwindPortTests
     [Test]
     public static void DecoderPreservesExtendedCountsAndEpilogScopeOffsets()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var extended = Dump(2u, [1u << 16], [0xFF, 0xFF, 0xFF, 0xFF], 0, 4);
         Assert.That(extended, Does.Contain("  Extended Code Words        : 1"));
 
@@ -113,6 +118,8 @@ internal static unsafe class ArmUnwindPortTests
     [Test]
     public static void DecoderHandlesExtendedCodeStreamsBeyondEpilogIndexRange()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var codes = new byte[65 * sizeof(uint)];
         Array.Fill(codes, (byte)0xFF);
         var text = Dump(2u, [65u << 16], codes, 0, 4);
@@ -123,6 +130,8 @@ internal static unsafe class ArmUnwindPortTests
     [Test]
     public static void DecoderPreservesSingleEpilogAndPhantomPrologFlags()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var header = (1u << 28) | (1u << 22) | (1u << 21) | 2u;
         var text = Dump(header, [], [0xFF, 0xFF, 0xFF, 0xFF], 0, 4);
 
@@ -156,7 +165,8 @@ internal static unsafe class ArmUnwindPortTests
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             fixed (byte* pointer = blob)
             {
-                DumpUnwindInfo(compiler, true, startOffset, endOffset, pointer + 1, unchecked((uint)blob.Length - 1));
+                TestConfiguration.DumpUnwindInfo(
+                    compiler, true, startOffset, endOffset, pointer + 1, unchecked((uint)blob.Length - 1));
             }
 
             writer.Flush();
@@ -165,8 +175,6 @@ internal static unsafe class ArmUnwindPortTests
         {
             s_jitstdout = previous;
         }
-
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 }

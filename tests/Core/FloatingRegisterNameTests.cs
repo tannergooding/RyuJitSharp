@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG && HAS_FIXED_REGISTER_SET
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -12,8 +12,16 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static unsafe class FloatingRegisterNameTests
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
+internal sealed unsafe class FloatingRegisterNameTests
 {
+    [SetUp]
+    public void RequireApplicableConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
+    }
+
     [TestCaseSource(nameof(FloatingNameTypeCases))]
     public static void EveryTableEntryUsesTheNativeTypeSelectionAndStableStorage(var_types type)
     {
@@ -220,4 +228,3 @@ internal static unsafe class FloatingRegisterNameTests
         return 0;
     }
 }
-#endif

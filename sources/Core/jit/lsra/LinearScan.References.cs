@@ -14,30 +14,27 @@ public sealed partial class LinearScan
 
     private uint _currentBlockNumber;
 
-#if DEBUG
     private GenTree? _currentBuildNode;
-#endif
 
     internal RefPosition newRefPositionRaw(LsraLocation nodeLocation, GenTree? treeNode, RefType refType)
     {
         var newRefPosition = new RefPosition(_currentBlockNumber, nodeLocation, treeNode, refType
-#if DEBUG
             , _currentBuildNode
-#endif
         );
         refPositions.Add(newRefPosition);
 
-#if DEBUG
-        // Only the first reference for a build node prints that node in the allocation table.
-        _currentBuildNode = null;
-        newRefPosition.rpNum = (uint)(refPositions.Count - 1);
-
-        if (!_enregisterLocalVars)
+        if (Configuration.DEBUG)
         {
-            assert(refType is not RefType.RefTypeParamDef and not RefType.RefTypeZeroInit and
-                not RefType.RefTypeDummyDef and not RefType.RefTypeExpUse);
+            // Only the first reference for a build node prints that node in the allocation table.
+            _currentBuildNode = null;
+            newRefPosition.rpNum = (uint)(refPositions.Count - 1);
+
+            if (!_enregisterLocalVars)
+            {
+                assert(refType is not RefType.RefTypeParamDef and not RefType.RefTypeZeroInit and
+                    not RefType.RefTypeDummyDef and not RefType.RefTypeExpUse);
+            }
         }
-#endif
         return newRefPosition;
     }
 

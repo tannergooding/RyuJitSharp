@@ -24,9 +24,10 @@ public sealed partial class FlowGraphNaturalLoop
                     {
                         info.HasConstInit = true;
                         info.ConstInitValue = unchecked((int)data.AsIntCon().IconValue);
-#if DEBUG
-                        info.InitTree = tree;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            info.InitTree = tree;
+                        }
                         return true;
                     }
                 }

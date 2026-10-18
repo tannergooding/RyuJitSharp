@@ -112,13 +112,15 @@ public partial struct RegSet
     {
         assert(Compiler.lvaDoneFrameLayout < RyuJitSharp.Compiler.FINAL_FRAME_LAYOUT);
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("Clearing modified regs.\n");
+            if (Compiler.verbose)
+            {
+                jitprintf("Clearing modified regs.\n");
+            }
+
+            _rsModifiedRegsMaskInitialized = true;
         }
-        _rsModifiedRegsMaskInitialized = true;
-#endif
 
         _rsModifiedRegsMask = RBM_NONE;
 

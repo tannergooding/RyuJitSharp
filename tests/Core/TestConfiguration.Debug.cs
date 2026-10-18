@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -90,14 +91,26 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
     private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "rpNum")]
-    private static extern ref uint ReferenceNumber(RefPosition reference);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compCodeGenDone")]
     private static extern ref bool CodeGenDone(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "buildNode")]
-    private static extern ref GenTree? BuildNode(RefPosition reference);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_NodeTestData")]
+    private static extern Dictionary<GenTree, TestLabelAndNum> NodeTestData(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "JitTestCheckSSA")]
+    private static extern void SsaTestCheck(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "JitTestCheckVN")]
+    private static extern void ValueNumberTestCheck(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lvaStressLclFld")]
+    private static extern void LocalFieldStress(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgStress64RsltMul")]
+    private static extern void WideMultiplyStress(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_lvNoLclFldStress")]
+    private static extern bool NoLocalFieldStress(ref LclVarDsc descriptor);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispJumpList")]
     private static extern void EmitJumpList(Emitter emitter);
@@ -107,6 +120,25 @@ internal static partial class TestConfiguration
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgDebugCheckSsa")]
     private static extern void FgDebugCheckSsa(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Dump")]
+    private static extern void UnwindInfoDump(UnwindInfo unwindInfo, bool isHotCode, int indent);
+
+    private unsafe delegate void GlobalsUnwindInfoDumpDelegate(
+        Compiler compiler, bool isHotCode, uint startOffset, uint endOffset, byte* header, uint unwindBlockSize);
+
+    private static readonly Lazy<GlobalsUnwindInfoDumpDelegate> s_globalsUnwindInfoDump =
+        new(CreateGlobalsUnwindInfoDump);
+
+    private static GlobalsUnwindInfoDumpDelegate CreateGlobalsUnwindInfoDump()
+    {
+        var method = typeof(Globals).GetMethod(
+            "DumpUnwindInfo",
+            BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Missing Debug unwind-info diagnostic.");
+
+        return method.CreateDelegate<GlobalsUnwindInfoDumpDelegate>();
+    }
 
     public static int GetActiveStressMode(Compiler compiler, Compiler.compStressArea area)
     {
@@ -133,7 +165,7 @@ internal static partial class TestConfiguration
             throw new InvalidOperationException("Reference numbers are only available in Debug builds.");
         }
 
-        return ReferenceNumber(reference);
+        return reference.rpNum;
     }
 
     public static void SetReferenceNumber(RefPosition reference, uint number)
@@ -143,7 +175,7 @@ internal static partial class TestConfiguration
             throw new InvalidOperationException("Reference numbers are only available in Debug builds.");
         }
 
-        ReferenceNumber(reference) = number;
+        reference.rpNum = number;
     }
 
     public static bool GetCodeGenDone(Compiler compiler)
@@ -154,6 +186,97 @@ internal static partial class TestConfiguration
         }
 
         return CodeGenDone(compiler);
+    }
+
+    public static void SetCodeGenDone(Compiler compiler, bool value)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Code-generation phase state is only available in Debug builds.");
+        }
+
+        CodeGenDone(compiler) = value;
+    }
+
+    public static Dictionary<GenTree, TestLabelAndNum> GetNodeTestData(Compiler compiler)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("SSA test annotations are only available in Debug builds.");
+        }
+
+        return NodeTestData(compiler);
+    }
+
+    public static void CheckSsaTestConstraints(Compiler compiler)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("SSA test constraints are only available in Debug builds.");
+        }
+
+        SsaTestCheck(compiler);
+    }
+
+    public static void CheckValueNumberTestConstraints(Compiler compiler)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Value-number test constraints are only available in Debug builds.");
+        }
+
+        ValueNumberTestCheck(compiler);
+    }
+
+    public static void ApplyLocalFieldStress(Compiler compiler)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Local-field stress is only available in Debug builds.");
+        }
+
+        LocalFieldStress(compiler);
+    }
+
+    public static void ApplyWideMultiplyStress(Compiler compiler)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Wide-multiply stress is only available in Debug builds.");
+        }
+
+        WideMultiplyStress(compiler);
+    }
+
+    public static bool GetNoLocalFieldStress(LclVarDsc[] locals, int localNumber)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Local-field stress state is only available in Debug builds.");
+        }
+
+        return NoLocalFieldStress(ref locals[localNumber]);
+    }
+
+    public static void DumpUnwindInfo(UnwindInfo unwindInfo, bool isHotCode)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Unwind diagnostics are only available in Debug builds.");
+        }
+
+        UnwindInfoDump(unwindInfo, isHotCode, indent: 0);
+    }
+
+    public static unsafe void DumpUnwindInfo(
+        Compiler compiler, bool isHotCode, uint startOffset, uint endOffset, byte* header, uint unwindBlockSize)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Unwind diagnostics are only available in Debug builds.");
+        }
+
+        s_globalsUnwindInfoDump.Value(compiler, isHotCode, startOffset, endOffset, header, unwindBlockSize);
     }
 
     public static void DumpEmitterJumpList(Emitter emitter)
@@ -173,7 +296,7 @@ internal static partial class TestConfiguration
             throw new InvalidOperationException("Reference build nodes are only available in Debug builds.");
         }
 
-        return BuildNode(reference);
+        return reference.buildNode;
     }
 
     public static bool ShouldDumpAsciiTrees(Compiler compiler)

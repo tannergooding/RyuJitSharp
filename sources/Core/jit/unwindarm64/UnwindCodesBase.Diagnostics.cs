@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public unsafe class Arm64UnwindCodesBase
@@ -40,4 +39,3 @@ public unsafe class Arm64UnwindCodesBase
         return code == 0xE4;
     }
 }
-#endif

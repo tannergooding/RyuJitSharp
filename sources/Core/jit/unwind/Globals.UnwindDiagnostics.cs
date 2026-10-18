@@ -24,7 +24,6 @@ public static partial class Globals
         return unchecked((regNumber)((uint)first + offset));
     }
 
-#if DEBUG
     public static uint GetUnwindSizeFromUnwindHeader(byte header)
     {
         if (Configuration.TARGET_ARM64)
@@ -45,6 +44,7 @@ public static partial class Globals
         throw new FatalJitException(CORJIT_SKIPPED, "Unwind opcode-size decoding for this target is not ported.");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public static unsafe void DumpUnwindInfo(Compiler comp, bool isHotCode, uint startOffset,
         uint endOffset, byte* pHeader, uint unwindBlockSize)
     {
@@ -69,5 +69,4 @@ public static partial class Globals
             throw new FatalJitException(CORJIT_SKIPPED, "Unwind diagnostic decoding for this target is not ported.");
         }
     }
-#endif
 }

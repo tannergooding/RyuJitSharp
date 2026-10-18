@@ -31,9 +31,7 @@ public partial class Compiler
         /// <summary>stack level in stack slots.</summary>
         public int acdStkLvl;
 
-#if DEBUG
         public int acdNum;
-#endif
 
         /// <summary>determine new key designator after modifying the region indices.</summary>
         /// <param name="compiler">current compiler instance</param>
@@ -86,9 +84,14 @@ public partial class Compiler
             return result;
         }
 
-#if DEBUG
+        [System.Diagnostics.Conditional("DEBUG")]
         public void Dump()
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("AddCodeDsc.Dump is only available in Debug builds.");
+            }
+
             jitprintf($"ACD{acdNum} {sckName(acdKind)} ");
 
             switch (acdKeyDsg)
@@ -126,6 +129,5 @@ public partial class Compiler
 
             jitprintf($" map key 0x{new AddCodeDscKey(this).Data:x}\n");
         }
-#endif
     }
 }

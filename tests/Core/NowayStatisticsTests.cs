@@ -150,21 +150,24 @@ internal static unsafe class NowayStatisticsTests
     {
         var text = Run(compiler => {
             compiler.RecordNowayAssert("a", 7, "condition");
-#if DEBUG
-            var previous = Compiler.genMethodCnt;
-            Compiler.genMethodCnt = 0;
+            if (Configuration.DEBUG)
+            {
+                var previous = Compiler.genMethodCnt;
+                Compiler.genMethodCnt = 0;
 
-            try
+                try
+                {
+                    Compiler.compShutdown();
+                }
+                finally
+                {
+                    Compiler.genMethodCnt = previous;
+                }
+            }
+            else
             {
-#endif
                 Compiler.compShutdown();
-#if DEBUG
             }
-            finally
-            {
-                Compiler.genMethodCnt = previous;
-            }
-#endif
         });
 
         Assert.That(text, Does.StartWith("\nnoway_assert counts:\ncount, file, line, text\n1, a, 7, \"condition\"\n"));

@@ -77,9 +77,7 @@ public partial class Emitter
 #pragma warning restore CA1802
 #endif
 
-#if EMITTER_STATS
     private static uint emitTotalIGjmps;
-#endif
 
     public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
@@ -145,9 +143,10 @@ public partial class Emitter
                 debugInfo.idCatchRet = true;
             }
         }
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
         id.idSetRelocFlags(attr);
         var size = emitInsSizeAM(id, insCodeRM(ins));
         id.idCodeSize(size);
@@ -269,9 +268,10 @@ public partial class Emitter
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;
         emitCurIGjmpList = id;
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
 
         if (ins == INS_call)
         {
@@ -392,9 +392,10 @@ public partial class Emitter
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;
         emitCurIGjmpList = id;
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
 
         var targetIG = emitCodeGetCookie(dst);
         if (!id.idjKeepLong && (targetIG is not null))

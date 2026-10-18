@@ -14,9 +14,10 @@ public sealed partial class LinearScan
             throw new FatalJitException(CORJIT_SKIPPED);
         }
 
-#if DEBUG
-        JITDUMP($"Inserting UpperVectorSave for RP #{reference.rpNum} before {tree.TreeId}.{tree.Oper.Name}:\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"Inserting UpperVectorSave for RP #{reference.rpNum} before {tree.TreeId}.{tree.Oper.Name}:\n");
+        }
         var localInterval = upper.relatedInterval
             ?? throw new FatalJitException("An upper-vector save requires its local interval.");
         assert(localInterval.isLocalVar && ReferenceEquals(reference.getInterval(), upper));
@@ -38,9 +39,10 @@ public sealed partial class LinearScan
         var saveType = Configuration.TARGET_ARM64 ? TYP_DOUBLE : TYP_SIMD16;
         var source = _compiler.gtNewLclvNode(local.Type, checked((int)localInterval.varNum));
         source.RegNum = localReg;
-#if DEBUG
-        source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+        }
         var save = new GenTreeIntrinsic(saveType, source, NI_SIMD_UpperSave, methodHandle: null)
         {
             RegNum = spillReg,
@@ -50,9 +52,10 @@ public sealed partial class LinearScan
             save.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
         }
 
-#if DEBUG
-        save._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            save._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+        }
         if (spillToMemory)
         {
             save.Flags |= GTF_SPILL;
@@ -76,9 +79,10 @@ public sealed partial class LinearScan
             throw new FatalJitException(CORJIT_SKIPPED);
         }
 
-#if DEBUG
-        JITDUMP($"Inserting UpperVectorRestore for RP #{reference.rpNum} ");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"Inserting UpperVectorRestore for RP #{reference.rpNum} ");
+        }
         var localInterval = upper.relatedInterval
             ?? throw new FatalJitException("An upper-vector restore requires its local interval.");
         assert(localInterval.isLocalVar && localInterval.physReg != REG_NA);
@@ -87,18 +91,20 @@ public sealed partial class LinearScan
 
         var source = _compiler.gtNewLclvNode(local.Type, checked((int)localInterval.varNum));
         source.RegNum = localInterval.physReg;
-#if DEBUG
-        source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+        }
         var restore = new GenTreeIntrinsic(local.Type, source, NI_SIMD_UpperRestore, methodHandle: null);
         if (Configuration.FEATURE_READYTORUN)
         {
             restore.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
         }
 
-#if DEBUG
-        restore._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            restore._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+        }
         var restoreReg = upper.physReg;
         if (restoreReg == REG_NA)
         {

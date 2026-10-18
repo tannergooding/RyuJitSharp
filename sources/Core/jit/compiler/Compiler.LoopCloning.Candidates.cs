@@ -387,10 +387,8 @@ public partial class Compiler
                 assert(handle.IsIconHandle(GTF_ICON_FTN_ADDR));
                 assert(block.LastStmt == stmt);
                 context.EnsureLoopOptInfo(loop.Index).Add(new LcMethodAddrTestOptInfo(
-                    block, stmt, indir, lclNum, (void*)handle.IconValue, right != handle
-#if DEBUG
-                    , (CORINFO_METHOD_HANDLE)handle.TargetHandle
-#endif
+                    block, stmt, indir, lclNum, (void*)handle.IconValue, right != handle,
+                    Configuration.DEBUG ? (CORINFO_METHOD_HANDLE)handle.TargetHandle : default
                 ));
             }
         }

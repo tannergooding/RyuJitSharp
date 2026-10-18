@@ -3,10 +3,74 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
 public sealed partial class RefPosition
 {
+    private sealed class DebugData
+    {
+        internal uint MinRegCandidateCount;
+        internal uint ReferencePositionNumber;
+        internal GenTree? BuildNode;
+    }
+
+    private static class DebugDataStorage
+    {
+        internal static readonly ConditionalWeakTable<RefPosition, DebugData> Table = [];
+    }
+
+    public uint minRegCandidateCount
+    {
+        get
+        {
+            return GetDebugData().MinRegCandidateCount;
+        }
+
+        set
+        {
+            GetDebugData().MinRegCandidateCount = value;
+        }
+    }
+
+    public uint rpNum
+    {
+        get
+        {
+            return GetDebugData().ReferencePositionNumber;
+        }
+
+        set
+        {
+            GetDebugData().ReferencePositionNumber = value;
+        }
+    }
+
+    public GenTree? buildNode
+    {
+        get
+        {
+            return GetDebugData().BuildNode;
+        }
+
+        set
+        {
+            GetDebugData().BuildNode = value;
+        }
+    }
+
+    private DebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("RefPosition debug data is only available in Debug builds.");
+        }
+
+        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+    }
+
     public Referenceable? referent;
     public RefPosition? nextRefPosition;
     public GenTree? treeNode;
@@ -37,12 +101,6 @@ public sealed partial class RefPosition
     public bool skipSaveRestore;
     public bool liveVarUpperSave;
 
-#if DEBUG
-    public uint minRegCandidateCount;
-    public uint rpNum;
-    public GenTree? buildNode;
-#endif
-
     public RefPosition(uint bbNum, LsraLocation nodeLocation, GenTree? treeNode, RefType refType, GenTree? buildNode = null)
     {
         this.bbNum = bbNum;
@@ -53,11 +111,13 @@ public sealed partial class RefPosition
         killedRegisters = RBM_NONE;
         multiRegIdx = 0;
 
-#if DEBUG
-        minRegCandidateCount = 1;
-        rpNum = 0;
-        this.buildNode = buildNode;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugData = GetDebugData();
+            debugData.MinRegCandidateCount = 1;
+            debugData.ReferencePositionNumber = 0;
+            debugData.BuildNode = buildNode;
+        }
     }
 
     public Interval getInterval()
@@ -179,9 +239,13 @@ public sealed partial class RefPosition
     public bool isFirstRefPositionOfConsecutiveRegisters() =>
         Configuration.TARGET_ARM64 && needsConsecutive && (regCount != 0);
 
-#if DEBUG
     public bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveLocation)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Consecutive-register diagnostics are only available in Debug builds.");
+        }
+
         if (!Configuration.TARGET_ARM64)
         {
             return false;
@@ -207,7 +271,6 @@ public sealed partial class RefPosition
         }
         return refType is RefType.RefTypeUpperVectorRestore && atConsecutiveLocation;
     }
-#endif
 
     public bool IsExtraUpperVectorSave()
     {

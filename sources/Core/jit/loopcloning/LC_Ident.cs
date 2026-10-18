@@ -35,9 +35,7 @@ public unsafe struct LC_Ident
     public LC_Span SpanAccess;
     public CORINFO_CLASS_HANDLE ClsHnd;
     public void* MethAddr;
-#if DEBUG
     public CORINFO_METHOD_HANDLE TargetMethHnd;
-#endif
 
     public readonly bool Matches(in LC_Ident that)
     {
@@ -197,9 +195,10 @@ public unsafe struct LC_Ident
             case IdentType.IndirOfMethodAddrSlot:
             {
                 var handle = compiler.gtNewIconHandleNode((nint)MethAddr, GTF_ICON_FTN_ADDR);
-#if DEBUG
-                handle.TargetHandle = (nint)TargetMethHnd;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    handle.TargetHandle = (nint)TargetMethHnd;
+                }
                 return Type is IdentType.MethodAddr ? handle :
                     compiler.gtNewIndir(TYP_I_IMPL, handle, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             }
@@ -232,29 +231,19 @@ public unsafe struct LC_Ident
     public static LC_Ident CreateClassHandle(CORINFO_CLASS_HANDLE clsHnd)
         => new() { Type = IdentType.ClassHandle, ClsHnd = clsHnd };
 
-    public static LC_Ident CreateMethodAddr(void* methAddr
-#if DEBUG
-        , CORINFO_METHOD_HANDLE targetMethHnd
-#endif
-        ) => new()
+    public static LC_Ident CreateMethodAddr(
+        void* methAddr, CORINFO_METHOD_HANDLE targetMethHnd = default) => new()
         {
             Type = IdentType.MethodAddr,
             MethAddr = methAddr,
-#if DEBUG
             TargetMethHnd = targetMethHnd,
-#endif
         };
 
-    public static LC_Ident CreateIndirMethodAddrSlot(void* methAddrSlot
-#if DEBUG
-        , CORINFO_METHOD_HANDLE targetMethHnd
-#endif
-        ) => new()
+    public static LC_Ident CreateIndirMethodAddrSlot(
+        void* methAddrSlot, CORINFO_METHOD_HANDLE targetMethHnd = default) => new()
         {
             Type = IdentType.IndirOfMethodAddrSlot,
             MethAddr = methAddrSlot,
-#if DEBUG
             TargetMethHnd = targetMethHnd,
-#endif
         };
 }

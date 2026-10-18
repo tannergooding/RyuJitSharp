@@ -54,13 +54,11 @@ public sealed partial class LinearScan
 
     private void buildRefPositionsForNode(GenTree tree, LsraLocation currentLocation)
     {
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             dumpDefList();
             _compiler.gtDispTree(tree, topOnly: true);
         }
-#endif
 
         if (tree.IsContained)
         {
@@ -86,107 +84,118 @@ public sealed partial class LinearScan
             return;
         }
 
+        var refPositionMark = 0;
+        var oldDefinitionCount = 0;
+        if (Configuration.DEBUG)
+        {
+            refPositionMark = refPositions.Count;
+            oldDefinitionCount = countPendingDefinitions();
+            _currentBuildNode = tree;
+        }
+
 #if DEBUG
-        var refPositionMark = refPositions.Count;
-        var oldDefinitionCount = countPendingDefinitions();
-        _currentBuildNode = tree;
+        var consumed = buildNode(tree);
+#else
+        _ = buildNode(tree);
 #endif
 
-        var consumed = buildNode(tree);
-
 #if DEBUG
-        var produced = countPendingDefinitions() - oldDefinitionCount;
-        _ = produced;
-        assert((consumed == 0) || (computeAvailableSrcCount(tree) == consumed));
-
-        var registerLimitMask = Configuration.TARGET_AMD64 ? 0x6003 : 0x3;
-        const int selectionHeuristicsMask = 0x1c;
-        if ((_lsraStressMask & (registerLimitMask | selectionHeuristicsMask)) != 0)
+        if (Configuration.DEBUG)
         {
-            uint minimumRegisterCount = 0;
-            for (var index = refPositionMark; index < refPositions.Count; index++)
+            var produced = countPendingDefinitions() - oldDefinitionCount;
+            _ = produced;
+            assert((consumed == 0) || (computeAvailableSrcCount(tree) == consumed));
+
+            var registerLimitMask = Configuration.TARGET_AMD64 ? 0x6003 : 0x3;
+            const int selectionHeuristicsMask = 0x1c;
+            if ((_lsraStressMask & (registerLimitMask | selectionHeuristicsMask)) != 0)
             {
-                var reference = refPositions[index];
-                if (!reference.isIntervalRef())
+                uint minimumRegisterCount = 0;
+                for (var index = refPositionMark; index < refPositions.Count; index++)
                 {
-                    continue;
-                }
-
-                if ((reference.refType is RefType.RefTypeUse) ||
-                    ((reference.refType is RefType.RefTypeDef) && !reference.getInterval().isInternal))
-                {
-                    minimumRegisterCount++;
-                }
-                else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
-                    reference.refType is RefType.RefTypeUpperVectorSave)
-                {
-                    minimumRegisterCount++;
-                }
-                else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
-                    Configuration.TARGET_ARM64 && reference.needsConsecutive)
-                {
-                    assert(reference.refType is RefType.RefTypeUpperVectorRestore);
-                    minimumRegisterCount++;
-                }
-                if (Configuration.TARGET_ARM64 && reference.needsConsecutive)
-                {
-                    _consecutiveRegistersLocation = reference.nodeLocation;
-                }
-                if (reference.getInterval().isSpecialPutArg)
-                {
-                    minimumRegisterCount++;
-                }
-            }
-
-            for (var index = refPositionMark; index < refPositions.Count; index++)
-            {
-                var reference = refPositions[index];
-                var minimumForReference = minimumRegisterCount;
-                if (RefTypeIsUse(reference.refType) && reference.delayRegFree)
-                {
-                    minimumForReference += checked((uint)countRegisterMaskBits(getKillSetForNode(tree)));
-                }
-                else if ((reference.refType is RefType.RefTypeDef) &&
-                    reference.getInterval().isSpecialPutArg)
-                {
-                    minimumForReference++;
-                }
-
-                reference.minRegCandidateCount = minimumForReference;
-                if (reference.IsActualRef() && doReverseCallerCallee())
-                {
-                    var interval = reference.getInterval();
-                    var previousCandidates = reference.registerAssignment;
-                    var calleeSaved = calleeSaveRegs(interval.registerType);
-                    if (!Configuration.TARGET_ARM64 ||
-                        !reference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
+                    var reference = refPositions[index];
+                    if (!reference.isIntervalRef())
                     {
-                        reference.registerAssignment = getConstrainedRegMask(
-                            reference, interval.registerType, previousCandidates, calleeSaved, minimumForReference);
+                        continue;
                     }
 
-                    if ((reference.registerAssignment != previousCandidates) &&
-                        (reference.refType is RefType.RefTypeUse) && !interval.isLocalVar)
+                    if ((reference.refType is RefType.RefTypeUse) ||
+                        ((reference.refType is RefType.RefTypeDef) && !reference.getInterval().isInternal))
                     {
-                        var shouldCheckConflictingDefUse = true;
-                        if (Configuration.TARGET_ARM64)
+                        minimumRegisterCount++;
+                    }
+                    else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                        reference.refType is RefType.RefTypeUpperVectorSave)
+                    {
+                        minimumRegisterCount++;
+                    }
+                    else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                        Configuration.TARGET_ARM64 && reference.needsConsecutive)
+                    {
+                        assert(reference.refType is RefType.RefTypeUpperVectorRestore);
+                        minimumRegisterCount++;
+                    }
+                    if (Configuration.TARGET_ARM64 && reference.needsConsecutive)
+                    {
+                        _consecutiveRegistersLocation = reference.nodeLocation;
+                    }
+                    if (reference.getInterval().isSpecialPutArg)
+                    {
+                        minimumRegisterCount++;
+                    }
+                }
+
+                for (var index = refPositionMark; index < refPositions.Count; index++)
+                {
+                    var reference = refPositions[index];
+                    var minimumForReference = minimumRegisterCount;
+                    if (RefTypeIsUse(reference.refType) && reference.delayRegFree)
+                    {
+                        minimumForReference += checked((uint)countRegisterMaskBits(getKillSetForNode(tree)));
+                    }
+                    else if ((reference.refType is RefType.RefTypeDef) &&
+                        reference.getInterval().isSpecialPutArg)
+                    {
+                        minimumForReference++;
+                    }
+
+                    reference.minRegCandidateCount = minimumForReference;
+                    if (reference.IsActualRef() && doReverseCallerCallee())
+                    {
+                        var interval = reference.getInterval();
+                        var previousCandidates = reference.registerAssignment;
+                        var calleeSaved = calleeSaveRegs(interval.registerType);
+                        if (!Configuration.TARGET_ARM64 ||
+                            !reference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
                         {
-                            var firstReference = interval.firstRefPosition
-                                ?? throw new FatalJitException("A live interval must have a first reference.");
-                            assert(firstReference.treeNode is not null);
-                            shouldCheckConflictingDefUse =
-                                !firstReference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation);
+                            reference.registerAssignment = getConstrainedRegMask(
+                                reference, interval.registerType, previousCandidates, calleeSaved, minimumForReference);
                         }
-                        if (shouldCheckConflictingDefUse)
+
+                        if ((reference.registerAssignment != previousCandidates) &&
+                            (reference.refType is RefType.RefTypeUse) && !interval.isLocalVar)
                         {
-                            checkConflictingDefUse(reference);
+                            var shouldCheckConflictingDefUse = true;
+                            if (Configuration.TARGET_ARM64)
+                            {
+                                var firstReference = interval.firstRefPosition
+                                    ?? throw new FatalJitException("A live interval must have a first reference.");
+                                assert(firstReference.treeNode is not null);
+                                shouldCheckConflictingDefUse =
+                                    !firstReference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation);
+                            }
+                            if (shouldCheckConflictingDefUse)
+                            {
+                                checkConflictingDefUse(reference);
+                            }
                         }
                     }
                 }
-            }
-            if (Configuration.TARGET_ARM64)
-            {
-                _consecutiveRegistersLocation = MinLocation;
+
+                if (Configuration.TARGET_ARM64)
+                {
+                    _consecutiveRegistersLocation = MinLocation;
+                }
             }
         }
 #endif

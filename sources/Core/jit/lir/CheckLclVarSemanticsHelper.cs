@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -156,14 +155,18 @@ public sealed class CheckLclVarSemanticsHelper
     /// <remarks>the node info representing the def.</remarks>
     private void PopLclVarRead(in AliasSet.NodeInfo defInfo)
     {
-        assert(_unusedLclVarReads.TryGetValue(defInfo.LclNum, out var reads));
-        assert(reads.Remove(defInfo.Node), "Could not find consumed local in unusedLclVarReads");
+        var found = _unusedLclVarReads.TryGetValue(defInfo.LclNum, out var reads);
+        if (!Configuration.DEBUG)
+        {
+            _ = found;
+        }
+        assert(found);
+        assert(reads!.Remove(defInfo.Node), "Could not find consumed local in unusedLclVarReads");
 
-        if (reads.Count == 0)
+        if (reads!.Count == 0)
         {
             _ = _unusedLclVarReads.Remove(defInfo.LclNum);
             _lclVarReadsMapsCache.Push(reads);
         }
     }
 }
-#endif

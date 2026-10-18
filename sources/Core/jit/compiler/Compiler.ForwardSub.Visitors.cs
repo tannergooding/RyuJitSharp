@@ -27,10 +27,8 @@ public partial class Compiler
         private ExceptionSetFlags _accumulatedExceptions;
         private ExceptionSetFlags _useExceptions;
         private uint _treeSize;
-#if DEBUG
         private uint _useCount;
         public readonly uint UseCount => _useCount;
-#endif
 
         public readonly GenTree? Node => _node;
         public readonly GenTree? ParentNode => _parentNode;
@@ -78,12 +76,10 @@ public partial class Compiler
 
             if (node.Oper.IsLocal)
             {
-#if DEBUG
-                if (IsUse(node.AsLclVarCommon().LclNum))
+                if (Configuration.DEBUG && IsUse(node.AsLclVarCommon().LclNum))
                 {
                     _useCount++;
                 }
-#endif
                 if (compiler.lvaGetDesc(node.AsLclVarCommon().LclNum).IsAddressExposed)
                 {
                     _accumulatedFlags |= GTF_GLOB_REF;

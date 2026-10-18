@@ -29,20 +29,15 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if ((compHndBBtabCount > 0) && !opts.compProcedureSplittingEH)
+        if (Configuration.DEBUG && (compHndBBtabCount > 0) && !opts.compProcedureSplittingEH)
         {
             JITDUMP("No procedure splitting will be done for this method with EH (by request)\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
 
         BasicBlock? firstColdBlock = null;
         BasicBlock? prevToFirstColdBlock = null;
-        var forceSplit = false;
-#if DEBUG
-        forceSplit = JitConfig.JitStressProcedureSplitting != 0;
-#endif
+        var forceSplit = Configuration.DEBUG && (JitConfig.JitStressProcedureSplitting != 0);
         if (forceSplit)
         {
             assert(fgFirstBB is not null);

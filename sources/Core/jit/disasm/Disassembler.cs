@@ -128,15 +128,18 @@ public partial struct Disassembler
             _diffable = true;
         }
 
-#if DEBUG
-        var fileName = JitConfig.JitLateDisasmTo;
-        if (fileName is not null)
+        if (Configuration.DEBUG)
         {
-            _disAsmFile = OpenLateDisassemblyFile(fileName);
+            var fileName = JitConfig.JitLateDisasmTo;
+            if (fileName is not null)
+            {
+                _disAsmFile = OpenLateDisassemblyFile(fileName);
+            }
         }
-#else
-        _disAsmFile = jitstdout();
-#endif
+        else
+        {
+            _disAsmFile = jitstdout();
+        }
 
         var output = _disAsmFile ??= jitstdout();
 

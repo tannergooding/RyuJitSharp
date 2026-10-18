@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Select packet 308 from the 1,367 Pending candidates by ascending pinned source_blob size, including returned deferrals and taking complete file groups to at least 300 candidates. Keep the four B209 candidates Deferred until the target-width table/emitter dependency closure and tests are complete.",
+    "nextAction": "Begin packet 309 from the reconciled Pending queue in pinned source-size order, starting with sources\\Core\\jit\\emitxarch\\Emitter.StackOutput.cs (13,970 bytes). Select about 300 candidates at complete-file boundaries, classify the 181 generic entries in that size window before implementation, and leave the 84 concrete Deferred rows, CFG-0001 exception, and open-revalidation row unresolved until their named prerequisites are addressed.",
 
     "unresolvedConditionalCleanup": [
       {
@@ -27,7 +27,6 @@
       }
     ],
 
-    "activeBatch": null,
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",
       "The optional ARM64 emitter recording selection failed 18/642 Debug and 12/606 Release cases on existing unsupported target register-recording and diagnostic paths; no pass is claimed from that selection. ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED remains undefined by default, so its guarded bodies were not executed. TRX: artifacts\\tst\\EmitterTestHarnessGuard\\Debug\\EmitterTestHarnessGuard.win-arm64.Debug.trx and Release equivalent.",

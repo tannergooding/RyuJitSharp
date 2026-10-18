@@ -148,7 +148,6 @@ public sealed partial class CodeSeqSM
         return StateWeights[stateId];
     }
 
-#if DEBUG
     public string StateDesc(SM_STATE_ID stateId)
     {
         if (stateId == 0)
@@ -183,7 +182,6 @@ public sealed partial class CodeSeqSM
 
         return stateDesc.ToString();
     }
-#endif
 
     public static SM_OPCODE MapToSMOpcode(OPCODE opcode)
     {

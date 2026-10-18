@@ -81,12 +81,13 @@ public sealed partial class LinearScan
 
             assert(first is not null);
             first.regCount = checked((byte)sourceCount);
-#if DEBUG
-            for (var current = first; current is not null; current = getNextConsecutiveRefPosition(current))
+            if (Configuration.DEBUG)
             {
-                current.minRegCandidateCount = (uint)sourceCount;
+                for (var current = first; current is not null; current = getNextConsecutiveRefPosition(current))
+                {
+                    current.minRegCandidateCount = (uint)sourceCount;
+                }
             }
-#endif
         }
         else
         {
@@ -118,9 +119,10 @@ public sealed partial class LinearScan
             var current = buildDef(tree, SRBM_NONE, index);
             current.needsConsecutive = true;
             current.regCount = index == 0 ? checked((byte)registerCount) : (byte)0;
-#if DEBUG
-            current.minRegCandidateCount = (uint)registerCount;
-#endif
+            if (Configuration.DEBUG)
+            {
+                current.minRegCandidateCount = (uint)registerCount;
+            }
             if (previous is not null)
             {
                 _nextConsecutiveRefPositions[previous] = current;

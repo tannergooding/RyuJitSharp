@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     private struct NativeLayout
     {
         private int _offset;
@@ -148,9 +147,10 @@ public partial class Emitter
     {
         var group = new NativeLayout();
         AddField(ref group, "igNext             ", word, word, print);
-#if EMIT_BACKWARDS_NAVIGATION
-        AddField(ref group, "igPrev             ", word, word, print);
-#endif
+        if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+        {
+            AddField(ref group, "igPrev             ", word, word, print);
+        }
         if (Configuration.DEBUG)
         {
             AddField(ref group, "igSelf             ", word, word, print);
@@ -188,9 +188,10 @@ public partial class Emitter
             jitprintf(FormattableString.Invariant($"Offset / size of igPhData           = {groupDataOffset,3} / {groupDataSize,2}\n"));
         }
 
-#if EMIT_BACKWARDS_NAVIGATION
-        AddField(ref group, "igLastIns          ", word, word, print);
-#endif
+        if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+        {
+            AddField(ref group, "igLastIns          ", word, word, print);
+        }
         if (Configuration.EMIT_TRACK_STACK_DEPTH)
         {
             AddField(ref group, "igStkLvl           ", sizeof(uint), sizeof(uint), print);
@@ -242,5 +243,4 @@ public partial class Emitter
         var value = divide ? capacity / size : capacity;
         jitprintf(FormattableString.Invariant($"{name} = {value,2}\n"));
     }
-#endif
 }

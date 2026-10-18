@@ -187,12 +187,10 @@ public partial class Compiler
                 }
 
                 JITDUMP("Will need to clone: ");
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     add.Dump();
                 }
-#endif
                 var cloned = new AddCodeDsc
                 {
                     acdDstBlk = null,
@@ -205,9 +203,7 @@ public partial class Compiler
                     acdUsed = false,
                     acdStkLvl = 0,
                     acdStkLvlInit = false,
-#if DEBUG
-                    acdNum = acdCount++,
-#endif
+                    acdNum = Configuration.DEBUG ? acdCount++ : 0,
                 };
                 clonedDescriptors.Push(cloned);
             }
@@ -217,12 +213,10 @@ public partial class Compiler
                 var cloned = clonedDescriptors.Pop();
                 descriptors[new AddCodeDscKey(cloned)] = cloned;
                 JITDUMP("Added clone: ");
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     cloned.Dump();
                 }
-#endif
             }
         }
 

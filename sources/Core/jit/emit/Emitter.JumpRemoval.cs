@@ -24,8 +24,8 @@ public partial class Emitter
 
         assert(_compiler is not null);
         JITDUMP("*************** In emitRemoveJumpToNextInst()\n");
-#if DEBUG
         // EMIT_INSTLIST_VERBOSE is disabled in the pinned emitter.
+#if DEBUG
         if (_compiler.verbose)
         {
             emitDispJumpList();
@@ -35,10 +35,13 @@ public partial class Emitter
         uint totalRemovedSize = 0;
         var jmp = emitJumpList;
         instrDescJmp? previousJmp = null;
-#if DEBUG
         insGroup? previousJumpIG = null;
         uint previousJumpInsNum = 0;
-#endif
+        if (!Configuration.DEBUG)
+        {
+            _ = previousJumpIG;
+            _ = previousJumpInsNum;
+        }
 
         while (jmp is not null)
         {
@@ -53,14 +56,19 @@ public partial class Emitter
                     assert(jmp.idIns() == INS_jmp);
                 }
 
-#if DEBUG
-                var debugInfo = jmp.idDebugOnlyInfo();
-                assert(debugInfo is not null);
-                assert((previousJumpIG is null) || jmpGroup.IsAfter(previousJumpIG)
-                    || (ReferenceEquals(jmpGroup, previousJumpIG) && (debugInfo.idNum > previousJumpInsNum)));
-                previousJumpIG = jmpGroup;
-                previousJumpInsNum = debugInfo.idNum;
-#endif
+                var debugInfo = Configuration.DEBUG ? jmp.idDebugOnlyInfo() : null;
+                if (!Configuration.DEBUG)
+                {
+                    _ = debugInfo;
+                }
+                if (Configuration.DEBUG)
+                {
+                    assert(debugInfo is not null);
+                    assert((previousJumpIG is null) || jmpGroup.IsAfter(previousJumpIG)
+                        || (ReferenceEquals(jmpGroup, previousJumpIG) && (debugInfo!.idNum > previousJumpInsNum)));
+                    previousJumpIG = jmpGroup;
+                    previousJumpInsNum = debugInfo!.idNum;
+                }
                 var targetGroup = (jmp.idjTarget is BasicBlock target
                     ? emitCodeGetCookie(target)
                     : null) ?? throw new FatalJitException(CORJIT_SKIPPED,
@@ -83,11 +91,11 @@ public partial class Emitter
                     {
                         jitprintf("jmp != id, dumping context information\n");
                         jitprintf($"method: {_compiler.impInlineRoot.info.compMethodName}\n");
-                        jitprintf($"  jmp: {debugInfo.idNum}: ");
+                        jitprintf($"  jmp: {debugInfo!.idNum}: ");
                         emitDispIns(jmp, false, true, false, 0, null, 0, jmpGroup);
                         var lastDebugInfo = lastInstruction.idDebugOnlyInfo();
                         assert(lastDebugInfo is not null);
-                        jitprintf($"   id: {lastDebugInfo.idNum}: ");
+                        jitprintf($"   id: {lastDebugInfo!.idNum}: ");
                         emitDispIns(lastInstruction, false, true, false, 0, null, 0, jmpGroup);
                         jitprintf("jump group:\n");
                         emitDispIG(jmpGroup, false, true);
@@ -95,7 +103,7 @@ public partial class Emitter
                         emitDispIG(targetGroup, false, false);
                         assert(ReferenceEquals(jmp, lastInstruction));
                     }
-                    JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo.idNum:x4} is the last instruction in the group " +
+                    JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo!.idNum:x4} is the last instruction in the group " +
                         $"and jumps to the next instruction group IG{targetGroup.GetDisplayId():D2} " +
                         $"{emitLabelString(targetGroup)}, removing.\n");
 #endif
@@ -139,18 +147,19 @@ public partial class Emitter
                 {
                     jmp.idjIsRemovableJmpCandidate = false;
                     previousJmp = jmp;
-#if DEBUG
-                    if (!ReferenceEquals(jmpGroup.igNext, targetGroup))
+                    if (Configuration.DEBUG)
                     {
-                        JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo.idNum:x4} does not jump to the next " +
-                            "instruction group, keeping.\n");
+                        if (!ReferenceEquals(jmpGroup.igNext, targetGroup))
+                        {
+                            JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo!.idNum:x4} does not jump to the next " +
+                                "instruction group, keeping.\n");
+                        }
+                        else
+                        {
+                            JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo!.idNum:x4} containing instruction " +
+                                "group is not marked with IGF_HAS_REMOVABLE_JMP, keeping.\n");
+                        }
                     }
-                    else
-                    {
-                        JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo.idNum:x4} containing instruction " +
-                            "group is not marked with IGF_HAS_REMOVABLE_JMP, keeping.\n");
-                    }
-#endif
                 }
             }
             else

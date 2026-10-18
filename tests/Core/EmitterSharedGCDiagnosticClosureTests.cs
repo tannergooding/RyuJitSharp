@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -50,7 +49,7 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         View.CurrentGCref(emitter) = (regMask)5;
         View.CurrentByref(emitter) = (regMask)6;
 
-        var output = TestConfiguration.CaptureDebugOutput(emitter.emitDispGCinfo);
+        var output = TestConfiguration.CaptureDebugOutput(() => View.DisplayGCInfo(emitter));
         var addresses = Regex.Matches(output, @"\(0x([0-9A-F]+)\)=");
         Assert.That(addresses, Has.Count.EqualTo(6));
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -144,7 +143,8 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         };
 
         var output = TestConfiguration.CaptureDebugOutput(() =>
-            emitter.emitDispIG(group, displayLocation: false));
+            View.DisplayGroup(emitter, group, displayFunc: false,
+                displayInstructions: false, displayLocation: false));
 
         Assert.That(output, Does.Contain("prolog placeholder, next placeholder=<END>, gcvars, byref"));
         Assert.That(output, Does.Contain(";   InitGCVars="));
@@ -169,7 +169,8 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         });
 
         Assert.That(TestConfiguration.CaptureDebugOutput(
-            () => emitter.emitDispIG(group, displayLocation: false)),
+            () => View.DisplayGroup(emitter, group, displayFunc: false,
+                displayInstructions: false, displayLocation: false)),
             Is.EqualTo($"G_M017_IG03:        ; bbWeight=1, gcrefRegs={registers}{Environment.NewLine}"));
     }
 
@@ -238,6 +239,13 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispRegPtrListDelta")]
         public static extern void DisplayArgumentDelta(Emitter emitter);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispGCinfo")]
+        public static extern void DisplayGCInfo(Emitter emitter);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispIG")]
+        public static extern void DisplayGroup(Emitter emitter, insGroup group, bool displayFunc,
+            bool displayInstructions, bool displayLocation);
+
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitPrevGCrefRegs")]
         public static extern ref regMask PreviousGCref(Emitter emitter);
 
@@ -257,4 +265,3 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         public static extern ref regMask CurrentByref(Emitter emitter);
     }
 }
-#endif

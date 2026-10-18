@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -42,7 +41,7 @@ internal static unsafe class EmitterGroupDiagnosticsTests
             InsGroupFlags.NoGCInterrupt | InsGroupFlags.UpdatedInstructionSize |
             InsGroupFlags.Extend | InsGroupFlags.HasAlign | InsGroupFlags.Placeholder;
 
-        var output = Capture(() => emitter.emitDispIGflags(flags));
+        var output = Capture(() => DisplayGroupFlags(emitter, flags));
 
         Assert.That(output, Is.EqualTo(
             ", gcvars, byref, prolog, epilog, funclet prolog, funclet epilog, nogc, isz, extend, align"));
@@ -74,7 +73,7 @@ internal static unsafe class EmitterGroupDiagnosticsTests
 
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = 7;
-        compiler.compCodeGenDone = true;
+        TestConfiguration.SetCodeGenDone(compiler, true);
         TestConfiguration.EnableVerbose(compiler);
         compiler.lvaCount = 9;
         compiler.lvaTrackedCount = 3;
@@ -97,7 +96,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         VarSetOps.AddElemD(compiler, group.SavedGcVars, 1);
         emitter.emitCurIG = group;
 
-        var output = Capture(() => emitter.emitDispIG(group, displayFunc: true));
+        var output = Capture(() => DisplayGroup(emitter, group, displayFunc: true,
+            displayInstructions: false, displayLocation: true));
 
         Assert.That(output, Is.EqualTo(
             "G_M007_IG02:        ; func=03, offs=0x00002A, size=0x0005, bbWeight=1, " +
@@ -143,7 +143,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         FirstPlaceholder(emitter) = placeholder;
         LastPlaceholder(emitter) = placeholder;
 
-        var output = Capture(() => emitter.emitDispIG(placeholder));
+        var output = Capture(() => DisplayGroup(emitter, placeholder, displayFunc: false,
+            displayInstructions: false, displayLocation: true));
         var indentation = new string(' ', "G_M042_IG04:        ".Length);
 
         Assert.That(output, Is.EqualTo(
@@ -173,7 +174,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         group.InitializeNum(1);
         group.igBlocks.Add(new BasicBlock(null, null));
 
-        var output = Capture(() => emitter.emitDispIG(group, displayFunc: true, displayLocation: false));
+        var output = Capture(() => DisplayGroup(emitter, group, displayFunc: true,
+            displayInstructions: false, displayLocation: false));
 
         Assert.That(output, Is.EqualTo(
             "G_M005_IG01:        ; bbWeight=0.50, byrefRegs=0000 {}, byref, extend" +
@@ -198,8 +200,9 @@ internal static unsafe class EmitterGroupDiagnosticsTests
                 emitter.emitDispIns(instructions[0], false, true, false, 0x24, null, 0, group);
                 emitter.emitDispIns(instructions[1], false, true, false, 0x25, null, 0, group);
             });
-            var output = Capture(() => emitter.emitDispIG(group, displayInstructions: true));
-            var listOutput = Capture(() => emitter.emitDispIGlist(displayInstructions: true));
+            var output = Capture(() => DisplayGroup(emitter, group, displayFunc: false,
+                displayInstructions: true, displayLocation: true));
+            var listOutput = Capture(() => DisplayGroupList(emitter, displayInstructions: true));
 
             Assert.That(expected, Does.Contain("nop"));
             Assert.That(expected, Does.Contain("ret"));
@@ -215,8 +218,10 @@ internal static unsafe class EmitterGroupDiagnosticsTests
 
         var emitter = CreateEmitter(out _);
         var group = new insGroup();
-        Assert.That(Capture(() => emitter.emitDispIG(group, displayInstructions: true)),
-            Is.EqualTo(Capture(() => emitter.emitDispIG(group))));
+        Assert.That(Capture(() => DisplayGroup(emitter, group, displayFunc: false,
+                displayInstructions: true, displayLocation: true)),
+            Is.EqualTo(Capture(() => DisplayGroup(emitter, group, displayFunc: false,
+                displayInstructions: false, displayLocation: true))));
     }
 
     [Test]
@@ -231,13 +236,14 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         var third = new insGroup { igFuncIdx = 1, igWeight = 100 };
         first.igNext = second;
         second.igNext = third;
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-        second.igPrev = first;
-        third.igPrev = second;
-#endif
+        if (Configuration.TARGET_XARCH || Configuration.EMIT_BACKWARDS_NAVIGATION)
+        {
+            second.igPrev = first;
+            third.igPrev = second;
+        }
         FirstGroup(emitter) = first;
 
-        var output = Capture(() => emitter.emitDispIGlist());
+        var output = Capture(() => DisplayGroupList(emitter, displayInstructions: false));
 
         Assert.That(output.Split("func=00", StringSplitOptions.None), Has.Length.EqualTo(2));
         Assert.That(output.Split("func=01", StringSplitOptions.None), Has.Length.EqualTo(2));
@@ -264,6 +270,16 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitSavIG")]
     private static extern insGroup Save(Emitter emitter, bool extend);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispIGflags")]
+    private static extern void DisplayGroupFlags(Emitter emitter, InsGroupFlags flags);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispIG")]
+    private static extern void DisplayGroup(Emitter emitter, insGroup group, bool displayFunc,
+        bool displayInstructions, bool displayLocation);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispIGlist")]
+    private static extern void DisplayGroupList(Emitter emitter, bool displayInstructions);
+
     private static string Capture(Action action)
     {
         using var stream = new MemoryStream();
@@ -283,4 +299,3 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

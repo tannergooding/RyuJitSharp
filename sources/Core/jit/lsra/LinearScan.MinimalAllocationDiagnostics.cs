@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpLsraIntervals(string message)
     {
         jitprintf($"\nLinear scan intervals {message}:\n");
@@ -19,6 +19,7 @@ public sealed partial class LinearScan
         jitprintf("\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpRefPositions(string title)
     {
         jitprintf("------------\n");
@@ -30,6 +31,7 @@ public sealed partial class LinearScan
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpVarRefPositions(string title)
     {
         if (!_enregisterLocalVars)
@@ -65,6 +67,7 @@ public sealed partial class LinearScan
         jitprintf("\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpActiveIntervalsAtEnd()
     {
         jitprintf("Active intervals at end of allocation:\n");
@@ -80,6 +83,7 @@ public sealed partial class LinearScan
         jitprintf("\n");
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void dumpInterval(Interval interval)
     {
         jitprintf($"Interval {interval.intervalIndex,2}:");
@@ -162,5 +166,4 @@ public sealed partial class LinearScan
 
         jitprintf("\n");
     }
-#endif
 }

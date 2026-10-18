@@ -45,10 +45,11 @@ internal static unsafe class EmitterInstructionGroupTests
         {
             Assert.That(group.igLastIns, Is.Null);
         }
-#if DEBUG
-        Assert.That(group.igSelf, Is.SameAs(group));
-        Assert.That(group.igBlocks, Is.Empty);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(group.igSelf, Is.SameAs(group));
+            Assert.That(group.igBlocks, Is.Empty);
+        }
         Assert.That(group.igWeight, Is.EqualTo(CapturesPerformanceMetrics ? 100.0 : 0.0));
         Assert.That(group.igPerfScore, Is.Zero);
     }

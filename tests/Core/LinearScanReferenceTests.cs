@@ -138,10 +138,10 @@ internal static unsafe class LinearScanReferenceTests
             Assert.That(use.treeNode, Is.SameAs(tree));
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(ReferenceNumber(definition), Is.EqualTo(0u));
-                Assert.That(ReferenceNumber(use), Is.EqualTo(1u));
-                Assert.That(BuildNode(definition), Is.SameAs(tree));
-                Assert.That(BuildNode(use), Is.Null);
+                Assert.That(definition.rpNum, Is.EqualTo(0u));
+                Assert.That(use.rpNum, Is.EqualTo(1u));
+                Assert.That(definition.buildNode, Is.SameAs(tree));
+                Assert.That(use.buildNode, Is.Null);
             }
         });
     }
@@ -181,12 +181,6 @@ internal static unsafe class LinearScanReferenceTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBuildNode")]
     private static extern ref GenTree? CurrentBuildNode(LinearScan allocator);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "rpNum")]
-    private static extern ref uint ReferenceNumber(RefPosition reference);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "buildNode")]
-    private static extern ref GenTree? BuildNode(RefPosition reference);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "tinyDump")]
     private static extern void DumpInterval(Interval interval);

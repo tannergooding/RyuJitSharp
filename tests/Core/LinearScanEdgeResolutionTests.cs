@@ -691,6 +691,7 @@ internal static class LinearScanEdgeResolutionTests
         BlockSequencingDone(allocator) = true;
         MaxBlockBeforeResolution(allocator) = (uint)compiler.fgBBNumMax;
         BlockInfo(allocator) = new LsraBlockInfo[compiler.fgBBNumMax + 1];
+        TestConfiguration.InitializeLsraStatistics(allocator, BlockInfo(allocator)!.Length);
         ResolutionCandidates(allocator) = SetOps.MakeEmpty(compiler);
         SplitOrSpilled(allocator) = SetOps.MakeEmpty(compiler);
         ExceptVars(allocator) = SetOps.MakeEmpty(compiler);

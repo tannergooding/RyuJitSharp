@@ -159,9 +159,10 @@ public sealed partial class FlowGraphNaturalLoop
 
         if (FindConstInit(preheader, info))
         {
-#if DEBUG
-            JITDUMP($"  Init = [{info.InitTree?.TreeId:D6}], test = [{test?.TreeId:D6}], incr = [{info.IterTree?.TreeId:D6}]\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"  Init = [{info.InitTree?.TreeId:D6}], test = [{test?.TreeId:D6}], incr = [{info.IterTree?.TreeId:D6}]\n");
+            }
         }
         else
         {
@@ -183,8 +184,7 @@ public sealed partial class FlowGraphNaturalLoop
             }
         }
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"  IterVar = V{info.IterVar:D2}\n");
             if (info.HasConstInit)
@@ -214,7 +214,6 @@ public sealed partial class FlowGraphNaturalLoop
             }
             jitprintf(")\n");
         }
-#endif
         return true;
     }
 

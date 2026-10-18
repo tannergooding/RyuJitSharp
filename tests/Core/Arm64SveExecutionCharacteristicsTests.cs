@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -12,8 +12,15 @@ using static RyuJitSharp.regNumber;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64SveExecutionCharacteristicsTests
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
+internal sealed class Arm64SveExecutionCharacteristicsTests
 {
+    [SetUp]
+    public void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(IF_ARM64_SVE_AA_3A, INS_sve_add, 2.0f, 0.5f)]
     [TestCase(IF_ARM64_SVE_AA_3A, INS_sve_mul, 4.0f, 1.0f)]
     [TestCase(IF_ARM64_SVE_AA_3A, INS_sve_asr, 2.0f, 1.0f)]
@@ -138,4 +145,3 @@ internal static class Arm64SveExecutionCharacteristicsTests
     private static extern void Score(Emitter emitter, Emitter.instrDesc id,
         ref Emitter.insExecutionCharacteristics result);
 }
-#endif

@@ -349,9 +349,10 @@ public partial class Emitter
 
             emitLastIns = emitSavedDescriptor(ig, emitLastIns, sz);
             emitLastInsIG = ig;
-#if EMIT_BACKWARDS_NAVIGATION
-            ig.igLastIns = emitLastIns;
-#endif
+            if (Configuration.EMIT_BACKWARDS_NAVIGATION)
+            {
+                ig.igLastIns = emitLastIns;
+            }
         }
 
         emitCurIGfreeBase.Clear();

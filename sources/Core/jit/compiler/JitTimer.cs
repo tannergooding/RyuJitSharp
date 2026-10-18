@@ -39,11 +39,6 @@ public sealed class JitTimer
     /// <summary>The enum/index of the current CLR API call (or -1).</summary>
     private API_ICorJitInfo_Names _clrCallApiNum;
 
-#if DEBUG
-    /// <summary>The last phase that was completed (or (Phases)-1 to start).</summary>
-    private Phases _lastPhase;
-#endif
-
     /// <summary>The CompTimeInfo for this compilation.</summary>
     private CompTimeInfo _info;
 
@@ -56,10 +51,6 @@ public sealed class JitTimer
         }
 
         _info = new CompTimeInfo(byteCodeSize);
-
-#if DEBUG
-        _lastPhase = (Phases)(-1);
-#endif
 
         _clrCallApiNum = (API_ICorJitInfo_Names)(-1);
 
@@ -153,10 +144,6 @@ public sealed class JitTimer
     public void EndPhase(Compiler compiler, Phases phase)
     {
         var includeClrApiTiming = JitConfig.JitEECallTimingInfo is not 0;
-        // Otherwise...
-        // We re-run some phases currently, so this following assert doesn't work.
-        // assert((int)phase > (int)_lastPhase);  // We should end phases in increasing order.
-
         var timestamp = Stopwatch.GetTimestamp();
         var phaseCycles = unchecked((ulong)timestamp - (ulong)_curPhaseStart);
 
@@ -210,10 +197,6 @@ public sealed class JitTimer
         {
             _info._nodeCountAfterPhase[(int)(phase)] = 0;
         }
-
-#if DEBUG
-        _lastPhase = phase;
-#endif
 
         if (includeClrApiTiming)
         {

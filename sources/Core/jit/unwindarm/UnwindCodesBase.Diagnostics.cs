@@ -3,13 +3,22 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public abstract unsafe class ArmUnwindCodesBase
 {
     public uint GetCodeSizeFromUnwindCodes(bool isProlog)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("ARM32 unwind diagnostics are only available in Debug builds.");
+        }
+
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind diagnostics require ARM32.");
+        }
+
         var codesStart = GetCodes();
         var codes = codesStart;
         var size = 0u;
@@ -37,4 +46,3 @@ public abstract unsafe class ArmUnwindCodesBase
 
     public abstract byte* GetCodes();
 }
-#endif

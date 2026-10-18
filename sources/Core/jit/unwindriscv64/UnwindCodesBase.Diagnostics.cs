@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 namespace RyuJitSharp;
 
 public abstract unsafe class RiscV64UnwindCodesBase
@@ -21,6 +20,16 @@ public abstract unsafe class RiscV64UnwindCodesBase
 
     public uint GetCodeSizeFromUnwindCodes(bool isProlog)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("RISC-V unwind diagnostics are only available in Debug builds.");
+        }
+
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V unwind diagnostics require RISC-V64.");
+        }
+
         var pCodesStart = GetCodes();
         var pCodes = pCodesStart;
         var size = 0u;
@@ -40,4 +49,3 @@ public abstract unsafe class RiscV64UnwindCodesBase
         return size;
     }
 }
-#endif

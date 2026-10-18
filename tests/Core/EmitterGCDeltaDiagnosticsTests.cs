@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG && TARGET_AMD64
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -24,6 +23,8 @@ internal static unsafe class EmitterGCDeltaDiagnosticsTests
     [TestCase(true, 7)]
     public static void RegisterDeltasIndentAndAdvanceTheirPreviousState(bool diffable, int indent)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         var emitter = CreateEmitter(out var compiler);
         compiler.opts.disDiffable = diffable;
         CurrentGCrefRegs(emitter) = SRBM_RAX;
@@ -45,6 +46,8 @@ internal static unsafe class EmitterGCDeltaDiagnosticsTests
     [Test]
     public static void VariableDeltasPrintConvertedLocalNumbersOnce()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaCount = 6;
         compiler.lvaTrackedCount = 2;
@@ -67,6 +70,8 @@ internal static unsafe class EmitterGCDeltaDiagnosticsTests
     [Test]
     public static void OutgoingArgumentDeltasSkipRegisterEntriesAndAdvanceDescriptorCursor()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         var emitter = CreateEmitter(out _);
         var outgoing = new GCInfo.regPtrDsc
         {
@@ -119,10 +124,10 @@ internal static unsafe class EmitterGCDeltaDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
     private static extern ref regMask CurrentByrefRegs(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevGCrefVars")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugPrevGCrefVars")]
     private static extern ref nint[] PreviousVars(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugThisGCrefVars")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_debugThisGCrefVars")]
     private static extern ref nint[] CurrentVars(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
@@ -149,4 +154,3 @@ internal static unsafe class EmitterGCDeltaDiagnosticsTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

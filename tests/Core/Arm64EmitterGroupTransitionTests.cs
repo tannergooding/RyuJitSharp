@@ -51,17 +51,19 @@ internal sealed unsafe class Arm64EmitterGroupTransitionTests
 
         Count(emitter) = 12;
         CodeSize(emitter) = 28;
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-        LastSize(emitter) = 20;
-#endif
+        if (Configuration.TARGET_XARCH || Configuration.EMIT_BACKWARDS_NAVIGATION)
+        {
+            LastSize(emitter) = 20;
+        }
         Prepare(emitter, first);
 
         Assert.That(Buffer(emitter), Is.SameAs(buffer));
         Assert.That(Count(emitter), Is.Zero);
         Assert.That(CodeSize(emitter), Is.Zero);
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-        Assert.That(LastSize(emitter), Is.Zero);
-#endif
+        if (Configuration.TARGET_XARCH || Configuration.EMIT_BACKWARDS_NAVIGATION)
+        {
+            Assert.That(LastSize(emitter), Is.Zero);
+        }
 
         Transition(emitter, extend);
 
@@ -183,8 +185,6 @@ internal sealed unsafe class Arm64EmitterGroupTransitionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int CodeSize(Emitter emitter);
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastInsFullSize")]
     private static extern ref int LastSize(Emitter emitter);
-#endif
 }

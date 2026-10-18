@@ -3,7 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System;
+
 namespace RyuJitSharp;
 
 public static partial class regNumberExtensions
@@ -12,6 +13,11 @@ public static partial class regNumberExtensions
     {
         public string GetFloatName(var_types type)
         {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Floating register names are only available in Debug builds.");
+            }
+
             if (Configuration.TARGET_ARM)
             {
                 assert(reg.IsFltReg, conditionExpression: "genIsValidFloatReg(reg)");
@@ -218,4 +224,3 @@ public static partial class regNumberExtensions
         throw new FatalJitException("Invalid target architecture.");
     }
 }
-#endif

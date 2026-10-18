@@ -30,21 +30,17 @@ public partial class Emitter
                     && !ReferenceEquals(group.igLoopBackEdge, loopHeader))
                 {
                     var buffer = new StringBuilder("Mismatch in align instruction.\n");
-                    buffer.Append(CultureInfo.InvariantCulture,
+                    _ = buffer.Append(CultureInfo.InvariantCulture,
                         $"Containing IG: IG{containingIG.GetDisplayId():D2}\n");
-                    buffer.Append(CultureInfo.InvariantCulture,
+                    _ = buffer.Append(CultureInfo.InvariantCulture,
                         $"loopHeadPredIG: IG{loopHeadPredIG.GetDisplayId():D2}\n");
-                    buffer.Append(CultureInfo.InvariantCulture,
+                    _ = buffer.Append(CultureInfo.InvariantCulture,
                         $"loopHeadIG: IG{loopHeader.GetDisplayId():D2}\n");
-                    buffer.Append(CultureInfo.InvariantCulture, $"igInLoop: IG{group.GetDisplayId():D2}\n");
-                    buffer.Append(CultureInfo.InvariantCulture,
+                    _ = buffer.Append(CultureInfo.InvariantCulture, $"igInLoop: IG{group.GetDisplayId():D2}\n");
+                    _ = buffer.Append(CultureInfo.InvariantCulture,
                         $"igInLoop->igLoopBackEdge: IG{group.igLoopBackEdge.GetDisplayId():D2}\n");
 
-#if EMIT_BACKWARDS_NAVIGATION
-                    const bool hasBackwardNavigation = true;
-#else
-                    var hasBackwardNavigation = Configuration.TARGET_XARCH;
-#endif
+                    var hasBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_XARCH;
                     if (hasBackwardNavigation && group.endsWithAlignInstr())
                     {
                         var lastAlign = group.igLastIns as instrDescAlign
@@ -52,20 +48,20 @@ public partial class Emitter
                         assert(ReferenceEquals(lastAlign.idaIG, group));
                         var targetGroup = lastAlign.idaLoopHeadPredIG?.igNext
                             ?? throw new FatalJitException("An alignment descriptor requires a loop-head group.");
-                        buffer.Append(CultureInfo.InvariantCulture,
+                        _ = buffer.Append(CultureInfo.InvariantCulture,
                             $"igInLoop has align instruction for : IG{targetGroup.GetDisplayId():D2}\n");
                     }
 
-                    buffer.Append("Loop:\n");
+                    _ = buffer.Append("Loop:\n");
                     var current = loopHeader;
                     while ((current is not null) && !ReferenceEquals(current.igLoopBackEdge, loopHeader))
                     {
-                        buffer.Append(CultureInfo.InvariantCulture, $"\tIG{current.GetDisplayId():D2}\n");
+                        _ = buffer.Append(CultureInfo.InvariantCulture, $"\tIG{current.GetDisplayId():D2}\n");
                         current = current.igNext;
                     }
                     if (current is null)
                     {
-                        buffer.Append(CultureInfo.InvariantCulture,
+                        _ = buffer.Append(CultureInfo.InvariantCulture,
                             $"Did not find IG with back edge to IG{loopHeader.GetDisplayId():D2}\n");
                     }
 

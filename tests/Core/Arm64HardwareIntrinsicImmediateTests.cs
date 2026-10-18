@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -127,7 +126,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
 
     [TestCase(1, 0)]
     [TestCase(16, 31)]
-    public static void ConstantCountArgumentsReachTypedPatternRecorderWithoutFakeEmission(int scale, int pattern)
+    public static void ConstantCountArgumentsReachTypedPatternRecorder(int scale, int pattern)
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -137,10 +136,13 @@ internal static class Arm64HardwareIntrinsicImmediateTests
             };
             EnableIsa(compiler, node);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??
-                throw new AssertionException("Missing pattern-recorder dependency failure.");
-            Assert.That(failure.Message, Is.EqualTo("ARM64 emitIns_R_R_PATTERN_I recording is not ported."));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            codeGen.genHWIntrinsic(node);
+
+            var id = SingleDescriptor(codeGen);
+            Assert.That(id.idIns(), Is.EqualTo(INS_sve_sqincw));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(id.idSvePattern(), Is.EqualTo((insSvePattern)pattern));
+            Assert.That(id.idSmallCns(), Is.EqualTo(scale));
         });
     }
 
@@ -196,4 +198,3 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         });
     }
 }
-#endif

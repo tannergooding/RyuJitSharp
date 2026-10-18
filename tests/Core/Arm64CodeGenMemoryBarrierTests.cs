@@ -133,11 +133,7 @@ internal static unsafe class Arm64CodeGenMemoryBarrierTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 

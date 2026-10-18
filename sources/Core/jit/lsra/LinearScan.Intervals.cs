@@ -35,13 +35,14 @@ public sealed partial class LinearScan
         var interval = new Interval(registerType, allRegs(registerType));
         intervals.Add(interval);
 
-#if DEBUG
-        interval.intervalIndex = (uint)(intervals.Count - 1);
-        if (VERBOSE)
+        if (Configuration.DEBUG)
         {
-            dumpInterval(interval);
+            interval.intervalIndex = (uint)(intervals.Count - 1);
+            if (VERBOSE)
+            {
+                dumpInterval(interval);
+            }
         }
-#endif
 
         return interval;
     }

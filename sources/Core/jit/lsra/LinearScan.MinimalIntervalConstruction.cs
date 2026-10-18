@@ -19,8 +19,7 @@ public sealed partial class LinearScan
         JITDUMP("\nbuildIntervals ========\n");
         buildPhysRegRecords();
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf("\n-----------------\nLIVENESS:\n-----------------\n");
             foreach (var block in _compiler.Blocks)
@@ -36,7 +35,6 @@ public sealed partial class LinearScan
                 jitprintf("\n");
             }
         }
-#endif
 
         resetRegStateMinimal();
         _doDoubleAlign = false;
@@ -169,10 +167,11 @@ public sealed partial class LinearScan
 
             foreach (var node in block)
             {
-#if DEBUG
-                node._seqNum = unchecked((int)_referenceBuildLocation);
-                node.RegNum = node.Reg;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    node._seqNum = unchecked((int)_referenceBuildLocation);
+                    node.RegNum = node.Reg;
+                }
                 buildRefPositionsForNode(node, _referenceBuildLocation);
 #if DEBUG
                 if (_referenceBuildLocation > _maxNodeLocation)
@@ -206,9 +205,7 @@ public sealed partial class LinearScan
             markBlockVisited(block);
             if (_definitionList.First is not null)
             {
-#if DEBUG
                 dumpDefList();
-#endif
                 assert(false, "Expected empty defList at end of block");
             }
             previousBlock = block;
@@ -254,13 +251,11 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             dumpLsraIntervals("BEFORE VALIDATING INTERVALS");
             dumpRefPositions("BEFORE VALIDATING INTERVALS");
         }
         // Native validateIntervals has no work when local variables are not enregistered.
-#endif
     }
 }

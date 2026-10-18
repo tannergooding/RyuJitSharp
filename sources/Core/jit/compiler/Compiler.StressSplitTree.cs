@@ -26,7 +26,11 @@ public partial class Compiler
 
     private void SplitTreesRandomly()
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         var rng = new CLRRandom(info.compMethodHash() ^ 0x077cc4d4);
 
         // Splitting creates a lot of new locals. Limit how many we create here.
@@ -98,7 +102,6 @@ public partial class Compiler
         }
 
         JITDUMP($"Split {numSplit} trees\n");
-#endif
     }
 
     private void SplitTreesRemoveCommas()

@@ -120,12 +120,10 @@ public sealed partial class LinearScan
             (regRecord.lastRefPosition.refType != refType));
         associateRefPosWithInterval(newRP);
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             newRP.dump(this);
         }
-#endif
         return newRP;
     }
 
@@ -185,18 +183,16 @@ public sealed partial class LinearScan
             interval.isSingleDef = ReferenceEquals(interval.firstRefPosition, newRP);
         }
 
-#if DEBUG
         // addKillForRegs sets this in Release; the build-time dump needs it now.
-        if (refType is RefType.RefTypeKill)
+        if (Configuration.DEBUG && (refType is RefType.RefTypeKill))
         {
             newRP.killedRegisters = new regMaskTP(mask);
         }
 
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             newRP.dump(this);
         }
-#endif
         return newRP;
     }
 }

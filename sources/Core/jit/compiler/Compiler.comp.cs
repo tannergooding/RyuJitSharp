@@ -2765,9 +2765,10 @@ public partial class Compiler
 
     public void compJitStats()
     {
-#if CALL_ARG_STATS
-        compCallArgStats();
-#endif
+        if (Configuration.CALL_ARG_STATS)
+        {
+            compCallArgStats();
+        }
     }
 
     public ref VarScopeDsc compGetNextEnterScope(int offs, bool scan = false)

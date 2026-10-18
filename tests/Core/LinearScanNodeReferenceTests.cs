@@ -17,6 +17,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanNodeReferenceTests
 {
+    private static void RequireDebugConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture exercises Debug-only LSRA diagnostics.");
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ContainedNodesDoNotBuildReferences(bool contained)
@@ -31,9 +36,10 @@ internal static unsafe class LinearScanNodeReferenceTests
             {
                 Assert.That(allocator.refPositions[0].nodeLocation, Is.EqualTo(5u));
                 Assert.That(allocator.refPositions[0].refType, Is.EqualTo(RefType.RefTypeDef));
-#if DEBUG
-                Assert.That(allocator.refPositions[0].buildNode, Is.SameAs(constant));
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(allocator.refPositions[0].buildNode, Is.SameAs(constant));
+                }
             }
         });
     }
@@ -81,17 +87,19 @@ internal static unsafe class LinearScanNodeReferenceTests
             Assert.That(rightDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
             Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(add));
             Assert.That(allocator.refPositions[^1].nodeLocation, Is.EqualTo(6u));
-#if DEBUG
-            Assert.That(leftDefinition.nextRefPosition?.buildNode, Is.SameAs(add));
-            Assert.That(rightDefinition.nextRefPosition?.buildNode, Is.Null);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(leftDefinition.nextRefPosition?.buildNode, Is.SameAs(add));
+                Assert.That(rightDefinition.nextRefPosition?.buildNode, Is.Null);
+            }
         });
     }
 
-#if DEBUG
     [Test]
     public static void DebugCountsContainedSourceRegistersTransitively()
     {
+        RequireDebugConfiguration();
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             var memory = compiler.gtNewIndir(TYP_INT, address);
@@ -112,6 +120,8 @@ internal static unsafe class LinearScanNodeReferenceTests
     [TestCase(0x08)]
     public static void DebugStressCountsAndReverseCallerCalleePreferences(int stressMask)
     {
+        RequireDebugConfiguration();
+
         WithAllocator((compiler, allocator) => {
             StressMask(allocator) = stressMask;
             var input = compiler.gtNewIconNode(TYP_INT, 7);
@@ -136,6 +146,8 @@ internal static unsafe class LinearScanNodeReferenceTests
     [TestCase(true, 3u)]
     public static void StressMinimumIncludesSpecialPutArgSource(bool specialPutArg, uint expectedMinimum)
     {
+        RequireDebugConfiguration();
+
         WithAllocator((compiler, allocator) => {
             var input = compiler.gtNewIconNode(TYP_INT, 7);
             BuildAt(allocator, input, 1);
@@ -153,6 +165,8 @@ internal static unsafe class LinearScanNodeReferenceTests
     [Test]
     public static void DelayFreeStressCountsTheConsumingNodesKillRegisters()
     {
+        RequireDebugConfiguration();
+
         WithAllocator((compiler, allocator) => {
             StressMask(allocator) = 0x08;
             var dividend = compiler.gtNewIconNode(TYP_INT, 101);
@@ -168,12 +182,10 @@ internal static unsafe class LinearScanNodeReferenceTests
             Assert.That(divisorUse?.minRegCandidateCount, Is.EqualTo(5u));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildRefPositionsForNode")]
     private static extern void BuildRefPositionsForNode(LinearScan allocator, GenTree tree, uint currentLocation);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "computeOperandDstCount")]
     private static extern int ComputeOperandDstCount(LinearScan allocator, GenTree operand);
 
@@ -182,7 +194,6 @@ internal static unsafe class LinearScanNodeReferenceTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);

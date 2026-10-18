@@ -103,7 +103,6 @@ internal static class HashTableTests
         Assert.That(firstValue, Is.EqualTo(1));
     }
 
-#if DEBUG
     [Test]
     public static void DebugIteratorWalksOccupiedBucketsInIndexOrder()
     {
@@ -147,7 +146,6 @@ internal static class HashTableTests
         Assert.That(pair.Key(), Is.EqualTo(0));
         Assert.That(pair.Value(), Is.EqualTo(10));
     }
-#endif
 
     private sealed class ConstantHashInfo : IHashTableInfo<uint>
     {

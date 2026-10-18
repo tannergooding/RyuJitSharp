@@ -12,6 +12,7 @@ public sealed partial class UnwindInfo
 {
 #if DEBUG
     public bool uwiAddingNOP;
+#endif
 
     private static ReadOnlySpan<byte> s_UnwindSize =>
     [
@@ -44,6 +45,4 @@ public sealed partial class UnwindInfo
     {
         return (value >> unchecked((int)start)) & ((1u << unchecked((int)length)) - 1);
     }
-#endif
-
 }

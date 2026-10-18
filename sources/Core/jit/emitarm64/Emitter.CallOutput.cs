@@ -38,12 +38,10 @@ public partial class Emitter
         // Stack variables die at the call's start, including non-returning THROW
         // helpers; return registers become live only after the instruction.
         emitUpdateLiveGCvars(GCvars, dst);
-#if DEBUG
-        if (_compiler.verbose || _compiler.opts.disasmWithGC)
+        if (Configuration.DEBUG && (_compiler.verbose || _compiler.opts.disasmWithGC))
         {
             emitDispGCVarDelta();
         }
-#endif
 
         uint outputInstrSize = emitOutputLong(dst, code);
         dst = unchecked(dst + outputInstrSize);

@@ -10,7 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DUMP_FLOWGRAPHS
     private sealed class RegionGraph
     {
         private sealed class Region(string name, BasicBlock start, BasicBlock end)
@@ -360,5 +359,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }

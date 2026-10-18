@@ -194,9 +194,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         compiler.opts.jitFlags = &flags;
         using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
-#if FUNC_INFO_LOGGING
         var functionLog = Compiler.compJitFuncInfoFile;
-#endif
 #if MEASURE_FATAL
         var nyiCount = s_fatalNyiCount;
 #endif
@@ -207,9 +205,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         {
             JitConfig = configuration;
             JitTls.Compiler = compiler;
-#if FUNC_INFO_LOGGING
             Compiler.compJitFuncInfoFile = null;
-#endif
             if (continueAfterNyi)
             {
                 AccessRiscVFormat(descriptor, setter);
@@ -225,9 +221,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         {
             JitConfig = config;
             JitTls.Compiler = previousCompiler;
-#if FUNC_INFO_LOGGING
             Compiler.compJitFuncInfoFile = functionLog;
-#endif
 #if MEASURE_FATAL
             s_fatalNyiCount = nyiCount;
 #endif

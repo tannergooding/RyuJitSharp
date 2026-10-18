@@ -3,7 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System;
+using System.Diagnostics;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.GCInfo.rpdArgType_t;
 
@@ -79,8 +80,13 @@ public partial class Emitter
         jitprintf("\n");
     }
 
+    [Conditional("DEBUG")]
     private void emitDispGCVarDelta()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("GC delta diagnostics are only available in Debug builds.");
+        }
         var compiler = _compiler ?? throw new FatalJitException("GC delta diagnostics require an active compiler.");
         if (VarSetOps.Equal(compiler, debugPrevGCrefVars, debugThisGCrefVars))
         {
@@ -202,8 +208,13 @@ public partial class Emitter
         emitDispRegPtrListDelta();
     }
 
+    [Conditional("DEBUG")]
     public unsafe void emitDispGCinfo()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("GC tracking diagnostics are only available in Debug builds.");
+        }
         var compiler = _compiler ?? throw new FatalJitException("GC tracking diagnostics require an active compiler.");
         // Keep the diagnostic field addresses stable while formatting can allocate.
         fixed (regMask* previousGCref = &emitPrevGCrefRegs, previousByref = &emitPrevByrefRegs,
@@ -245,4 +256,3 @@ public partial class Emitter
         }
     }
 }
-#endif

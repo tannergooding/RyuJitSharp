@@ -52,18 +52,20 @@ public partial class Compiler
             acdKeyDsg = designator,
             acdKind = kind,
         };
-#if DEBUG
-        add.acdNum = acdCount++;
-#endif
+        if (Configuration.DEBUG)
+        {
+            add.acdNum = acdCount++;
+        }
 
         var map = fgGetAddCodeDscMap();
         var key = new AddCodeDscKey(add);
         assert(key.Data == referenceData);
         map[key] = add;
 
-#if DEBUG
-        JITDUMP($"{FMT_BB(source.bbNum)} requires throw helper block for {sckName(kind)}, created ACD{add.acdNum} with data 0x{unchecked((uint)key.Data):x8}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"{FMT_BB(source.bbNum)} requires throw helper block for {sckName(kind)}, created ACD{add.acdNum} with data 0x{unchecked((uint)key.Data):x8}\n");
+        }
         if (Configuration.DEBUG)
         {
             assert(map.TryGetValue(new AddCodeDscKey(kind, source, this), out var found) && (found == add));
@@ -94,8 +96,7 @@ public partial class Compiler
         add.acdDstBlk = block;
         fgSetThrowHelpBlockLiveness(block);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             var where = add.acdKeyDsg switch {
                 AcdKeyDesignator.KD_NONE => "non-EH region",
@@ -116,7 +117,6 @@ public partial class Compiler
             };
             jitprintf($"\nAdding throw helper {FMT_BB(block.bbNum)} for ACD{add.acdNum} {sckName(add.acdKind)} in {where}{reason}\n");
         }
-#endif
         block.SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
     }
 

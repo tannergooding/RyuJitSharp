@@ -22,9 +22,7 @@ internal partial struct LocalAddressVisitor
         private int _lclNum;
         private uint _offset;
 
-#if DEBUG
         private bool _consumed;
-#endif
 
         internal Value(Statement statement, ref GenTree use, GenTree? owner)
         {
@@ -186,22 +184,19 @@ internal partial struct LocalAddressVisitor
         }
 
         [Conditional("DEBUG")]
-#if DEBUG
         internal void Consume()
-#else
-        internal readonly void Consume()
-#endif
         {
-#if DEBUG
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Value consumption state is only available in Debug builds.");
+            }
+
             assert(!_consumed);
             _consumed = true;
-#endif
         }
 
-#if DEBUG
-        internal readonly bool IsConsumed => _consumed;
-#else
-        internal readonly bool IsConsumed => throw new System.InvalidOperationException("Consumption state is only available in Debug builds.");
-#endif
+        internal readonly bool IsConsumed => Configuration.DEBUG
+            ? _consumed
+            : throw new System.InvalidOperationException("Consumption state is only available in Debug builds.");
     }
 }

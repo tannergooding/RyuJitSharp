@@ -2,6 +2,7 @@
 
 #if EMITTER_STATS
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -12,6 +13,7 @@ using NUnit.Framework;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "NUnit instantiates test fixtures through reflection.")]
 internal sealed unsafe class EmitterMethodStatisticsTests
 {
     [SetUp]

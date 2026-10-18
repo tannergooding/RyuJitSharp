@@ -3,21 +3,85 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if DEBUG
-    private VARSET_TP debugPrevGCrefVars = [];
+    private sealed class DebugData
+    {
+        internal VARSET_TP debugPrevGCrefVars = [];
 
-    private VARSET_TP debugThisGCrefVars = [];
+        internal VARSET_TP debugThisGCrefVars = [];
 
-    private GCInfo.regPtrDsc? debugPrevRegPtrDsc;
+        internal GCInfo.regPtrDsc? debugPrevRegPtrDsc;
 
-    private regMaskTP debugPrevGCrefRegs;
+        internal regMaskTP debugPrevGCrefRegs;
 
-    private regMaskTP debugPrevByrefRegs;
-#endif
+        internal regMaskTP debugPrevByrefRegs;
+    }
+
+    private static class DebugDataStorage
+    {
+        internal static readonly ConditionalWeakTable<Emitter, DebugData> Table = [];
+    }
+
+    private ref VARSET_TP debugPrevGCrefVars
+    {
+        get
+        {
+            var debugData = GetDebugData();
+            return ref debugData.debugPrevGCrefVars;
+        }
+    }
+
+    private ref VARSET_TP debugThisGCrefVars
+    {
+        get
+        {
+            var debugData = GetDebugData();
+            return ref debugData.debugThisGCrefVars;
+        }
+    }
+
+    private ref GCInfo.regPtrDsc? debugPrevRegPtrDsc
+    {
+        get
+        {
+            var debugData = GetDebugData();
+            return ref debugData.debugPrevRegPtrDsc;
+        }
+    }
+
+    private ref regMaskTP debugPrevGCrefRegs
+    {
+        get
+        {
+            var debugData = GetDebugData();
+            return ref debugData.debugPrevGCrefRegs;
+        }
+    }
+
+    private ref regMaskTP debugPrevByrefRegs
+    {
+        get
+        {
+            var debugData = GetDebugData();
+            return ref debugData.debugPrevByrefRegs;
+        }
+    }
+
+    private DebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Emitter GC diagnostic state is only available in Debug builds.");
+        }
+
+        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+    }
 
     public void Init()
     {
@@ -27,13 +91,15 @@ public partial class Emitter
         VarSetOps.AssignNoCopy(compiler, ref emitPrevGCrefVars, VarSetOps.MakeEmpty(compiler));
         VarSetOps.AssignNoCopy(compiler, ref emitInitGCrefVars, VarSetOps.MakeEmpty(compiler));
         VarSetOps.AssignNoCopy(compiler, ref emitThisGCrefVars, VarSetOps.MakeEmpty(compiler));
-#if DEBUG
-        VarSetOps.AssignNoCopy(compiler, ref debugPrevGCrefVars, VarSetOps.MakeEmpty(compiler));
-        VarSetOps.AssignNoCopy(compiler, ref debugThisGCrefVars, VarSetOps.MakeEmpty(compiler));
-        debugPrevRegPtrDsc = null;
-        debugPrevGCrefRegs = RBM_NONE;
-        debugPrevByrefRegs = RBM_NONE;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugData = GetDebugData();
+            VarSetOps.AssignNoCopy(compiler, ref debugData.debugPrevGCrefVars, VarSetOps.MakeEmpty(compiler));
+            VarSetOps.AssignNoCopy(compiler, ref debugData.debugThisGCrefVars, VarSetOps.MakeEmpty(compiler));
+            debugData.debugPrevRegPtrDsc = null;
+            debugData.debugPrevGCrefRegs = RBM_NONE;
+            debugData.debugPrevByrefRegs = RBM_NONE;
+        }
         emitCurIG = null;
     }
 }

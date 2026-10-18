@@ -2,11 +2,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -21,9 +21,7 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
             "This fixture requires ARM64 or WebAssembly hardware intrinsics.");
     }
 
-#if DEBUG
     private static int s_assertions;
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -85,11 +83,12 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void MinOptsFallbackRetainsOptimizationAssertion(bool nonTemporal)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(true, compiler =>
         {
             var address = Local(compiler, TYP_BYREF);
@@ -111,7 +110,6 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
 
         return 0;
     }
-#endif
 
     private static GenTreeLclVar Local(Compiler compiler, var_types type)
     {
@@ -123,13 +121,18 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
 
     private static void WithCompiler(bool minOpts, Action<Compiler> action)
     {
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&jitInfo);
-        s_assertions = 0;
-#endif
+        ICorJitInfo jitInfo = default;
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+            jitInfo.lpVtbl = &vtable;
+        }
+        using var tls = TestConfiguration.IsDebug ? TestConfiguration.CreateJitTls(&jitInfo) : null;
+        if (TestConfiguration.IsDebug)
+        {
+            s_assertions = 0;
+        }
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();
@@ -143,12 +146,10 @@ internal static unsafe class SimdAlignedMemoryCompletionTests
         try
         {
             action(compiler);
-#if DEBUG
-            if (!minOpts)
+            if (TestConfiguration.IsDebug && !minOpts)
             {
                 Assert.That(s_assertions, Is.Zero);
             }
-#endif
         }
         finally
         {

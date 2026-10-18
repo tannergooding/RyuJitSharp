@@ -30,9 +30,8 @@ public partial class Compiler
             chunks[chunksCount++] = *coldCodeChunk;
         }
 
-#if DEBUG
         // Fake splitting keeps the cold offset in the caller's pointers until the EE returns the hot allocation.
-        if ((JitConfig.JitFakeProcedureSplitting != 0) && (coldCodeChunk is not null))
+        if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) && (coldCodeChunk is not null))
         {
             coldCodeChunk->block = (byte*)(nuint)unchecked((uint)chunks[0].size);
             coldCodeChunk->blockRW = (byte*)(nuint)unchecked((uint)chunks[0].size);
@@ -40,7 +39,6 @@ public partial class Compiler
             chunksCount--;
             coldCodeChunkIndex = -1;
         }
-#endif
 
         var firstDataChunk = chunksCount;
         var targetUsesDataCodeRelocations = Configuration.TARGET_ARM64 ||
@@ -96,13 +94,11 @@ public partial class Compiler
             }
 #pragma warning restore CA1508
 
-#if DEBUG
-            if ((JitConfig.JitFakeProcedureSplitting != 0) && (coldCodeChunk is not null))
+            if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) && (coldCodeChunk is not null))
             {
                 coldCodeChunk->block = unchecked((byte*)((nuint)codeChunk.block + (nuint)coldCodeChunk->block));
                 coldCodeChunk->blockRW = unchecked((byte*)((nuint)codeChunk.blockRW + (nuint)coldCodeChunk->blockRW));
             }
-#endif
 
             var curDataChunk = firstDataChunk;
             if (targetUsesDataCodeRelocations)

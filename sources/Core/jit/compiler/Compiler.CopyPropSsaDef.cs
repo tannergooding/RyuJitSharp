@@ -12,29 +12,28 @@ public partial class Compiler
         private readonly Compiler _compiler;
         private readonly int _lclNum;
         private readonly int _ssaNum;
-#if DEBUG
         private readonly GenTreeLclVarCommon _defNode;
-#endif
 
         public CopyPropSsaDef(Compiler compiler, int lclNum, int ssaNum, GenTreeLclVarCommon defNode)
         {
             _compiler = compiler;
             _lclNum = lclNum;
             _ssaNum = ssaNum;
-#if DEBUG
             _defNode = defNode;
-#endif
         }
 
         public int SsaNum => _ssaNum;
 
         public ref LclSsaVarDsc GetSsaDef() => ref _compiler.lvaGetDesc(_lclNum).GetPerSsaData(_ssaNum);
 
-#if DEBUG
-        public GenTreeLclVarCommon GetDefNode() => _defNode;
-#else
         public GenTreeLclVarCommon GetDefNode()
-            => throw new System.InvalidOperationException("Copy-propagation definition nodes are only available in Debug builds.");
-#endif
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("Copy-propagation definition nodes are only available in Debug builds.");
+            }
+
+            return _defNode;
+        }
     }
 }

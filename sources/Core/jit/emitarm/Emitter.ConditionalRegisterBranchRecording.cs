@@ -22,7 +22,7 @@ public partial class Emitter
 
         assert(dst.HasFlag(BBF_HAS_LABEL));
 
-        var format = IF_NONE;
+        Emitter.insFormat format;
         switch (ins)
         {
             case INS_cbz:
@@ -55,9 +55,10 @@ public partial class Emitter
         id.idjNext = emitCurIGjmpList;
         emitCurIGjmpList = id;
 
-#if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
-#endif
+        if (Configuration.EMITTER_STATS)
+        {
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+        }
 
         dispIns(id);
         appendToCurIG(id);

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 && DEBUG
 using System;
 using System.Buffers.Binary;
 using System.IO;
@@ -16,6 +15,13 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64UnwindDiagnosticsTests
 {
+    [SetUp]
+    public static void RequireArm64DebugConfiguration()
+    {
+        Assume.That(Configuration.TARGET_ARM64 && TestConfiguration.IsDebug,
+            "This fixture requires ARM64 Debug diagnostics.");
+    }
+
     [Test]
     public static void HeaderSizeTableRetainsEveryOpcodeIncludingReservedEntries()
     {
@@ -157,7 +163,7 @@ internal static unsafe class Arm64UnwindDiagnosticsTests
             try
             {
                 s_jitstdout = writer;
-                unwindInfo.Dump(true);
+                TestConfiguration.DumpUnwindInfo(unwindInfo, true);
                 writer.Flush();
             }
             finally
@@ -206,7 +212,7 @@ internal static unsafe class Arm64UnwindDiagnosticsTests
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             fixed (byte* pointer = blob)
             {
-                DumpUnwindInfo(compiler, true, start, end, pointer + headerOffset, size);
+                TestConfiguration.DumpUnwindInfo(compiler, true, start, end, pointer + headerOffset, size);
             }
 
             writer.Flush();
@@ -219,4 +225,3 @@ internal static unsafe class Arm64UnwindDiagnosticsTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

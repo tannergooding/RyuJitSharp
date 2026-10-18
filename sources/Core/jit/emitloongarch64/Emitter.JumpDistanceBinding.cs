@@ -31,9 +31,7 @@ public partial class Emitter
 
         while (true)
         {
-#if DEBUG
             emitCheckIGList();
-#endif
             insGroup? previousJumpGroup = null;
             uint localAdjustment = 0;
             uint groupAdjustment = 0;
@@ -43,7 +41,7 @@ public partial class Emitter
                 var jumpGroup = jump.idjIG
                     ?? throw new FatalJitException("A LoongArch64 jump must be associated with an instruction group.");
                 var sourceInstructionOffset = unchecked(jumpGroup.igOffs + jump.idjOffs + localAdjustment);
-                var sizeAdjustment = 0;
+                int sizeAdjustment;
 
                 if (!ReferenceEquals(previousJumpGroup, jumpGroup))
                 {
@@ -151,8 +149,6 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
         emitCheckIGList();
-#endif
     }
 }

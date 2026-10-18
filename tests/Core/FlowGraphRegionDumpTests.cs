@@ -10,10 +10,15 @@ using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
 
-#if DUMP_FLOWGRAPHS
 [NonParallelizable]
 internal static unsafe class FlowGraphRegionDumpTests
 {
+    [SetUp]
+    public static void RequireFlowGraphDumpConfiguration()
+    {
+        Assume.That(Configuration.DUMP_FLOWGRAPHS, "Flowgraph dump support is disabled.");
+    }
+
     [Test]
     public static void EhRegionsReparentEarlierIntervalsAndSortFiltersLexically()
     {
@@ -272,4 +277,3 @@ internal static unsafe class FlowGraphRegionDumpTests
         }
     }
 }
-#endif

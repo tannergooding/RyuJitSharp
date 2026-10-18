@@ -103,8 +103,7 @@ public sealed partial class Interval : Referenceable
 
     public void assignRelatedInterval(Interval newRelatedInterval)
     {
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf("Assigning related ");
             newRelatedInterval.microDump();
@@ -112,7 +111,6 @@ public sealed partial class Interval : Referenceable
             microDump();
             jitprintf("\n");
         }
-#endif
         relatedInterval = newRelatedInterval;
     }
 
@@ -120,14 +118,12 @@ public sealed partial class Interval : Referenceable
     {
         if (relatedInterval is not null)
         {
-#if DEBUG
-            if (VERBOSE)
+            if (Configuration.DEBUG && VERBOSE)
             {
                 jitprintf("Interval ");
                 microDump();
                 jitprintf(" already has a related interval\n");
             }
-#endif
             return false;
         }
 
@@ -198,9 +194,13 @@ public sealed partial class Interval : Referenceable
         mergeRegisterPreferences(preferences);
     }
 
-#if DEBUG
     public void tinyDump()
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         jitprintf($"<Ivl:{intervalIndex}");
         if (isLocalVar)
         {
@@ -220,6 +220,11 @@ public sealed partial class Interval : Referenceable
 
     public void microDump()
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         if (isLocalVar)
         {
             jitprintf($"<V{varNum:D2}/L{intervalIndex}>");
@@ -234,5 +239,4 @@ public sealed partial class Interval : Referenceable
         var intervalTypeChar = isInternal ? 'T' : 'I';
         jitprintf($"<{intervalTypeChar}{intervalIndex}>");
     }
-#endif
 }

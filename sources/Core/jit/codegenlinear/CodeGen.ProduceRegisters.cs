@@ -27,10 +27,11 @@ public sealed partial class CodeGen
 
     public void genProduceReg(GenTree tree)
     {
-#if DEBUG
-        assert((tree._debugFlags & GTF_DEBUG_NODE_CG_PRODUCED) == 0);
-        tree._debugFlags |= GTF_DEBUG_NODE_CG_PRODUCED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((tree._debugFlags & GTF_DEBUG_NODE_CG_PRODUCED) == 0);
+            tree._debugFlags |= GTF_DEBUG_NODE_CG_PRODUCED;
+        }
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             if ((tree.Flags & GTF_SPILL) != 0)

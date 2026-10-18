@@ -11,9 +11,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
     {
+        if (!Configuration.EMITTER_STATS)
+        {
+            return;
+        }
+
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_ARM)
         {
             throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
@@ -270,5 +274,4 @@ public partial class Emitter
             output.Write(value.ToString(format, CultureInfo.InvariantCulture).PadLeft(width));
         }
     }
-#endif
 }

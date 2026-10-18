@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if CALL_ARG_STATS
 using System.Globalization;
 using System.IO;
 
@@ -32,18 +31,31 @@ public partial class Compiler
 
     internal static uint argMaxTempsPerMethod;
 
-    private static readonly uint[] argCntBuckets = [0, 1, 2, 3, 4, 5, 6, 10, 0];
-    private static readonly uint[] argDWordCntBuckets = [0, 1, 2, 3, 4, 5, 6, 10, 0];
-    private static readonly uint[] argDWordLngCntBuckets = [0, 1, 2, 3, 4, 5, 6, 10, 0];
-    private static readonly uint[] argTempsCntBuckets = [0, 1, 2, 3, 4, 5, 6, 10, 0];
+    private static readonly uint[]? argCntBuckets =
+        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+    private static readonly uint[]? argDWordCntBuckets =
+        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+    private static readonly uint[]? argDWordLngCntBuckets =
+        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+    private static readonly uint[]? argTempsCntBuckets =
+        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
 
-    internal static readonly Histogram argCntTable = new(argCntBuckets);
-    internal static readonly Histogram argDWordCntTable = new(argDWordCntBuckets);
-    internal static readonly Histogram argDWordLngCntTable = new(argDWordLngCntBuckets);
-    internal static readonly Histogram argTempsCntTable = new(argTempsCntBuckets);
+    internal static readonly Histogram argCntTable =
+        Configuration.CALL_ARG_STATS ? new(argCntBuckets!) : null!;
+    internal static readonly Histogram argDWordCntTable =
+        Configuration.CALL_ARG_STATS ? new(argDWordCntBuckets!) : null!;
+    internal static readonly Histogram argDWordLngCntTable =
+        Configuration.CALL_ARG_STATS ? new(argDWordLngCntBuckets!) : null!;
+    internal static readonly Histogram argTempsCntTable =
+        Configuration.CALL_ARG_STATS ? new(argTempsCntBuckets!) : null!;
 
     public void compCallArgStats()
     {
+        if (!Configuration.CALL_ARG_STATS)
+        {
+            return;
+        }
+
         uint argTempsThisMethod = 0;
 
         assert(fgNodeThreading is NodeThreading.LIR);
@@ -98,6 +110,11 @@ public partial class Compiler
 
     internal static void compDispCallArgStats(StreamWriter output)
     {
+        if (!Configuration.CALL_ARG_STATS)
+        {
+            return;
+        }
+
         if (argTotalCalls is 0)
         {
             return;
@@ -211,4 +228,3 @@ public partial class Compiler
         return text.PadLeft(width);
     }
 }
-#endif
