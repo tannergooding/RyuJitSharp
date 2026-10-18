@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -326,8 +325,8 @@ internal static unsafe class LinearScanFinalVerificationTests
     {
         var reference = new RefPosition(1, location, null, type) {
             registerAssignment = assignment,
-            rpNum = (uint)allocator.refPositions.Count,
         };
+        TestConfiguration.SetReferenceNumber(reference, (uint)allocator.refPositions.Count);
         if (interval is not null)
         {
             reference.setInterval(interval);
@@ -411,6 +410,7 @@ internal static unsafe class LinearScanFinalVerificationTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action, bool evex = false)
     {
+        Assume.That(TestConfiguration.IsDebug);
         using var tls = new JitTls(null);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -447,4 +447,3 @@ internal static unsafe class LinearScanFinalVerificationTests
         }
     }
 }
-#endif

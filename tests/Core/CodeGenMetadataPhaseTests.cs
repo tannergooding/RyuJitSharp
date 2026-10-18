@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,21 +17,19 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenMetadataPhaseTests
 {
-#if DEBUG
     private static string? s_assertion;
-#endif
 
     [TestCase(false, false, false)]
     [TestCase(false, true, false)]
     [TestCase(true, false, false)]
     [TestCase(true, true, false)]
-#if DEBUG
     [TestCase(true, false, true)]
     [TestCase(true, true, true)]
-#endif
     public static void CompleteMachineAndMetadataPhasesPublishInNativeOrder(
         bool useDriver, bool debugInfo, bool displayMetrics)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+        Assume.That(!displayMetrics || TestConfiguration.IsDebug);
         var previousConfig = JitConfig;
         (nuint GrossVMsize, nuint GrossNCsize, nuint TotalNCsize) previousSizes = default;
         (uint Interruptible, uint NonInterruptible) previousCounts = default;
@@ -49,13 +46,14 @@ internal static unsafe class CodeGenMetadataPhaseTests
         try
         {
             RichMappings(ref JitConfig) = 0;
-#if DEBUG
-            HaltSelection(ref JitConfig) = new(null, null);
-            HaltHash(ref JitConfig) = -1;
-            EmitterTests(ref JitConfig) = new(null, null);
-            RawHexSelection(ref JitConfig) = new(null, null);
-            ForceFallback(ref JitConfig) = 0;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                HaltSelection(ref JitConfig) = new(null, null);
+                HaltHash(ref JitConfig) = -1;
+                EmitterTests(ref JitConfig) = new(null, null);
+                RawHexSelection(ref JitConfig) = new(null, null);
+                ForceFallback(ref JitConfig) = 0;
+            }
             CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
             {
                 PrepareVoidReturn(compiler, codeGen, debugInfo);
@@ -83,12 +81,13 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 vtable.Base.Base.allocateArray = &AllocateArray;
                 vtable.Base.Base.setBoundaries = &SetBoundaries;
                 vtable.Base.Base.setVars = &SetVars;
-#if DEBUG
-                vtable.Base.Base.printMethodName = &PrintMethodName;
-                vtable.Base.Base.printClassName = &PrintClassName;
-                vtable.Base.Base.getMethodClass = &GetMethodClass;
-                vtable.doAssert = &RecordAssertion;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    vtable.Base.Base.printMethodName = &PrintMethodName;
+                    vtable.Base.Base.printClassName = &PrintClassName;
+                    vtable.Base.Base.getMethodClass = &GetMethodClass;
+                    vtable.doAssert = &RecordAssertion;
+                }
                 var state = new PublicationState
                 {
                     JitInfo = new ICorJitInfo { lpVtbl = &vtable },
@@ -105,32 +104,36 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 var size = -1;
 
                 using var tls = TestConfiguration.CreateJitTls(&state.JitInfo);
-#if DEBUG
-                JitTls.Compiler = compiler;
-                s_assertion = null;
-                compiler.opts.dspMetrics = displayMetrics;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    JitTls.Compiler = compiler;
+                    s_assertion = null;
+                    TestConfiguration.SetDspMetrics(compiler, displayMetrics);
+                }
                 if (useDriver)
                 {
                     Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
                     Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
-#if DEBUG
-                    void* generatedCode = null;
-                    var generatedSize = -1;
-                    var output = CodeGenLifeTransitionTests.Capture(() =>
-                        codeGen.genGenerateCode(out generatedCode, out generatedSize));
-                    code = generatedCode;
-                    size = generatedSize;
-                    if (displayMetrics)
+                    if (TestConfiguration.IsDebug)
                     {
-                        Assert.That(output, Does.StartWith($"; Total bytes of code {size}, "));
-                        Assert.That(output, Does.Contain(", num cse 0 num cand 0 Standard CSE Heuristic seq "));
-                        Assert.That(output, Does.Contain($"for method {compiler.info.compFullName} ("));
-                        Assert.That(output, Does.Not.Contain("; ============================================================"));
+                        void* generatedCode = null;
+                        var generatedSize = -1;
+                        var output = CodeGenLifeTransitionTests.Capture(() =>
+                            codeGen.genGenerateCode(out generatedCode, out generatedSize));
+                        code = generatedCode;
+                        size = generatedSize;
+                        if (displayMetrics)
+                        {
+                            Assert.That(output, Does.StartWith($"; Total bytes of code {size}, "));
+                            Assert.That(output, Does.Contain(", num cse 0 num cand 0 Standard CSE Heuristic seq "));
+                            Assert.That(output, Does.Contain($"for method {compiler.info.compFullName} ("));
+                            Assert.That(output, Does.Not.Contain("; ============================================================"));
+                        }
                     }
-#else
-                    codeGen.genGenerateCode(out code, out size);
-#endif
+                    else
+                    {
+                        codeGen.genGenerateCode(out code, out size);
+                    }
                     Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
                     Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
                     Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(PHASE_EMIT_GCEH));
@@ -145,14 +148,15 @@ internal static unsafe class CodeGenMetadataPhaseTests
                     codeGen.genEmitUnwindDebugGCandEH();
                 }
 
-#if DEBUG
-                var assertion = s_assertion;
-                s_assertion = null;
-                if (assertion is not null)
+                if (TestConfiguration.IsDebug)
                 {
-                    Assert.Fail($"JIT assertion: {assertion}");
+                    var assertion = s_assertion;
+                    s_assertion = null;
+                    if (assertion is not null)
+                    {
+                        Assert.Fail($"JIT assertion: {assertion}");
+                    }
                 }
-#endif
                 Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
                 Assert.That(state.InvalidRequests, Is.Zero);
                 Assert.That(state.EventCount, Is.EqualTo(debugInfo ? 5 : 4));
@@ -233,11 +237,13 @@ internal static unsafe class CodeGenMetadataPhaseTests
         compiler.opts.compScopeInfo = false;
         compiler.opts.doLateDisasm = false;
         compiler.opts.disAsm = false;
-#if DEBUG
-        compiler.opts.dspMetrics = false;
-        compiler.info.compFullName = nameof(CompleteMachineAndMetadataPhasesPublishInNativeOrder);
-        compiler.info.compMethodSpmiIndex = -1;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            TestConfiguration.SetDspMetrics(compiler, false);
+            TestConfiguration.SetCompilerFullName(
+                compiler, nameof(CompleteMachineAndMetadataPhasesPublishInNativeOrder));
+            compiler.info.compMethodSpmiIndex = -1;
+        }
         compiler.genIPmappings = [];
         compiler.genRichIPmappings = [];
         compiler.compHndBBtab = [];
@@ -405,7 +411,6 @@ internal static unsafe class CodeGenMetadataPhaseTests
         return state->GCBuffer;
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_CLASS_STRUCT_* GetMethodClass(ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* method)
         => default;
@@ -432,7 +437,6 @@ internal static unsafe class CodeGenMetadataPhaseTests
         s_assertion = $"{Marshal.PtrToStringUTF8((nint)file)}:{line}: {Marshal.PtrToStringUTF8((nint)expression)}";
         return 0;
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_codePtr")]
     private static extern ref void** CodePointerAddress(CodeGen codeGen);
@@ -452,7 +456,6 @@ internal static unsafe class CodeGenMetadataPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichMappings(ref JitConfigValues config);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHalt")]
     private static extern ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config);
 
@@ -467,6 +470,4 @@ internal static unsafe class CodeGenMetadataPhaseTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitForceFallback")]
     private static extern ref int ForceFallback(ref JitConfigValues config);
-#endif
 }
-#endif

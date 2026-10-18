@@ -17,13 +17,13 @@ public partial class Emitter
         var size = EA_SIZE(attr);
         var fmt = IF_NONE;
         var opt = INS_OPTS_NONE;
-        var reg2 = REG_ARM64_NA;
+        regNumber reg2;
         var reg3 = REG_ARM64_NA;
         var scale = 0;
         var isLdrStr = false;
         var isSimple = true;
         var useRegForImm = false;
-        nint imm = 0;
+        nint imm;
 
         assert(offs >= 0);
 
@@ -34,7 +34,7 @@ public partial class Emitter
             assert(offs == 0);
             isSimple = false;
             reg2 = REG_UNKBASE;
-            var localType = TYP_UNDEF;
+            var_types localType;
 
             if (varx >= 0)
             {
@@ -248,11 +248,12 @@ public partial class Emitter
         id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
 
         dispIns(id);
         appendToCurIG(id);
@@ -334,11 +335,12 @@ public partial class Emitter
         id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
 
         dispIns(id);
         appendToCurIG(id);
@@ -355,8 +357,8 @@ public partial class Emitter
         var isStr = false;
         var isSimple = true;
         var useRegForImm = false;
-        var reg2 = REG_ARM64_NA;
-        nint imm = 0;
+        regNumber reg2;
+        nint imm;
 
         if (((varx >= 0) && _compiler.lvaLocalIsOnUnknownSizeFrame(varx)) ||
             ((varx < 0) && codeGen.RegSet.tmpIsUnknownSizeTemp(varx)))
@@ -513,11 +515,12 @@ public partial class Emitter
         id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
 
         dispIns(id);
         appendToCurIG(id);
@@ -599,11 +602,12 @@ public partial class Emitter
         id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idVarRefOffs = unchecked((uint)emitVarRefOffs);
+        }
 
         dispIns(id);
         appendToCurIG(id);

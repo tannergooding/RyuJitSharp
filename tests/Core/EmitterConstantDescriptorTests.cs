@@ -76,20 +76,19 @@ internal static unsafe class EmitterConstantDescriptorTests
         }
     }
 
-#if !DEBUG
     [TestCase(-17L, 15)]
     [TestCase(16L, -16)]
     [TestCase(long.MinValue, 0)]
     [TestCase(long.MaxValue, -1)]
     public static void UncheckedSmallConstantWritesRetainNativeBitfieldTruncation(long value, int expected)
     {
+        Assume.That(!TestConfiguration.IsDebug);
         var emitter = CreateEmitter();
         var descriptor = NewConstant(emitter, EA_8BYTE, 0);
         descriptor.idSmallCns((nint)value);
 
         Assert.That(descriptor.idSmallCns(), Is.EqualTo(expected));
     }
-#endif
 
     [TestCase(long.MinValue, true)]
     [TestCase(-8193L, true)]
@@ -194,9 +193,7 @@ internal static unsafe class EmitterConstantDescriptorTests
 
         foreach (var displacement in new nint[] { -8191, 8191, -8192, nint.MinValue, 0 })
         {
-#if !DEBUG
             var previousDisplacement = address.amDisp;
-#endif
             SetAddress(emitter, descriptor, displacement);
             var large = displacement is < -8191 or > 8191;
 
@@ -211,17 +208,14 @@ internal static unsafe class EmitterConstantDescriptorTests
             {
                 Assert.That(address.amDisp, Is.EqualTo((int)displacement));
             }
-#if DEBUG
-            else
+            else if (TestConfiguration.IsDebug)
             {
                 Assert.That(address.amDisp, Is.EqualTo(-8192));
             }
-#else
             else
             {
                 Assert.That(address.amDisp, Is.EqualTo(previousDisplacement));
             }
-#endif
         }
     }
 
@@ -268,11 +262,7 @@ internal static unsafe class EmitterConstantDescriptorTests
         ];
         int[] sizes = [8, 16, 24, 24, 32, 24, 32];
         var prefix = Prefix(emitter);
-#if DEBUG
-        Assert.That(prefix, Is.EqualTo(8));
-#else
-        Assert.That(prefix, Is.EqualTo(disassembly ? 8 : 0));
-#endif
+        Assert.That(prefix, Is.EqualTo(TestConfiguration.IsDebug || disassembly ? 8 : 0));
         nuint offset = 0;
 
         for (var index = 0; index < descriptors.Length; index++)
@@ -342,11 +332,8 @@ internal static unsafe class EmitterConstantDescriptorTests
     {
         if (large)
         {
-#if DEBUG
-            Assert.That(descriptor.idAddr().iiaAddrMode.amDisp, Is.EqualTo(-8192));
-#else
-            Assert.That(descriptor.idAddr().iiaAddrMode.amDisp, Is.Zero);
-#endif
+            Assert.That(descriptor.idAddr().iiaAddrMode.amDisp,
+                Is.EqualTo(TestConfiguration.IsDebug ? -8192 : 0));
         }
         else
         {
@@ -383,11 +370,7 @@ internal static unsafe class EmitterConstantDescriptorTests
         var emitter = new DescriptorFactory(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false);
 
         return emitter;
     }

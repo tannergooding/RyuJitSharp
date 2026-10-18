@@ -31,13 +31,11 @@ internal partial struct LocalAddressVisitor
 
     internal void VisitStmt(Statement stmt)
     {
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("LocalAddressVisitor visiting statement:\n");
             _compiler.gtDispStmt(stmt);
         }
-#endif
         _statement = stmt;
         _stmtModified = false;
         _stmtSideEffectsModified = false;
@@ -70,8 +68,7 @@ internal partial struct LocalAddressVisitor
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             if (_stmtModified)
             {
@@ -81,7 +78,6 @@ internal partial struct LocalAddressVisitor
 
             jitprintf("\n");
         }
-#endif
     }
 
     internal void VisitBlock(BasicBlock block)
@@ -554,9 +550,7 @@ internal partial struct LocalAddressVisitor
 
     private readonly void PopValue()
     {
-#if DEBUG
         assert(TopValue(0).IsConsumed);
-#endif
         _valueStack.RemoveAt(_valueStack.Count - 1);
     }
 
@@ -590,12 +584,10 @@ internal partial struct LocalAddressVisitor
         if (_lclAddrAssertions.GetCurrentAssertion(local.LclNum) is LocalEqualsLocalAddrAssertion assertion)
         {
             JITDUMP("Using assertion ");
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 assertion.Print();
             }
-#endif
             JITDUMP("\n");
             value.Address(assertion.AddressLclNum, assertion.AddressOffset);
             _propagatedAddrs = true;

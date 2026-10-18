@@ -468,26 +468,22 @@ public partial class Compiler
             jitprintf($"Estimated code size expansion is {estDupCostSz}\n");
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             fgDumpBlock(preheader);
             fgDumpBlock(condBlock);
         }
-#endif
         Metrics.LoopsInverted++;
         return true;
     }
 
     public PhaseStatus optInvertLoops()
     {
-#if OPT_CONFIG
-        if (JitConfig.JitDoLoopInversion == 0)
+        if (Configuration.DEBUG && (JitConfig.JitDoLoopInversion == 0))
         {
             JITDUMP("Loop inversion disabled\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
         if (compCodeOpt is SMALL_CODE)
         {
             return PhaseStatus.MODIFIED_NOTHING;

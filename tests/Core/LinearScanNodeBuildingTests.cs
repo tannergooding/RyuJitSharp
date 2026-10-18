@@ -20,10 +20,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanNodeBuildingTests
 {
-#if TARGET_X86
     [Test]
     public static void UnusedLongConsumesBothHalvesWithoutDefiningARegister()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var low = compiler.gtNewIconNode(TYP_INT, 17);
             var high = compiler.gtNewIconNode(TYP_INT, 23);
@@ -49,6 +50,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(GT_SUB_HI)]
     public static void LongArithmeticHalvesBuildBothOperandUses(genTreeOps operation)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var low = compiler.gtNewIconNode(TYP_INT, 17);
             var high = compiler.gtNewIconNode(TYP_INT, 23);
@@ -65,6 +68,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void LongMultiplyDefinesTwoRegisters()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var left = compiler.gtNewIconNode(TYP_INT, 17);
             var right = compiler.gtNewIconNode(TYP_INT, 23);
@@ -87,6 +92,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(12, true)]
     public static void IndexAddressReservesTemporaryOnlyForUnscaledElementSizes(int elemSize, bool needsTemporary)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var array = compiler.gtNewIconNode(TYP_REF, 0);
             var index = compiler.gtNewIconNode(TYP_INT, 3);
@@ -102,6 +109,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void SetccDefinesOnlyByteCapableRegisters()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var setcc = new GenTree(GT_SETCC, TYP_INT);
 
@@ -110,10 +119,11 @@ internal static unsafe class LinearScanNodeBuildingTests
                 Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet));
         });
     }
-#else
     [Test]
     public static void NodeSequenceBuildsConstantIntervalsAndConsumesTheirDefinitions()
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var left = compiler.gtNewIconNode(TYP_INT, 23);
             var right = compiler.gtNewIconNode(TYP_INT, 11);
@@ -141,6 +151,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void InternalRegisterStateDoesNotLeakBetweenNodes()
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var value = compiler.gtNewDconNode(TYP_DOUBLE, 2.5);
             _ = Build(allocator, value);
@@ -165,6 +177,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(true, true)]
     public static void LocalLoadsReconcileCandidatesAndOptionalContainment(bool candidate, bool optional)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = candidate }];
             compiler.lvaCount = 1;
@@ -182,6 +196,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(true)]
     public static void MultiRegisterLocalsRetainOnlyIndependentPromotion(bool independent)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaEnregMultiRegVars = true;
             compiler.lvaTable = [
@@ -211,6 +227,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(true)]
     public static void BitcastsKeepNativeIntegerRegisterRestrictions(bool integerSource)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             AvailableIntRegs(allocator) |= SRBM_R16;
             GenTree source = integerSource
@@ -230,6 +248,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void CompareExchangeReservesRaxForComparandAndResult()
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             var data = compiler.gtNewIconNode(TYP_INT, 2);
@@ -258,6 +278,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(GT_XCHG, false)]
     public static void AtomicOperationsPreserveLoopTempsAndDelayedAddressUses(genTreeOps operation, bool unused)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             var data = compiler.gtNewIconNode(TYP_INT, 3);
@@ -282,6 +304,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void IndexAddressesReserveTheirNativeSizedTemporary()
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var array = compiler.gtNewIconNode(TYP_REF, 0);
             var index = compiler.gtNewIconNode(TYP_INT, 3);
@@ -299,6 +323,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void PlacedArgumentsSurviveNodeResetsUntilTheCallConsumesThem()
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var value = compiler.gtNewIconNode(TYP_INT, 23);
             _ = Build(allocator, value);
@@ -323,6 +349,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(GT_RELOAD)]
     public static void RegisterDestinationCountsFollowCopySources(genTreeOps operation)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, _) => {
             var source = compiler.gtNewIconNode(TYP_INT, 23);
             var copy = new GenTreeCopyOrReload(operation, TYP_INT, source);
@@ -338,6 +366,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(NI_X86Base_X64_BigMul)]
     public static void MultiRegisterHardwareDispatchPreservesBothDestinations(NamedIntrinsic id)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var type = id is NI_X86Base_DivRem ? TYP_INT : TYP_LONG;
             var first = compiler.gtNewIconNode(type, 23);
@@ -373,6 +403,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [Test]
     public static void UnloweredSwitchRejectsInsteadOfBuildingNoReferences()
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, allocator) => {
             var selector = compiler.gtNewIconNode(TYP_INT, 1);
             var node = new GenTreeUnOp(GT_SWITCH, TYP_VOID, selector);
@@ -384,6 +416,8 @@ internal static unsafe class LinearScanNodeBuildingTests
     [TestCase(TYP_SIMD32, TYP_SIMD64)]
     public static void SimdInitializationTempIsImplicitlyLiveAndOnlyGrows(var_types initialType, var_types largerType)
     {
+        AssumeNonX86Target();
+
         WithAllocator((compiler, _) => {
             compiler.lvaTable = [];
             compiler.lvaSimdInitTempVarNum = BAD_VAR_NUM;
@@ -399,7 +433,11 @@ internal static unsafe class LinearScanNodeBuildingTests
             Assert.That(compiler.lvaCount, Is.EqualTo(1));
         });
     }
-#endif
+
+    private static void AssumeNonX86Target()
+    {
+        Assume.That(!Configuration.TARGET_X86);
+    }
 
     private static int Build(LinearScan allocator, GenTree node)
     {

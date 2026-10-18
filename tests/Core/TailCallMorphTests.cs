@@ -313,12 +313,13 @@ internal static unsafe class TailCallMorphTests
             Assert.That(compiler.fgCanTailCallViaJitHelper(NewRecursiveCall(compiler)), Is.False));
     }
 
-#if DEBUG
     private static int s_assertionCount;
 
     [Test]
     public static void TailCallValidationRejectsAnUnrelatedReturnValue()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler((compiler, entry, block) => {
             var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
             var first = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, call));
@@ -349,6 +350,8 @@ internal static unsafe class TailCallMorphTests
     [TestCase(true)]
     public static void TailCallValidationFollowsForwardedResultsAcrossBlocks(bool normalize)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler((compiler, entry, block) => {
             var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null);
             call._returnType = TYP_UBYTE;
@@ -372,7 +375,6 @@ internal static unsafe class TailCallMorphTests
             Assert.That(first.RootNode.AsLclVar().Data, Is.SameAs(value));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgMorphStmt")]
     private static extern ref Statement? MorphStatement(Compiler compiler);

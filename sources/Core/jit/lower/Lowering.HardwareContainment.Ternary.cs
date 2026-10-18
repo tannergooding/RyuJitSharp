@@ -103,9 +103,7 @@ public sealed partial class Lowering
                 }
                 else if (HWIntrinsicInfo.IsPermuteVar2x(intrinsicId))
                 {
-#if DEBUG
                     assert(CompilerInstance.canUseEvexEncodingDebugOnly());
-#endif
                     var supportsOp1RegOptional = false;
                     var supportsOp3RegOptional = false;
                     GenTree? containedOperand = null;

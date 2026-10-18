@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Packet 305 is validated and reconciled; commit its source, test, and checkpoint changes. At that committed HEAD, prepare packet 306 from the remaining Pending master rows, grouping complete files by pinned source_blob size and continuing after the 18,590-byte packet-305 boundary. Keep the 35 packet-305 deferrals concrete; preserve B209 genAsyncResumeInfo until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "At the committed packet-306 HEAD, select packet 307 from all Pending master rows by ascending pinned source_blob size, grouping complete file sets and targeting roughly 300 candidates; include the 73 requeued unassessed rows in ordinary ranking. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
 
     "unresolvedConditionalCleanup": [
       {
@@ -27,6 +27,11 @@
         "batch": "conditional-cleanup-305-e11e1f13",
         "deferredCount": 35,
         "candidateLedger": "artifacts\\conditional-cleanup\\batch-305-e11e1f13\\candidates.csv"
+      },
+      {
+        "batch": "conditional-cleanup-306-93d0ef86",
+        "deferredCount": 24,
+        "candidateLedger": "artifacts\\conditional-cleanup\\batch-306-93d0ef86\\candidates.csv"
       }
     ],
 

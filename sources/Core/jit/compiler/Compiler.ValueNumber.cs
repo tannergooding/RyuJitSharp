@@ -410,14 +410,12 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (isUpdate)
+        if (Configuration.DEBUG && isUpdate)
         {
             assert(!definition._updated);
             definition._origVNPair = definition._vnPair;
             definition._updated = true;
         }
-#endif
         definition._vnPair = definitionValues;
         if (Configuration.DEBUG && verbose)
         {

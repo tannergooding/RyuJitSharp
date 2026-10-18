@@ -182,11 +182,11 @@ internal static unsafe class CodeGenPrologInitializationTests
         });
     }
 
-#if TARGET_AMD64
     [TestCase(false, INS_movaps)]
     [TestCase(true, INS_movdqa32)]
     public static void AlignedMoveSelectionUsesVexEncodingWhenSupported(bool vex, instruction expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         WithProlog((compiler, codeGen) =>
         {
             if (vex)
@@ -197,7 +197,6 @@ internal static unsafe class CodeGenPrologInitializationTests
             Assert.That(GetSimdAlignedMovIns(codeGen), Is.EqualTo(expected));
         });
     }
-#endif
 
     [TestCase(1L, false)]
     [TestCase(-1L, false)]
@@ -223,10 +222,10 @@ internal static unsafe class CodeGenPrologInitializationTests
         });
     }
 
-#if TARGET_LOONGARCH64
     [Test]
     public static void LoongArchCookieInitializationSkipsWhenNoCookieIsNeeded()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
         WithProlog((compiler, codeGen) =>
         {
             compiler.compNeedsGSSecurityCookie = false;
@@ -242,6 +241,7 @@ internal static unsafe class CodeGenPrologInitializationTests
     [Test]
     public static void LoongArchCookieInitializationPreservesRelocationBoundary()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
         WithProlog((compiler, codeGen) =>
         {
             compiler.compNeedsGSSecurityCookie = true;
@@ -257,7 +257,6 @@ internal static unsafe class CodeGenPrologInitializationTests
                 Does.Contain("LoongArch64 relocated-address instruction recording is not ported."));
         });
     }
-#endif
 
     [TestCase(REG_X64_RAX)]
     [TestCase(REG_X64_R10)]
@@ -364,7 +363,6 @@ internal static unsafe class CodeGenPrologInitializationTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -372,9 +370,10 @@ internal static unsafe class CodeGenPrologInitializationTests
     [TestCase(4)]
     public static void DspCodeRecordsPrologInitializationAndPreservesUnneededContextNoOp(int operation)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithProlog((compiler, codeGen) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             if (operation == 3)
             {
                 compiler.compNeedsGSSecurityCookie = true;
@@ -424,7 +423,6 @@ internal static unsafe class CodeGenPrologInitializationTests
             Assert.That(diagnostic.Length > 0, Is.EqualTo(operation is not 2 and not 4));
         });
     }
-#endif
 
     private static void WithProlog(Action<Compiler, CodeGen> action)
     {
@@ -471,10 +469,8 @@ internal static unsafe class CodeGenPrologInitializationTests
         codeGen.Emitter.UseEvexEncodings = width == 64;
     }
 
-#if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "simdAlignedMovIns")]
     private static extern instruction GetSimdAlignedMovIns(CodeGen codeGen);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
     private static extern nint Displacement(Emitter emitter, Emitter.instrDesc descriptor);

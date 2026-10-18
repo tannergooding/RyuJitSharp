@@ -379,11 +379,7 @@ public sealed partial class Lowering
             assert(tree.Oper is GT_CAST);
             if (tree.HasOverflowCheck)
             {
-                SetMultiplyUsed(tree.CastOp
-#if DEBUG
-                    , "LowerCast op1 (overflow exception)"
-#endif
-                );
+                SetMultiplyUsed(tree.CastOp, Configuration.DEBUG ? "LowerCast op1 (overflow exception)" : null);
             }
 
             ContainCheckCast(tree);

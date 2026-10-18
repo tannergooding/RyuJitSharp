@@ -345,10 +345,8 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
         SetConfig(ref config, "_jitObjectStackAllocationConditionalEscape", 1);
         JitConfig = (JitConfigValues)config;
 
-#if DEBUG
         ICorJitInfo jitInfo = default;
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.IsDebug ? new JitTls(&jitInfo) : null;
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         TestConfiguration.SetCompilerFullName(compiler, "ObjectAllocatorEscapeAnalysisTests");

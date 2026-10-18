@@ -22,10 +22,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanCallBuildingTests
 {
-#if TARGET_X86
     [Test]
     public static void InitPInvokeFrameReturnsTheThreadControlBlockInEsi()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewHelperCallNode(TYP_LONG, CorInfoHelpFunc.CORINFO_HELP_INIT_PINVOKE_FRAME);
             ReferenceBuildLocation(allocator) = 4;
@@ -41,6 +42,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [TestCase(TYP_DOUBLE)]
     public static void FloatingCallReturnUsesAllocatableRegisters(var_types type)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewCallNode(type, CT_USER_FUNC, null);
             ReferenceBuildLocation(allocator) = 4;
@@ -55,6 +58,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [Test]
     public static void IndirectVirtualStubCallUsesEaxForTheContainedTargetAddress()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
@@ -71,10 +76,11 @@ internal static unsafe class LinearScanCallBuildingTests
         });
     }
 
-#if NOGC_WRITE_BARRIERS
     [Test]
     public static void OptimizedWriteBarrierUsesEdxAndItsSourceRegisterSet()
     {
+        Assume.That(Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS);
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0x1000);
             var source = compiler.gtNewIconNode(TYP_REF, 0x2000);
@@ -93,8 +99,7 @@ internal static unsafe class LinearScanCallBuildingTests
                 reference.getKilledRegisters() == new regMaskTP(SRBM_EDX)), Is.True);
         });
     }
-#endif
-#else
+
     private static IEnumerable<TestCaseData> ReturnRegisterCases()
     {
         yield return new TestCaseData(TYP_VOID, SRBM_NONE);
@@ -110,6 +115,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [TestCaseSource(nameof(ReturnRegisterCases))]
     public static void CallKillsBeforeDefiningItsAbiReturn(var_types type, regMask returnRegister)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewCallNode(type, CT_USER_FUNC, null);
             if (Configuration.FEATURE_MULTIREG_RET)
@@ -141,6 +148,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [TestCase(true, true)]
     public static void FastTailCallTargetAvoidsGsCookieTemporary(bool cookie, bool secretStub)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             if (cookie)
             {
@@ -176,6 +185,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [TestCase(REG_X64_XMM2)]
     public static void RegisterArgumentsUseAndDefineTheirAbiRegister(regNumber register)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var type = register is REG_X64_XMM2 ? TYP_DOUBLE : TYP_INT;
             GenTree value = type is TYP_DOUBLE
@@ -212,6 +223,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [Test]
     public static void NonLastUseLocalArgumentRetainsItsRegisterRelationship()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [
                 new() { Type = TYP_INT, _varIndex = 0, lvTracked = true, lvLRACandidate = true },
@@ -237,6 +250,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [Test]
     public static void WriteBarrierUsesFixedArgumentRegistersThenKillsHelperRegisters()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [
                 new() { Type = TYP_BYREF },
@@ -262,6 +277,8 @@ internal static unsafe class LinearScanCallBuildingTests
     [Test]
     public static void AsyncContinuationKillIsDelayedBeforeTheCallKill()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
             call._callMoreFlags |= GTF_CALL_M_ASYNC;
@@ -283,7 +300,6 @@ internal static unsafe class LinearScanCallBuildingTests
         });
     }
 
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
     [TestCase(REG_X64_XMM0, SRBM_X64_RCX)]
     [TestCase(REG_X64_XMM1, SRBM_X64_RDX)]
     [TestCase(REG_X64_XMM2, SRBM_X64_R8)]
@@ -291,6 +307,8 @@ internal static unsafe class LinearScanCallBuildingTests
     public static void WindowsVarargsFloatsReserveTheCorrespondingIntegerRegister(
         regNumber floatRegister, regMask integerRegister)
     {
+        Assume.That(Configuration.TARGET_AMD64 && !Configuration.UNIX_AMD64_ABI);
+
         WithAllocator((compiler, allocator) => {
             var value = compiler.gtNewDconNode(TYP_DOUBLE, 2.5);
             var target = compiler.gtNewIconNode(TYP_LONG, 0x1234);
@@ -320,12 +338,13 @@ internal static unsafe class LinearScanCallBuildingTests
                 Is.EqualTo(AvailableIntRegs(allocator) & ~SRBM_ARG_REGS));
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
     public static void CallsRecordVzeroupperOnlyWhenTheCalleeNeedsIt(bool pinvoke)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             EnableInstructionSet(compiler, InstructionSet_AVX);
             var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
@@ -340,10 +359,11 @@ internal static unsafe class LinearScanCallBuildingTests
         });
     }
 
-#if SWIFT_SUPPORT
     [Test]
     public static void SwiftErrorArgumentKeepsItsRegisterBusyThroughTheCall()
     {
+        Assume.That(Configuration.SWIFT_SUPPORT && !Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_LONG, 0);
             var swiftErrorRegister = TargetRuntimeMetadata.SwiftErrorRegister;
@@ -369,8 +389,6 @@ internal static unsafe class LinearScanCallBuildingTests
             Assert.That(fixedUse.delayRegFree, Is.True);
         });
     }
-#endif
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildCall")]
     private static extern int BuildCall(LinearScan allocator, GenTreeCall call);

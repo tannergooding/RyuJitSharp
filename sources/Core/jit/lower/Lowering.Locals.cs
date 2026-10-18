@@ -130,35 +130,36 @@ public sealed partial class Lowering
             }
             else if (src.Oper is GT_CALL)
             {
-#if DEBUG
-                var layout = lclStore.GetLayout(CompilerInstance);
-                assert(layout is not null);
-                if (Configuration.TARGET_XARCH && !Configuration.UNIX_AMD64_ABI)
+                if (Configuration.DEBUG)
                 {
-                    assert(layout.SlotCount == 1);
-                    assert(localRegisterType is not TYP_UNDEF);
-                }
-                else
-                {
-                    if (!CompilerInstance.IsHfa(layout.ClassHandle))
+                    var layout = lclStore.GetLayout(CompilerInstance);
+                    assert(layout is not null);
+                    if (Configuration.TARGET_XARCH && !Configuration.UNIX_AMD64_ABI)
                     {
-                        if (layout.SlotCount > 1)
+                        assert(layout.SlotCount == 1);
+                        assert(localRegisterType is not TYP_UNDEF);
+                    }
+                    else
+                    {
+                        if (!CompilerInstance.IsHfa(layout.ClassHandle))
                         {
-                            if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64 &&
-                                !Configuration.TARGET_WASM)
+                            if (layout.SlotCount > 1)
                             {
-                                assert(src.AsCall().HasMultiRegRetVal);
+                                if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64 &&
+                                    !Configuration.TARGET_WASM)
+                                {
+                                    assert(src.AsCall().HasMultiRegRetVal);
+                                }
                             }
-                        }
-                        else
-                        {
-                            var size = layout.Size;
-                            assert((size <= 8) || (size == 16));
-                            assert((((size - 1) & size) == 0) == (localRegisterType is not TYP_UNDEF));
+                            else
+                            {
+                                var size = layout.Size;
+                                assert((size <= 8) || (size == 16));
+                                assert((((size - 1) & size) == 0) == (localRegisterType is not TYP_UNDEF));
+                            }
                         }
                     }
                 }
-#endif
                 if (!Configuration.WINDOWS_AMD64_ABI &&
                     !src.AsCall().HasMultiRegRetVal && (localRegisterType is TYP_UNDEF))
                 {
@@ -250,9 +251,7 @@ public sealed partial class Lowering
                     assert(loweredStore is not null);
                 }
                 JITDUMP("lowering store lcl var/field (after):\n");
-#if DEBUG
-                DISPTREERANGE(BlockRange(), loweredStore);
-#endif
+                DISPTREERANGE(BlockRange(), loweredStore!);
                 JITDUMP("\n");
                 return nextNode;
             }

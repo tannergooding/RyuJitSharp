@@ -114,16 +114,18 @@ internal static unsafe class TargetSignedSizeTests
                 _ => new GenTreeAddrMode(TYP_BYREF, inner, null, 0, second),
             };
 
-#if DEBUG
-            var overflow = Configuration.TARGET_64BIT
-                ? !CheckedOps.TryAdd(first, (long)second, out _)
-                : !CheckedOps.TryAdd(unchecked((int)first), second, out _);
-            if (overflow)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.Throws<OverflowException>(() => compiler.gtPeelOffsets(ref address, out _));
-                return;
+                var overflow = Configuration.TARGET_64BIT
+                    ? !CheckedOps.TryAdd(first, (long)second, out _)
+                    : !CheckedOps.TryAdd(unchecked((int)first), second, out _);
+                if (overflow)
+                {
+                    _ = Assert.Throws<OverflowException>(() => compiler.gtPeelOffsets(ref address, out _));
+                    return;
+                }
             }
-#endif
+
             compiler.gtPeelOffsets(ref address, out var offset, out var fields);
 
             var expected = Configuration.TARGET_64BIT

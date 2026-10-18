@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -19,6 +18,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanRiscVNodeBuildingTests
 {
+    [SetUp]
+    public static void RequireRiscV64Target()
+    {
+        Assume.That(Configuration.TARGET_RISCV64);
+    }
+
     [TestCase(0, false, 0)]
     [TestCase(-2048, false, 0)]
     [TestCase(2047, false, 0)]
@@ -65,10 +70,11 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
         });
     }
 
-#if FEATURE_SIMD
     [Test]
     public static void Simd12IndirectionReservesAnInternalRegister()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithAllocator((compiler, allocator) =>
         {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
@@ -88,30 +94,30 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
     [Test]
     public static void SimdNodeBuildingSkipsForUnportedRiscVBackend()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithAllocator((_, allocator) =>
         {
-            var simdTree = (GenTreeSIMD)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeSIMD));
-            var failure = Assert.Throws<FatalJitException>(() => BuildSIMD(allocator, simdTree));
+            var failure = Assert.Throws<FatalJitException>(() => BuildSimdRiscV64(allocator));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         });
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS
     [Test]
     public static void HardwareIntrinsicNodeBuildingSkipsForUnportedRiscVBackend()
     {
-        WithAllocator((_, allocator) =>
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
+
+        WithAllocator((_compiler, allocator) =>
         {
             var intrinsicTree = (GenTreeHWIntrinsic)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeHWIntrinsic));
             var failure = Assert.Throws<FatalJitException>(() =>
                 BuildHWIntrinsic(allocator, intrinsicTree, out _));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         });
     }
-#endif
 
     [Test]
     public static void CallConsumesItsIndirectTargetAndDefinesItsReturnValue()
@@ -372,16 +378,12 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildNode")]
     private static extern int BuildNode(LinearScan allocator, GenTree tree);
 
-#if FEATURE_SIMD
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildSIMD")]
-    private static extern int BuildSIMD(LinearScan allocator, GenTreeSIMD simdTree);
-#endif
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildSIMDRiscV64")]
+    private static extern int BuildSimdRiscV64(LinearScan allocator);
 
-#if FEATURE_HW_INTRINSICS
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildHWIntrinsic")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildHWIntrinsicRiscV64")]
     private static extern int BuildHWIntrinsic(
         LinearScan allocator, GenTreeHWIntrinsic intrinsicTree, out int destinationCount);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildDef")]
     private static extern RefPosition BuildDef(LinearScan allocator, GenTree tree, regMask candidates, int multiRegIndex);
@@ -421,4 +423,3 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
         }
     }
 }
-#endif

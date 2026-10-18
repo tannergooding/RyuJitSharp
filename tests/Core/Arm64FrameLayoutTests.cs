@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -292,6 +291,7 @@ internal static unsafe class Arm64FrameLayoutTests
     [Test]
     public static void MasksKeepThePinnedNativeExactValueSize()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         var size = ValueSize.FromJitType(TYP_MASK);
         Assert.That(size.IsExact, Is.True);
         Assert.That(size.ExactSize, Is.EqualTo(8));
@@ -304,6 +304,7 @@ internal static unsafe class Arm64FrameLayoutTests
     [TestCase(9, 2)]
     public static void UnknownFrameBookkeepingPadsTheMaskBlock(int maskCount, int maskVectors)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         Compiler.UnknownSizeFrame frame = default;
         for (var index = 0; index < maskCount; index++)
         {
@@ -348,11 +349,7 @@ internal static unsafe class Arm64FrameLayoutTests
             compiler.lvaTrackedToVarNum = [0];
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             codeGen.Emitter.emitBegProlog();
 
             codeGen.psiBegProlog();
@@ -387,6 +384,7 @@ internal static unsafe class Arm64FrameLayoutTests
 
     private static void WithFrame(Action<Compiler, CodeGen> action, bool minOpts = true)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -430,4 +428,3 @@ internal static unsafe class Arm64FrameLayoutTests
         }
     }
 }
-#endif

@@ -237,13 +237,17 @@ internal static unsafe class ProfileCountTests
             };
             compiler.fgPgoSchema = schema;
             compiler.fgPgoSchemaCount = 10;
-#if DEBUG
-            var output = Capture(compiler, () => _ = IncorporateProfile(compiler));
-            Assert.That(output, Does.Contain("Unknown PGO record type 0xffffffff in schema entry 8"));
-            Assert.That(output, Does.Contain($"Profile summary: {expectedRuns} runs, 0 block probes, 0 edge probes, 2 class profiles, 2 method profiles, 2 other records"));
-#else
-            _ = IncorporateProfile(compiler);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var output = Capture(compiler, () => _ = IncorporateProfile(compiler));
+                Assert.That(output, Does.Contain("Unknown PGO record type 0xffffffff in schema entry 8"));
+                Assert.That(output, Does.Contain(
+                    $"Profile summary: {expectedRuns} runs, 0 block probes, 0 edge probes, 2 class profiles, 2 method profiles, 2 other records"));
+            }
+            else
+            {
+                _ = IncorporateProfile(compiler);
+            }
             Assert.That(compiler.fgNumProfileRuns, Is.EqualTo(expectedRuns));
             Assert.That(compiler.fgPgoClassProfiles, Is.EqualTo(2));
             Assert.That(compiler.fgPgoMethodProfiles, Is.EqualTo(2));
@@ -276,11 +280,11 @@ internal static unsafe class ProfileCountTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgIncorporateProfileData")]
     private static extern PhaseStatus IncorporateProfile(Compiler compiler);
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void MissingProfileDiagnosticMatchesNative(bool bbopt)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
             compiler.opts.SetMinOpts(false);
@@ -306,6 +310,7 @@ internal static unsafe class ProfileCountTests
     [TestCase(0, true, true, 1)]
     public static void DebugSynthesisOptionsRespectProfilePresence(int mode, bool hasSchema, bool propagate, int expectedRuns)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
             compiler.opts.SetMinOpts(false);
@@ -332,6 +337,7 @@ internal static unsafe class ProfileCountTests
     [Test]
     public static void StressPrecedesTheOptimizationGate()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             _ = CreateLinearGraph(compiler);
             compiler.opts.SetMinOpts(true);
@@ -349,10 +355,11 @@ internal static unsafe class ProfileCountTests
 
     private static string Capture(Compiler compiler, Action action)
     {
+        Assume.That(TestConfiguration.IsDebug);
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = s_jitstdout;
-        var verbose = compiler.verbose;
+        var verbose = TestConfiguration.IsDebug && Verbose(compiler);
 
         try
         {
@@ -364,7 +371,10 @@ internal static unsafe class ProfileCountTests
         finally
         {
             s_jitstdout = previous;
-            compiler.verbose = verbose;
+            if (TestConfiguration.IsDebug)
+            {
+                Verbose(compiler) = verbose;
+            }
         }
 
         return Encoding.UTF8.GetString(stream.ToArray());
@@ -375,6 +385,7 @@ internal static unsafe class ProfileCountTests
     [TestCase(-1)]
     public static void StressCountsPreserveTheUnsignedSeed(int seed)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var config = JitConfig;
             StressSeed(ref config) = seed;
@@ -402,7 +413,9 @@ internal static unsafe class ProfileCountTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressBBProf")]
     private static extern ref int StressSeed(ref JitConfigValues config);
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verbose")]
+    private static extern ref bool Verbose(Compiler compiler);
 
     private static void WithCompiler(Action<Compiler> action)
     {

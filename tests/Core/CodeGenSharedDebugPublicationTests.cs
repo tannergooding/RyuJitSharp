@@ -307,9 +307,10 @@ internal static unsafe class CodeGenSharedDebugPublicationTests
     private static emitLocation Location(uint offset)
     {
         var group = new insGroup { igOffs = offset };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
         return new emitLocation(group);
     }
 
@@ -320,10 +321,12 @@ internal static unsafe class CodeGenSharedDebugPublicationTests
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousRichConfig = RichDebugConfig(ref JitConfig);
-#if DEBUG
-        var previousFileConfig = RichFileConfig(ref JitConfig);
-        RichFileConfig(ref JitConfig) = null;
-#endif
+        byte* previousFileConfig = null;
+        if (TestConfiguration.IsDebug)
+        {
+            previousFileConfig = RichFileConfig(ref JitConfig);
+            RichFileConfig(ref JitConfig) = null;
+        }
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
@@ -355,9 +358,10 @@ internal static unsafe class CodeGenSharedDebugPublicationTests
         {
             JitTls.Compiler = previous;
             RichDebugConfig(ref JitConfig) = previousRichConfig;
-#if DEBUG
-            RichFileConfig(ref JitConfig) = previousFileConfig;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                RichFileConfig(ref JitConfig) = previousFileConfig;
+            }
             NativeMemory.Free(context.Allocation0);
             NativeMemory.Free(context.Allocation1);
         }
@@ -430,10 +434,8 @@ internal static unsafe class CodeGenSharedDebugPublicationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichDebugConfig(ref JitConfigValues config);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_writeRichDebugInfoFile")]
     private static extern ref byte* RichFileConfig(ref JitConfigValues config);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_ordinal")]
     private static extern ref int Ordinal(InlineContext context);

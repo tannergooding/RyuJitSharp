@@ -408,11 +408,7 @@ public sealed partial class Lowering
             if ((block._kind is not GenTreeBlk.BlkOpKindNativeOpcode) ||
                 ((block.Flags & GTF_IND_NONFAULTING) is 0))
             {
-                SetMultiplyUsed(destination
-#if DEBUG
-                    , "LowerInitBlockStore destination address"
-#endif
-                );
+                SetMultiplyUsed(destination, Configuration.DEBUG ? "LowerInitBlockStore destination address" : null);
             }
         }
         else
@@ -539,20 +535,13 @@ public sealed partial class Lowering
             block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
             if ((source.Oper is GT_IND) && ((source.Flags & GTF_IND_NONFAULTING) is 0))
             {
-                SetMultiplyUsed(source.AsIndir().Addr
-#if DEBUG
-                    , "LowerCopyBlockStore source address (indirection)"
-#endif
-                );
+                SetMultiplyUsed(source.AsIndir().Addr,
+                    Configuration.DEBUG ? "LowerCopyBlockStore source address (indirection)" : null);
             }
 
             if ((block.Flags & GTF_IND_NONFAULTING) is 0)
             {
-                SetMultiplyUsed(address
-#if DEBUG
-                    , "LowerCopyBlockStore destination address"
-#endif
-                );
+                SetMultiplyUsed(address, Configuration.DEBUG ? "LowerCopyBlockStore destination address" : null);
             }
         }
         else

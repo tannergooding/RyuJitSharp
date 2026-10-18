@@ -15,9 +15,10 @@ public sealed partial class ObjectAllocator
         var compiler = CompilerInstance;
         var builder = new ClassLayoutBuilder(compiler, layout.Size);
         builder.CopyPaddingFrom(0, layout);
-#if DEBUG
-        builder.CopyNameFrom(layout, "[nongc] ");
-#endif
+        if (Configuration.DEBUG)
+        {
+            builder.CopyNameFrom(layout, "[nongc] ");
+        }
         return compiler.typGetCustomLayout(builder);
     }
 
@@ -41,9 +42,10 @@ public sealed partial class ObjectAllocator
             }
         }
 
-#if DEBUG
-        builder.CopyNameFrom(layout, "[byref] ");
-#endif
+        if (Configuration.DEBUG)
+        {
+            builder.CopyNameFrom(layout, "[byref] ");
+        }
         return compiler.typGetCustomLayout(builder);
     }
 
@@ -352,12 +354,10 @@ public sealed partial class ObjectAllocator
                 if (Configuration.DEBUG)
                 {
                     JITDUMP($"Update V{local:D2} to V{stackLocal:D2} in use [{TreeIdForDump(tree):D6}]\n");
-#if DEBUG
-                if (compiler.verbose)
-                {
-                    compiler.gtDispTree(tree);
-                }
-#endif
+                    if (compiler.verbose)
+                    {
+                        compiler.gtDispTree(tree);
+                    }
                 }
             }
             else if (newType is TYP_STRUCT)

@@ -125,8 +125,7 @@ public sealed partial class ValueNumStore
             _mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
         }
 
-#if DEBUG
-        if (compiler.compStressCompile(Compiler.compStressArea.STRESS_VN_BUDGET, 50))
+        if (Configuration.DEBUG && compiler.compStressCompile(Compiler.compStressArea.STRESS_VN_BUDGET, 50))
         {
             assert(compiler._inlineStrategy is not null);
             var random = compiler._inlineStrategy.GetRandom(compiler.info.compMethodHash());
@@ -142,7 +141,6 @@ public sealed partial class ValueNumStore
 
             JITDUMP($"VN Stress: setting select budget to {_mapSelectBudget}\n");
         }
-#endif
     }
 
     public static ValueNum VNForVoid() => 1;
@@ -285,27 +283,15 @@ public sealed partial class ValueNumStore
 
     public T ConstantValue<T>(ValueNum vn) where T : unmanaged, INumberBase<T>
     {
-        return ConstantValueInternal<T>(vn
-#if DEBUG
-            , coerce: false
-#endif
-            );
+        return ConstantValueInternal<T>(vn, coerce: false);
     }
 
     public T CoercedConstantValue<T>(ValueNum vn) where T : unmanaged, INumberBase<T>
     {
-        return ConstantValueInternal<T>(vn
-#if DEBUG
-            , coerce: true
-#endif
-            );
+        return ConstantValueInternal<T>(vn, coerce: true);
     }
 
-    private T ConstantValueInternal<T>(ValueNum vn
-#if DEBUG
-        , bool coerce
-#endif
-        ) where T : unmanaged, INumberBase<T>
+    private T ConstantValueInternal<T>(ValueNum vn, bool coerce) where T : unmanaged, INumberBase<T>
     {
         var chunk = _chunks[GetChunkNum(vn)];
         var offset = ChunkOffset(vn);
@@ -339,8 +325,7 @@ public sealed partial class ValueNumStore
                     return T.CreateTruncating(((VNHandle[])chunk.Defs)[offset].Value);
                 }
 
-#if DEBUG
-                if (!coerce)
+                if (Configuration.DEBUG && !coerce)
                 {
                     // Reference storage uses the host pointer width, even for a cross-target JIT.
                     // Keep the width preflight rather than reading beyond an element on an invalid call.
@@ -366,7 +351,6 @@ public sealed partial class ValueNumStore
                             "Called ConstantValue<T>(vn), but type(T) != type(vn); Use CoercedConstantValue instead.");
                     }
                 }
-#endif
                 return SafeGetConstantValue<T>(chunk, offset);
             }
             default:

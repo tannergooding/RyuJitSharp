@@ -14,13 +14,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class NaturalLoopIterationTests
 {
-#if DEBUG
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
     public static void BaseCaseDiagnosticsUseNativeOperatorNames(bool unsigned, bool verbose)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithLoop((compiler, loop, preheader, unusedHeader, latch) =>
         {
             compiler.fgInsertStmtAtEnd(preheader, compiler.gtNewStmt(
@@ -31,7 +31,7 @@ internal static unsafe class NaturalLoopIterationTests
             {
                 latch.LastStmt!.RootNode.AsUnOp().Op1.Flags |= GTF_UNSIGNED;
             }
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
 
             var output = CodeGenLifeTransitionTests.Capture(() => Assert.That(loop.AnalyzeIteration(out _), Is.True));
             if (verbose)
@@ -49,6 +49,7 @@ internal static unsafe class NaturalLoopIterationTests
     [TestCase(true)]
     public static void MismatchedGuardDiagnosticsUseNativeOperatorNames(bool unsigned)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithLoop((compiler, loop, unusedPreheader, unusedHeader, latch) =>
         {
             compiler.fgInsertStmtAtEnd(latch, compiler.gtNewStmt(NewIncrement(compiler, GT_ADD, 1)));
@@ -66,7 +67,6 @@ internal static unsafe class NaturalLoopIterationTests
                 .And.Contain($"but invariant requires V00 {prefix}LT ["));
         }, GT_LE);
     }
-#endif
 
     [TestCase(GT_ADD, 1, GT_LT, 5, true)]
     [TestCase(GT_SUB, 1, GT_GT, -5, true)]

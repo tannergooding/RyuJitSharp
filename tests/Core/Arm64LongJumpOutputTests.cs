@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,6 +17,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64LongJumpOutputTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     private delegate void OutputTest(Compiler compiler, Emitter emitter, byte* code, CallbackContext* callbacks);
 
     [TestCase(INS_b, IF_ARM64_BI_0A, EA_4BYTE, 0, 0x14000008u)]
@@ -427,9 +432,10 @@ internal static unsafe class Arm64LongJumpOutputTests
                 id.idReg2(scratch);
             }
             id.idSmallCns(immediate);
-#if DEBUG
-            id.idDebugOnlyInfo(new instrDescDebugInfo());
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                id.idDebugOnlyInfo(new instrDescDebugInfo());
+            }
 
             return id;
         }
@@ -504,4 +510,3 @@ internal static unsafe class Arm64LongJumpOutputTests
         context->Count++;
     }
 }
-#endif

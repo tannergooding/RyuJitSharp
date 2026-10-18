@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 && DEBUG
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -250,6 +249,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
     [TestCase(long.MinValue, false)]
     public static void FromOneImmediatePredicatePreservesUncheckedForwarding(long value, bool valid)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_ARM64);
         Assert.That(FromOne(null, (nint)value, 4), Is.EqualTo(valid));
     }
 
@@ -265,17 +265,14 @@ internal static unsafe class Arm64SveInstructionSanityTests
 
     internal static void AssertUnexpectedFormat((string Output, string[] Assertions) result)
     {
-#if HOST_WINDOWS
-        const string newline = "\r\n";
-#else
-        const string newline = "\n";
-#endif
+        var newline = Configuration.HOST_WINDOWS ? "\r\n" : "\n";
         Assert.That(result.Output, Is.EqualTo($"unexpected format IF_EN5A{newline}"));
         Assert.That(result.Assertions, Is.EqualTo<string[]>(["!\"Unexpected format\""]));
     }
 
     internal static (string Output, string[] Assertions) Capture(Action action)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_ARM64);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
@@ -366,4 +363,3 @@ internal static unsafe class Arm64SveInstructionSanityTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidUimmFrom1")]
     private static extern bool FromOne(Emitter? emitter, nint immediate, int bits);
 }
-#endif

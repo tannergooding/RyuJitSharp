@@ -37,9 +37,9 @@ public partial class Emitter
             smallLabelSize = 4;
             smallConstantSize = 4;
         }
+        var interestingJumpNumber = -1;
 #if DEBUG
         var compiler = _compiler ?? throw new FatalJitException("Jump distance binding requires an active compiler.");
-        var interestingJumpNumber = -1;
         if (compiler.verbose)
         {
             jitprintf("*************** In emitJumpDistBind()\n");
@@ -54,14 +54,10 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
         var iteration = 1;
-#endif
         while (true)
         {
-#if DEBUG
             emitCheckIGList();
-#endif
             insGroup? lastIG = null;
             instrDescJmp? lastJump = null;
             insGroup? previousJumpIG = null;
@@ -74,10 +70,12 @@ public partial class Emitter
             {
                 var jumpIG = jump.idjIG ?? throw new FatalJitException("A saved jump requires an instruction group.");
                 var size = jump.idCodeSize();
-#if DEBUG
-                var debugInfo = jump.idDebugOnlyInfo();
-                assert(debugInfo is not null);
-#endif
+                instrDescDebugInfo? debugInfo = null;
+                if (Configuration.DEBUG)
+                {
+                    debugInfo = jump.idDebugOnlyInfo();
+                    assert(debugInfo is not null);
+                }
                 uint shortSize = 0;
                 var maxNegativeDistance = 0;
                 var maxPositiveDistance = 0;
@@ -230,7 +228,7 @@ public partial class Emitter
 
                 jump.idjOffs = unchecked(jump.idjOffs - localAdjustment);
 
-                var distance = 0;
+                int distance;
                 if (Configuration.TARGET_ARM64 && jump.idAddr().iiaIsJitDataOffset())
                 {
                     assert(jump.idIsBound());
@@ -313,64 +311,65 @@ public partial class Emitter
                     extra = unchecked(distance + maxNegativeDistance);
                 }
 
-#if DEBUG
-                if (jumpIG.IsBefore(targetIG))
+                if (Configuration.DEBUG)
                 {
-                    if (debugInfo.idNum == unchecked((uint)interestingJumpNumber)
-                        || interestingJumpNumber == 0)
+                    if (jumpIG.IsBefore(targetIG))
                     {
-                        if (interestingJumpNumber == 0)
+                        if (debugInfo!.idNum == unchecked((uint)interestingJumpNumber)
+                            || interestingJumpNumber == 0)
                         {
-                            jitprintf($"[1] Jump {debugInfo.idNum}:\n");
+                            if (interestingJumpNumber == 0)
+                            {
+                                jitprintf($"[1] Jump {debugInfo!.idNum}:\n");
+                            }
+
+                            jitprintf($"[1] Jump  block is at {jumpIG.igOffs:X8}\n");
+                            jitprintf($"[1] Jump reloffset is {jump.idjOffs:X4}\n");
+                            jitprintf($"[1] Jump source is at {encodingOffset:X8}\n");
+                            jitprintf($"[1] Label block is at {destinationOffset:X8}\n");
+                            jitprintf($"[1] Jump  dist. is    {unchecked((uint)distance):X4}\n");
+                            if (extra > 0)
+                            {
+                                jitprintf($"[1] Dist excess [S] = {extra}  \n");
+                            }
                         }
 
-                        jitprintf($"[1] Jump  block is at {jumpIG.igOffs:X8}\n");
-                        jitprintf($"[1] Jump reloffset is {jump.idjOffs:X4}\n");
-                        jitprintf($"[1] Jump source is at {encodingOffset:X8}\n");
-                        jitprintf($"[1] Label block is at {destinationOffset:X8}\n");
-                        jitprintf($"[1] Jump  dist. is    {unchecked((uint)distance):X4}\n");
-                        if (extra > 0)
+                        if (_compiler!.verbose)
                         {
-                            jitprintf($"[1] Dist excess [S] = {extra}  \n");
+                            var jumpForDisplay = jump;
+                            jitprintf($"Estimate of fwd jump [{FMT_PTR((void*)dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref jumpForDisplay)))}/{debugInfo!.idNum:D3}]: " +
+                                $"{sourceOffset:X4} -> {destinationOffset:X4} = {unchecked((uint)distance):X4}\n");
                         }
                     }
-
-                    if (compiler.verbose)
+                    else
                     {
-                        var jumpForDisplay = jump;
-                        jitprintf($"Estimate of fwd jump [{FMT_PTR((void*)dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref jumpForDisplay)))}/{debugInfo.idNum:D3}]: " +
-                            $"{sourceOffset:X4} -> {destinationOffset:X4} = {unchecked((uint)distance):X4}\n");
+                        if (debugInfo!.idNum == unchecked((uint)interestingJumpNumber)
+                            || interestingJumpNumber == 0)
+                        {
+                            if (interestingJumpNumber == 0)
+                            {
+                                jitprintf($"[2] Jump {debugInfo!.idNum}:\n");
+                            }
+
+                            jitprintf($"[2] Jump  block is at {jumpIG.igOffs:X8}\n");
+                            jitprintf($"[2] Jump reloffset is {jump.idjOffs:X4}\n");
+                            jitprintf($"[2] Jump source is at {encodingOffset:X8}\n");
+                            jitprintf($"[2] Label block is at {destinationOffset:X8}\n");
+                            jitprintf($"[2] Jump  dist. is    {unchecked((uint)distance):X4}\n");
+                            if (extra > 0)
+                            {
+                                jitprintf($"[2] Dist excess [S] = {extra}  \n");
+                            }
+                        }
+
+                        if (_compiler!.verbose)
+                        {
+                            var jumpForDisplay = jump;
+                            jitprintf($"Estimate of bwd jump [{FMT_PTR((void*)dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref jumpForDisplay)))}/{debugInfo!.idNum:D3}]: " +
+                                $"{sourceOffset:X4} -> {destinationOffset:X4} = {unchecked((uint)distance):X4}\n");
+                        }
                     }
                 }
-                else
-                {
-                    if (debugInfo.idNum == unchecked((uint)interestingJumpNumber)
-                        || interestingJumpNumber == 0)
-                    {
-                        if (interestingJumpNumber == 0)
-                        {
-                            jitprintf($"[2] Jump {debugInfo.idNum}:\n");
-                        }
-
-                        jitprintf($"[2] Jump  block is at {jumpIG.igOffs:X8}\n");
-                        jitprintf($"[2] Jump reloffset is {jump.idjOffs:X4}\n");
-                        jitprintf($"[2] Jump source is at {encodingOffset:X8}\n");
-                        jitprintf($"[2] Label block is at {destinationOffset:X8}\n");
-                        jitprintf($"[2] Jump  dist. is    {unchecked((uint)distance):X4}\n");
-                        if (extra > 0)
-                        {
-                            jitprintf($"[2] Dist excess [S] = {extra}  \n");
-                        }
-                    }
-
-                    if (compiler.verbose)
-                    {
-                        var jumpForDisplay = jump;
-                        jitprintf($"Estimate of bwd jump [{FMT_PTR((void*)dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref jumpForDisplay)))}/{debugInfo.idNum:D3}]: " +
-                            $"{sourceOffset:X4} -> {destinationOffset:X4} = {unchecked((uint)distance):X4}\n");
-                    }
-                }
-#endif
 
                 if (extra > 0)
                 {
@@ -385,22 +384,23 @@ public partial class Emitter
                         var mediumExtra = jumpIG.IsBefore(targetIG)
                             ? unchecked(distance - maxMediumPositiveDistance)
                             : unchecked(distance + maxMediumNegativeDistance);
-#if DEBUG
-                        if (debugInfo.idNum == unchecked((uint)interestingJumpNumber)
-                            || interestingJumpNumber == 0)
+                        if (Configuration.DEBUG)
                         {
-                            if (mediumExtra > 0)
+                            if (debugInfo!.idNum == unchecked((uint)interestingJumpNumber)
+                                || interestingJumpNumber == 0)
                             {
-                                var prefix = jumpIG.IsBefore(targetIG) ? 6 : 7;
-                                if (interestingJumpNumber == 0)
+                                if (mediumExtra > 0)
                                 {
-                                    jitprintf($"[{prefix}] Jump {debugInfo.idNum}:\n");
-                                }
+                                    var prefix = jumpIG.IsBefore(targetIG) ? 6 : 7;
+                                    if (interestingJumpNumber == 0)
+                                    {
+                                        jitprintf($"[{prefix}] Jump {debugInfo!.idNum}:\n");
+                                    }
 
-                                jitprintf($"[{prefix}] Dist excess [S] = {mediumExtra}  \n");
+                                    jitprintf($"[{prefix}] Dist excess [S] = {mediumExtra}  \n");
+                                }
                             }
                         }
-#endif
                         if (mediumExtra <= 0)
                         {
                             goto MEDIUM_JMP;
@@ -465,13 +465,11 @@ public partial class Emitter
 
             NEXT_JMP:
                 assert(((shortSize | unchecked((uint)distance)) == 0) || (shortSize == jump.idCodeSize()));
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && _compiler!.verbose)
                 {
                     var jumpForDisplay = jump;
-                    jitprintf($"Shrinking jump [{FMT_PTR((void*)dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref jumpForDisplay)))}/{debugInfo.idNum:D3}]\n");
+                    jitprintf($"Shrinking jump [{FMT_PTR((void*)dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref jumpForDisplay)))}/{debugInfo!.idNum:D3}]\n");
                 }
-#endif
                 noway_assert(unchecked((ushort)difference) == difference);
 
                 groupAdjustment = unchecked(groupAdjustment + difference);
@@ -498,9 +496,8 @@ public partial class Emitter
                 assert(IsCodeAligned(group.igOffs));
             }
 
-#if DEBUG
             emitCheckIGList();
-            if (compiler.verbose)
+            if (Configuration.DEBUG && _compiler!.verbose)
             {
                 if (Configuration.TARGET_ARM)
                 {
@@ -512,24 +509,22 @@ public partial class Emitter
                     jitprintf($"Total shrinkage = {groupAdjustment,3}, min extra jump size = {minShortExtra,3}\n");
                 }
             }
-#endif
             if (minShortExtra > groupAdjustment &&
                 (!Configuration.TARGET_ARM || minMediumExtra > groupAdjustment))
             {
                 break;
             }
 
-#if DEBUG
-            iteration++;
-            if (compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                jitprintf($"Iterating branch shortening. Iteration = {iteration}\n");
+                iteration++;
+                if (_compiler!.verbose)
+                {
+                    jitprintf($"Iterating branch shortening. Iteration = {iteration}\n");
+                }
             }
-#endif
         }
 
-#if DEBUG
         emitCheckIGList();
-#endif
     }
 }

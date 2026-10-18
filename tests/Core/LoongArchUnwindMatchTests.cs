@@ -1,10 +1,7 @@
-#if TARGET_LOONGARCH64
 using System;
-#if DEBUG
 using System.Buffers.Binary;
 using System.IO;
 using System.Text;
-#endif
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -19,6 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class LoongArchUnwindMatchTests
 {
+    [SetUp]
+    public static void RequireLoongArch64Target()
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+    }
+
     [TestCase(new byte[] { 0xE1, 0xAA }, new byte[] { 0xAA }, 1)]
     [TestCase(new byte[] { 0xE2, 0x01, 0x02, 0xAA }, new byte[] { 0xAA }, 3)]
     [TestCase(new byte[] { 0xE1, 0xAA, 0xE4 }, new byte[] { 0xE1, 0xAB }, -1)]
@@ -75,6 +78,12 @@ internal static class LoongArchUnwindMatchTests
 
 internal static unsafe class LoongArchUnwindLifecycleTests
 {
+    [SetUp]
+    public static void RequireLoongArch64Target()
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+    }
+
     [Test]
     public static void OSRPrologPreservesTheLoongArchEmitterBoundary()
     {
@@ -260,11 +269,12 @@ internal static unsafe class LoongArchUnwindLifecycleTests
         });
     }
 
-#if DEBUG
     [Test]
     [NonParallelizable]
     public static void DebugDumpShowsLoongArchBufferAndEpilogState()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var unwindInfo = new UnwindInfo();
         unwindInfo.InitUnwindInfo(compiler, null, null);
@@ -286,7 +296,14 @@ internal static unsafe class LoongArchUnwindLifecycleTests
         try
         {
             Globals.s_jitstdout = writer;
-            unwindInfo.Dump(true);
+            var dump = typeof(UnwindInfo).GetMethod(
+                "Dump",
+                BindingFlags.Instance | BindingFlags.Public,
+                null,
+                [typeof(bool), typeof(int)],
+                null)
+                ?? throw new InvalidOperationException("UnwindInfo.Dump was not found.");
+            _ = dump.Invoke(unwindInfo, [true, 0]);
             writer.Flush();
         }
         finally
@@ -303,7 +320,6 @@ internal static unsafe class LoongArchUnwindLifecycleTests
         Assert.That(output, Does.Contain("UnwindEpilogInfo"));
         Assert.That(output, Does.Contain("uecFinalized: false"));
     }
-#endif
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
@@ -332,11 +348,7 @@ internal static unsafe class LoongArchUnwindLifecycleTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
 
             action(compiler, codeGen);
         }
@@ -357,9 +369,11 @@ internal static unsafe class LoongArchUnwindLifecycleTests
             igSize = size,
             igFlags = flags,
         };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
+
         return group;
     }
 
@@ -405,9 +419,15 @@ internal static unsafe class LoongArchUnwindLifecycleTests
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
 
-#if DEBUG
 internal static unsafe class LoongArchUnwindDiagnosticsTests
 {
+    [SetUp]
+    public static void RequireDebugConfiguration()
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+        Assume.That(TestConfiguration.IsDebug);
+    }
+
     [TestCase(0xFFFFFFFFu, 27u, 5u, 31u)]
     [TestCase(0xFFFFFFFFu, 22u, 5u, 31u)]
     [TestCase(0xFFFFFFFFu, 0u, 18u, 0x3FFFFu)]
@@ -488,7 +508,7 @@ internal static unsafe class LoongArchUnwindDiagnosticsTests
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             fixed (byte* pointer = blob)
             {
-                Globals.DumpUnwindInfo(compiler, true, start, end, pointer + headerOffset, size);
+                InvokeDumpUnwindInfo(compiler, true, start, end, pointer + headerOffset, size);
             }
 
             writer.Flush();
@@ -500,6 +520,31 @@ internal static unsafe class LoongArchUnwindDiagnosticsTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
+
+    private static void InvokeDumpUnwindInfo(
+        Compiler compiler,
+        bool isHotCode,
+        uint startOffset,
+        uint endOffset,
+        byte* header,
+        uint size)
+    {
+        var dump = typeof(Globals).GetMethod(
+            "DumpUnwindInfo",
+            BindingFlags.Static | BindingFlags.Public,
+            null,
+            [typeof(Compiler), typeof(bool), typeof(uint), typeof(uint), typeof(byte*), typeof(uint)],
+            null)
+            ?? throw new InvalidOperationException("Globals.DumpUnwindInfo was not found.");
+        var dumpUnwindInfo = dump.CreateDelegate<DumpUnwindInfoDelegate>();
+        dumpUnwindInfo(compiler, isHotCode, startOffset, endOffset, header, size);
+    }
+
+    private delegate void DumpUnwindInfoDelegate(
+        Compiler compiler,
+        bool isHotCode,
+        uint startOffset,
+        uint endOffset,
+        byte* header,
+        uint size);
 }
-#endif
-#endif

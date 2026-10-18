@@ -1,10 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
@@ -284,10 +282,10 @@ internal static class EmitterJumpRemovalTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void VerboseRemovalDisplaysTheJumpListBeforeAndAfterAndChecksGroupOffsets()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
             var target = Label();
@@ -322,6 +320,7 @@ internal static class EmitterJumpRemovalTests
     [Test]
     public static void JumpListDiagnosticKeepsNativePushNameAndBoundJumpPolicy()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((_, emitter) =>
         {
             var target = Label();
@@ -333,7 +332,7 @@ internal static class EmitterJumpRemovalTests
             target.bbEmitCookie = successor;
             JumpView.Bind(bound);
 
-            var output = Capture(emitter.emitDispJumpList);
+            var output = Capture(() => TestConfiguration.DumpEmitterJumpList(emitter));
 
             Assert.That(output, Is.EqualTo(NativeNewLines(
                 "Emitter Jump List:\n" +
@@ -346,6 +345,7 @@ internal static class EmitterJumpRemovalTests
     [Test]
     public static void VerboseKeptCandidatePrintsTheReasonAndDoesNotPrintAnAfterList()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
             var target = Label();
@@ -373,7 +373,6 @@ internal static class EmitterJumpRemovalTests
             Assert.That(successor.igOffs, Is.EqualTo(5u));
         });
     }
-#endif
 
     private static BasicBlock Label()
     {
@@ -421,7 +420,6 @@ internal static class EmitterJumpRemovalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitTotalCodeSize")]
     private static extern ref int TotalSize(Emitter emitter);
 
-#if DEBUG
     private static string NativeNewLines(string output)
     {
         return output.Replace("\n", Environment.NewLine, StringComparison.Ordinal);
@@ -442,8 +440,6 @@ internal static class EmitterJumpRemovalTests
         {
             s_jitstdout = previous;
         }
-
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 }

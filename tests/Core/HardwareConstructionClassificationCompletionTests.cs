@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareConstructionClassificationCompletionTests
 {
+    [SetUp]
+    public static void RequireSupportedHardwareIntrinsicTarget()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS &&
+            (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM));
+    }
+
     [Test]
     public static void FixedIntegralBroadcastPreservesNativeTruncationAndEveryLane(
         [Values(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG)] var_types baseType,
@@ -77,12 +83,12 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [TestCase((byte)8)]
     [TestCase((byte)12)]
     [TestCase((byte)16)]
-#if TARGET_XARCH
     [TestCase((byte)32)]
     [TestCase((byte)64)]
-#endif
     public static void FixedBroadcastUsesEveryLogicalLaneAndLeavesTheStorageTailZero(byte size)
     {
+        Assume.That(size <= 16 || Configuration.TARGET_XARCH);
+
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
@@ -132,15 +138,13 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         WithCompiler(compiler =>
         {
             var address = Address(compiler, zero);
-#if TARGET_XARCH
-            var id = NI_X86Base_LoadAlignedVector128;
-#elif TARGET_ARM64
-            var id = NI_AdvSimd_LoadAndReplicateToVector128;
-#elif TARGET_WASM
-            var id = NI_PackedSimd_LoadScalarAndSplatVector128;
-#else
-#error Unsupported hardware classification test target
-#endif
+            var id = Configuration.TARGET_XARCH
+                ? NI_X86Base_LoadAlignedVector128
+                : Configuration.TARGET_ARM64
+                    ? NI_AdvSimd_LoadAndReplicateToVector128
+                    : Configuration.TARGET_WASM
+                        ? NI_PackedSimd_LoadScalarAndSplatVector128
+                        : throw new AssertionException("Unsupported hardware classification test target.");
             var node = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_FLOAT, 16, address);
             AssertMemoryClassification(node, address, false);
         });
@@ -154,18 +158,26 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         {
             var address = Address(compiler, zero);
             var value = Local(compiler, TYP_SIMD16);
-#if TARGET_XARCH
-            var node = compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, NI_X86Base_StoreLow, TYP_FLOAT, 16,
-                address, value);
-#elif TARGET_ARM64
-            var node = compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, NI_AdvSimd_StoreSelectedScalar, TYP_FLOAT, 16,
-                address, value, compiler.gtNewIconNode(TYP_INT, 0));
-#elif TARGET_WASM
-            var node = compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, NI_PackedSimd_StoreSelectedScalar, TYP_FLOAT, 16,
-                address, value, compiler.gtNewIconNode(TYP_INT, 0));
-#else
-#error Unsupported hardware classification test target
-#endif
+            GenTreeHWIntrinsic node;
+            if (Configuration.TARGET_XARCH)
+            {
+                node = compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, NI_X86Base_StoreLow, TYP_FLOAT, 16,
+                    address, value);
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                node = compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, NI_AdvSimd_StoreSelectedScalar, TYP_FLOAT, 16,
+                    address, value, compiler.gtNewIconNode(TYP_INT, 0));
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                node = compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, NI_PackedSimd_StoreSelectedScalar, TYP_FLOAT, 16,
+                    address, value, compiler.gtNewIconNode(TYP_INT, 0));
+            }
+            else
+            {
+                throw new AssertionException("Unsupported hardware classification test target.");
+            }
             AssertMemoryClassification(node, address, true);
         });
     }
@@ -175,15 +187,13 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     {
         WithCompiler(compiler =>
         {
-#if TARGET_XARCH
-            var id = NI_X86Base_Add;
-#elif TARGET_ARM64
-            var id = NI_AdvSimd_Add;
-#elif TARGET_WASM
-            var id = NI_PackedSimd_Add;
-#else
-#error Unsupported hardware classification test target
-#endif
+            var id = Configuration.TARGET_XARCH
+                ? NI_X86Base_Add
+                : Configuration.TARGET_ARM64
+                    ? NI_AdvSimd_Add
+                    : Configuration.TARGET_WASM
+                        ? NI_PackedSimd_Add
+                        : throw new AssertionException("Unsupported hardware classification test target.");
             var node = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, id, TYP_INT, 16,
                 Local(compiler, TYP_SIMD16), Local(compiler, TYP_SIMD16));
             var loadAddress = (GenTree?)Address(compiler, false);
@@ -197,11 +207,12 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         });
     }
 
-#if TARGET_XARCH
     [TestCase(NI_X86Base_LoadLow)]
     [TestCase(NI_X86Base_LoadHigh)]
     public static void XarchPartialLoadsSelectTheSecondOperand(NamedIntrinsic id)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler(compiler =>
         {
             var address = Address(compiler, false);
@@ -214,6 +225,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [Test]
     public static void XarchMaskMoveSelectsTheThirdOperand()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler(compiler =>
         {
             var address = Address(compiler, false);
@@ -228,6 +241,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         [Values(NI_X86Base_ConvertToVector128Int16, NI_AVX2_BroadcastScalarToVector128)] NamedIntrinsic id,
         [Values(false, true)] bool pointer)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler(compiler =>
         {
             GenTree operand = pointer ? Address(compiler, false) : Local(compiler, TYP_SIMD16);
@@ -248,6 +263,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [TestCase(true)]
     public static void XarchGatherAddressPositionDependsOnItsMaskedForm(bool masked)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler(compiler =>
         {
             var address = Address(compiler, false);
@@ -266,6 +283,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [TestCase(true)]
     public static void XarchMultiplyNoFlagsHasStoreSemanticsOnlyForItsOutArgument(bool store)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler(compiler =>
         {
             var address = Address(compiler, false);
@@ -282,13 +301,12 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
                 Is.EqualTo(store ? GTF_ASG | GTF_GLOB_REF | GTF_EXCEPT : GTF_EMPTY));
         });
     }
-#endif
-
-#if TARGET_ARM64
     [Test]
     public static void Arm64NonconstantScalableBroadcastRetainsNativeCreate(
         [Values(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE)] var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler(compiler =>
         {
             var value = Local(compiler, baseType);
@@ -305,6 +323,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         [Values(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG)] var_types baseType,
         [Values(-1L, long.MinValue, 0x180000001L)] long value)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler(compiler =>
         {
             GenTree scalar = baseType.Size == 8
@@ -329,6 +349,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [TestCase(TYP_DOUBLE, 0x3FF8000000000000UL)]
     public static void Arm64ScalableFloatingBroadcastPreservesRawRepeatedIndex(var_types baseType, ulong bits)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler(compiler =>
         {
             var value = BitConverter.Int64BitsToDouble(unchecked((long)bits));
@@ -348,6 +370,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [Test]
     public static void Arm64LaneLoadSelectsTheThirdOperand()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler(compiler =>
         {
             var address = Address(compiler, false);
@@ -363,6 +387,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [TestCase(NI_Sve2_GatherVectorNonTemporal, true)]
     public static void Arm64GatherAcceptsNativeScalarOrVectorAddresses(NamedIntrinsic id, bool vectorAddress)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler(compiler =>
         {
             GenTree address = vectorAddress ? Local(compiler, TYP_SIMD_ARM64) : Address(compiler, false);
@@ -381,6 +407,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     [TestCase(NI_Sve2_ScatterNonTemporal, true)]
     public static void Arm64ScatterAcceptsNativeScalarOrVectorAddresses(NamedIntrinsic id, bool vectorAddress)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler(compiler =>
         {
             GenTree address = vectorAddress ? Local(compiler, TYP_SIMD_ARM64) : Address(compiler, false);
@@ -393,15 +421,14 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
             AssertMemoryClassification(node, address, true);
         });
     }
-#endif
-
-#if TARGET_WASM
     [Test]
     public static void WasmLoweredLoadsUseTheFirstOperandAndNeverBecomePure(
         [Values(NI_PackedSimd_LoadScalarAndInsert, NI_PackedSimd_LoadScalarAndSplatVector128,
             NI_PackedSimd_LoadScalarVector128, NI_PackedSimd_LoadWideningVector128)] NamedIntrinsic id,
         [Values(false, true)] bool zero)
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         WithCompiler(compiler =>
         {
             Assert.That(HWIntrinsicInfo.IsInvalidNodeId(id), Is.False);
@@ -413,7 +440,6 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
             AssertMemoryClassification(node, address, false);
         });
     }
-#endif
 
     private static void AssertMemoryClassification(GenTreeHWIntrinsic node, GenTree address, bool store)
     {
@@ -478,4 +504,3 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         }
     }
 }
-#endif

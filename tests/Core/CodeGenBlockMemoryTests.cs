@@ -284,17 +284,17 @@ internal static class CodeGenBlockMemoryTests
         });
     }
 
-#if DEBUG
     [TestCase(BlkOpKindUnroll)]
     [TestCase(BlkOpKindUnrollMemmove)]
     public static void DspCodeRecordsBlockStoresAndRestoresGcInterruptibility(BlkOpKind kind)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithMemory(16, true, (compiler, codeGen) =>
         {
             var node = Copy(8, kind, Physical(REG_RDX), Physical(REG_RCX));
             node._gcUnsafe = true;
             codeGen.InternalRegisters.Add(node, Mask(REG_R8));
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForStoreBlk(node));
 
@@ -306,7 +306,6 @@ internal static class CodeGenBlockMemoryTests
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
-#endif
 
     private static void CheckMemmoveBytes(List<Emitter.instrDesc> ids, int size)
     {

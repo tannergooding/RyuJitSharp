@@ -192,11 +192,11 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(codeGen.ins_StoreFromSrc(source, destination, aligned), Is.EqualTo(expected)));
     }
 
-#if !UNIX_AMD64_ABI
     [Test]
     public static void NativeUnsupportedWindowsSimdAssemblyRejectsBeforeConsumption(
         [Values(false, true)] bool direct)
     {
+        Assume.That(Configuration.TARGET_AMD64 && !Configuration.UNIX_AMD64_ABI);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -224,9 +224,7 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(compiler.compCurLifeTree, Is.Null);
         });
     }
-#endif
 
-#if UNIX_AMD64_ABI
     [TestCase(0, false)]
     [TestCase(1, false)]
     [TestCase(2, false)]
@@ -235,6 +233,7 @@ internal static class CodeGenMultiRegisterStoreTests
     [TestCase(2, true)]
     public static unsafe void SysvSimdStorePacksBothHalvesAfterResolvingCopies(int destination, bool copy)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.UNIX_AMD64_ABI);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             EnableAvx2(compiler);
@@ -282,13 +281,12 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(compiler.compCurLifeTree, Is.SameAs(store));
         });
     }
-#endif
 
-#if SWIFT_SUPPORT
     [TestCase(0, 12)]
     [TestCase(4, 16)]
     public static unsafe void SwiftCallStoresUseLoweredFieldOffsets(int firstOffset, int secondOffset)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             ConfigureStackHome(compiler, 24);
@@ -325,12 +323,11 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
         });
     }
-#endif
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsMultiRegisterSpills()
     {
+        Assume.That(Configuration.TARGET_AMD64 && TestConfiguration.IsDebug);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             ConfigureStackHome(compiler);
@@ -338,7 +335,7 @@ internal static class CodeGenMultiRegisterStoreTests
             PrepareSpill(codeGen, source, 1);
             var store = new GenTreeLclVar(TYP_STRUCT, 0, source);
             var before = Descriptors(codeGen).Count;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genMultiRegStoreToLocal(store));
 
@@ -347,7 +344,6 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(diagnostic, Does.Contain("mov"));
         });
     }
-#endif
 
     private static GenTreeHWIntrinsic Source(Compiler compiler, var_types type)
     {
@@ -427,10 +423,8 @@ internal static class CodeGenMultiRegisterStoreTests
 
     private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
 
-#if UNIX_AMD64_ABI || SWIFT_SUPPORT
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
     private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);

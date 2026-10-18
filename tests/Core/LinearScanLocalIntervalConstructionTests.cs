@@ -146,10 +146,10 @@ internal static unsafe class LinearScanLocalIntervalConstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void ParameterPreferenceStressSelectsDistinctIncomingRegisters()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithBuilder(2, (compiler, allocator) => {
             _ = CreateBlocks(compiler, BBJ_RETURN);
             compiler.info.compFullName = nameof(ParameterPreferenceStressSelectsDistinctIncomingRegisters);
@@ -177,7 +177,6 @@ internal static unsafe class LinearScanLocalIntervalConstructionTests
             Assert.That(second.registerPreferences, Is.EqualTo(incoming));
         });
     }
-#endif
 
     [Test]
     public static void ExceptionalIncomingEdgeDoesNotInheritPredecessorLocations()
@@ -393,10 +392,8 @@ internal static unsafe class LinearScanLocalIntervalConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildIntervalsWithLocals")]
     private static extern void BuildIntervals(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "stressSetRandomParameterPreferences")]
     private static extern void StressParameterPreferences(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64 || TARGET_WASM)
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ValueNumHardwareTernaryTests
 {
+    [SetUp]
+    public static void RequireHardwareIntrinsicTarget()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS &&
+            (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM));
+    }
+
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_SHORT)]
     [TestCase(TYP_INT)]
@@ -212,7 +218,6 @@ internal static unsafe class ValueNumHardwareTernaryTests
         });
     }
 
-#if TARGET_XARCH
     [TestCase(NI_X86Base_BlendVariable, VNF_HWI_X86Base_BlendVariable, 0)]
     [TestCase(NI_X86Base_BlendVariable, VNF_HWI_X86Base_BlendVariable, 1)]
     [TestCase(NI_X86Base_BlendVariable, VNF_HWI_X86Base_BlendVariable, 2)]
@@ -231,6 +236,8 @@ internal static unsafe class ValueNumHardwareTernaryTests
     [TestCase(NI_AVX512_BlendVariableMask, VNF_HWI_AVX512_BlendVariableMask, 3)]
     public static void XarchBlendRetainsNativeShortcutAndFallbackOrdering(NamedIntrinsic id, VNFunc func, int scenario)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithStore((_, store) =>
         {
             var first = store.VNForGenericCon(TYP_SIMD16, SelectionFirst());
@@ -265,9 +272,7 @@ internal static unsafe class ValueNumHardwareTernaryTests
             }
         });
     }
-#endif
 
-#if TARGET_ARM64
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_SHORT)]
     [TestCase(TYP_INT)]
@@ -276,6 +281,8 @@ internal static unsafe class ValueNumHardwareTernaryTests
     [TestCase(TYP_DOUBLE)]
     public static void SveSelectionUsesByteSpacedPredicateBitsAndNativeInterningOrder(var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((compiler, store) =>
         {
             var reference = new ValueNumStore(compiler);
@@ -327,6 +334,8 @@ internal static unsafe class ValueNumHardwareTernaryTests
     [TestCase(true)]
     public static void SveUnrepresentableScalableMaskRetainsSymbolicSelection(bool allBits)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var mask = store.VNForSimdMaskScalableCon(allBits ? simdmaskscalable_t.AllBitsSet : default);
@@ -345,6 +354,8 @@ internal static unsafe class ValueNumHardwareTernaryTests
     [TestCase(true)]
     public static void SveEqualOperandsShortcutOnlyWithANonconstantPredicate(bool constant)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var mask = constant
@@ -366,26 +377,27 @@ internal static unsafe class ValueNumHardwareTernaryTests
             }
         });
     }
-#endif
 
     [Test]
     public static void OtherTernaryIntrinsicRetainsItsOrderedSymbolicFunction()
     {
         WithStore((_, store) =>
         {
-#if TARGET_XARCH
-            var intrinsicId = NI_AVX2_MultiplyAdd;
-            var intrinsicFunc = VNF_HWI_AVX2_MultiplyAdd;
-            var baseType = TYP_FLOAT;
-#elif TARGET_ARM64
-            var intrinsicId = NI_AdvSimd_FusedMultiplyAdd;
-            var intrinsicFunc = VNF_HWI_AdvSimd_FusedMultiplyAdd;
-            var baseType = TYP_FLOAT;
-#else
-            var intrinsicId = NI_PackedSimd_BitwiseSelect;
-            var intrinsicFunc = VNF_HWI_PackedSimd_BitwiseSelect;
-            var baseType = TYP_INT;
-#endif
+            var intrinsicId = Configuration.TARGET_XARCH
+                ? NI_AVX2_MultiplyAdd
+                : Configuration.TARGET_ARM64
+                    ? NI_AdvSimd_FusedMultiplyAdd
+                    : Configuration.TARGET_WASM
+                        ? NI_PackedSimd_BitwiseSelect
+                        : throw new AssertionException("Unsupported hardware intrinsic target.");
+            var intrinsicFunc = Configuration.TARGET_XARCH
+                ? VNF_HWI_AVX2_MultiplyAdd
+                : Configuration.TARGET_ARM64
+                    ? VNF_HWI_AdvSimd_FusedMultiplyAdd
+                    : Configuration.TARGET_WASM
+                        ? VNF_HWI_PackedSimd_BitwiseSelect
+                        : throw new AssertionException("Unsupported hardware intrinsic target.");
+            var baseType = Configuration.TARGET_WASM ? TYP_INT : TYP_FLOAT;
             var first = store.VNForGenericCon(TYP_SIMD16, SelectionFirst());
             var second = store.VNForGenericCon(TYP_SIMD16, SelectionSecond());
             var third = store.VNZeroForType(TYP_SIMD16);
@@ -400,18 +412,10 @@ internal static unsafe class ValueNumHardwareTernaryTests
     }
 
     private static NamedIntrinsic SelectionId =>
-#if TARGET_ARM64
-        NI_AdvSimd_BitwiseSelect;
-#else
-        NI_Vector_ConditionalSelect;
-#endif
+        Configuration.TARGET_ARM64 ? NI_AdvSimd_BitwiseSelect : NI_Vector_ConditionalSelect;
 
     private static VNFunc SelectionFunc =>
-#if TARGET_ARM64
-        VNF_HWI_AdvSimd_BitwiseSelect;
-#else
-        VNF_HWI_Vector_ConditionalSelect;
-#endif
+        Configuration.TARGET_ARM64 ? VNF_HWI_AdvSimd_BitwiseSelect : VNF_HWI_Vector_ConditionalSelect;
 
     private static byte[] SelectionMask() =>
     [
@@ -478,13 +482,18 @@ internal static unsafe class ValueNumHardwareTernaryTests
         return vector.AsSpan<byte>()[..store.TypeOfVN(value).Size].ToArray();
     }
 
-    private static var_types[] FixedTypes =>
-    [
-        TYP_SIMD8, TYP_SIMD12, TYP_SIMD16,
-#if TARGET_XARCH
-        TYP_SIMD32, TYP_SIMD64,
-#endif
-    ];
+    private static var_types[] FixedTypes
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return [TYP_SIMD8, TYP_SIMD12, TYP_SIMD16, TYP_SIMD32, TYP_SIMD64];
+            }
+
+            return [TYP_SIMD8, TYP_SIMD12, TYP_SIMD16];
+        }
+    }
 
     private static void WithStore(Action<Compiler, ValueNumStore> action)
     {
@@ -505,4 +514,3 @@ internal static unsafe class ValueNumHardwareTernaryTests
         }
     }
 }
-#endif

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -8,9 +7,7 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if TARGET_XARCH
 using static RyuJitSharp.ManagedInstructionSet;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -78,37 +75,32 @@ internal static unsafe class SimdShuffleTargetCompletionTests
             }
             var result = compiler.gtNewSimdShuffleNode(TYP_SIMD16, source, indices, TYP_BYTE, 16, true)
                 .AsHWIntrinsic();
-#if TARGET_XARCH
-            var intrinsic = NI_X86Base_Shuffle;
-#elif TARGET_ARM64
-            var intrinsic = NI_AdvSimd_Arm64_VectorTableLookup;
-#elif TARGET_WASM
-            var intrinsic = NI_PackedSimd_Swizzle;
-#else
-#error Unsupported SIMD shuffle test target
-#endif
+            var intrinsic = Configuration.TARGET_XARCH
+                ? NI_X86Base_Shuffle
+                : Configuration.TARGET_ARM64
+                    ? NI_AdvSimd_Arm64_VectorTableLookup
+                    : NI_PackedSimd_Swizzle;
             Assert.That(result.HWIntrinsicId, Is.EqualTo(intrinsic));
             Assert.That(result.GetOp(1), Is.SameAs(source));
             Assert.That(result.GetOp(2), Is.SameAs(indices));
         });
     }
 
-#if TARGET_ARM64 || TARGET_WASM
     [TestCase(false)]
     [TestCase(true)]
     public static void ByteVariableShuffleUsesTheLookupZeroFillWithoutAnAdditionalMask(bool native)
     {
+        Assume.That(Configuration.TARGET_ARM64 || Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
             var indices = Local(compiler, TYP_SIMD16);
             var result = compiler.gtNewSimdShuffleNode(TYP_SIMD16, source, indices, TYP_UBYTE, 16, native)
                 .AsHWIntrinsic();
-#if TARGET_ARM64
-            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_Arm64_VectorTableLookup));
-#else
-            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
-#endif
+            var expected = Configuration.TARGET_ARM64
+                ? NI_AdvSimd_Arm64_VectorTableLookup
+                : NI_PackedSimd_Swizzle;
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
             Assert.That(result.GetOp(1), Is.SameAs(source));
             Assert.That(result.GetOp(2), Is.SameAs(indices));
         });
@@ -124,6 +116,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     [TestCase(TYP_DOUBLE)]
     public static void ConstantShuffleExpandsEveryElementByteAndZeroFillsInvalidSelectors(var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64 || Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
@@ -136,11 +129,10 @@ internal static unsafe class SimdShuffleTargetCompletionTests
             }
             var result = compiler.gtNewSimdShuffleNode(TYP_SIMD16, source, indices, baseType, 16, false)
                 .AsHWIntrinsic();
-#if TARGET_ARM64
-            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_Arm64_VectorTableLookup));
-#else
-            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
-#endif
+            var expected = Configuration.TARGET_ARM64
+                ? NI_AdvSimd_Arm64_VectorTableLookup
+                : NI_PackedSimd_Swizzle;
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
             Assert.That(result.SimdBaseType, Is.EqualTo(baseType is TYP_USHORT or TYP_UINT or TYP_ULONG
                 ? TYP_UBYTE : TYP_BYTE));
             Assert.That(result.GetOp(1), Is.SameAs(source));
@@ -150,19 +142,18 @@ internal static unsafe class SimdShuffleTargetCompletionTests
                 var selector = index == 0 ? count - 1 : index - 2;
                 for (var offset = 0; offset < baseType.Size; offset++)
                 {
-                    var expected = index == 1 ? 0xFF : (selector * baseType.Size) + offset;
+                    var expectedByte = index == 1 ? 0xFF : (selector * baseType.Size) + offset;
                     Assert.That(result.GetOp(2).AsVecCon().SimdVal.u8[(index * baseType.Size) + offset],
-                        Is.EqualTo(unchecked((byte)expected)));
+                        Is.EqualTo(unchecked((byte)expectedByte)));
                 }
             }
         });
     }
-#endif
 
-#if TARGET_ARM64
     [Test]
     public static void Arm64ConstantHalfSwapCapturesEffectfulSourceOnlyOnce()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var effect = compiler.gtNewStoreLclVarNode(Local(compiler, TYP_SIMD16).LclNum,
@@ -203,6 +194,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     public static void Arm64VariableShuffleUsesNativeIndexScalingAndUnsignedMask(
         byte size, var_types baseType, NamedIntrinsic shiftIntrinsic, var_types shiftBaseType)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
@@ -243,6 +235,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     [TestCase((byte)16, TYP_DOUBLE)]
     public static void Arm64NativeWideElementShuffleDoesNotAddTheSafeRangeMask(byte size, var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
@@ -258,12 +251,11 @@ internal static unsafe class SimdShuffleTargetCompletionTests
             Assert.That(shift.GetOp(1), Is.SameAs(indices));
         });
     }
-#endif
 
-#if TARGET_XARCH
     [Test]
     public static void ReorderedNativeShuffleCapturesSourceBeforeIndicesOverwriteIt()
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler =>
         {
             Enable(compiler, InstructionSet_AVX2);
@@ -293,6 +285,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     [TestCase(true)]
     public static void XarchVariableByteShuffleMasksOnlyTheSafeOperation(bool native)
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
@@ -317,6 +310,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     [TestCase(true)]
     public static void ShuffleValidityPreservesIsaGatingAndCanBecomeValid(bool enabled)
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler =>
         {
             if (enabled)
@@ -335,6 +329,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     [TestCase(TYP_INT, false)]
     public static void ShuffleValidityPreservesWideByteIsaRestriction(var_types baseType, bool enabled)
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler =>
         {
             if (enabled)
@@ -355,6 +350,7 @@ internal static unsafe class SimdShuffleTargetCompletionTests
     [TestCase(true, true)]
     public static void NativeConstantEligibilityScanDoesNotChangeTheEligibilityResult(bool native, bool invalid)
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler =>
         {
             var indices = compiler.gtNewVconNode(TYP_SIMD16);
@@ -373,7 +369,6 @@ internal static unsafe class SimdShuffleTargetCompletionTests
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(instructionSet);
     }
-#endif
 
     private static var_types IndexType(var_types type)
     {
@@ -407,6 +402,8 @@ internal static unsafe class SimdShuffleTargetCompletionTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS
+            && (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM));
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
@@ -431,4 +428,3 @@ internal static unsafe class SimdShuffleTargetCompletionTests
         }
     }
 }
-#endif

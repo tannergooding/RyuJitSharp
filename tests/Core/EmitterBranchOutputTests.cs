@@ -116,9 +116,7 @@ internal static unsafe class EmitterBranchOutputTests
             new Span<byte>(buffer, 256).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 256;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, buffer, descriptor);
             var bytes = Convert.FromHexString(expected);
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(), Is.EqualTo(bytes));
@@ -147,9 +145,7 @@ internal static unsafe class EmitterBranchOutputTests
             new Span<byte>(buffer, 32).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, buffer + 3, descriptor);
             Assert.That(new ReadOnlySpan<byte>(buffer + 3, (int)(end - (buffer + 3))).ToArray(),
                 Is.EqualTo(Convert.FromHexString("EBFB")));
@@ -177,9 +173,7 @@ internal static unsafe class EmitterBranchOutputTests
             emitter.emitColdCodeBlock = buffer;
             emitter.emitTotalColdCodeSize = 16;
             emitter.emitSetFirstColdIGCookie(source);
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, buffer, descriptor);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -207,9 +201,7 @@ internal static unsafe class EmitterBranchOutputTests
             new Span<byte>(buffer, 32).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, buffer, descriptor);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -239,9 +231,7 @@ internal static unsafe class EmitterBranchOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, buffer, descriptor);
 
             Assert.That(GCrefRegs(emitter) | ByrefRegs(emitter), Is.EqualTo(SRBM_NONE));
@@ -292,9 +282,7 @@ internal static unsafe class EmitterBranchOutputTests
             emitter.emitTotalHotCodeSize = unchecked((int)target.igOffs);
             emitter.emitTotalColdCodeSize = 16;
             emitter.emitSetFirstColdIGCookie(target);
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, hot, descriptor);
 
             Assert.That(new ReadOnlySpan<byte>(hot, (int)(end - hot)).ToArray(),
@@ -333,9 +321,7 @@ internal static unsafe class EmitterBranchOutputTests
             new Span<byte>(buffer, 32).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputLJ(source, buffer + 3, descriptor);
 
             Assert.That(new ReadOnlySpan<byte>(buffer + 3, (int)(end - (buffer + 3))).ToArray(),
@@ -377,9 +363,7 @@ internal static unsafe class EmitterBranchOutputTests
             new Span<byte>(buffer, 32).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = buffer + 3;
             if (dispatch)
             {
@@ -513,9 +497,10 @@ internal static unsafe class EmitterBranchOutputTests
             descriptor.idIns(INS_align);
             descriptor.idCodeSize(padding);
             descriptor.idaIG = group;
-#if DEBUG
-            descriptor.isPlacedAfterJmp = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                descriptor.isPlacedAfterJmp = true;
+            }
             return descriptor;
         }
 

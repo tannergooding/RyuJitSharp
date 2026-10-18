@@ -76,7 +76,7 @@ public sealed partial class CodeGen
                     {
                         if (type == TYP_FLOAT)
                         {
-                            Emitter.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, TargetRuntimeMetadata.IntegerReturnRegister, value.RegNum, canSkip: false);
+                            _ = Emitter.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, TargetRuntimeMetadata.IntegerReturnRegister, value.RegNum, canSkip: false);
                         }
                         else
                         {
@@ -102,13 +102,11 @@ public sealed partial class CodeGen
                 }
             }
 
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET &&
             (tree.Oper is GT_RETURN or GT_SWIFT_ERROR_RET))
         {
             genMarkReturnGCInfo();
         }
-#endif
         if (Configuration.PROFILING_SUPPORTED &&
             (tree.Oper is GT_RETURN or GT_SWIFT_ERROR_RET) && _compiler.compIsProfilerHookNeeded)
         {

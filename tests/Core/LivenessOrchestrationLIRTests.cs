@@ -79,11 +79,14 @@ internal static unsafe class LivenessOrchestrationLIRTests
                 Assert.That((int)SetOps.Count(compiler, block.bbLiveIn), Is.Zero);
                 Assert.That((int)SetOps.Count(compiler, block.bbLiveOut), Is.Zero);
             }
-#if DEBUG
-            Assert.That(compiler.compCurBB, Is.Null);
-#else
-            Assert.That(compiler.compCurBB, Is.SameAs(blocks[1]));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.compCurBB, Is.Null);
+            }
+            else
+            {
+                Assert.That(compiler.compCurBB, Is.SameAs(blocks[1]));
+            }
         });
     }
 
@@ -111,11 +114,14 @@ internal static unsafe class LivenessOrchestrationLIRTests
             Assert.That(compiler.fgLocalVarLivenessDone, Is.True);
             Assert.That(compiler.CurLVEpoch, Is.EqualTo(epoch));
             Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(phase));
-#if DEBUG
-            Assert.That(compiler.compCurBB, Is.Null);
-#else
-            Assert.That(compiler.compCurBB, Is.SameAs(blocks[1]));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(compiler.compCurBB, Is.Null);
+            }
+            else
+            {
+                Assert.That(compiler.compCurBB, Is.SameAs(blocks[1]));
+            }
         });
     }
 
@@ -304,13 +310,16 @@ internal static unsafe class LivenessOrchestrationLIRTests
             compiler.fgStmtRemoved = true;
             var epoch = compiler.CurLVEpoch;
             var phase = compiler.mostRecentlyActivePhase;
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = Capture(Act);
-            Assert.That(output, Is.Empty);
-#else
-            Act();
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = Capture(Act);
+                Assert.That(output, Is.Empty);
+            }
+            else
+            {
+                Act();
+            }
             Assert.That(compiler.fgBBVarSetsInited, Is.False);
             Assert.That(compiler.fgLocalVarLivenessDone, Is.False);
             Assert.That(compiler.fgStmtRemoved, Is.True);
@@ -347,20 +356,21 @@ internal static unsafe class LivenessOrchestrationLIRTests
                 var liveness = new Liveness<TPolicy>(compiler);
                 if (run)
                 {
-                    Assert.Throws<NotSupportedException>(liveness.RunLIR);
+                    _ = Assert.Throws<NotSupportedException>(liveness.RunLIR);
                 }
                 else
                 {
-                    Assert.Throws<NotSupportedException>(liveness.InterBlockLocalVarLivenessLIR);
+                    _ = Assert.Throws<NotSupportedException>(liveness.InterBlockLocalVarLivenessLIR);
                 }
             }
         });
     }
 
-#if DEBUG
     [Test]
     public static void ChangedLiveInWithoutNodeRemovalDoesNotRepeat()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(1, true, compiler => {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_IL_STUB);
             compiler.info.compUnmanagedCallCountWithGCTransition = 1;
@@ -382,6 +392,8 @@ internal static unsafe class LivenessOrchestrationLIRTests
     [Test]
     public static void NativeRepeatConditionRequiresBothRemovalAndChangedLiveIn()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(2, false, compiler => {
             _ = DeadChain(compiler);
             TestConfiguration.EnableVerbose(compiler);
@@ -425,7 +437,6 @@ internal static unsafe class LivenessOrchestrationLIRTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     private static (BasicBlock[] Blocks, GenTree FirstStore, GenTree SecondStore, GenTree LastUse) DeadChain(Compiler compiler)
     {

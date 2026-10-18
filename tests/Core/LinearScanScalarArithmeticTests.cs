@@ -247,13 +247,14 @@ internal static unsafe class LinearScanScalarArithmeticTests
         });
     }
 
-#if TARGET_X86
     [TestCase(GT_LSH_HI, true, false)]
     [TestCase(GT_RSH_LO, false, false)]
     [TestCase(GT_LSH_HI, true, true)]
     public static void ThreeOperandShiftUsesBothLongHalvesAndDelaysTheOverwrittenHalf(
         genTreeOps operation, bool delaysLow, bool contained)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var low = compiler.gtNewIconNode(TYP_INT, 0x1234);
             var high = compiler.gtNewIconNode(TYP_INT, 0x5678);
@@ -262,10 +263,12 @@ internal static unsafe class LinearScanScalarArithmeticTests
             ReferenceBuildLocation(allocator) = 2;
             var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
             var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
-            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
-            source.IsContained = true;
-            var shift = new GenTreeOp(operation, TYP_INT, source, count);
-            shift.IsContained = contained;
+            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high) {
+                IsContained = true,
+            };
+            var shift = new GenTreeOp(operation, TYP_INT, source, count) {
+                IsContained = contained,
+            };
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildShiftRotate(allocator, shift), Is.Zero);
@@ -281,6 +284,8 @@ internal static unsafe class LinearScanScalarArithmeticTests
     [Test]
     public static void LongDividendModuloUsesBothFixedRegistersAndAnInternalTemporary()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var low = compiler.gtNewIconNode(TYP_INT, 101);
             var high = compiler.gtNewIconNode(TYP_INT, 0);
@@ -289,8 +294,9 @@ internal static unsafe class LinearScanScalarArithmeticTests
             ReferenceBuildLocation(allocator) = 2;
             var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
             var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
-            var dividend = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
-            dividend.IsContained = true;
+            var dividend = new GenTreeOp(GT_LONG, TYP_LONG, low, high) {
+                IsContained = true,
+            };
             var modulo = new GenTreeOp(GT_UMOD, TYP_INT, dividend, divisor);
             ReferenceBuildLocation(allocator) = 4;
 
@@ -309,6 +315,8 @@ internal static unsafe class LinearScanScalarArithmeticTests
     [TestCase(true)]
     public static void WideningMultiplyBuildsBothResultRegisters(bool mulx)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             if (mulx)
             {
@@ -341,7 +349,6 @@ internal static unsafe class LinearScanScalarArithmeticTests
             }
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildShiftRotate")]
     private static extern int BuildShiftRotate(LinearScan allocator, GenTree tree);

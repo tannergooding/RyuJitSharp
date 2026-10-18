@@ -19,8 +19,7 @@ public sealed partial class LinearScan
         JITDUMP("\nbuildIntervals ========\n");
         buildPhysRegRecords();
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf("\n-----------------\nLIVENESS:\n-----------------\n");
             foreach (var block in _compiler.Blocks)
@@ -36,7 +35,6 @@ public sealed partial class LinearScan
                 jitprintf("\n");
             }
         }
-#endif
 
         resetRegStateWithLocals();
         _doDoubleAlign = false;
@@ -149,12 +147,10 @@ public sealed partial class LinearScan
             buildInitialParamDef(in local, parameterRegister);
         }
 
-#if DEBUG
-        if (stressInitialParamReg())
+        if (Configuration.DEBUG && stressInitialParamReg())
         {
             stressSetRandomParameterPreferences();
         }
-#endif
 
         _placedArgumentLocalCount = 0;
         _placedArgumentRegisters = RBM_NONE;
@@ -266,11 +262,12 @@ public sealed partial class LinearScan
             // Two locations per node keep definitions separate from operand uses.
             foreach (var node in block)
             {
-#if DEBUG
-                node._seqNum = unchecked((int)_referenceBuildLocation);
-                // Self-assignment sets the register tag used by subsequent DEBUG dumps.
-                node.RegNum = node.Reg;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    node._seqNum = unchecked((int)_referenceBuildLocation);
+                    // Self-assignment sets the register tag used by subsequent DEBUG dumps.
+                    node.RegNum = node.Reg;
+                }
                 buildRefPositionsForNode(node, _referenceBuildLocation);
 #if DEBUG
                 if (_referenceBuildLocation > _maxNodeLocation)
@@ -312,9 +309,10 @@ public sealed partial class LinearScan
             markBlockVisited(block);
             if (_definitionList.First is not null)
             {
-#if DEBUG
-                dumpDefList();
-#endif
+                if (Configuration.DEBUG)
+                {
+                    dumpDefList();
+                }
                 assert(false, "Expected empty defList at end of block");
             }
 
@@ -445,8 +443,7 @@ public sealed partial class LinearScan
             });
         }
 
-#if DEBUG
-        if (extendLifetimes())
+        if (Configuration.DEBUG && extendLifetimes())
         {
             for (var localNumber = 0; localNumber < _compiler.lvaCount; localNumber++)
             {
@@ -461,7 +458,6 @@ public sealed partial class LinearScan
                 }
             }
         }
-#endif
 
         assert(previousBlock is not null);
         if (previousBlock.NumSucc > 0)

@@ -188,11 +188,7 @@ public partial class Globals
     /// <summary>Fixed locallocs of this size or smaller will convert to local buffers.</summary>
     public const int DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE = 32;
 
-#if DEBUG
-    public static bool InlinePInvokeEnabled => JitConfig.JitPInvokeEnabled is not 0;
-#else
-    public static bool InlinePInvokeEnabled => true;
-#endif
+    public static bool InlinePInvokeEnabled => !Configuration.DEBUG || (JitConfig.JitPInvokeEnabled is not 0);
 
     /// <summary>Should we enable JitStress mode?</summary>
     /// <remarks>

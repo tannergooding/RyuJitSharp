@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 || TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -17,52 +16,48 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SharedLocalVariableSpillTests
 {
-#if TARGET_AMD64
-    private const regNumber IntegerRegister = REG_X64_RAX;
-    private const regNumber FloatRegister = REG_X64_XMM0;
-    private const regNumber UnrelatedRegister = REG_X64_RDX;
-    private const regNumber ReferenceRegister = REG_X64_RCX;
-    private const regNumber ByrefRegister = REG_X64_R8;
-#else
-    private const regNumber IntegerRegister = REG_ARM64_R0;
-    private const regNumber FloatRegister = REG_ARM64_V0;
-    private const regNumber UnrelatedRegister = REG_ARM64_R1;
-    private const regNumber ReferenceRegister = REG_ARM64_R2;
-    private const regNumber ByrefRegister = REG_ARM64_R3;
-#endif
+    private static regNumber IntegerRegister => Configuration.TARGET_AMD64 ? REG_X64_RAX : REG_ARM64_R0;
+    private static regNumber FloatRegister => Configuration.TARGET_AMD64 ? REG_X64_XMM0 : REG_ARM64_V0;
+    private static regNumber UnrelatedRegister => Configuration.TARGET_AMD64 ? REG_X64_RDX : REG_ARM64_R1;
+    private static regNumber ReferenceRegister => Configuration.TARGET_AMD64 ? REG_X64_RCX : REG_ARM64_R2;
+    private static regNumber ByrefRegister => Configuration.TARGET_AMD64 ? REG_X64_R8 : REG_ARM64_R3;
+    private static regNumber StackRegister => Configuration.TARGET_AMD64 ? REG_X64_STK : REG_ARM64_STK;
 
-#if TARGET_AMD64
-    private const instruction IntegerStore = INS_mov;
-    private const instruction FloatStore = INS_movss;
-    private const instruction DoubleStore = INS_movsd_simd;
-    private const instruction VectorStore = INS_movaps;
-    private const instruction StructVectorStore = INS_movups;
-#else
-    private const instruction IntegerStore = INS_str;
-    private const instruction FloatStore = INS_str;
-    private const instruction DoubleStore = INS_str;
-    private const instruction VectorStore = INS_str;
-    private const instruction StructVectorStore = INS_str;
-#endif
+    private static instruction IntegerStore => Configuration.TARGET_AMD64 ? INS_mov : INS_str;
+    private static instruction FloatStore => Configuration.TARGET_AMD64 ? INS_movss : INS_str;
+    private static instruction DoubleStore => Configuration.TARGET_AMD64 ? INS_movsd_simd : INS_str;
+    private static instruction VectorStore => Configuration.TARGET_AMD64 ? INS_movaps : INS_str;
+    private static instruction StructVectorStore => Configuration.TARGET_AMD64 ? INS_movups : INS_str;
 
-    [TestCase(TYP_BYTE, IntegerRegister, IntegerStore, EA_4BYTE, 0u)]
-    [TestCase(TYP_UBYTE, IntegerRegister, IntegerStore, EA_4BYTE, 0u)]
-    [TestCase(TYP_SHORT, IntegerRegister, IntegerStore, EA_4BYTE, 0u)]
-    [TestCase(TYP_USHORT, IntegerRegister, IntegerStore, EA_4BYTE, 0u)]
-    [TestCase(TYP_INT, IntegerRegister, IntegerStore, EA_4BYTE, 0u)]
-    [TestCase(TYP_LONG, IntegerRegister, IntegerStore, EA_8BYTE, 0u)]
-    [TestCase(TYP_FLOAT, FloatRegister, FloatStore, EA_4BYTE, 0u)]
-    [TestCase(TYP_DOUBLE, FloatRegister, DoubleStore, EA_8BYTE, 0u)]
-    [TestCase(TYP_SIMD8, FloatRegister, DoubleStore, EA_8BYTE, 0u)]
-    [TestCase(TYP_SIMD16, FloatRegister, VectorStore, EA_16BYTE, 0u)]
-    [TestCase(TYP_STRUCT, IntegerRegister, IntegerStore, EA_4BYTE, 1u)]
-    [TestCase(TYP_STRUCT, IntegerRegister, IntegerStore, EA_4BYTE, 2u)]
-    [TestCase(TYP_STRUCT, IntegerRegister, IntegerStore, EA_4BYTE, 4u)]
-    [TestCase(TYP_STRUCT, IntegerRegister, IntegerStore, EA_8BYTE, 8u)]
-    [TestCase(TYP_STRUCT, FloatRegister, StructVectorStore, EA_16BYTE, 16u)]
+    [TestCase(TYP_BYTE, EA_4BYTE, 0u)]
+    [TestCase(TYP_UBYTE, EA_4BYTE, 0u)]
+    [TestCase(TYP_SHORT, EA_4BYTE, 0u)]
+    [TestCase(TYP_USHORT, EA_4BYTE, 0u)]
+    [TestCase(TYP_INT, EA_4BYTE, 0u)]
+    [TestCase(TYP_LONG, EA_8BYTE, 0u)]
+    [TestCase(TYP_FLOAT, EA_4BYTE, 0u)]
+    [TestCase(TYP_DOUBLE, EA_8BYTE, 0u)]
+    [TestCase(TYP_SIMD8, EA_8BYTE, 0u)]
+    [TestCase(TYP_SIMD16, EA_16BYTE, 0u)]
+    [TestCase(TYP_STRUCT, EA_4BYTE, 1u)]
+    [TestCase(TYP_STRUCT, EA_4BYTE, 2u)]
+    [TestCase(TYP_STRUCT, EA_4BYTE, 4u)]
+    [TestCase(TYP_STRUCT, EA_8BYTE, 8u)]
+    [TestCase(TYP_STRUCT, EA_16BYTE, 16u)]
     public static void SpillRecordsTheNormalizedStackHomeAndKillsOnlyTheLocalRegister(
-        var_types type, regNumber reg, instruction ins, emitAttr size, uint layoutSize)
+        var_types type, emitAttr size, uint layoutSize)
     {
+        var floating = (type is TYP_FLOAT or TYP_DOUBLE or TYP_SIMD8 or TYP_SIMD16)
+            || ((type == TYP_STRUCT) && (layoutSize == 16));
+        var reg = floating ? FloatRegister : IntegerRegister;
+        var ins = type switch
+        {
+            TYP_FLOAT => FloatStore,
+            TYP_DOUBLE or TYP_SIMD8 => DoubleStore,
+            TYP_SIMD16 => VectorStore,
+            TYP_STRUCT when layoutSize == 16 => StructVectorStore,
+            _ => IntegerStore,
+        };
         WithCompiler(type, reg, (compiler, codeGen, tree) =>
         {
             var flags = tree.Flags;
@@ -78,14 +73,15 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.Zero);
             Assert.That(descriptor.idCodeSize(), Is.GreaterThan(0));
-#if TARGET_ARM64
-            Assert.That(CurrentSize(codeGen.Emitter), Is.EqualTo(4));
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                Assert.That(CurrentSize(codeGen.Emitter), Is.EqualTo(4));
+            }
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(UnrelatedRegister)));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.RegNum, Is.EqualTo(reg));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         }, layoutSize);
@@ -121,7 +117,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
     }
@@ -140,12 +136,11 @@ internal static unsafe class SharedLocalVariableSpillTests
             var descriptor = LastInstruction(codeGen.Emitter) ??
                 throw new AssertionException("The OSR field spill did not record a store.");
             Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
-#if TARGET_ARM64
-            Assert.That(descriptor.idIns(), Is.EqualTo(type == TYP_BYTE ? INS_strb : INS_strh));
-#else
-            Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
-#endif
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            var expectedInstruction = Configuration.TARGET_ARM64
+                ? type == TYP_BYTE ? INS_strb : INS_strh
+                : INS_mov;
+            Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
         });
     }
     [TestCase(TYP_INT, false)]
@@ -176,7 +171,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.EqualTo(isGc));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.RegNum, Is.EqualTo(IntegerRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
@@ -213,7 +208,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(refs));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(spilled ? IntegerRegister : REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(spilled ? IntegerRegister : StackRegister));
             Assert.That(tree.RegNum, Is.EqualTo(IntegerRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
@@ -227,7 +222,7 @@ internal static unsafe class SharedLocalVariableSpillTests
     {
         WithCompiler(type, IntegerRegister, (compiler, codeGen, tree) =>
         {
-            compiler.lvaTable[0].RegNum = REG_X64_STK;
+            compiler.lvaTable[0].RegNum = StackRegister;
             codeGen.RegSet.RemoveMaskVars(Mask(IntegerRegister));
             compiler.opts.compDbgInfo = true;
             codeGen.initializeVariableLiveKeeper();
@@ -244,17 +239,16 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
         });
     }
 
-#if TARGET_ARM64
-#if FEATURE_SIMD
     [Test]
     public static void Simd12SpillRecordsTheStackStoreBeforeUpdatingSpillState()
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_SIMD);
         WithCompiler(TYP_SIMD12, FloatRegister, (compiler, codeGen, tree) =>
         {
             var flags = tree.Flags;
@@ -267,7 +261,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.RegNum, Is.EqualTo(FloatRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
@@ -277,6 +271,7 @@ internal static unsafe class SharedLocalVariableSpillTests
     [TestCase(true)]
     public static void AlwaysMemorySimd12DoesNotRequireTheUnportedStore(bool singleDef)
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_SIMD);
         WithCompiler(TYP_SIMD12, FloatRegister, (compiler, codeGen, tree) =>
         {
             compiler.lvaTable[0].lvSpillAtSingleDef = singleDef;
@@ -289,15 +284,15 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(UnrelatedRegister)));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
     }
-#endif
 
     [Test]
     public static void DebugLocationDependencyObservesTheAlreadyChangedStackHomeAndLiveness()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(TYP_REF, IntegerRegister, (compiler, codeGen, tree) =>
         {
             compiler.lvaTable[0]._lvLiveInOutOfHandler = true;
@@ -316,18 +311,18 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(StackRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
         });
     }
-#endif
 
     private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
 
     private static void WithCompiler(var_types type, regNumber reg, Action<Compiler, CodeGen, GenTree> action,
         uint layoutSize = 0)
     {
+        Assume.That(Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -374,15 +369,12 @@ internal static unsafe class SharedLocalVariableSpillTests
             codeGen.GCInfo.gcMarkRegPtrVal(ByrefRegister, TYP_BYREF);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
-#if TARGET_AMD64
-            codeGen.Emitter.UseVexEncodings = true;
-            codeGen.Emitter.UseEvexEncodings = true;
-#endif
+            codeGen.Emitter.emitBegFN(true);
+            if (Configuration.TARGET_AMD64)
+            {
+                codeGen.Emitter.UseVexEncodings = true;
+                codeGen.Emitter.UseEvexEncodings = true;
+            }
             var tree = compiler.gtNewLclvNode(type, 0);
             tree.RegNum = reg;
             tree.Flags |= GTF_SPILL | GTF_VAR_DEATH;
@@ -403,4 +395,3 @@ internal static unsafe class SharedLocalVariableSpillTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
     private static extern ref int CurrentCount(Emitter emitter);
 }
-#endif

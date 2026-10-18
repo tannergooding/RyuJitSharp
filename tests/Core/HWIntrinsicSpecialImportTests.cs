@@ -11,7 +11,6 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && TARGET_XARCH
 [NonParallelizable]
 internal static unsafe class HWIntrinsicSpecialImportTests
 {
@@ -344,6 +343,9 @@ internal static unsafe class HWIntrinsicSpecialImportTests
 
     private static void WithImporter(Action<Compiler> test)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS
+            && Configuration.FEATURE_SIMD
+            && Configuration.TARGET_XARCH);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         vtable.Base.Base.isIntrinsicType = &IsIntrinsicType;
@@ -444,4 +446,3 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         in CORINFO_SIG_INFO sig, var_types baseType, var_types retType, byte width)
         => Import(compiler, intrinsic, default, default, in sig, default, baseType, retType, width, false);
 }
-#endif

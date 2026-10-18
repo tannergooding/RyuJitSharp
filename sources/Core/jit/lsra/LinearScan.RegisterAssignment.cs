@@ -266,8 +266,7 @@ public sealed partial class LinearScan
                 ?? throw new FatalJitException("An active interval spill requires its last reference.");
             var spillTo = nextRefPosition
                 ?? throw new FatalJitException("A spilled interval requires a following reference.");
-#if DEBUG
-            if (extendLifetimes() && assignedInterval.isLocalVar &&
+            if (Configuration.DEBUG && extendLifetimes() && assignedInterval.isLocalVar &&
                 RefTypeIsUse(spillFrom.refType) && spillFrom.treeNode is not null &&
                 spillFrom.treeNode.AsLclVar().IsLastUse(spillFrom.multiRegIdx))
             {
@@ -287,7 +286,6 @@ public sealed partial class LinearScan
                 }
             }
             else
-#endif
             {
                 spillInterval(assignedInterval, spillFrom, spillTo);
             }

@@ -387,14 +387,12 @@ public sealed partial class LinearScan
 
     private bool supportsSpecialPutArg()
     {
-#if DEBUG
-        if (Configuration.TARGET_X86)
+        if (Configuration.DEBUG && Configuration.TARGET_X86)
         {
             // Caller-only stress leaves EAX, ECX and EDX. Reserving a pass-through ECX/EDX
             // can leave too few registers for operands computed before the remaining arguments.
             return (_lsraStressMask & 0x3) != 0x2;
         }
-#endif
         return true;
     }
 

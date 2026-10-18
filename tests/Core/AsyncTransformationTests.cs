@@ -167,16 +167,17 @@ internal static unsafe class AsyncTransformationTests
             block.InsertAtEnd(result);
             var value = compiler.gtNewIconNode(TYP_INT, 42);
             value.SetCosts(9, 7);
-#if DEBUG
-            value._seqNum = 17;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                value._seqNum = 17;
+            }
             var transformation = NewTransformation(compiler);
             var type = typeof(Compiler).GetNestedType("AsyncTransformation", BindingFlags.NonPublic) ??
                 throw new AssertionException("Missing async transformation");
             var replace = type.GetMethod("ReplaceAsyncPlaceholder",
                 BindingFlags.Instance | BindingFlags.NonPublic) ??
                 throw new AssertionException("Missing async placeholder replacement");
-            replace.Invoke(transformation, [block, placeholder, value, sequence]);
+            _ = replace.Invoke(transformation, [block, placeholder, value, sequence]);
 
             Assert.That(result.Op1, Is.SameAs(value));
             Assert.That(block.FirstLIRNode, Is.SameAs(value));
@@ -195,9 +196,10 @@ internal static unsafe class AsyncTransformationTests
                 Assert.That(value.CostEx, Is.EqualTo(9));
                 Assert.That(value.CostSz, Is.EqualTo(7));
             }
-#if DEBUG
-            Assert.That(value._seqNum, Is.EqualTo(sequence ? 1 : 17));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(value._seqNum, Is.EqualTo(sequence ? 1 : 17));
+            }
         });
     }
 

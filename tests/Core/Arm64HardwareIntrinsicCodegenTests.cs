@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -47,6 +46,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
     [TestCase(TYP_DOUBLE, EA_16BYTE, INS_OPTS_2D)]
     public static void FixedSimdOptionsPreserveNativeLaneCount(var_types type, emitAttr size, insOpts expected)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64);
         Assert.That(SimdOptions(null, size, type), Is.EqualTo(expected));
     }
 
@@ -338,12 +338,14 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
 
     internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = new() { doAssert = &RecordAssertion };
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions.Clear();
-#endif
+        using var tls = TestConfiguration.IsDebug ? new JitTls(&ee) : null;
+        if (TestConfiguration.IsDebug)
+        {
+            s_assertions.Clear();
+        }
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -365,15 +367,12 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(compiler, codeGen);
-#if DEBUG
-            Assert.That(s_assertions, Is.Empty, "Unexpected JIT assertions: " + string.Join(" | ", s_assertions));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(s_assertions, Is.Empty, "Unexpected JIT assertions: " + string.Join(" | ", s_assertions));
+            }
         }
         finally
         {
@@ -410,4 +409,3 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "genGetSimdInsOpt")]
     private static extern insOpts SimdOptions(CodeGen? codeGen, emitAttr size, var_types type);
 }
-#endif

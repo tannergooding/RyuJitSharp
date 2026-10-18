@@ -49,18 +49,16 @@ internal static unsafe class LocalReferenceAccountingTests
             Assert.That(compiler.lvaRefCountState, Is.EqualTo(RCS_NORMAL));
             AssertCounts(compiler, 1, 1, BB_UNITY_WEIGHT);
             Assert.That(compiler.lvaTable[0].lvImplicitlyReferenced, Is.EqualTo(minopts || keepContext));
-#if DEBUG
-            Assert.That(compiler.lvaTable[1].lvSlotNum, Is.EqualTo(1));
-#else
-            Assert.That(compiler.lvaTable[1].lvSlotNum, Is.EqualTo(scopeInfo ? 1 : 99));
-#endif
+            var expectedSlotNumber = TestConfiguration.IsDebug || scopeInfo ? 1 : 99;
+            Assert.That(compiler.lvaTable[1].lvSlotNum, Is.EqualTo(expectedSlotNumber));
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisqualificationReasonHasNativeDefaultAndValueCopySemantics()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         LclVarDsc zeroed = default;
         var constructed = new LclVarDsc();
         var locals = new LclVarDsc[2];
@@ -81,7 +79,6 @@ internal static unsafe class LocalReferenceAccountingTests
         Array.Clear(locals);
         Assert.That(locals[0].lvSingleDefDisqualifyReason, Is.EqualTo((byte)'H'));
     }
-#endif
 
     [TestCase(true, false, true)]
     [TestCase(true, true, false)]
@@ -285,19 +282,21 @@ internal static unsafe class LocalReferenceAccountingTests
             var disqualified = explicitInitialization || (definitions > 1);
             Assert.That(compiler.lvaTable[0].lvDisqualifySingleDefRegCandidate, Is.EqualTo(disqualified));
             Assert.That(compiler.lvaTable[0].lvSingleDefRegCandidate, Is.EqualTo(!disqualified && !doNotEnregister));
-#if DEBUG
-            var reason = explicitInitialization ? 'Z' : definitions > 1 ? 'M' : 'H';
-            Assert.That(compiler.lvaTable[0].lvSingleDefDisqualifyReason, Is.EqualTo((byte)reason));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var reason = explicitInitialization ? 'Z' : definitions > 1 ? 'M' : 'H';
+                Assert.That(compiler.lvaTable[0].lvSingleDefDisqualifyReason, Is.EqualTo((byte)reason));
+            }
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(TYP_SIMD16, true)]
     [TestCase(TYP_SIMD32, false)]
     [TestCase(TYP_SIMD64, false)]
     public static void WindowsPartialSimdCalleeSavesExcludeSingleDefCandidates(var_types type, bool candidate)
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         WithCompiler(false, compiler => {
             compiler.lvaTable[0].Type = type;
             compiler.lvaTable[1].Type = type;
@@ -311,7 +310,6 @@ internal static unsafe class LocalReferenceAccountingTests
             Assert.That(Compiler.varTypeNeedsPartialCalleeSave(type), Is.EqualTo(!candidate));
         });
     }
-#endif
 
     [TestCase(true, false)]
     [TestCase(false, false)]

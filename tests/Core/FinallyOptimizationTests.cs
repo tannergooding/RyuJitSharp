@@ -133,9 +133,10 @@ internal static class FinallyOptimizationTests
             Assert.That(compiler.compHndBBtab[0].HasFinallyHandler, Is.True);
             Assert.That(call.isBBCallFinallyPair, Is.True);
             Assert.That(tryBlock.Target, Is.SameAs(call));
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(Globals.JitConfig.JitEnableFinallyCloning, Is.EqualTo(1));
-#endif
+            }
             Assert.That(Clone(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.compHndBBtabCount, Is.EqualTo(1));
             var cloned = call.Target;
@@ -320,25 +321,28 @@ internal static class FinallyOptimizationTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
         var previous = Globals.JitConfig;
-        object config = new JitConfigValues();
-        var field = typeof(JitConfigValues).GetField("_jitEnableFinallyCloning",
-            BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new AssertionException("Missing finally-cloning configuration.");
-        field.SetValue(config, 1);
-        Globals.JitConfig = (JitConfigValues)config;
+        if (TestConfiguration.IsDebug)
+        {
+            object config = new JitConfigValues();
+            var field = typeof(JitConfigValues).GetField("_jitEnableFinallyCloning",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new AssertionException("Missing finally-cloning configuration.");
+            field.SetValue(config, 1);
+            Globals.JitConfig = (JitConfigValues)config;
+        }
+
         try
         {
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, action);
         }
         finally
         {
-            Globals.JitConfig = previous;
+            if (TestConfiguration.IsDebug)
+            {
+                Globals.JitConfig = previous;
+            }
         }
-#else
-        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, action);
-#endif
     }
 
     private static void Link(Compiler compiler, params BasicBlock[] blocks)

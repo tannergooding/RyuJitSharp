@@ -77,10 +77,11 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
                 {
                     Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
                     Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo((uint)offset));
-#if DEBUG
-                    var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-                    Assert.That(info.idVarRefOffs, Is.EqualTo(0x1234u));
-#endif
+                    if (TestConfiguration.IsDebug)
+                    {
+                        var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
+                        Assert.That(info.idVarRefOffs, Is.EqualTo(0x1234u));
+                    }
                     break;
                 }
             }
@@ -150,9 +151,10 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
                 IsContained = true,
             };
             constant.Flags |= GTF_ICON_FIELD_HDL;
-#if DEBUG
-            constant.TargetHandle = unchecked((nint)0xFEDCBA9876543210UL);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                constant.TargetHandle = unchecked((nint)0xFEDCBA9876543210UL);
+            }
             var indir = new GenTreeIndir(GT_IND, TYP_SIMD16, constant);
             if (form == 0)
             {
@@ -173,11 +175,12 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             Assert.That(id.idIsDspReloc(), Is.True);
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)0x12345678));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
-#if DEBUG
-            var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-            Assert.That(info.idFlags, Is.EqualTo(constant.Flags));
-            Assert.That(info.idMemCookie, Is.EqualTo(constant.TargetHandle));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
+                Assert.That(info.idFlags, Is.EqualTo(constant.Flags));
+                Assert.That(info.idMemCookie, Is.EqualTo(constant.TargetHandle));
+            }
         });
     }
 
@@ -286,7 +289,6 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -300,11 +302,12 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
     [TestCase(10)]
     public static void DisassemblyRecordsMemoryImmediateOperandsAndLegacyCopies(int entrypoint)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
             var address = Address(compiler, 0);
             var field = Compiler.eeFindJitDataOffs(64);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             if (entrypoint >= 8)
             {
                 emitter.UseEvexEncodings = false;
@@ -396,7 +399,6 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             }));
         });
     }
-#endif
 
     private static void EmitImmediate(Compiler compiler, Emitter emitter, int memoryKind, bool twoRegisters,
         instruction ins, emitAttr attr, int offset, int value, insOpts options = INS_OPTS_NONE)
@@ -463,10 +465,11 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             compiler.info.compMatchedVM = true;
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-            codeGen.Emitter.emitVarRefOffs = 0x1234;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
+                VarRefOffset(codeGen.Emitter) = 0x1234;
+            }
             action(compiler, codeGen.Emitter);
         });
     }
@@ -500,4 +503,7 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeNext")]
     private static extern ref nuint Used(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
+    private static extern ref int VarRefOffset(Emitter emitter);
 }

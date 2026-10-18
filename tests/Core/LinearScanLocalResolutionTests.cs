@@ -391,10 +391,11 @@ internal static class LinearScanLocalResolutionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void ExtendedLifetimeStressLeavesPrecomputedTreeLastUseUntouched()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithResolution(1, (_, allocator, block, interval) =>
         {
             var tree = new GenTreeLclVar(TYP_INT, 0);
@@ -410,7 +411,6 @@ internal static class LinearScanLocalResolutionTests
             Assert.That(interval.isActive, Is.True);
         });
     }
-#endif
 
     private static RefPosition MakeReference(Interval interval, GenTreeLclVar? tree,
         RefType type, regNumber register)
@@ -446,6 +446,7 @@ internal static class LinearScanLocalResolutionTests
             MaxBlockBeforeResolution(allocator) = 1;
             BlockInfo(allocator) = new LsraBlockInfo[2];
             BlockInfo(allocator)![1].weight = BB_UNITY_WEIGHT;
+            TestConfiguration.InitializeLsraStatistics(allocator, 2);
             BuildPhysicalRegisters(allocator);
             allocator.initVarRegMaps();
             action(compiler, allocator, block, interval);
@@ -474,8 +475,6 @@ internal static class LinearScanLocalResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocals(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
 }

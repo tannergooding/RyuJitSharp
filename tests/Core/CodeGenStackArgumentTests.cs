@@ -303,11 +303,11 @@ internal static class CodeGenStackArgumentTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DspCodeRecordsStructStackArgumentsAndConsumesAddress(bool directStructEntry)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithStackArea((compiler, codeGen) =>
         {
             var source = StructSource(new ClassLayout(17), true, REG_X64_R10);
@@ -319,7 +319,7 @@ internal static class CodeGenStackArgumentTests
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_BYREF);
             StackArgVariable(codeGen) = directStructEntry ? 1 : BAD_VAR_NUM;
             StackArgOffset(codeGen) = directStructEntry ? 40 : 123;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             void Generate()
             {
@@ -340,7 +340,6 @@ internal static class CodeGenStackArgumentTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static void WithStackArea(Action<Compiler, CodeGen> action)
     {
@@ -424,11 +423,15 @@ internal static class CodeGenStackArgumentTests
 
     private static void AssertConsumed(GenTree node, bool consumed)
     {
-#if DEBUG
-        Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) != 0, Is.EqualTo(consumed));
-#else
-        Assert.That(node.RegNum == REG_X64_NA || node.IsUsedFromReg, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) != 0,
+                Is.EqualTo(consumed));
+        }
+        else
+        {
+            Assert.That(node.RegNum == REG_X64_NA || node.IsUsedFromReg, Is.True);
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllFloat")]

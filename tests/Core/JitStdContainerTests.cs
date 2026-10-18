@@ -415,10 +415,11 @@ internal static class JitStdContainerTests
         Assert.That(string.Join(",", operations.Calls), Is.EqualTo("C:1,C:2,C:3,D:3,C:4,D:4,C:5,D:5"));
     }
 
-#if !DEBUG
     [Test]
     public static void ListSortAndUniquePreserveTheirNativeReleaseNoOp()
     {
+        Assume.That(!TestConfiguration.IsDebug);
+
         using var scope = new JitStdAllocationScope();
         using var list = new JitStdList<int>([2, 1], new JitStdAllocator<int>(scope));
 
@@ -431,7 +432,6 @@ internal static class JitStdContainerTests
         Assert.That(list.front(), Is.EqualTo(2));
         Assert.That(list.back(), Is.EqualTo(1));
     }
-#endif
 
     [Test]
     public static void AllocationScopeInvalidatesItsAllocatorsWhenDisposed()

@@ -195,10 +195,10 @@ internal static unsafe class ObjectAllocatorPhaseTests
         }, enableArray: true);
     }
 
-#if DEBUG
     [Test]
     public static void MethodRangeExcludesStackAnalysisButStillMorphsHeapAllocations()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithAllocator(OMF_HAS_NEWOBJ, minOpts: false, (compiler, allocator, block) =>
         {
             block.SetFlags(BBF_HAS_NEWOBJ);
@@ -238,7 +238,6 @@ internal static unsafe class ObjectAllocatorPhaseTests
             }
         });
     }
-#endif
 
     private static PhaseStatus InvokePhase(ObjectAllocator allocator)
     {

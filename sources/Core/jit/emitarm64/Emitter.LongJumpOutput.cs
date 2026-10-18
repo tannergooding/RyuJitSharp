@@ -190,9 +190,7 @@ public partial class Emitter
 #endif
         }
 
-#if DEBUG
-        emitTraceLongJumpArm64(id, srcOffs, dstOffs, distVal, enabled: false);
-#endif
+        assert(_compiler is not null);
         id.idjAddr = distVal > 0 ? dst : null;
         assert(insOptsNone(id.idInsOpt()));
         if (isJump)
@@ -562,23 +560,4 @@ public partial class Emitter
     {
         return emitReverseJumpKind(jumpKind);
     }
-
-#if DEBUG
-    private unsafe void emitTraceLongJumpArm64(instrDescJmp id, uint srcOffs, uint dstOffs, nint distVal, bool enabled)
-    {
-        assert(_compiler is not null);
-        if (enabled && _compiler.verbose)
-        {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            var descriptor = id;
-            var address = dspPtr((void*)Unsafe.As<instrDescJmp, nint>(ref descriptor));
-            var width = id.idjShort ? "X4" : "X8";
-            jitprintf($"; {(dstOffs <= srcOffs ? "Fwd" : "Bwd")} jump [{FMT_PTR((void*)address)}/{debugInfo.idNum:D3}] " +
-                $"from {unchecked((nuint)srcOffs + 4).ToString(width, System.Globalization.CultureInfo.InvariantCulture)} " +
-                $"to {dstOffs.ToString(width, System.Globalization.CultureInfo.InvariantCulture)}: " +
-                $"dist = 0x{unchecked((nuint)distVal):X8}\n");
-        }
-    }
-#endif
 }

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -20,6 +19,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64LinearScanLocalResolutionTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void LocalCandidatesCreateIntegerAndFloatingIntervals()
     {
@@ -194,11 +199,11 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     }
 
     [TestCase(false)]
-#if DEBUG
     [TestCase(true)]
-#endif
     public static void ConstructedLocalAllocatesAndResolvesWithinOneBlock(bool stressSpills)
     {
+        Assume.That(!stressSpills || TestConfiguration.IsDebug);
+
         WithLocals(1, (compiler, allocator, block) => {
             var returnType = new ReturnTypeDesc();
             returnType.InitializeReturnType(compiler, TYP_INT, null, CorInfoCallConvExtension.Managed);
@@ -212,12 +217,13 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             block.InsertAtEnd(load);
             block.InsertAtEnd(ret);
 
-#if DEBUG
-            if (stressSpills)
+            if (TestConfiguration.IsDebug)
             {
-                StressMask(allocator) = 0xc00;
+                if (stressSpills)
+                {
+                    StressMask(allocator) = 0xc00;
+                }
             }
-#endif
             InitMaxSpill(allocator);
             BuildIntervalsWithLocals(allocator);
             allocator.initVarRegMaps();
@@ -436,10 +442,8 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initMaxSpill")]
     private static extern void InitMaxSpill(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationPassComplete")]
     private static extern ref bool AllocationPassComplete(LinearScan allocator);
 
@@ -479,4 +483,3 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
     private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
 }
-#endif

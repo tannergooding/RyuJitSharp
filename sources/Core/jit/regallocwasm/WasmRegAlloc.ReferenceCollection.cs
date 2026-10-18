@@ -612,24 +612,16 @@ public sealed partial class WasmRegAlloc
         assert(register == operand.RegNum);
 
         operand._lirFlags &= ~LIR.Flags.MultiplyUsed;
-#if DEBUG
         JITDUMP($"Consumed a temporary reg for [{operand.TreeId:D6}]: {reason}\n");
-#else
-        JITDUMP($"Consumed a temporary reg: {reason}\n");
-#endif
     }
 
     private regNumber RequestInternalRegister(GenTree node, var_types type)
     {
-#if DEBUG
         JITDUMP($"Requesting internal {type.Name} register for [{node.TreeId:D6}]\n");
-#else
-        JITDUMP($"Requesting internal {type.Name} register\n");
-#endif
 
         var register = AllocateTemporaryRegister(type);
         _codeGen.InternalRegisters.Add(node, register);
-        _nodesWithInternalRegisters.Add(node);
+        _ = _nodesWithInternalRegisters.Add(node);
         CollectReference(node);
         return register;
     }

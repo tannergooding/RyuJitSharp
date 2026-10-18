@@ -1,16 +1,13 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if TARGET_WASM
-using System.Collections.Generic;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -36,46 +33,51 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
             right.SimdVal.u64[0] = zeroBits;
             var result = compiler.gtNewSimdCmpOpNode(operation, TYP_SIMD16, left, right, baseType, 16)
                 .AsHWIntrinsic();
-#if TARGET_XARCH
-            var expected = operation switch
+            NamedIntrinsic expected;
+            if (Configuration.TARGET_XARCH)
             {
-                GT_EQ => NI_X86Base_CompareEqual,
-                GT_GE => NI_X86Base_CompareGreaterThanOrEqual,
-                GT_GT => NI_X86Base_CompareGreaterThan,
-                GT_LE => NI_X86Base_CompareLessThanOrEqual,
-                GT_LT => NI_X86Base_CompareLessThan,
-                _ => NI_X86Base_CompareNotEqual,
-            };
-#elif TARGET_ARM64
-            if (operation == GT_NE)
-            {
-                Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_Not));
-                result = result.GetOp(1).AsHWIntrinsic();
+                expected = operation switch
+                {
+                    GT_EQ => NI_X86Base_CompareEqual,
+                    GT_GE => NI_X86Base_CompareGreaterThanOrEqual,
+                    GT_GT => NI_X86Base_CompareGreaterThan,
+                    GT_LE => NI_X86Base_CompareLessThanOrEqual,
+                    GT_LT => NI_X86Base_CompareLessThan,
+                    _ => NI_X86Base_CompareNotEqual,
+                };
             }
-            var expected = baseType == TYP_DOUBLE ? operation switch
+            else if (Configuration.TARGET_ARM64)
             {
-                GT_GE => NI_AdvSimd_Arm64_CompareGreaterThanOrEqual,
-                GT_LE => NI_AdvSimd_Arm64_CompareLessThanOrEqual,
-                _ => NI_AdvSimd_Arm64_CompareEqual,
-            } : operation switch
+                if (operation == GT_NE)
+                {
+                    Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_Not));
+                    result = result.GetOp(1).AsHWIntrinsic();
+                }
+                expected = baseType == TYP_DOUBLE ? operation switch
+                {
+                    GT_GE => NI_AdvSimd_Arm64_CompareGreaterThanOrEqual,
+                    GT_LE => NI_AdvSimd_Arm64_CompareLessThanOrEqual,
+                    _ => NI_AdvSimd_Arm64_CompareEqual,
+                } : operation switch
+                {
+                    GT_GT => NI_AdvSimd_CompareGreaterThan,
+                    GT_LT => NI_AdvSimd_CompareLessThan,
+                    _ => NI_AdvSimd_CompareEqual,
+                };
+            }
+            else
             {
-                GT_GT => NI_AdvSimd_CompareGreaterThan,
-                GT_LT => NI_AdvSimd_CompareLessThan,
-                _ => NI_AdvSimd_CompareEqual,
-            };
-#elif TARGET_WASM
-            var expected = operation switch
-            {
-                GT_EQ => NI_PackedSimd_CompareEqual,
-                GT_GE => NI_PackedSimd_CompareGreaterThanOrEqual,
-                GT_GT => NI_PackedSimd_CompareGreaterThan,
-                GT_LE => NI_PackedSimd_CompareLessThanOrEqual,
-                GT_LT => NI_PackedSimd_CompareLessThan,
-                _ => NI_PackedSimd_CompareNotEqual,
-            };
-#else
-#error Unsupported SIMD comparison test target
-#endif
+                Assume.That(Configuration.TARGET_WASM);
+                expected = operation switch
+                {
+                    GT_EQ => NI_PackedSimd_CompareEqual,
+                    GT_GE => NI_PackedSimd_CompareGreaterThanOrEqual,
+                    GT_GT => NI_PackedSimd_CompareGreaterThan,
+                    GT_LE => NI_PackedSimd_CompareLessThanOrEqual,
+                    GT_LT => NI_PackedSimd_CompareLessThan,
+                    _ => NI_PackedSimd_CompareNotEqual,
+                };
+            }
             Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
             Assert.That(result.SimdBaseType, Is.EqualTo(baseType));
             Assert.That(result.GetOp(1), Is.SameAs(left));
@@ -146,12 +148,12 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
         });
     }
 
-#if TARGET_XARCH
     [Test]
     public static void XarchUnsignedComparisonRetainsItsBiasAndSignedRelation(
         [Values(GT_GT, GT_LT)] genTreeOps operation,
         [Values(TYP_UBYTE, TYP_USHORT, TYP_UINT, TYP_ULONG)] var_types baseType)
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler =>
         {
             var left = Local(compiler);
@@ -161,13 +163,12 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
             AssertBiasedComparison(result, operation, left, right, baseType);
         });
     }
-#endif
 
-#if TARGET_WASM
     [Test]
     public static void WasmUnsignedComparisonSubtractsDistinctBiasesWithoutCapturingOrReorderingEffects(
         [Values(GT_GE, GT_GT, GT_LE, GT_LT)] genTreeOps operation, [Values(false, true)] bool effectful)
     {
+        Assume.That(Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             GenTree left = Local(compiler);
@@ -195,6 +196,7 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
     public static void WasmSignedBiasPreservesUnsignedOrderingAcrossTheSignBoundary(
         genTreeOps operation, ulong leftValue, ulong rightValue)
     {
+        Assume.That(Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             var left = compiler.gtNewVconNode(TYP_SIMD16);
@@ -236,6 +238,7 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
         [Values(TYP_LONG, TYP_DOUBLE)] var_types baseType, [Values(false, true)] bool native,
         [Values(false, true)] bool effectful)
     {
+        Assume.That(Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             var source = Local(compiler);
@@ -320,25 +323,30 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
             }
         }
     }
-#endif
-
-#if TARGET_XARCH || TARGET_WASM
     private static void AssertBiasedComparison(GenTreeHWIntrinsic result, genTreeOps operation,
         GenTree left, GenTree right, var_types unsignedType)
     {
-#if TARGET_XARCH
-        var comparison = operation == GT_GT ? NI_X86Base_CompareGreaterThan : NI_X86Base_CompareLessThan;
-        var subtraction = NI_X86Base_Subtract;
-#else
-        var comparison = operation switch
+        NamedIntrinsic comparison;
+        NamedIntrinsic subtraction;
+        if (Configuration.TARGET_XARCH)
         {
-            GT_GE => NI_PackedSimd_CompareGreaterThanOrEqual,
-            GT_GT => NI_PackedSimd_CompareGreaterThan,
-            GT_LE => NI_PackedSimd_CompareLessThanOrEqual,
-            _ => NI_PackedSimd_CompareLessThan,
-        };
-        var subtraction = NI_PackedSimd_Subtract;
-#endif
+            comparison = operation == GT_GT
+                ? NI_X86Base_CompareGreaterThan
+                : NI_X86Base_CompareLessThan;
+            subtraction = NI_X86Base_Subtract;
+        }
+        else
+        {
+            Assume.That(Configuration.TARGET_WASM);
+            comparison = operation switch
+            {
+                GT_GE => NI_PackedSimd_CompareGreaterThanOrEqual,
+                GT_GT => NI_PackedSimd_CompareGreaterThan,
+                GT_LE => NI_PackedSimd_CompareLessThanOrEqual,
+                _ => NI_PackedSimd_CompareLessThan,
+            };
+            subtraction = NI_PackedSimd_Subtract;
+        }
         var signedType = unsignedType switch
         {
             TYP_UBYTE => TYP_BYTE,
@@ -366,7 +374,6 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
                 Is.EqualTo(expectedBias));
         }
     }
-#endif
 
     private static var_types IntegralMaskType(var_types baseType)
     {
@@ -399,6 +406,8 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS
+            && (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM));
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
@@ -423,4 +432,3 @@ internal static unsafe class SimdComparisonConstructionCompletionTests
         }
     }
 }
-#endif

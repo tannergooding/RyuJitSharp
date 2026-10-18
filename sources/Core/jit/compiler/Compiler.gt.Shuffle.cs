@@ -249,9 +249,7 @@ public partial class Compiler
                 }
                 else if (elementSize == 2)
                 {
-    #if DEBUG
                     assert(crossLane && canUseEvexEncodingDebugOnly());
-    #endif
                     for (var index = 0; index < elementCount; index++)
                     {
                         indices.u16[index] = (ushort)(indices.u8[index * elementSize] / elementSize);

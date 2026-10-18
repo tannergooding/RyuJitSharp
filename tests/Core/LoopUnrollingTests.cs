@@ -64,16 +64,17 @@ internal static unsafe class LoopUnrollingTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void UnrollingDiagnosticsIncludeNativeGraphsAndTrees(bool verbose)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithLoop((compiler, unusedLoop, preheader, header, latch, unusedExit) =>
         {
             AddCountedLoopBody(compiler, preheader, header, latch, 2);
             compiler._loops = FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
-            compiler.verbose = verbose;
+            TestConfiguration.SetVerbose(compiler, verbose);
 
             var output = CodeGenLifeTransitionTests.Capture(() =>
                 Assert.That(compiler.optUnrollLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
@@ -97,7 +98,6 @@ internal static unsafe class LoopUnrollingTests
             }
         });
     }
-#endif
 
     [TestCase(1)]
     [TestCase(4)]

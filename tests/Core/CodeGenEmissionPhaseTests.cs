@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -25,9 +24,13 @@ internal static unsafe class CodeGenEmissionPhaseTests
 {
     private static bool IsDebug => Configuration.DEBUG;
 
-#if DEBUG
     private static string? s_assertion;
-#endif
+
+    [SetUp]
+    public static void RequireWindowsAmd64Target()
+    {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+    }
 
     [Test]
     public static void RegisterInfoCopyUsesInitializedCompilerState()
@@ -85,26 +88,29 @@ internal static unsafe class CodeGenEmissionPhaseTests
 
             WithAllocationContext(compiler, codeGen, (_, generator, state) =>
             {
-#if DEBUG
-                var savedHalt = HaltSelection(ref JitConfig);
-                var savedHash = HaltHash(ref JitConfig);
-                var savedEmitterTests = EmitterTests(ref JitConfig);
-                HaltSelection(ref JitConfig) = new(null, null);
-                HaltHash(ref JitConfig) = -1;
-                EmitterTests(ref JitConfig) = new(null, null);
-                try
+                if (IsDebug)
+                {
+                    var savedHalt = HaltSelection(ref JitConfig);
+                    var savedHash = HaltHash(ref JitConfig);
+                    var savedEmitterTests = EmitterTests(ref JitConfig);
+                    HaltSelection(ref JitConfig) = new(null, null);
+                    HaltHash(ref JitConfig) = -1;
+                    EmitterTests(ref JitConfig) = new(null, null);
+                    try
+                    {
+                        generator.genGenerateMachineCode();
+                    }
+                    finally
+                    {
+                        HaltSelection(ref JitConfig) = savedHalt;
+                        HaltHash(ref JitConfig) = savedHash;
+                        EmitterTests(ref JitConfig) = savedEmitterTests;
+                    }
+                }
+                else
                 {
                     generator.genGenerateMachineCode();
                 }
-                finally
-                {
-                    HaltSelection(ref JitConfig) = savedHalt;
-                    HaltHash(ref JitConfig) = savedHash;
-                    EmitterTests(ref JitConfig) = savedEmitterTests;
-                }
-#else
-                generator.genGenerateMachineCode();
-#endif
 
                 Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
                 Assert.That(block.bbEmitCookie, Is.Not.Null);
@@ -156,19 +162,21 @@ internal static unsafe class CodeGenEmissionPhaseTests
                 Is.EqualTo(Convert.FromHexString("90C3")));
             Assert.That(state->HotExec[0], Is.EqualTo(0xA5));
             Assert.That(output, Does.Not.Contain("; Total bytes of code"));
-#if DEBUG
-            Assert.That(compiler.compCodeGenDone, Is.True);
-#endif
+            if (IsDebug)
+            {
+                Assert.That(TestConfiguration.GetCodeGenDone(compiler), Is.True);
+            }
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void LateDisassemblyRejectsBeforePhaseMutationOrPublication(int phaseNumber)
     {
+        Assume.That(IsDebug);
         Assume.That(Configuration.LATE_DISASM);
+
         WithEmission((compiler, codeGen, state) =>
         {
             void* hotCode = null;
@@ -200,13 +208,15 @@ internal static unsafe class CodeGenEmissionPhaseTests
     [Test]
     public static void MetricsModeEmitsAfterUnwindAndCodeAllocation()
     {
+        Assume.That(IsDebug);
+
         WithEmission((compiler, codeGen, state) =>
         {
             void* hotCode = null;
             var nativeSize = -1;
             CodePointerAddress(codeGen) = &hotCode;
             NativeSizeAddress(codeGen) = &nativeSize;
-            compiler.opts.dspMetrics = true;
+            TestConfiguration.SetDspMetrics(compiler, true);
             compiler.info.compFullName = "MetricsFixture()";
             compiler.info.compMethodSpmiIndex = -1;
 
@@ -235,6 +245,8 @@ internal static unsafe class CodeGenEmissionPhaseTests
     [Test]
     public static void ForcedFallbackOccursBeforeUnwindReservationAndCodeAllocation()
     {
+        Assume.That(IsDebug);
+
         WithEmission((compiler, codeGen, state) =>
         {
             void* hotCode = null;
@@ -257,7 +269,6 @@ internal static unsafe class CodeGenEmissionPhaseTests
             Assert.That(nativeSize, Is.EqualTo(-1));
         });
     }
-#endif
 
     [Test]
     public static void LsraSummaryIncludesBlockZeroAndWeightedPreResolutionBlocksOnly()
@@ -364,9 +375,10 @@ internal static unsafe class CodeGenEmissionPhaseTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, bool, bool, int, void>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte, byte, int, void>)&Reserve;
         vtable.allocMem = &Allocate;
-#if DEBUG
-        vtable.doAssert = &RecordAssertion;
-#endif
+        if (IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+        }
         var state = new EmissionState
         {
             JitInfo = new ICorJitInfo { lpVtbl = &vtable },
@@ -376,25 +388,28 @@ internal static unsafe class CodeGenEmissionPhaseTests
         compiler.info.compCompHnd = &state.JitInfo;
         codeGen.Emitter.emitCmpHandle = &state.JitInfo;
         using var tls = TestConfiguration.CreateJitTls(&state.JitInfo);
-#if DEBUG
-        JitTls.Compiler = compiler;
-        s_assertion = null;
-        try
+        if (IsDebug)
+        {
+            s_assertion = null;
+            JitTls.Compiler = compiler;
+            try
+            {
+                action(compiler, codeGen, &state);
+            }
+            finally
+            {
+                var assertion = s_assertion;
+                s_assertion = null;
+                if (assertion is not null)
+                {
+                    Assert.Fail($"JIT assertion: {assertion}");
+                }
+            }
+        }
+        else
         {
             action(compiler, codeGen, &state);
         }
-        finally
-        {
-            var assertion = s_assertion;
-            s_assertion = null;
-            if (assertion is not null)
-            {
-                Assert.Fail($"JIT assertion: {assertion}");
-            }
-        }
-#else
-        action(compiler, codeGen, &state);
-#endif
     }
 
     private static string Capture(Action action)
@@ -466,14 +481,12 @@ internal static unsafe class CodeGenEmissionPhaseTests
         }
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* jitInfo, byte* file, int line, byte* expression)
     {
         s_assertion = $"{Marshal.PtrToStringUTF8((nint)file)}:{line}: {Marshal.PtrToStringUTF8((nint)expression)}";
         return 0;
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_codePtr")]
     private static extern ref void** CodePointerAddress(CodeGen codeGen);
@@ -505,7 +518,6 @@ internal static unsafe class CodeGenEmissionPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllFloat")]
     private static extern ref regMask CompilerAllFloatRegs(Compiler compiler);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitForceFallback")]
     private static extern ref int ForceFallback(ref JitConfigValues config);
 
@@ -517,7 +529,6 @@ internal static unsafe class CodeGenEmissionPhaseTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
     private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
@@ -534,4 +545,3 @@ internal static unsafe class CodeGenEmissionPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint BbNumMaxBeforeResolution(LinearScan allocator);
 }
-#endif

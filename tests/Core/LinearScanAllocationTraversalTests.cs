@@ -2,10 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
@@ -18,9 +16,14 @@ using SetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVa
 
 namespace RyuJitSharp.UnitTests;
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
 internal static unsafe class LinearScanAllocationTraversalTests
 {
+    [SetUp]
+    public static void RequireWindowsAmd64Target()
+    {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void DefinitionAndLastUsePreserveLocationOrder(bool delayed)
@@ -205,13 +208,13 @@ internal static unsafe class LinearScanAllocationTraversalTests
     [TestCase(TYP_INT, REG_X64_RCX, false, true)]
     [TestCase(TYP_DOUBLE, REG_X64_XMM0, false, false)]
     [TestCase(TYP_DOUBLE, REG_X64_XMM0, false, true)]
-#if DEBUG
     [TestCase(TYP_INT, REG_X64_RCX, true, false)]
     [TestCase(TYP_DOUBLE, REG_X64_XMM0, true, false)]
-#endif
     public static void IncomingParameterCanSpillBeforeTheFirstBlock(
         var_types type, regNumber register, bool forceSpill, bool lowWeight)
     {
+        Assume.That(!forceSpill || TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [
                 new LclVarDsc {
@@ -247,9 +250,10 @@ internal static unsafe class LinearScanAllocationTraversalTests
             _ = allocator.newRefPosition(null, 1, RefType.RefTypeBB, null, SRBM_NONE);
             var use = allocator.newRefPosition(
                 interval, 4, RefType.RefTypeUse, compiler.gtNewLclvNode(type, 0), mask);
-#if DEBUG
-            StressMask(allocator) = forceSpill ? 0x800 : 0;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                StressMask(allocator) = forceSpill ? 0x800 : 0;
+            }
 
             AllocateRegisters(allocator);
 
@@ -262,10 +266,11 @@ internal static unsafe class LinearScanAllocationTraversalTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void AllocationDumpPreservesNativeReferenceActionOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             _ = BeginBlock(compiler, allocator);
             var interval = NewInterval(allocator, TYP_INT);
@@ -288,6 +293,8 @@ internal static unsafe class LinearScanAllocationTraversalTests
     [Test]
     public static void ExposedUseDumpKeepsDefaultRegisterAndDoesNotExtendColumns()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             _ = BeginBlock(compiler, allocator);
             compiler.lvaTable = [
@@ -315,10 +322,11 @@ internal static unsafe class LinearScanAllocationTraversalTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void UnassignedNonlocalUpperVectorSaveDoesNotEmitNoReg()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         WithAllocator((compiler, allocator) => {
             _ = BeginBlock(compiler, allocator);
             var interval = NewInterval(allocator, TYP_SIMD32);
@@ -333,7 +341,6 @@ internal static unsafe class LinearScanAllocationTraversalTests
             Assert.That(output, Does.Not.Contain("NoReg"));
         });
     }
-#endif
 
     private static string Capture(Action action)
     {
@@ -352,18 +359,17 @@ internal static unsafe class LinearScanAllocationTraversalTests
         }
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void Amd64ProfilerDoesNotPreserveUpperVectorHalves()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         var reference = new RefPosition(1, 4, null, RefType.RefTypeUpperVectorSave);
         var interval = new Interval(TYP_SIMD32, SRBM_X64_XMM0);
         var allocator = (LinearScan)RuntimeHelpers.GetUninitializedObject(typeof(LinearScan));
         Assert.That(CanSkipUpperVectorSave(allocator, reference, interval), Is.False);
     }
-#endif
 
     private static BasicBlock BeginBlock(Compiler compiler, LinearScan allocator, bool addBoundary = true)
     {
@@ -463,19 +469,15 @@ internal static unsafe class LinearScanAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registerCandidateVars")]
     private static extern ref nint[] RegisterCandidateVars(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRegisters")]
-    private static extern ref regMaskTP AllocationDumpRegisters(LinearScan allocator);
-#endif
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRegisters")]
+    private static extern regMaskTP AllocationDumpRegisters(LinearScan allocator);
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "canSkipUpperVectorSave")]
     private static extern bool CanSkipUpperVectorSave(
         LinearScan? _, RefPosition reference, Interval interval);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
@@ -486,4 +488,3 @@ internal static unsafe class LinearScanAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
     private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
 }
-#endif

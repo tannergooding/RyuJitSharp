@@ -449,13 +449,14 @@ internal static class HardwareBaseGenerationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsMaskClearingShifts()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.ClearUnusedMaskBits(REG_K3, 2));
@@ -468,6 +469,8 @@ internal static class HardwareBaseGenerationTests
     [TestCase(true)]
     public static void DspCodeRecordsBaseHardwareInstructions(bool x86)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var node = x86
@@ -475,7 +478,7 @@ internal static class HardwareBaseGenerationTests
                     Register(compiler, TYP_LONG, REG_RCX)) { RegNum = REG_RAX }
                 : new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_CreateScalar, TYP_FLOAT, 16,
                     new GenTreeDblCon(TYP_FLOAT, 1.0) { RegNum = REG_XMM1 }) { RegNum = REG_XMM0 };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             void Generate()
             {
@@ -494,7 +497,6 @@ internal static class HardwareBaseGenerationTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static GenTreeVecCon Vector(var_types type, regNumber reg)
     {

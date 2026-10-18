@@ -634,9 +634,10 @@ public sealed partial class LinearScan
 
             default:
             {
-#if DEBUG
-                NYIRAW($"NYI: Unimplemented node type {tree.Oper.Name}");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    NYIRAW($"NYI: Unimplemented node type {tree.Oper.Name}");
+                }
                 unreached();
                 throw new FatalJitException(CORJIT_RECOVERABLEERROR);
             }

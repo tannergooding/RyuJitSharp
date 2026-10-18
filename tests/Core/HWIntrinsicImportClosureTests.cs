@@ -13,10 +13,15 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && TARGET_XARCH
 [NonParallelizable]
 internal static unsafe class HWIntrinsicImportClosureTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH);
+    }
+
     private static int s_selectedArg;
 
     [TestCase(NI_X86Base_Pause, 0u)]
@@ -480,4 +485,3 @@ internal static unsafe class HWIntrinsicImportClosureTests
     private static extern GenTreeHWIntrinsic? Fallback(Compiler compiler, NamedIntrinsic intrinsic,
         var_types simdType, var_types baseType);
 }
-#endif

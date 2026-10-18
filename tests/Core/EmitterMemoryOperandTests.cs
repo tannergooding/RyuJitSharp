@@ -157,9 +157,10 @@ internal static unsafe class EmitterMemoryOperandTests
             {
                 constant.Flags |= GTF_ICON_FIELD_HDL;
             }
-#if DEBUG
-            constant.TargetHandle = unchecked((nint)0xFEDCBA9876543210UL);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                constant.TargetHandle = unchecked((nint)0xFEDCBA9876543210UL);
+            }
             var indir = new GenTreeIndir(GT_IND, TYP_INT, constant);
             var id = NewAddress(emitter, EA_4BYTE, (nint)address);
             id.idIns(INS_mov);
@@ -172,11 +173,12 @@ internal static unsafe class EmitterMemoryOperandTests
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)address));
             Assert.That(id.idIsDspReloc(), Is.EqualTo(displacementRelocation));
             Assert.That(emitter.emitInsSizeAM(id, insCodeRM(INS_mov)), Is.EqualTo(displacementRelocation ? 6u : 7u));
-#if DEBUG
-            var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-            Assert.That(info.idFlags, Is.EqualTo(handle ? constant.Flags : GTF_EMPTY));
-            Assert.That(info.idMemCookie, Is.EqualTo(handle ? constant.TargetHandle : (nint)0));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
+                Assert.That(info.idFlags, Is.EqualTo(handle ? constant.Flags : GTF_EMPTY));
+                Assert.That(info.idMemCookie, Is.EqualTo(handle ? constant.TargetHandle : (nint)0));
+            }
         }, hint);
     }
 
@@ -333,15 +335,15 @@ internal static unsafe class EmitterMemoryOperandTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void DisassemblyRecordsMemoryOperands(int entrypoint)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -374,7 +376,6 @@ internal static unsafe class EmitterMemoryOperandTests
             Assert.That(diagnostic, Does.Contain(entrypoint == 0 ? "neg" : entrypoint == 1 ? "mov" : "addps"));
         });
     }
-#endif
 
     private static void WithEmitter(Action<Compiler, Emitter> action, CorInfoReloc hint = CorInfoReloc.NONE)
     {
@@ -386,10 +387,11 @@ internal static unsafe class EmitterMemoryOperandTests
             compiler.info.compCompHnd = &jitInfo;
             compiler.info.compMatchedVM = true;
             s_hint = hint;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-            codeGen.Emitter.emitVarRefOffs = 0x1234;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
+                VarRefOffset(codeGen.Emitter) = 0x1234;
+            }
             action(compiler, codeGen.Emitter);
         });
     }
@@ -399,13 +401,19 @@ internal static unsafe class EmitterMemoryOperandTests
 
     private static void CheckDebugOffset(Emitter.instrDesc id)
     {
-#if DEBUG
-        var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
-        Assert.That(info.idVarRefOffs, Is.EqualTo(0x1234u));
-#else
-        _ = id;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
+            Assert.That(info.idVarRefOffs, Is.EqualTo(0x1234u));
+        }
+        else
+        {
+            _ = id;
+        }
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
+    private static extern ref int VarRefOffset(Emitter emitter);
 
     private static Emitter.instrDesc Last(Emitter emitter)
     {

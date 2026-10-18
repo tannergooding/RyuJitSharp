@@ -430,10 +430,11 @@ internal static unsafe class BlockSplittingTests
                     var strategy = (InlineStrategy)RuntimeHelpers.GetUninitializedObject(typeof(InlineStrategy));
                     var root = new InlineContext(strategy) { _ilSize = 11 };
                     var child = new InlineContext(strategy) { _parent = root, _location = new ILLocation(10, 0), _ilSize = 124 };
-#if DEBUG
-                    root._ilInstsSet = new BitArray(11, true);
-                    child._ilInstsSet = new BitArray(124, true);
-#endif
+                    if (TestConfiguration.IsDebug)
+                    {
+                        root._ilInstsSet = new BitArray(11, true);
+                        child._ilInstsSet = new BitArray(124, true);
+                    }
                     last = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 3), new DebugInfo(child, new ILLocation(123, 0)));
                     compiler.fgInsertStmtAtEnd(block, last);
                 }

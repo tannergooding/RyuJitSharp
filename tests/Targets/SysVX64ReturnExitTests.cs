@@ -269,10 +269,11 @@ internal static unsafe class SysVX64ReturnExitTests
         });
     }
 
-#if SWIFT_SUPPORT
     [Test]
     public static void SwiftErrorReturnsMoveErrorBeforeReturningOrdinaryValue()
     {
+        Assume.That(Configuration.SWIFT_SUPPORT);
+
         WithReturn(TYP_REF, (compiler, codeGen) =>
         {
             var error = compiler.gtNewIconNode(TYP_BYREF, 1);
@@ -290,6 +291,8 @@ internal static unsafe class SysVX64ReturnExitTests
     [Test]
     public static void SwiftStructReturnLoadsLoweredFieldsAtTheirDeclaredOffsets()
     {
+        Assume.That(Configuration.SWIFT_SUPPORT);
+
         WithReturn(TYP_STRUCT, (compiler, codeGen) =>
         {
             compiler.info.compCallConv = CorInfoCallConvExtension.Swift;
@@ -319,7 +322,6 @@ internal static unsafe class SysVX64ReturnExitTests
                 Is.EqualTo((regNumber[])[REG_X64_RAX, REG_X64_RDX]));
         });
     }
-#endif
 
     [TestCase(TYP_VOID)]
     [TestCase(TYP_REF)]

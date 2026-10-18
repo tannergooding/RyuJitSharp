@@ -16,10 +16,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallDispatchLoweringTests
 {
-#if TARGET_X86
     [Test]
     public static void X86OrdinaryDirectCallReachesTargetLowering()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithCompiler((compiler, block, lowering) => {
             var call = new GenTreeCall(TYP_VOID) {
                 _callType = CT_USER_FUNC,
@@ -33,7 +34,6 @@ internal static unsafe class CallDispatchLoweringTests
             Assert.That(block.FirstNode, Is.SameAs(call));
         });
     }
-#endif
 
     [Test]
     public static void DirectUserCallUsesMetadataAndReplacesStaleTargetAddress()
@@ -137,9 +137,10 @@ internal static unsafe class CallDispatchLoweringTests
             Assert.That(LowerCall(lowering, call), Is.Null);
             Assert.That(call._controlExpr, Is.SameAs(target));
             Assert.That(target.IsContained, Is.True);
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(target.RegTag, Is.EqualTo(GenTree.GT_REGTAG_REG));
-#endif
+            }
             Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(target.Next, Is.SameAs(call));
         });
@@ -166,11 +167,10 @@ internal static unsafe class CallDispatchLoweringTests
 
             Assert.That(call._controlExpr, Is.SameAs(target));
             Assert.That(target.IsContained, Is.True);
-#if TARGET_X86
-            Assert.That(target.RegNum, Is.EqualTo(virtualStub ? regNumber.REG_X64_RAX : regNumber.REG_X64_NA));
-#else
-            Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_X64_NA));
-#endif
+            var expectedRegister = Configuration.TARGET_X86 && virtualStub
+                ? regNumber.REG_X64_RAX
+                : regNumber.REG_X64_NA;
+            Assert.That(target.RegNum, Is.EqualTo(expectedRegister));
         });
     }
 

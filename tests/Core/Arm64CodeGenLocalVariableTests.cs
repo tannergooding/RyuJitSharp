@@ -258,10 +258,11 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         });
     }
 
-#if FEATURE_SIMD
     [Test]
     public static void ContainedSimd16LocalStoresUsePairOfZeroRegisters()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -287,6 +288,8 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     [Test]
     public static void ContainedSimdRegisterLocalStoresUseMoveImmediate()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -312,6 +315,8 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     [Test]
     public static void ContainedSimd12FieldStoresWriteTwoZeroChunks()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -341,6 +346,8 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     [Test]
     public static void Simd12FieldRegisterStoresCopyToTheAssignedRegister()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -367,6 +374,8 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     [Test]
     public static void Simd12FieldStackStoresRotateWhenNoTemporaryRegisterIsAvailable()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -412,6 +421,8 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     [Test]
     public static void Simd12FieldStackStoresUseTemporaryRegisterWhenAssigned()
     {
+        Assume.That(Configuration.FEATURE_SIMD);
+
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
@@ -447,7 +458,6 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(codeGen.InternalRegisters.Count(tree), Is.Zero);
         });
     }
-#endif
 
     internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
@@ -483,11 +493,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
             action(compiler, codeGen);

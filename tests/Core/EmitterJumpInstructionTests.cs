@@ -301,13 +301,13 @@ internal static class EmitterJumpInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(INS_call, true, true)]
     [TestCase(INS_call, false, false)]
     [TestCase(INS_jmp, true, false)]
     public static void FinallyCallDiagnosticIsAddedToTheAllocatedMetadata(
         instruction ins, bool finallyBlock, bool expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
             var target = Label();
@@ -333,6 +333,7 @@ internal static class EmitterJumpInstructionTests
     [TestCase(INS_push)]
     public static void DspCodeRecordsJumpsAndUpdatesJumpLists(instruction ins)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
             var target = Label();
@@ -341,7 +342,7 @@ internal static class EmitterJumpInstructionTests
             var used = Used(emitter);
             var size = CurrentSize(emitter);
             var count = CurrentCount(emitter);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => emitter.emitIns_J(ins, target, keepShort: true, isRemovableJmpCandidate: true));
@@ -360,6 +361,7 @@ internal static class EmitterJumpInstructionTests
     [Test]
     public static void JumpListDiagnosticDisplaysNativeInstructionNamesAndUnboundMetadata()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((_, emitter) =>
         {
             var target = Label();
@@ -371,7 +373,8 @@ internal static class EmitterJumpInstructionTests
             JumpView.Next(call, jump);
             JumpView.First(emitter, call);
 
-            var diagnostic = InstructionRecordingTestSupport.Capture(emitter.emitDispJumpList);
+            var diagnostic = InstructionRecordingTestSupport.Capture(
+                () => TestConfiguration.DumpEmitterJumpList(emitter));
 
             Assert.That(diagnostic, Does.Contain("IN0001 call[5] -> ILLEGAL"));
             Assert.That(diagnostic,
@@ -380,12 +383,14 @@ internal static class EmitterJumpInstructionTests
 
             var targetGroup = emitter.emitCurIG ?? throw new AssertionException("Missing target instruction group.");
             target.bbEmitCookie = targetGroup;
-            diagnostic = InstructionRecordingTestSupport.Capture(emitter.emitDispJumpList);
+            diagnostic = InstructionRecordingTestSupport.Capture(
+                () => TestConfiguration.DumpEmitterJumpList(emitter));
             Assert.That(diagnostic,
                 Does.Contain($"IN0002 jmp[5] -> IG{targetGroup.GetDisplayId():D2} (short) ; removal candidate ; after call before epilog"));
 
             jump.idSetIsBound();
-            diagnostic = InstructionRecordingTestSupport.Capture(emitter.emitDispJumpList);
+            diagnostic = InstructionRecordingTestSupport.Capture(
+                () => TestConfiguration.DumpEmitterJumpList(emitter));
 
             var boundJumpIndex = diagnostic.IndexOf("IN0002 jmp[5]", StringComparison.Ordinal);
             Assert.That(boundJumpIndex, Is.GreaterThanOrEqualTo(0));
@@ -394,7 +399,6 @@ internal static class EmitterJumpInstructionTests
             Assert.That(boundJumpLine, Does.Not.Contain("removal candidate"));
         });
     }
-#endif
 
     private static BasicBlock Label()
     {

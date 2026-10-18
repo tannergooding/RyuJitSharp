@@ -60,9 +60,7 @@ public partial class Compiler
         info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo);
         JITDUMP($"tlsRootObject= {dspPtr(threadStaticInfo.tlsRootObject.addr):X16}\n");
         JITDUMP($"tlsIndexObject= {dspPtr(threadStaticInfo.tlsIndexObject.addr):X16}\n");
-#if DEBUG
         JITDUMP($"offsetOfThreadLocalStoragePointer= {DspThreadLocalOffset(threadStaticInfo.offsetOfThreadLocalStoragePointer)}\n");
-#endif
         JITDUMP($"threadStaticBaseSlow= {dspPtr(threadStaticInfo.threadStaticBaseSlow.addr):X16}\n");
 
         var previous = block;
@@ -112,7 +110,7 @@ public partial class Compiler
             var tlsArg = gtNewIconNode(TYP_I_IMPL, (nint)tlsRootObject);
             tlsArg.Flags |= GTF_ICON_TLSGD_OFFSET;
             _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
-            fgMorphArgs(tlsRefCall);
+            _ = fgMorphArgs(tlsRefCall);
             tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
             tlsRootAddress = tlsRefCall;
         }
@@ -125,7 +123,7 @@ public partial class Compiler
             var tlsCallIndir = CloneThreadLocalTree(tlsRootOffset);
             var tlsRefCall = gtNewIndCallNode(TYP_I_IMPL, tlsCallIndir);
             tlsRefCall.Flags |= GTF_TLS_GET_ADDR;
-            fgMorphArgs(tlsRefCall);
+            _ = fgMorphArgs(tlsRefCall);
             tlsRefCall.Flags |= GTF_EXCEPT | (tlsCallIndir.Flags & GTF_GLOB_EFFECT);
             tlsRootAddress = tlsRefCall;
         }
@@ -151,7 +149,7 @@ public partial class Compiler
         var slowCall = gtNewIndCallNode(TYP_REF,
             gtNewIconHandleNode((nint)threadStaticInfo.threadStaticBaseSlow.addr, GTF_ICON_TLS_HDL));
         _ = slowCall.Args.PushBack(NewCallArg.CreateForPrimitive(gtNewLclvNode(TYP_I_IMPL, rootAddressLocal)));
-        fgMorphArgs(slowCall);
+        _ = fgMorphArgs(slowCall);
         var fallback = fgNewBBFromTreeAfter(BBJ_ALWAYS, rootCheck,
             gtNewStoreLclVarNode(finalLocal, slowCall), debugInfo, true);
         var fast = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallback,
@@ -212,12 +210,10 @@ public partial class Compiler
         JITDUMP($"tlsGetAddrFtnPtr= {dspPtr(metadata.tlsGetAddrFtnPtr):X16}\n");
         JITDUMP($"tlsIndexObject= {dspPtr(metadata.tlsIndexObject):X16}\n");
         JITDUMP($"threadVarsSection= {dspPtr(metadata.threadVarsSection):X16}\n");
-#if DEBUG
         JITDUMP($"offsetOfThreadLocalStoragePointer= {DspThreadLocalOffset(metadata.offsetOfThreadLocalStoragePointer)}\n");
         JITDUMP($"offsetOfMaxThreadStaticBlocks= {DspThreadLocalOffset(metadata.offsetOfMaxThreadStaticBlocks)}\n");
         JITDUMP($"offsetOfThreadStaticBlocks= {DspThreadLocalOffset(metadata.offsetOfThreadStaticBlocks)}\n");
         JITDUMP($"offsetOfBaseOfThreadLocalData= {DspThreadLocalOffset(metadata.offsetOfBaseOfThreadLocalData)}\n");
-#endif
         assert(call.Args.CountUserArgs() == 1);
         var previous = block;
         ref var callUse = ref fgSplitBlockBeforeTree(block, stmt, call, out var firstNewStmt, out block);
@@ -270,7 +266,7 @@ public partial class Compiler
             assert(opts.altJit || threadVarsSection != 0);
             var tlsArg = gtNewIconNode(TYP_I_IMPL, threadVarsSection);
             _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
-            fgMorphArgs(tlsRefCall);
+            _ = fgMorphArgs(tlsRefCall);
             tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
             tlsValue = tlsRefCall;
         }
@@ -282,7 +278,7 @@ public partial class Compiler
 
             var tlsArg = gtNewIconNode(TYP_I_IMPL, (nint)metadata.tlsIndexObject);
             _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
-            fgMorphArgs(tlsRefCall);
+            _ = fgMorphArgs(tlsRefCall);
             tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
             if (Configuration.UNIX_X86_ABI)
             {
@@ -399,8 +395,6 @@ public partial class Compiler
     private GenTree CloneThreadLocalTree(GenTree tree)
         => gtCloneExpr(tree) ?? throw new FatalJitException("Cannot clone a thread static expression.");
 
-#if DEBUG
     private uint DspThreadLocalOffset(int offset)
         => unchecked((uint)dspOffset(unchecked((nint)(uint)offset)));
-#endif
 }

@@ -33,9 +33,10 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         var_types operandType, bool containedRight, bool flagsOnly, bool byteResult)
     {
         WithAllocator((compiler, allocator) => {
-#if TARGET_X86
-            AvailableIntRegs(allocator) |= SRBM_EBP;
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                AvailableIntRegs(allocator) |= SRBM_EBP;
+            }
             var left = compiler.gtNewIconNode(operandType, 3);
             var right = compiler.gtNewIconNode(operandType, 5);
             right.IsContained = containedRight;
@@ -59,12 +60,10 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
             }
 
             var operandCandidates = AvailableIntRegs(allocator);
-#if TARGET_X86
-            if ((operandType is TYP_BYTE) || byteResult)
+            if (Configuration.TARGET_X86 && ((operandType is TYP_BYTE) || byteResult))
             {
                 operandCandidates &= SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
             }
-#endif
             foreach (var use in uses)
             {
                 Assert.That(use.registerAssignment, Is.EqualTo(operandCandidates));
@@ -78,9 +77,10 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
             if (!flagsOnly)
             {
                 var destinationCandidates = AvailableIntRegs(allocator);
-#if TARGET_X86
-                destinationCandidates &= SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
-#endif
+                if (Configuration.TARGET_X86)
+                {
+                    destinationCandidates &= SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
+                }
                 Assert.That(definitions[0].registerAssignment, Is.EqualTo(destinationCandidates));
                 Assert.That(definitions[0].nodeLocation, Is.EqualTo(5));
                 Assert.That(allocator.refPositions.IndexOf(uses[^1]),
@@ -115,23 +115,23 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
                 ?? throw new AssertionException("Missing comparison value use.");
             Assert.That(addressUse.registerAssignment, Is.EqualTo(AvailableIntRegs(allocator)));
             var valueCandidates = AvailableIntRegs(allocator);
-#if TARGET_X86
-            valueCandidates &= SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                valueCandidates &= SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
+            }
             Assert.That(valueUse.registerAssignment, Is.EqualTo(valueCandidates));
             Assert.That(allocator.refPositions.IndexOf(memoryFirst ? addressUse : valueUse),
                 Is.LessThan(allocator.refPositions.IndexOf(memoryFirst ? valueUse : addressUse)));
         });
     }
 
-#if TARGET_64BIT
     [TestCase(TYP_LONG, false)]
     [TestCase(TYP_LONG, true)]
-#endif
     [TestCase(TYP_INT, false)]
     [TestCase(TYP_INT, true)]
     public static void CastUsesPreferOnlyUncontainedLongToIntCopies(var_types sourceType, bool contained)
     {
+        Assume.That((sourceType != TYP_LONG) || Configuration.TARGET_64BIT);
         WithAllocator((compiler, allocator) => {
             var value = compiler.gtNewIconNode(contained ? TYP_I_IMPL : sourceType, 17);
             ReferenceBuildLocation(allocator) = 2;
@@ -158,7 +158,6 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         });
     }
 
-#if DEBUG
     [TestCase(0, false)]
     [TestCase(0, true)]
     [TestCase(1, false)]
@@ -171,16 +170,14 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
     [TestCase(0x82, true)]
     [TestCase(0x2002, false)]
     [TestCase(0x2002, true)]
-#else
-    [TestCase(0, false)]
-    [TestCase(0, true)]
-#endif
     public static void PassThroughArgumentsRespectStressAndLastUse(int stressMask, bool lastUse)
     {
+        Assume.That(TestConfiguration.IsDebug || (stressMask == 0));
         WithAllocator((compiler, allocator) => {
-#if DEBUG
-            StressMask(allocator) = stressMask;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                StressMask(allocator) = stressMask;
+            }
             compiler.lvaTable = [
                 new() { Type = TYP_INT, _varIndex = 0, lvTracked = true, lvLRACandidate = true },
             ];
@@ -201,9 +198,10 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
             var argument = new GenTreeUnOp(GT_PUTARG_REG, TYP_INT, source) { RegNum = register };
             ReferenceBuildLocation(allocator) = 4;
             var supported = true;
-#if DEBUG && TARGET_X86
-            supported = (stressMask & 0x3) != 0x2;
-#endif
+            if (TestConfiguration.IsDebug && Configuration.TARGET_X86)
+            {
+                supported = (stressMask & 0x3) != 0x2;
+            }
             Assert.That(SupportsSpecialPutArg(allocator), Is.EqualTo(supported));
             Assert.That(BuildPutArgReg(allocator, argument), Is.EqualTo(1));
             var definition = allocator.refPositions[^1];
@@ -235,9 +233,10 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
             ref var descriptor = ref CallReturnDescriptor(call);
             SetReturnType(ref descriptor, 0, TYP_FLOAT);
             SetReturnType(ref descriptor, 1, TYP_FLOAT);
-#if DEBUG
-            ReturnDescriptorInitialized(ref descriptor) = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                ReturnDescriptorInitialized(ref descriptor) = true;
+            }
             var xmm0 = GetXmmMask(0);
             var xmm1 = GetXmmMask(1);
             var xmm31 = GetXmmMask(31);
@@ -290,10 +289,8 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         return (regMask)regMaskTP.CreateFromRegNum(register, register.SingleTypeMask);
     }
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inited")]
     private static extern ref bool ReturnDescriptorInitialized(ref ReturnTypeDesc descriptor);
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -357,10 +354,8 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_placedArgumentLocalCount")]
     private static extern ref int PlacedArgumentLocalCount(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableIntRegs")]
     private static extern ref regMask AvailableIntRegs(LinearScan allocator);
@@ -388,8 +383,7 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-#if TARGET_AMD64
-        if (evex)
+        if (Configuration.TARGET_AMD64 && evex)
         {
             CompilerAllFloatRegs(compiler) |= SRBM_HIGHFLOAT;
             CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_EVEX;
@@ -397,9 +391,6 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
             compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
             compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
         }
-#else
-        _ = evex;
-#endif
         JitTls.Compiler = compiler;
         try
         {

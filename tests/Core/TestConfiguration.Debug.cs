@@ -93,8 +93,14 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "rpNum")]
     private static extern ref uint ReferenceNumber(RefPosition reference);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compCodeGenDone")]
+    private static extern ref bool CodeGenDone(Compiler compiler);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "buildNode")]
     private static extern ref GenTree? BuildNode(RefPosition reference);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispJumpList")]
+    private static extern void EmitJumpList(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ShouldDumpAsciiTrees")]
     private static extern bool GetShouldDumpAsciiTrees(Compiler compiler);
@@ -128,6 +134,36 @@ internal static partial class TestConfiguration
         }
 
         return ReferenceNumber(reference);
+    }
+
+    public static void SetReferenceNumber(RefPosition reference, uint number)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Reference numbers are only available in Debug builds.");
+        }
+
+        ReferenceNumber(reference) = number;
+    }
+
+    public static bool GetCodeGenDone(Compiler compiler)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Code-generation phase state is only available in Debug builds.");
+        }
+
+        return CodeGenDone(compiler);
+    }
+
+    public static void DumpEmitterJumpList(Emitter emitter)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Emitter jump-list diagnostics are only available in Debug builds.");
+        }
+
+        EmitJumpList(emitter);
     }
 
     public static GenTree? GetBuildNode(RefPosition reference)
