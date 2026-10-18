@@ -1,8 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -54,12 +52,15 @@ internal static unsafe class BitPositionTests
     [TestCase(true)]
     public static void TotalFunctionsAtZeroReturnNativeResultsWithoutAsserting(bool wide)
     {
-#if DEBUG
-        WithAssertionRecorder(() => AssertTotalZero(wide));
-        Assert.That(s_assertions, Is.Empty);
-#else
-        AssertTotalZero(wide);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = TestConfiguration.CaptureDebugAssertions(() => AssertTotalZero(wide));
+            Assert.That(assertions, Is.Empty);
+        }
+        else
+        {
+            AssertTotalZero(wide);
+        }
     }
 
     private static void AssertTotalZero(bool wide)
@@ -94,14 +95,13 @@ internal static unsafe class BitPositionTests
         }
     }
 
-#if DEBUG
-    private static readonly List<string?> s_assertions = [];
-
     [TestCase(false)]
     [TestCase(true)]
     public static void ZeroScanRetainsTheNativeAssertionCountAndText(bool wide)
     {
-        WithAssertionRecorder(() => {
+        Assume.That(TestConfiguration.IsDebug);
+
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(() => {
             if (wide)
             {
                 _ = BitScanForward(0UL);
@@ -110,28 +110,10 @@ internal static unsafe class BitPositionTests
             {
                 _ = BitScanForward(0U);
             }
-
-            var expectedCount = wide && OperatingSystem.IsWindows() && !Environment.Is64BitProcess ? 2 : 1;
-            Assert.That(s_assertions, Has.Count.EqualTo(expectedCount));
-            Assert.That(s_assertions, Is.All.EqualTo("value != 0"));
         });
-    }
 
-    private static void WithAssertionRecorder(Action action)
-    {
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions.Clear();
-        action();
+        var expectedCount = wide && OperatingSystem.IsWindows() && !Environment.Is64BitProcess ? 2 : 1;
+        Assert.That(assertions, Has.Length.EqualTo(expectedCount));
+        Assert.That(assertions, Is.All.EqualTo("value != 0"));
     }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
-    {
-        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
-        return 0;
-    }
-#endif
 }

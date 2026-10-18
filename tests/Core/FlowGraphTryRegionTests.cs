@@ -41,10 +41,11 @@ internal static class FlowGraphTryRegionTests
             Assert.That(regions.GetTryRegionByHeader(blocks[0]), Is.Null);
             Assert.That(RegionSlots(regions).Length, Is.EqualTo(nextId));
             Assert.That(BitVecTraits.GetSize(regions.GetBlockBitVecTraits()), Is.EqualTo(useDfs ? 1 : 2));
-#if DEBUG
-            Assert.That(CodeGenLifeTransitionTests.Capture(() => FlowGraphTryRegions.Dump(regions)),
-                Is.EqualTo($"No try regions in this method{Environment.NewLine}"));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(CodeGenLifeTransitionTests.Capture(() => FlowGraphTryRegions.Dump(regions)),
+                    Is.EqualTo($"No try regions in this method{Environment.NewLine}"));
+            }
         });
     }
 
@@ -365,11 +366,12 @@ internal static class FlowGraphTryRegionTests
         });
     }
 
-#if DEBUG
     [TestCase(false, " [bbNum]: BB02 BB03 BB04")]
     [TestCase(true, " [rpo]: BB02 BB04 BB03")]
     public static void DumpUsesBitOrderOrReverseDfsOrder(bool useDfs, string expectedMembers)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, _) =>
         {
             var blocks = Blocks(compiler, 5);
@@ -398,6 +400,8 @@ internal static class FlowGraphTryRegionTests
     [TestCase(true)]
     public static void CollectionDumpUsesStableEhIdOrderAndSkipsGaps(bool includeHandlers)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, _) =>
         {
             var blocks = Blocks(compiler, 6);
@@ -422,6 +426,8 @@ internal static class FlowGraphTryRegionTests
     [Test]
     public static void NestedDumpShowsImmediateMutualProtectParent()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var blocks = Blocks(compiler, 3);
@@ -438,7 +444,6 @@ internal static class FlowGraphTryRegionTests
                 Is.EqualTo("EH#00: 1 blocks [excluding handler blocks] [ in EH#01]: [bbNum]: BB02 [entries]:  BB01->BB02"));
         });
     }
-#endif
 
     private static BasicBlock[] Blocks(Compiler compiler, int count, int numberStride = 1)
     {

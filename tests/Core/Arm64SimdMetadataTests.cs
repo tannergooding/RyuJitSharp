@@ -1,13 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.Globals;
@@ -22,28 +19,36 @@ namespace RyuJitSharp.UnitTests;
 internal static class Arm64SimdMetadataTests
 {
     private static Compiler? s_previousCompiler;
-#if DEBUG
     private static JitTls? s_jitTls;
-#endif
 
     [SetUp]
     public static unsafe void SetUp()
     {
+        Assume.That(Configuration.TARGET_ARM64);
         s_previousCompiler = JitTls.Compiler;
-#if DEBUG
-        s_jitTls = new JitTls(null);
-#endif
+
+        if (TestConfiguration.IsDebug)
+        {
+            s_jitTls = new JitTls(null);
+        }
+
         JitTls.Compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
     }
 
     [TearDown]
     public static void TearDown()
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            return;
+        }
+
         JitTls.Compiler = s_previousCompiler;
-#if DEBUG
-        s_jitTls?.Dispose();
-        s_jitTls = null;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            s_jitTls?.Dispose();
+            s_jitTls = null;
+        }
     }
 
     [TestCase(TYP_SIMD8)]
@@ -359,7 +364,6 @@ internal static class Arm64SimdMetadataTests
         Assert.That(node.SimdScalableVal, Is.EqualTo(original));
     }
 
-#if DEBUG
     [TestCase(TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFFUL, 0UL, "0xff, 0xff, 0xff")]
     [TestCase(TYP_UBYTE, SimdScalableKind.SimdScalableSequence, 0xFFUL, 1UL, "0xff, 0x00, 0x01")]
     [TestCase(TYP_SHORT, SimdScalableKind.SimdScalableSequence, 0xFFFFUL, 1UL, "0xffff, 0x0000, 0x0001")]
@@ -387,6 +391,8 @@ internal static class Arm64SimdMetadataTests
     public static unsafe void ScalableConstantDumpsPreserveNativeElementArithmeticAndFormatting(
         var_types baseType, SimdScalableKind kind, ulong index, ulong step, string elements)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
         var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, baseType, kind, index, step);
         using var stream = new MemoryStream();
@@ -410,6 +416,8 @@ internal static class Arm64SimdMetadataTests
     [Test]
     public static unsafe void ScalableHashCombinesBothOperandWordsInNativeOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
         var node = compiler.gtNewSimdVconNode(
             TYP_SIMD_ARM64, TYP_ULONG, SimdScalableKind.SimdScalableSequence, 0x1234_5678_90AB_CDEF, 0xFEDC_BA09_8765_4321);
@@ -424,8 +432,6 @@ internal static class Arm64SimdMetadataTests
 
         Assert.That(compiler.gtHashValue(node), Is.EqualTo(expectedHash));
     }
-#endif
-
     [TestCase(TYP_BYTE, 0xffffUL)]
     [TestCase(TYP_UBYTE, 0xffffUL)]
     [TestCase(TYP_SHORT, 0x5555UL)]
@@ -517,4 +523,3 @@ internal static class Arm64SimdMetadataTests
         Assert.That(node.GetRegNumByIdx(1), Is.EqualTo(REG_ARM64_V9));
     }
 }
-#endif

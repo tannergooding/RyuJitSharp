@@ -18,11 +18,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanScalarConversionTests
 {
-#if TARGET_XARCH
-#if !TARGET_X86
     [Test]
     public static void LongToIntCastPreferencesTheSource()
     {
+        Assume.That(Configuration.TARGET_XARCH && !Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_LONG, 17);
             ReferenceBuildLocation(allocator) = 2;
@@ -40,6 +40,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [Test]
     public static void OverflowingLongToIntCastDefinesAnInternalIntegerTemporary()
     {
+        Assume.That(Configuration.TARGET_XARCH && !Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_LONG, 17);
             ReferenceBuildLocation(allocator) = 2;
@@ -61,6 +63,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [Test]
     public static void ContainedCastCountsItsAddressWithoutPreferringTheMemoryOperand()
     {
+        Assume.That(Configuration.TARGET_XARCH && !Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
@@ -80,6 +84,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [TestCase(true)]
     public static void UnsignedLongToFloatingCastWithoutEvexDefinesTwoTempsAndRestrictsSource(bool apx)
     {
+        Assume.That(Configuration.TARGET_XARCH && !Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             Assert.That(EvexSupported(allocator), Is.False);
             ApxSupported(allocator) = apx;
@@ -112,6 +118,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [Test]
     public static void EvexUnsignedLongToFloatingCastNeedsNoIntegerTemporariesOrLowGprRestriction()
     {
+        Assume.That(Configuration.TARGET_XARCH && !Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             ApxSupported(allocator) = true;
             EvexSupported(allocator) = true;
@@ -129,11 +137,12 @@ internal static unsafe class LinearScanScalarConversionTests
                     (reference.refType is RefType.RefTypeDef) && reference.getInterval().isInternal), Is.Empty);
         });
     }
-#elif TARGET_X86
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_UBYTE)]
     public static void NarrowingByteCastRestrictsSourceAndDestination(var_types castType)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_INT, 17);
             ReferenceBuildLocation(allocator) = 2;
@@ -151,14 +160,18 @@ internal static unsafe class LinearScanScalarConversionTests
     [Test]
     public static void ContainedLongCastConsumesBothHalfOperands()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var low = compiler.gtNewIconNode(TYP_INT, 17);
             var high = compiler.gtNewIconNode(TYP_INT, 23);
             ReferenceBuildLocation(allocator) = 2;
             var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
             var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
-            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
-            source.IsContained = true;
+            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high)
+            {
+                IsContained = true,
+            };
             var cast = new GenTreeCast(TYP_INT, source, false, TYP_INT);
             ReferenceBuildLocation(allocator) = 4;
 
@@ -169,8 +182,6 @@ internal static unsafe class LinearScanScalarConversionTests
             Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(cast));
         });
     }
-#endif
-
     [TestCase(NI_System_Math_Abs, true)]
     [TestCase(NI_System_Math_Ceiling, false)]
     [TestCase(NI_System_Math_Floor, false)]
@@ -179,6 +190,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [TestCase(NI_System_Math_Sqrt, false)]
     public static void MathIntrinsicsBuildCorrectInternalTemporaries(NamedIntrinsic name, bool expectsTemp)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithAllocator((compiler, allocator) => {
             var operand = compiler.gtNewDconNode(TYP_DOUBLE, 4.0);
             ReferenceBuildLocation(allocator) = 2;
@@ -206,6 +219,8 @@ internal static unsafe class LinearScanScalarConversionTests
     public static void ContainedMathOperandUsesTheAppropriateAddressCandidates(
         NamedIntrinsic name, bool evex)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithAllocator((compiler, allocator) => {
             EvexSupported(allocator) = evex;
             ApxSupported(allocator) = true;
@@ -237,6 +252,8 @@ internal static unsafe class LinearScanScalarConversionTests
     public static void FloatingSelectConditionsDelayTheAdditionalCmovUse(
         GenCondition.CodeKind condition, bool? delayTrue)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithAllocator((compiler, allocator) => {
             var first = compiler.gtNewIconNode(TYP_INT, 1);
             var second = compiler.gtNewIconNode(TYP_INT, 2);
@@ -259,6 +276,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [Test]
     public static void ConditionalSelectCountsItsConditionAndContainedAddress()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithAllocator((compiler, allocator) => {
             var condition = compiler.gtNewIconNode(TYP_INT, 1);
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
@@ -282,6 +301,8 @@ internal static unsafe class LinearScanScalarConversionTests
     [Test]
     public static void SelectDelaysTheFirstUseWhenBothOperandsShareAnInterval()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [
                 new() { Type = TYP_INT, _varIndex = 0, lvTracked = true, lvLRACandidate = true },
@@ -308,9 +329,6 @@ internal static unsafe class LinearScanScalarConversionTests
             Assert.That(allocator.refPositions[^1].getInterval().hasInterferingUses, Is.True);
         });
     }
-#endif
-
-#if TARGET_ARM || TARGET_ARM64
     [TestCase(GT_SELECT, false)]
     [TestCase(GT_SELECT, true)]
     [TestCase(GT_SELECTCC, false)]
@@ -318,6 +336,8 @@ internal static unsafe class LinearScanScalarConversionTests
     public static void ArmSelectBuildsOperandUsesInOrderAndDefinesTheResult(
         genTreeOps operation, bool contained)
     {
+        Assume.That(Configuration.TARGET_ARM || Configuration.TARGET_ARM64);
+
         WithAllocator((compiler, allocator) => {
             var condition = compiler.gtNewIconNode(TYP_INT, 1);
             var first = compiler.gtNewIconNode(contained ? TYP_I_IMPL : TYP_INT, 2);
@@ -393,8 +413,6 @@ internal static unsafe class LinearScanScalarConversionTests
             Assert.That(TargetPreferredUse2(allocator), Is.Null);
         });
     }
-#endif
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildCast")]
     private static extern int BuildCast(LinearScan allocator, GenTreeCast cast);
 
@@ -445,49 +463,54 @@ internal static unsafe class LinearScanScalarConversionTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
-#if TARGET_ARM64
-        Arm64LinearScanConstructionTests.WithCompiler(false, false, (compiler, codeGen) => {
+        if (Configuration.TARGET_ARM64)
+        {
+            Arm64LinearScanConstructionTests.WithCompiler(false, false, (compiler, codeGen) => {
+                codeGen.IsFramePointerRequired = false;
+                codeGen.IsFramePointerUsed = false;
+                codeGen.IsFrameRequired = false;
+
+                var allocator = new LinearScan(compiler);
+                BuildPhysRegRecords(allocator);
+                action(compiler, allocator);
+            });
+        }
+        else
+        {
+            using var tls = TestConfiguration.CreateJitTls();
+            var previous = JitTls.Compiler;
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            JitFlags flags = default;
+            compiler.opts.jitFlags = &flags;
+            compiler.opts.SetMinOpts(true);
+            if (!Configuration.TARGET_ARM)
+            {
+                CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
+                CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
+                CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
+                CompilerFloatCalleeTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
+            }
+            JitTls.Compiler = compiler;
+
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            if (Configuration.TARGET_XARCH)
+            {
+                codeGen.CopyRegisterInfo();
+            }
             codeGen.IsFramePointerRequired = false;
             codeGen.IsFramePointerUsed = false;
             codeGen.IsFrameRequired = false;
-
-            var allocator = new LinearScan(compiler);
-            BuildPhysRegRecords(allocator);
-            action(compiler, allocator);
-        });
-#else
-        using var tls = TestConfiguration.CreateJitTls();
-        var previous = JitTls.Compiler;
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        JitFlags flags = default;
-        compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
-#if !TARGET_ARM
-        CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
-        CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
-        CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-        CompilerFloatCalleeTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
-#endif
-        JitTls.Compiler = compiler;
-
-        var codeGen = new CodeGen(compiler);
-        compiler.codeGen = codeGen;
-#if TARGET_XARCH
-        codeGen.CopyRegisterInfo();
-#endif
-        codeGen.IsFramePointerRequired = false;
-        codeGen.IsFramePointerUsed = false;
-        codeGen.IsFrameRequired = false;
-        try
-        {
-            var allocator = new LinearScan(compiler);
-            BuildPhysRegRecords(allocator);
-            action(compiler, allocator);
+            try
+            {
+                var allocator = new LinearScan(compiler);
+                BuildPhysRegRecords(allocator);
+                action(compiler, allocator);
+            }
+            finally
+            {
+                JitTls.Compiler = previous;
+            }
         }
-        finally
-        {
-            JitTls.Compiler = previous;
-        }
-#endif
     }
 }

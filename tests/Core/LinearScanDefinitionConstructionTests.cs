@@ -112,7 +112,8 @@ internal static unsafe class LinearScanDefinitionConstructionTests
     [Test]
     public static void FloatRegisterKillAddsUpperVectorSaveForLiveTemporary()
     {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         WithAllocator((compiler, allocator) => {
             compiler.compFloatingPointUsed = true;
             var vector = new GenTreeVecCon(TYP_SIMD32);
@@ -131,16 +132,19 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             Assert.That(save.nodeLocation, Is.EqualTo(5));
             Assert.That(save.registerAssignment, Is.EqualTo(SRBM_FLT_CALLEE_SAVED));
         });
-#endif
     }
 
     [TestCase(false)]
-#if DEBUG
     [TestCase(true)]
-#endif
     public static void FloatRegisterKillSavesTrackedLargeVectorLocalsFromBlockLiveness(bool missingBlockLiveness)
     {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
+        if (missingBlockLiveness)
+        {
+            Assume.That(TestConfiguration.IsDebug);
+        }
+
         WithAllocator((compiler, allocator) => {
             compiler.compFloatingPointUsed = true;
             compiler.lvaTable = [
@@ -170,25 +174,33 @@ internal static unsafe class LinearScanDefinitionConstructionTests
 
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             var floatKillSet = GetKillSetForCall(allocator, call);
-#if DEBUG
-            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-            vtable.doAssert = &RecordAssertion;
-            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-            using var tls = new JitTls(&jitInfo);
-            s_assertExpression = null;
-#endif
-            BuildKills(allocator, call, floatKillSet);
-
-#if DEBUG
-            if (missingBlockLiveness)
+            string? assertion = null;
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(s_assertExpression, Does.Contain("VarSetOps.IsSubset"));
-                Assert.That(localInterval.isPartiallySpilled, Is.False);
-                return;
+                var (_, assertions) = TestConfiguration.CaptureDebugAssertions(
+                    () => BuildKills(allocator, call, floatKillSet));
+                if (assertions.Length > 0)
+                {
+                    assertion = assertions[^1];
+                }
+            }
+            else
+            {
+                BuildKills(allocator, call, floatKillSet);
             }
 
-            Assert.That(s_assertExpression, Is.Null);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                if (missingBlockLiveness)
+                {
+                    Assert.That(assertion, Does.Contain("VarSetOps.IsSubset"));
+                    Assert.That(localInterval.isPartiallySpilled, Is.False);
+                    return;
+                }
+
+                Assert.That(assertion, Is.Null);
+            }
+
             Assert.That(localInterval.isPartiallySpilled, Is.True);
             var upperInterval = allocator.intervals.Find(interval => interval.IsUpperVector())
                 ?? throw new AssertionException("The candidate local has no upper-vector interval.");
@@ -199,14 +211,14 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             Assert.That(save.liveVarUpperSave, Is.True);
             Assert.That(save.regOptional, Is.True);
         }, enregisterLocalVars: true);
-#endif
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(4, TYP_INT)]
     [TestCase(8, TYP_LONG)]
     public static void StructLocalUpperVectorTypeUsesTheDescriptor(int size, var_types registerType)
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [new() { Type = TYP_STRUCT, Layout = new ClassLayout((uint)size) }];
             compiler.lvaCount = 1;
@@ -215,12 +227,12 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             Assert.That(GetUpperVectorTemporaryType(allocator, local), Is.EqualTo(registerType));
         });
     }
-#endif
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && WINDOWS_AMD64_ABI
     [Test]
     public static void NonLocalStructCallUsesWindowsAbiReturnClassification()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && Configuration.WINDOWS_AMD64_ABI);
+
         WithAllocator((compiler, allocator) => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.getClassSize = &GetStructClassSize;
@@ -235,7 +247,6 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             Assert.That(GetUpperVectorTemporaryType(allocator, call), Is.EqualTo(TYP_UNKNOWN));
         });
     }
-#endif
 
     [Test]
     public static void CallKillPreferencesExcludeTrashedRegisters()
@@ -256,11 +267,11 @@ internal static unsafe class LinearScanDefinitionConstructionTests
         });
     }
 
-#if TARGET_AMD64
-#if !UNIX_AMD64_ABI
     [Test]
     public static void HelperCallKillSetsMatchWindowsAmd64Masks()
     {
+        Assume.That(Configuration.TARGET_AMD64 && !Configuration.UNIX_AMD64_ABI);
+
         WithAllocator((compiler, _) => {
             var calleeTrash = GetCalleeTrashKillMask(compiler);
 
@@ -278,11 +289,12 @@ internal static unsafe class LinearScanDefinitionConstructionTests
                 Is.EqualTo(RemoveRegisterSets(calleeTrash, SRBM_INTRET, SRBM_FLOATRET, SRBM_NONE)));
         });
     }
-#endif
 
     [Test]
     public static void IndirectStoreKillSetUsesWriteBarrierClassification()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithAllocator((compiler, allocator) => {
             compiler.lvaTable = [
                 new() { Type = TYP_BYREF },
@@ -301,10 +313,11 @@ internal static unsafe class LinearScanDefinitionConstructionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DebugKillSetDispatcherMatchesScalarAndCallKills()
     {
+        Assume.That(Configuration.TARGET_AMD64 && TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             var dividend = compiler.gtNewIconNode(TYP_INT, 13);
             var divisor = compiler.gtNewIconNode(TYP_INT, 3);
@@ -328,8 +341,6 @@ internal static unsafe class LinearScanDefinitionConstructionTests
                 Is.EqualTo(HelperCallKillSet(compiler, CORINFO_HELP_PATCHPOINT_FORCED)));
         });
     }
-#endif
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildInternalIntRegisterDefForNode")]
     private static extern RefPosition BuildInternalIntRegisterDef(
@@ -356,20 +367,15 @@ internal static unsafe class LinearScanDefinitionConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForCall")]
     private static extern regMaskTP GetKillSetForCall(LinearScan allocator, GenTreeCall tree);
 
-#if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "compHelperCallKillSet")]
     private static extern regMaskTP HelperCallKillSet(Compiler compiler, CorInfoHelpFunc helper);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForStoreInd")]
     private static extern regMaskTP GetKillSetForStoreInd(LinearScan allocator, GenTreeStoreInd tree);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForNode")]
     private static extern regMaskTP GetKillSetForNode(LinearScan allocator, GenTree tree);
-#endif
-#endif
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "newInterval")]
     private static extern Interval NewInterval(LinearScan allocator, var_types type);
 
@@ -381,7 +387,6 @@ internal static unsafe class LinearScanDefinitionConstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getUpperVectorTemporaryType")]
     private static extern var_types GetUpperVectorTemporaryType(LinearScan allocator, GenTree tree);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);
@@ -424,25 +429,24 @@ internal static unsafe class LinearScanDefinitionConstructionTests
 
     private static regMaskTP GetCalleeTrashKillMask(Compiler compiler)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(
-            compiler.SRBM_INT_CALLEE_TRASH | compiler.SRBM_FLT_CALLEE_TRASH,
-            compiler.SRBM_MSK_CALLEE_TRASH);
-#else
-        return new regMaskTP(
-            compiler.SRBM_INT_CALLEE_TRASH | compiler.SRBM_FLT_CALLEE_TRASH |
-            compiler.SRBM_MSK_CALLEE_TRASH);
-#endif
+        var scalarRegisters = compiler.SRBM_INT_CALLEE_TRASH | compiler.SRBM_FLT_CALLEE_TRASH;
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            return new regMaskTP(scalarRegisters, compiler.SRBM_MSK_CALLEE_TRASH);
+        }
+
+        return new regMaskTP(scalarRegisters | compiler.SRBM_MSK_CALLEE_TRASH);
     }
 
     private static regMaskTP RemoveRegisterSets(
         regMaskTP mask, regMask intRegisters, regMask floatRegisters, regMask maskRegisters)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(mask.Lower & ~(intRegisters | floatRegisters), mask.Upper & ~maskRegisters);
-#else
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            return new regMaskTP(mask.Lower & ~(intRegisters | floatRegisters), mask.Upper & ~maskRegisters);
+        }
+
         return new regMaskTP(mask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
-#endif
     }
 
     private static void WithAllocator(Action<Compiler, LinearScan> action, bool enregisterLocalVars = false)
@@ -485,19 +489,6 @@ internal static unsafe class LinearScanDefinitionConstructionTests
         }
     }
 
-#if DEBUG
-    private static string? s_assertExpression;
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* info, byte* filePath, int lineNumber, byte* expression)
-    {
-        s_assertExpression = Marshal.PtrToStringUTF8((nint)expression);
-        return 0;
-    }
-#endif
-
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && WINDOWS_AMD64_ABI
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetStructClassSize(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* classHandle) => 16;
-#endif
 }

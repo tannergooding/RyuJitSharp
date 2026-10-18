@@ -3,7 +3,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.EHHandlerType;
 
@@ -48,13 +47,12 @@ internal static unsafe class FuncletRegionTests
         });
     }
 
-#if DEBUG
-    private static readonly List<string?> s_assertions = [];
-
     [TestCase(false)]
     [TestCase(true)]
     public static void QueriesRequireCreatedFuncletsEvenForMainMethodBlocks(bool compare)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithGraph((compiler, blocks) => {
             compiler.fgFuncletsCreated = false;
 
@@ -69,63 +67,57 @@ internal static unsafe class FuncletRegionTests
         }, expectedAssertions: compare ? 2 : 1);
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
-    {
-        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
-
-        return 0;
-    }
-#endif
-
     private static void WithGraph(Action<Compiler, BasicBlock[]> action, int expectedAssertions = 0)
     {
-#if DEBUG
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions.Clear();
-#endif
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var blocks = new BasicBlock[10];
 
-        for (var index = 0; index < blocks.Length; index++)
+        void BuildGraph()
         {
-            blocks[index] = new BasicBlock(null, null);
-
-            if (index > 0)
+            for (var index = 0; index < blocks.Length; index++)
             {
-                blocks[index - 1].Next = blocks[index];
+                blocks[index] = new BasicBlock(null, null);
+
+                if (index > 0)
+                {
+                    blocks[index - 1].Next = blocks[index];
+                }
             }
+
+            blocks[1].TryIndex = 0;
+            blocks[2].HndIndex = 0;
+            blocks[3].HndIndex = 0;
+            blocks[4].HndIndex = 1;
+            blocks[5].HndIndex = 1;
+            blocks[6].HndIndex = 1;
+            blocks[7].HndIndex = 1;
+            blocks[8].HndIndex = 2;
+            blocks[9].HndIndex = 2;
+            compiler.compHndBBtab = [
+                new EHblkDsc { ebdHandlerType = EH_HANDLER_CATCH, ebdFuncIndex = 1 },
+                new EHblkDsc {
+                    ebdHandlerType = EH_HANDLER_FILTER,
+                    ebdFuncIndex = 3,
+                    ebdFilter = blocks[4],
+                    ebdHndBeg = blocks[6],
+                },
+                new EHblkDsc { ebdHandlerType = EH_HANDLER_CATCH, ebdFuncIndex = ushort.MaxValue },
+            ];
+            compiler.compHndBBtabCount = 3;
+            compiler.fgFuncletsCreated = true;
+
+            action(compiler, blocks);
         }
 
-        blocks[1].TryIndex = 0;
-        blocks[2].HndIndex = 0;
-        blocks[3].HndIndex = 0;
-        blocks[4].HndIndex = 1;
-        blocks[5].HndIndex = 1;
-        blocks[6].HndIndex = 1;
-        blocks[7].HndIndex = 1;
-        blocks[8].HndIndex = 2;
-        blocks[9].HndIndex = 2;
-        compiler.compHndBBtab = [
-            new EHblkDsc { ebdHandlerType = EH_HANDLER_CATCH, ebdFuncIndex = 1 },
-            new EHblkDsc {
-                ebdHandlerType = EH_HANDLER_FILTER,
-                ebdFuncIndex = 3,
-                ebdFilter = blocks[4],
-                ebdHndBeg = blocks[6],
-            },
-            new EHblkDsc { ebdHandlerType = EH_HANDLER_CATCH, ebdFuncIndex = ushort.MaxValue },
-        ];
-        compiler.compHndBBtabCount = 3;
-        compiler.fgFuncletsCreated = true;
-
-        action(compiler, blocks);
-#if DEBUG
-        Assert.That(s_assertions, Has.Count.EqualTo(expectedAssertions));
-        Assert.That(s_assertions, Is.All.EqualTo("fgFuncletsCreated"));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var assertions = TestConfiguration.CaptureDebugAssertions(BuildGraph).Assertions;
+            Assert.That(assertions, Has.Length.EqualTo(expectedAssertions));
+            Assert.That(assertions, Is.All.EqualTo("fgFuncletsCreated"));
+        }
+        else
+        {
+            BuildGraph();
+        }
     }
 }

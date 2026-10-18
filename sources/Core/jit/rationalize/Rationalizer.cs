@@ -91,11 +91,8 @@ public sealed partial class Rationalizer : Phase
 
                     if (di.IsValid || di.GetRoot().IsValid)
                     {
-                        var ilOffset = new GenTreeILOffset(di
-#if DEBUG
-                            , statement.LastILOffset
-#endif
-                        );
+                        var ilOffset = new GenTreeILOffset(di,
+                            Configuration.DEBUG ? statement.LastILOffset : BAD_IL_OFFSET);
                         block.InsertBefore(statement.TreeListBegin, ilOffset);
                     }
                     _block = block;
@@ -656,9 +653,10 @@ public sealed partial class Rationalizer : Phase
             default:
             {
                 // Check that we don't have nodes not allowed in HIR here.
-#if DEBUG
-                assert((node.Oper.DebugKind & DBK_NOTHIR) == 0);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert((node.Oper.DebugKind & DBK_NOTHIR) == 0);
+                }
                 break;
             }
         }

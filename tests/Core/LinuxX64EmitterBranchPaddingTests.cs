@@ -100,9 +100,10 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
             descriptor.idIns(INS_align);
             descriptor.idCodeSize(padding);
             descriptor.idaIG = group;
-#if DEBUG
-            descriptor.isPlacedAfterJmp = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                descriptor.isPlacedAfterJmp = true;
+            }
             return descriptor;
         }
     }

@@ -18,11 +18,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
 {
-#if TARGET_X86
     [Test]
     public static void ByteVectorToScalarRestrictsTheResultToByteRegisters()
     {
-        WithAllocator((_, allocator) => {
+        Assume.That(Configuration.TARGET_X86);
+
+        WithAllocator((_compiler, allocator) => {
             var vector = new GenTreeVecCon(TYP_SIMD16);
             ReferenceBuildLocation(allocator) = 2;
             _ = BuildDef(allocator, vector, SRBM_NONE, 0);
@@ -39,6 +40,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void ByteExtractRestrictsTheResultToByteRegisters()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var vector = new GenTreeVecCon(TYP_SIMD16);
             var index = compiler.gtNewIconNode(TYP_INT, 1);
@@ -61,6 +64,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     public static void Crc32DelaysItsSecondOperandAndConstrainsByteSources(
         NamedIntrinsic id, var_types baseType, bool byteSource)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var accumulator = compiler.gtNewIconNode(TYP_INT, 7);
             var data = compiler.gtNewIconNode(TYP_INT, 13);
@@ -84,6 +89,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void ByteVectorInsertionRestrictsScalarSource()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var vector = new GenTreeVecCon(TYP_SIMD16);
             var index = new GenTreeUnOp(
@@ -103,10 +110,11 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
                 Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet));
         });
     }
-#else
     [Test]
     public static void ZeroOperandFenceHasNoSourcesOrResults()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((_, allocator) => {
             var fence = new GenTreeHWIntrinsic(
                 TYP_VOID, NI_X86Base_MemoryFence, TYP_UNKNOWN, 0);
@@ -122,6 +130,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [TestCase(NI_X86Base_X64_DivRem)]
     public static void DivRemUsesFixedDividendAndResultRegisters(NamedIntrinsic id)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var operandType = id is NI_X86Base_DivRem ? TYP_INT : TYP_LONG;
             var low = compiler.gtNewIconNode(operandType, 5);
@@ -153,6 +163,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void BigMulWithContainedMemoryForcesItsOtherOperandIntoRax()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var left = compiler.gtNewIconNode(TYP_LONG, 11);
             var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
@@ -180,6 +192,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void BigMulPermitsExtendedGprsWhenEvexEncodingIsAvailable()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             ApxSupported(allocator) = true;
             EvexSupported(allocator) = true;
@@ -208,6 +222,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     public static void ImplicitOperandsAndInternalUsesHaveNativeAssignments(
         NamedIntrinsic id, regMask fixedRegister, int internalTemps)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             GenTree first = id is NI_X86Base_MaskMove
                 ? new GenTreeVecCon(TYP_SIMD16)
@@ -245,6 +261,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [TestCase(true)]
     public static void VectorArithmeticConstrictsLegacyButNotEvexRegisters(bool evexIntrinsic)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             Enable(compiler, InstructionSet_AVX);
             Enable(compiler, InstructionSet_AVX512);
@@ -269,6 +287,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void LegacyRmwVectorOperationPrefersTheFirstOperandAndDelaysTheSecond()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((_, allocator) => {
             var first = new GenTreeVecCon(TYP_SIMD16);
             var second = new GenTreeVecCon(TYP_SIMD16);
@@ -289,6 +309,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void FmaPrefersTheEmittedRegisterOperandsAfterContainingTheSecondOperand()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             Enable(compiler, InstructionSet_AVX);
             Enable(compiler, InstructionSet_AVX2);
@@ -317,6 +339,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void MemoryLoadBuildsItsAddressRatherThanUsingContainedLoad()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
@@ -335,6 +359,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void DynamicShuffleImmediateReservesTwoJumpTableTemporaries()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var vector = new GenTreeVecCon(TYP_SIMD16);
             var control = new GenTreeUnOp(
@@ -361,6 +387,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [Test]
     public static void VariableVectorInsertionReservesAnImplicitlyUsedSimdSpillTemp()
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             var vector = new GenTreeVecCon(TYP_SIMD16);
             var index = new GenTreeUnOp(
@@ -386,6 +414,8 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [TestCase(true)]
     public static void Avx2GatherUsesDistinctMaskAndInternalSimdTemporary(bool evexSupported)
     {
+        Assume.That(!Configuration.TARGET_X86);
+
         WithAllocator((compiler, allocator) => {
             Enable(compiler, InstructionSet_AVX);
             Enable(compiler, InstructionSet_AVX2);
@@ -412,7 +442,6 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
                 reference.delayRegFree && reference.registerAssignment == SRBM_LOWFLOAT), Is.True);
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildHWIntrinsic")]
     private static extern int BuildHWIntrinsic(

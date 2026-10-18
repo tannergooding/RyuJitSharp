@@ -292,7 +292,6 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
         private void IfConvertDump()
         {
             _compiler.fgDumpBlock(_startBlock);
@@ -307,7 +306,6 @@ public partial class Compiler
                 JITDUMP("------------------------------------\n");
             }
         }
-#endif
 
         public bool optIfConvert(int[] reachabilityBudget)
         {
@@ -329,8 +327,7 @@ public partial class Compiler
                 return false;
             }
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 JITDUMP($"JTRUE block is {FMT_BB(_startBlock.bbNum)}. ");
                 JITDUMP($"Statement {FMT_STMT(_thenOperation.Stmt!.Id)} (Then) ");
@@ -341,7 +338,6 @@ public partial class Compiler
                 JITDUMP("can be expressed as SELECT:\n");
                 IfConvertDump();
             }
-#endif
 
             if (!_compiler.compStressCompile(Compiler.STRESS_IF_CONVERSION_COST, 25))
             {
@@ -417,25 +413,27 @@ public partial class Compiler
             select.AddAllEffectsFlags(selectTrueInput);
             select.AddAllEffectsFlags(selectFalseInput);
 
-#if DEBUG
-            JITDUMP("\nSELECT created:\n");
-            if (_compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                _compiler.gtDispTree(select);
+                JITDUMP("\nSELECT created:\n");
+                if (_compiler.verbose)
+                {
+                    _compiler.gtDispTree(select);
+                }
             }
-#endif
 
             var optimized = TryOptimizeSelect(select.AsConditional());
             if (optimized is not null)
             {
                 select = optimized;
-#if DEBUG
-                JITDUMP("\nSELECT after optimizations:\n");
-                if (_compiler.verbose)
+                if (Configuration.DEBUG)
                 {
-                    _compiler.gtDispTree(select);
+                    JITDUMP("\nSELECT after optimizations:\n");
+                    if (_compiler.verbose)
+                    {
+                        _compiler.gtDispTree(select);
+                    }
                 }
-#endif
             }
 
             if (select.Oper is GT_SELECT)
@@ -528,13 +526,11 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 JITDUMP("\nAfter if conversion\n");
                 IfConvertDump();
             }
-#endif
             return true;
         }
 

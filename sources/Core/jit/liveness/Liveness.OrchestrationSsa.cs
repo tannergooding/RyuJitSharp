@@ -129,9 +129,10 @@ public partial class Liveness<TLiveness>
             }
 
             noway_assert(_compiler.compCurBB == block);
-#if DEBUG
-            _compiler.compCurBB = null;
-#endif
+            if (Configuration.DEBUG)
+            {
+                _compiler.compCurBB = null;
+            }
         }
 
         _compiler.fgLocalVarLivenessDone = true;

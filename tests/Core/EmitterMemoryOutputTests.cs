@@ -169,9 +169,7 @@ internal static unsafe class EmitterMemoryOutputTests
                 }
                 var id = Last(emitter);
                 var buffer = stackalloc byte[32];
-#if DEBUG
-                emitter.emitIssuing = true;
-#endif
+                TestConfiguration.EnableEmitterIssuing(emitter);
                 var code = gcWrite ? insCodeMR(INS_mov) : insCodeRM(INS_mov);
                 var end = emitter.emitOutputSV(buffer, id, (ulong)code, null);
                 Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -209,9 +207,7 @@ internal static unsafe class EmitterMemoryOutputTests
             code = EncodeReg3456(emitter, id, REG_R16, EA_8BYTE, code);
             var regcode = EncodeReg345(emitter, id, REG_R17, EA_8BYTE, &code);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputSV(buffer, id, code | ((ulong)regcode << 8), null);
             var encoded = new ReadOnlySpan<byte>(buffer, (int)(end - buffer));
 
@@ -240,9 +236,7 @@ internal static unsafe class EmitterMemoryOutputTests
             code = EncodeReg3456(emitter, id, REG_XMM17, EA_64BYTE, code);
             var regcode = EncodeReg345(emitter, id, REG_XMM16, EA_64BYTE, &code);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputSV(buffer, id, code | ((ulong)regcode << 8), null);
             var encoded = new ReadOnlySpan<byte>(buffer, (int)(end - buffer));
 
@@ -268,9 +262,7 @@ internal static unsafe class EmitterMemoryOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var code = (ulong)insCodeMR(INS_mov);
             var regcode = EncodeReg345(emitter, id, REG_RAX, EA_8BYTE, &code);
             var end = emitter.emitOutputSV(buffer, id, code | ((ulong)regcode << 8), null);
@@ -296,7 +288,7 @@ internal static unsafe class EmitterMemoryOutputTests
     public static void MemoryImmediateWritesKillGcRootsOnlyForIntegerDestinations(
         bool staticMemory, bool simdOnly, string hex, GCInfo.GCtype type)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _unused) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;
@@ -329,10 +321,8 @@ internal static unsafe class EmitterMemoryOutputTests
             emitter.emitTotalHotCodeSize = 32;
             var end = buffer;
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
-            emitter.emitOutputInstr(group, id, &end);
+            TestConfiguration.EnableEmitterIssuing(emitter);
+            _ = emitter.emitOutputInstr(group, id, &end);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString(hex)));
@@ -399,9 +389,7 @@ internal static unsafe class EmitterMemoryOutputTests
                 gs ? FLD_GLOBAL_GS : FLD_GLOBAL_FS, 16);
             var id = Last(emitter);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCodeRM(INS_mov) | 0x0500, null);
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString(hex)));
@@ -441,9 +429,7 @@ internal static unsafe class EmitterMemoryOutputTests
             var id = Last(emitter);
             Assert.That(id.idIsLargeDsp(), Is.True);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCodeRM(INS_mov) | 0x0500, null);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -482,9 +468,7 @@ internal static unsafe class EmitterMemoryOutputTests
             var id = Last(emitter);
             var constant = new Emitter.CnsVal { cnsVal = 7 };
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputCV(buffer, id, (ulong)insCodeRM(INS_pshufd) | 0x0500, &constant);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer))[^1], Is.EqualTo(7));
@@ -509,9 +493,7 @@ internal static unsafe class EmitterMemoryOutputTests
             record(compiler, emitter);
             var id = Last(emitter);
             var buffer = stackalloc byte[32];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = output(emitter, buffer, id);
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString(hex)));

@@ -280,14 +280,16 @@ public partial class Compiler
                 assert(apLocalPostorder is not null);
                 BitVecOps.Assign(apTraits, ref apLocalPostorder, apLocal);
             }
-#if DEBUG
-            var oldHash = verbose ? gtHashValue(oldTree) : 0;
-            if (verbose)
+            uint oldHash;
+            if (Configuration.DEBUG)
             {
-                jitprintf($"\nfgMorphTree {FMT_BB(block.bbNum)}, {FMT_STMT(statement.Id)} (before)\n");
-                gtDispTree(oldTree);
+                oldHash = verbose ? gtHashValue(oldTree) : 0;
+                if (verbose)
+                {
+                    jitprintf($"\nfgMorphTree {FMT_BB(block.bbNum)}, {FMT_STMT(statement.Id)} (before)\n");
+                    gtDispTree(oldTree);
+                }
             }
-#endif
             var morphedTree = fgMorphTree(oldTree);
             if ((statement.RootNode != oldTree) || (block != compCurBB))
             {
@@ -317,13 +319,11 @@ public partial class Compiler
                     gtDispTree(morphedTree);
                 }
             }
-#if DEBUG
-            if (verbose && (gtHashValue(morphedTree) != oldHash))
+            if (Configuration.DEBUG && verbose && (gtHashValue(morphedTree) != oldHash))
             {
                 jitprintf($"\nfgMorphTree {FMT_BB(block.bbNum)}, {FMT_STMT(statement.Id)} (after)\n");
                 gtDispTree(morphedTree);
             }
-#endif
             if (fgIsCommaThrow(morphedTree, forFolding: true))
             {
                 morphedTree = morphedTree.AsOp().Op1;
@@ -339,7 +339,6 @@ public partial class Compiler
                 if ((fgGetTopLevelQmark(statement.RootNode, out _) is null) && gtRemoveTreesAfterNoReturnCall(block, statement))
                 {
                     fgRemoveRestOfBlock = true;
-                    morphedTree = statement.RootNode;
                 }
             }
             if (fgRemoveRestOfBlock || fgCheckRemoveStmt(block, statement))

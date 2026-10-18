@@ -290,20 +290,22 @@ internal static unsafe class MorphTreeSupportTests
             Assert.That(node.Oper, Is.EqualTo(GT_CNS_INT));
             Assert.That(node.AsIntCon().IconValue, Is.EqualTo((nint)0x123400));
             Assert.That(node.Flags & GTF_ICON_HDL_MASK, Is.EqualTo(handleKind));
-#if DEBUG
-            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + indirections + 1));
-            if (indirections != 0)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(node.AsIntCon().TargetHandle, Is.EqualTo((nint)0x123400));
+                Assert.That(compiler.compGenTreeID, Is.EqualTo(nextId + indirections + 1));
+                if (indirections != 0)
+                {
+                    Assert.That(node.AsIntCon().TargetHandle, Is.EqualTo((nint)0x123400));
+                }
             }
-#endif
         });
     }
 
-#if DEBUG
     [Test]
     public static void MorphStressCopyPreservesIdentityAndShallowChildren()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var left = compiler.gtNewIconNode(TYP_INT, 42);
             var right = compiler.gtNewIconNode(TYP_INT, 7);
@@ -341,6 +343,8 @@ internal static unsafe class MorphTreeSupportTests
     [TestCase(3)]
     public static void MorphStressCopiesInlineOperandSlotsButSharesExternalSlots(int count)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var operands = new GenTree[count];
             for (var i = 0; i < count; i++)
@@ -365,6 +369,8 @@ internal static unsafe class MorphTreeSupportTests
     [Test]
     public static void MorphStressCopiesArrayIndexSlots()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var array = compiler.gtNewLclvNode(TYP_REF, 0);
             var index = compiler.gtNewIconNode(TYP_INT, 3);
@@ -379,8 +385,6 @@ internal static unsafe class MorphTreeSupportTests
             Assert.That(original.ArrInds[0], Is.SameAs(index));
         });
     }
-#endif
-
     [TestCase((ushort)4, false, true)]
     [TestCase((ushort)6, false, false)]
     [TestCase((ushort)4, true, false)]

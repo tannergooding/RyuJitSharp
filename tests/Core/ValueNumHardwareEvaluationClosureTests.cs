@@ -1,11 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using ValueNum = System.Int32;
 using static RyuJitSharp.Globals;
@@ -18,9 +15,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ValueNumHardwareEvaluationClosureTests
 {
-#if DEBUG
     private static int s_assertionCount;
-#endif
+
+    [SetUp]
+    public static void RequireHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
+    }
 
     [TestCase(TYP_BYTE, -1L)]
     [TestCase(TYP_USHORT, 65535L)]
@@ -126,7 +127,6 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
         });
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_SHORT)]
     [TestCase(TYP_INT)]
@@ -135,6 +135,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(TYP_DOUBLE)]
     public static void FixedMaskConversionsRetainOnlyActiveLaneBits(var_types baseType)
     {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS);
+
         WithStore((_, store) =>
         {
             var mask = default(simdmask_t);
@@ -145,16 +147,16 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
                 var vector = MaskToVector(store, type, baseType, input);
                 var result = VectorToMask(store, type, baseType, vector);
                 var count = type.Size / baseType.Size;
-#if TARGET_ARM64
-                ulong laneMask = 0;
-                for (var index = 0; index < count; index++)
-                {
-                    laneMask |= 1UL << (index * baseType.Size);
-                }
-                var expected = mask.RawBits & unchecked((long)laneMask);
-#else
                 var expected = mask.RawBits & simdmask_t.GetBitMask(count);
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    ulong laneMask = 0;
+                    for (var index = 0; index < count; index++)
+                    {
+                        laneMask |= 1UL << (index * baseType.Size);
+                    }
+                    expected = mask.RawBits & unchecked((long)laneMask);
+                }
 
                 Assert.That(store.GetConstantSimdMask(result).RawBits, Is.EqualTo(expected));
                 Assert.That(MaskToVector(store, type, baseType, result), Is.EqualTo(vector));
@@ -166,14 +168,19 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(TYP_DOUBLE)]
     public static void PartialFinalLaneRetainsItsTailAndDoesNotRaiseAssertions(var_types baseType)
     {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS);
+
         ICorJitInfo* jitInfo = null;
-#if DEBUG
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        jitInfo = &ee;
-        s_assertionCount = 0;
-#endif
+        ICorJitInfo ee = default;
+        if (TestConfiguration.IsDebug)
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ee = new ICorJitInfo { lpVtbl = &vtable };
+            jitInfo = &ee;
+            s_assertionCount = 0;
+        }
+
         WithStore((_, store) =>
         {
             var mask = default(simdmask_t);
@@ -205,9 +212,10 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
             var foldedBytes = VectorBytes(store, folded);
             Assert.That(foldedBytes.AsSpan(0, 8).ToArray(), Is.All.EqualTo(byte.MaxValue));
             Assert.That(foldedBytes.AsSpan(8).ToArray(), Is.All.EqualTo((byte)0));
-#if DEBUG
-            Assert.That(s_assertionCount, Is.Zero);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(s_assertionCount, Is.Zero);
+            }
         }, jitInfo);
     }
 
@@ -216,16 +224,15 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "EvaluateSimdCvtVectorToMaskVN")]
     private static extern ValueNum VectorToMask(ValueNumStore store, var_types type, var_types baseType, ValueNum value);
-#endif
 
-#if TARGET_XARCH
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(-1, TYP_INT)]
     [TestCase(int.MinValue, TYP_INT)]
     [TestCase(-1, TYP_FLOAT)]
     [TestCase(int.MinValue, TYP_FLOAT)]
     public static void NegativeWithElementRetainsOrderedSymbolicArguments(int index, var_types baseType)
     {
+        Assume.That(Configuration.TARGET_XARCH && Configuration.FEATURE_MASKED_HW_INTRINSICS);
+
         WithStore((_, store) =>
         {
             var input = store.VNZeroForType(TYP_SIMD16);
@@ -248,7 +255,6 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
                 input, indexVN, valueVN, typeVN), Is.EqualTo(result));
         });
     }
-#endif
 
     [TestCase(NI_Vector_ToVector256, VNF_HWI_Vector_ToVector256, TYP_SIMD16, TYP_SIMD32)]
     [TestCase(NI_Vector_ToVector256Unsafe, VNF_HWI_Vector_ToVector256Unsafe, TYP_SIMD16, TYP_SIMD32)]
@@ -257,6 +263,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     public static void WideningCopiesOnlyTheInputAndZeroesTheRemainingBytes(
         NamedIntrinsic id, VNFunc func, var_types inputType, var_types resultType)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithStore((_, store) =>
         {
             var bytes = new byte[inputType.Size];
@@ -281,6 +289,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(0x0123456789ABCDEFL)]
     public static void Avx512MoveMaskPreservesAllByteLaneBits(long bits)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithStore((_, store) =>
         {
             var mask = default(simdmask_t);
@@ -311,6 +321,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     public static void FloatingIdentitiesRespectSignedZeroNaNsAndOperandOrder(
         NamedIntrinsic id, VNFunc func, long bits, bool constantFirst, int identity)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithStore((_, store) =>
         {
             var variable = store.VNForExpr(null, TYP_SIMD16);
@@ -338,15 +350,15 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
             }
         });
     }
-#endif
 
-#if TARGET_ARM64
     [TestCase(0UL, 3, 5)]
     [TestCase(1UL, 6, 10)]
     [TestCase(0x100000001UL, 0, 0)]
     public static void WideShiftCountsNarrowWithoutWrappingAndDuplicateAcrossTheirLanes(
         ulong count, int first, int second)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var left = default(simd16_t);
@@ -378,6 +390,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(long.MinValue, 0)]
     public static void Arm64LongLeadingZeroCountReturnsAnIntValueNumber(long input, int expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var tree = new GenTreeHWIntrinsic(TYP_INT, NI_ArmBase_Arm64_LeadingZeroCount, TYP_LONG, 0,
@@ -398,6 +412,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(true, 0x0123456789ABCDEFL, unchecked((long)0xF7B3D591E6A2C480UL))]
     public static void Arm64ReverseBitsRetainsFullUnsignedWidth(bool wide, long input, long expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var type = wide ? TYP_LONG : TYP_INT;
@@ -416,6 +432,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(true)]
     public static void ScalableConversionRejectsFixedScalableKindMismatch(bool scalable)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var mask = scalable
@@ -432,6 +450,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(TYP_LONG)]
     public static void ScalableRepeatedMaskRoundTripsAtMatchingElementWidth(var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var scalar = store.VNForGenericCon(baseType, BitConverter.GetBytes(-1L).AsSpan(0, baseType.Size));
@@ -447,6 +467,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [Test]
     public static void ScalableMaskUnaryAndMixedBinaryRemainSymbolic()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var mask = store.VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet);
@@ -472,6 +494,8 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
     [TestCase(3)]
     public static void MultiplyByScalarIgnoresAllButTheFirstRhsElement(int first)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStore((_, store) =>
         {
             var left = default(simd16_t);
@@ -489,15 +513,11 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
             Assert.That(store.GetConstantSimd16(result).f32[1], Is.EqualTo(11.0f * first));
         });
     }
-#endif
 
     private static var_types[] FixedTypes =>
-    [
-        TYP_SIMD8, TYP_SIMD12, TYP_SIMD16,
-#if TARGET_XARCH
-        TYP_SIMD32, TYP_SIMD64,
-#endif
-    ];
+        Configuration.TARGET_XARCH
+            ? [TYP_SIMD8, TYP_SIMD12, TYP_SIMD16, TYP_SIMD32, TYP_SIMD64]
+            : [TYP_SIMD8, TYP_SIMD12, TYP_SIMD16];
 
     private static byte[] VectorBytes(ValueNumStore store, ValueNum value)
     {
@@ -525,16 +545,13 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
         }
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* jitInfo, byte* file, int line, byte* expression)
     {
         s_assertionCount++;
         return 0;
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "VNOneForSimdType")]
     private static extern ValueNum VectorOne(ValueNumStore store, var_types type, var_types baseType);
 }
-#endif

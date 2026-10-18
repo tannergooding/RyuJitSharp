@@ -41,10 +41,11 @@ public partial class Emitter
         emitSizeMethod = unchecked(emitSizeMethod + size);
 #endif
 
-#if DEBUG
-        ig.igSelf = ig;
-        ig.igDataSize = 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            ig.igSelf = ig;
+            ig.igDataSize = 0;
+        }
 
         emitInitIG(ig);
 
@@ -90,9 +91,10 @@ public partial class Emitter
             ig.igLoopBackEdge = null;
         }
 
-#if DEBUG
-        ig.lastGeneratedBlock = null;
-#endif
+        if (Configuration.DEBUG)
+        {
+            ig.lastGeneratedBlock = null;
+        }
     }
 
     private void emitInsertIGAfter(insGroup insertAfterIG, insGroup ig)

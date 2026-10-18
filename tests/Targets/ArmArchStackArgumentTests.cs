@@ -1,14 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARMARCH
 extern alias RyuJitSharpCore;
 
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-#if TARGET_ARM64
 using System.Runtime.InteropServices;
-#endif
 
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -24,6 +21,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ArmArchStackArgumentTests
 {
+    [SetUp]
+    public static void RequireArmArchTarget()
+    {
+        Assume.That(Configuration.TARGET_ARMARCH);
+    }
+
     [Test]
     public static void PreSpilledParameterDetectionMatchesItsRegisterSegment()
     {
@@ -106,19 +109,29 @@ internal static unsafe class ArmArchStackArgumentTests
 
     private static IEnumerable<TestCaseData> ScalarRegisterCases()
     {
+        if (!Configuration.TARGET_ARMARCH)
+        {
+            yield return new TestCaseData(default(var_types), default(regNumber))
+                .Ignore("Scalar register arguments are specific to ARM architecture targets.");
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_BYTE, REG_R1);
         yield return new TestCaseData(TYP_USHORT, REG_R2);
         yield return new TestCaseData(TYP_INT, REG_R3);
         yield return new TestCaseData(TYP_REF, REG_R1);
         yield return new TestCaseData(TYP_BYREF, REG_R2);
-#if TARGET_ARM64
-        yield return new TestCaseData(TYP_FLOAT, REG_V0);
-        yield return new TestCaseData(TYP_DOUBLE, REG_V0);
-        yield return new TestCaseData(TYP_LONG, REG_R3);
-#else
-        yield return new TestCaseData(TYP_FLOAT, REG_F0);
-        yield return new TestCaseData(TYP_DOUBLE, REG_F0);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            yield return new TestCaseData(TYP_FLOAT, REG_V0);
+            yield return new TestCaseData(TYP_DOUBLE, REG_V0);
+            yield return new TestCaseData(TYP_LONG, REG_R3);
+        }
+        else
+        {
+            yield return new TestCaseData(TYP_FLOAT, REG_F0);
+            yield return new TestCaseData(TYP_DOUBLE, REG_F0);
+        }
     }
 
     [TestCase(1, TYP_BYTE)]
@@ -139,10 +152,11 @@ internal static unsafe class ArmArchStackArgumentTests
         });
     }
 
-#if FEATURE_FASTTAILCALL
     [Test]
     public static void FastTailCallsUseTheFirstStackParameterAndIncomingAreaSize()
     {
+        Assume.That(Configuration.FEATURE_FASTTAILCALL);
+
         WithStackArea((compiler, codeGen) =>
         {
             compiler.info.compArgsCount = 2;
@@ -168,7 +182,6 @@ internal static unsafe class ArmArchStackArgumentTests
             AssertStack(Descriptors(codeGen)[0], INS_str, EA_4BYTE, 1, 32, REG_R1);
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -181,10 +194,11 @@ internal static unsafe class ArmArchStackArgumentTests
             var fields = new GenTreeFieldList { IsContained = true };
             fields.AddFieldLIR(compiler, small, 0, TYP_BYTE);
             fields.AddFieldLIR(compiler, reference, checked((ushort)TARGET_POINTER_SIZE), TYP_REF);
-#if DEBUG
-            small.UseNum = 0;
-            reference.UseNum = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                small.UseNum = 0;
+                reference.UseNum = 1;
+            }
             codeGen.GCInfo.gcMarkRegPtrVal(REG_R2, TYP_REF);
             var argument = Argument(fields, 32, 2 * TARGET_POINTER_SIZE);
 
@@ -237,24 +251,19 @@ internal static unsafe class ArmArchStackArgumentTests
             while (offset < copiedSize)
             {
                 var remaining = copiedSize - offset;
-#if TARGET_ARM64
-                var pair = remaining >= 16;
-                var width = pair ? 16 : remaining >= 8 ? 8 : remaining >= 4 ? 4 : remaining >= 2 ? 2 : 1;
-#else
-                var pair = false;
-                var width = remaining >= 4 ? 4 : remaining >= 2 ? 2 : 1;
-#endif
+                var pair = Configuration.TARGET_ARM64 && remaining >= 16;
+                var width = Configuration.TARGET_ARM64
+                    ? pair ? 16 : remaining >= 8 ? 8 : remaining >= 4 ? 4 : remaining >= 2 ? 2 : 1
+                    : remaining >= 4 ? 4 : remaining >= 2 ? 2 : 1;
                 var load = descriptors[index++];
                 var store = descriptors[index++];
                 var loadIns = width == 1 ? INS_ldrb : width == 2 ? INS_ldrh : INS_ldr;
                 var storeIns = width == 1 ? INS_strb : width == 2 ? INS_strh : INS_str;
-#if TARGET_ARM64
                 if (pair)
                 {
                     loadIns = INS_ldp;
                     storeIns = INS_stp;
                 }
-#endif
                 Assert.That(load.idIns(), Is.EqualTo(loadIns));
                 Assert.That(store.idIns(), Is.EqualTo(storeIns));
                 var descriptorWidth = pair ? TARGET_POINTER_SIZE : Math.Max(4, width);
@@ -271,12 +280,12 @@ internal static unsafe class ArmArchStackArgumentTests
                     }
 
                     var displacement = offset;
-#if TARGET_ARM64
-                    displacement /= pair ? 8 : width;
+                    if (Configuration.TARGET_ARM64)
+                    {
+                        displacement /= pair ? 8 : width;
+                    }
+
                     Assert.That(Emitter.emitGetInsSC(load), Is.EqualTo((nint)displacement));
-#else
-                    Assert.That(Emitter.emitGetInsSC(load), Is.EqualTo((nint)displacement));
-#endif
                 }
                 else
                 {
@@ -307,30 +316,34 @@ internal static unsafe class ArmArchStackArgumentTests
             codeGen.genPutArgStk(argument);
 
             var descriptors = Descriptors(codeGen);
-#if TARGET_ARM64
-            Assert.That(descriptors, Has.Count.EqualTo(2));
-            Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
-            // The pinned indirect LDP passes type0 for both attributes; retain that contract.
-            Assert.That(descriptors[0].idGCrefReg2(),
-                Is.EqualTo(indirect ? GCInfo.GCtype.GCT_GCREF : GCInfo.GCtype.GCT_BYREF));
-            Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
-            Assert.That(descriptors[1].idGCrefReg2(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
-#else
-            Assert.That(descriptors, Has.Count.EqualTo(4));
-            Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
-            Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
-            Assert.That(descriptors[2].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
-            Assert.That(descriptors[3].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                Assert.That(descriptors, Has.Count.EqualTo(2));
+                Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+                // The pinned indirect LDP passes type0 for both attributes; retain that contract.
+                Assert.That(descriptors[0].idGCrefReg2(),
+                    Is.EqualTo(indirect ? GCInfo.GCtype.GCT_GCREF : GCInfo.GCtype.GCT_BYREF));
+                Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+                Assert.That(descriptors[1].idGCrefReg2(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
+            }
+            else
+            {
+                Assert.That(descriptors, Has.Count.EqualTo(4));
+                Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+                Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+                Assert.That(descriptors[2].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
+                Assert.That(descriptors[3].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
+            }
         });
     }
 
-#if TARGET_ARM64
     [TestCase(REG_ARM64_R1, REG_ARM64_R2, REG_ARM64_R1)]
     [TestCase(REG_ARM64_R2, REG_ARM64_R1, REG_ARM64_R2)]
     public static void IndirectPairsOnlyOverwriteTheAddressAfterItsLastLoad(
         regNumber addressReg, regNumber lowReg, regNumber highReg)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStackArea((_, codeGen) =>
         {
             var argument = Argument(StructSource(new ClassLayout(16), true, addressReg), 32, 16);
@@ -355,6 +368,8 @@ internal static unsafe class ArmArchStackArgumentTests
     [TestCase(TYP_INT, 2)]
     public static void ContainedZeroStoresUseTheZeroRegisterWithoutConsumption(var_types type, int size)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStackArea((compiler, codeGen) =>
         {
             var source = compiler.gtNewIconNode(type, 0);
@@ -366,9 +381,10 @@ internal static unsafe class ArmArchStackArgumentTests
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             AssertStack(Descriptors(codeGen)[0], codeGen.ins_Store(storeType), storeType.EmitSize, 1, 32, REG_ZR);
-#if DEBUG
-            Assert.That((source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) == 0, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That((source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) == 0, Is.True);
+            }
         });
     }
 
@@ -376,6 +392,8 @@ internal static unsafe class ArmArchStackArgumentTests
     [TestCase(TYP_SIMD16, 16)]
     public static void SimdArgumentsStoreTheirRegisterWidth(var_types type, int size)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStackArea((_, codeGen) =>
         {
             var source = Physical(type, REG_V0);
@@ -392,6 +410,8 @@ internal static unsafe class ArmArchStackArgumentTests
     [TestCase(false, true)]
     public static void Simd12StoresExactlyTwelveBytesAndPreservesExtractionOrder(bool temporary, bool fieldList)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         if (!fieldList && !compAppleArm64Abi())
         {
             Assert.Ignore("Twelve-byte scalar SIMD stack slots require the Apple ARM64 ABI.");
@@ -432,6 +452,8 @@ internal static unsafe class ArmArchStackArgumentTests
     [TestCase(true)]
     public static void HfaStructsCopyAllFourPointerChunks(bool indirect)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithStackArea((compiler, codeGen) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -456,10 +478,11 @@ internal static unsafe class ArmArchStackArgumentTests
     {
         return CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE;
     }
-#else
     [Test]
     public static void RetypedDoubleStoresBothIntegerRegistersAtConsecutiveWordOffsets()
     {
+        Assume.That(!Configuration.TARGET_ARM64);
+
         WithStackArea((_, codeGen) =>
         {
             var source = new GenTreeCopyOrReload(GT_RELOAD, TYP_LONG, Physical(TYP_DOUBLE, REG_F0));
@@ -478,6 +501,8 @@ internal static unsafe class ArmArchStackArgumentTests
     [Test]
     public static void FinalWordLoadMayOverwriteItsAddressRegister()
     {
+        Assume.That(!Configuration.TARGET_ARM64);
+
         WithStackArea((_, codeGen) =>
         {
             var argument = Argument(StructSource(new ClassLayout(4), true, REG_R1), 32, 4);
@@ -492,15 +517,17 @@ internal static unsafe class ArmArchStackArgumentTests
             AssertStack(descriptors[1], INS_str, EA_4BYTE, 1, 32, REG_R1);
         });
     }
-#endif
 
     private static void WithStackArea(Action<Compiler, CodeGen> action)
     {
-#if TARGET_ARM64
-        Arm64CodeGenLocalVariableTests.WithCodeGen(Initialize);
-#else
-        ArmCalleeSavedRegisterTests.WithCodeGen(Initialize);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            Arm64CodeGenLocalVariableTests.WithCodeGen(Initialize);
+        }
+        else
+        {
+            ArmCalleeSavedRegisterTests.WithCodeGen(Initialize);
+        }
 
         void Initialize(Compiler compiler, CodeGen codeGen)
         {
@@ -545,9 +572,11 @@ internal static unsafe class ArmArchStackArgumentTests
     private static void AddTemps(CodeGen codeGen, GenTreePutArgStk argument)
     {
         var temps = Mask(REG_R1);
-#if TARGET_ARM64
-        temps |= Mask(REG_R2);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            temps |= Mask(REG_R2);
+        }
+
         codeGen.InternalRegisters.Add(argument, temps);
     }
 
@@ -584,12 +613,12 @@ internal static unsafe class ArmArchStackArgumentTests
 
     private static void AssertConsumed(GenTree source)
     {
-#if DEBUG
-        Assert.That((source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) != 0, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That((source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) != 0, Is.True);
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

@@ -103,7 +103,7 @@ public partial class Compiler
         {
             // Pseudo arguments such as AsyncAwaiter may be decomposed for the
             // later stores into a continuation.
-            fgTryReplaceStructLocalWithFields(ref argument.NodeRef);
+            _ = fgTryReplaceStructLocalWithFields(ref argument.NodeRef);
 
             return true;
         }
@@ -160,12 +160,10 @@ public partial class Compiler
                 descriptor.lvIsMultiRegArg = true;
             }
             JITDUMP($"Struct argument V{localNumber:D2}: ");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 argument.Dump();
             }
-#endif
             if (descriptor.lvPromoted && !descriptor.lvDoNotEnregister
                 && (!isSplit || FieldsMatchAbi(descriptor, argument.AbiInfo)))
             {

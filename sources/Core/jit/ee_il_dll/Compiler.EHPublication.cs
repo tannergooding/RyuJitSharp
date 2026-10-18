@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -21,21 +23,23 @@ public partial class Compiler
 
     public unsafe void eeSetEHinfo(uint EHnumber, CORINFO_EH_CLAUSE* clause)
     {
-#if DEBUG
-        if (opts.dspEHTable)
+        if (Configuration.DEBUG && opts.dspEHTable)
         {
             dispOutgoingEHClause(EHnumber, *clause);
         }
-#endif
         if (info.compMatchedVM)
         {
             info.compCompHnd->setEHinfo(unchecked((int)EHnumber), clause);
         }
     }
 
-#if DEBUG
     public void dispOutgoingEHClause(uint number, in CORINFO_EH_CLAUSE clause)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Outgoing EH diagnostics are only available in Debug builds.");
+        }
+
         var emitter = codeGen?.Emitter
             ?? throw new FatalJitException(CORJIT_SKIPPED, "EH diagnostics require an emitter.");
 
@@ -104,5 +108,4 @@ public partial class Compiler
         }
         jitprintf("\n");
     }
-#endif
 }

@@ -1,11 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.IO;
 using System.Runtime.CompilerServices;
-#if DEBUG
-using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
@@ -165,11 +161,14 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
             Assert.That(register.assignedInterval, Is.SameAs(interval));
             Assert.That(interval.isActive, Is.True);
-#if DEBUG
-            Assert.That(output, Does.Contain("None          "));
-#else
-            Assert.That(output, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain("None          "));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -230,11 +229,14 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             Assert.That(interval.relatedInterval, Is.SameAs(relatedInterval));
             Assert.That(primaryRegister.assignedInterval, Is.SameAs(interval));
             Assert.That(copyRegister.assignedInterval, Is.SameAs(interval));
-#if DEBUG
-            Assert.That(output, Does.Contain("Copy     rbx "));
-#else
-            Assert.That(output, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain("Copy     rbx "));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -259,12 +261,15 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
                 Assert.That(result, Is.EqualTo(regNumber.REG_X64_RBX));
             });
 
-#if DEBUG
-            Assert.That(output, Does.Contain("ORDER(C) rbx "));
-            Assert.That(output, Does.Not.Contain("Copy     rbx "));
-#else
-            Assert.That(output, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Does.Contain("ORDER(C) rbx "));
+                Assert.That(output, Does.Not.Contain("Copy     rbx "));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
         });
     }
 
@@ -390,32 +395,17 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "isUpperVector")]
     private static extern ref bool IsUpperVector(Interval interval);
 
-#if DEBUG
     private static string Capture(Action action)
     {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
+        if (TestConfiguration.IsDebug)
         {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
+            return TestConfiguration.CaptureDebugOutput(action);
         }
 
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
-#else
-    private static string Capture(Action action)
-    {
         action();
+
         return string.Empty;
     }
-#endif
 
     private static void WithAllocator(Action<Compiler, LinearScan> action, bool trackedLocal = false)
     {
@@ -470,6 +460,18 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
                 BlockInfo(allocator) = [new LsraBlockInfo { weight = 1 }];
             }
 
+            if (Configuration.TRACK_LSRA_STATS)
+            {
+                var blockInfo = BlockInfo(allocator)
+                    ?? throw new InvalidOperationException("The LSRA allocator must have block information.");
+                var blockStats = new uint[]?[blockInfo.Length];
+                for (var index = 0; index < blockStats.Length; index++)
+                {
+                    blockStats[index] = new uint[(int)LsraStat.COUNT];
+                }
+                BlockStats(allocator) = blockStats;
+            }
+
             action(compiler, allocator);
         }
         finally
@@ -489,6 +491,9 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint BbNumMaxBeforeResolution(LinearScan allocator);

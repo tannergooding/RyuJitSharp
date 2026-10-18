@@ -1,12 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
-using System.IO;
-using System.Text;
-#endif
 using NUnit.Framework;
 using ValueNum = System.Int32;
 using static RyuJitSharp.Globals;
@@ -19,6 +14,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ValueNumHardwareDispatchCompletionTests
 {
+    [SetUp]
+    public static void RequireHardwareIntrinsicTarget()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS &&
+            (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64));
+    }
+
     [TestCase(1, false)]
     [TestCase(1, true)]
     [TestCase(2, false)]
@@ -85,13 +87,12 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
     {
         WithCompiler((compiler, store) =>
         {
-#if TARGET_XARCH
-            var id = NI_AVX512_TernaryLogic;
-            var_types[] types = [TYP_SIMD16, TYP_SIMD16, TYP_SIMD16, TYP_INT];
-#else
-            var id = NI_AdvSimd_Arm64_InsertSelectedScalar;
-            var_types[] types = [TYP_SIMD16, TYP_INT, TYP_SIMD16, TYP_INT];
-#endif
+            var id = Configuration.TARGET_XARCH
+                ? NI_AVX512_TernaryLogic
+                : NI_AdvSimd_Arm64_InsertSelectedScalar;
+            var_types[] types = Configuration.TARGET_XARCH
+                ? [TYP_SIMD16, TYP_SIMD16, TYP_SIMD16, TYP_INT]
+                : [TYP_SIMD16, TYP_INT, TYP_SIMD16, TYP_INT];
             var operands = new GenTree[4];
             var expected = ValueNumStore.VNPForEmptyExcSet();
             for (var index = 0; index < operands.Length; index++)
@@ -244,11 +245,7 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
     {
         WithCompiler((compiler, store) =>
         {
-#if TARGET_XARCH
-            var id = NI_X86Base_Pause;
-#else
-            var id = NI_ArmBase_Yield;
-#endif
+            var id = Configuration.TARGET_XARCH ? NI_X86Base_Pause : NI_ArmBase_Yield;
             var tree = new GenTreeHWIntrinsic(TYP_VOID, id, TYP_INT, 0);
             var heap = compiler.fgCurMemoryVN[(int)MemoryKind.GcHeap];
             var byref = compiler.fgCurMemoryVN[(int)MemoryKind.ByrefExposed];
@@ -261,7 +258,6 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
         });
     }
 
-#if TARGET_XARCH
     [TestCase(NI_X86Base_LoadFence, false)]
     [TestCase(NI_X86Base_LoadFence, true)]
     [TestCase(NI_X86Base_MemoryFence, false)]
@@ -270,6 +266,8 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
     [TestCase(NI_X86Base_StoreFence, true)]
     public static void EveryBarrierMutatesHeapBeforeOpaqueDispatch(NamedIntrinsic id, bool sharedHeapStates)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler((compiler, store) =>
         {
             compiler.byrefStatesMatchGcHeapStates = sharedHeapStates;
@@ -298,6 +296,8 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
     [TestCase(NI_AVX2_GatherMaskVector256)]
     public static void ImpreciseEffectiveAddressesUseFreshNullExceptionsNotTheBaseAddress(NamedIntrinsic id)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler((compiler, store) =>
         {
             var tree = EffectiveAddressTree(store, id);
@@ -324,6 +324,8 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
     [Test]
     public static void GatherAuxiliaryIndexTypeRemainsPartOfTheDispatchFunction()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithCompiler((compiler, store) =>
         {
             var first = EffectiveAddressTree(store, NI_AVX2_GatherVector128);
@@ -377,13 +379,13 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
 
         return new GenTreeHWIntrinsic(resultType, id, baseType, (byte)type.Size, operands);
     }
-#endif
 
-#if TARGET_ARM64
     [TestCase(NI_Sve_CreateFalseMaskByte)]
     [TestCase(NI_Sve_ConversionTrueMask)]
     public static void ValidZeroOperandMasksEncodeTheirResultType(NamedIntrinsic id)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithCompiler((compiler, store) =>
         {
             var tree = new GenTreeHWIntrinsic(TYP_MASK, id, TYP_BYTE, 16);
@@ -396,12 +398,12 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
             Assert.That(store.VNPExceptionSet(tree._vnPair), Is.EqualTo(ValueNumStore.VNPForEmptyExcSet()));
         });
     }
-#endif
 
-#if DEBUG
     [Test]
     public static void TypeDiagnosticUsesTheNativeValueNumberPrefixAndLevel()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler((compiler, store) =>
         {
             var tree = new GenTreeHWIntrinsic(TYP_SIMD16, AddId, TYP_INT, 16,
@@ -411,64 +413,26 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
             TestConfiguration.EnableVerbose(compiler);
             var actual = Capture(() => compiler.fgValueNumberHWIntrinsic(tree));
 
-            Assert.That(actual, Is.EqualTo($"    simdTypeVN is {expected}\n"));
+            Assert.That(actual, Is.EqualTo($"    simdTypeVN is {expected}{Environment.NewLine}"));
         });
     }
 
-    private static string Capture(Action action)
-    {
-        using var stream = new MemoryStream();
-        using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
-        var previous = s_jitstdout;
-        s_jitstdout = writer;
-        try
-        {
-            action();
-            writer.Flush();
-
-            return Encoding.UTF8.GetString(stream.ToArray());
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-    }
-#endif
+    private static string Capture(Action action) => TestConfiguration.CaptureDebugOutput(action);
 
     private static NamedIntrinsic AddId =>
-#if TARGET_XARCH
-        NI_X86Base_Add;
-#else
-        NI_AdvSimd_Add;
-#endif
+        Configuration.TARGET_XARCH ? NI_X86Base_Add : NI_AdvSimd_Add;
 
     private static NamedIntrinsic TernaryId =>
-#if TARGET_XARCH
-        NI_AVX2_MultiplyAdd;
-#else
-        NI_AdvSimd_FusedMultiplyAdd;
-#endif
+        Configuration.TARGET_XARCH ? NI_AVX2_MultiplyAdd : NI_AdvSimd_FusedMultiplyAdd;
 
     private static NamedIntrinsic LoadId =>
-#if TARGET_XARCH
-        NI_X86Base_LoadAlignedVector128;
-#else
-        NI_AdvSimd_LoadAndReplicateToVector128;
-#endif
+        Configuration.TARGET_XARCH ? NI_X86Base_LoadAlignedVector128 : NI_AdvSimd_LoadAndReplicateToVector128;
 
     private static NamedIntrinsic StoreId =>
-#if TARGET_XARCH
-        NI_X86Base_StoreAligned;
-#else
-        NI_AdvSimd_Store;
-#endif
+        Configuration.TARGET_XARCH ? NI_X86Base_StoreAligned : NI_AdvSimd_Store;
 
     private static NamedIntrinsic MaskConversionId =>
-#if TARGET_XARCH
-        NI_AVX512_ConvertMaskToVector;
-#else
-        NI_Sve_ConvertMaskToVector;
-#endif
+        Configuration.TARGET_XARCH ? NI_AVX512_ConvertMaskToVector : NI_Sve_ConvertMaskToVector;
 
     private static VNFunc Function(NamedIntrinsic id) =>
         (VNFunc)((int)VNF_HWI_FIRST + (int)id - (int)NI_HW_INTRINSIC_START - 1);
@@ -529,4 +493,3 @@ internal static unsafe class ValueNumHardwareDispatchCompletionTests
         }
     }
 }
-#endif

@@ -303,11 +303,12 @@ internal static unsafe class NaturalLoopTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DumpsPreserveNativeRangesEdgesAndNewlines(bool gap)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var blocks = gap
                 ? Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_RETURN, BBJ_ALWAYS, BBJ_RETURN)
@@ -317,29 +318,15 @@ internal static unsafe class NaturalLoopTests
             blocks[1].SetCond(Connect(blocks[1], body), Connect(blocks[1], blocks[^1]));
             _ = Jump(body, blocks[1]);
             var loops = Find(compiler);
-            using var stream = new MemoryStream();
-            using var writer = new JitTextWriter(stream, leaveOpen: true);
-            var previous = s_jitstdout;
-
-            try
-            {
-                s_jitstdout = writer;
-                FlowGraphNaturalLoops.Dump(loops);
-                writer.Flush();
-            }
-            finally
-            {
-                s_jitstdout = previous;
-            }
+            var output = TestConfiguration.CaptureDebugOutput(() => FlowGraphNaturalLoops.Dump(loops));
 
             var expected = "\n***************  Natural loop graph\nL00 header: BB02\n  Members (2): " +
                 (gap ? "BB02;BB04" : "[BB02..BB03]") +
                 $"\n  Entry: BB01 -> BB02\n  Exit: BB02 -> BB{blocks.Length:D2}\n  Back: BB{blocks.Length - 1:D2} -> BB02\n\n";
-            Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+            Assert.That(output,
                 Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
         });
     }
-#endif
 
     [Test]
     public static void LocalDefinitionMapsPreserveNativeCollisionAndOverwriteGrowthOrder()

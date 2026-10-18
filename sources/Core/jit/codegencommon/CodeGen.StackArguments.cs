@@ -240,7 +240,7 @@ public sealed partial class CodeGen
                         {
                             assert(loReg != addrReg);
                             noway_assert((remainingSize == (2 * Configuration.TARGET_POINTER_SIZE)) || (hiReg != addrReg));
-                            emit.emitIns_R_R_R_I(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
+                            emit.emitIns_R_R_R_IArm64(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
                                 unchecked((nint)structOffset), INS_OPTS_NONE, type0.EmitSize);
                         }
 

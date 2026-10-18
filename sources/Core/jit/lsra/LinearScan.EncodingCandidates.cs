@@ -108,10 +108,11 @@ public sealed partial class LinearScan
         emitter.ContainsAvxInstruction = true;
         if (sizeOfSIMDVector >= 32)
         {
-#if DEBUG
-            assert((sizeOfSIMDVector == 32) ||
-                ((sizeOfSIMDVector == 64) && _compiler.canUseEvexEncodingDebugOnly()));
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert((sizeOfSIMDVector == 32) ||
+                    ((sizeOfSIMDVector == 64) && _compiler.canUseEvexEncodingDebugOnly()));
+            }
             emitter.Contains256BitOrMoreAvxInstruction = true;
         }
     }

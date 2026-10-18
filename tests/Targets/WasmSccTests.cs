@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.Target.UnitTests;
 [NonParallelizable]
 internal static unsafe class WasmSccTests
 {
+    [SetUp]
+    public static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM);
+    }
+
     private static readonly int[] s_initialAddCodeOrder = [19, 10, 1, 4, 3, 2];
     private static readonly int[] s_growthAddCodeOrder = [3, 1, 4, 10, 19, 2, 5];
     private static readonly int[] s_rekeyAddCodeOrder = [3, 1, 4, 19, 2, 5, 11];
@@ -492,16 +497,19 @@ internal static unsafe class WasmSccTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-#endif
+        ICorJitInfo ee = default;
+        JitTls? debugTls = null;
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+            ee = new ICorJitInfo { lpVtbl = &vtable };
+            debugTls = new JitTls(&ee);
+        }
+
+        using var tls = debugTls;
         var previous = JitTls.Compiler;
-#if DEBUG
-        var previousConfig = JitConfig;
-#endif
+        var previousConfig = TestConfiguration.IsDebug ? JitConfig : default;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitTls.Compiler = compiler;
 
@@ -516,12 +524,13 @@ internal static unsafe class WasmSccTests
             compiler.fgPredsComputed = true;
             compiler.fgImportDone = true;
             compiler.compHndBBtab = [];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-            JitConfig = new JitConfigValues();
-            AltJitSkipOnAssert(ref JitConfig) = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+                TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
+                JitConfig = new JitConfigValues();
+                AltJitSkipOnAssert(ref JitConfig) = 1;
+            }
             compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
             compiler.lvaCount = 1;
             s_assertions.Clear();
@@ -531,9 +540,10 @@ internal static unsafe class WasmSccTests
         finally
         {
             JitTls.Compiler = previous;
-#if DEBUG
-            JitConfig = previousConfig;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                JitConfig = previousConfig;
+            }
         }
     }
 
@@ -547,9 +557,6 @@ internal static unsafe class WasmSccTests
         return 0;
     }
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
     private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
-#endif
 }
-#endif

@@ -2,7 +2,6 @@
 
 using System.Reflection;
 using NUnit.Framework;
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -13,7 +12,6 @@ using static RyuJitSharp.EHHandlerType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 using static RyuJitSharp.bbCatchType;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -24,19 +22,14 @@ internal static unsafe class EHVerificationTests
     public static void HandlerTableCheckerExistsOnlyInDebug()
     {
         var method = typeof(Compiler).GetMethod("fgVerifyHandlerTab", BindingFlags.Instance | BindingFlags.Public);
-#if DEBUG
-        Assert.That(method, Is.Not.Null);
-#else
-        Assert.That(method, Is.Null);
-#endif
+        Assert.That(method is not null, Is.EqualTo(TestConfiguration.IsDebug));
     }
 
-#if DEBUG
     [Test]
     public static void EmptyTableNeedsNoGraph()
     {
         WithCompiler(compiler => {
-            compiler.fgVerifyHandlerTab();
+            VerifyHandlerTable(compiler);
             Assert.That(s_assertions, Is.Empty);
         });
     }
@@ -92,7 +85,7 @@ internal static unsafe class EHVerificationTests
                 before.Add((block, block.bbNum, block.bbTryIndex, block.bbHndIndex));
             }
 
-            compiler.fgVerifyHandlerTab();
+            VerifyHandlerTable(compiler);
 
             Assert.That(s_assertions, Is.Empty);
             var index = 0;
@@ -110,7 +103,7 @@ internal static unsafe class EHVerificationTests
     {
         WithCompiler(compiler => {
             CreateNestedTable(compiler, false, false, true);
-            compiler.fgNormalizeEHDone = normalized;
+            TestConfiguration.SetEhNormalizationDone(compiler, normalized);
 
             if (normalized)
             {
@@ -118,7 +111,7 @@ internal static unsafe class EHVerificationTests
             }
             else
             {
-                compiler.fgVerifyHandlerTab();
+                VerifyHandlerTable(compiler);
                 Assert.That(s_assertions, Is.Empty);
             }
         });
@@ -132,7 +125,7 @@ internal static unsafe class EHVerificationTests
     {
         WithCompiler(compiler => {
             CreateNestedTable(compiler, insideHandler, funclets, false);
-            compiler.fgNormalizeEHDone = true;
+            TestConfiguration.SetEhNormalizationDone(compiler, true);
 
             if (sharedEnd)
             {
@@ -151,7 +144,7 @@ internal static unsafe class EHVerificationTests
                 }
             }
 
-            compiler.fgVerifyHandlerTab();
+            VerifyHandlerTable(compiler);
 
             Assert.That(s_assertions, Is.Empty);
         });
@@ -179,7 +172,7 @@ internal static unsafe class EHVerificationTests
             var blocks = new List<BasicBlock>(compiler.Blocks);
 
             compiler.fgNormalizeEH();
-            compiler.fgVerifyHandlerTab();
+            VerifyHandlerTable(compiler);
 
             Assert.That(compiler.fgNormalizeEHDone, Is.True);
             Assert.That(compiler.Blocks, Is.EqualTo(blocks));
@@ -208,7 +201,7 @@ internal static unsafe class EHVerificationTests
             }
             clause.ebdTryBeg.Next = null;
 
-            compiler.fgVerifyHandlerTab();
+            VerifyHandlerTable(compiler);
 
             Assert.That(s_assertions, Is.Empty);
         });
@@ -230,7 +223,7 @@ internal static unsafe class EHVerificationTests
     {
         WithCompiler(compiler => {
             CreateNestedTable(compiler, true, false, true);
-            compiler.fgNormalizeEHDone = normalized;
+            TestConfiguration.SetEhNormalizationDone(compiler, normalized);
 
             if (normalized)
             {
@@ -238,7 +231,7 @@ internal static unsafe class EHVerificationTests
             }
             else
             {
-                compiler.fgVerifyHandlerTab();
+                VerifyHandlerTable(compiler);
                 Assert.That(s_assertions, Is.Empty);
             }
         });
@@ -259,11 +252,11 @@ internal static unsafe class EHVerificationTests
             tryBlock.TryIndex = 0;
             firstHandler.HndIndex = 0;
             secondHandler.HndIndex = 1;
-            compiler.fgNormalizeEHDone = true;
+            TestConfiguration.SetEhNormalizationDone(compiler, true);
             compiler.fgFuncletsCreated = funclets;
             compiler.fgFirstFuncletBB = funclets ? firstHandler : null;
 
-            compiler.fgVerifyHandlerTab();
+            VerifyHandlerTable(compiler);
 
             Assert.That(s_assertions, Is.Empty);
             Assert.That(firstHandler.hasTryIndex, Is.False);
@@ -612,7 +605,7 @@ internal static unsafe class EHVerificationTests
 
     private static void CheckFailure(Compiler compiler, string expression)
     {
-        var exception = Assert.Throws<FatalJitException>(compiler.fgVerifyHandlerTab);
+        var exception = Assert.Throws<FatalJitException>(() => VerifyHandlerTable(compiler));
         Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
         Assert.That(s_assertions, Has.Count.EqualTo(1));
         Assert.That(s_assertions[0], Does.Contain(expression));
@@ -622,10 +615,12 @@ internal static unsafe class EHVerificationTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
+        using var tls = TestConfiguration.CreateJitTls(&ee);
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -663,5 +658,7 @@ internal static unsafe class EHVerificationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
     private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgVerifyHandlerTab")]
+    private static extern void VerifyHandlerTable(Compiler compiler);
 }

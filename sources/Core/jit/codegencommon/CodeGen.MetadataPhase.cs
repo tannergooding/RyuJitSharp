@@ -50,33 +50,34 @@ public sealed partial class CodeGen
             Disassembler.disAsmCode((byte*)*_codePtr, (byte*)_codePtrRW, finalHotCodeSize,
                 (byte*)_coldCodePtr, (byte*)_coldCodePtrRW, finalColdCodeSize);
         }
-#if DEBUG
-        if (JitConfig.JitRawHexCode.contains(_compiler.info.compMethodHnd, _compiler.info.compClassHnd,
-            &_compiler.info.compMethodInfo->args))
+        if (Configuration.DEBUG)
         {
-            // Native raw-hex output includes only the hot region.
-            var dumpAddress = (byte*)_codePtrRW;
-            var pathPointer = JitConfig.JitRawHexCodeFile;
-            if (pathPointer is not null)
+            if (JitConfig.JitRawHexCode.contains(_compiler.info.compMethodHnd, _compiler.info.compClassHnd,
+                &_compiler.info.compMethodInfo->args))
             {
-                var path = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint)pathPointer)
-                    ?? throw new FatalJitException(CORJIT_SKIPPED, "Raw-hex output file path is invalid.");
-                using var file = OpenRichDebugInfoFile(path);
-                if (file is not null)
+                // Native raw-hex output includes only the hot region.
+                var dumpAddress = (byte*)_codePtrRW;
+                var pathPointer = JitConfig.JitRawHexCodeFile;
+                if (pathPointer is not null)
                 {
-                    using var writer = new JitTextWriter(file, leaveOpen: true);
+                    var path = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint)pathPointer)
+                        ?? throw new FatalJitException(CORJIT_SKIPPED, "Raw-hex output file path is invalid.");
+                    using var file = OpenRichDebugInfoFile(path);
+                    if (file is not null)
+                    {
+                        using var writer = new JitTextWriter(file, leaveOpen: true);
+                        hexDump(writer, dumpAddress, finalHotCodeSize);
+                    }
+                }
+                else
+                {
+                    var writer = jitstdout();
+                    writer.Write($"Generated native code for {_compiler.info.compFullName}:\n");
                     hexDump(writer, dumpAddress, finalHotCodeSize);
+                    writer.Write("\n\n");
                 }
             }
-            else
-            {
-                var writer = jitstdout();
-                writer.Write($"Generated native code for {_compiler.info.compFullName}:\n");
-                hexDump(writer, dumpAddress, finalHotCodeSize);
-                writer.Write("\n\n");
-            }
         }
-#endif
         genReportEH();
         genCreateAndStoreGCInfo(_codeSize, _prologSize, _epilogSize);
         _compiler.Metrics.GCInfoBytes = unchecked((int)_compiler.compInfoBlkSize);

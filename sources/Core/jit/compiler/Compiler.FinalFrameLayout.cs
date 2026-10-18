@@ -394,9 +394,10 @@ public partial class Compiler
                 return true;
             }
 
-#if DEBUG
-            assert(dsc.StackOffset != BAD_STK_OFFS);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(dsc.StackOffset != BAD_STK_OFFS);
+            }
 
             return false;
         }

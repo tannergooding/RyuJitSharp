@@ -208,30 +208,32 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         });
     }
 
-#if DEBUG
-#if TARGET_ARM
     [TestCase(TYP_DOUBLE, 0)]
     [TestCase(TYP_FLOAT, 1)]
     public static void VerifyFreeRegistersTreatsDoubleSecondHalfAsPairedState(
         var_types type, int expectedAssertions)
     {
+        Assume.That(Configuration.TARGET_ARM);
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((_, allocator) =>
         {
-            allocator.physRegs[(int)regNumber.REG_F0].assignedInterval = new Interval(type, SRBM_F0)
+            allocator.physRegs[(int)REG_F0].assignedInterval = new Interval(type, SRBM_F0)
             {
-                physReg = regNumber.REG_F0,
+                physReg = REG_F0,
             };
-            SetConstantReg(allocator, regNumber.REG_F1);
+            SetConstantReg(allocator, REG_F1);
 
             Assert.That(VerifyWithAssertCounter(allocator, new regMaskTP(SRBM_NONE)),
                 Is.EqualTo(expectedAssertions));
         });
     }
-#endif
 
     [Test]
     public static void VerifyFreeRegistersAcceptsNativeInactiveRetainedAndReleasedStates()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             var retainedInterval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
@@ -260,6 +262,8 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     [Test]
     public static void VerifyFreeRegistersSkipsPendingRegistersAndChecksNonpendingRegisters()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((_, allocator) => {
             var pendingRegisters = new regMaskTP(SRBM_X64_RAX);
 
@@ -274,6 +278,8 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     [Test]
     public static void AllocationLifecycleEventsPreserveNativeVerboseDumpGating()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var delayedInterval = NewInterval(allocator, TYP_INT);
@@ -305,7 +311,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
             Assert.That(verboseOutput, Does.Contain("Allocating Registers"));
             Assert.That(verboseOutput, Does.Contain("r10"));
 
-            compiler.verbose = false;
+            TestConfiguration.SetVerbose(compiler, false);
             var quietOutput = Capture(() => {
                 var registersToFree = new regMaskTP(SRBM_NONE);
                 var delayedRegisters = new regMaskTP(SRBM_NONE);
@@ -322,6 +328,8 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     [Test]
     public static void VerifyFreeRegistersHonorsSpillAlwaysStressForConstantMarker()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((_, allocator) => {
             SetConstantReg(allocator, regNumber.REG_X64_RAX);
             StressMask(allocator) = 0x800;
@@ -329,7 +337,6 @@ internal static unsafe class LinearScanRegisterLifetimeTests
             VerifyFreeRegisters(allocator, new regMaskTP(SRBM_NONE));
         });
     }
-#endif
 
     private static Interval NewAssignedInterval(
         Compiler compiler, LinearScan allocator, var_types type, regNumber registerNumber)
@@ -405,33 +412,16 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_fixedRegsLow")]
     private static extern ref regMask FixedRegsLow(LinearScan allocator);
 
-#if DEBUG
-    private static int s_assertCount;
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* info, byte* filePath, int lineNumber, byte* expression)
-    {
-        s_assertCount++;
-        return 0;
-    }
-
     private static int VerifyWithAssertCounter(LinearScan allocator, regMaskTP registersToFree)
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("Missing assertion compiler.");
         var originalFlags = compiler.opts.jitFlags;
         var flags = *originalFlags;
         compiler.opts.jitFlags = &flags;
-        var vtable = default(ICorJitInfo.Vtbl<ICorJitInfo>);
-        vtable.doAssert = &RecordAssertion;
-        var jitInfo = default(ICorJitInfo);
-        jitInfo.lpVtbl = &vtable;
         try
         {
-            using var tls = new JitTls(&jitInfo);
-            JitTls.Compiler = compiler;
-            s_assertCount = 0;
-            VerifyFreeRegisters(allocator, registersToFree);
-            return s_assertCount;
+            return TestConfiguration.CaptureDebugAssertions(
+                () => VerifyFreeRegisters(allocator, registersToFree)).Assertions.Length;
         }
         finally
         {
@@ -444,7 +434,6 @@ internal static unsafe class LinearScanRegisterLifetimeTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
-#endif
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
@@ -486,21 +475,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
 
     private static string Capture(Action action)
     {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
-        {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
+        return TestConfiguration.CaptureDebugOutput(action);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]

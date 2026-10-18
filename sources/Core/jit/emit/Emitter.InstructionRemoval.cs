@@ -69,14 +69,15 @@ public partial class Emitter
             {
                 assert(_compiler is not null);
             }
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);
+                if (_compiler.verbose)
+                {
+                    emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);
+                }
+                assert(lastGroup.igDataSize
+                    == lastInstruction.StorageOffset + (nuint)emitSizeOfInsDsc(lastInstruction));
             }
-            assert(lastGroup.igDataSize
-                == lastInstruction.StorageOffset + (nuint)emitSizeOfInsDsc(lastInstruction));
-#endif
             assert(lastGroup.igInsCnt >= 1);
             assert(lastGroup.igSize >= lastCodeSize);
             assert(lastGroup.igData is not null);

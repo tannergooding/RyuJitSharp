@@ -2,8 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 
@@ -70,14 +68,13 @@ internal static unsafe class BitScanReverseTests
         }
     }
 
-#if DEBUG
-    private static readonly List<string?> s_assertions = [];
-
     [TestCase(false)]
     [TestCase(true)]
     public static void ZeroScanRetainsTheNativeAssertionCountAndText(bool wide)
     {
-        WithAssertionRecorder(() => {
+        Assume.That(TestConfiguration.IsDebug);
+
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(() => {
             if (wide)
             {
                 _ = BitScanReverse(0UL);
@@ -86,28 +83,10 @@ internal static unsafe class BitScanReverseTests
             {
                 _ = BitScanReverse(0U);
             }
-
-            var expectedCount = wide && OperatingSystem.IsWindows() && !Environment.Is64BitProcess ? 2 : 1;
-            Assert.That(s_assertions, Has.Count.EqualTo(expectedCount));
-            Assert.That(s_assertions, Is.All.EqualTo("value != 0"));
         });
-    }
 
-    private static void WithAssertionRecorder(Action action)
-    {
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions.Clear();
-        action();
+        var expectedCount = wide && OperatingSystem.IsWindows() && !Environment.Is64BitProcess ? 2 : 1;
+        Assert.That(assertions, Has.Length.EqualTo(expectedCount));
+        Assert.That(assertions, Is.All.EqualTo("value != 0"));
     }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
-    {
-        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
-        return 0;
-    }
-#endif
 }

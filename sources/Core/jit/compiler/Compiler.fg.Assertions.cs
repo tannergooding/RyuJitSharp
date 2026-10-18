@@ -107,14 +107,12 @@ public partial class Compiler
 
     public unsafe void fgMorphTreeDone(GenTree tree, bool optAssertionPropDone, int morphNum = 0)
     {
-#if DEBUG
-        if (verbose && treesBeforeAfterMorph)
+        if (Configuration.DEBUG && verbose && treesBeforeAfterMorph)
         {
             jitprintf($"\nfgMorphTree (after {morphNum}):\n");
             gtDispTree(tree);
             jitstdout().Flush();
         }
-#endif
         if (!fgGlobalMorph)
         {
             return;

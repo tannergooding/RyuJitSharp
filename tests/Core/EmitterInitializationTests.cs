@@ -41,13 +41,14 @@ internal static unsafe class EmitterInitializationTests
         InitVars(emitter)[0] = 2;
         ThisVars(emitter)[0] = 4;
         emitter.emitCurIG = new insGroup();
-#if DEBUG
-        DebugPrevVars(emitter)[0] = 8;
-        DebugThisVars(emitter)[0] = 16;
-        DebugPrevRegPtr(emitter) = new GCInfo.regPtrDsc();
-        DebugPrevGCrefRegs(emitter) = new regMaskTP(SRBM_X64_RAX);
-        DebugPrevByrefRegs(emitter) = new regMaskTP(SRBM_X64_RBX);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            DebugPrevVars(emitter)[0] = 8;
+            DebugThisVars(emitter)[0] = 16;
+            DebugPrevRegPtr(emitter) = new GCInfo.regPtrDsc();
+            DebugPrevGCrefRegs(emitter) = new regMaskTP(SRBM_X64_RAX);
+            DebugPrevByrefRegs(emitter) = new regMaskTP(SRBM_X64_RBX);
+        }
 
         emitter.Init();
 
@@ -55,13 +56,14 @@ internal static unsafe class EmitterInitializationTests
         Assert.That(InitVars(emitter), Is.EqualTo(new nint[] { 0 }));
         Assert.That(ThisVars(emitter), Is.EqualTo(new nint[] { 0 }));
         Assert.That(emitter.emitCurIG, Is.Null);
-#if DEBUG
-        Assert.That(DebugPrevVars(emitter), Is.EqualTo(new nint[] { 0 }));
-        Assert.That(DebugThisVars(emitter), Is.EqualTo(new nint[] { 0 }));
-        Assert.That(DebugPrevRegPtr(emitter), Is.Null);
-        Assert.That(DebugPrevGCrefRegs(emitter).IsEmpty, Is.True);
-        Assert.That(DebugPrevByrefRegs(emitter).IsEmpty, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(DebugPrevVars(emitter), Is.EqualTo(new nint[] { 0 }));
+            Assert.That(DebugThisVars(emitter), Is.EqualTo(new nint[] { 0 }));
+            Assert.That(DebugPrevRegPtr(emitter), Is.Null);
+            Assert.That(DebugPrevGCrefRegs(emitter).IsEmpty, Is.True);
+            Assert.That(DebugPrevByrefRegs(emitter).IsEmpty, Is.True);
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitPrevGCrefVars")]
@@ -73,7 +75,6 @@ internal static unsafe class EmitterInitializationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefVars")]
     private static extern ref nint[] ThisVars(Emitter emitter);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevGCrefVars")]
     private static extern ref nint[] DebugPrevVars(Emitter emitter);
 
@@ -88,5 +89,4 @@ internal static unsafe class EmitterInitializationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "debugPrevByrefRegs")]
     private static extern ref regMaskTP DebugPrevByrefRegs(Emitter emitter);
-#endif
 }

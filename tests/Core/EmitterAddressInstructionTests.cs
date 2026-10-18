@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -15,17 +16,13 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterAddressInstructionTests
 {
-#if TARGET_X86
-    [TestCase(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 5u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_AWR_RRD, 5u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_ECX, IF_XARCH_RWR_ARD, 6u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_ESP, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_X64_EBP, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_X64_EBP, REG_X64_ECX, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u)]
+    [TestCaseSource(nameof(X86AbsoluteAndIndexedAddressCases))]
     public static void X86AbsoluteAndIndexedAddressesPreserveNativeWidth(
         instruction ins, emitAttr attr, regNumber baseReg, regNumber index, uint scale,
         regNumber targetReg, Emitter.insFormat format, uint size)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithEmitter((_, emitter) =>
         {
             var id = Address(emitter, ins, attr, baseReg, index, scale, 0, targetReg);
@@ -40,7 +37,21 @@ internal static class EmitterAddressInstructionTests
             }
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> X86AbsoluteAndIndexedAddressCases()
+    {
+        if (!Configuration.TARGET_X86)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 5u);
+        yield return new TestCaseData(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_AWR_RRD, 5u);
+        yield return new TestCaseData(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_ECX, IF_XARCH_RWR_ARD, 6u);
+        yield return new TestCaseData(INS_mov, EA_4BYTE, REG_ESP, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u);
+        yield return new TestCaseData(INS_mov, EA_4BYTE, REG_X64_EBP, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u);
+        yield return new TestCaseData(INS_mov, EA_4BYTE, REG_X64_EBP, REG_X64_ECX, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u);
+    }
 
     [TestCase(INS_inc, EA_4BYTE, REG_X64_RAX, 0, IF_XARCH_ARW, 2u)]
     [TestCase(INS_dec, EA_2BYTE, REG_X64_RSP, -8, IF_XARCH_ARW, 5u)]

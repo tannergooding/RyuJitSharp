@@ -22,30 +22,31 @@ public sealed partial class CodeGen
         var numArgs = node.Operands.Length;
         GenTree? embMaskNode = null;
         GenTree? embMaskOp = null;
-#if DEBUG
-        if (isa == InstructionSet_Vector)
+        if (Configuration.DEBUG)
         {
-            if (node.SimdSize == 64)
+            if (isa == InstructionSet_Vector)
             {
-                assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector512));
-            }
-            else if (node.SimdSize == 32)
-            {
-                assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector256));
+                if (node.SimdSize == 64)
+                {
+                    assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector512));
+                }
+                else if (node.SimdSize == 32)
+                {
+                    assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector256));
+                }
+                else
+                {
+                    assert(node.SimdSize is 8 or 12 or 16);
+                    assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector128));
+                }
             }
             else
             {
-                assert(node.SimdSize is 8 or 12 or 16);
-                assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_Vector128));
+                assert(_compiler.compIsaSupportedDebugOnly(isa));
             }
+            assert((HWIntrinsicInfo.lookupFlags(intrinsic) & HW_Flag_NoCodeGen) == 0);
+            assert(!HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsic) || !varTypeIsSmall(node.SimdBaseType));
         }
-        else
-        {
-            assert(_compiler.compIsaSupportedDebugOnly(isa));
-        }
-        assert((HWIntrinsicInfo.lookupFlags(intrinsic) & HW_Flag_NoCodeGen) == 0);
-        assert(!HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsic) || !varTypeIsSmall(node.SimdBaseType));
-#endif
         var tableDriven = HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(intrinsic, category);
         var options = INS_OPTS_NONE;
         if (Emitter.UseEvexEncodings)
@@ -72,9 +73,9 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        genConsumeReg(op1);
+                        _ = genConsumeReg(op1);
                         var attr = Compiler.GetSimdTypeForSize(node.SimdSize).EmitActualSize;
-                        Emitter.emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, canSkip: true);
+                        _ = Emitter.emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, canSkip: true);
                     }
 
                     // The contained operation produces the outer mask node's destination.
@@ -143,7 +144,7 @@ public sealed partial class CodeGen
                         if (embMaskOp is not null)
                         {
                             assert(embMaskNode is not null);
-                            genConsumeReg(embMaskOp);
+                            _ = genConsumeReg(embMaskOp);
                         }
                         switch (numArgs)
                         {
@@ -199,7 +200,7 @@ public sealed partial class CodeGen
             if (embMaskOp is not null)
             {
                 assert(embMaskNode is not null);
-                genConsumeReg(embMaskOp);
+                _ = genConsumeReg(embMaskOp);
             }
 
             var targetReg = node.RegNum;
@@ -364,7 +365,7 @@ public sealed partial class CodeGen
                         assert(genIsValidMaskReg(op2Reg));
                         assert(mergeWithZero == op3.IsVectorZero);
                         var load = indirForm(node.Type, op1);
-                        Emitter.emitIns_Mov(INS_movaps, simdSize, targetReg, op3Reg, canSkip: true);
+                        _ = Emitter.emitIns_Mov(INS_movaps, simdSize, targetReg, op3Reg, canSkip: true);
                         options = AddEmbMaskingMode(options, op2Reg, mergeWithZero);
                         Emitter.emitIns_R_A(ins, simdSize, targetReg, load, options);
                     }
@@ -387,7 +388,7 @@ public sealed partial class CodeGen
                             assert(intrinsic == NI_X86Base_MaskMove);
                             assert(targetReg == REG_NA);
                             // SSE2 MASKMOV uses DI/EDI/RDI implicitly for its destination.
-                            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE,
+                            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE,
                                 TargetRuntimeMetadata.SelectXarch(REG_X86_EDI, REG_X64_RDI), op3Reg, canSkip: true);
                             Emitter.emitIns_R_R(ins, simdSize, op1Reg, op2Reg, options);
                         }
@@ -417,7 +418,7 @@ public sealed partial class CodeGen
                                 assert(genIsValidMaskReg(op2Reg));
                                 assert(mergeWithZero == op1.IsVectorZero);
                                 var attr = Compiler.GetSimdTypeForSize(node.SimdSize).EmitActualSize;
-                                Emitter.emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
+                                _ = Emitter.emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
                                 options = AddEmbMaskingMode(options, op2Reg, mergeWithZero);
                                 Emitter.emitIns_R_R(ins, attr, targetReg, op3Reg, options);
                                 break;

@@ -109,15 +109,16 @@ internal static unsafe class EmitterIndirectStoreTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsAddressRegisterImmediateStores()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, codeGen) =>
         {
             var store = new GenTreeStoreInd(TYP_SIMD16, Physical(REG_X64_RAX), Physical(REG_X64_XMM2, TYP_SIMD16));
             var used = Used(codeGen.Emitter);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, store, REG_X64_XMM2, 2));
@@ -129,7 +130,6 @@ internal static unsafe class EmitterIndirectStoreTests
             Assert.That(compiler.compCurLifeTree, Is.Null);
         });
     }
-#endif
 
     [TestCase(TYP_BYTE, EA_1BYTE, INS_mov, REG_X64_RDX, 2u)]
     [TestCase(TYP_BYTE, EA_1BYTE, INS_mov, REG_X64_RSI, 3u)]
@@ -279,9 +279,10 @@ internal static unsafe class EmitterIndirectStoreTests
             if (relocation)
             {
                 address.Flags |= GTF_ICON_STATIC_HDL;
-#if DEBUG
-                address.TargetHandle = 0x5678;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    address.TargetHandle = 0x5678;
+                }
             }
             GenTree data = Physical(REG_X64_RDX);
             if (immediate)
@@ -299,15 +300,13 @@ internal static unsafe class EmitterIndirectStoreTests
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)0x1234));
             Assert.That(id.idIsDspReloc(), Is.EqualTo(relocation));
             Assert.That(id.idCodeSize(), Is.EqualTo((relocation ? 6u : 7u) + (immediate ? 4u : 0u)));
-#if DEBUG
-            if (relocation)
+            if (TestConfiguration.IsDebug && relocation)
             {
                 var info = id.idDebugOnlyInfo();
                 assert(info is not null);
                 Assert.That(info.idMemCookie, Is.EqualTo((nint)0x5678));
                 Assert.That(info.idFlags & GTF_ICON_HDL_MASK, Is.EqualTo(GTF_ICON_STATIC_HDL));
             }
-#endif
         }, relocation);
     }
 
@@ -488,13 +487,14 @@ internal static unsafe class EmitterIndirectStoreTests
         });
     }
 
-#if DEBUG
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
     public static void DspCodeRecordsIndirectStoresAndLocalLiveness(bool local, bool immediate)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, codeGen) =>
         {
             var address = Address(local);
@@ -510,7 +510,7 @@ internal static unsafe class EmitterIndirectStoreTests
             }
             var store = new GenTreeStoreInd(TYP_INT, address, data);
             var used = Used(codeGen.Emitter);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.Emitter.emitInsStoreInd(INS_mov, EA_4BYTE, store));
@@ -521,7 +521,6 @@ internal static unsafe class EmitterIndirectStoreTests
             Assert.That(diagnostic, Does.Contain("mov"));
         });
     }
-#endif
 
     private static GenTreePhysReg Physical(regNumber reg, var_types type = TYP_LONG)
         => new(reg, type) { RegNum = reg };
@@ -541,12 +540,15 @@ internal static unsafe class EmitterIndirectStoreTests
 
     private static void AssertNotConsumed(GenTree tree)
     {
-#if DEBUG
-        Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-            Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-#else
-        Assert.That(tree.RegNum, Is.Not.EqualTo(REG_X64_NA));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+        }
+        else
+        {
+            Assert.That(tree.RegNum, Is.Not.EqualTo(REG_X64_NA));
+        }
     }
 
     private static void WithEmitter(Action<Compiler, CodeGen> action, bool relocation = false)
@@ -567,9 +569,7 @@ internal static unsafe class EmitterIndirectStoreTests
             compiler.info.compMatchedVM = true;
             codeGen.Emitter.UseRex2Encodings = true;
             codeGen.Emitter.UsePromotedEvexEncodings = true;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
             action(compiler, codeGen);
         });
     }

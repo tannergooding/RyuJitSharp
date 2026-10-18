@@ -67,9 +67,10 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
             var call = tree.AsCall();
             var tryLateDevirt = call.IsDevirtualizationCandidate(_compiler);
 
-#if DEBUG
-            tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization == 1);
-#endif
+            if (Configuration.DEBUG)
+            {
+                tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization == 1);
+            }
 
             if (tryLateDevirt)
             {
@@ -118,7 +119,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                         assert(_compiler.compCurBB is not null);
                         assert(_curStmt is not null);
 
-                        _compiler.gtSplitTree(_compiler.compCurBB, _curStmt, call, out var newStmt, out var splitChanged, early: true);
+                        _ = _compiler.gtSplitTree(_compiler.compCurBB, _curStmt, call, out var newStmt, out var splitChanged, early: true);
 
                         if (splitChanged)
                         {
@@ -225,7 +226,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
 
                 if (sideEffects is not null)
                 {
-                    _compiler.fgNewStmtNearEnd(block, sideEffects);
+                    _ = _compiler.fgNewStmtNearEnd(block, sideEffects);
                 }
 
                 // Splice out the comma with its value

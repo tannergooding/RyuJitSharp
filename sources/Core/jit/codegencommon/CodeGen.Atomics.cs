@@ -566,12 +566,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_ARM64)
         {
-#if DEBUG
-            if (JitConfig.JitNoMemoryBarriers == 1)
+            if (Configuration.DEBUG && (JitConfig.JitNoMemoryBarriers == 1))
             {
                 return;
             }
-#endif
             if (barrierKind == BARRIER_STORE_ONLY)
             {
                 // ISHST is too weak because loads must not move across a store barrier.
@@ -589,12 +587,10 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_ARM)
         {
-#if DEBUG
-            if (JitConfig.JitNoMemoryBarriers == 1)
+            if (Configuration.DEBUG && (JitConfig.JitNoMemoryBarriers == 1))
             {
                 return;
             }
-#endif
             if (!_compiler.opts.OptimizationEnabled ||
                 !Emitter.emitTryCoalesceLastMemBarrier(INS_BARRIER_SY))
             {
@@ -605,12 +601,10 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_RISCV64)
         {
-#if DEBUG
-            if (JitConfig.JitNoMemoryBarriers == 1)
+            if (Configuration.DEBUG && (JitConfig.JitNoMemoryBarriers == 1))
             {
                 return;
             }
-#endif
             var barrier = barrierKind switch {
                 BARRIER_LOAD_ONLY => INS_BARRIER_LOAD_ONLY,
                 BARRIER_STORE_ONLY => INS_BARRIER_STORE_ONLY,
@@ -629,12 +623,10 @@ public sealed partial class CodeGen
         {
             Emitter.RequireSupportedInstructionRecording();
         }
-#if DEBUG
-        if (JitConfig.JitNoMemoryBarriers == 1)
+        if (Configuration.DEBUG && (JitConfig.JitNoMemoryBarriers == 1))
         {
             return;
         }
-#endif
         // Load-only and store-only barriers require no instructions on xarch.
         if (barrierKind == BARRIER_FULL)
         {

@@ -4,9 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
-#if DEBUG
 using static RyuJitSharp.GenTreeDebugFlags;
-#endif
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -93,10 +91,11 @@ internal static class LinearScanLocalResolutionDriverTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void VerboseResolutionReportsBoundaryMapsAndFinalVerification()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithDriver((compiler, allocator, block, interval) =>
         {
             TestConfiguration.EnableVerbose(compiler);
@@ -120,7 +119,6 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(output, Does.Contain("Final allocation"));
         });
     }
-#endif
 
     [TestCase(false, false)]
     [TestCase(true, false)]
@@ -182,13 +180,14 @@ internal static class LinearScanLocalResolutionDriverTests
         }, twoBlocks: true);
     }
 
-#if DEBUG
     [TestCase(REG_X64_RCX, REG_X64_RDX, GT_COPY)]
     [TestCase(REG_X64_STK, REG_X64_RCX, GT_LCL_VAR)]
     [TestCase(REG_X64_RCX, REG_X64_STK, GT_LCL_VAR)]
     public static void FinalVerificationReplaysInsertedRegisterAndStackMoves(
         regNumber from, regNumber to, genTreeOps oper)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithDriver((compiler, allocator, _, interval) =>
         {
             interval.physReg = from == REG_X64_STK ? REG_X64_NA : from;
@@ -237,6 +236,8 @@ internal static class LinearScanLocalResolutionDriverTests
     [Test]
     public static void FinalVerificationReplaysAnInsertedRegisterSwap()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithDriver((compiler, allocator, _, firstInterval) =>
         {
             var secondInterval = new Interval(TYP_INT, SRBM_X64_RDX)
@@ -270,11 +271,12 @@ internal static class LinearScanLocalResolutionDriverTests
         }, localCount: 2);
     }
 
-#if TARGET_AMD64
     [TestCase(false)]
     [TestCase(true)]
     public static void ResolutionMoveVerboseRowsUseNativePrefixAndPadding(bool swap)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         WithDriver((compiler, allocator, block, firstInterval) =>
         {
             firstInterval.physReg = REG_X64_RCX;
@@ -333,6 +335,8 @@ internal static class LinearScanLocalResolutionDriverTests
     [Test]
     public static void ResolutionBlockVerboseHeaderUsesNativeLocationAndActualPredecessor()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         WithDriver((compiler, allocator, entry, _) =>
         {
             var successor = entry.Next ?? throw new AssertionException("Missing successor block.");
@@ -363,15 +367,14 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(resolution.Kind, Is.EqualTo(BBJ_ALWAYS));
         }, twoBlocks: true);
     }
-#endif
-#endif
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(REG_X64_NA, true)]
     [TestCase(REG_X64_XMM8, false)]
     public static void UpperVectorSavesAndRestoresPreservePlacementAndMemoryHome(
         regNumber spillRegister, bool onStack)
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         WithDriver((compiler, allocator, block, _) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD32;
@@ -429,11 +432,13 @@ internal static class LinearScanLocalResolutionDriverTests
         });
     }
 
-#if DEBUG && TARGET_AMD64
     [TestCase(BBJ_COND)]
     [TestCase(BBJ_SWITCH)]
     public static void UpperVectorRestoreRejectsEmptyBranchWithRecoverableError(BBKinds kind)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64
+            && Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+
         LinearScanMinimalCandidatesTests.WithCompiler(compiler =>
         {
             compiler.lvaCount = 1;
@@ -468,9 +473,6 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(local.physReg, Is.EqualTo(REG_X64_XMM6));
         }, minOpts: false);
     }
-#endif
-#endif
-
     private static void WithDriver(Action<Compiler, LinearScan, BasicBlock, Interval> action,
         bool twoBlocks = false, int localCount = 1)
     {
@@ -529,11 +531,9 @@ internal static class LinearScanLocalResolutionDriverTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysicalRegisters(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "verifyResolutionMoveWithLocals")]
     private static extern void VerifyMove(LinearScan allocator, GenTree destination, uint location);
 
-#if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initializeAllocationDumpFormat")]
     private static extern void InitializeDumpFormat(LinearScan allocator);
 
@@ -542,10 +542,7 @@ internal static class LinearScanLocalResolutionDriverTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint MaxBlockBeforeResolution(LinearScan allocator);
-#endif
-#endif
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insertUpperVectorSave")]
     private static extern void SaveUpper(LinearScan allocator, GenTree tree, RefPosition reference,
         Interval upper, BasicBlock block);
@@ -553,7 +550,6 @@ internal static class LinearScanLocalResolutionDriverTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insertUpperVectorRestore")]
     private static extern void RestoreUpper(LinearScan allocator, GenTree? tree, RefPosition reference,
         Interval upper, BasicBlock block);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enregisterLocalVars")]
     private static extern ref bool EnregisterLocals(LinearScan allocator);

@@ -34,6 +34,8 @@ internal static class Configuration
 
     internal static bool EMITTER_STATS => BuildFeatures.EmitterStatistics;
 
+    internal static bool EMIT_BACKWARDS_NAVIGATION => BuildFeatures.EmitBackwardsNavigation;
+
     internal static bool TRACK_LSRA_STATS => BuildFeatures.TrackLsraStatistics;
 
     internal static bool DUMP_FLOWGRAPHS => BuildFeatures.DumpFlowgraphs;
@@ -55,6 +57,7 @@ internal static class Configuration
         private static bool s_varSetCountOps;
         private static bool s_allVarSetCountOps;
         private static bool s_emitterStatistics;
+        private static bool s_emitBackwardsNavigation;
         private static bool s_trackLsraStatistics;
         private static bool s_dumpFlowgraphs;
         private static bool s_dumpGcTables;
@@ -73,6 +76,7 @@ internal static class Configuration
             EnableVarSetCountOps();
             EnableAllVarSetCountOps();
             EnableEmitterStatistics();
+            EnableEmitBackwardsNavigation();
             EnableTrackLsraStatistics();
             EnableDumpFlowgraphs();
             EnableDumpGcTables();
@@ -100,6 +104,8 @@ internal static class Configuration
         internal static bool AllVarSetCountOps => s_allVarSetCountOps;
 
         internal static bool EmitterStatistics => s_emitterStatistics;
+
+        internal static bool EmitBackwardsNavigation => s_emitBackwardsNavigation;
 
         internal static bool TrackLsraStatistics => s_trackLsraStatistics;
 
@@ -141,6 +147,9 @@ internal static class Configuration
 
         [Conditional("EMITTER_STATS")]
         private static void EnableEmitterStatistics() => s_emitterStatistics = true;
+
+        [Conditional("EMIT_BACKWARDS_NAVIGATION")]
+        private static void EnableEmitBackwardsNavigation() => s_emitBackwardsNavigation = true;
 
         [Conditional("TRACK_LSRA_STATS")]
         private static void EnableTrackLsraStatistics() => s_trackLsraStatistics = true;

@@ -166,24 +166,25 @@ public partial class Compiler
         string? pathname = null;
         string? pre = null;
         var post = "*";
-#if DEBUG
-        var dump = JitConfig.JitDumpFg.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
-        dump |= unchecked((uint)JitConfig.JitDumpFgHash) == unchecked((uint)info.compMethodHash());
-        if (opts.IsTier0)
+        if (Configuration.DEBUG)
         {
-            dump &= JitConfig.JitDumpFgTier0 > 0;
-        }
+            var dump = JitConfig.JitDumpFg.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+            dump |= unchecked((uint)JitConfig.JitDumpFgHash) == unchecked((uint)info.compMethodHash());
+            if (opts.IsTier0)
+            {
+                dump &= JitConfig.JitDumpFgTier0 > 0;
+            }
 
-        if (!dump)
-        {
-            return null;
-        }
+            if (!dump)
+            {
+                return null;
+            }
 
-        filename = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgFile);
-        pathname = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgDir);
-        pre = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgPrePhase);
-        post = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgPhase);
-#endif
+            filename = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgFile);
+            pathname = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgDir);
+            pre = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgPrePhase);
+            post = Marshal.PtrToStringUTF8((nint)JitConfig.JitDumpFgPhase);
+        }
 
         if (!fgFlowGraphPhaseSelected(phase, pos, pre, post))
         {
@@ -315,11 +316,7 @@ public partial class Compiler
     [SuppressMessage("Reliability", "CA2000", Justification = "The dontClose result distinguishes borrowed standard streams from owned files.")]
     public bool fgDumpFlowGraph(Phases phase, PhasePosition pos)
     {
-#if DEBUG
-        var dot = JitConfig.JitDumpFgDot != 0;
-#else
-        const bool dot = true;
-#endif
+        var dot = !Configuration.DEBUG || JitConfig.JitDumpFgDot != 0;
         var writer = fgOpenFlowGraphFile(out var dontClose, phase, pos, dot ? "dot" : "fgx");
         if (writer is null)
         {
@@ -349,22 +346,23 @@ public partial class Compiler
 
     internal unsafe void fgWriteFlowGraph(TextWriter writer, Phases phase, PhasePosition pos, bool dot)
     {
-#if DEBUG
-        var includeEH = (JitConfig.JitDumpFgEH != 0) && !compIsForInlining;
-        var includeLoops = (JitConfig.JitDumpFgLoops != 0) && !compIsForInlining;
-        var constrained = JitConfig.JitDumpFgConstrained != 0;
-        var useBlockId = JitConfig.JitDumpFgBlockID != 0;
-        var displayFlags = JitConfig.JitDumpFgBlockFlags != 0;
-        var displayMemorySsa = JitConfig.JitDumpFgMemorySsa != 0;
-        var synthesizeCounts = JitConfig.JitSynthesizeCounts > 0;
-#else
-        const bool includeEH = false;
-        const bool includeLoops = false;
-        const bool constrained = true;
-        const bool displayFlags = false;
-        const bool displayMemorySsa = false;
-        const bool synthesizeCounts = false;
-#endif
+        var includeEH = false;
+        var includeLoops = false;
+        var constrained = true;
+        var useBlockId = false;
+        var displayFlags = false;
+        var displayMemorySsa = false;
+        var synthesizeCounts = false;
+        if (Configuration.DEBUG)
+        {
+            includeEH = (JitConfig.JitDumpFgEH != 0) && !compIsForInlining;
+            includeLoops = (JitConfig.JitDumpFgLoops != 0) && !compIsForInlining;
+            constrained = JitConfig.JitDumpFgConstrained != 0;
+            useBlockId = JitConfig.JitDumpFgBlockID != 0;
+            displayFlags = JitConfig.JitDumpFgBlockFlags != 0;
+            displayMemorySsa = JitConfig.JitDumpFgMemorySsa != 0;
+            synthesizeCounts = JitConfig.JitSynthesizeCounts > 0;
+        }
         assert(fgFirstBB is not null);
         var divisor = BasicBlock.getCalledCount(this);
         if (dot)
@@ -422,11 +420,14 @@ public partial class Compiler
             if (dot)
             {
                 writer.Write($"    BB{block.bbNum:D2} [label = \"");
-#if DEBUG
-                writer.Write(useBlockId ? block.dspToString() : $"BB{block.bbNum:D2}");
-#else
-                writer.Write($"BB{block.bbNum:D2}");
-#endif
+                if (Configuration.DEBUG && useBlockId)
+                {
+                    writer.Write(block.dspToString());
+                }
+                else
+                {
+                    writer.Write($"BB{block.bbNum:D2}");
+                }
                 if (displayFlags)
                 {
                     var isTry = bbIsTryBeg(block);

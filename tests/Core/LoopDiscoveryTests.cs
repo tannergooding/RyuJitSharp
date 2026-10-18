@@ -23,13 +23,16 @@ internal static unsafe class LoopDiscoveryTests
             blocks[0].SetFlags(BBF_INTERNAL);
             blocks[1].SetFlags(BBF_PROF_WEIGHT);
 
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var text = CodeGenLifeTransitionTests.Capture(() => ResetLoopInfo(compiler));
-            Assert.That(text, Is.EqualTo($"*************** In optResetLoopInfo(){Environment.NewLine}"));
-#else
-            ResetLoopInfo(compiler);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var text = CodeGenLifeTransitionTests.Capture(() => ResetLoopInfo(compiler));
+                Assert.That(text, Is.EqualTo($"*************** In optResetLoopInfo(){Environment.NewLine}"));
+            }
+            else
+            {
+                ResetLoopInfo(compiler);
+            }
 
             Assert.That(blocks[0].bbWeight, Is.EqualTo(BB_UNITY_WEIGHT));
             Assert.That(blocks[0].HasFlag(BBF_INTERNAL), Is.True);
@@ -413,10 +416,8 @@ internal static unsafe class LoopDiscoveryTests
         });
     }
 
-#if OPT_CONFIG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDoLoopInversion")]
     private static extern ref int InversionEnabled(ref JitConfigValues config);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitLoopInversionSizeLimit")]
     private static extern ref int InversionSizeLimit(ref JitConfigValues config);
@@ -558,11 +559,12 @@ internal static unsafe class LoopDiscoveryTests
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-#if DEBUG
-        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        using var tls = new JitTls(null);
-#endif
+        using var tls = TestConfiguration.IsDebug ? TestConfiguration.CreateJitTls() : null;
+        if (TestConfiguration.IsDebug)
+        {
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
+        }
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);

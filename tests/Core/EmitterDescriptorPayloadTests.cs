@@ -13,17 +13,17 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class EmitterDescriptorPayloadTests
 {
-#if !TARGET_XARCH
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(6)]
     [TestCase(7)]
-#if !TARGET_ARMARCH
     [TestCase(14)]
     [TestCase(15)]
-#endif
     public static void NonXarchBoundFlagAliasesCustomBitZeroWithoutChangingOtherBits(int value)
     {
+        Assume.That(!Configuration.TARGET_XARCH);
+        Assume.That(value < 14 || !Configuration.TARGET_ARMARCH);
+
         var descriptor = new Descriptor();
         CustomBits(descriptor) = (byte)value;
 
@@ -37,12 +37,12 @@ internal static unsafe class EmitterDescriptorPayloadTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_idCustomBits")]
     private static extern ref byte CustomBits(Emitter.instrDesc descriptor);
-#endif
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
     [Test]
     public static void CallRegisterPointerAliasesCustomBitThreeWithoutChangingBoundOrNoGc()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM);
+
         var descriptor = new Descriptor();
         descriptor.idSetIsBound();
         descriptor.idSetIsNoGC(true);
@@ -62,27 +62,27 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idIsBound(), Is.True);
         Assert.That(descriptor.idIsNoGC(), Is.True);
     }
-#endif
 
-#if TARGET_WASM
     [Test]
     public static void WasmCodeSizeRetainsTheTerminatingUnportedBoundary()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         var descriptor = new Descriptor();
 
         var exception = Assert.Throws<FatalJitException>(() => descriptor.idCodeSize());
 
         Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
     }
-#endif
 
-#if TARGET_XARCH
     [TestCase(EA_4BYTE, false, false)]
     [TestCase(EA_4BYTE | EA_CNS_RELOC_FLG, true, false)]
     [TestCase(EA_4BYTE | EA_DSP_RELOC_FLG, false, true)]
     [TestCase(EA_4BYTE | EA_CNS_RELOC_FLG | EA_DSP_RELOC_FLG, true, true)]
     public static void RelocationFlagAccessorsReplaceBothFlags(emitAttr attr, bool constant, bool displacement)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idSetIsCnsReloc();
         descriptor.idSetIsDspReloc(false);
@@ -100,6 +100,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [Test]
     public static void AddressAccessorReturnsMutableDescriptorStorage()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         ref var address = ref descriptor.idAddr();
         address.iiaSecRel = true;
@@ -110,6 +112,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [Test]
     public static void SmallDisplacementFlagClearsLargeDisplacementFlag()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idSetIsLargeDsp();
 
@@ -123,6 +127,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [Test]
     public static void EvexDescriptorContextAccessorsPreserveEncodingFields()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idIns(INS_addps);
         descriptor.idSetEvexbContext(3u);
@@ -147,6 +153,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(true)]
     public static void BoundFlagUsesTheSharedCustomBitWithoutChangingOtherPayloads(bool bound)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idIns(INS_nop);
         descriptor.idSetTlsGD();
@@ -181,6 +189,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(15u)]
     public static void CustomPayloadWritesUpdateTheBoundFlagThroughTheNativeAlias(uint value)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idIns(INS_nop);
         descriptor.idSetEvexDFV(value << 8);
@@ -199,6 +209,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(true)]
     public static void BoundAndEvexMaskViewsShareTheSameBitInBothDirections(bool setThroughBound)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idIns(INS_nop);
         descriptor.idSetIsCallRegPtr();
@@ -226,6 +238,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(15u)]
     public static void XarchCodeAndOperandSizesPreserveIndependentDescriptorState(uint size)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         var descriptor = new Descriptor();
         descriptor.idIns(INS_nop);
         descriptor.idReg1(REG_X64_RAX);
@@ -257,12 +271,13 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(REG_X64_RAX)]
     [TestCase(REG_X64_XMM0)]
     [TestCase(REG_X64_K7)]
-#if TARGET_AMD64
     [TestCase(REG_X64_R31)]
     [TestCase(REG_X64_XMM31)]
-#endif
     public static void XarchRegistersPreserveTheirBankAndTheOtherOperand(regNumber reg)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+        Assume.That((reg != REG_X64_R31 && reg != REG_X64_XMM31) || Configuration.TARGET_AMD64);
+
         var descriptor = new Descriptor();
         descriptor.idReg1(REG_X64_RAX);
         descriptor.idReg2(REG_X64_XMM0);
@@ -277,31 +292,30 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idReg2(), Is.EqualTo(reg));
     }
 
-#if !DEBUG
     [TestCase(16u)]
     [TestCase(uint.MaxValue)]
     public static void XarchWritesRetainNativeFieldTruncationInRelease(uint value)
     {
+        Assume.That(Configuration.TARGET_XARCH && !TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idCodeSize(value);
         descriptor.idGCref((GCInfo.GCtype)value);
         descriptor.idReg1(unchecked((regNumber)value));
         descriptor.idReg2(unchecked((regNumber)value));
-#if TARGET_AMD64
-        const uint registerMask = 127;
-#else
-        const uint registerMask = 63;
-#endif
+        var registerMask = Configuration.TARGET_AMD64 ? 127u : 63u;
         Assert.That(descriptor.idCodeSize(), Is.EqualTo(value & 15));
         Assert.That(descriptor.idGCref(), Is.EqualTo((GCInfo.GCtype)(value & 3)));
         Assert.That(descriptor.idReg1(), Is.EqualTo((regNumber)(value & registerMask)));
         Assert.That(descriptor.idReg2(), Is.EqualTo((regNumber)(value & registerMask)));
     }
-#else
+
     [TestCase(false)]
     [TestCase(true)]
     public static void BoundAliasRetainsTheNativeAssertionBeforeReadingOrWriting(bool write)
     {
+        Assume.That(Configuration.TARGET_XARCH && TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idIns(INS_addps);
         descriptor.idSetEvexDFV(write ? 0u : 1u << 8);
@@ -353,20 +367,19 @@ internal static unsafe class EmitterDescriptorPayloadTests
 
         return 0;
     }
-#endif
-#endif
 
-#if TARGET_ARM
     [Test]
     public static void ArmInstructionSizeEnumRetainsTheNativeNamesOrdinalsAndUnsignedWidth()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         Assert.That(Enum.GetUnderlyingType(typeof(Emitter.insSize)), Is.EqualTo(typeof(uint)));
-        Assert.That(Enum.GetNames<Emitter.insSize>(), Is.EqualTo(new[]
-        {
+        Assert.That(Enum.GetNames<Emitter.insSize>(), Is.EqualTo(
+        [
             nameof(Emitter.insSize.ISZ_16BIT),
             nameof(Emitter.insSize.ISZ_32BIT),
             nameof(Emitter.insSize.ISZ_48BIT),
-        }));
+        ]));
         Assert.That((uint)Emitter.insSize.ISZ_16BIT, Is.Zero);
         Assert.That((uint)Emitter.insSize.ISZ_32BIT, Is.EqualTo(1u));
         Assert.That((uint)Emitter.insSize.ISZ_48BIT, Is.EqualTo(2u));
@@ -377,6 +390,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(Emitter.insSize.ISZ_48BIT, 6u)]
     public static void ArmInstructionSizeRetainsThePseudoInstructionWidth(Emitter.insSize size, uint codeSize)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var descriptor = new Descriptor();
         descriptor.idInsSize(size);
         descriptor.idInsFlags(insFlags.INS_FLAGS_SET);
@@ -389,12 +404,13 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idSmallCns(), Is.EqualTo(-1));
     }
 
-#if !DEBUG
     [TestCase(3u, 1u, 6u)]
     [TestCase(4u, 2u, 2u)]
     [TestCase(uint.MaxValue, uint.MaxValue, 6u)]
     public static void ArmMetadataWritesRetainTheNativeTwoAndOneBitWidths(uint size, uint flags, uint codeSize)
     {
+        Assume.That(Configuration.TARGET_ARM && !TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idInsSize((Emitter.insSize)size);
         descriptor.idInsFlags((insFlags)flags);
@@ -403,11 +419,12 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idInsFlags(), Is.EqualTo((insFlags)(flags & 1)));
         Assert.That(descriptor.idCodeSize(), Is.EqualTo(codeSize));
     }
-#else
     [TestCase(false)]
     [TestCase(true)]
     public static void ArmMetadataAssertionsObserveTheAlreadyTruncatedField(bool flags)
     {
+        Assume.That(Configuration.TARGET_ARM && TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idInsSize(Emitter.insSize.ISZ_32BIT);
         descriptor.idInsFlags(insFlags.INS_FLAGS_SET);
@@ -462,24 +479,18 @@ internal static unsafe class EmitterDescriptorPayloadTests
 
         return 0;
     }
-#endif
-#endif
-
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
     [Test]
     public static void RegisterUnionViewsPreserveTheOtherWordAndUnusedBits()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+
         var descriptor = new Descriptor();
         ref var address = ref descriptor.idAddr();
         var words = MemoryMarshal.Cast<byte, uint>(
             MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref address, 1)));
         words[0] = 0xA5A5A5A5;
         words[1] = 0x5A5A5A5A;
-#if TARGET_LOONGARCH64
-        const int registerWord = 1;
-#else
-        const int registerWord = 0;
-#endif
+        var registerWord = Configuration.TARGET_LOONGARCH64 ? 1 : 0;
         var registerBits = words[registerWord];
         var otherWord = words[1 - registerWord];
 
@@ -499,15 +510,13 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(32767, 32767u)]
     public static void LocalAddressAndRegisterViewsAliasTheNativeWordInBothDirections(int variable, uint offset)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+
         var descriptor = new Descriptor();
         ref var address = ref descriptor.idAddr();
         var words = MemoryMarshal.Cast<byte, uint>(
             MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref address, 1)));
-#if TARGET_LOONGARCH64
-        const int registerWord = 1;
-#else
-        const int registerWord = 0;
-#endif
+        var registerWord = Configuration.TARGET_LOONGARCH64 ? 1 : 0;
         words[1 - registerWord] = 0xA5A5A5A5;
         address.iiaLclVar.initLclVarAddr(variable, offset);
         var registerBits = (uint)variable | (offset << 15);
@@ -531,11 +540,12 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(1u)]
     [TestCase(4u)]
     [TestCase(16u)]
-#if TARGET_RISCV64
     [TestCase(32u)]
-#endif
     public static void MultiInstructionDescriptorsRetainTheNativeCodeSize(uint size)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+        Assume.That(size != 32 || Configuration.TARGET_RISCV64);
+
         var descriptor = new Descriptor();
         descriptor.idCodeSize(size);
         descriptor.idReg1((regNumber)1);
@@ -554,26 +564,28 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idSmallCns(), Is.EqualTo(-1));
     }
 
-#if !DEBUG
     [TestCase(32u)]
     [TestCase(64u)]
     [TestCase(uint.MaxValue)]
     public static void MultiInstructionSizesKeepTheNativeStorageWidthWithoutAnExtraPostcondition(uint size)
     {
+        Assume.That((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            && !TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idCodeSize(size);
 
-#if TARGET_LOONGARCH64
-        Assert.That(descriptor.idCodeSize(), Is.EqualTo(size & 31));
-#else
-        Assert.That(descriptor.idCodeSize(), Is.EqualTo(size & 63));
-#endif
+        var registerMask = Configuration.TARGET_LOONGARCH64 ? 31u : 63u;
+        Assert.That(descriptor.idCodeSize(), Is.EqualTo(size & registerMask));
     }
 
     [TestCase(64u)]
     [TestCase(uint.MaxValue)]
     public static void RegisterAndOptionWritesTruncateTheirOwnFieldsOnly(uint value)
     {
+        Assume.That((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            && !TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idReg3((regNumber)3);
         descriptor.idReg4((regNumber)4);
@@ -590,10 +602,12 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idReg3(), Is.EqualTo(storedRegister));
         Assert.That(descriptor.idReg4(), Is.EqualTo(storedRegister));
     }
-#else
     [Test]
     public static void MultiInstructionSizeAssertionPrecedesTheNativeWidthTruncation()
     {
+        Assume.That((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            && TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idCodeSize(4);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -608,11 +622,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
 
             Assert.That(context.Assertions, Is.EqualTo(1));
             Assert.That(context.ObservedPayload, Is.EqualTo(4u));
-#if TARGET_LOONGARCH64
-            Assert.That(descriptor.idCodeSize(), Is.EqualTo(31u));
-#else
-            Assert.That(descriptor.idCodeSize(), Is.EqualTo(63u));
-#endif
+            var registerMask = Configuration.TARGET_LOONGARCH64 ? 31u : 63u;
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(registerMask));
         }
         finally
         {
@@ -625,6 +636,9 @@ internal static unsafe class EmitterDescriptorPayloadTests
     [TestCase(2u)]
     public static void RegisterAndOptionAssertionsObserveTheirTruncatedField(uint operand)
     {
+        Assume.That((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            && TestConfiguration.IsDebug);
+
         var descriptor = new Descriptor();
         descriptor.idInsOpt((insOpts)2);
         descriptor.idReg3((regNumber)3);
@@ -713,9 +727,6 @@ internal static unsafe class EmitterDescriptorPayloadTests
 
         return 0;
     }
-#endif
-#endif
-
     private sealed class Descriptor : Emitter.instrDesc
     {
         public override int NativeLogicalSize => throw new NotSupportedException();

@@ -414,7 +414,7 @@ public sealed partial class CodeGen
         }
         if (Configuration.TARGET_ARM && _compiler.compLocallocUsed)
         {
-            Emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM32_R9, TargetRuntimeMetadata.StackPointerBaseRegister, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM32_R9, TargetRuntimeMetadata.StackPointerBaseRegister, canSkip: false);
             _regSet.verifyRegUsed(REG_ARM32_R9);
             _compiler.unwindSetFrameReg(REG_ARM32_R9, 0);
         }
@@ -558,9 +558,10 @@ public sealed partial class CodeGen
                 ref readonly var lastArg = ref _compiler.lvaGetDesc(_compiler.lvaVarargsHandleArg);
                 noway_assert(!lastArg.lvRegister);
                 var offset = lastArg.StackOffset;
-#if DEBUG
-                assert(offset != BAD_STK_OFFS);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(offset != BAD_STK_OFFS);
+                }
                 noway_assert(lastArg.lvFramePointerBased);
                 Emitter.emitIns_R_ARR(INS_lea, EA_PTRSIZE, TargetRuntimeMetadata.ScratchRegister, genFramePointerReg(), TargetRuntimeMetadata.ScratchRegister, offset);
                 if (local.lvIsInReg)

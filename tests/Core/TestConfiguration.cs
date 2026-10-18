@@ -32,12 +32,44 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "minRegCandidateCount")]
     private static extern ref uint MinRegCandidateCount(RefPosition reference);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgNormalizeEHDone")]
+    private static extern ref bool EhNormalizationDone(Compiler compiler);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_doNotEnregReason")]
     private static extern ref DoNotEnregisterReason DoNotEnregisterReasonField(ref LclVarDsc descriptor);
+
+    private static FieldInfo FatalNoWayAssertBodyArgsCountField =>
+        typeof(Globals).GetField(
+            "s_fatalNoWayAssertBodyArgsCount",
+            BindingFlags.NonPublic | BindingFlags.Static)
+        ?? throw new InvalidOperationException("Missing Debug fatal argument diagnostic state.");
 
     public static bool IsDebug => Configuration.DEBUG;
 
     public static bool IsArm32 => Configuration.TARGET_ARM;
+
+    public static uint GetFatalNoWayAssertBodyArgsCount()
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Fatal argument diagnostics are available only in Debug.");
+        }
+
+        var value = FatalNoWayAssertBodyArgsCountField.GetValue(null);
+        return value is uint count
+            ? count
+            : throw new InvalidOperationException("Invalid Debug fatal argument diagnostic state.");
+    }
+
+    public static void SetFatalNoWayAssertBodyArgsCount(uint count)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Fatal argument diagnostics are available only in Debug.");
+        }
+
+        FatalNoWayAssertBodyArgsCountField.SetValue(null, count);
+    }
 
     public static void SetScalableVectorConfiguration(bool enabled)
     {
@@ -174,6 +206,14 @@ internal static partial class TestConfiguration
     public static void EnableVerbose(Compiler compiler)
     {
         SetVerbose(compiler, true);
+    }
+
+    public static void SetEhNormalizationDone(Compiler compiler, bool done)
+    {
+        if (IsDebug)
+        {
+            EhNormalizationDone(compiler) = done;
+        }
     }
 
     public static void SetVerbose(Compiler compiler, bool enabled)

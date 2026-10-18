@@ -796,16 +796,8 @@ public sealed partial class Lowering
     {
         if (node.IsBoundsChecked)
         {
-            SetMultiplyUsed(node.Arr
-#if DEBUG
-                , "LowerIndexAddr Arr"
-#endif
-            );
-            SetMultiplyUsed(node.Index
-#if DEBUG
-                , "LowerIndexAddr Index"
-#endif
-            );
+            SetMultiplyUsed(node.Arr, Configuration.DEBUG ? "LowerIndexAddr Arr" : null);
+            SetMultiplyUsed(node.Index, Configuration.DEBUG ? "LowerIndexAddr Index" : null);
         }
     }
 
@@ -813,10 +805,6 @@ public sealed partial class Lowering
     {
         assert(node.Oper is GT_CKFINITE);
         // Codegen reads the operand for both the finiteness check and the produced value.
-        SetMultiplyUsed(node.Op1
-#if DEBUG
-            , "LowerCkfinite op1 (finiteness check)"
-#endif
-        );
+        SetMultiplyUsed(node.Op1, Configuration.DEBUG ? "LowerCkfinite op1 (finiteness check)" : null);
     }
 }

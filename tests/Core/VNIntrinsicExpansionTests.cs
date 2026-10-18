@@ -26,7 +26,6 @@ internal static unsafe class VNIntrinsicExpansionTests
     private static int s_contentQueries;
     private static int s_staticContentQueries;
 
-#if DEBUG
     [TestCase("", "")]
     [TestCase("Hello", "Hello")]
     [TestCase("A\r\nB", "A  B")]
@@ -36,6 +35,8 @@ internal static unsafe class VNIntrinsicExpansionTests
     [TestCase("A\u00E9\u20AC", "A\u00E9\u20AC")]
     public static void ObjectDescriptionMatchesNativeCString(string source, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(source, (compiler, _, _, _) =>
         {
             var output = CodeGenLifeTransitionTests.Capture(() => compiler.eePrintObjectDescription("object", null));
@@ -46,6 +47,8 @@ internal static unsafe class VNIntrinsicExpansionTests
     [Test]
     public static void ReadonlyStaticDataProducesGuardedCopy()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler("Hi", (compiler, entry, body, store) =>
         {
             var field = compiler.FieldSeqStore.Create((CORINFO_FIELD_STRUCT_*)0x1234, 0,
@@ -78,6 +81,8 @@ internal static unsafe class VNIntrinsicExpansionTests
     [TestCase(6)]
     public static void LiteralDumpMatchesNativeBoundaries(int kind)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var (source, expected) = kind switch
         {
             0 => ("", "\"\""),
@@ -95,7 +100,6 @@ internal static unsafe class VNIntrinsicExpansionTests
             Assert.That(output, Is.EqualTo(expected));
         });
     }
-#endif
 
     [TestCase("A", "41")]
     [TestCase("A\u00E9\u20AC", "41C3A9E282AC")]
@@ -398,11 +402,12 @@ internal static unsafe class VNIntrinsicExpansionTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_STRUCT_*, byte*, int, int, bool, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte>)
             &GetStaticFieldContent;
-#if DEBUG
-        vtable.Base.Base.printObjectDescription = &GetDescription;
-        vtable.Base.Base.getStringLiteral = &GetLiteral;
-        vtable.Base.Base.runWithSPMIErrorTrap = &RunTrap;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.Base.Base.printObjectDescription = &GetDescription;
+            vtable.Base.Base.getStringLiteral = &GetLiteral;
+            vtable.Base.Base.runWithSPMIErrorTrap = &RunTrap;
+        }
         ICorJitInfo ee = new() { lpVtbl = &vtable };
         using var tls = TestConfiguration.CreateJitTls(&ee);
         var previous = JitTls.Compiler;
@@ -466,7 +471,6 @@ internal static unsafe class VNIntrinsicExpansionTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsFieldStatic(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field) => 1;
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static nint GetDescription(ICorJitInfo* self, CORINFO_OBJECT_STRUCT_* obj,
         byte* buffer, nint bufferSize, nint* requiredBufferSize)
@@ -503,7 +507,6 @@ internal static unsafe class VNIntrinsicExpansionTests
         s_content.AsSpan(0, Math.Min(bufferSize, s_content.Length)).CopyTo(new Span<char>(buffer, bufferSize));
         return s_content.Length;
     }
-#endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte GetContent(ICorJitInfo* self, CORINFO_OBJECT_STRUCT_* obj, byte* buffer,

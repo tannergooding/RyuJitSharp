@@ -15,10 +15,15 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if SWIFT_SUPPORT
 [NonParallelizable]
 internal static unsafe class SwiftAbiTests
 {
+    [SetUp]
+    public static void RequireSwiftSupport()
+    {
+        Assume.That(Configuration.SWIFT_SUPPORT);
+    }
+
     [Test]
     public static void SwiftLoweringIsCachedPerClassAndCompiler()
     {
@@ -550,4 +555,3 @@ internal static unsafe class SwiftAbiTests
         lowering->offsets[0] = 4;
     }
 }
-#endif

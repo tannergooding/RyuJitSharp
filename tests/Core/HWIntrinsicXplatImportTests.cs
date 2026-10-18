@@ -12,20 +12,29 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && (TARGET_XARCH || TARGET_ARM64)
 [NonParallelizable]
 internal static unsafe class HWIntrinsicXplatImportTests
 {
-#if TARGET_XARCH
     private static int s_assertionCount;
 
+    [SetUp]
+    public static void RequireSupportedTarget()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.FEATURE_SIMD
+            && (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64));
+    }
+
     [TestCase((byte)32, false)]
-#if DEBUG
     [TestCase((byte)64, true)]
-#endif
     public static void VectorT128ExpansionKeepsDestinationIdentityAndNativeWidthAssertion(
         byte simdSize, bool expectsAssertion)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+        if (expectsAssertion)
+        {
+            Assume.That(TestConfiguration.IsDebug);
+        }
+
         WithImporter(compiler => {
             TestConfiguration.SetCompilerFullName(compiler, nameof(VectorT128ExpansionKeepsDestinationIdentityAndNativeWidthAssertion));
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_VectorT128);
@@ -59,6 +68,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     public static void SignedSaturatingNarrowUsesDestinationLanesAndPreservesOperandOrder(
         var_types baseType, var_types destinationType)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithImporter(compiler => {
             TestConfiguration.SetCompilerFullName(compiler, nameof(SignedSaturatingNarrowUsesDestinationLanesAndPreservesOperandOrder));
             CORINFO_SIG_INFO sig = default;
@@ -98,6 +109,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     public static void MemoryImportsStripOnlyByrefAddressCasts(
         NamedIntrinsic intrinsic, bool withOffset, bool fromByref)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithImporter(compiler => {
             TestConfiguration.SetCompilerFullName(compiler, nameof(MemoryImportsStripOnlyByrefAddressCasts));
             var isStore = intrinsic is NI_Vector_StoreAligned or NI_Vector_StoreAlignedNonTemporal or NI_Vector_StoreUnsafe;
@@ -145,6 +158,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [TestCase(NI_Vector_FusedMultiplyAdd, TYP_FLOAT)]
     public static void UnavailableIsaDoesNotConsumeOperands(NamedIntrinsic intrinsic, var_types baseType)
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = intrinsic == NI_Vector_FusedMultiplyAdd ? (ushort)3 : (ushort)1;
@@ -166,6 +181,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [Test]
     public static void AvxOnlyWidthCheckFallsBackBeforePoppingOperands()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 1;
@@ -184,6 +201,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [Test]
     public static void FloatingEvenIntegerAndScalarShiftPreserveTheStack()
     {
+        Assume.That(Configuration.TARGET_XARCH);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 1;
@@ -200,8 +219,6 @@ internal static unsafe class HWIntrinsicXplatImportTests
             Assert.That(compiler.impStackHeight, Is.EqualTo(2));
         });
     }
-#endif
-
     [Test]
     public static void BinaryOperandsPreserveSourceOrder()
     {
@@ -225,26 +242,23 @@ internal static unsafe class HWIntrinsicXplatImportTests
     }
 
     [TestCase((byte)16)]
-#if TARGET_XARCH
     [TestCase((byte)32)]
-#elif TARGET_ARM64
     [TestCase((byte)8)]
-#endif
     public static void PerLaneShiftUsesNativeWidthAndPreservesOperandOrder(byte size)
     {
+        Assume.That(Configuration.TARGET_ARM64 ? size <= 16 : size >= 16);
+
         WithImporter(compiler => {
             TestConfiguration.SetCompilerFullName(compiler, nameof(PerLaneShiftUsesNativeWidthAndPreservesOperandOrder));
-#if TARGET_XARCH
-            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX2);
-            var expected = NI_AVX2_ShiftLeftLogicalVariable;
-#elif TARGET_ARM64
-            var expected = NI_AdvSimd_ShiftLogical;
-#endif
-#if TARGET_ARM64
-            var type = size == 8 ? TYP_SIMD8 : TYP_SIMD16;
-#else
+            var expected = Configuration.TARGET_XARCH
+                ? NI_AVX2_ShiftLeftLogicalVariable
+                : NI_AdvSimd_ShiftLogical;
+            if (Configuration.TARGET_XARCH)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX2);
+            }
+
             var type = size == 8 ? TYP_SIMD8 : size == 16 ? TYP_SIMD16 : TYP_SIMD32;
-#endif
             compiler.lvaTable[0].Type = type;
             compiler.lvaTable[1].Type = type;
             CORINFO_SIG_INFO sig = default;
@@ -318,11 +332,12 @@ internal static unsafe class HWIntrinsicXplatImportTests
         });
     }
 
-#if TARGET_ARM64
     [TestCase(false)]
     [TestCase(true)]
     public static void LongGeometricSequenceWithConstantMultiplierDefersOrPreservesTheStack(bool minOpts)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             TestConfiguration.SetCompilerFullName(compiler, nameof(LongGeometricSequenceWithConstantMultiplierDefersOrPreservesTheStack));
             compiler.opts.SetMinOpts(minOpts);
@@ -372,6 +387,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     public static void LongMultiplicationEvaluatesEachOperandOnceAndPropagatesSpillEffects(
         var_types baseType, byte size, bool scalarSecond)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             var type = size == 8 ? TYP_SIMD8 : TYP_SIMD16;
             var first = new GenTreeIndir(genTreeOps.GT_IND, type,
@@ -419,6 +436,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     public static void IntegerSaturationUsesAdvSimdAndPreservesOperandOrder(
         NamedIntrinsic operation, var_types baseType, byte size, NamedIntrinsic expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 2;
@@ -445,6 +464,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [Test]
     public static void LongCreateSequenceFallsBackBeforePoppingVariableIncrement()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 2;
@@ -465,6 +486,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [TestCase(4)]
     public static void OutOfRangeWithElementFallsBackBeforePopping(int lane)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 3;
@@ -484,6 +507,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [Test]
     public static void VariableWithElementDefersExpansionWithMethodAndOperandOrder()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         WithImporter(compiler => {
             CORINFO_SIG_INFO sig = default;
             sig.numArgs = 3;
@@ -510,8 +535,6 @@ internal static unsafe class HWIntrinsicXplatImportTests
             Assert.That(compiler.impStackHeight, Is.Zero);
         });
     }
-#endif
-
     private static void WithImporter(Action<Compiler> test)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -551,9 +574,11 @@ internal static unsafe class HWIntrinsicXplatImportTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
     {
-#if TARGET_XARCH
-        s_assertionCount++;
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            s_assertionCount++;
+        }
+
         return 0;
     }
 
@@ -567,4 +592,3 @@ internal static unsafe class HWIntrinsicXplatImportTests
         in CORINFO_SIG_INFO sig, in CORINFO_CONST_LOOKUP entryPoint,
         var_types simdBaseType, var_types retType, byte simdSize, bool mustExpand);
 }
-#endif

@@ -10,28 +10,20 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "At the committed packet-306 HEAD, select packet 307 from all Pending master rows by ascending pinned source_blob size, grouping complete file sets and targeting roughly 300 candidates; include the 73 requeued unassessed rows in ordinary ranking. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "Select packet 308 from the 1,367 Pending candidates by ascending pinned source_blob size, including returned deferrals and taking complete file groups to at least 300 candidates. Keep the four B209 candidates Deferred until the target-width table/emitter dependency closure and tests are complete.",
 
     "unresolvedConditionalCleanup": [
       {
-        "batch": "conditional-cleanup-303-572aa772",
-        "deferredCount": 33,
-        "candidateLedger": "artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv"
-      },
-      {
-        "batch": "conditional-cleanup-304-7992524d",
-        "deferredCount": 47,
-        "candidateLedger": "artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv"
-      },
-      {
-        "batch": "conditional-cleanup-305-e11e1f13",
-        "deferredCount": 35,
-        "candidateLedger": "artifacts\\conditional-cleanup\\batch-305-e11e1f13\\candidates.csv"
-      },
-      {
-        "batch": "conditional-cleanup-306-93d0ef86",
-        "deferredCount": 24,
-        "candidateLedger": "artifacts\\conditional-cleanup\\batch-306-93d0ef86\\candidates.csv"
+        "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
+        "deferredCount": 4,
+        "candidateIds": [
+          "ABI-0001",
+          "CCB-0910",
+          "CCB-1058",
+          "CCB-1062"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Port and test the target-width table/emitter dependency closure before re-evaluating these candidates."
       }
     ],
 

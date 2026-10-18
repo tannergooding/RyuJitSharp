@@ -1,8 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -124,28 +122,16 @@ internal static class PhasedVarInitializationTests
         Assert.That(value.HasFinalValue, Is.True);
     }
 
-    private static unsafe void WithoutAssertions(Action action)
+    private static void WithoutAssertions(Action action)
     {
-#if DEBUG
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = new() { doAssert = &RecordAssertion };
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertionCount = 0;
-#endif
-        action();
-#if DEBUG
-        Assert.That(s_assertionCount, Is.Zero);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = TestConfiguration.CaptureDebugAssertions(action);
+            Assert.That(assertions, Is.Empty);
+        }
+        else
+        {
+            action();
+        }
     }
-
-#if DEBUG
-    private static int s_assertionCount;
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static unsafe int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
-    {
-        s_assertionCount++;
-        return 0;
-    }
-#endif
 }

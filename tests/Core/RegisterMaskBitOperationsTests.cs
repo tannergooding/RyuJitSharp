@@ -2,7 +2,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 
@@ -97,15 +96,13 @@ internal static unsafe class RegisterMaskBitOperationsTests
 
         Assert.That(BitScanForward(mask), Is.EqualTo(expected));
     }
-#if DEBUG
-    private static int s_assertions;
-    private static string? s_lastAssertion;
-
     [TestCase(false)]
     [TestCase(true)]
     public static void ZeroScanRetainsTheNativeNonzeroAssertion(bool fullMask)
     {
-        WithAssertionRecorder(() => {
+        Assume.That(TestConfiguration.IsDebug);
+
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(() => {
             if (fullMask)
             {
                 _ = BitScanForward(default(regMaskTP));
@@ -114,29 +111,9 @@ internal static unsafe class RegisterMaskBitOperationsTests
             {
                 _ = BitScanForward(default(regMask));
             }
-
-            Assert.That(s_assertions, Is.EqualTo(1));
-            Assert.That(s_lastAssertion, Is.EqualTo("value != 0"));
         });
-    }
 
-    private static void WithAssertionRecorder(Action action)
-    {
-        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-        s_assertions = 0;
-        s_lastAssertion = null;
-        action();
+        Assert.That(assertions, Has.Length.EqualTo(1));
+        Assert.That(assertions[0], Is.EqualTo("value != 0"));
     }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
-    {
-        s_assertions++;
-        s_lastAssertion = Marshal.PtrToStringUTF8((nint)expression);
-        return 0;
-    }
-#endif
 }

@@ -174,10 +174,11 @@ internal static unsafe class ValueNumExceptionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DebugExceptionSetCheckUsesSortedSubsetOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithStore((_, store) =>
         {
             var first = store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNF_NullPtrExc,
@@ -192,7 +193,6 @@ internal static unsafe class ValueNumExceptionTests
                 ValueNumStore.VNForEmptyExcSet()), Is.True);
         });
     }
-#endif
 
     [TestCase(GT_DIV, TYP_INT, -1, int.MinValue, false, true)]
     [TestCase(GT_MOD, TYP_INT, 2, int.MinValue, false, false)]

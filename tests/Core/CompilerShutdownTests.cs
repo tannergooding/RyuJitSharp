@@ -141,10 +141,10 @@ internal static unsafe class CompilerShutdownTests
         WithState(() => {
             var saved = (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
                 s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount);
-#if DEBUG
-            var savedArgs = s_fatalNoWayAssertBodyArgsCount;
-            using var tls = new JitTls(null);
-#endif
+            var savedArgs = TestConfiguration.IsDebug
+                ? TestConfiguration.GetFatalNoWayAssertBodyArgsCount()
+                : 0;
+            using var tls = TestConfiguration.CreateJitTls();
             var previousCompiler = JitTls.Compiler;
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             JitFlags flags = default;
@@ -158,9 +158,10 @@ internal static unsafe class CompilerShutdownTests
             {
                 s_fatalBadCodeCount = s_fatalNoWayCount = s_fatalImplLimitationCount = 0;
                 s_fatalNoMemCount = s_fatalNoWayAssertBodyCount = s_fatalNyiCount = 0;
-#if DEBUG
-                s_fatalNoWayAssertBodyArgsCount = 0;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    TestConfiguration.SetFatalNoWayAssertBodyArgsCount(0);
+                }
                 Assert.That(Assert.Throws<FatalJitException>(badCode)?.Result, Is.EqualTo(CorJitResult.CORJIT_BADCODE));
                 Assert.That(Assert.Throws<FatalJitException>(noWay)?.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
                 Assert.That(Assert.Throws<FatalJitException>(implLimitation)?.Result, Is.EqualTo(CorJitResult.CORJIT_IMPLLIMITATION));
@@ -181,11 +182,12 @@ internal static unsafe class CompilerShutdownTests
                     "   noWay:               1\n" +
                     "   implLimitation:      1\n" +
                     "   NOMEM:               1\n" +
-                    "   noWayAssertBody:     2\n" +
-#if DEBUG
-                    "   noWayAssertBodyArgs: 1\n" +
-#endif
-                    "   NYI:                 1\n";
+                    "   noWayAssertBody:     2\n";
+                if (TestConfiguration.IsDebug)
+                {
+                    expected += "   noWayAssertBodyArgs: 1\n";
+                }
+                expected += "   NYI:                 1\n";
 
                 Assert.That(Encoding.UTF8.GetString(output.ToArray()), Does.EndWith(expected));
             }
@@ -194,9 +196,10 @@ internal static unsafe class CompilerShutdownTests
                 JitTls.Compiler = previousCompiler;
                 (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
                     s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount) = saved;
-#if DEBUG
-                s_fatalNoWayAssertBodyArgsCount = savedArgs;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    TestConfiguration.SetFatalNoWayAssertBodyArgsCount(savedArgs);
+                }
             }
         });
     }
@@ -229,10 +232,11 @@ internal static unsafe class CompilerShutdownTests
     }
 #endif
 
-#if COUNT_BASIC_BLOCKS
     [Test]
     public static void ShutdownPrintsBlockStatisticsBeforeRegisteredDumps()
     {
+        Assume.That(Configuration.COUNT_BASIC_BLOCKS);
+
         WithState(() => {
             var entries = ShutdownEntries(null);
             var saved = ((string?, Dumpable?)[])entries.Clone();
@@ -270,7 +274,6 @@ internal static unsafe class CompilerShutdownTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_entries")]
     private static extern ref (string? Name, Dumpable? Dumpable)[] ShutdownEntries(DumpOnShutdown? type);
-#endif
 
     [Test]
     public static void TimerTerminationUpdatesTheCallersAggregate()
@@ -316,20 +319,22 @@ internal static unsafe class CompilerShutdownTests
             {
                 AltAssemblies(null) = new AssemblyNamesList2(name);
                 AltInitialized(null) = true;
-#if DEBUG
-                DumpAssemblies(null) = new AssemblyNamesList2(name);
-                DumpInitialized(null) = true;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    DumpAssemblies(null) = new AssemblyNamesList2(name);
+                    DumpInitialized(null) = true;
+                }
             }
 
             Compiler.compShutdown();
 
             Assert.That(AltAssemblies(null), Is.Null);
             Assert.That(AltInitialized(null), Is.True);
-#if DEBUG
-            Assert.That(DumpAssemblies(null), Is.Null);
-            Assert.That(DumpInitialized(null), Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(DumpAssemblies(null), Is.Null);
+                Assert.That(DumpInitialized(null), Is.True);
+            }
         });
     }
 
@@ -389,9 +394,10 @@ internal static unsafe class CompilerShutdownTests
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: false);
             s_jitstdout = writer;
             initialized.SetValue(null, true);
-#if DEBUG
-            LoopStats(ref JitConfig) = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                LoopStats(ref JitConfig) = 1;
+            }
             try
             {
                 var jit = new CILJit();
@@ -413,11 +419,12 @@ internal static unsafe class CompilerShutdownTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void XmlFooterPrecedesZeroMethodGuardAndFallsBackToStdout(bool canOpenXml)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithState(() => {
             var path = canOpenXml ? Path.GetTempFileName() : Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "inlines.xml");
             using var output = new MemoryStream();
@@ -467,6 +474,8 @@ internal static unsafe class CompilerShutdownTests
     [TestCase(1, 1)]
     public static void ShutdownSelectsAggregateReportsInNativeOrder(int loops, int locals)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithState(() => {
             LoopStats(ref JitConfig) = loops;
             EnregStats(ref JitConfig) = locals;
@@ -490,7 +499,6 @@ internal static unsafe class CompilerShutdownTests
             }
         });
     }
-#endif
 
     private static void WithState(Action action)
     {
@@ -512,14 +520,13 @@ internal static unsafe class CompilerShutdownTests
             grossVMsize = grossNCsize = totalNCsize = gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 0;
             Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
         }
-#if DEBUG
-        var dump = DumpAssemblies(null);
-        var dumpInitialized = DumpInitialized(null);
-        var xmlHeader = XmlHeader;
-        var enreg = Compiler.s_enregisterStats;
-        XmlHeader = false;
-        Compiler.s_enregisterStats = default;
-#endif
+        var dump = TestConfiguration.IsDebug ? DumpAssemblies(null) : null;
+        var dumpInitialized = TestConfiguration.IsDebug && DumpInitialized(null);
+        var xmlHeader = TestConfiguration.IsDebug && XmlHeader;
+        if (TestConfiguration.IsDebug)
+        {
+            XmlHeader = false;
+        }
         JitConfig = new JitConfigValues();
         CsvFile(null) = null;
         TimeLogFile(null) = 0;
@@ -543,12 +550,12 @@ internal static unsafe class CompilerShutdownTests
                 (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
                     gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt) = sizeStatistics;
             }
-#if DEBUG
-            DumpAssemblies(null) = dump;
-            DumpInitialized(null) = dumpInitialized;
-            XmlHeader = xmlHeader;
-            Compiler.s_enregisterStats = enreg;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                DumpAssemblies(null) = dump;
+                DumpInitialized(null) = dumpInitialized;
+                XmlHeader = xmlHeader;
+            }
         }
     }
 
@@ -567,26 +574,26 @@ internal static unsafe class CompilerShutdownTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitTimeLogCsv")]
     private static extern ref byte* CsvConfig(ref JitConfigValues config);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pJitDisasmIncludeAssembliesList")]
     private static extern ref AssemblyNamesList2? DumpAssemblies(Compiler? compiler);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pJitDisasmIncludeAssembliesListInitialized")]
     private static extern ref bool DumpInitialized(Compiler? compiler);
 
-    private static readonly FieldInfo s_xmlHeaderField =
-        typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)!
-            .GetField("HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)!;
+    private static FieldInfo XmlHeaderField =>
+        typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)?
+            .GetField("HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Missing XML dump header state.");
 
     private static bool XmlHeader
     {
         get
         {
-            return (bool)s_xmlHeaderField.GetValue(null)!;
+            return (bool)XmlHeaderField.GetValue(null)!;
         }
         set
         {
-            s_xmlHeaderField.SetValue(null, value);
+            XmlHeaderField.SetValue(null, value);
         }
     }
 
@@ -598,5 +605,5 @@ internal static unsafe class CompilerShutdownTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEnregStats")]
     private static extern ref int EnregStats(ref JitConfigValues config);
-#endif
+
 }
