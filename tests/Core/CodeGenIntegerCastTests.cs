@@ -322,20 +322,19 @@ internal static class CodeGenIntegerCastTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsIntegerCastAndConsumesSource()
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var cast = CreateCast(Register(compiler, TYP_INT, REG_RAX), false, TYP_LONG, false);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genIntToIntCast(cast));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static GenTreeCast CreateCast(GenTree source, bool unsigned, var_types type, bool overflow)
     {

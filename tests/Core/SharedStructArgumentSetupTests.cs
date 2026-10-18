@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64 || TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -18,29 +17,23 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SharedStructArgumentSetupTests
 {
-#if TARGET_AMD64
-    private const regNumber DestinationRegister = REG_X64_RDI;
-    private const regNumber SourceRegister = REG_X64_RSI;
-    private const regNumber AddressRegister = REG_X64_R10;
-    private const regNumber FieldRegister = REG_X64_RAX;
-    private const regNumber ReferenceRegister = REG_X64_RDX;
-#else
-    private const regNumber DestinationRegister = REG_ARM64_R0;
-    private const regNumber SourceRegister = REG_ARM64_R1;
-    private const regNumber AddressRegister = REG_ARM64_R2;
-    private const regNumber FieldRegister = REG_ARM64_R3;
-    private const regNumber ReferenceRegister = REG_ARM64_R4;
-#endif
+    private static regNumber DestinationRegister => Configuration.TARGET_AMD64 ? REG_X64_RDI : REG_ARM64_R0;
+    private static regNumber SourceRegister => Configuration.TARGET_AMD64 ? REG_X64_RSI : REG_ARM64_R1;
+    private static regNumber AddressRegister => Configuration.TARGET_AMD64 ? REG_X64_R10 : REG_ARM64_R2;
+    private static regNumber FieldRegister => Configuration.TARGET_AMD64 ? REG_X64_RAX : REG_ARM64_R3;
+    private static regNumber ReferenceRegister => Configuration.TARGET_AMD64 ? REG_X64_RDX : REG_ARM64_R4;
 
     [TestCase(GT_BLK, false)]
     [TestCase(GT_BLK, true)]
-#if FEATURE_SIMD
     [TestCase(GT_IND, false)]
     [TestCase(GT_IND, true)]
-#endif
     public static void IndirectSetupConsumesOnlyTheAddressAndElidesOnlyTheSameRegisterMove(
         genTreeOps oper, bool sourceReady)
     {
+        if (oper is GT_IND)
+        {
+            Assume.That(Configuration.FEATURE_SIMD);
+        }
         WithCompiler((_, codeGen) =>
         {
             var addressReg = sourceReady ? SourceRegister : AddressRegister;
@@ -95,12 +88,7 @@ internal static unsafe class SharedStructArgumentSetupTests
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(DestinationRegister));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_PTRSIZE));
             Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
-            AssertStack(descriptors[1],
-#if TARGET_AMD64
-                INS_lea,
-#else
-                INS_add,
-#endif
+            AssertStack(descriptors[1], Configuration.TARGET_AMD64 ? INS_lea : INS_add,
                 EA_PTRSIZE, DestinationRegister, 0, 16);
             Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_mov));
@@ -140,20 +128,10 @@ internal static unsafe class SharedStructArgumentSetupTests
             Assert.That(descriptors, Has.Count.EqualTo(destinationReady ? 1 : 2));
             if (!destinationReady)
             {
-                AssertStack(descriptors[0],
-#if TARGET_AMD64
-                    INS_lea,
-#else
-                    INS_add,
-#endif
+                AssertStack(descriptors[0], Configuration.TARGET_AMD64 ? INS_lea : INS_add,
                     EA_PTRSIZE, DestinationRegister, 0, 16);
             }
-            AssertStack(descriptors[^1],
-#if TARGET_AMD64
-                INS_lea,
-#else
-                INS_sub,
-#endif
+            AssertStack(descriptors[^1], Configuration.TARGET_AMD64 ? INS_lea : INS_sub,
                 EA_PTRSIZE, SourceRegister, 1, 8);
             foreach (var descriptor in descriptors)
             {
@@ -184,11 +162,13 @@ internal static unsafe class SharedStructArgumentSetupTests
     }
 
     [TestCase(false)]
-#if FEATURE_FASTTAILCALL
     [TestCase(true)]
-#endif
     public static void FieldListConsumesAndStoresEachFieldInOrderWithNativeWidthsAndTailCallBounds(bool incoming)
     {
+        if (incoming)
+        {
+            Assume.That(Configuration.FEATURE_FASTTAILCALL);
+        }
         WithCompiler((compiler, codeGen) =>
         {
             compiler.lvaTable[0] = new LclVarDsc
@@ -217,19 +197,9 @@ internal static unsafe class SharedStructArgumentSetupTests
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
-            AssertStack(descriptors[0],
-#if TARGET_AMD64
-                INS_mov,
-#else
-                INS_strb,
-#endif
+            AssertStack(descriptors[0], Configuration.TARGET_AMD64 ? INS_mov : INS_strb,
                 EA_1BYTE, FieldRegister, 0, offset);
-            AssertStack(descriptors[1],
-#if TARGET_AMD64
-                INS_mov,
-#else
-                INS_str,
-#endif
+            AssertStack(descriptors[1], Configuration.TARGET_AMD64 ? INS_mov : INS_str,
                 EA_PTRSIZE, ReferenceRegister, 0, offset + 8);
             Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
@@ -239,13 +209,13 @@ internal static unsafe class SharedStructArgumentSetupTests
         });
     }
 
-#if TARGET_AMD64
     [TestCase(0u)]
     [TestCase(96u)]
     [TestCase(0x80000000u)]
     [TestCase(uint.MaxValue)]
     public static void OptionalSizePreservesTheNativeUnsignedStackByteSize(uint size)
     {
+        Assume.That(Configuration.TARGET_AMD64);
         WithCompiler((_, codeGen) =>
         {
             var source = new GenTreeBlk(TYP_STRUCT, Physical(TYP_BYREF, SourceRegister), new ClassLayout(16))
@@ -269,12 +239,11 @@ internal static unsafe class SharedStructArgumentSetupTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCns")]
     private static extern nint GetConstant(Emitter emitter, Emitter.instrDesc descriptor);
-#endif
 
-#if TARGET_ARM64 && FEATURE_SIMD
     [Test]
     public static void Simd12FieldListRecordsTheValueBeforeFollowingFields()
     {
+        Assume.That(Configuration.TARGET_ARM64 && Configuration.FEATURE_SIMD);
         WithCompiler((compiler, codeGen) =>
         {
             var small = Physical(TYP_INT, FieldRegister);
@@ -310,7 +279,6 @@ internal static unsafe class SharedStructArgumentSetupTests
             AssertConsumed(reference, true);
         });
     }
-#endif
 
     private static GenTreePutArgStk Argument(GenTree source, int offset, int size, bool incoming = false)
     {
@@ -342,22 +310,30 @@ internal static unsafe class SharedStructArgumentSetupTests
 
     private static void AssertConsumed(GenTree node, bool consumed)
     {
-#if DEBUG
-        Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) != 0, Is.EqualTo(consumed));
-#else
-        Assert.That(node.IsContained || node.IsUsedFromReg, Is.True);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED) != 0,
+                Is.EqualTo(consumed));
+        }
+        else
+        {
+            Assert.That(node.IsContained || node.IsUsedFromReg, Is.True);
+        }
     }
 
     private static void WithCompiler(Action<Compiler, CodeGen> action)
     {
-#if TARGET_AMD64
-        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+        Assume.That(Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64);
+        if (Configuration.TARGET_AMD64)
         {
-            ConfigureCompiler(compiler, codeGen);
-            action(compiler, codeGen);
-        });
-#else
+            EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+            {
+                ConfigureCompiler(compiler, codeGen);
+                action(compiler, codeGen);
+            });
+            return;
+        }
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -374,11 +350,7 @@ internal static unsafe class SharedStructArgumentSetupTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             ConfigureCompiler(compiler, codeGen);
             action(compiler, codeGen);
         }
@@ -386,7 +358,6 @@ internal static unsafe class SharedStructArgumentSetupTests
         {
             JitTls.Compiler = previous;
         }
-#endif
     }
 
     private static void ConfigureCompiler(Compiler compiler, CodeGen codeGen)
@@ -426,4 +397,3 @@ internal static unsafe class SharedStructArgumentSetupTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

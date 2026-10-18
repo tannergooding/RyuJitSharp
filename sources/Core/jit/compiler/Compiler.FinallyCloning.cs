@@ -19,10 +19,7 @@ public partial class Compiler
         assert(!fgFuncletsCreated);
         assert(fgPredsComputed);
 
-        var enableCloning = true;
-#if DEBUG
-        enableCloning = JitConfig.JitEnableFinallyCloning == 1;
-#endif
+        var enableCloning = !Configuration.DEBUG || JitConfig.JitEnableFinallyCloning == 1;
         if (!enableCloning)
         {
             JITDUMP("Finally cloning disabled.\n");

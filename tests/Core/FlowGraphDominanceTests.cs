@@ -279,10 +279,11 @@ internal static unsafe class FlowGraphDominanceTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DiagnosticsPreserveNativeOrderAndSpacing()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler =>
         {
             _ = CreateGraph(compiler, [[1, 2], [3], [3], []]);
@@ -300,7 +301,6 @@ internal static unsafe class FlowGraphDominanceTests
             Assert.That(text, Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
         });
     }
-#endif
 
     private static Dictionary<BasicBlock, HashSet<BasicBlock>> ComputeDominators(BasicBlock root, BasicBlock[] blocks)
     {
@@ -407,10 +407,11 @@ internal static unsafe class FlowGraphDominanceTests
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-#if DEBUG
-        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
-        using var tls = new JitTls(null);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        }
+        using var tls = TestConfiguration.IsDebug ? new JitTls(null) : null;
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitTls.Compiler = compiler;

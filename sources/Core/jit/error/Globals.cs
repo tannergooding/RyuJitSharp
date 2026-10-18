@@ -28,7 +28,7 @@ public partial class Globals
     internal static uint s_fatalNyiCount;
 #endif
 
-#if DEBUG
+    [Conditional("DEBUG")]
     private static void debugError(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
         var fileName = Path.GetFileName(filePath);
@@ -49,7 +49,6 @@ public partial class Globals
 
         BreakIfDebuggerPresent();
     }
-#endif
 
     [DoesNotReturn]
     public static void badCode()
@@ -61,14 +60,13 @@ public partial class Globals
         fatal(CORJIT_BADCODE);
     }
 
-#if DEBUG
     [DoesNotReturn]
+    [Conditional("DEBUG")]
     public static void badCode3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, ReadOnlySpan<char> filePath, int lineNumber)
     {
         debugError(string.Format(CultureInfo.InvariantCulture, $"{message}{message2}", arg), filePath, lineNumber);
         badCode();
     }
-#endif
 
     [DoesNotReturn]
     public static void noWay()
@@ -106,16 +104,17 @@ public partial class Globals
     [DoesNotReturn]
     public static void fatal(CorJitResult jitResult)
     {
-#if DEBUG
-        // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
-        if (jitResult != CORJIT_SKIPPED)
+        if (Configuration.DEBUG)
         {
-            if (JitConfig.DebugBreakOnVerificationFailure != 0)
+            // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
+            if (jitResult != CORJIT_SKIPPED)
             {
-                Debugger.Break();
+                if (JitConfig.DebugBreakOnVerificationFailure != 0)
+                {
+                    Debugger.Break();
+                }
             }
         }
-#endif
 
         throw new FatalJitException(jitResult);
     }
@@ -301,37 +300,41 @@ public partial class Globals
         }
 
 #if FUNC_INFO_LOGGING
-#if DEBUG
-        ref var logEnv = ref JitTls.LogEnv;
-
-        if (logEnv.Compiler is not null)
+        if (Configuration.DEBUG)
         {
-            compiler = logEnv.Compiler;
+            ref var logEnv = ref JitTls.LogEnv;
 
-            if (compiler.verbose)
+            if (logEnv.Compiler is not null)
             {
-                jitprintf($"\n\n{compiler.info.compFullName} - NYI ({filePath}:{lineNumber} - {message})\n");
+                compiler = logEnv.Compiler;
+
+                if (compiler.verbose)
+                {
+                    jitprintf($"\n\n{compiler.info.compFullName} - NYI ({filePath}:{lineNumber} - {message})\n");
+                }
+            }
+
+            if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
+            {
+                compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - NYI ({filePath}:{lineNumber} - {message})");
+                compJitFuncInfoFile.Flush();
             }
         }
-
-        if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
+        else
         {
-            compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - NYI ({filePath}:{lineNumber} - {message})");
-            compJitFuncInfoFile.Flush();
-        }
-#else
-        if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
-        {
-            compJitFuncInfoFile.WriteLine($"NYI ({filePath}:{lineNumber} - {message})");
-            compJitFuncInfoFile.Flush();
+            if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
+            {
+                compJitFuncInfoFile.WriteLine($"NYI ({filePath}:{lineNumber} - {message})");
+                compJitFuncInfoFile.Flush();
+            }
         }
 #endif
-#endif
 
-#if DEBUG
         // Assume we're within a compFunctionTrace boundary, which might not be true.
-        compiler.compFunctionTraceEnd(null, 0, true);
-#endif
+        if (Configuration.DEBUG)
+        {
+            compiler.compFunctionTraceEnd(null, 0, true);
+        }
 
         var altJitAssertOnNyi = JitConfig.AltJitAssertOnNYI;
 
@@ -341,9 +344,7 @@ public partial class Globals
         // 3 means popup the assert (abort=abort, retry=debugger, ignore=don't skip)
         if ((altJitAssertOnNyi & 1) != 0)
         {
-#if DEBUG
             assertAbort(message, filePath, lineNumber);
-#endif
         }
 
         if ((altJitAssertOnNyi & 2) == 0)
@@ -447,9 +448,7 @@ public partial class Globals
 
     public static void BreakIfDebuggerPresent() => Debugger.Break();
 
-#if DEBUG
     public static int getBreakOnBadCode() => JitConfig.JitBreakOnBadCode;
-#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool ShouldThrowOnNoway() => (JitTls.Compiler is not Compiler compiler) || compiler.compShouldThrowOnNoway;

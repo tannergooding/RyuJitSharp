@@ -360,14 +360,12 @@ public sealed partial class LinearScan
             return;
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf($"Last use of V{interval.varNum:D2} between PUTARG and CALL. Removing occupied arg regs from preferences: ");
             _compiler.dumpRegMask(unpreferredRegisters);
             jitprintf("\n");
         }
-#endif
 
         var unpreferredSet = getRegSetForType(unpreferredRegisters, interval.registerType);
         interval.registerAversion |= unpreferredSet;
@@ -454,10 +452,9 @@ public sealed partial class LinearScan
         restorePosition.regOptional = Configuration.TARGET_XARCH;
     }
 
-#if DEBUG
     private void dumpDefList()
     {
-        if (!VERBOSE)
+        if (!Configuration.DEBUG || !VERBOSE)
         {
             return;
         }
@@ -475,5 +472,4 @@ public sealed partial class LinearScan
 
         jitprintf(" }\n");
     }
-#endif
 }

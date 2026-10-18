@@ -192,7 +192,6 @@ internal static unsafe class SwitchLoweringTests
         });
     }
 
-#if DEBUG
     [TestCase(-1, false, 0.2)]
     [TestCase(1, false, 0.2)]
     [TestCase(0, true, 0.2)]
@@ -201,6 +200,8 @@ internal static unsafe class SwitchLoweringTests
     public static void StressExpansionPreservesCaseOrderFallthroughAndDuplicateEdges(int following, bool sharedDefault,
         double defaultLikelihood)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var previous = StressNames(ref JitConfig);
         fixed (byte* names = "STRESS_SWITCH_CMP_BR_EXPANSION\0"u8)
         {
@@ -215,7 +216,7 @@ internal static unsafe class SwitchLoweringTests
                     compiler.info.compFullName = "SwitchLoweringTests.Switch";
                     var followingBlock = source.Next;
                     _ = LowerSwitch(lowering, node);
-                    Assert.That(compiler.compActiveStressModes[(int)Compiler.STRESS_SWITCH_CMP_BR_EXPANSION], Is.EqualTo(1));
+                    Assert.That(TestConfiguration.GetActiveStressMode(compiler, Compiler.STRESS_SWITCH_CMP_BR_EXPANSION), Is.EqualTo(1));
                     var expectedComparisons = Enumerable.Range(0, cases.Length).Where(index => cases[index] != following).ToList();
                     if (following == -1)
                     {
@@ -273,7 +274,6 @@ internal static unsafe class SwitchLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
     private static extern ref byte* StressNames(ref JitConfigValues config);
-#endif
 
     private static BasicBlock AssertDefaultGuard(BasicBlock source, BasicBlock defaultTarget, int lastCase, double probability)
     {

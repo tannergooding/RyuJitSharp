@@ -3,17 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.ICorDebugInfo.VarLocType;
@@ -111,17 +108,17 @@ internal static unsafe class CodeGenSharedScopePublicationTests
         });
     }
 
-#if DEBUG
     [TestCase(0x80000000u)]
     [TestCase(uint.MaxValue)]
     public static void AllocationDiagnosticsRetainNativeSignedFormattingWithoutAllocatingHugeTables(uint capacity)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithPublication((compiler, _, context) =>
         {
             context->ReturnNullAllocation = true;
             TestConfiguration.EnableVerbose(compiler);
             var output = Capture(() => compiler.eeAllocateLVs(capacity));
-            compiler.verbose = false;
+            TestConfiguration.SetVerbose(compiler, false);
             compiler.eeSetLVdone();
 
             Assert.That(output, Is.EqualTo($"Allocating {unchecked((int)capacity)} VarLocInfo{Environment.NewLine}"));
@@ -150,7 +147,6 @@ internal static unsafe class CodeGenSharedScopePublicationTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -208,12 +204,12 @@ internal static unsafe class CodeGenSharedScopePublicationTests
         });
     }
 
-#if TARGET_X86
     [TestCase(8, 16, 32)]
     [TestCase(-16, -8, 32)]
     [TestCase(0, 16, unchecked((int)0x80000020u))]
     public static void VarargsStackHomesAreCookieRelativeAndMutateTheOriginalRange(int cookie, int argument, int size)
     {
+        Assume.That(Configuration.TARGET_X86);
         WithPublication((compiler, codeGen, context) =>
         {
             SetVarargs(compiler, cookie, argument, size);
@@ -232,6 +228,7 @@ internal static unsafe class CodeGenSharedScopePublicationTests
     [Test]
     public static void VarargsCookieAndRegisterArgumentsKeepTheirOriginalHomes()
     {
+        Assume.That(Configuration.TARGET_X86);
         WithPublication((compiler, codeGen, context) =>
         {
             SetVarargs(compiler, 8, 16, 32);
@@ -250,6 +247,7 @@ internal static unsafe class CodeGenSharedScopePublicationTests
     [Test]
     public static void VarargsWithAnUnhomedCookieReturnBeforeRecordingOrTranslating()
     {
+        Assume.That(Configuration.TARGET_X86);
         WithPublication((compiler, codeGen, context) =>
         {
             SetVarargs(compiler, 8, 16, 32);
@@ -277,7 +275,6 @@ internal static unsafe class CodeGenSharedScopePublicationTests
         compiler.lvaTable[0].StackOffset = cookie;
         compiler.lvaTable[1].StackOffset = argument;
     }
-#endif
 
     private static CodeGen.siVarLoc StackLocation()
     {
@@ -290,9 +287,10 @@ internal static unsafe class CodeGenSharedScopePublicationTests
     private static emitLocation Location(uint offset)
     {
         var group = new insGroup { igOffs = offset };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
         return new emitLocation(group, 0);
     }
 
@@ -325,6 +323,7 @@ internal static unsafe class CodeGenSharedScopePublicationTests
 
     private static void WithPublication(PublicationAction action)
     {
+        Assume.That(Configuration.TARGET_XARCH);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -439,4 +438,3 @@ internal static unsafe class CodeGenSharedScopePublicationTests
         }
     }
 }
-#endif

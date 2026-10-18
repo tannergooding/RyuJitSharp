@@ -333,13 +333,14 @@ internal static class CodeGenRegisterValueTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsStackLoads()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_X64_RAX, 0, 0));
@@ -348,7 +349,6 @@ internal static class CodeGenRegisterValueTests
             Assert.That(diagnostic, Does.Contain("mov"));
         });
     }
-#endif
 
     private static void PrepareLife(Compiler compiler, CodeGen codeGen)
     {

@@ -52,26 +52,20 @@ public partial class Compiler
 
         public bool compMinOptsIsSet;
 
-#if DEBUG
         public bool compMinOptsIsUsed;
-#else
-        public readonly bool compMinOptsIsUsed => false;
-#endif
 
-#if DEBUG
         public bool MinOpts
         {
             get
             {
                 assert(compMinOptsIsSet);
-                compMinOptsIsUsed = true;
+                if (Configuration.DEBUG)
+                {
+                    compMinOptsIsUsed = true;
+                }
                 return compMinOpts;
             }
         }
-
-#else
-        public readonly bool MinOpts => compMinOpts;
-#endif
 
         public readonly bool IsMinOptsSet => compMinOptsIsSet;
 
@@ -212,18 +206,14 @@ public partial class Compiler
 
         public bool compNoPInvokeInlineCB;
 
-#if DEBUG
         /// <summary>Check arguments and return values to ensure they are sane</summary>
         public bool compGcChecks;
-#endif
 
         /// <summary>Generate relocs for pointers in code, true for all AOT codegen</summary>
         public bool compReloc;
 
-#if DEBUG
         /// <summary>Whether absolute addr be encoded as PC-rel offset by RyuJIT where possible</summary>
         public bool compEnablePCRelAddr;
-#endif
 
         /// <summary>This flag is indicating if there is a need to align the frame.</summary>
         /// <remarks>
@@ -280,10 +270,8 @@ public partial class Compiler
         /// <summary>Display instruction code bytes in disassembly code</summary>
         public bool disCodeBytes; 
 
-#if DEBUG
         /// <summary>Separate cold code from hot code for functions with EH</summary>
         public bool compProcedureSplittingEH;
-#endif
 
         /// <summary>Display native code generated</summary>
 #if DEBUG
@@ -342,23 +330,31 @@ public partial class Compiler
         public readonly bool dspMetrics => false;
 #endif
 
-#if DEBUG
-        /// <summary>If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.</summary>
-        public bool compJitAlignLoopForJcc;
-#else
+        private bool _compJitAlignLoopForJcc;
+
         public bool compJitAlignLoopForJcc
         {
             readonly get
             {
+                if (Configuration.DEBUG)
+                {
+                    return _compJitAlignLoopForJcc;
+                }
+
                 throw new System.InvalidOperationException("Loop-alignment diagnostic options are only available in Debug builds.");
             }
 
             set
             {
+                if (Configuration.DEBUG)
+                {
+                    _compJitAlignLoopForJcc = value;
+                    return;
+                }
+
                 throw new System.InvalidOperationException("Loop-alignment diagnostic options are only available in Debug builds.");
             }
         }
-#endif
 
         /// <summary>For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.</summary>
         public ushort compJitAlignLoopMaxCodeSize;

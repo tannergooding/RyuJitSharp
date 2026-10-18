@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64InstructionOutputTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(-5, false, 16u)]
     [TestCase(0, false, 16u)]
     [TestCase(7, false, 16u)]
@@ -55,9 +60,7 @@ internal static unsafe class Arm64InstructionOutputTests
         instruction ins, Emitter.insFormat format, uint expected, bool isSmallDescriptor)
     {
         var emitter = NewEmitter();
-#if DEBUG
-        emitter.emitIssuing = true;
-#endif
+        TestConfiguration.EnableEmitterIssuing(emitter);
         var id = OutputEmitter.Descriptor(ins, format, EA_8BYTE);
         if (isSmallDescriptor)
         {
@@ -129,17 +132,20 @@ internal static unsafe class Arm64InstructionOutputTests
         var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
         var cursor = buffer + 4;
-#if DEBUG
         nuint result = 0;
-        var slot = (nint)(&cursor);
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-            () => result = emitter.emitOutputInstr(group, id, (byte**)slot));
-        Assert.That(assertions, Is.Empty);
-        Assert.That(result, Is.EqualTo((nuint)48));
-#else
-        var result = emitter.emitOutputInstr(group, id, &cursor);
-        Assert.That(result, Is.EqualTo((nuint)40));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var slot = (nint)(&cursor);
+            var (_, assertions) = TestConfiguration.CaptureDebugAssertions(
+                () => result = emitter.emitOutputInstr(group, id, (byte**)slot));
+            Assert.That(assertions, Is.Empty);
+            Assert.That(result, Is.EqualTo((nuint)48));
+        }
+        else
+        {
+            result = emitter.emitOutputInstr(group, id, &cursor);
+            Assert.That(result, Is.EqualTo((nuint)40));
+        }
         Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 4)));
         Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
     }
@@ -234,12 +240,12 @@ internal static unsafe class Arm64InstructionOutputTests
         Assert.That(MayWriteGc(NewEmitter(), OutputEmitter.Descriptor(ins, format, EA_8BYTE)), Is.EqualTo(expected));
     }
 
-#if DEBUG
     [Test]
     public static void InvalidConvertOptionAssertsAndRetainsNativeZeroContinuation()
     {
+        Assume.That(TestConfiguration.IsDebug);
         var result = uint.MaxValue;
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Convert(null, IF_ARM64_DV_2J, INS_OPTS_NONE));
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(() => result = Convert(null, IF_ARM64_DV_2J, INS_OPTS_NONE));
         Assert.That(assertions, Is.EqualTo<string[]>(["!\"Invalid 'conversion' value\""]));
         Assert.That(result, Is.Zero);
     }
@@ -247,8 +253,9 @@ internal static unsafe class Arm64InstructionOutputTests
     [Test]
     public static void NonTemporalPairAssertsInvalidWritebackBeforeReturningNativeZeroBits()
     {
+        Assume.That(TestConfiguration.IsDebug);
         var result = uint.MaxValue;
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(
             () => result = PairIndexed(null, INS_stnp, INS_OPTS_PRE_INDEX));
         Assert.That(assertions, Is.EqualTo<string[]>(["insOptsNone(opt)"]));
         Assert.That(result, Is.Zero);
@@ -257,8 +264,9 @@ internal static unsafe class Arm64InstructionOutputTests
     [Test]
     public static void WrongConversionFormatAssertsBeforeReturningTheNativeSelectedEncoding()
     {
+        Assume.That(TestConfiguration.IsDebug);
         uint result = 0;
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(
             () => result = Convert(null, IF_ARM64_DV_2I, INS_OPTS_H_TO_S));
         Assert.That(assertions, Is.EqualTo<string[]>(["fmt == IF_DV_2J"]));
         Assert.That(result, Is.EqualTo(0x00C00000u));
@@ -267,8 +275,9 @@ internal static unsafe class Arm64InstructionOutputTests
     [Test]
     public static void InvalidLaneAssertsWithoutMaskingItIntoAValidLane()
     {
+        Assume.That(TestConfiguration.IsDebug);
         uint result = 0;
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = TestConfiguration.CaptureDebugAssertions(
             () => result = VectorIndex(null, EA_1BYTE, 16));
         Assert.That(assertions, Is.EqualTo<string[]>(["(bits >= 1) && (bits <= 0x1F)"]));
         Assert.That(result, Is.EqualTo(0x00210000u));
@@ -277,6 +286,7 @@ internal static unsafe class Arm64InstructionOutputTests
     [Test]
     public static void UnboundJumpDescriptorTripsItsBoundAssertion()
     {
+        Assume.That(TestConfiguration.IsDebug);
         var emitter = NewEmitter();
         var id = OutputEmitter.Jump(INS_cbz, IF_ARM64_LARGEJMP, EA_8BYTE, 48, isBound: false);
         var buffer = stackalloc byte[64];
@@ -287,7 +297,7 @@ internal static unsafe class Arm64InstructionOutputTests
         {
             var cursor = buffer + 16;
             var slot = (nint)(&cursor);
-            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+            var (_, assertions) = TestConfiguration.CaptureDebugAssertions(
                 () => _ = Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry));
             Assert.That(assertions, Is.EqualTo<string[]>(["id.idIsBound()"]));
             Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 24)));
@@ -295,7 +305,6 @@ internal static unsafe class Arm64InstructionOutputTests
             Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 20), Is.EqualTo(0x14000007u));
         }
     }
-#endif
 
     private static nuint Output(Emitter emitter, insGroup group, Emitter.instrDesc id, byte** cursor,
         bool usePublicEntry)
@@ -348,9 +357,10 @@ internal static unsafe class Arm64InstructionOutputTests
                 id.idSetIsBound();
             }
             id.idjTargetIG = new insGroup { igOffs = target };
-#if DEBUG
-            id.idDebugOnlyInfo(new instrDescDebugInfo());
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                id.idDebugOnlyInfo(new instrDescDebugInfo());
+            }
 
             return id;
         }
@@ -387,4 +397,3 @@ internal static unsafe class Arm64InstructionOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteToGCRegArm64")]
     private static extern bool MayWriteGc(Emitter emitter, Emitter.instrDesc id);
 }
-#endif

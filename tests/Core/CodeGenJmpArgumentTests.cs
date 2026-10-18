@@ -246,18 +246,19 @@ internal static unsafe class CodeGenJmpArgumentTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DspCodeRecordsJmpArgumentsAndUpdatesGcState(bool varargsEntry)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithJmp((compiler, codeGen) =>
         {
             Configure(compiler, codeGen, [TYP_REF], [REG_X64_RDX], [REG_X64_RCX]);
             compiler.info.compIsVarArgs = true;
             var jump = new GenTreeVal(GT_JMP, TYP_VOID, 0);
             Assert.That(codeGen.Emitter.emitCurIG, Is.Not.Null);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             void Generate()
             {
@@ -277,7 +278,6 @@ internal static unsafe class CodeGenJmpArgumentTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static void Configure(Compiler compiler, CodeGen codeGen,
         var_types[] types, regNumber[] homes, regNumber[] abiRegisters)

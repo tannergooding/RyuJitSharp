@@ -252,7 +252,6 @@ internal static unsafe class CodeGenBlockDriverTests
         });
     }
 
-#if DEBUG
     [TestCase(true, "sse2", true, false)]
     [TestCase(true, "sse2", true, true)]
     [TestCase(true, "prefixsse2suffix", true, false)]
@@ -266,6 +265,7 @@ internal static unsafe class CodeGenBlockDriverTests
     public static void EmitterPayloadUsesNativeSectionSelectionAtTheLastBlock(
         bool matches, string? section, bool lastBlock, bool wholeList)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithDriver((compiler, codeGen) =>
         {
             var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
@@ -370,6 +370,7 @@ internal static unsafe class CodeGenBlockDriverTests
     [Test]
     public static void DisassemblyRecordsBlockListInstructions()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithDriver((compiler, codeGen) =>
         {
             var blocks = Blocks(compiler, BBJ_RETURN);
@@ -379,7 +380,7 @@ internal static unsafe class CodeGenBlockDriverTests
             blocks[0].InsertAtEnd(constant);
             blocks[0].InsertAtEnd(negation);
             var first = codeGen.Emitter.emitCurIG;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(codeGen.genCodeForBBlist);
             Assert.That(blocks[0].HasFlag(BBF_HAS_LABEL), Is.True);
             Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen).Select(id => id.idIns()),
@@ -387,7 +388,6 @@ internal static unsafe class CodeGenBlockDriverTests
             Assert.That(diagnostic, Does.Contain("neg"));
         });
     }
-#endif
 
     internal static BasicBlock[] Blocks(Compiler compiler, params BBKinds[] kinds)
     {
@@ -411,12 +411,15 @@ internal static unsafe class CodeGenBlockDriverTests
 
     internal static void WithDriver(Action<Compiler, CodeGen> action)
     {
-#if DEBUG
-        var saved = EmitterTests(ref JitConfig);
-        EmitterTests(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
+        Action? restoreDebugConfig = null;
+        if (TestConfiguration.IsDebug)
+        {
+            var saved = EmitterTests(ref JitConfig);
+            EmitterTests(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
+            restoreDebugConfig = () => EmitterTests(ref JitConfig) = saved;
+        }
         try
         {
-#endif
             CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
             {
                 compiler.lvaTable[0].RegNum = REG_STK;
@@ -430,13 +433,11 @@ internal static unsafe class CodeGenBlockDriverTests
                 Allocator(compiler) = new LinearScan(compiler);
                 action(compiler, codeGen);
             });
-#if DEBUG
         }
         finally
         {
-            EmitterTests(ref JitConfig) = saved;
+            restoreDebugConfig?.Invoke();
         }
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
@@ -457,12 +458,10 @@ internal static unsafe class CodeGenBlockDriverTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichMappings(ref JitConfigValues config);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
     private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTestsSections")]
     private static extern ref byte* EmitterSections(ref JitConfigValues config);
 
-#endif
 }

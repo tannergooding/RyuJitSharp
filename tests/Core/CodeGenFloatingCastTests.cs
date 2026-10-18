@@ -320,11 +320,12 @@ internal static class CodeGenFloatingCastTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsFloatingCastAndUpdatesTemporaryOwnership(
         [Values(false, true)] bool floating)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = Source(compiler, floating ? TYP_FLOAT : TYP_LONG, memory: false);
@@ -333,7 +334,7 @@ internal static class CodeGenFloatingCastTests
             codeGen.InternalRegisters.Add(cast, temps);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_BYREF);
             var gc = codeGen.GCInfo.gcRegByrefSetCur;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var first = codeGen.Emitter.emitCurIG;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
@@ -356,7 +357,6 @@ internal static class CodeGenFloatingCastTests
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
-#endif
 
     private static GenTree Source(Compiler compiler, var_types type, bool memory)
     {
@@ -393,10 +393,14 @@ internal static class CodeGenFloatingCastTests
 
     private static void AssertProduced(GenTree tree)
     {
-#if DEBUG
-        Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED, Is.Not.EqualTo((GenTreeDebugFlags)0));
-#else
-        Assert.That(tree.RegNum, Is.EqualTo(REG_XMM0).Or.EqualTo(REG_XMM1));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                Is.Not.EqualTo((GenTreeDebugFlags)0));
+        }
+        else
+        {
+            Assert.That(tree.RegNum, Is.EqualTo(REG_XMM0).Or.EqualTo(REG_XMM1));
+        }
     }
 }

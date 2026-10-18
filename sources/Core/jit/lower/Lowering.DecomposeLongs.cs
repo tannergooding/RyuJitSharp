@@ -302,10 +302,8 @@ public sealed partial class Lowering
             GenTree insertResultAfter)
         {
             assert(use.IsInitialized());
-#if DEBUG
             assert(Range().Contains(loResult));
             assert(Range().Contains(hiResult));
-#endif
 
             var gtLong = new GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
             if (use.IsDummyUse())
@@ -335,9 +333,6 @@ public sealed partial class Lowering
             var loSrc = src.Op1;
             var hiSrc = src.Op2;
             JITDUMP($"Optimizing a truncating cast [{cast.TreeId:D6}] from decomposed LONG [{src.TreeId:D6}]\n");
-#if DEBUG
-            GenTree treeToDisplay = cast;
-#endif
             if ((hiSrc.Flags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
             {
                 JITDUMP($"Removing the HI part of [{src.TreeId:D6}] and marking its operands unused:\n");
@@ -353,7 +348,8 @@ public sealed partial class Lowering
             JITDUMP("Removing the LONG source:\n");
             DISPNODE(src);
             Range().Remove(src);
-            if (varTypeIsSmall(dstType))
+            var isSmallType = varTypeIsSmall(dstType);
+            if (isSmallType)
             {
                 JITDUMP($"Cast is to a small type, keeping it, the new source is [{loSrc.TreeId:D6}]\n");
                 cast.Op1 = loSrc;
@@ -374,18 +370,16 @@ public sealed partial class Lowering
                     nextNode = cast.Next;
                 }
 
-#if DEBUG
-                treeToDisplay = loSrc;
-#endif
                 JITDUMP("Removing the cast:\n");
                 DISPNODE(cast);
                 Range().Remove(cast);
             }
 
             JITDUMP("Final result:\n");
-#if DEBUG
-            DISPTREERANGE(Range(), treeToDisplay);
-#endif
+            if (Configuration.DEBUG)
+            {
+                DISPTREERANGE(Range(), isSmallType ? cast : loSrc);
+            }
             return nextNode;
         }
 

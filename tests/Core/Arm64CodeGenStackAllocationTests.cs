@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +22,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64CodeGenStackAllocationTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(0u, false)]
     [TestCase(0u, true)]
     [TestCase(16u, true)]
@@ -317,11 +322,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             action(compiler, codeGen);
         }
         finally
@@ -381,4 +382,3 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
     private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
 }
-#endif

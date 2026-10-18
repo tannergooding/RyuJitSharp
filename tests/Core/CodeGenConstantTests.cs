@@ -323,16 +323,16 @@ internal static unsafe class CodeGenConstantTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     [TestCase(3)]
     public static void DspCodeRecordsConstantsAndUpdatesGcState(int kind)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCodeGen((compiler, codeGen) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
             var before = codeGen.GCInfo.gcRegGCrefSetCur;
             string diagnostic;
@@ -369,7 +369,6 @@ internal static unsafe class CodeGenConstantTests
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     private static simd64_t Pattern(int populated, int period)
     {

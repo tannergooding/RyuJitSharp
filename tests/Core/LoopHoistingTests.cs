@@ -29,13 +29,11 @@ internal static unsafe class LoopHoistingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optCopyLoopMemoryDependence")]
     private static extern void CopyMemoryDependence(Compiler compiler, GenTree source, GenTree clone);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHoistLimit")]
     private static extern ref int HoistLimit(ref JitConfigValues config);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitNoHoist")]
     private static extern ref int NoHoist(ref JitConfigValues config);
-#endif
 
     [TestCase(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE)]
     [TestCase(CORINFO_HELP_READYTORUN_GCSTATIC_BASE)]
@@ -65,14 +63,17 @@ internal static unsafe class LoopHoistingTests
             compiler.fgFirstBB = entry;
             compiler.fgLastBB = entry;
             compiler._loops = FlowGraphNaturalLoops.Find(compiler.fgComputeDfs(false));
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING)));
-            Assert.That(output, Does.Contain("No loops; no hoisting"));
-#else
-            Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING)));
+                Assert.That(output, Does.Contain("No loops; no hoisting"));
+            }
+            else
+            {
+                Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            }
             Assert.That(compiler._loopSideEffects, Is.Null);
         });
     }
@@ -178,19 +179,21 @@ internal static unsafe class LoopHoistingTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(TYP_DOUBLE, false)]
     [TestCase(TYP_DOUBLE, true)]
     [TestCase(TYP_SIMD16, false)]
     [TestCase(TYP_SIMD16, true)]
-#if TARGET_AMD64
     [TestCase(TYP_SIMD32, false)]
     [TestCase(TYP_SIMD32, true)]
     [TestCase(TYP_SIMD64, true)]
-#endif
     public static void HoistingDoesNotCountPartiallySavedVectorRegistersAcrossCalls(
         var_types type, bool containsCall)
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
+        if (type is TYP_SIMD32 or TYP_SIMD64)
+        {
+            Assume.That(Configuration.TARGET_AMD64);
+        }
         WithLoop((compiler, unusedPreheader, unusedHeader, unusedLatch) => {
             compiler._loopSideEffects = [new LoopSideEffects { ContainsCall = containsCall }];
             var loop = compiler._loops!.GetLoopByIndex(0);
@@ -210,7 +213,6 @@ internal static unsafe class LoopHoistingTests
             Assert.That(profitable.Invoke(compiler, [tree, loop, context, true]), Is.EqualTo(expected));
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -251,12 +253,12 @@ internal static unsafe class LoopHoistingTests
         });
     }
 
-#if DEBUG
     [TestCase(1)]
     [TestCase(-1)]
     [TestCase(int.MinValue)]
     public static void NonzeroNoHoistConfigurationDisablesHoisting(int configuration)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithLoop((compiler, preheader, header, unusedLatch) => {
             _ = AddInvariantCandidate(compiler, header);
             NoHoist(ref JitConfig) = configuration;
@@ -270,6 +272,7 @@ internal static unsafe class LoopHoistingTests
     [Test]
     public static void DuplicateValueNumberReportsNativeHexDiagnostic()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithLoop((compiler, preheader, header, unusedLatch) => {
             var first = AddInvariantCandidate(compiler, header);
             var duplicate = compiler.gtCloneExpr(first)!;
@@ -292,6 +295,7 @@ internal static unsafe class LoopHoistingTests
     [TestCase(true)]
     public static void CandidateRespectsHoistLimitAndTryRegion(bool differentTry)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithLoop((compiler, preheader, header, unusedLatch) => {
             _ = AddInvariantCandidate(compiler, header);
             if (differentTry)
@@ -312,7 +316,6 @@ internal static unsafe class LoopHoistingTests
             Assert.That(output, Does.Contain(differentTry ? "eh region constraint" : "JitHoistLimit 0"));
         });
     }
-#endif
 
     private static GenTreeOp AddInvariantCandidate(Compiler compiler, BasicBlock header)
     {
@@ -368,9 +371,10 @@ internal static unsafe class LoopHoistingTests
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         JitConfig = new JitConfigValues();
-#if DEBUG
-        HoistLimit(ref JitConfig) = -1;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            HoistLimit(ref JitConfig) = -1;
+        }
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;

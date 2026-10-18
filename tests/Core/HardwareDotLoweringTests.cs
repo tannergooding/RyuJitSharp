@@ -13,10 +13,16 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 [NonParallelizable]
 internal static unsafe class HardwareDotLoweringTests
 {
+    [SetUp]
+    public static void RequireSupportedConfiguration()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH,
+            "This fixture requires xarch hardware intrinsics.");
+    }
+
     [TestCase(TYP_FLOAT, (byte)16, false)]
     [TestCase(TYP_FLOAT, (byte)16, true)]
     [TestCase(TYP_DOUBLE, (byte)16, false)]
@@ -362,4 +368,3 @@ internal static unsafe class HardwareDotLoweringTests
         }
     }
 }
-#endif

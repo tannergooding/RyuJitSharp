@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64FinalFrameTests
 {
+    [SetUp]
+    public static void RequireSysVX64Target()
+    {
+        Assume.That(Configuration.UNIX_AMD64_ABI, "This fixture requires the SysV AMD64 ABI.");
+    }
+
     [Test]
     public static void OnlyStackParametersHaveCallerAllocatedHomes()
     {
@@ -381,4 +386,3 @@ internal static unsafe class SysVX64FinalFrameTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
     private static extern nint Displacement(Emitter emitter, Emitter.instrDesc descriptor);
 }
-#endif

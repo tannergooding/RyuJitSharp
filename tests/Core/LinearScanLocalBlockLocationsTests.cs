@@ -257,10 +257,10 @@ internal static class LinearScanLocalBlockLocationsTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void DeadUpperVectorReleasesItsRegisterWithoutChangingLocalMap()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
         WithLocations((_, allocator, block, _) =>
         {
             var upper = new Interval(TYP_SIMD16, SRBM_XMM1) { isUpperVector = true };
@@ -273,12 +273,11 @@ internal static class LinearScanLocalBlockLocationsTests
             Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_X64_STK));
         });
     }
-#endif
 
-#if DEBUG
     [Test]
     public static void BoundaryRotationSplitsAndMovesTheIncomingHome()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithLocations((compiler, allocator, block, interval) =>
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
@@ -293,7 +292,6 @@ internal static class LinearScanLocalBlockLocationsTests
             Assert.That(SetOps.IsMember(compiler, SplitVars(allocator), 0), Is.True);
         });
     }
-#endif
 
     private static void WithLocations(Action<Compiler, LinearScan, BasicBlock, Interval> action)
     {
@@ -383,11 +381,9 @@ internal static class LinearScanLocalBlockLocationsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
     private static extern ref uint CurrentBlockNumber(LinearScan allocator);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_splitOrSpilledVars")]
     private static extern ref nint[] SplitVars(LinearScan allocator);
-#endif
 }

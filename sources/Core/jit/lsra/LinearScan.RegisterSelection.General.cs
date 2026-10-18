@@ -176,9 +176,7 @@ public sealed partial class LinearScan
                 }
             }
 
-#if DEBUG
             var inUseOrBusyRegsMask = SRBM_NONE;
-#endif
             if (!_found)
             {
                 var busy = (_linearScan._regsBusyUntilKill | _linearScan._regsInUseThisLocation)
@@ -188,12 +186,10 @@ public sealed partial class LinearScan
                 {
                     _candidates = excludeBusyDoubleHalves(_candidates, busy);
                 }
-#if DEBUG
-                if (Configuration.TARGET_ARM64)
+                if (Configuration.DEBUG && Configuration.TARGET_ARM64)
                 {
                     inUseOrBusyRegsMask |= busy;
                 }
-#endif
                 var conflicts = _candidates;
                 var fixedRegisterMask = Configuration.HAS_MORE_THAN_64_REGISTERS && varTypeIsMask(_regType)
                     ? _linearScan._fixedRegsHigh
@@ -209,12 +205,10 @@ public sealed partial class LinearScan
                         (refPosition.delayRegFree && location == unchecked(refPosition.nodeLocation + 1)))
                     {
                         _candidates &= ~bit;
-#if DEBUG
-                        if (Configuration.TARGET_ARM64)
+                        if (Configuration.DEBUG && Configuration.TARGET_ARM64)
                         {
                             inUseOrBusyRegsMask |= bit;
                         }
-#endif
                     }
                 }
                 _candidates |= fixedRegMask;
@@ -230,9 +224,10 @@ public sealed partial class LinearScan
                     {
                         _candidates = _prevRegBit;
                         _found = true;
-#if DEBUG
-                        selectionScore = RegisterScore.THIS_ASSIGNED;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            selectionScore = RegisterScore.THIS_ASSIGNED;
+                        }
                     }
                 }
             }
@@ -272,8 +267,7 @@ public sealed partial class LinearScan
 
                 if (_freeCandidates == SRBM_NONE && _candidates == SRBM_NONE)
                 {
-#if DEBUG
-                    if ((_linearScan._lsraStressMask & 0x3) != 0 &&
+                    if (Configuration.DEBUG && ((_linearScan._lsraStressMask & 0x3) != 0) &&
                         refPosition.isFirstRefPositionOfConsecutiveRegisters())
                     {
                         var available = (refPosition.registerAssignment & ~inUseOrBusyRegsMask) &
@@ -289,15 +283,17 @@ public sealed partial class LinearScan
                                 ((1UL << refPosition.regCount) - 1) << firstRegister));
                         }
                     }
-#endif
-#if DEBUG
-                    if (_candidates == SRBM_NONE)
+                    if (Configuration.DEBUG)
+                    {
+                        if (_candidates == SRBM_NONE)
+                        {
+                            throw new FatalJitException("Insufficient consecutive register candidates.");
+                        }
+                    }
+                    else
                     {
                         throw new FatalJitException("Insufficient consecutive register candidates.");
                     }
-#else
-                    throw new FatalJitException("Insufficient consecutive register candidates.");
-#endif
                 }
             }
             else

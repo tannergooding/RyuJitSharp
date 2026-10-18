@@ -199,11 +199,15 @@ internal static unsafe class ValueNumMathTargetCompletionTests
         {
             var argument = store.VNForDoubleCon(4);
             var result = store.EvalMathFuncUnary(TYP_DOUBLE, NI_System_Math_Sqrt, argument);
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64 || TARGET_WASM
-            Assert.That(store.GetConstantDouble(result), Is.EqualTo(2.0));
-#else
-            AssertUnary(store, result, TYP_DOUBLE, VNF_Sqrt, argument);
-#endif
+            if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+                Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+            {
+                Assert.That(store.GetConstantDouble(result), Is.EqualTo(2.0));
+            }
+            else
+            {
+                AssertUnary(store, result, TYP_DOUBLE, VNF_Sqrt, argument);
+            }
         }, aot: true);
     }
 
@@ -248,11 +252,11 @@ internal static unsafe class ValueNumMathTargetCompletionTests
         });
     }
 
-#if TARGET_ARM || TARGET_ARM64
     [TestCase(false)]
     [TestCase(true)]
     public static void ArmPowerOneRetainsSubnormalSignedZeroAndNaNPayloadIdentity(bool single)
     {
+        Assume.That(Configuration.TARGET_ARM || Configuration.TARGET_ARM64);
         WithStore(store =>
         {
             var type = single ? TYP_FLOAT : TYP_DOUBLE;
@@ -270,15 +274,14 @@ internal static unsafe class ValueNumMathTargetCompletionTests
             }
         });
     }
-#endif
 
-#if TARGET_RISCV64 || TARGET_WASM
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
     public static void NativeMinMaxRetainsTargetNaNPolicySignedZeroAndPayloads(bool single, bool maximum)
     {
+        Assume.That(Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM);
         WithStore(store =>
         {
             var type = single ? TYP_FLOAT : TYP_DOUBLE;
@@ -291,13 +294,8 @@ internal static unsafe class ValueNumMathTargetCompletionTests
                 ? store.VNForFloatCon(BitConverter.UInt32BitsToSingle(0xFFC54321))
                 : store.VNForDoubleCon(BitConverter.UInt64BitsToDouble(0xFFF876543210ABCD));
             var number = single ? store.VNForFloatCon(3) : store.VNForDoubleCon(3);
-#if TARGET_WASM
-            var leftNaNExpected = firstNaN;
-            var rightNaNExpected = secondNaN;
-#else
-            var leftNaNExpected = number;
-            var rightNaNExpected = number;
-#endif
+            var leftNaNExpected = Configuration.TARGET_WASM ? firstNaN : number;
+            var rightNaNExpected = Configuration.TARGET_WASM ? secondNaN : number;
             var cases = new[]
             {
                 (Left: negativeZero, Right: positiveZero, Expected: maximum ? positiveZero : negativeZero),
@@ -320,24 +318,21 @@ internal static unsafe class ValueNumMathTargetCompletionTests
     [TestCase(true)]
     public static void NativeMinMaxSymbolicFunctionsRetainTheTargetPolicy(bool maximum)
     {
+        Assume.That(Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM);
         WithStore(store =>
         {
             var left = store.VNForExpr(null, TYP_DOUBLE);
             var right = store.VNForExpr(null, TYP_DOUBLE);
             var intrinsic = maximum ? NI_System_Math_MaxNative : NI_System_Math_MinNative;
-#if TARGET_WASM
-            var func = maximum ? VNF_Max : VNF_Min;
-#else
-            var func = maximum ? VNF_MaxNumber : VNF_MinNumber;
-#endif
+            var func = Configuration.TARGET_WASM
+                ? maximum ? VNF_Max : VNF_Min
+                : maximum ? VNF_MaxNumber : VNF_MinNumber;
             var result = store.EvalMathFuncBinary(TYP_DOUBLE, intrinsic, left, right);
 
             AssertBinary(store, result, TYP_DOUBLE, func, left, right);
         });
     }
-#endif
 
-#if TARGET_RISCV64
     [TestCase(NI_System_Math_Min, false, -1L, 1L, -1L)]
     [TestCase(NI_System_Math_Max, false, -1L, 1L, 1L)]
     [TestCase(NI_System_Math_MinUnsigned, false, -1L, 1L, 1L)]
@@ -349,6 +344,7 @@ internal static unsafe class ValueNumMathTargetCompletionTests
     public static void RiscVIntegerMinMaxRetainsSignedUnsignedWidthsAndInterning(
         NamedIntrinsic intrinsic, bool wide, long first, long second, long expected)
     {
+        Assume.That(Configuration.TARGET_RISCV64);
         WithStore(store =>
         {
             var type = wide ? TYP_LONG : TYP_INT;
@@ -367,6 +363,7 @@ internal static unsafe class ValueNumMathTargetCompletionTests
     [TestCase(NI_System_Math_MaxUnsigned, VNF_MaxInt_UN)]
     public static void RiscVIntegerMinMaxSymbolicFunctionsRetainSignedness(NamedIntrinsic intrinsic, VNFunc func)
     {
+        Assume.That(Configuration.TARGET_RISCV64);
         WithStore(store =>
         {
             var left = store.VNForExpr(null, TYP_LONG);
@@ -376,7 +373,6 @@ internal static unsafe class ValueNumMathTargetCompletionTests
             AssertBinary(store, result, TYP_LONG, func, left, right);
         });
     }
-#endif
 
     private static void AssertUnary(ValueNumStore store, ValueNum result, var_types type, VNFunc func, ValueNum argument)
     {

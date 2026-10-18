@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Commit reconciled packet 304 locally, then immediately select packet 305 from the next smallest complete Pending file groups. Keep packet 303's 33 and packet 304's 47 concrete deferrals open; preserve B209 genAsyncResumeInfo until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "Packet 305 is validated and reconciled; commit its source, test, and checkpoint changes. At that committed HEAD, prepare packet 306 from the remaining Pending master rows, grouping complete files by pinned source_blob size and continuing after the 18,590-byte packet-305 boundary. Keep the 35 packet-305 deferrals concrete; preserve B209 genAsyncResumeInfo until its target-width table/emitter closure is ported and tested.",
 
     "unresolvedConditionalCleanup": [
       {
@@ -22,43 +22,15 @@
         "batch": "conditional-cleanup-304-7992524d",
         "deferredCount": 47,
         "candidateLedger": "artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv"
+      },
+      {
+        "batch": "conditional-cleanup-305-e11e1f13",
+        "deferredCount": 35,
+        "candidateLedger": "artifacts\\conditional-cleanup\\batch-305-e11e1f13\\candidates.csv"
       }
     ],
 
-    "activeBatch": {
-      "batch": "conditional-cleanup-304-7992524d",
-      "baselineCommit": "7992524dc8025f96fe75ce284daf8923b4ec0c46",
-      "sourceSnapshotCommit": "5a7c8fd5785e1672a08f25a771cabda0a0a112cb",
-      "scope": "300 candidate IDs across 77 complete source-file groups, ordered by pinned source_blob size (14,004-16,281 bytes); full source contexts are in artifacts\\conditional-cleanup\\batch-304-7992524d.",
-      "completionCondition": "Every selected ID has an evidence-backed Converted or concrete Deferred disposition; zero selected IDs remain Pending or Retained; every eligible selected guard and dependent surface is resolved and combined acceptance is met.",
-      "validation": {
-        "core": "Full-analysis Core Debug/Release builds plus one combined affected Core fixture selection per configuration.",
-        "targets": "Combined affected Target fixture selections in Debug/Release for each affected target configuration; require nonempty executed coverage and record inapplicability/baseline outcomes."
-      },
-      "deferrals": [
-        {
-          "ids": ["CCB-0107", "CCB-0262", "CCB-0265", "CCB-0266", "CCB-0267", "CCB-0269", "CCB-0272", "CCB-0274", "CCB-0276", "CCB-0277", "CCB-0279", "CCB-0280", "CCB-0281", "CCB-0282", "CCB-0977", "CCB-0978", "CCB-0979", "CCB-0980", "CCB-0981", "CCB-0982", "CCB-0984", "INV-89FD708CCA09", "INV-B15D39D3317E", "INV-B1D6BC6FF554"],
-          "prerequisite": "These candidates change optional statistics, measurement, dump, or DEBUG_EMIT behavior. The grouped G2 decision and an approved universal representation must precede conversion.",
-          "nextAction": "Obtain grouped G2 approval, establish approved runtime representations for the selected optional modes, then convert and validate each mode enabled and disabled in Debug and Release.",
-          "evidence": "Per-candidate mode and prerequisite details are in artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv; the G2 scope is in packet.json."
-        },
-        {
-          "ids": ["CCB-0103", "CCB-0124", "CCB-0137", "CCB-0261", "CCB-0286", "CCB-0741", "CCB-1066", "CCB-1067", "CCB-1068", "CGCOMMON-0111", "CGCOMMON-0122", "CGCOMMON-0125", "INV-287B697DCF60", "INV-37D55313015B", "INV-47FC6ADC4DDC", "INV-50B381D5AE6E", "INV-636059B59910", "INV-79F875AD1C3E", "INV-872C834DDD7A", "INV-9E8B7DD603E9", "INV-EBAA0A72FEC7", "INV-F9E8DDE28E64", "INV-FCBA51F20237"],
-          "prerequisite": "These candidates require specific Release-bindable Debug declarations, API, or state closures; candidate-level dependencies are recorded in the ledger.",
-          "nextAction": "Resolve each row's named declaration/state dependency across the verifier, emitter, LSRA, ValueNum, CodeGen diagnostic/test-hook, tree-flag, and disassembly configuration families; convert and validate the complete closures in Debug and Release.",
-          "evidence": "Exact symbols, branch contexts, and per-candidate next actions are recorded in artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv and branch-contexts.jsonl."
-        }
-      ],
-      "result": "Validated with 253 Converted and 47 concretely Deferred candidates; zero Pending or Retained.",
-      "acceptanceEvidence": "artifacts\\conditional-cleanup\\batch-304-7992524d\\validation\\batch-acceptance.json",
-      "artifacts": {
-        "candidates": "artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv",
-        "files": "artifacts\\conditional-cleanup\\batch-304-7992524d\\files.json",
-        "branchContexts": "artifacts\\conditional-cleanup\\batch-304-7992524d\\branch-contexts.jsonl",
-        "classificationPreflight": "artifacts\\conditional-cleanup\\batch-304-7992524d\\classification-preflight.json",
-        "validation": "artifacts\\conditional-cleanup\\batch-304-7992524d\\validation"
-      }
-    },
+    "activeBatch": null,
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",
       "The optional ARM64 emitter recording selection failed 18/642 Debug and 12/606 Release cases on existing unsupported target register-recording and diagnostic paths; no pass is claimed from that selection. ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED remains undefined by default, so its guarded bodies were not executed. TRX: artifacts\\tst\\EmitterTestHarnessGuard\\Debug\\EmitterTestHarnessGuard.win-arm64.Debug.trx and Release equivalent.",

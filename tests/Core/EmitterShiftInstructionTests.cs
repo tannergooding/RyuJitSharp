@@ -252,7 +252,6 @@ internal static class EmitterShiftInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -261,13 +260,14 @@ internal static class EmitterShiftInstructionTests
     [TestCase(5)]
     public static void DspCodeRecordsShiftsAndPreservesIdentityElision(int entrypoint)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithEmitter((compiler, emitter) =>
         {
             var source = compiler.gtNewIconNode(TYP_INT, 3);
             source.IsContained = true;
             var store = Store(compiler, entrypoint == 5 ? 0 : 1, source);
             var used = Used(emitter);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -309,7 +309,6 @@ internal static class EmitterShiftInstructionTests
                 Is.EqualTo(entrypoint != 2));
         });
     }
-#endif
 
     private static GenTreeStoreInd Store(Compiler compiler, int kind, GenTree source)
     {

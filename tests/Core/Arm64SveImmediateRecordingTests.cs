@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -23,6 +22,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64SveImmediateRecordingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void SetFirstFaultRegisterOverridesAttributeAndImmediate()
     {
@@ -301,13 +306,17 @@ internal static unsafe class Arm64SveImmediateRecordingTests
 
     private static Emitter.instrDesc Record(Emitter emitter, Action record)
     {
-#if DEBUG
-        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
-        Assert.That(assertions, Is.Empty);
-        Assert.That(output, Is.Empty);
-#else
-        record();
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (output, assertions) = Arm64SveDisassemblyTests.Capture(record);
+            Assert.That(assertions, Is.Empty);
+            Assert.That(output, Is.Empty);
+        }
+        else
+        {
+            record();
+        }
+
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
         var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
         Assert.That(id.idCodeSize(), Is.EqualTo(4u));
@@ -335,11 +344,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             CodeGenEmitter(codeGen) = emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, true);
             action(emitter);
         }
         finally
@@ -363,4 +368,3 @@ internal static unsafe class Arm64SveImmediateRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getBitMaskOnes")]
     private static extern nint BitMaskOnes(Emitter? emitter, nint immediate, uint width);
 }
-#endif

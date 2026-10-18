@@ -196,18 +196,19 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
                 store.VNForSimdType(16, TYP_INT));
             Assert.That(store.GetConstantSimd16(result).i32[0], Is.Zero);
 
-#if FEATURE_MASKED_HW_INTRINSICS
-            var mask = new GenTreeMskCon(default);
-            var maskTree = new GenTreeHWIntrinsic(TYP_MASK, NI_AVX512_AndMask, TYP_INT, 16, mask, mask);
-            var left = default(simdmask_t);
-            left.u64[0] = 0b_1011;
-            var right = default(simdmask_t);
-            right.u64[0] = 0b_0110;
-            var maskResult = store.EvalHWIntrinsicFunBinary(maskTree, VNFunc.VNF_HWI_AVX512_AndMask,
-                store.VNForSimdMaskCon(left), store.VNForSimdMaskCon(right),
-                store.VNForSimdType(16, TYP_INT));
-            Assert.That(store.GetConstantSimdMask(maskResult).RawBits, Is.EqualTo(0b_0010L));
-#endif
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+            {
+                var mask = new GenTreeMskCon(default);
+                var maskTree = new GenTreeHWIntrinsic(TYP_MASK, NI_AVX512_AndMask, TYP_INT, 16, mask, mask);
+                var left = default(simdmask_t);
+                left.u64[0] = 0b_1011;
+                var right = default(simdmask_t);
+                right.u64[0] = 0b_0110;
+                var maskResult = store.EvalHWIntrinsicFunBinary(maskTree, VNFunc.VNF_HWI_AVX512_AndMask,
+                    store.VNForSimdMaskCon(left), store.VNForSimdMaskCon(right),
+                    store.VNForSimdType(16, TYP_INT));
+                Assert.That(store.GetConstantSimdMask(maskResult).RawBits, Is.EqualTo(0b_0010L));
+            }
         });
     }
 

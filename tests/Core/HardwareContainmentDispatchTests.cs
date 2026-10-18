@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -364,15 +363,15 @@ internal static unsafe class HardwareContainmentDispatchTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
-#if DEBUG
-        compiler.opts.compEnablePCRelAddr = true;
-#endif
+        TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
         compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX512);
         compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
@@ -395,4 +394,3 @@ internal static unsafe class HardwareContainmentDispatchTests
         }
     }
 }
-#endif

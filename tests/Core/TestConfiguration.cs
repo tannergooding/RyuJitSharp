@@ -32,6 +32,9 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "minRegCandidateCount")]
     private static extern ref uint MinRegCandidateCount(RefPosition reference);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_doNotEnregReason")]
+    private static extern ref DoNotEnregisterReason DoNotEnregisterReasonField(ref LclVarDsc descriptor);
+
     public static bool IsDebug => Configuration.DEBUG;
 
     public static bool IsArm32 => Configuration.TARGET_ARM;
@@ -121,6 +124,14 @@ internal static partial class TestConfiguration
         if (IsDebug)
         {
             DspCode(ref compiler.opts) = enabled;
+        }
+    }
+
+    public static void SetDoNotEnregisterReason(ref LclVarDsc descriptor, DoNotEnregisterReason reason)
+    {
+        if (IsDebug)
+        {
+            DoNotEnregisterReasonField(ref descriptor) = reason;
         }
     }
 

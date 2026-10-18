@@ -107,16 +107,15 @@ public sealed partial class Lowering
         }
 
         JITDUMP("  ..and they are close. Trying to move the following range (where * are nodes part of the data flow):\n\n");
-#if DEBUG
-        var startDumpNode = BlockRange().GetTreeRange(prevIndir, out _).FirstNode;
-        var endDumpNode = indir.Next;
         void DumpWithMarks()
         {
-            if (!CompilerInstance.verbose)
+            if (!Configuration.DEBUG || !CompilerInstance.verbose)
             {
                 return;
             }
 
+            var startDumpNode = BlockRange().GetTreeRange(prevIndir, out _).FirstNode;
+            var endDumpNode = indir.Next;
             for (var node = startDumpNode; node != endDumpNode; node = node.Next)
             {
                 assert(node is not null);
@@ -125,14 +124,14 @@ public sealed partial class Lowering
                 CompilerInstance.gtDispLIRNode(node, prefix);
             }
         }
-#endif
 
         try
         {
             MarkTree(indir);
-#if DEBUG
-            DumpWithMarks();
-#endif
+            if (Configuration.DEBUG)
+            {
+                DumpWithMarks();
+            }
             JITDUMP("\n");
 
             if ((prevIndir._lirFlags & LIR.Flags.Mark) != 0)
@@ -314,9 +313,10 @@ public sealed partial class Lowering
             }
 
             JITDUMP("Result:\n\n");
-#if DEBUG
-            DumpWithMarks();
-#endif
+            if (Configuration.DEBUG)
+            {
+                DumpWithMarks();
+            }
             JITDUMP("\n");
             return true;
         }

@@ -191,10 +191,11 @@ internal static unsafe class LinearScanRegisterAssignmentTests
         }, trackedLocal: true);
     }
 
-#if DEBUG
     [Test]
     public static void ExtendLifetimeStressKeepsLastUseFromBeingSpilled()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             var blocks = CreateTrackedBlocks(compiler);
             Assert.That(StartBlockSequence(allocator), Is.SameAs(blocks[0]));
@@ -222,7 +223,6 @@ internal static unsafe class LinearScanRegisterAssignmentTests
             Assert.That(InVarReg(allocator, 2, 0), Is.EqualTo(regNumber.REG_X64_STK));
         }, trackedLocal: true);
     }
-#endif
 
     private static BasicBlock[] CreateTrackedBlocks(Compiler compiler)
     {
@@ -333,6 +333,7 @@ internal static unsafe class LinearScanRegisterAssignmentTests
             {
                 BlockInfo(allocator) = [new LsraBlockInfo { weight = 1 }];
             }
+            TestConfiguration.InitializeLsraStatistics(allocator, BlockInfo(allocator)!.Length);
 
             action(compiler, allocator);
         }

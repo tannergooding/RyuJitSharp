@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64RationalizationTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(TYP_UBYTE, 16, NI_AdvSimd_Arm64_MaxAcross)]
     [TestCase(TYP_UINT, 8, NI_AdvSimd_MaxPairwise)]
     public static void MaskZeroComparisonReducesAcrossLanes(
@@ -348,4 +353,3 @@ internal static unsafe class Arm64RationalizationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoPhase")]
     private static extern PhaseStatus RunPhase(Rationalizer rationalizer);
 }
-#endif

@@ -1,9 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-#if DEBUG
 using System.Globalization;
-#endif
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -189,11 +187,11 @@ internal static unsafe class UnwindPublicationTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void UnwindAllocationDiagnosticDiffsPointersButPassesRawAddressesToEE(bool diffable)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithPublication((compiler, _, context) =>
         {
             compiler.opts.dspDiffable = diffable;
@@ -220,6 +218,7 @@ internal static unsafe class UnwindPublicationTests
     [TestCase(true, "0xd1ffab1e")]
     public static void UnwindDumpUsesDiffableOffsetsWithoutChangingPublication(bool diffable, string endOffset)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithPublication((compiler, _, context) =>
         {
             compiler.opts.dspUnwind = true;
@@ -239,6 +238,7 @@ internal static unsafe class UnwindPublicationTests
     [Test]
     public static void FakeSplitTreatsColdRootAndFuncletAsHot()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithPublication((compiler, _, context) =>
         {
             FakeSplit(ref Globals.JitConfig) = 1;
@@ -276,14 +276,14 @@ internal static unsafe class UnwindPublicationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
     private static extern ref int FakeSplit(ref JitConfigValues config);
-#endif
 
     private static insGroup Group(uint offset)
     {
         var group = new insGroup { igOffs = offset };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
         return group;
     }
 

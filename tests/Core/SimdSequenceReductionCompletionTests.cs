@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && (TARGET_ARM64 || TARGET_WASM)
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,27 +9,28 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if TARGET_ARM64
 using static RyuJitSharp.SimdScalableKind;
-#else
 using static RyuJitSharp.GenTreeFlags;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class SimdSequenceReductionCompletionTests
 {
+    [SetUp]
+    public static void RequireSupportedConfiguration()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM),
+            "This fixture requires ARM64 or WebAssembly hardware intrinsics.");
+    }
+
     [Test]
     public static void FixedIntegralIndicesAndSequencesWrapAtElementWidth(
         [Values(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG)]
         var_types baseType,
-#if TARGET_ARM64
         [Values((byte)8, (byte)16)] byte size)
-#else
-        [Values((byte)16)] byte size)
-#endif
     {
+        Assume.That(size == 16 || Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
@@ -51,13 +51,10 @@ internal static unsafe class SimdSequenceReductionCompletionTests
     [Test]
     public static void FixedFloatingSequencesRetainPrecisionSignedZeroAndNonfiniteArithmetic(
         [Values(TYP_FLOAT, TYP_DOUBLE)] var_types baseType,
-#if TARGET_ARM64
         [Values((byte)8, (byte)16)] byte size,
-#else
-        [Values((byte)16)] byte size,
-#endif
         [Values(0, 1, 2, 3)] int scenario)
     {
+        Assume.That(size == 16 || Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
@@ -118,12 +115,12 @@ internal static unsafe class SimdSequenceReductionCompletionTests
         });
     }
 
-#if TARGET_ARM64
     [Test]
     public static void ScalableIndicesUseIntegralSequencesAndFloatingConversions(
         [Values(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG,
             TYP_FLOAT, TYP_DOUBLE)] var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var result = compiler.gtNewSimdGetIndicesNode(TYP_SIMD_ARM64, baseType, 0);
@@ -154,6 +151,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
         [Values(false, true)] bool constantStart,
         [Values(false, true)] bool constantStep)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var scalarType = baseType.Size == 8 ? TYP_LONG : TYP_INT;
@@ -187,6 +185,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
         [Values(TYP_FLOAT, TYP_DOUBLE)] var_types baseType,
         [Values(false, true)] bool constants)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             GenTree start = constants ? compiler.gtNewDconNode(baseType, -0.0) : Local(compiler, baseType);
@@ -209,6 +208,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
             TYP_FLOAT, TYP_DOUBLE)] var_types baseType,
         [Values((byte)8, (byte)16)] byte size)
     {
+        Assume.That(Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             var value = compiler.gtNewVconNode(Compiler.GetSimdTypeForSize(size));
@@ -243,12 +243,12 @@ internal static unsafe class SimdSequenceReductionCompletionTests
             Assert.That(value.SimdVal.u64[0], Is.EqualTo(bits));
         });
     }
-#else
     [Test]
     public static void WasmSumPreservesIncreasingStrideMasksAndStoreBeforeReload(
         [Values(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG,
             TYP_FLOAT, TYP_DOUBLE)] var_types baseType)
     {
+        Assume.That(Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             var source = compiler.gtNewVconNode(TYP_SIMD16);
@@ -262,6 +262,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
     [Test]
     public static void WasmSumCapturesAnEffectfulSourceOnceBeforeReloadingIt()
     {
+        Assume.That(Configuration.TARGET_WASM);
         WithCompiler(compiler =>
         {
             var source = new GenTreeIndir(GT_IND, TYP_SIMD16, Local(compiler, TYP_BYREF));
@@ -316,7 +317,6 @@ internal static unsafe class SimdSequenceReductionCompletionTests
 
         return result;
     }
-#endif
 
     private static GenTree Scalar(Compiler compiler, var_types baseType, long value)
     {
@@ -366,4 +366,3 @@ internal static unsafe class SimdSequenceReductionCompletionTests
         }
     }
 }
-#endif

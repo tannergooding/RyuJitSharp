@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.RmwStatus;
 using static RyuJitSharp.genTreeOps;
@@ -182,11 +183,11 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
         });
     }
 
-#if TARGET_X86
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_UBYTE)]
     public static void ByteStoresRequireByteAddressableSourceRegisters(var_types type)
     {
+        Assume.That(Configuration.TARGET_X86);
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             var data = compiler.gtNewIconNode(type, 23);
@@ -207,6 +208,7 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
     [Test]
     public static void X86ConstantLocalHeapAlwaysReservesACounterRegister()
     {
+        Assume.That(Configuration.TARGET_X86);
         WithAllocator((compiler, allocator) => {
             compiler.eeInfo.osPageSize = 4096;
             var size = compiler.gtNewIconNode(TYP_I_IMPL, 16);
@@ -222,6 +224,7 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
     [Test]
     public static void X86RmwAddressUsesPreserveTheirNonMemoryOperand()
     {
+        Assume.That(Configuration.TARGET_X86);
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             var containedAddress = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
@@ -249,6 +252,7 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
     [TestCase(true)]
     public static void RmwLastUseTransfersOnlyFromAContainedLastUse(bool lastUse)
     {
+        Assume.That(Configuration.TARGET_X86);
         WithAllocator((compiler, allocator) => {
             var from = new GenTreeLclVar(TYP_INT, 0) { IsContained = true };
             var to = new GenTreeLclVar(TYP_INT, 0);
@@ -265,12 +269,9 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
             Assert.That((to.Flags & GTF_VAR_DEATH) != 0, Is.EqualTo(lastUse));
         });
     }
-#endif
 
-#if TARGET_X86
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "checkAndMoveRMWLastUse")]
     private static extern void CheckAndMoveRMWLastUse(LinearScan allocator, GenTree? fromTree, GenTree? toTree);
-#endif
 
     private static void AssertHeapDefinitions(LinearScan allocator, GenTree heap, bool needsTemporary)
     {

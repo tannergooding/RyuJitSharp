@@ -543,12 +543,11 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
         return new(lowerBound, upperBound);
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public static void Print(IntegralRange range)
     {
         jitprintf($"[{SymbolicToRealValue(range.LowerBound)}");
         jitprintf("..");
         jitprintf($"{SymbolicToRealValue(range.UpperBound)}]");
     }
-#endif
 }

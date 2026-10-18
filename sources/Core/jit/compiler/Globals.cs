@@ -13,10 +13,8 @@ public partial class Globals
 {
     public const CorInfoFlag FLG_CCTOR = CORINFO_FLG_CONSTRUCTOR | CORINFO_FLG_STATIC;
 
-#if DEBUG
     // for LclVarDsc.lvStkOffs
     public const int BAD_STK_OFFS = unchecked((int)(0xBAADF00D));
-#endif
 
     public const int ROOT_FUNC_IDX = 0;
 

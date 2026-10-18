@@ -321,7 +321,6 @@ internal static class EmitterSimdRegisterInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(0, false)]
     [TestCase(0, true)]
     [TestCase(1, false)]
@@ -331,11 +330,13 @@ internal static class EmitterSimdRegisterInstructionTests
     [TestCase(4, true)]
     public static void DisassemblyRecordsSimdOperandsAndLegacyCopies(int entrypoint, bool vex)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseEvexEncodings = vex;
             emitter.UseVexEncodings = vex;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -380,7 +381,6 @@ internal static class EmitterSimdRegisterInstructionTests
             Assert.That(diagnostic, Does.Contain(entrypoint is 1 or 3 ? "shufps" : entrypoint == 4 ? "pshufd" : "addps"));
         });
     }
-#endif
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {

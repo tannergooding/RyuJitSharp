@@ -82,12 +82,10 @@ public partial class Compiler
         if (!checkIteration)
         {
             JITDUMP("Conditions: ");
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 context.PrintConditions(loopNum);
             }
-#endif
             JITDUMP("\n");
             return true;
         }
@@ -389,12 +387,10 @@ public partial class Compiler
             JITDUMP("Added NE init-vs-limit cloning condition\n");
         }
         JITDUMP("Conditions: ");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             context.PrintConditions(loopNum);
         }
-#endif
         JITDUMP("\n");
         return true;
     }
@@ -428,8 +424,7 @@ public partial class Compiler
             }
             maxRank = Math.Max(rank, maxRank);
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             if (roots.Count > 0)
             {
@@ -445,7 +440,6 @@ public partial class Compiler
                 jitprintf("No array deref conditions\n");
             }
         }
-#endif
         if (arrays.Count > 0)
         {
             assert(maxRank != -1);
@@ -471,12 +465,10 @@ public partial class Compiler
                     new LC_Expr(LC_Ident.CreateNull(deref.LclType))));
             }
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             context.PrintBlockConditions(loopNum);
         }
-#endif
         return true;
     }
 }

@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -90,13 +91,13 @@ internal static unsafe class CodeGenReturnTests
         });
     }
 
-#if SWIFT_SUPPORT
     [TestCase(false, TYP_VOID)]
     [TestCase(true, TYP_VOID)]
     [TestCase(false, TYP_INT)]
     [TestCase(true, TYP_REF)]
     public static void SwiftErrorReturnsMoveTheErrorBeforeTheNormalValue(bool aliasedError, var_types type)
     {
+        Assume.That(Configuration.SWIFT_SUPPORT);
         WithReturn(type, (compiler, codeGen) =>
         {
             compiler.info.compCallConv = CorInfoCallConvExtension.Swift;
@@ -125,7 +126,6 @@ internal static unsafe class CodeGenReturnTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? RBM_RAX : RBM_NONE));
         });
     }
-#endif
 
     [TestCase(GT_RETFILT, TYP_VOID)]
     [TestCase(GT_RETFILT, TYP_INT)]
@@ -143,11 +143,11 @@ internal static unsafe class CodeGenReturnTests
         });
     }
 
-#if UNIX_AMD64_ABI
     [TestCase(TYP_INT, false)]
     [TestCase(TYP_STRUCT, true)]
     public static void StructClassificationRequiresTheNativeReturnType(var_types nativeType, bool expected)
     {
+        Assume.That(Configuration.UNIX_AMD64_ABI);
         WithReturn(TYP_INT, (compiler, codeGen) =>
         {
             compiler.info.compRetNativeType = nativeType;
@@ -157,12 +157,8 @@ internal static unsafe class CodeGenReturnTests
             Assert.That(codeGen.isStructReturn(tree), Is.EqualTo(expected));
         });
     }
-#endif
 
-#if UNIX_AMD64_ABI
-    [TestCase(REG_XMM0, 1)]
-    [TestCase(REG_XMM1, 2)]
-    [TestCase(REG_XMM2, 2)]
+    [TestCaseSource(nameof(SplitSimdReturnCases))]
     public static void SplitSimdReturnsPreserveBothAbiHalvesWhenSourceAliasesEitherRegister(
         regNumber sourceReg, int expectedInstructions)
     {
@@ -189,7 +185,16 @@ internal static unsafe class CodeGenReturnTests
             }
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> SplitSimdReturnCases()
+    {
+        if (Configuration.UNIX_AMD64_ABI)
+        {
+            yield return new TestCaseData(REG_XMM0, 1);
+            yield return new TestCaseData(REG_XMM1, 2);
+            yield return new TestCaseData(REG_XMM2, 2);
+        }
+    }
 
     [TestCase(false)]
     [TestCase(true)]
@@ -316,11 +321,11 @@ internal static unsafe class CodeGenReturnTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(32)]
     public static void StackChecksBranchAroundTheBreakpointAndDefineTheContinuation(int offset)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithReturn(TYP_VOID, (compiler, codeGen) =>
         {
             compiler.lvaSetVarDoNotEnregister(0, DoNotEnregisterReason.ReturnSpCheck);
@@ -342,6 +347,7 @@ internal static unsafe class CodeGenReturnTests
     [TestCase(true)]
     public static void ReturnStackChecksOnlyRunInTheRootFunction(bool funclet)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithReturn(TYP_VOID, (compiler, codeGen) =>
         {
             compiler.compStackCheckOnRet = true;
@@ -361,6 +367,7 @@ internal static unsafe class CodeGenReturnTests
     [Test]
     public static void DisassemblyRecordsReturnsAndProfilerCallbacks()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithReturn(TYP_REF, (compiler, codeGen) =>
         {
             var source = Register(compiler, TYP_REF, REG_RCX);
@@ -368,7 +375,7 @@ internal static unsafe class CodeGenReturnTests
             codeGen.GCInfo.gcMarkRegPtrVal(REG_RCX, TYP_REF);
             ProfilerHookNeeded(compiler) = true;
             PrepareProfiler(compiler, codeGen, finalLayout: true, framePointer: true, indirect: false);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genReturn(tree));
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
@@ -376,7 +383,6 @@ internal static unsafe class CodeGenReturnTests
             Assert.That(compiler.info.compProfilerCallback, Is.True);
         });
     }
-#endif
 
     private static void PrepareProfiler(Compiler compiler, CodeGen codeGen, bool finalLayout, bool framePointer, bool indirect)
     {
@@ -405,10 +411,8 @@ internal static unsafe class CodeGenReturnTests
         });
     }
 
-#if UNIX_AMD64_ABI
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
     private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);

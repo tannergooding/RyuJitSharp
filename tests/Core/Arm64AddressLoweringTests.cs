@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64AddressLoweringTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(TYP_INT, 2, true)]
     [TestCase(TYP_LONG, 3, true)]
     [TestCase(TYP_INT, 3, false)]
@@ -410,4 +415,3 @@ internal static unsafe class Arm64AddressLoweringTests
         }
     }
 }
-#endif

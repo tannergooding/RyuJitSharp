@@ -87,6 +87,15 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compActiveStressModes")]
     private static extern ref InlineArrayCompilerStressCount<byte> ActiveStressModes(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "rpNum")]
+    private static extern ref uint ReferenceNumber(RefPosition reference);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "buildNode")]
+    private static extern ref GenTree? BuildNode(RefPosition reference);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ShouldDumpAsciiTrees")]
     private static extern bool GetShouldDumpAsciiTrees(Compiler compiler);
 
@@ -101,6 +110,34 @@ internal static partial class TestConfiguration
         }
 
         return ActiveStressModes(compiler)[(int)area];
+    }
+
+    public static void InitializeLsraStatistics(LinearScan allocator, int blockCount)
+    {
+        if (IsDebug && Configuration.TRACK_LSRA_STATS)
+        {
+            BlockStats(allocator) = new uint[]?[blockCount];
+        }
+    }
+
+    public static uint GetReferenceNumber(RefPosition reference)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Reference numbers are only available in Debug builds.");
+        }
+
+        return ReferenceNumber(reference);
+    }
+
+    public static GenTree? GetBuildNode(RefPosition reference)
+    {
+        if (!IsDebug)
+        {
+            throw new InvalidOperationException("Reference build nodes are only available in Debug builds.");
+        }
+
+        return BuildNode(reference);
     }
 
     public static bool ShouldDumpAsciiTrees(Compiler compiler)

@@ -3,9 +3,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-#if TARGET_ARM || (DEBUG && TARGET_ARM64)
 using System.Reflection;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using SingleTypeRegSet = RyuJitSharp.regMask;
@@ -111,10 +109,10 @@ internal static unsafe class LinearScanRegisterSelectionTests
         });
     }
 
-#if TARGET_AMD64 && HAS_MORE_THAN_64_REGISTERS
     [Test]
     public static void MinimalMaskSelectionExcludesConflictingHighBankRegister()
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.HAS_MORE_THAN_64_REGISTERS);
         WithCompiler(compiler => {
             CompilerAllMaskRegs(compiler) = SRBM_X64_K1 | SRBM_X64_K2;
             var allocator = CreateAllocator(compiler);
@@ -130,40 +128,39 @@ internal static unsafe class LinearScanRegisterSelectionTests
             Assert.That(selected, Is.EqualTo(SRBM_X64_K2));
         });
     }
-#endif
 
-#if TARGET_ARM
     [TestCase(8.0, 1.0)]
     [TestCase(1.0, 8.0)]
     public static void DoubleSpillCostUsesTheMoreExpensiveHalf(double lowerCost, double upperCost)
     {
+        Assume.That(Configuration.TARGET_ARM);
         WithCompiler(compiler =>
         {
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_DOUBLE);
-            foreach (var register in new[] { regNumber.REG_F0, regNumber.REG_F2 })
+            foreach (var register in new[] { regNumber.REG_ARM32_F0, regNumber.REG_ARM32_F2 })
             {
                 var assigned = NewInterval(allocator, TYP_FLOAT);
                 assigned.recentRefPosition = allocator.newRefPosition(
-                    assigned, 1, RefType.RefTypeUse, null, genSingleTypeRegMask(register));
+                    assigned, 1, RefType.RefTypeUse, null, genSingleTypeRegMask(register, TYP_FLOAT));
                 assigned.physReg = register;
                 assigned.assignedReg = allocator.physRegs[(int)register];
                 assigned.isActive = true;
                 assigned.assignedReg.assignedInterval = assigned;
             }
             var reference = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, null, SRBM_F0 | SRBM_F2);
+                interval, 10, RefType.RefTypeDef, null, SRBM_ARM32_F0 | SRBM_ARM32_F2);
             var selector = GetSelector(allocator);
             InvokeSelector(selector, "reset", interval, reference);
             var costs = SpillCost(allocator);
-            costs[(int)regNumber.REG_F0] = lowerCost;
-            costs[(int)regNumber.REG_F1] = upperCost;
-            costs[(int)regNumber.REG_F2] = 3;
-            costs[(int)regNumber.REG_F3] = 2;
+            costs[(int)regNumber.REG_ARM32_F0] = lowerCost;
+            costs[(int)regNumber.REG_ARM32_F1] = upperCost;
+            costs[(int)regNumber.REG_ARM32_F2] = 3;
+            costs[(int)regNumber.REG_ARM32_F3] = 2;
 
             InvokeSelector(selector, "try_SPILL_COST");
 
-            Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_candidates"), Is.EqualTo(SRBM_F2));
+            Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_candidates"), Is.EqualTo(SRBM_ARM32_F2));
             Assert.That(GetSelectorField<bool>(selector, "_found"), Is.True);
         });
     }
@@ -175,14 +172,16 @@ internal static unsafe class LinearScanRegisterSelectionTests
     public static void PreviousOptionalDoubleSelectionPreservesNativeHalfAndTieRules(
         int lowerState, int upperState, bool twoCandidates, bool expectedFound)
     {
+        Assume.That(Configuration.TARGET_ARM);
         WithCompiler(compiler =>
         {
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_DOUBLE);
-            var candidates = twoCandidates ? SRBM_F0 | SRBM_F2 : SRBM_F0;
-            foreach (var register in twoCandidates
-                ? new[] { regNumber.REG_F0, regNumber.REG_F2 }
-                : new[] { regNumber.REG_F0 })
+            var candidates = twoCandidates ? SRBM_ARM32_F0 | SRBM_ARM32_F2 : SRBM_ARM32_F0;
+            regNumber[] registers = twoCandidates
+                ? [regNumber.REG_ARM32_F0, regNumber.REG_ARM32_F2]
+                : [regNumber.REG_ARM32_F0];
+            foreach (var register in registers)
             {
                 SetPreviousHalf(register, lowerState);
                 SetPreviousHalf(register + 1, upperState);
@@ -195,7 +194,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
 
             Assert.That(GetSelectorField<bool>(selector, "_found"), Is.EqualTo(expectedFound));
             Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_candidates"),
-                Is.EqualTo(expectedFound && twoCandidates ? SRBM_F2 : candidates));
+                Is.EqualTo(expectedFound && twoCandidates ? SRBM_ARM32_F2 : candidates));
 
             void SetPreviousHalf(regNumber register, int state)
             {
@@ -205,7 +204,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
                 }
                 var assigned = NewInterval(allocator, TYP_FLOAT);
                 var recent = allocator.newRefPosition(
-                    assigned, 1, RefType.RefTypeUse, null, genSingleTypeRegMask(register));
+                    assigned, 1, RefType.RefTypeUse, null, genSingleTypeRegMask(register, TYP_FLOAT));
                 recent.reload = state == 1;
                 recent.setRegOptional(state == 1);
                 assigned.recentRefPosition = recent;
@@ -220,22 +219,23 @@ internal static unsafe class LinearScanRegisterSelectionTests
     [TestCase("calculateCoversSets")]
     public static void DoubleUnassignedClassificationUsesNativeFirstHalfNextReference(string method)
     {
+        Assume.That(Configuration.TARGET_ARM);
         WithCompiler(compiler =>
         {
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_DOUBLE);
-            var reference = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, null, SRBM_F0);
+            var reference = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, null, SRBM_ARM32_F0);
             var selector = GetSelector(allocator);
             InvokeSelector(selector, "reset", interval, reference);
-            SetSelectorField(selector, "_freeCandidates", SRBM_F0);
+            SetSelectorField(selector, "_freeCandidates", SRBM_ARM32_F0);
             SetSelectorField(selector, "_lastLocation", 30u);
             SetSelectorField(selector, "_found", true);
-            NextIntervalRef(allocator)[(int)regNumber.REG_F0] = LsraGlobals.MaxLocation;
-            NextIntervalRef(allocator)[(int)regNumber.REG_F1] = 20;
+            NextIntervalRef(allocator)[(int)regNumber.REG_ARM32_F0] = LsraGlobals.MaxLocation;
+            NextIntervalRef(allocator)[(int)regNumber.REG_ARM32_F1] = 20;
 
             InvokeSelector(selector, method);
 
-            Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_unassignedSet"), Is.EqualTo(SRBM_F0));
+            Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_unassignedSet"), Is.EqualTo(SRBM_ARM32_F0));
         });
     }
 
@@ -244,9 +244,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_nextIntervalRef")]
     private static extern ref uint[] NextIntervalRef(LinearScan allocator);
-#endif
 
-#if DEBUG && TARGET_ARM64
     private static readonly int[] s_consecutiveExpected = [
         0x10000, 0x08000, 0x04000, 0x02000, 0x01000, 0x00800,
         0x00400, 0x00200, 0x00100, 0x00080, 0x00040, 0x00020,
@@ -260,6 +258,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
     [TestCase(true)]
     public static void MinimalOrderingRetainsFullHeuristicsForConsecutiveMethods(bool needsConsecutive)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             compiler.info.compNeedsConsecutiveRegisters = needsConsecutive;
@@ -278,6 +277,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
     [Test]
     public static void ConsecutivePreviousOptionalHeuristicAcceptsAnUnassignedCandidate()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_ARM64);
         WithCompiler(compiler =>
         {
             compiler.info.compNeedsConsecutiveRegisters = true;
@@ -294,9 +294,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
             Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_candidates"), Is.EqualTo(SRBM_ARM64_V0));
         });
     }
-#endif
 
-#if TARGET_ARM || (DEBUG && TARGET_ARM64)
     private static object GetSelector(LinearScan allocator)
     {
         var field = typeof(LinearScan).GetField("_regSelector", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -314,14 +312,14 @@ internal static unsafe class LinearScanRegisterSelectionTests
             ? value : throw new AssertionException($"Unexpected selector field type for {name}.");
     }
 
-#if TARGET_ARM
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects private register-selector state retained in the test assembly.")]
     private static void SetSelectorField<T>(object selector, string name, T value)
     {
         var field = selector.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new AssertionException($"Missing selector field {name}.");
         field.SetValue(selector, value);
     }
-#endif
 
     [UnconditionalSuppressMessage("Trimming", "IL2075",
         Justification = "The test intentionally reflects private register-selector methods retained in the test assembly.")]
@@ -331,12 +329,12 @@ internal static unsafe class LinearScanRegisterSelectionTests
             ?? throw new AssertionException($"Missing selector method {name}.");
         _ = method.Invoke(selector, arguments);
     }
-#endif
 
     private static LinearScan CreateAllocator(Compiler compiler)
     {
         var allocator = new LinearScan(compiler);
         BlockInfo(allocator) = [new LsraBlockInfo()];
+        TestConfiguration.InitializeLsraStatistics(allocator, 1);
         for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             var register = allocator.physRegs[index];

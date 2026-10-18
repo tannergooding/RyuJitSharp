@@ -18,12 +18,11 @@ internal static unsafe class EmitterCallGCOutputTests
 {
     private delegate void EmitterTest(Compiler compiler, Emitter emitter, byte* buffer);
 
-#if TARGET_AMD64
     [TestCase(false)]
     [TestCase(true)]
     public static void ColdCodeOffsetsFollowBothNowayPolicies(bool minopts)
     {
-        WithEmitter((_, emitter, _) =>
+        WithAmd64Emitter((_, emitter, _) =>
         {
             emitter.emitCodeBlock = (byte*)0x2000;
             emitter.emitTotalHotCodeSize = 0x40;
@@ -49,13 +48,13 @@ internal static unsafe class EmitterCallGCOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitCurCodeOffs")]
     private static extern uint CurrentCodeOffset(Emitter emitter, byte* address);
-#endif
 
-#if DEBUG && EMIT_TRACK_STACK_DEPTH && !UNIX_AMD64_ABI
     [Test]
     [NonParallelizable]
     public static void VerboseCallPrintsNativeUnsignedStackBitsBeforeSizeValidation()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.EMIT_TRACK_STACK_DEPTH &&
+            !Configuration.UNIX_AMD64_ABI);
         WithEmitter((compiler, emitter, buffer) =>
         {
             var previous = Globals.s_jitstdout;
@@ -79,7 +78,6 @@ internal static unsafe class EmitterCallGCOutputTests
             }
         }, minopts: false);
     }
-#endif
 
     [Test]
     public static void PartialMapUsesCompactMasksAndRecordsEvenEmptyCalls()
@@ -321,11 +319,18 @@ internal static unsafe class EmitterCallGCOutputTests
             var buffer = stackalloc byte[64];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 64;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableEmitterIssuing(emitter);
+            }
             test(compiler, emitter, buffer);
         }, minopts: minopts);
+    }
+
+    private static void WithAmd64Emitter(EmitterTest test, bool fullPtrMap = false, bool minopts = true)
+    {
+        Assume.That(Configuration.TARGET_AMD64);
+        WithEmitter(test, fullPtrMap, minopts);
     }
 
     private static object CallList(ref GCInfo info)

@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT).
 // See License.md in the repository root.
 
-#if TARGET_WASM
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,6 +23,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class WasmEmitterOutputTests
 {
+    [SetUp]
+    public static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM, "This fixture requires the Wasm target.");
+    }
+
     [TestCase(CorInfoReloc.WASM_FUNCTION_INDEX_LEB)]
     [TestCase(CorInfoReloc.WASM_TABLE_INDEX_SLEB)]
     public static void FuncletRelocationPreservesCallbackWrittenAddend(CorInfoReloc relocationType)
@@ -234,10 +239,11 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void EmitterUnitTestsExerciseAllWasmSimdInstructionFormats()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, _) =>
         {
             if (compiler.codeGen is not CodeGen codeGen)
@@ -254,7 +260,7 @@ internal static unsafe class WasmEmitterOutputTests
             try
             {
                 Globals.s_jitstdout = writer;
-                compiler.opts.dspCode = true;
+                TestConfiguration.SetDspCode(compiler, true);
                 emitter.emitBegFN(false, false);
 
                 EmitWasmEmitterTestSkipBlock(codeGen);
@@ -278,7 +284,6 @@ internal static unsafe class WasmEmitterOutputTests
             }
         });
     }
-#endif
 
     private static void AssertFloatingDiagnostic(Emitter emitter, double value, string expected)
     {
@@ -342,11 +347,7 @@ internal static unsafe class WasmEmitterOutputTests
             compiler.codeGen = codeGen;
             codeGen.genPrepForCompiler();
             codeGen.Emitter.emitBegCG(compiler, default);
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , false
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, false);
             action(compiler, codeGen);
         }
         finally
@@ -401,13 +402,11 @@ internal static unsafe class WasmEmitterOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCompareInt")]
     private static extern void GenCompareInt(CodeGen codeGen, GenTreeOp comparison);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genEmitWasmEmitterTestSkipBlock")]
     private static extern void EmitWasmEmitterTestSkipBlock(CodeGen codeGen);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genWasmEmitterUnitTestsSimd")]
     private static extern void EmitWasmEmitterUnitTestsSimd(CodeGen codeGen);
-#endif
 
     private sealed class TestEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
@@ -431,4 +430,3 @@ internal static unsafe class WasmEmitterOutputTests
         }
     }
 }
-#endif

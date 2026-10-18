@@ -273,11 +273,12 @@ internal static unsafe class PInvokeCallLoweringTests
         });
     }
 
-#if SWIFT_SUPPORT
     [TestCase(false)]
     [TestCase(true)]
     public static void SwiftErrorConsumerMovesBeforeThePInvokeEpilog(bool suppressTransition)
     {
+        Assume.That(Configuration.SWIFT_SUPPORT);
+
         WithCompiler((compiler, block, lowering, ee) => {
             var call = NewPInvokeCall();
             call._unmgdCallConv = CorInfoCallConvExtension.Swift;
@@ -321,6 +322,8 @@ internal static unsafe class PInvokeCallLoweringTests
     public static void SwiftErrorHandlingRequiresBothTheCallingConventionAndArgument(
         bool swift, bool errorArgument, bool expected)
     {
+        Assume.That(Configuration.SWIFT_SUPPORT);
+
         WithCompiler((compiler, block, lowering, ee) => {
             var call = NewPInvokeCall();
             call._unmgdCallConv = swift ? CorInfoCallConvExtension.Swift : CorInfoCallConvExtension.C;
@@ -333,7 +336,6 @@ internal static unsafe class PInvokeCallLoweringTests
             Assert.That(call.HasSwiftErrorHandling, Is.EqualTo(expected));
         });
     }
-#endif
 
     private static GenTreeCall NewPInvokeCall()
     {

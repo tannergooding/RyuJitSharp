@@ -234,8 +234,7 @@ public partial class Compiler
         var arrIndex = new ArrIndex();
         if (arrayBounds && optReconstructArrIndex(tree, arrIndex))
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 var useBlock = arrIndex.UseBlock
                     ?? throw new FatalJitException("Array candidate has no use block.");
@@ -246,7 +245,6 @@ public partial class Compiler
                 arrIndex.PrintBoundsCheckNodes();
                 jitprintf("\n");
             }
-#endif
             if (!optIsStackLocalInvariant(loop, arrIndex.ArrLcl))
             {
                 JITDUMP($"V{arrIndex.ArrLcl:D2} is not loop invariant\n");
@@ -269,14 +267,12 @@ public partial class Compiler
                         return WALK_SKIP_SUBTREES;
                     }
                 }
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"Loop L{loop.Index:D2} can be cloned for ArrIndex ");
                     arrIndex.Print();
                     jitprintf($" on dim {dim}\n");
                 }
-#endif
                 context.EnsureLoopOptInfo(loop.Index).Add(new LcJaggedArrayOptInfo(arrIndex, dim, stmt));
             }
             return WALK_SKIP_SUBTREES;
@@ -410,9 +406,7 @@ public partial class Compiler
             JITDUMP($"Not checking loop L{loop.Index:D2} -- no array bounds or type tests in this method\n");
             return false;
         }
-#if DEBUG
-        gdvTests &= JitConfig.JitCloneLoopsWithGdvTests != 0;
-#endif
+        gdvTests &= !Configuration.DEBUG || JitConfig.JitCloneLoopsWithGdvTests != 0;
         JITDUMP($"Checking loop L{loop.Index:D2} for optimization candidates" +
             $"{(arrayBounds ? " (array bounds)" : "")}{(gdvTests ? " (GDV tests)" : "")}\n");
         var visitor = new LoopCloneVisitor(this, loop, context, arrayBounds, gdvTests);
@@ -450,10 +444,6 @@ public partial class Compiler
 
     private static bool optLoopCloningEnabled()
     {
-#if DEBUG
-        return JitConfig.JitCloneLoops != 0;
-#else
-        return true;
-#endif
+        return !Configuration.DEBUG || JitConfig.JitCloneLoops != 0;
     }
 }

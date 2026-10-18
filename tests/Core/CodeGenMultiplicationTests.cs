@@ -176,10 +176,10 @@ internal static class CodeGenMultiplicationTests
         });
     }
 
-#if TARGET_X86
     [Test]
     public static void LongProductsPreserveBothMulxResultRegisters()
     {
+        Assume.That(Configuration.TARGET_X86);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             CodeGenShiftTests.EnableAvx2(compiler);
@@ -201,7 +201,6 @@ internal static class CodeGenMultiplicationTests
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_EBX));
         });
     }
-#endif
 
     [TestCase(false, false)]
     [TestCase(false, true)]
@@ -388,11 +387,11 @@ internal static class CodeGenMultiplicationTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DisassemblyRecordsMultiplicationWithoutConsumingOperandsTwice(bool high)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeOp(high ? GT_MULHI : GT_MUL, TYP_INT,
@@ -401,7 +400,7 @@ internal static class CodeGenMultiplicationTests
             {
                 RegNum = high ? REG_RDX : REG_RAX,
             };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (high)
@@ -417,7 +416,6 @@ internal static class CodeGenMultiplicationTests
             Assert.That(diagnostic, Does.Contain("mul"));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enableApxNDD")]
     private static extern ref int ApxNdd(ref JitConfigValues config);

@@ -86,8 +86,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             var headerPrinted = false;
 
@@ -107,7 +106,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
     }
 
     private void optValnumCSE_SetUpAsyncByrefKills()
@@ -247,8 +245,7 @@ public partial class Compiler
         var callback = new CSE_DataFlow(this);
         new DataFlow(this).ForwardAnalysis(ref callback);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\nAfter performing DataFlow for ValnumCSE's\n");
 
@@ -262,10 +259,8 @@ public partial class Compiler
                 optPrintCSEDataFlowSet(block.bbCseOut);
                 jitprintf("\n");
             }
-
             jitprintf("\n");
         }
-#endif
     }
 
     private void optValnumCSE_Availability()
@@ -301,16 +296,11 @@ public partial class Compiler
 
                         isUse = BitVecOps.IsMember(cseLivenessTraits, available, availBit);
                         isDef = !isUse;
-#if DEBUG
-                        var madeLiveAcrossCall = false;
-#endif
-                        if (isUse && !descriptor.csdLiveAcrossCall &&
-                            !BitVecOps.IsMember(cseLivenessTraits, available, crossCallBit))
+                        var madeLiveAcrossCall = isUse && !descriptor.csdLiveAcrossCall &&
+                            !BitVecOps.IsMember(cseLivenessTraits, available, crossCallBit);
+                        if (madeLiveAcrossCall)
                         {
                             descriptor.csdLiveAcrossCall = true;
-#if DEBUG
-                            madeLiveAcrossCall = true;
-#endif
                         }
 
                         if (Configuration.DEBUG && isDef)
@@ -318,14 +308,12 @@ public partial class Compiler
                             assert(!BitVecOps.IsMember(cseLivenessTraits, available, crossCallBit));
                         }
 
-#if DEBUG
-                        if (verbose)
+                        if (Configuration.DEBUG && verbose)
                         {
                             jitprintf($"{FMT_BB(block.bbNum)} [{tree.TreeId:D6}] " +
                                 $"{(isUse ? "Use" : "Def")} of {FMT_CSE(index)} [weight={refCntWtd2str(weight)}]" +
                                 $"{(madeLiveAcrossCall ? " *** Now Live Across Call ***" : "")}\n");
                         }
-#endif
                         if (descriptor.defExcSetPromise == ValueNumStore.NoVN)
                         {
                             tree._cseNum = NO_CSE;
@@ -344,8 +332,7 @@ public partial class Compiler
                             {
                                 var intersection = vnStore.VNExcSetIntersection(
                                     descriptor.defExcSetCurrent, exceptions);
-#if DEBUG
-                                if (verbose)
+                                if (Configuration.DEBUG && verbose)
                                 {
                                     jitprintf(">>> defExcSetCurrent is ");
                                     vnStore.vnDumpExc(this, descriptor.defExcSetCurrent);
@@ -357,7 +344,6 @@ public partial class Compiler
                                     vnStore.vnDumpExc(this, intersection);
                                     jitprintf("\n");
                                 }
-#endif
                                 assert(vnStore.VNExcIsSubset(descriptor.defExcSetCurrent, intersection));
                                 descriptor.defExcSetCurrent = intersection;
                             }
@@ -420,7 +406,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     private void optPrintCSEDataFlowSet(ReadOnlySpan<nint> set, bool includeBits = true)
     {
         assert(cseLivenessTraits is not null);
@@ -447,5 +432,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }

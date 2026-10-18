@@ -1,26 +1,20 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
-#if TARGET_WASM
 using System.Collections.Generic;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if TARGET_XARCH
 using static RyuJitSharp.ManagedInstructionSet;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class SimdOperationMappingCompletionTests
 {
-#if TARGET_WASM
     [TestCase(GT_ADD, TYP_INT, NI_PackedSimd_Add)]
     [TestCase(GT_ADD, TYP_FLOAT, NI_PackedSimd_Add)]
     [TestCase(GT_AND, TYP_UINT, NI_PackedSimd_And)]
@@ -39,7 +33,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void WasmBinaryMappingRetainsSupportedIdsAndNativeUnsupportedCases(
         genTreeOps operation, var_types baseType, NamedIntrinsic expected)
     {
-        WithCompiler(compiler =>
+        WithWasmCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
             GenTree right = operation is GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR
@@ -55,7 +49,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void WasmShiftMappingRetainsThePinnedIdForVectorShiftOperands(
         genTreeOps operation, NamedIntrinsic expected)
     {
-        WithCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForBinOp(operation, Local(compiler, TYP_SIMD16),
+        WithWasmCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForBinOp(operation, Local(compiler, TYP_SIMD16),
             Local(compiler, TYP_SIMD16), TYP_INT, 16, false), Is.EqualTo(expected)));
     }
 
@@ -65,7 +59,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     [TestCase(GT_SUB, NI_PackedSimd_Subtract)]
     public static void WasmFloatingScalarMappingUsesThePinnedPackedId(genTreeOps operation, NamedIntrinsic expected)
     {
-        WithCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForBinOp(operation, Local(compiler, TYP_SIMD16),
+        WithWasmCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForBinOp(operation, Local(compiler, TYP_SIMD16),
             Local(compiler, TYP_SIMD16), TYP_FLOAT, 16, true), Is.EqualTo(expected)));
     }
 
@@ -73,7 +67,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     [TestCase(true, NI_PackedSimd_AndNot)]
     public static void WasmAndNotRemainsRestrictedToLir(bool lir, NamedIntrinsic expected)
     {
-        WithCompiler(compiler =>
+        WithWasmCompiler(compiler =>
         {
             compiler.fgNodeThreading = lir ? NodeThreading.LIR : NodeThreading.None;
             Assert.That(compiler.GetHWIntrinsicIdForBinOp(GT_AND_NOT, Local(compiler, TYP_SIMD16),
@@ -112,7 +106,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void WasmComparisonMappingPreservesSignednessAndReverseConditionDispatch(
         genTreeOps operation, var_types baseType, bool reverse, NamedIntrinsic expected)
     {
-        WithCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForCmpOp(operation, TYP_SIMD16,
+        WithWasmCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForCmpOp(operation, TYP_SIMD16,
             Local(compiler, TYP_SIMD16), Local(compiler, TYP_SIMD16), baseType, 16, false, reverse),
             Is.EqualTo(expected)));
     }
@@ -122,7 +116,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     [TestCase(TYP_FLOAT)]
     public static void WasmSafeVariableShuffleConstructsExpansionAndFullWidthRangeMask(var_types baseType)
     {
-        WithCompiler(compiler =>
+        WithWasmCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
             var indices = Local(compiler, TYP_SIMD16);
@@ -154,7 +148,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     [TestCase(TYP_DOUBLE)]
     public static void WasmNativeLongElementShuffleConstructsOrWithoutAnUnsignedRangeMask(var_types baseType)
     {
-        WithCompiler(compiler =>
+        WithWasmCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
             var indices = Local(compiler, TYP_SIMD16);
@@ -170,7 +164,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     [TestCase(true)]
     public static void WasmUnzipConstructsBothScatterMasksAndCombinesThemInSourceOrder(bool odd)
     {
-        WithCompiler(compiler =>
+        WithWasmCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
@@ -195,9 +189,6 @@ internal static unsafe class SimdOperationMappingCompletionTests
             }
         });
     }
-#endif
-
-#if TARGET_XARCH
     [TestCase(GT_ADD, (byte)16, TYP_INT, false, NI_X86Base_Add)]
     [TestCase(GT_ADD, (byte)32, TYP_UINT, false, NI_AVX2_Add)]
     [TestCase(GT_DIV, (byte)64, TYP_DOUBLE, false, NI_AVX512_Divide)]
@@ -209,7 +200,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void XarchBinaryWidthAndScalarControlsRemainUnchanged(
         genTreeOps operation, byte size, var_types baseType, bool scalar, NamedIntrinsic expected)
     {
-        WithCompiler(compiler =>
+        WithXarchCompiler(compiler =>
         {
             Enable(compiler, InstructionSet_AVX2);
             var type = Compiler.GetSimdTypeForSize(size);
@@ -226,7 +217,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void XarchComparisonReverseAndUnsupportedControlsRemainUnchanged(
         genTreeOps operation, var_types baseType, bool reverse, NamedIntrinsic expected)
     {
-        WithCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForCmpOp(operation, TYP_SIMD16,
+        WithXarchCompiler(compiler => Assert.That(compiler.GetHWIntrinsicIdForCmpOp(operation, TYP_SIMD16,
             Local(compiler, TYP_SIMD16), Local(compiler, TYP_SIMD16), baseType, 16, false, reverse),
             Is.EqualTo(expected)));
     }
@@ -234,7 +225,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     [Test]
     public static void XarchMaskComparisonMapsToAvx512()
     {
-        WithCompiler(compiler =>
+        WithXarchCompiler(compiler =>
         {
             Enable(compiler, InstructionSet_AVX512);
             Assert.That(compiler.GetHWIntrinsicIdForCmpOp(GT_EQ, TYP_MASK,
@@ -249,9 +240,6 @@ internal static unsafe class SimdOperationMappingCompletionTests
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(instructionSet);
     }
-#endif
-
-#if TARGET_ARM64
     [TestCase(GT_ADD, (byte)8, TYP_LONG, false, NI_AdvSimd_AddScalar)]
     [TestCase(GT_DIV, (byte)8, TYP_DOUBLE, true, NI_AdvSimd_DivideScalar)]
     [TestCase(GT_MUL, (byte)16, TYP_LONG, false, NI_Illegal)]
@@ -259,7 +247,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void Arm64BinaryScalarAndUnsupportedControlsRemainUnchanged(
         genTreeOps operation, byte size, var_types baseType, bool scalar, NamedIntrinsic expected)
     {
-        WithCompiler(compiler =>
+        WithArm64Compiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
             Assert.That(compiler.GetHWIntrinsicIdForBinOp(operation, Local(compiler, type),
@@ -276,15 +264,13 @@ internal static unsafe class SimdOperationMappingCompletionTests
     public static void Arm64ComparisonWidthAndFloatingReverseRestrictionsRemainUnchanged(
         genTreeOps operation, byte size, var_types baseType, bool reverse, NamedIntrinsic expected)
     {
-        WithCompiler(compiler =>
+        WithArm64Compiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
             Assert.That(compiler.GetHWIntrinsicIdForCmpOp(operation, type, Local(compiler, type),
                 Local(compiler, type), baseType, size, false, reverse), Is.EqualTo(expected));
         });
     }
-#endif
-
     [Test]
     public static void UnaryAndComparisonLookupMappingsUseTheConfiguredTarget()
     {
@@ -339,6 +325,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
@@ -362,5 +349,22 @@ internal static unsafe class SimdOperationMappingCompletionTests
             JitConfig = previousConfig;
         }
     }
+
+    private static void WithWasmCompiler(Action<Compiler> action)
+    {
+        Assume.That(Configuration.TARGET_WASM);
+        WithCompiler(action);
+    }
+
+    private static void WithXarchCompiler(Action<Compiler> action)
+    {
+        Assume.That(Configuration.TARGET_XARCH);
+        WithCompiler(action);
+    }
+
+    private static void WithArm64Compiler(Action<Compiler> action)
+    {
+        Assume.That(Configuration.TARGET_ARM64);
+        WithCompiler(action);
+    }
 }
-#endif

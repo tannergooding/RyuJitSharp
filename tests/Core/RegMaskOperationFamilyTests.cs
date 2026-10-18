@@ -1,12 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using System.Collections.Generic;
-
-#if DEBUG
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
@@ -29,22 +26,19 @@ internal static unsafe class RegMaskOperationFamilyTests
         yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterLast);
         yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst);
         yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast);
-#if FEATURE_MASKED_HW_INTRINSICS
-        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
-        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
+            yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
+        }
     }
 
     [TestCaseSource(nameof(RegisterCases))]
     public static void RegisterOperationsUseTheNativeLookupAndBank(regNumber reg)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        var expected = (int)reg < 64
-            ? new regMaskTP(reg.SingleTypeMask)
-            : new regMaskTP(SRBM_NONE, reg.SingleTypeMask);
-#else
-        var expected = new regMaskTP(reg.SingleTypeMask);
-#endif
+        var expected = Configuration.HAS_MORE_THAN_64_REGISTERS && (int)reg >= 64
+            ? new regMaskTP(SRBM_NONE, reg.SingleTypeMask)
+            : new regMaskTP(reg.SingleTypeMask);
         var mask = default(regMaskTP);
 
         regMaskTP.AddRegNumInMask(ref mask, reg);
@@ -61,9 +55,11 @@ internal static unsafe class RegMaskOperationFamilyTests
     public static void StackPseudoRegisterDoesNotAddRemoveOrMatchAnyBit()
     {
         var mask = new regMaskTP((regMask)(-1));
-#if HAS_MORE_THAN_64_REGISTERS
-        mask = new regMaskTP(mask.Lower, (regMask)(-1));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            mask = new regMaskTP(mask.Lower, (regMask)(-1));
+        }
+
         var original = mask;
 
         regMaskTP.AddRegNumInMask(ref mask, REG_STK);
@@ -78,39 +74,35 @@ internal static unsafe class RegMaskOperationFamilyTests
     [TestCase(TYP_BYREF)]
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
-#if FEATURE_SIMD
     [TestCase(TYP_SIMD16)]
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK)]
-#endif
     public static void RegisterSetsSelectTheBankWithoutFilteringBits(var_types type)
     {
+        Assume.That(type != TYP_SIMD16 || Configuration.FEATURE_SIMD);
+        Assume.That(type != TYP_MASK || Configuration.FEATURE_MASKED_HW_INTRINSICS);
+
         var initial = new regMaskTP((regMask)1);
-#if HAS_MORE_THAN_64_REGISTERS
-        initial = new regMaskTP(initial.Lower, (regMask)4);
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            initial = new regMaskTP(initial.Lower, (regMask)4);
+        }
         var mask = initial;
         var bits = (regMask)(-1);
         regMaskTP.AddRegsetForType(ref mask, bits, type);
 
-#if HAS_MORE_THAN_64_REGISTERS
-        var expected = varTypeIsMask(type)
-            ? new regMaskTP(initial.Lower, bits)
-            : new regMaskTP(bits, initial.Upper);
-#else
-        var expected = new regMaskTP(bits);
-#endif
+        var expected = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? varTypeIsMask(type)
+                ? new regMaskTP(initial.Lower, bits)
+                : new regMaskTP(bits, initial.Upper)
+            : new regMaskTP(bits);
         Assert.That(mask, Is.EqualTo(expected));
 
         regMaskTP.RemoveRegsetForType(ref mask, bits, type);
-#if HAS_MORE_THAN_64_REGISTERS
-        expected = varTypeIsMask(type)
-            ? new regMaskTP(initial.Lower, SRBM_NONE)
-            : new regMaskTP(SRBM_NONE, initial.Upper);
-#else
-        expected = default;
-#endif
+        expected = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? varTypeIsMask(type)
+                ? new regMaskTP(initial.Lower, SRBM_NONE)
+                : new regMaskTP(SRBM_NONE, initial.Upper)
+            : default;
         Assert.That(mask, Is.EqualTo(expected));
     }
 
@@ -118,17 +110,19 @@ internal static unsafe class RegMaskOperationFamilyTests
     public static void EmptyRegisterSetsLeaveBothBanksUnchanged()
     {
         var mask = new regMaskTP((regMask)(-1));
-#if HAS_MORE_THAN_64_REGISTERS
-        mask = new regMaskTP(mask.Lower, (regMask)(-1));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            mask = new regMaskTP(mask.Lower, (regMask)(-1));
+        }
         var original = mask;
 
         regMaskTP.AddRegsetForType(ref mask, SRBM_NONE, TYP_FLOAT);
         regMaskTP.RemoveRegsetForType(ref mask, SRBM_NONE, TYP_FLOAT);
-#if FEATURE_MASKED_HW_INTRINSICS
-        regMaskTP.AddRegsetForType(ref mask, SRBM_NONE, TYP_MASK);
-        regMaskTP.RemoveRegsetForType(ref mask, SRBM_NONE, TYP_MASK);
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            regMaskTP.AddRegsetForType(ref mask, SRBM_NONE, TYP_MASK);
+            regMaskTP.RemoveRegsetForType(ref mask, SRBM_NONE, TYP_MASK);
+        }
         Assert.That(mask, Is.EqualTo(original));
     }
 
@@ -165,24 +159,27 @@ internal static unsafe class RegMaskOperationFamilyTests
         var first = REG_INT_FIRST.SingleTypeMask;
         var floating = REG_FP_FIRST.SingleTypeMask;
         var mask = new regMaskTP(floating);
-#if HAS_MORE_THAN_64_REGISTERS
-        mask = new regMaskTP(mask.Lower, (regMask)(-1));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            mask = new regMaskTP(mask.Lower, (regMask)(-1));
+        }
         var original = mask;
 
         AddGprRegs(ref mask, SRBM_NONE, default);
         Assert.That(mask, Is.EqualTo(original));
         AddGprRegs(ref mask, first, new regMaskTP(first));
         Assert.That(mask.Lower, Is.EqualTo(floating | first));
-#if HAS_MORE_THAN_64_REGISTERS
-        Assert.That(mask.Upper, Is.EqualTo(original.Upper));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            Assert.That(mask.Upper, Is.EqualTo(original.Upper));
+        }
     }
 
-#if TARGET_AMD64
     [Test]
     public static void HighVectorBitAndMaskBankSurviveIndependentRegisterRemoval()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         var mask = new regMaskTP(SRBM_RAX | SRBM_XMM31, SRBM_K7);
 
         regMaskTP.RemoveRegNumFromMask(ref mask, REG_RAX);
@@ -196,14 +193,14 @@ internal static unsafe class RegMaskOperationFamilyTests
         regMaskTP.RemoveRegNumFromMask(ref mask, REG_K7);
         Assert.That(mask, Is.EqualTo(new regMaskTP(SRBM_XMM31)));
     }
-#endif
 
-#if !TARGET_ARM
     [TestCase(TYP_INT)]
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
     public static void NonArmTypedRegisterOperationsIgnoreTheType(var_types type)
     {
+        Assume.That(!Configuration.TARGET_ARM);
+
         var mask = default(regMaskTP);
         var reg = REG_INT_FIRST;
 
@@ -213,13 +210,13 @@ internal static unsafe class RegMaskOperationFamilyTests
         regMaskTP.RemoveRegNum(ref mask, reg, type);
         Assert.That(mask, Is.EqualTo(default(regMaskTP)));
     }
-#endif
 
-#if TARGET_ARM
     [TestCase(0)]
     [TestCase(30)]
     public static void ArmTypedLookupAddsAndRemovesBothDoubleHalves(int offset)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var first = (regNumber)((int)REG_F0 + offset);
         var second = first + 1;
         var pair = first.SingleTypeMask | second.SingleTypeMask;
@@ -237,6 +234,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [TestCase(30)]
     public static void ArmNormalizedOperationsAcceptEitherDoubleHalf(int offset)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var first = (regNumber)((int)REG_F0 + offset);
         var second = first + 1;
         var pair = first.SingleTypeMask | second.SingleTypeMask;
@@ -258,6 +257,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [TestCase(TYP_FLOAT)]
     public static void ArmNonDoubleTypedLookupKeepsTheSingleFloatHalf(var_types type)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var reg = REG_F1;
         var mask = default(regMaskTP);
 
@@ -271,6 +272,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [Test]
     public static void ArmIntegerTypedLookupDoesNotExpandTheRegister()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var mask = default(regMaskTP);
 
         regMaskTP.AddRegNumInMask(ref mask, REG_INT_FIRST, TYP_LONG);
@@ -287,6 +290,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     public static void ArmScalarConversionsPreserveTheLowRegisterMaskBits(
         uint bits, int expectedInt, byte expectedByte)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var mask = new regMaskTP((regMask)bits);
 
         Assert.That((int)mask, Is.EqualTo(expectedInt));
@@ -299,6 +304,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     public static void ArmSubtractionWrapsAtTheRegisterMaskWidth(
         long first, long second, long expected)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var result = new regMaskTP((regMask)first) - new regMaskTP((regMask)second);
 
         Assert.That(result, Is.EqualTo(new regMaskTP((regMask)expected)));
@@ -307,6 +314,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [Test]
     public static void ArmMaskOrderingUsesUnsignedRegisterBits()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var belowSignBit = new regMaskTP((regMask)long.MaxValue);
         var aboveSignBit = new regMaskTP((regMask)long.MinValue);
         var allBits = new regMaskTP((regMask)(-1L));
@@ -322,6 +331,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [TestCase(long.MinValue, 1, 0L)]
     public static void ArmLeftShiftMatchesTheNativeRegisterWidth(long bits, int count, long expected)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var mask = new regMaskTP((regMask)bits);
         var result = mask << count;
 
@@ -330,9 +341,7 @@ internal static unsafe class RegMaskOperationFamilyTests
         mask <<= count;
         Assert.That(mask, Is.EqualTo(result));
     }
-#endif
 
-#if DEBUG
     private static int s_assertions;
     private static MaskOwner? s_assertionOwner;
     private static regMaskTP s_maskAtAssertion;
@@ -342,6 +351,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [TestCase(true)]
     public static void GprAssertionRunsBeforeWritebackAndTestsIntersectionRatherThanSubset(bool intersects)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var first = REG_INT_FIRST.SingleTypeMask;
         var second = ((regNumber)((int)REG_INT_FIRST + 1)).SingleTypeMask;
         var third = ((regNumber)((int)REG_INT_FIRST + 2)).SingleTypeMask;
@@ -363,10 +374,11 @@ internal static unsafe class RegMaskOperationFamilyTests
         });
     }
 
-#if HAS_MORE_THAN_64_REGISTERS
     [Test]
     public static void GprAvailabilityDoesNotUseTheUpperBank()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.HAS_MORE_THAN_64_REGISTERS);
+
         var bit = REG_INT_FIRST.SingleTypeMask;
         var owner = new MaskOwner { Mask = new regMaskTP(SRBM_NONE, (regMask)(-1)) };
 
@@ -380,12 +392,12 @@ internal static unsafe class RegMaskOperationFamilyTests
             Assert.That(owner.Mask, Is.EqualTo(new regMaskTP(bit, original.Upper)));
         });
     }
-#endif
 
-#if TARGET_ARM
     [Test]
     public static void ArmStructTypedLookupRetainsTheNativeTypeAssertionAndContinuation()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_ARM);
+
         var owner = new MaskOwner();
 
         WithAssertionRecorder(owner, () => {
@@ -399,6 +411,8 @@ internal static unsafe class RegMaskOperationFamilyTests
     [Test]
     public static void ArmTypedLookupAssertsOnAnOddDoubleInsteadOfNormalizingIt()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_ARM);
+
         var odd = REG_F1;
         var owner = new MaskOwner();
 
@@ -409,7 +423,6 @@ internal static unsafe class RegMaskOperationFamilyTests
             Assert.That(owner.Mask.Lower, Is.EqualTo(odd.SingleTypeMask | (odd + 1).SingleTypeMask));
         });
     }
-#endif
 
     private static void WithAssertionRecorder(MaskOwner owner, Action action)
     {
@@ -447,14 +460,9 @@ internal static unsafe class RegMaskOperationFamilyTests
 
         return 0;
     }
-#endif
 
     private static void AddGprRegs(ref regMaskTP mask, regMask registers, regMaskTP available)
     {
-        regMaskTP.AddGprRegs(ref mask, registers
-#if DEBUG
-            , available
-#endif
-        );
+        regMaskTP.AddGprRegs(ref mask, registers, available);
     }
 }

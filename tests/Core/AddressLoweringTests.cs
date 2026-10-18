@@ -277,9 +277,7 @@ internal static unsafe class AddressLoweringTests
             compiler.info.compCompHnd = &jitInfo;
             compiler.info.compMatchedVM = true;
             compiler.opts.compReloc = relocatable;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
             s_relocHint = hint;
             var constant = compiler.gtNewIconNode(var_types.TYP_LONG, (nint)address);
             if (handle)
@@ -302,9 +300,7 @@ internal static unsafe class AddressLoweringTests
         var_types type, genTreeOps oper, bool containedAddress, var_types probeType)
     {
         WithCompiler(compiler => {
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
             var lowering = new Lowering(compiler, new LinearScan(compiler));

@@ -72,7 +72,6 @@ internal static class ValueNumBinaryEvaluationTests
         Assert.That(EvalOp(func, left, right), Is.EqualTo(expected));
     }
 
-#if WINDOWS_AMD64_ABI
     // The 32-bit out-of-range cases record pinned-source expressions compiled with
     // MSVC /O2 on Windows x64, not a portable C++ guarantee for overshifts.
     [TestCase(VNFunc.VNF_LSH, 0, 0x12345678)]
@@ -95,6 +94,7 @@ internal static class ValueNumBinaryEvaluationTests
     [TestCase(VNFunc.VNF_ROR, -1, 0x2468ACF0)]
     public static void WindowsX64IntCountBoundaries(VNFunc func, int count, int expected)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
         Assert.That(EvalOp(func, 0x12345678, count), Is.EqualTo(expected));
     }
 
@@ -114,6 +114,7 @@ internal static class ValueNumBinaryEvaluationTests
     [TestCase(VNFunc.VNF_RSZ, 65, 1073741824)]
     public static void WindowsX64IntRightShiftBoundaries(VNFunc func, int count, int expected)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
         Assert.That(EvalOp(func, int.MinValue, count), Is.EqualTo(expected));
     }
 
@@ -138,6 +139,7 @@ internal static class ValueNumBinaryEvaluationTests
     [TestCase(VNFunc.VNF_ROR, -1L, 0x2468ACF13579BDE0L)]
     public static void WindowsX64LongCountBoundaries(VNFunc func, long count, long expected)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
         Assert.That(EvalOp(func, 0x123456789ABCDEF0L, count), Is.EqualTo(expected));
     }
 
@@ -159,9 +161,9 @@ internal static class ValueNumBinaryEvaluationTests
     [TestCase(VNFunc.VNF_RSZ, -1L, 1L)]
     public static void WindowsX64LongRightShiftBoundaries(VNFunc func, long count, long expected)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
         Assert.That(EvalOp(func, long.MinValue, count), Is.EqualTo(expected));
     }
-#endif
 
     [TestCase(VNFunc.VNF_GT, -1, 1, 0)]
     [TestCase(VNFunc.VNF_GT_UN, -1, 1, 1)]
@@ -226,7 +228,6 @@ internal static class ValueNumBinaryEvaluationTests
         Assert.That(unchecked((ulong)BitConverter.DoubleToInt64Bits(EvalOp(func, left, right))), Is.EqualTo(expectedBits));
     }
 
-#if WINDOWS_AMD64_ABI
     // Pinned valuenum.cpp FpAdd/FpSub/FpMul/FpDiv on Windows x64 use native
     // arithmetic, including operand NaN payloads and the invalid-operation NaN sign.
     [TestCase(VNFunc.VNF_ADD, 0x7FC01234U, 0x3F800000U, 0x7FC01234U,
@@ -254,6 +255,7 @@ internal static class ValueNumBinaryEvaluationTests
     public static void WindowsX64FloatingArithmeticNaNBits(VNFunc func, uint leftFloatBits, uint rightFloatBits,
         uint expectedFloatBits, ulong leftDoubleBits, ulong rightDoubleBits, ulong expectedDoubleBits)
     {
+        Assume.That(Configuration.WINDOWS_AMD64_ABI);
         var leftFloat = BitConverter.Int32BitsToSingle(unchecked((int)leftFloatBits));
         var rightFloat = BitConverter.Int32BitsToSingle(unchecked((int)rightFloatBits));
         var leftDouble = BitConverter.Int64BitsToDouble(unchecked((long)leftDoubleBits));
@@ -264,7 +266,6 @@ internal static class ValueNumBinaryEvaluationTests
         Assert.That(unchecked((ulong)BitConverter.DoubleToInt64Bits(EvalOp(func, leftDouble, rightDouble))),
             Is.EqualTo(expectedDoubleBits));
     }
-#endif
 
     [TestCase(VNFunc.VNF_EQ, 0)]
     [TestCase(VNFunc.VNF_NE, 1)]
@@ -297,13 +298,12 @@ internal static class ValueNumBinaryEvaluationTests
     [Test]
     public static void RemainderCanonicalizesNonfiniteDividends()
     {
-#if TARGET_XARCH
-        const int floatNaN = unchecked((int)0xFFC00000);
-        const long doubleNaN = unchecked((long)0xFFF8000000000000);
-#else
-        const int floatNaN = 0x7FC00000;
-        const long doubleNaN = 0x7FF8000000000000;
-#endif
+        var floatNaN = Configuration.TARGET_XARCH
+            ? unchecked((int)0xFFC00000)
+            : 0x7FC00000;
+        var doubleNaN = Configuration.TARGET_XARCH
+            ? unchecked((long)0xFFF8000000000000)
+            : 0x7FF8000000000000;
         var payloadFloat = BitConverter.Int32BitsToSingle(unchecked((int)0x7FC01234));
         var payloadDouble = BitConverter.Int64BitsToDouble(unchecked((long)0x7FF8000000001234));
         Assert.That(BitConverter.SingleToInt32Bits(EvalOp(VNFunc.VNF_MOD, payloadFloat, 2.0f)), Is.EqualTo(floatNaN));

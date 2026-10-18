@@ -1,18 +1,17 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using System.Reflection;
-using NUnit.Framework;
-#if DEBUG
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -20,17 +19,13 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class FlowGraphUpdateChecksTests
 {
     [Test]
-    public static void UpdateCheckerExistsOnlyInDebug()
+    public static void UpdateCheckerRetainsItsDebugCallCondition()
     {
         var method = typeof(Compiler).GetMethod("fgDebugCheckUpdate", BindingFlags.Instance | BindingFlags.Public);
-#if DEBUG
         Assert.That(method, Is.Not.Null);
-#else
-        Assert.That(method, Is.Null);
-#endif
+        Assert.That(method!.GetCustomAttribute<ConditionalAttribute>()?.ConditionString, Is.EqualTo("DEBUG"));
     }
 
-#if DEBUG
     [TestCase(BBJ_COND, 0)]
     [TestCase(BBJ_COND, 1)]
     [TestCase(BBJ_COND, 2)]
@@ -43,6 +38,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(BBJ_RETURN, 2)]
     public static void LegacyPredecessorVerifierChecksOnlyNativeBranchKinds(BBKinds kind, int targetChoice)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var source = NewBlock(compiler, kind);
             var target = NewBlock(compiler, BBJ_RETURN);
@@ -77,6 +73,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [Test]
     public static void LegacyPredecessorVerifierRejectsPredecessorsOutsideTheBlockList()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var source = NewBlock(compiler, BBJ_ALWAYS);
             var target = NewBlock(compiler, BBJ_RETURN);
@@ -94,6 +91,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [Test]
     public static void EmptyGraphHasNothingToCheck()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             compiler.fgDebugCheckUpdate();
             Assert.That(s_assertions, Is.Empty);
@@ -106,6 +104,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase("compactable", "Found un-compacted blocks!")]
     public static void OptimizedDiagnosticsRetainRecoverableFailureAndMessage(string fault, string message)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, BBJ_RETURN);
             Link(compiler, block);
@@ -165,6 +164,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [Test]
     public static void MinOptsRetainsAssertionOrderAndContinuesAcrossBlocks()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(true, compiler => {
             var first = NewBlock(compiler, BBJ_THROW);
             var second = NewBlock(compiler, BBJ_RETURN);
@@ -191,6 +191,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(true)]
     public static void ProtectedBlocksBypassUnreachableAndEmptyChecksButNotImportChecks(bool imported)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(true, compiler => {
             var block = NewBlock(compiler, BBJ_THROW);
             Link(compiler, block);
@@ -211,6 +212,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [Test]
     public static void InternalBlocksNeedNotBeImported()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, BBJ_RETURN);
             Link(compiler, block);
@@ -227,6 +229,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(true)]
     public static void ConditionalWithDistinctEdgesPassesRegardlessOfWhichEdgeTargetsNext(bool trueTargetsNext)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, BBJ_COND);
             var next = NewBlock(compiler, BBJ_RETURN);
@@ -253,6 +256,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
             BBJ_EHCATCHRET, BBJ_THROW, BBJ_SWITCH, BBJ_CALLFINALLYRET)] BBKinds kind,
         [Values(false, true)] bool lir)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, kind);
             Link(compiler, block);
@@ -276,6 +280,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(true)]
     public static void NonemptyUnreachableBlocksDoNotEmitTheEmptyBlockDiagnostic(bool lir)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(true, compiler => {
             var block = NewBlock(compiler, BBJ_THROW);
             Link(compiler, block);
@@ -300,6 +305,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(true)]
     public static void CompactableBlocksAreCheckedEvenWhenProtected(bool protectedBlock)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(true, compiler => {
             var block = NewBlock(compiler, BBJ_ALWAYS);
             var target = NewBlock(compiler, BBJ_RETURN);
@@ -323,6 +329,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase("different-eh")]
     public static void NoncompactableUnconditionalBlocksPass(string reason)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, BBJ_ALWAYS);
             var target = NewBlock(compiler, BBJ_RETURN);
@@ -374,6 +381,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(true)]
     public static void CallFinallyAcceptsItsPairedTailOrRetlessFlag(bool retless)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, BBJ_CALLFINALLY);
             var tail = NewBlock(compiler, retless ? BBJ_RETURN : BBJ_CALLFINALLYRET);
@@ -394,6 +402,7 @@ internal static unsafe class FlowGraphUpdateChecksTests
     [TestCase(true)]
     public static void CallFinallyReportsTheExistingPairPredicateAssertions(bool nonemptyTail)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(false, compiler => {
             var block = NewBlock(compiler, BBJ_CALLFINALLY);
             var tail = NewBlock(compiler, nonemptyTail ? BBJ_CALLFINALLYRET : BBJ_RETURN);
@@ -472,5 +481,4 @@ internal static unsafe class FlowGraphUpdateChecksTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEnableNoWayAssert")]
     private static extern ref int EnableNoway(ref JitConfigValues config);
-#endif
 }

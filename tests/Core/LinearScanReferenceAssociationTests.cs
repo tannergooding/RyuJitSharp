@@ -54,9 +54,10 @@ internal static unsafe class LinearScanReferenceAssociationTests
             var interval = NewInterval(allocator, TYP_INT);
             interval.isInternal = isInternal;
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-#if DEBUG
-            CurrentBuildNode(allocator) = tree;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                CurrentBuildNode(allocator) = tree;
+            }
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             var use = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             var physicalDefinition = allocator.refPositions[0];
@@ -81,12 +82,13 @@ internal static unsafe class LinearScanReferenceAssociationTests
             Assert.That(definition.isFixedRegRef, Is.True);
             Assert.That(use.isFixedRegRef, Is.True);
             Assert.That(interval.isSingleDef, Is.True);
-#if DEBUG
-            Assert.That(physicalDefinition.buildNode, Is.SameAs(tree));
-            Assert.That(definition.buildNode, Is.Null);
-            Assert.That(definition.rpNum, Is.EqualTo(1u));
-            Assert.That(use.rpNum, Is.EqualTo((uint)(count - 1)));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(TestConfiguration.GetBuildNode(physicalDefinition), Is.SameAs(tree));
+                Assert.That(TestConfiguration.GetBuildNode(definition), Is.Null);
+                Assert.That(TestConfiguration.GetReferenceNumber(definition), Is.EqualTo(1u));
+                Assert.That(TestConfiguration.GetReferenceNumber(use), Is.EqualTo((uint)(count - 1)));
+            }
         });
     }
 
@@ -198,12 +200,15 @@ internal static unsafe class LinearScanReferenceAssociationTests
             Assert.That(reference.nextRefPosition, Is.Null);
             Assert.That(reference.registerAssignment, Is.EqualTo(mask));
             Assert.That(allocator.refPositions[0], Is.SameAs(reference));
-#if DEBUG
-            Assert.That(reference.killedRegisters, Is.EqualTo(
-                new regMaskTP(type is RefType.RefTypeKill ? mask : SRBM_NONE)));
-#else
-            Assert.That(reference.killedRegisters.IsEmpty, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(reference.killedRegisters, Is.EqualTo(
+                    new regMaskTP(type is RefType.RefTypeKill ? mask : SRBM_NONE)));
+            }
+            else
+            {
+                Assert.That(reference.killedRegisters.IsEmpty, Is.True);
+            }
         });
     }
 
@@ -221,10 +226,10 @@ internal static unsafe class LinearScanReferenceAssociationTests
         }, debugEnC);
     }
 
-#if DEBUG
     [Test]
     public static void StressOptionsPreservePreferencesAndExtendLocalLifetimes()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var allocator = CreateAllocator(compiler);
             StressMask(allocator) = 0x08 | 0x80;
@@ -242,6 +247,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
     [Test]
     public static void TypedReferenceDiagnosticsRetainNativeOrderingAndActualWeights()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var allocator = CreateAllocator(compiler);
             BlockInfo(allocator) = [new LsraBlockInfo { weight = 3 }];
@@ -267,6 +273,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
     [Test]
     public static void RegisterMaskDiagnosticsUseCurrentBanksAndFallbackRegisterNames()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             CompilerAllMaskRegs(compiler) = SRBM_X64_K1 | SRBM_X64_K2;
             var text = Capture(() => {
@@ -309,7 +316,6 @@ internal static unsafe class LinearScanReferenceAssociationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
-#endif
 
     private static LinearScan CreateAllocator(Compiler compiler)
     {

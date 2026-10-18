@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -53,10 +54,10 @@ internal static unsafe class CompilerFinalizationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void PublicFinalizationEmitsCompletionMarker()
     {
+        Assume.That(TestConfiguration.IsDebug);
         SsaLivenessTests.WithCompiler(0, compiler => {
             TestConfiguration.EnableVerbose(compiler);
             compiler.info.compFullName = "Finalization";
@@ -68,11 +69,18 @@ internal static unsafe class CompilerFinalizationTests
 
     [TestCase(false)]
     [TestCase(true)]
+    [UnconditionalSuppressMessage("Trimming", "IL2070",
+        Justification = "The test intentionally reflects over private Debug-only inline XML dump state.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects over private Debug-only inline XML dump state.")]
     public static void InlineXmlAppendsOrFallsBackToStdout(bool append)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var path = append ? Path.GetTempFileName() : Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "inlines.xml");
-            var header = typeof(InlineStrategy).GetField("s_HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)
+            var xmlState = typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("The inline XML dump state is missing.");
+            var header = xmlState.GetField("HasDumpedXmlHeader", BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("The inline XML header state is missing.");
             var previous = header.GetValue(null);
             header.SetValue(null, false);
@@ -120,6 +128,7 @@ internal static unsafe class CompilerFinalizationTests
     [TestCase(double.PositiveInfinity, "inf")]
     public static void VerboseCompletionUsesNativeMetricFormatting(double score, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             TestConfiguration.EnableVerbose(compiler);
             compiler.Metrics.PerfScore = score;
@@ -141,6 +150,7 @@ internal static unsafe class CompilerFinalizationTests
     [TestCase(1000000.0, "  1M | ")]
     public static void OrderedSummaryUsesNativeProfileBucketsAndSingleHeader(double count, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             compiler.opts.dspOrder = true;
             compiler.fgPgoHaveWeights = true;
@@ -164,22 +174,23 @@ internal static unsafe class CompilerFinalizationTests
     [Test]
     public static void CompletionAggregatesOnlyReferencedLocalsAndAllLoopCounters()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             compiler.lvaTable[1].setLvRefCnt(0);
-            compiler._loopsConsidered = 4;
-            compiler._loopsWithHoistedExpressions = 2;
-            compiler._totalHoistedExpressions = 3;
+            SetLoopCounter(compiler, "_loopsConsidered", 4);
+            SetLoopCounter(compiler, "_loopsWithHoistedExpressions", 2);
+            SetLoopCounter(compiler, "_totalHoistedExpressions", 3);
 
             compiler.compCompileFinish();
 
             using var stats = new StringWriter();
-            Compiler.s_enregisterStats.Dump(stats);
+            DumpEnregisterStats(stats);
             Assert.That(stats.ToString(), Is.EqualTo(
                 "\nLocals enregistration statistics:\n" +
                 "total number of locals: 2, number of enregistered: 2, notEnreg: 0, ratio: 1.00\n" +
                 "All locals are enregistered.\n"));
             using var loops = new StringWriter();
-            Compiler.PrintAggregateLoopHoistStats(loops);
+            PrintAggregateLoopHoistStats(loops);
             Assert.That(loops.ToString(), Does.Contain("Considered 4 loops.  Of these, we hoisted expressions out of 2 ( 50.00%).\n"));
             Assert.That(loops.ToString(), Does.EndWith("  A total of 3 expressions were hoisted, an average of  1.50 per loop-with-hoisted-expr.\n"));
         });
@@ -188,19 +199,20 @@ internal static unsafe class CompilerFinalizationTests
     [Test]
     public static void LoopCounterAccumulationPreservesUnsignedWrapAndRatios()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
-            Compiler.s_loopsConsidered = int.MaxValue;
-            Compiler.s_loopsWithHoistedExpressions = int.MaxValue;
-            Compiler.s_totalHoistedExpressions = int.MaxValue;
-            compiler._loopsConsidered = 1;
-            compiler._loopsWithHoistedExpressions = 1;
-            compiler._totalHoistedExpressions = 1;
+            SetStaticLoopCounter("s_loopsConsidered", int.MaxValue);
+            SetStaticLoopCounter("s_loopsWithHoistedExpressions", int.MaxValue);
+            SetStaticLoopCounter("s_totalHoistedExpressions", int.MaxValue);
+            SetLoopCounter(compiler, "_loopsConsidered", 1);
+            SetLoopCounter(compiler, "_loopsWithHoistedExpressions", 1);
+            SetLoopCounter(compiler, "_totalHoistedExpressions", 1);
 
-            compiler.AddLoopHoistStats();
+            AddLoopHoistStats(compiler);
 
-            Assert.That(Compiler.s_loopsConsidered, Is.EqualTo(int.MinValue));
+            Assert.That(GetStaticLoopCounter("s_loopsConsidered"), Is.EqualTo(int.MinValue));
             using var writer = new StringWriter();
-            Compiler.PrintAggregateLoopHoistStats(writer);
+            PrintAggregateLoopHoistStats(writer);
             Assert.That(writer.ToString(), Does.Contain("(100.00%)."));
             Assert.That(writer.ToString(), Does.Contain(" 1.00 per loop-with-hoisted-expr."));
         });
@@ -228,11 +240,13 @@ internal static unsafe class CompilerFinalizationTests
     [TestCase(DoNotEnregisterReason.WasmGCVisibility, "m_wasmGcVisibility")]
     public static void EnregistrationReasonCountersHaveNativeNames(DoNotEnregisterReason reason, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
-            var descriptor = new LclVarDsc { Type = TYP_INT, lvDoNotEnregister = true, DoNotEnregisterReason = reason };
-            Compiler.s_enregisterStats.RecordLocal(in descriptor);
+            var descriptor = new LclVarDsc { Type = TYP_INT, lvDoNotEnregister = true };
+            TestConfiguration.SetDoNotEnregisterReason(ref descriptor, reason);
+            RecordEnregisterLocal(in descriptor);
             using var writer = new StringWriter();
-            Compiler.s_enregisterStats.Dump(writer);
+            DumpEnregisterStats(writer);
             Assert.That(writer.ToString(), Does.Contain(expected + " 1, ratio: 1.00\n"));
             Assert.That(writer.ToString(), Does.EndWith("\nAddr exposed details:\n\nNo address exposed locals to report.\n"));
         });
@@ -250,14 +264,14 @@ internal static unsafe class CompilerFinalizationTests
     [TestCase(AddressExposedReason.SMALL_TYPE_PARTIAL_DEF, "m_smallTypePartialDef")]
     public static void AddressExposureCountersIncludeClearedExposure(AddressExposedReason reason, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
-            var descriptor = new LclVarDsc {
-                Type = TYP_STRUCT, lvDoNotEnregister = true, DoNotEnregisterReason = DoNotEnregisterReason.AddrExposed,
-            };
+            var descriptor = new LclVarDsc { Type = TYP_STRUCT, lvDoNotEnregister = true };
+            TestConfiguration.SetDoNotEnregisterReason(ref descriptor, DoNotEnregisterReason.AddrExposed);
             descriptor.SetAddressExposed(false, reason);
-            Compiler.s_enregisterStats.RecordLocal(in descriptor);
+            RecordEnregisterLocal(in descriptor);
             using var writer = new StringWriter();
-            Compiler.s_enregisterStats.Dump(writer);
+            DumpEnregisterStats(writer);
             Assert.That(writer.ToString(), Does.Contain("total number of struct locals: 1, number of enregistered: 0, notEnreg: 1, ratio: 0.00\n"));
             Assert.That(writer.ToString(), Does.Contain("m_addrExposed 1, ratio: 1.00\n"));
             Assert.That(writer.ToString(), Does.EndWith(expected + " 1, ratio: 1.00\n"));
@@ -267,18 +281,19 @@ internal static unsafe class CompilerFinalizationTests
     [Test]
     public static void EmptyAggregatesAvoidDividingByZero()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             using var locals = new StringWriter();
-            Compiler.s_enregisterStats.Dump(locals);
+            DumpEnregisterStats(locals);
             Assert.That(locals.ToString(), Is.EqualTo("\nLocals enregistration statistics:\nNo locals to report.\n"));
             using var loops = new StringWriter();
-            Compiler.PrintAggregateLoopHoistStats(loops);
+            PrintAggregateLoopHoistStats(loops);
             Assert.That(loops.ToString(), Does.Contain("(  0.00%)."));
             Assert.That(loops.ToString(), Does.EndWith(" 0.00 per loop-with-hoisted-expr.\n"));
         });
     }
-#endif
-
+    [UnconditionalSuppressMessage("Trimming", "IL2072",
+        Justification = "The test resets a Debug-only statistics object through its private runtime type.")]
     private static void WithCompiler(Action<Compiler> action)
     {
         SsaLivenessTests.WithCompiler(3, compiler => {
@@ -289,34 +304,56 @@ internal static unsafe class CompilerFinalizationTests
             compiler.info.compCompHnd = &jitInfo;
             compiler.info.compMethodHnd = Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_THROW);
             s_metadata.Clear();
-#if DEBUG
-            InlineSize(ref JitConfig) = 100;
-            InlineDepth(ref JitConfig) = 20;
-            ForceDepth(ref JitConfig) = 20;
-            compiler._inlineStrategy = new InlineStrategy(compiler);
-            compiler.info.compFullName = "Finalization";
-            var previousLocals = Compiler.s_enregisterStats;
-            var previousLoops = (Compiler.s_loopsConsidered, Compiler.s_loopsWithHoistedExpressions, Compiler.s_totalHoistedExpressions);
-            Compiler.s_enregisterStats = default;
-            Compiler.s_loopsConsidered = 0;
-            Compiler.s_loopsWithHoistedExpressions = 0;
-            Compiler.s_totalHoistedExpressions = 0;
-            var headerField = typeof(Compiler).GetField("s_compOrderHeaderPrinted", BindingFlags.Static | BindingFlags.NonPublic)
-                ?? throw new InvalidOperationException("The ordered-summary header state is missing.");
-            var previousHeader = headerField.GetValue(null);
-            headerField.SetValue(null, false);
-#endif
+            var isDebug = TestConfiguration.IsDebug;
+            FieldInfo? enregisterStats = null;
+            object? previousLocals = null;
+            FieldInfo? loopsConsidered = null;
+            object? previousLoopsConsidered = null;
+            FieldInfo? loopsWithHoistedExpressions = null;
+            object? previousLoopsWithHoistedExpressions = null;
+            FieldInfo? totalHoistedExpressions = null;
+            object? previousTotalHoistedExpressions = null;
+            FieldInfo? headerField = null;
+            object? previousHeader = null;
+            if (isDebug)
+            {
+                InlineSize(ref JitConfig) = 100;
+                InlineDepth(ref JitConfig) = 20;
+                ForceDepth(ref JitConfig) = 20;
+                compiler._inlineStrategy = new InlineStrategy(compiler);
+                compiler.info.compFullName = "Finalization";
+                enregisterStats = GetEnregisterStatsField();
+                previousLocals = enregisterStats.GetValue(null);
+                enregisterStats.SetValue(null, Activator.CreateInstance(enregisterStats.FieldType));
+                loopsConsidered = GetCompilerField("s_loopsConsidered", isStatic: true);
+                previousLoopsConsidered = loopsConsidered.GetValue(null);
+                loopsConsidered.SetValue(null, 0);
+                loopsWithHoistedExpressions = GetCompilerField("s_loopsWithHoistedExpressions", isStatic: true);
+                previousLoopsWithHoistedExpressions = loopsWithHoistedExpressions.GetValue(null);
+                loopsWithHoistedExpressions.SetValue(null, 0);
+                totalHoistedExpressions = GetCompilerField("s_totalHoistedExpressions", isStatic: true);
+                previousTotalHoistedExpressions = totalHoistedExpressions.GetValue(null);
+                totalHoistedExpressions.SetValue(null, 0);
+                headerField = typeof(Compiler).GetField("s_compOrderHeaderPrinted",
+                    BindingFlags.Static | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("The ordered-summary header state is missing.");
+                previousHeader = headerField.GetValue(null);
+                headerField.SetValue(null, false);
+            }
             try
             {
                 action(compiler);
             }
             finally
             {
-#if DEBUG
-                Compiler.s_enregisterStats = previousLocals;
-                (Compiler.s_loopsConsidered, Compiler.s_loopsWithHoistedExpressions, Compiler.s_totalHoistedExpressions) = previousLoops;
-                headerField.SetValue(null, previousHeader);
-#endif
+                if (isDebug)
+                {
+                    enregisterStats!.SetValue(null, previousLocals);
+                    loopsConsidered!.SetValue(null, previousLoopsConsidered);
+                    loopsWithHoistedExpressions!.SetValue(null, previousLoopsWithHoistedExpressions);
+                    totalHoistedExpressions!.SetValue(null, previousTotalHoistedExpressions);
+                    headerField!.SetValue(null, previousHeader);
+                }
             }
         });
     }
@@ -339,6 +376,72 @@ internal static unsafe class CompilerFinalizationTests
         }
     }
 
+    private static FieldInfo GetCompilerField(string name, bool isStatic)
+    {
+        var flags = isStatic ? BindingFlags.Static : BindingFlags.Instance;
+        return typeof(Compiler).GetField(name, flags | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException($"The compiler field {name} is missing.");
+    }
+
+    private static FieldInfo GetEnregisterStatsField()
+    {
+        return GetCompilerField("s_enregisterStats", isStatic: true);
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects over Debug-only statistics methods retained in the test assembly.")]
+    private static void RecordEnregisterLocal(in LclVarDsc descriptor)
+    {
+        var field = GetEnregisterStatsField();
+        var stats = field.GetValue(null) ?? throw new InvalidOperationException("Missing enregistration statistics.");
+        var method = stats.GetType().GetMethod("RecordLocal", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("The enregistration RecordLocal method is missing.");
+        _ = method.Invoke(stats, [descriptor]);
+        field.SetValue(null, stats);
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects over Debug-only statistics methods retained in the test assembly.")]
+    private static void DumpEnregisterStats(TextWriter writer)
+    {
+        var stats = GetEnregisterStatsField().GetValue(null)
+            ?? throw new InvalidOperationException("Missing enregistration statistics.");
+        var method = stats.GetType().GetMethod("Dump", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("The enregistration Dump method is missing.");
+        _ = method.Invoke(stats, [writer]);
+    }
+
+    private static void SetLoopCounter(Compiler compiler, string name, int value)
+    {
+        GetCompilerField(name, isStatic: false).SetValue(compiler, value);
+    }
+
+    private static void SetStaticLoopCounter(string name, int value)
+    {
+        GetCompilerField(name, isStatic: true).SetValue(null, value);
+    }
+
+    private static int GetStaticLoopCounter(string name)
+    {
+        return (int)(GetCompilerField(name, isStatic: true).GetValue(null)
+            ?? throw new InvalidOperationException($"The compiler field {name} is uninitialized."));
+    }
+
+    private static void AddLoopHoistStats(Compiler compiler)
+    {
+        var method = typeof(Compiler).GetMethod("AddLoopHoistStats", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("The loop-hoist statistics method is missing.");
+        _ = method.Invoke(compiler, null);
+    }
+
+    private static void PrintAggregateLoopHoistStats(TextWriter writer)
+    {
+        var method = typeof(Compiler).GetMethod("PrintAggregateLoopHoistStats",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("The aggregate loop-hoist statistics method is missing.");
+        _ = method.Invoke(null, [writer]);
+    }
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void ReportMetadata(ICorJitInfo* info, byte* key, void* value, nint length)
     {
@@ -358,7 +461,6 @@ internal static unsafe class CompilerFinalizationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReportMetrics")]
     private static extern ref int ReportMetrics(ref JitConfigValues values);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitInlineDumpXml")]
     private static extern ref int InlineXml(ref JitConfigValues values);
 
@@ -373,5 +475,4 @@ internal static unsafe class CompilerFinalizationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitForceInlineDepth")]
     private static extern ref int ForceDepth(ref JitConfigValues values);
-#endif
 }

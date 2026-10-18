@@ -49,8 +49,7 @@ public partial class Compiler
 
             ExpandStoredCursors(_cursors1, _cursors2);
             JITDUMP($"  Found {_cursors1.Count} cursors using primary IV V{primaryLocal.LclNum:D2}\n");
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 for (var i = 0; i < _cursors1.Count; i++)
                 {
@@ -64,7 +63,6 @@ public partial class Compiler
                     jitprintf("\n");
                 }
             }
-#endif
             return true;
         }
 
@@ -141,8 +139,7 @@ public partial class Compiler
                 } while (Scev.Equals(nextCursor.IV, cursorIV));
             }
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 for (var i = 0; i < nextCursors.Count; i++)
                 {
@@ -159,7 +156,6 @@ public partial class Compiler
                     jitprintf("\n");
                 }
             }
-#endif
         }
 
         private void ExpandStoredCursors(List<CursorInfo> cursors, List<CursorInfo> otherCursors)

@@ -2,9 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.regMask;
@@ -16,7 +14,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterStackGCOutputTests
 {
-#if DEBUG && EMIT_TRACK_STACK_DEPTH
     private static int s_safeIntAssertions;
 
     [TestCase(ushort.MaxValue + 1)]
@@ -24,6 +21,7 @@ internal static unsafe class EmitterStackGCOutputTests
     [NonParallelizable]
     public static void LargeStackPopAssertsAtOverflowedArgCountValue(int count)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.EMIT_TRACK_STACK_DEPTH);
         WithEmitter((compiler, codeGen, buffer) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -56,6 +54,7 @@ internal static unsafe class EmitterStackGCOutputTests
     [NonParallelizable]
     public static void SimpleStackZeroCountCallRecordsGeneralEncoderDescriptor()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.EMIT_TRACK_STACK_DEPTH);
         Assume.That(!Configuration.JIT32_GCENCODER);
         WithEmitter((compiler, codeGen, buffer) =>
         {
@@ -93,6 +92,7 @@ internal static unsafe class EmitterStackGCOutputTests
     public static void LargeStackKillAssertsOnlyWhenOverflowedValueIsConsumed(
         bool fullArgInfo, bool fullGcInfo, int expectedAssertions)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.EMIT_TRACK_STACK_DEPTH);
         WithEmitter((compiler, codeGen, buffer) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -128,7 +128,6 @@ internal static unsafe class EmitterStackGCOutputTests
         s_safeIntAssertions++;
         return 0;
     }
-#endif
 
     [TestCase(GCT_GCREF, 0u)]
     [TestCase(GCT_BYREF, 1u)]
@@ -309,44 +308,48 @@ internal static unsafe class EmitterStackGCOutputTests
             LiveTable(emitter) = new GCInfo.varPtrDsc?[2];
             CurrentVariableSet(emitter) = true;
             compiler.lvaOutgoingArgSpaceVar = -1;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             body(compiler, codeGen, buffer);
         });
     }
 
     private static void Live(Emitter emitter, int offset, int variable, GCInfo.GCtype type, byte* address)
     {
-        LiveUpdate(emitter, offset, variable, type, address
-#if DEBUG
-            , uint.MaxValue
-#endif
-            );
+        if (TestConfiguration.IsDebug)
+        {
+            LiveUpdateDebug(emitter, offset, variable, type, address, uint.MaxValue);
+        }
+        else
+        {
+            LiveUpdateRelease(emitter, offset, variable, type, address);
+        }
     }
 
     private static void Dead(Emitter emitter, int offset, byte* address)
     {
-        DeadUpdate(emitter, offset, address
-#if DEBUG
-            , uint.MaxValue
-#endif
-            );
+        if (TestConfiguration.IsDebug)
+        {
+            DeadUpdateDebug(emitter, offset, address, uint.MaxValue);
+        }
+        else
+        {
+            DeadUpdateRelease(emitter, offset, address);
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGCvarLiveUpd")]
-    private static extern void LiveUpdate(Emitter emitter, int offset, int variable, GCInfo.GCtype type, byte* address
-#if DEBUG
-        , uint actualVariable
-#endif
-        );
+    private static extern void LiveUpdateDebug(
+        Emitter emitter, int offset, int variable, GCInfo.GCtype type, byte* address, uint actualVariable);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGCvarLiveUpd")]
+    private static extern void LiveUpdateRelease(
+        Emitter emitter, int offset, int variable, GCInfo.GCtype type, byte* address);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGCvarDeadUpd")]
-    private static extern void DeadUpdate(Emitter emitter, int offset, byte* address
-#if DEBUG
-        , uint variable
-#endif
-        );
+    private static extern void DeadUpdateDebug(Emitter emitter, int offset, byte* address, uint variable);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGCvarDeadUpd")]
+    private static extern void DeadUpdateRelease(Emitter emitter, int offset, byte* address);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitGCrFrameOffsMin")]
     private static extern ref int FrameMinimum(Emitter emitter);

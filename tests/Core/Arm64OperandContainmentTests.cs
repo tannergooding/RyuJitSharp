@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64OperandContainmentTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(GT_ADD, 4095L, true)]
     [TestCase(GT_SUB, -4096L, true)]
     [TestCase(GT_ADD, 4097L, false)]
@@ -371,4 +376,3 @@ internal static unsafe class Arm64OperandContainmentTests
         }
     }
 }
-#endif

@@ -135,10 +135,8 @@ public sealed partial class Lowering
         DISPTREERANGE(BlockRange(), call);
         JITDUMP("\n");
 
-#if DEBUG
         assert((call.HelperNum is not (CORINFO_HELP_RUNTIMEHANDLE_METHOD or CORINFO_HELP_RUNTIMEHANDLE_CLASS)) ||
             ((call._callDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0));
-#endif
         if (compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && Compiler.IsStaticHelperEligibleForExpansion(call))
         {
             assert(call._initClsHnd is null);
@@ -427,12 +425,13 @@ public sealed partial class Lowering
         assert(size.Oper is GT_CNS_INT);
         size.AsIntCon().IconValue = unchecked((nint)newStackArgsWords);
 
-#if DEBUG
-        var oldSizeArg = call.Args.GetArgByIndex(numArgs - 4) ??
-            throw new InvalidOperationException("Tail-call helper incoming size argument is missing.");
-        assert(oldSizeArg.EarlyNode is not null);
-        assert(oldSizeArg.EarlyNode.AsPutArgStk().Op1.Oper is GT_CNS_INT);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var oldSizeArg = call.Args.GetArgByIndex(numArgs - 4) ??
+                throw new InvalidOperationException("Tail-call helper incoming size argument is missing.");
+            assert(oldSizeArg.EarlyNode is not null);
+            assert(oldSizeArg.EarlyNode.AsPutArgStk().Op1.Oper is GT_CNS_INT);
+        }
 
         MovePutArgNodesUpToCall(call);
 

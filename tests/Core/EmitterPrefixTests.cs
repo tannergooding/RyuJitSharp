@@ -67,10 +67,11 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(emitter.AddSimdPrefixIfNeeded(descriptor, code, size), Is.EqualTo(expected));
     }
 
-#if DEBUG
     [Test]
     public static void InvalidShiftImmediateOpcodeAssertsAndReturnsNoRegister()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
@@ -79,9 +80,7 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(GetSseShiftRegNumber(CreateEmitter(), INS_mov), Is.EqualTo(REG_X64_NA));
         Assert.That(context.Assertions, Is.EqualTo(1));
     }
-#endif
 
-#if DEBUG
     [TestCase(false, false, 0x62FFFFFFFFFFFFFFUL, 1)]
     [TestCase(true, false, 0x62FFFFFFFFFFFFFFUL, 0)]
     [TestCase(false, true, 0x62FFFFFFFFFFFFFFUL, 0)]
@@ -90,6 +89,8 @@ internal static unsafe class EmitterPrefixTests
     public static void HighSimdRegisterFieldsRequireEnabledEvexPrefix(
         bool evex, bool promotedEvex, ulong code, int expectedAssertions)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = evex;
@@ -111,6 +112,8 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(REG_X64_XMM31, true)]
     public static void HighSimdRegisterClassifierMatchesExtendedRegisterRange(regNumber reg, bool expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         Assert.That(Emitter.isHighSimdReg(reg), Is.EqualTo(expected));
     }
 
@@ -119,6 +122,8 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(REG_X64_R31, true)]
     public static void HighGeneralPurposeRegisterClassifierMatchesApxRegisterRange(regNumber reg, bool expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         Assert.That(IsHighGPReg(CreateEmitter(), reg), Is.EqualTo(expected));
     }
 
@@ -130,6 +135,8 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(0xD5FF00000000UL, true, true)]
     public static void RexAndRex2ClassifiersMatchEncodedPrefixBytes(ulong code, bool expectedRex, bool expectedRex2)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter();
         Assert.That(IsRexPrefix(emitter, code), Is.EqualTo(expectedRex));
         Assert.That(IsRex2Prefix(emitter, code), Is.EqualTo(expectedRex2));
@@ -141,6 +148,8 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(INS_add, false)]
     public static void KMaskDestinationClassifierMatchesEvexInstructionSet(instruction ins, bool expected)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
@@ -160,7 +169,6 @@ internal static unsafe class EmitterPrefixTests
         ((AssertionContext*)self)->Assertions++;
         return 0;
     }
-#endif
 
     [Test]
     public static void AddressModeAndRegisterUnionPreserveNativeBitWidths()

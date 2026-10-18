@@ -315,10 +315,10 @@ internal static unsafe class IntegralRangeTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void RangeDumpMatchesNativeBounds()
     {
+        Assume.That(TestConfiguration.IsDebug);
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = s_jitstdout;
@@ -336,7 +336,6 @@ internal static unsafe class IntegralRangeTests
 
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo("[-9223372036854775808..4294967295]"));
     }
-#endif
 
     private static void WithCompiler(Action<Compiler> action)
     {

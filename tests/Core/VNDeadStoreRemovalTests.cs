@@ -2,10 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Reflection;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoGCType;
 using static RyuJitSharp.GenTreeFlags;
@@ -323,11 +321,12 @@ internal static unsafe class VNDeadStoreRemovalTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DebugMethodRangeControlsRemoval(bool enabled)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler((compiler, store) =>
         {
             var field = typeof(Compiler).GetField("s_jitEnableVNBasedDeadStoreRemovalRange",
@@ -369,7 +368,6 @@ internal static unsafe class VNDeadStoreRemovalTests
             }
         });
     }
-#endif
 
     private static int AddDefinition(Compiler compiler, int local, BasicBlock block,
         GenTreeLclVarCommon? definition, int value)

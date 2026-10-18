@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -56,13 +57,7 @@ internal static class CodeGenComparisonTests
         });
     }
 
-#if TARGET_X86
-    [TestCase(REG_EAX, EA_1BYTE)]
-    [TestCase(REG_ECX, EA_1BYTE)]
-    [TestCase(REG_EDX, EA_1BYTE)]
-    [TestCase(REG_EBX, EA_1BYTE)]
-    [TestCase(REG_ESI, EA_4BYTE)]
-    [TestCase(REG_EDI, EA_4BYTE)]
+    [TestCaseSource(nameof(X86TestMaskCases))]
     public static void X86TestMasksRequireAByteAddressableRegister(regNumber valueReg, emitAttr expectedSize)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -81,7 +76,19 @@ internal static class CodeGenComparisonTests
             Assert.That(Descriptors(codeGen)[0].idOpSize(), Is.EqualTo(expectedSize));
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> X86TestMaskCases()
+    {
+        if (Configuration.TARGET_X86)
+        {
+            yield return new TestCaseData(REG_EAX, EA_1BYTE);
+            yield return new TestCaseData(REG_ECX, EA_1BYTE);
+            yield return new TestCaseData(REG_EDX, EA_1BYTE);
+            yield return new TestCaseData(REG_EBX, EA_1BYTE);
+            yield return new TestCaseData(REG_ESI, EA_4BYTE);
+            yield return new TestCaseData(REG_EDI, EA_4BYTE);
+        }
+    }
 
     [TestCase(GT_LT, false, INS_setl)]
     [TestCase(GT_LT, true, INS_setb)]
@@ -346,10 +353,10 @@ internal static class CodeGenComparisonTests
         });
     }
 
-#if TARGET_X86
     [Test]
     public static void X86NonRegisterValueCannotReuseFlags()
     {
+        Assume.That(Configuration.TARGET_X86);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var zero = compiler.gtNewIconNode(TYP_INT, 0);
@@ -358,14 +365,13 @@ internal static class CodeGenComparisonTests
             Assert.That(codeGen.genCanAvoidEmittingCompareAgainstZero(tree, EA_4BYTE), Is.False);
         });
     }
-#endif
 
-#if DEBUG
     [TestCase(INS_and, GenCondition.CodeKind.EQ, false)]
     [TestCase(INS_add, GenCondition.CodeKind.SLT, true)]
     public static void FlagReusePreservesZeroAndSignDiagnostics(
         instruction producerInstruction, GenCondition.CodeKind conditionCode, bool changesCondition)
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.canUseAllOpts = true;
@@ -389,7 +395,6 @@ internal static class CodeGenComparisonTests
                 Is.EqualTo(changesCondition ? GenCondition.CodeKind.S : conditionCode));
         });
     }
-#endif
 
     [TestCase(EJ_NONE, EJ_NONE)]
     [TestCase(EJ_jmp, EJ_jmp)]
@@ -403,20 +408,19 @@ internal static class CodeGenComparisonTests
         Assert.That(Emitter.emitReverseJumpKind(reverse), Is.EqualTo(condition));
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsConditionInstructions()
     {
+        Assume.That(TestConfiguration.IsDebug);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
                 codeGen.inst_SETCC(new GenCondition(GenCondition.CodeKind.FEQ), TYP_INT, REG_RAX));
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(diagnostic, Does.Contain("set"));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_enableApxZU")]
     private static extern ref int ApxZu(ref JitConfigValues config);

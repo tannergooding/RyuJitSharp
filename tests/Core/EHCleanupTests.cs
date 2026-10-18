@@ -2,9 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Reflection;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -340,29 +338,33 @@ internal static class EHCleanupTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
-#if DEBUG
-        var previous = Globals.JitConfig;
-        object config = new JitConfigValues();
-        foreach (var fieldName in new[] { "_jitEnableRemoveEmptyTry", "_jitEnableRemoveEmptyTryCatchOrTryFault" })
+        var isDebug = TestConfiguration.IsDebug;
+        var previous = isDebug ? Globals.JitConfig : default;
+        if (isDebug)
         {
-            var field = typeof(JitConfigValues).GetField(fieldName,
-                BindingFlags.Instance | BindingFlags.NonPublic)
-                ?? throw new AssertionException($"Missing configuration {fieldName}.");
-            field.SetValue(config, 1);
+            object config = new JitConfigValues();
+            foreach (var fieldName in new[] { "_jitEnableRemoveEmptyTry", "_jitEnableRemoveEmptyTryCatchOrTryFault" })
+            {
+                var field = typeof(JitConfigValues).GetField(fieldName,
+                    BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new AssertionException($"Missing configuration {fieldName}.");
+                field.SetValue(config, 1);
+            }
+
+            Globals.JitConfig = (JitConfigValues)config;
         }
 
-        Globals.JitConfig = (JitConfigValues)config;
         try
         {
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, action);
         }
         finally
         {
-            Globals.JitConfig = previous;
+            if (isDebug)
+            {
+                Globals.JitConfig = previous;
+            }
         }
-#else
-        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, action);
-#endif
     }
 
     private static void Link(Compiler compiler, params BasicBlock[] blocks)

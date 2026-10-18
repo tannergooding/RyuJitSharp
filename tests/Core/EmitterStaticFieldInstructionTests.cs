@@ -325,18 +325,19 @@ internal static unsafe class EmitterStaticFieldInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(0, true)]
     [TestCase(1, true)]
     [TestCase(2, true)]
     [TestCase(2, false)]
     public static void DisassemblyRecordsStaticOperandsAndLegacyCopies(int entrypoint, bool vex)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseEvexEncodings = vex;
             emitter.UseVexEncodings = vex;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -370,7 +371,6 @@ internal static unsafe class EmitterStaticFieldInstructionTests
             Assert.That(diagnostic, Does.Contain(entrypoint == 0 ? "movss" : "addps"));
         });
     }
-#endif
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {

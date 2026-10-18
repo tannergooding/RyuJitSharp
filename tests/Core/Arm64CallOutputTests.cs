@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class Arm64CallOutputTests
 {
     private delegate void OutputTest(Compiler compiler, Emitter emitter, byte* buffer);
+
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
 
     [TestCase(false, EA_64BIT_PTRSIZE)]
     [TestCase(false, EA_64BIT_GCREF)]
@@ -168,23 +173,26 @@ internal static unsafe class Arm64CallOutputTests
         {
             var id = Call(emitter, VarSetOps.MakeEmpty(compiler), new regMaskTP(SRBM_ARM64_R19),
                 large ? new regMaskTP(SRBM_ARM64_R20) : RBM_NONE, EA_GCREF);
-#if EMIT_TRACK_STACK_DEPTH
-            var size = Output(emitter, new insGroup(), buffer + 8, id, 0x94000000u);
-            Assert.That(size, Is.EqualTo(4u));
-            var call = CallList(ref emitter.GCInfo) ?? throw new AssertionException("Missing partial-map call.");
-            Assert.That(CallField<uint>(call, "cdOffs"), Is.EqualTo(12u));
-            Assert.That(CallField<ushort>(call, "cdCallInstrSize"), Is.EqualTo((ushort)4));
-            Assert.That(CallField<regMask>(call, "cdGCrefRegs"), Is.EqualTo(SRBM_ARM64_R19 | SRBM_ARM64_R0));
-            Assert.That(CallField<regMask>(call, "cdByrefRegs"), Is.EqualTo(large ? SRBM_ARM64_R20 : SRBM_NONE));
-#else
-            var address = (nint)(buffer + 8);
-            var failure = Assert.Throws<FatalJitException>(() =>
-                Output(emitter, new insGroup(), (byte*)address, id, 0x94000000u)) ??
-                throw new AssertionException("Missing stack-tracking dependency failure.");
-            Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Stack-depth tracking is disabled for this target."));
-            Assert.That(CallList(ref emitter.GCInfo), Is.Null);
-#endif
+            if (Configuration.EMIT_TRACK_STACK_DEPTH)
+            {
+                var size = Output(emitter, new insGroup(), buffer + 8, id, 0x94000000u);
+                Assert.That(size, Is.EqualTo(4u));
+                var call = CallList(ref emitter.GCInfo) ?? throw new AssertionException("Missing partial-map call.");
+                Assert.That(CallField<uint>(call, "cdOffs"), Is.EqualTo(12u));
+                Assert.That(CallField<ushort>(call, "cdCallInstrSize"), Is.EqualTo((ushort)4));
+                Assert.That(CallField<regMask>(call, "cdGCrefRegs"), Is.EqualTo(SRBM_ARM64_R19 | SRBM_ARM64_R0));
+                Assert.That(CallField<regMask>(call, "cdByrefRegs"), Is.EqualTo(large ? SRBM_ARM64_R20 : SRBM_NONE));
+            }
+            else
+            {
+                var address = (nint)(buffer + 8);
+                var failure = Assert.Throws<FatalJitException>(() =>
+                    Output(emitter, new insGroup(), (byte*)address, id, 0x94000000u)) ??
+                    throw new AssertionException("Missing stack-tracking dependency failure.");
+                Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Assert.That(failure.Message, Is.EqualTo("Stack-depth tracking is disabled for this target."));
+                Assert.That(CallList(ref emitter.GCInfo), Is.Null);
+            }
             Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 8), Is.EqualTo(0x94000000u));
             Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_ARM64_R19 | SRBM_ARM64_R0));
             Assert.That(ByrefRegs(emitter), Is.EqualTo(large ? SRBM_ARM64_R20 : SRBM_NONE));
@@ -198,25 +206,29 @@ internal static unsafe class Arm64CallOutputTests
         {
             emitter.emitFullGCinfo = true;
             emitter.emitSimpleStkUsed = false;
-#if EMIT_TRACK_STACK_DEPTH
-            var tracking = stackalloc byte[1];
-            emitter.emitMaxStackDepth = 1;
-            emitter.u2.emitArgTrackTab = tracking;
-            emitter.u2.emitArgTrackTop = tracking;
-            emitter.u2.emitGcArgTrackCnt = 0;
-#endif
+            if (Configuration.EMIT_TRACK_STACK_DEPTH)
+            {
+                var tracking = stackalloc byte[1];
+                emitter.emitMaxStackDepth = 1;
+                emitter.u2.emitArgTrackTab = tracking;
+                emitter.u2.emitArgTrackTop = tracking;
+                emitter.u2.emitGcArgTrackCnt = 0;
+            }
             var id = Call(emitter, VarSetOps.MakeEmpty(compiler), RBM_NONE, RBM_NONE, EA_GCREF);
-#if EMIT_TRACK_STACK_DEPTH
-            var size = Output(emitter, new insGroup(), buffer + 8, id, 0x94000000u);
-            Assert.That(size, Is.EqualTo(4u));
-#else
-            var address = (nint)(buffer + 8);
-            var failure = Assert.Throws<FatalJitException>(() =>
-                Output(emitter, new insGroup(), (byte*)address, id, 0x94000000u)) ??
-                throw new AssertionException("Missing stack-tracking dependency failure.");
-            Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Stack-depth tracking is disabled for this target."));
-#endif
+            if (Configuration.EMIT_TRACK_STACK_DEPTH)
+            {
+                var size = Output(emitter, new insGroup(), buffer + 8, id, 0x94000000u);
+                Assert.That(size, Is.EqualTo(4u));
+            }
+            else
+            {
+                var address = (nint)(buffer + 8);
+                var failure = Assert.Throws<FatalJitException>(() =>
+                    Output(emitter, new insGroup(), (byte*)address, id, 0x94000000u)) ??
+                    throw new AssertionException("Missing stack-tracking dependency failure.");
+                Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Assert.That(failure.Message, Is.EqualTo("Stack-depth tracking is disabled for this target."));
+            }
             Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 8), Is.EqualTo(0x94000000u));
             Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_ARM64_R0));
             Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_NONE));
@@ -227,20 +239,23 @@ internal static unsafe class Arm64CallOutputTests
             Assert.That(birth.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_ARM64_R0));
             Assert.That(birth.rpdCall, Is.False);
             Assert.That(birth.rpdArg, Is.False);
-#if EMIT_TRACK_STACK_DEPTH
-            var call = birth.rpdNext ?? throw new AssertionException("Missing full-map call.");
-            Assert.That(call.rpdOffs, Is.EqualTo(12u));
-            Assert.That(call.rpdCall, Is.True);
-            Assert.That(call.rpdArg, Is.True);
-            Assert.That(call.rpdArgTypeGet(), Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_POP));
-            Assert.That(call.rpdCallInstrSize, Is.EqualTo((byte)4));
-            Assert.That(call.rpdCallData.rpdCallGCrefRegs, Is.EqualTo((uint)SRBM_ARM64_R0));
-            Assert.That(call.rpdCallData.rpdCallByrefRegs, Is.Zero);
-            Assert.That(call.rpdCallData.rpdPtrArg, Is.Zero);
-            Assert.That(call.rpdNext, Is.Null);
-#else
-            Assert.That(birth.rpdNext, Is.Null);
-#endif
+            if (Configuration.EMIT_TRACK_STACK_DEPTH)
+            {
+                var call = birth.rpdNext ?? throw new AssertionException("Missing full-map call.");
+                Assert.That(call.rpdOffs, Is.EqualTo(12u));
+                Assert.That(call.rpdCall, Is.True);
+                Assert.That(call.rpdArg, Is.True);
+                Assert.That(call.rpdArgTypeGet(), Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_POP));
+                Assert.That(call.rpdCallInstrSize, Is.EqualTo((byte)4));
+                Assert.That(call.rpdCallData.rpdCallGCrefRegs, Is.EqualTo((uint)SRBM_ARM64_R0));
+                Assert.That(call.rpdCallData.rpdCallByrefRegs, Is.Zero);
+                Assert.That(call.rpdCallData.rpdPtrArg, Is.Zero);
+                Assert.That(call.rpdNext, Is.Null);
+            }
+            else
+            {
+                Assert.That(birth.rpdNext, Is.Null);
+            }
         });
     }
 
@@ -248,11 +263,7 @@ internal static unsafe class Arm64CallOutputTests
         regMaskTP refs, regMaskTP byrefs, emitAttr firstReturn,
         emitAttr secondReturn = EA_8BYTE, bool asyncReturn = false)
     {
-        return AllocateCall(emitter, 0, variables, refs, byrefs, firstReturn,
-#if MULTIREG_HAS_SECOND_GC_RET
-            secondReturn,
-#endif
-            asyncReturn);
+        return AllocateCall(emitter, 0, variables, refs, byrefs, firstReturn, secondReturn, asyncReturn);
     }
 
     private static void WithEmitter(OutputTest action)
@@ -275,20 +286,14 @@ internal static unsafe class Arm64CallOutputTests
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, TestConfiguration.IsDebug);
             SyncThisObjectReg(emitter) = REG_NA;
             emitter.emitSimpleStkUsed = true;
             var buffer = stackalloc byte[64];
             new Span<byte>(buffer, 64).Fill(0xA5);
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 64;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             action(compiler, emitter, buffer);
         }
         finally
@@ -320,11 +325,7 @@ internal static unsafe class Arm64CallOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrCallDir")]
     private static extern Emitter.instrDesc AllocateCall(Emitter emitter, int arguments, ReadOnlySpan<nint> variables,
-        regMaskTP refs, regMaskTP byrefs, emitAttr firstReturn,
-#if MULTIREG_HAS_SECOND_GC_RET
-        emitAttr secondReturn,
-#endif
-        bool asyncReturn);
+        regMaskTP refs, regMaskTP byrefs, emitAttr firstReturn, emitAttr secondReturn, bool asyncReturn);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask GCrefRegs(Emitter emitter);
@@ -349,4 +350,3 @@ internal static unsafe class Arm64CallOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
     private static extern ref GCInfo.regPtrDsc? RegPtrList(ref GCInfo info);
 }
-#endif

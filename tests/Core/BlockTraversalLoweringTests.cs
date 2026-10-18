@@ -180,11 +180,12 @@ internal static unsafe class BlockTraversalLoweringTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void NonLirBlockRequiresSemanticStatementsToBeEmpty(bool hasSemanticStatement)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(true, (compiler, lowering, ee) => {
             var block = new BasicBlock(null, null);
             var root = hasSemanticStatement
@@ -213,6 +214,8 @@ internal static unsafe class BlockTraversalLoweringTests
     [Test]
     public static void CallValidationVisitsEarlyThenLateArgumentsAndChecksFieldListElements()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(true, (compiler, lowering, ee) => {
             var value = compiler.gtNewIconNode(TYP_INT, 1);
             var fields = new GenTreeFieldList { IsContained = false };
@@ -236,6 +239,8 @@ internal static unsafe class BlockTraversalLoweringTests
     [Test]
     public static void ValidationAcceptsEarlyStoresAndOrderedLateRegisterFields()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(true, (compiler, lowering, ee) => {
             var firstValue = compiler.gtNewIconNode(TYP_INT, 1);
             var earlyStore = compiler.gtNewStoreLclVarNode(3, firstValue);
@@ -270,6 +275,8 @@ internal static unsafe class BlockTraversalLoweringTests
     [TestCase(GT_LCL_ADDR)]
     public static void StackAndPromotedLocalChecksRequireNativeEnregistrationState(genTreeOps oper)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(true, (compiler, lowering, ee) => {
             GenTree node = oper switch {
                 GT_LCL_VAR => compiler.gtNewLclvNode(TYP_I_IMPL, 0),
@@ -289,6 +296,8 @@ internal static unsafe class BlockTraversalLoweringTests
     [Test]
     public static void UncontainedTrackedScalarGcDefinitionIsRejected()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(true, (compiler, lowering, ee) => {
             compiler.lvaTable[0].Type = TYP_REF;
             compiler.lvaTable[0].lvTracked = true;
@@ -327,7 +336,6 @@ internal static unsafe class BlockTraversalLoweringTests
 
         return 0;
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CheckBlock")]
     private static extern bool CheckBlock(Lowering? _, Compiler compiler, BasicBlock block);

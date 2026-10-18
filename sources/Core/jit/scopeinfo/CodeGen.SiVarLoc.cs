@@ -325,9 +325,7 @@ public sealed partial class CodeGen
         private void siFillStackVarLoc(in LclVarDsc varDsc, var_types type, regNumber baseReg, int offset,
             bool isFramePointerUsed)
         {
-#if DEBUG
             assert(offset != BAD_STK_OFFS);
-#endif
             switch (type)
             {
                 case TYP_INT:

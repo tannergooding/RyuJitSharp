@@ -133,9 +133,10 @@ internal static unsafe class EmitterDataSectionOutputTests
             StubEntryPoint(emitter) = (void*)0x1234;
 
             var group = new insGroup { igOffs = 12 };
-#if DEBUG
-            group.igSelf = group;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                group.igSelf = group;
+            }
             var section = new Emitter.dataSection
             {
                 dsType = Emitter.dataSection.sectionType.asyncResumeInfo,
@@ -257,9 +258,10 @@ internal static unsafe class EmitterDataSectionOutputTests
             compiler.opts.disAsm = true;
             var group = new insGroup { igOffs = 12 };
             group.InitializeNum(1);
-#if DEBUG
-            group.igSelf = group;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                group.igSelf = group;
+            }
             var section = new Emitter.dataSection
             {
                 dsType = Emitter.dataSection.sectionType.asyncResumeInfo,
