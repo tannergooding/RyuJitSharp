@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_FASTTAILCALL && (TARGET_AMD64 || TARGET_ARM64)
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,14 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class FastTailCallLoweringTests
 {
+    [SetUp]
+    public static void RequireFastTailCallTarget()
+    {
+        Assume.That(Configuration.FEATURE_FASTTAILCALL &&
+            (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64),
+            "This fixture requires fast tail calls on AMD64 or ARM64.");
+    }
+
     [Test]
     public static void CallsWithoutStackArgumentsDoNotEnterNonGcRegion()
     {
@@ -253,10 +260,11 @@ internal static unsafe class FastTailCallLoweringTests
         });
     }
 
-#if PROFILING_SUPPORTED
     [Test]
     public static void ProfilerHookClearsArgumentMarksBeforeStackSetup()
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "This test requires profiling support.");
+
         WithCompiler((compiler, block, lowering) => {
             ProfilerHookNeeded(compiler) = true;
             block.SetFlags(BBF_GC_SAFE_POINT);
@@ -284,6 +292,8 @@ internal static unsafe class FastTailCallLoweringTests
     [TestCase(false)]
     public static void ProfilerHookPrecedesNonGcRegionOrFirstRegisterArgument(bool hasStackArg)
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "This test requires profiling support.");
+
         WithCompiler((compiler, block, lowering) => {
             ProfilerHookNeeded(compiler) = true;
             var call = FastCall();
@@ -320,6 +330,8 @@ internal static unsafe class FastTailCallLoweringTests
     [Test]
     public static void ArgumentlessProfilerTailCallHooksImmediatelyBeforeCall()
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "This test requires profiling support.");
+
         WithCompiler((compiler, block, lowering) => {
             ProfilerHookNeeded(compiler) = true;
             var call = FastCall();
@@ -331,7 +343,6 @@ internal static unsafe class FastTailCallLoweringTests
             Assert.That(block.FirstNode?.Next, Is.SameAs(call));
         });
     }
-#endif
 
     private static GenTreeCall FastCall()
         => new(TYP_VOID) { _callMoreFlags = GTF_CALL_M_TAILCALL };
@@ -352,13 +363,11 @@ internal static unsafe class FastTailCallLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "FirstOperand")]
     private static extern GenTree FirstOperand(Lowering lowering, GenTree node);
 
-#if PROFILING_SUPPORTED
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InsertProfTailCallHook")]
     private static extern void InsertProfTailCallHook(Lowering lowering, GenTreeCall call, GenTree? insertionPoint);
-#endif
 
     private static void WithCompiler(Action<Compiler, BasicBlock, Lowering> action)
     {
@@ -389,4 +398,3 @@ internal static unsafe class FastTailCallLoweringTests
         }
     }
 }
-#endif

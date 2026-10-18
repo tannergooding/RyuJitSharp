@@ -332,11 +332,12 @@ public sealed class StackLevelSetter : Phase
                     assert(mismatchedDestination is not null);
                     JITDUMP($"Wrong stack level was set for {FMT_BB(mismatchedDestination.bbNum)}\n");
                 }
-#if DEBUG
-                var destination = add.acdDstBlk;
-                assert(destination is not null);
-                destination.bbTgtStkDepth = unchecked((int)_currentStackLevel);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    var destination = add.acdDstBlk;
+                    assert(destination is not null);
+                    destination.bbTgtStkDepth = unchecked((int)_currentStackLevel);
+                }
                 add.acdStkLvl = unchecked((int)_currentStackLevel);
             }
         }

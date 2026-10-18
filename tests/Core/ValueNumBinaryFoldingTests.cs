@@ -150,11 +150,9 @@ internal static unsafe class ValueNumBinaryFoldingTests
     [Test]
     public static void FloatingDivisionDoesNotUseIntegerTrapGuard()
     {
-#if TARGET_XARCH
-        const long expectedNaN = unchecked((long)0xFFF8000000000000);
-#else
-        const long expectedNaN = 0x7FF8000000000000;
-#endif
+        var expectedNaN = Configuration.TARGET_XARCH
+            ? unchecked((long)0xFFF8000000000000)
+            : 0x7FF8000000000000;
         WithStore((store, _) => {
             var zero = store.VNForDoubleCon(0.0);
             var result = Fold(store, TYP_DOUBLE, VNFunc.VNF_DIV, zero, zero);
@@ -298,13 +296,14 @@ internal static unsafe class ValueNumBinaryFoldingTests
                 store.VNForIntCon(0));
             Assert.That(store.GetConstantInt32(byteBits), Is.EqualTo(-1));
 
-#if FEATURE_SIMD
-            var vector = simd8_t.Zero;
-            vector.u64[0] = 0x7FF8000000005678;
-            var vectorVN = store.VNForSimd8Con(vector);
-            var vectorBitcast = Fold(store, TYP_LONG, VNFunc.VNF_BitCast, vectorVN, store.VNForIntCon(0));
-            Assert.That(store.GetConstantInt64(vectorBitcast), Is.EqualTo(0x7FF8000000005678L));
-#endif
+            if (Configuration.FEATURE_SIMD)
+            {
+                var vector = simd8_t.Zero;
+                vector.u64[0] = 0x7FF8000000005678;
+                var vectorVN = store.VNForSimd8Con(vector);
+                var vectorBitcast = Fold(store, TYP_LONG, VNFunc.VNF_BitCast, vectorVN, store.VNForIntCon(0));
+                Assert.That(store.GetConstantInt64(vectorBitcast), Is.EqualTo(0x7FF8000000005678L));
+            }
         });
     }
 

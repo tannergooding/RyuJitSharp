@@ -1,11 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_AMD64
 using System;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.regNumber;
@@ -16,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterLoopAlignmentAdjustmentTests
 {
+    [SetUp]
+    public static void RequireAmd64Target()
+    {
+        Assume.That(Configuration.TARGET_AMD64, "This fixture requires the AMD64 target.");
+    }
+
     [Test]
     public static void NoAlignmentsLeaveCodeSizeAndGroupsUnchanged()
     {
@@ -225,12 +228,13 @@ internal static class EmitterLoopAlignmentAdjustmentTests
         });
     }
 
-#if DEBUG
     [TestCase(false, 0, 3, 32)]
     [TestCase(true, 29, 32, 61)]
     public static void JccErratumUsesTheNativeDebugOnlyOffsetAdjustment(
         bool forJcc, int actual, int headerOffset, int finalSize)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug loop-alignment diagnostics.");
+
         WithEmitter((compiler, emitter) =>
         {
             Configure(compiler, adaptive: false, boundary: 32);
@@ -264,6 +268,8 @@ internal static class EmitterLoopAlignmentAdjustmentTests
     [Test]
     public static void VerboseAdjustmentReportsNativePaddingAndGroupOffsets()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug loop-alignment diagnostics.");
+
         WithEmitter((compiler, emitter) =>
         {
             Configure(compiler, adaptive: true, boundary: 32);
@@ -296,7 +302,6 @@ internal static class EmitterLoopAlignmentAdjustmentTests
                 "from 0030 to 002C" + Environment.NewLine));
         });
     }
-#endif
 
     private static void Configure(Compiler compiler, bool adaptive, int boundary)
     {
@@ -348,7 +353,6 @@ internal static class EmitterLoopAlignmentAdjustmentTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitFirstColdIG")]
     private static extern ref insGroup? FirstCold(Emitter emitter);
 
-#if DEBUG
     private static string Capture(Action action)
     {
         using var stream = new MemoryStream();
@@ -367,6 +371,4 @@ internal static class EmitterLoopAlignmentAdjustmentTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 }
-#endif

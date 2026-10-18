@@ -1,4 +1,3 @@
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class ArmEmitterPredicateTests
 {
+    [SetUp]
+    public static void RequireArmTarget()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM32 target.");
+    }
+
     private static readonly Emitter s_emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
 
     [TestCase(INS_str, true)]
@@ -117,9 +122,9 @@ internal static class ArmEmitterPredicateTests
 
     private static IEnumerable<TestCaseData> GeneralRegisterNameCases()
     {
-        yield return new TestCaseData(REG_R0, EA_32BIT_PTRSIZE);
-        yield return new TestCaseData(REG_SP, EA_4BYTE);
-        yield return new TestCaseData(REG_R15, EA_32BIT_PTRSIZE);
+        yield return new TestCaseData(REG_ARM32_R0, EA_32BIT_PTRSIZE);
+        yield return new TestCaseData(REG_ARM32_SP, EA_4BYTE);
+        yield return new TestCaseData(REG_ARM32_R15, EA_32BIT_PTRSIZE);
     }
 
     [TestCaseSource(nameof(GeneralRegisterNameCases))]
@@ -138,8 +143,8 @@ internal static class ArmEmitterPredicateTests
 
     private static IEnumerable<TestCaseData> FloatRegisterNameCases()
     {
-        yield return new TestCaseData(REG_F0, EA_32BIT_PTRSIZE);
-        yield return new TestCaseData(REG_F31, EA_4BYTE);
+        yield return new TestCaseData(REG_ARM32_F0, EA_32BIT_PTRSIZE);
+        yield return new TestCaseData(REG_ARM32_F31, EA_4BYTE);
     }
 
     [TestCaseSource(nameof(FloatRegisterNameCases))]
@@ -156,22 +161,22 @@ internal static class ArmEmitterPredicateTests
         });
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStoreArm32")]
     private static extern bool EmitInsIsLoadOrStore(Emitter emitter, instruction ins);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoad")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadArm32")]
     private static extern bool EmitInsIsLoad(Emitter emitter, instruction ins);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompare")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompareArm32")]
     private static extern bool EmitInsIsCompare(Emitter emitter, instruction ins);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsWritesToLclVarStackLoc")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsWritesToLclVarStackLocArm32")]
     private static extern bool EmitInsWritesToLclVarStackLoc(Emitter emitter, Emitter.instrDesc id);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteMultipleRegs")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteMultipleRegsArm32")]
     private static extern bool EmitInsMayWriteMultipleRegs(Emitter emitter, Emitter.instrDesc id);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteToGCReg")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteToGCRegArm32")]
     private static extern bool EmitInsMayWriteToGCReg(Emitter emitter, Emitter.instrDesc id);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitFloatRegName")]
@@ -197,9 +202,9 @@ internal static class ArmEmitterPredicateTests
 
     private static IEnumerable<TestCaseData> GeneralRegisterClassificationCases()
     {
-        yield return new TestCaseData(REG_R0, true);
-        yield return new TestCaseData(REG_R15, true);
-        yield return new TestCaseData(REG_F0, false);
+        yield return new TestCaseData(REG_ARM32_R0, true);
+        yield return new TestCaseData(REG_ARM32_R15, true);
+        yield return new TestCaseData(REG_ARM32_F0, false);
     }
 
     [TestCaseSource(nameof(GeneralRegisterClassificationCases))]
@@ -210,9 +215,9 @@ internal static class ArmEmitterPredicateTests
 
     private static IEnumerable<TestCaseData> FloatRegisterClassificationCases()
     {
-        yield return new TestCaseData(REG_F0, true);
-        yield return new TestCaseData(REG_F31, true);
-        yield return new TestCaseData(REG_R0, false);
+        yield return new TestCaseData(REG_ARM32_F0, true);
+        yield return new TestCaseData(REG_ARM32_F31, true);
+        yield return new TestCaseData(REG_ARM32_R0, false);
     }
 
     [TestCaseSource(nameof(FloatRegisterClassificationCases))]
@@ -223,10 +228,10 @@ internal static class ArmEmitterPredicateTests
 
     private static IEnumerable<TestCaseData> DoubleRegisterClassificationCases()
     {
-        yield return new TestCaseData(REG_F0, true);
-        yield return new TestCaseData(REG_F1, false);
-        yield return new TestCaseData(REG_F30, true);
-        yield return new TestCaseData(REG_F31, false);
+        yield return new TestCaseData(REG_ARM32_F0, true);
+        yield return new TestCaseData(REG_ARM32_F1, false);
+        yield return new TestCaseData(REG_ARM32_F30, true);
+        yield return new TestCaseData(REG_ARM32_F31, false);
     }
 
     [TestCaseSource(nameof(DoubleRegisterClassificationCases))]
@@ -331,7 +336,10 @@ internal static class ArmEmitterPredicateTests
         descriptor.idInsFmt(format);
         var classifier = typeof(Emitter).GetMethod(
             methodName,
-            BindingFlags.NonPublic | BindingFlags.Static)
+            BindingFlags.NonPublic | BindingFlags.Static,
+            binder: null,
+            types: [typeof(Emitter.instrDesc)],
+            modifiers: null)
             ?? throw new InvalidOperationException($"{methodName} was not found.");
 
         Assert.That(classifier.Invoke(null, [descriptor]), Is.EqualTo(expected));
@@ -374,4 +382,3 @@ internal static class ArmEmitterPredicateTests
         Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
     }
 }
-#endif

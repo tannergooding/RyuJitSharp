@@ -25,14 +25,17 @@ internal static unsafe class BoundsCheckCoalescingTests
             var check = AddCheck(compiler, block, 1, lengthVN);
             var later = AddCheck(compiler, block, 3, lengthVN);
             compiler.MethodHasBoundsChecks = false;
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING)));
-            Assert.That(output, Does.Contain("Method has no bounds checks"));
-#else
-            Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING)));
+                Assert.That(output, Does.Contain("Method has no bounds checks"));
+            }
+            else
+            {
+                Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            }
             Assert.That(IndexValue(check), Is.EqualTo(1));
 
             compiler.MethodHasBoundsChecks = true;
@@ -50,16 +53,19 @@ internal static unsafe class BoundsCheckCoalescingTests
             var first = AddCheck(compiler, block, 0, lengthVN);
             var second = AddCheck(compiler, block, 3, lengthVN);
             var third = AddCheck(compiler, block, 2, lengthVN);
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var status = PhaseStatus.MODIFIED_NOTHING;
-            var output = CodeGenLifeTransitionTests.Capture(() => status = Coalesce(compiler));
-            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING), output);
-            Assert.That(output, Does.Contain(
-                $"BC coalesce in BB01: strengthen [{first.TreeId:D6}] offset 0 -> 3 (lenVN ${lengthVN:x})"));
-#else
-            Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var status = PhaseStatus.MODIFIED_NOTHING;
+                var output = CodeGenLifeTransitionTests.Capture(() => status = Coalesce(compiler));
+                Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING), output);
+                Assert.That(output, Does.Contain(
+                    $"BC coalesce in BB01: strengthen [{first.TreeId:D6}] offset 0 -> 3 (lenVN ${lengthVN:x})"));
+            }
+            else
+            {
+                Assert.That(Coalesce(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            }
             Assert.That(IndexValue(first), Is.EqualTo(3));
             Assert.That(first.Index._vnPair.Liberal, Is.EqualTo(Store(compiler).VNForIntCon(3)));
             Assert.That(first.Index._vnPair.Conservative, Is.EqualTo(Store(compiler).VNForIntCon(3)));

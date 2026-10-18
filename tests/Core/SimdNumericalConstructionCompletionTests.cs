@@ -1,23 +1,27 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64 || TARGET_WASM)
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
-#if TARGET_XARCH
 using static RyuJitSharp.ManagedInstructionSet;
-#elif TARGET_ARM64
 using static RyuJitSharp.SimdScalableKind;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class SimdNumericalConstructionCompletionTests
 {
+    [SetUp]
+    public static void RequireSupportedTarget()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS &&
+            (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM),
+            "This fixture requires a supported hardware-intrinsic target.");
+    }
+
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_UBYTE)]
     [TestCase(TYP_SHORT)]
@@ -52,15 +56,16 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
     [Test]
     public static void RoundingPreservesSourceBitsAndSelectsNativeControls(
         [Values(TYP_FLOAT, TYP_DOUBLE)] var_types baseType,
-#if TARGET_XARCH
-        [Values((byte)16, (byte)32, (byte)64)] byte size,
-#elif TARGET_ARM64
-        [Values((byte)8, (byte)16)] byte size,
-#else
-        [Values((byte)16)] byte size,
-#endif
+        [Values((byte)8, (byte)16, (byte)32, (byte)64)] byte size,
         [Values(false, true)] bool negativeZero)
     {
+        Assume.That(Configuration.TARGET_XARCH
+            ? size is 16 or 32 or 64
+            : Configuration.TARGET_ARM64
+                ? size is 8 or 16
+                : size == 16,
+            "This test case uses a vector size supported by the target.");
+
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
@@ -99,25 +104,24 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
                 Assert.That(intrinsic.SimdBaseType, Is.EqualTo(baseType));
                 Assert.That(intrinsic.SimdSize, Is.EqualTo(size));
                 Assert.That(intrinsic.GetOp(1), Is.SameAs(value));
-#if TARGET_XARCH
-                if (size == 64)
+                if (Configuration.TARGET_XARCH && size == 64)
                 {
                     Assert.That((int)intrinsic.GetOp(2).AsIntCon().IconValue, Is.EqualTo((int)mode));
                 }
-#endif
                 Assert.That(baseType == TYP_FLOAT ? value.SimdVal.u32[0] : value.SimdVal.u64[0],
                     Is.EqualTo(bits));
             }
         });
     }
 
-#if TARGET_XARCH
     [TestCase((byte)16, TYP_SIMD16, NI_X86Base_Max, NI_X86Base_Min)]
     [TestCase((byte)32, TYP_SIMD32, NI_AVX2_Max, NI_AVX2_Min)]
     [TestCase((byte)64, TYP_SIMD64, NI_AVX512_Max, NI_AVX512_Min)]
     public static void UnsignedMagnitudeUsesNativeMinMax(
         byte size, var_types simdType, NamedIntrinsic expectedMax, NamedIntrinsic expectedMin)
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires the xarch target.");
+
         WithCompiler(compiler =>
         {
             var max = compiler.gtNewSimdMinMaxNode(
@@ -131,65 +135,73 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
             Assert.That(min.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(expectedMin));
         });
     }
-#endif
 
     [Test]
     public static void FmaPreservesNativeOperandOrder(
         [Values(TYP_FLOAT, TYP_DOUBLE)] var_types baseType,
-#if TARGET_XARCH
-        [Values((byte)16, (byte)32, (byte)64)] byte size)
-#elif TARGET_ARM64
-        [Values((byte)8, (byte)16)] byte size)
-#else
-        [Values((byte)16)] byte size)
-#endif
+        [Values((byte)8, (byte)16, (byte)32, (byte)64)] byte size)
     {
+        Assume.That(Configuration.TARGET_XARCH
+            ? size is 16 or 32 or 64
+            : Configuration.TARGET_ARM64
+                ? size is 8 or 16
+                : size == 16,
+            "This test case uses a vector size supported by the target.");
+
         WithCompiler(compiler =>
         {
             var type = Compiler.GetSimdTypeForSize(size);
             var left = compiler.gtNewVconNode(type);
             var right = compiler.gtNewVconNode(type);
             var addend = compiler.gtNewVconNode(type);
-#if TARGET_WASM
-            _ = Assert.Throws<FatalJitException>(
-                () => compiler.gtNewSimdFmaNode(type, left, right, addend, baseType, size));
-#else
-            var result = compiler.gtNewSimdFmaNode(type, left, right, addend, baseType, size).AsHWIntrinsic();
-#if TARGET_XARCH
-            var expected = size == 64 ? NI_AVX512_FusedMultiplyAdd : NI_AVX2_MultiplyAdd;
-            Assert.That(result.GetOp(1), Is.SameAs(left));
-            Assert.That(result.GetOp(3), Is.SameAs(addend));
-#else
-            var expected = (baseType, size) switch
+            if (Configuration.TARGET_WASM)
             {
-                (TYP_DOUBLE, 8) => NI_AdvSimd_FusedMultiplyAddScalar,
-                (TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_FusedMultiplyAdd,
-                _ => NI_AdvSimd_FusedMultiplyAdd,
-            };
-            Assert.That(result.GetOp(1), Is.SameAs(addend));
-            Assert.That(result.GetOp(3), Is.SameAs(left));
-#endif
+                _ = Assert.Throws<FatalJitException>(
+                    () => compiler.gtNewSimdFmaNode(type, left, right, addend, baseType, size));
+                return;
+            }
+
+            var result = compiler.gtNewSimdFmaNode(type, left, right, addend, baseType, size).AsHWIntrinsic();
+            NamedIntrinsic expected;
+            if (Configuration.TARGET_XARCH)
+            {
+                expected = size == 64 ? NI_AVX512_FusedMultiplyAdd : NI_AVX2_MultiplyAdd;
+                Assert.That(result.GetOp(1), Is.SameAs(left));
+                Assert.That(result.GetOp(3), Is.SameAs(addend));
+            }
+            else
+            {
+                expected = (baseType, size) switch
+                {
+                    (TYP_DOUBLE, 8) => NI_AdvSimd_FusedMultiplyAddScalar,
+                    (TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_FusedMultiplyAdd,
+                    _ => NI_AdvSimd_FusedMultiplyAdd,
+                };
+                Assert.That(result.GetOp(1), Is.SameAs(addend));
+                Assert.That(result.GetOp(3), Is.SameAs(left));
+            }
+
             Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
             Assert.That(result.GetOp(2), Is.SameAs(right));
             Assert.That(result.Type, Is.EqualTo(type));
             Assert.That(result.SimdBaseType, Is.EqualTo(baseType));
             Assert.That(result.SimdSize, Is.EqualTo(size));
-#endif
         });
     }
 
-#if TARGET_ARM64 || TARGET_WASM
     [Test]
     public static void ConversionPreservesFloatingSourceMetadataAndDelegation(
-#if TARGET_ARM64
         [Values(TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG)] var_types target,
         [Values((byte)8, (byte)16)] byte size,
-#else
-        [Values(TYP_INT, TYP_UINT)] var_types target,
-        [Values((byte)16)] byte size,
-#endif
         [Values(false, true)] bool native)
     {
+        Assume.That(Configuration.TARGET_ARM64 || Configuration.TARGET_WASM,
+            "This test requires the ARM64 or WebAssembly target.");
+        Assume.That(Configuration.TARGET_ARM64
+                ? size is 8 or 16
+                : size == 16 && target is TYP_INT or TYP_UINT,
+            "This test case uses a conversion supported by the target.");
+
         WithCompiler(compiler =>
         {
             var source = target is TYP_LONG or TYP_ULONG ? TYP_DOUBLE : TYP_FLOAT;
@@ -199,20 +211,25 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
             var result = native
                 ? compiler.gtNewSimdCvtNativeNode(type, value, target, source, size)
                 : compiler.gtNewSimdCvtNode(type, value, target, source, size);
-#if TARGET_ARM64
-            var expected = (target, size) switch
+            NamedIntrinsic expected;
+            if (Configuration.TARGET_ARM64)
             {
-                (TYP_INT, _) => NI_AdvSimd_ConvertToInt32RoundToZero,
-                (TYP_UINT, _) => NI_AdvSimd_ConvertToUInt32RoundToZero,
-                (TYP_LONG, 8) => NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar,
-                (TYP_LONG, 16) => NI_AdvSimd_Arm64_ConvertToInt64RoundToZero,
-                (TYP_ULONG, 8) => NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar,
-                _ => NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero,
-            };
-#else
-            var expected = target == TYP_INT ? NI_PackedSimd_ConvertToInt32Saturate
-                : NI_PackedSimd_ConvertToUInt32Saturate;
-#endif
+                expected = (target, size) switch
+                {
+                    (TYP_INT, _) => NI_AdvSimd_ConvertToInt32RoundToZero,
+                    (TYP_UINT, _) => NI_AdvSimd_ConvertToUInt32RoundToZero,
+                    (TYP_LONG, 8) => NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar,
+                    (TYP_LONG, 16) => NI_AdvSimd_Arm64_ConvertToInt64RoundToZero,
+                    (TYP_ULONG, 8) => NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar,
+                    _ => NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero,
+                };
+            }
+            else
+            {
+                expected = target == TYP_INT ? NI_PackedSimd_ConvertToInt32Saturate
+                    : NI_PackedSimd_ConvertToUInt32Saturate;
+            }
+
             var intrinsic = result.AsHWIntrinsic();
             Assert.That(intrinsic.HWIntrinsicId, Is.EqualTo(expected));
             Assert.That(intrinsic.Type, Is.EqualTo(type));
@@ -222,14 +239,14 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
             Assert.That(value.SimdVal.u64[0], Is.EqualTo(0x8000_0000_7FC0_1234UL));
         });
     }
-#endif
 
-#if TARGET_WASM
     [Test]
     public static void UnsupportedWasmLongConversionsTerminate(
         [Values(TYP_LONG, TYP_ULONG)] var_types target,
         [Values(false, true)] bool native)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         WithCompiler(compiler =>
         {
             var value = compiler.gtNewVconNode(TYP_SIMD16);
@@ -238,14 +255,14 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
                 : compiler.gtNewSimdCvtNode(TYP_SIMD16, value, target, TYP_DOUBLE, 16));
         });
     }
-#endif
 
-#if TARGET_ARM64
     [TestCase(SimdScalableRepeated)]
     [TestCase(SimdScalableSequence)]
     [TestCase(SimdScalableScalar)]
     public static void ScalableWrapperPreservesStoredRepresentation(SimdScalableKind kind)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithCompiler(compiler =>
         {
             var store = new ValueNumStore(compiler);
@@ -270,6 +287,8 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
         var_types baseType,
         [Values(-1L, 0L, 0x1_8000_0001L)] long value)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithCompiler(compiler =>
         {
             var store = new ValueNumStore(compiler);
@@ -298,6 +317,8 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
     [TestCase(TYP_DOUBLE, 0x3FF8_0000_0000_0000UL)]
     public static void ScalableWrapperBroadcastsFloatingRawBits(var_types baseType, ulong bits)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithCompiler(compiler =>
         {
             var store = new ValueNumStore(compiler);
@@ -313,46 +334,49 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
             Assert.That(result.Step.u64[0], Is.Zero);
         });
     }
-#endif
 
     private static NamedIntrinsic ExpectedRounding(FloatRoundingMode mode, var_types baseType, byte size)
     {
-#if TARGET_XARCH
-        if (size == 64)
+        if (Configuration.TARGET_XARCH)
         {
-            return NI_AVX512_RoundScale;
+            if (size == 64)
+            {
+                return NI_AVX512_RoundScale;
+            }
+
+            return (mode, size) switch
+            {
+                (FloatRoundingMode.ToPositiveInfinity, 32) => NI_AVX_Ceiling,
+                (FloatRoundingMode.ToNegativeInfinity, 32) => NI_AVX_Floor,
+                (FloatRoundingMode.ToNearestInteger, 32) => NI_AVX_RoundToNearestInteger,
+                (FloatRoundingMode.ToPositiveInfinity, _) => NI_X86Base_Ceiling,
+                (FloatRoundingMode.ToNegativeInfinity, _) => NI_X86Base_Floor,
+                _ => NI_X86Base_RoundToNearestInteger,
+            };
         }
 
-        return (mode, size) switch
+        if (Configuration.TARGET_ARM64)
         {
-            (FloatRoundingMode.ToPositiveInfinity, 32) => NI_AVX_Ceiling,
-            (FloatRoundingMode.ToNegativeInfinity, 32) => NI_AVX_Floor,
-            (FloatRoundingMode.ToNearestInteger, 32) => NI_AVX_RoundToNearestInteger,
-            (FloatRoundingMode.ToPositiveInfinity, _) => NI_X86Base_Ceiling,
-            (FloatRoundingMode.ToNegativeInfinity, _) => NI_X86Base_Floor,
-            _ => NI_X86Base_RoundToNearestInteger,
-        };
-#elif TARGET_ARM64
-        return (mode, baseType, size) switch
-        {
-            (FloatRoundingMode.ToPositiveInfinity, TYP_DOUBLE, 8) => NI_AdvSimd_CeilingScalar,
-            (FloatRoundingMode.ToPositiveInfinity, TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_Ceiling,
-            (FloatRoundingMode.ToPositiveInfinity, _, _) => NI_AdvSimd_Ceiling,
-            (FloatRoundingMode.ToNegativeInfinity, TYP_DOUBLE, 8) => NI_AdvSimd_FloorScalar,
-            (FloatRoundingMode.ToNegativeInfinity, TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_Floor,
-            (FloatRoundingMode.ToNegativeInfinity, _, _) => NI_AdvSimd_Floor,
-            (FloatRoundingMode.ToNearestInteger, TYP_DOUBLE, 8) => NI_AdvSimd_RoundToNearestScalar,
-            (FloatRoundingMode.ToNearestInteger, TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_RoundToNearest,
-            _ => NI_AdvSimd_RoundToNearest,
-        };
-#else
+            return (mode, baseType, size) switch
+            {
+                (FloatRoundingMode.ToPositiveInfinity, TYP_DOUBLE, 8) => NI_AdvSimd_CeilingScalar,
+                (FloatRoundingMode.ToPositiveInfinity, TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_Ceiling,
+                (FloatRoundingMode.ToPositiveInfinity, _, _) => NI_AdvSimd_Ceiling,
+                (FloatRoundingMode.ToNegativeInfinity, TYP_DOUBLE, 8) => NI_AdvSimd_FloorScalar,
+                (FloatRoundingMode.ToNegativeInfinity, TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_Floor,
+                (FloatRoundingMode.ToNegativeInfinity, _, _) => NI_AdvSimd_Floor,
+                (FloatRoundingMode.ToNearestInteger, TYP_DOUBLE, 8) => NI_AdvSimd_RoundToNearestScalar,
+                (FloatRoundingMode.ToNearestInteger, TYP_DOUBLE, 16) => NI_AdvSimd_Arm64_RoundToNearest,
+                _ => NI_AdvSimd_RoundToNearest,
+            };
+        }
+
         return mode switch
         {
             FloatRoundingMode.ToPositiveInfinity => NI_PackedSimd_Ceiling,
             FloatRoundingMode.ToNegativeInfinity => NI_PackedSimd_Floor,
             _ => NI_PackedSimd_RoundToNearest,
         };
-#endif
     }
 
     private static void WithCompiler(Action<Compiler> action)
@@ -368,14 +392,15 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
         JitTls.Compiler = compiler;
         try
         {
-#if TARGET_XARCH
-            foreach (var instructionSet in new[] { InstructionSet_AVX2, InstructionSet_AVX512 })
+            if (Configuration.TARGET_XARCH)
             {
-                compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
-                compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);
-                compiler.opts.compSupportsISAExactly.AddInstructionSet(instructionSet);
+                foreach (var instructionSet in new[] { InstructionSet_AVX2, InstructionSet_AVX512 })
+                {
+                    compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
+                    compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);
+                    compiler.opts.compSupportsISAExactly.AddInstructionSet(instructionSet);
+                }
             }
-#endif
             action(compiler);
         }
         finally
@@ -385,4 +410,3 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
         }
     }
 }
-#endif

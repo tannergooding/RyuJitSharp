@@ -13,10 +13,16 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_SIMD && TARGET_XARCH
 [NonParallelizable]
 internal static unsafe class SIMDImportTests
 {
+    [SetUp]
+    public static void RequireXarchSimd()
+    {
+        Assume.That(Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH,
+            "This fixture requires xarch SIMD support.");
+    }
+
     [TestCase("Vector128`1", 16, CORINFO_TYPE_UINT, false, false, TYP_UINT, 16)]
     [TestCase("Vector256`1", 32, CORINFO_TYPE_FLOAT, true, false, TYP_FLOAT, 32)]
     [TestCase("Vector256`1", 32, CORINFO_TYPE_FLOAT, false, false, TYP_UNDEF, 0)]
@@ -57,11 +63,15 @@ internal static unsafe class SIMDImportTests
     [TestCase(TYP_SIMD16)]
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK)]
-#endif
     public static void NonCallValuesPopWithoutAStore(var_types type)
     {
+        if (type == TYP_MASK)
+        {
+            Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
+                "Mask values require masked hardware intrinsics.");
+        }
+
         WithImporter(compiler => {
             var value = new GenTreeLclVar(type, 0);
             compiler.impPushOnStack(value, new typeInfo(type));
@@ -118,7 +128,6 @@ internal static unsafe class SIMDImportTests
         });
     }
 
-#if FEATURE_HW_INTRINSICS
     [TestCase(TYP_INT, TYP_UBYTE, true)]
     [TestCase(TYP_DOUBLE, TYP_FLOAT, true)]
     [TestCase(TYP_BYREF, TYP_BYREF, true)]
@@ -127,6 +136,9 @@ internal static unsafe class SIMDImportTests
     public static void ScalarHardwareArgumentsUseNativeCoercionOrReportBadCode(
         var_types actualType, var_types signatureType, bool permitted)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS,
+            "This test requires hardware intrinsics.");
+
         WithImporter(compiler => {
             var argument = new GenTreeLclVar(actualType, 0);
             compiler.impPushOnStack(argument, new typeInfo(actualType));
@@ -150,6 +162,9 @@ internal static unsafe class SIMDImportTests
     [Test]
     public static void HardwareArgumentsPopInCallerSpecifiedOrder()
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS,
+            "This test requires hardware intrinsics.");
+
         WithImporter(compiler => {
             var left = new GenTreeLclVar(TYP_DOUBLE, 0);
             var right = new GenTreeLclVar(TYP_INT, 1);
@@ -171,6 +186,9 @@ internal static unsafe class SIMDImportTests
     public static void StructHardwareArgumentsRecognizeClassBeforePoppingSIMD(
         bool signatureIsSimd, bool callOperand)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS,
+            "This test requires hardware intrinsics.");
+
         WithImporter(compiler => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.isIntrinsicType = &IsIntrinsicType;
@@ -211,10 +229,12 @@ internal static unsafe class SIMDImportTests
         });
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     [Test]
     public static void HardwareVectorSignatureCanPopAnImportedMask()
     {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
+            "This test requires masked hardware intrinsics.");
+
         WithImporter(compiler => {
             var mask = new GenTreeLclVar(TYP_MASK, 0);
             compiler.impPushOnStack(mask, new typeInfo(TYP_MASK));
@@ -223,8 +243,6 @@ internal static unsafe class SIMDImportTests
             Assert.That(compiler.impStackHeight, Is.Zero);
         });
     }
-#endif
-#endif
 
     private static void WithImporter(Action<Compiler> action)
     {
@@ -353,13 +371,10 @@ internal static unsafe class SIMDImportTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "impSIMDPopStack")]
     private static extern GenTree PopSimd(Compiler compiler);
 
-#if FEATURE_HW_INTRINSICS
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getArgForHWIntrinsic")]
     private static extern GenTree GetHardwareArgument(
         Compiler compiler, var_types argumentType, CORINFO_CLASS_STRUCT_* argumentClass);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
     private static extern ref Statement? ImportStatements(Compiler compiler);
 }
-#endif

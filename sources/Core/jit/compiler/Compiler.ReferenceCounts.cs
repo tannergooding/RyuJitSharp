@@ -308,18 +308,19 @@ public partial class Compiler
                 var needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(localNumber, inLoop, isReturn);
                 if (descriptor.lvSingleDefRegCandidate || needsExplicitZeroInit)
                 {
-#if DEBUG
-                    if (needsExplicitZeroInit)
+                    if (Configuration.DEBUG)
                     {
-                        descriptor.lvSingleDefDisqualifyReason = (byte)'Z';
-                        JITDUMP($"V{localNumber:D2} needs explicit zero init. Disqualified as a single-def register candidate.\n");
+                        if (needsExplicitZeroInit)
+                        {
+                            descriptor.lvSingleDefDisqualifyReason = (byte)'Z';
+                            JITDUMP($"V{localNumber:D2} needs explicit zero init. Disqualified as a single-def register candidate.\n");
+                        }
+                        else
+                        {
+                            descriptor.lvSingleDefDisqualifyReason = (byte)'M';
+                            JITDUMP($"V{localNumber:D2} has multiple definitions. Disqualified as a single-def register candidate.\n");
+                        }
                     }
-                    else
-                    {
-                        descriptor.lvSingleDefDisqualifyReason = (byte)'M';
-                        JITDUMP($"V{localNumber:D2} has multiple definitions. Disqualified as a single-def register candidate.\n");
-                    }
-#endif
                     descriptor.lvSingleDefRegCandidate = false;
                     descriptor.lvDisqualifySingleDefRegCandidate = true;
                 }

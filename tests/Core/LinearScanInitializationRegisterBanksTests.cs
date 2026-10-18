@@ -7,9 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#if TARGET_XARCH
 using static RyuJitSharp.ManagedInstructionSet;
-#endif
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -24,22 +22,33 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
     [TestCase(TYP_INT, 1)]
     [TestCase(TYP_FLOAT, 2)]
     [TestCase(TYP_DOUBLE, 4)]
-#if FEATURE_SIMD
     [TestCase(TYP_SIMD8, 4)]
     [TestCase(TYP_SIMD12, 4)]
     [TestCase(TYP_SIMD16, 4)]
-#if TARGET_XARCH
     [TestCase(TYP_SIMD32, 4)]
     [TestCase(TYP_SIMD64, 4)]
-#elif TARGET_ARM64
     [TestCase(TYP_SIMD_ARM64, 4)]
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK, 8)]
-#endif
-#endif
     public static void TypeMappingPreservesDistinctDoubleAndFloatBanks(var_types type, int expectedMask)
     {
+        if (type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64 or TYP_SIMD_ARM64)
+        {
+            Assume.That(Configuration.FEATURE_SIMD, "SIMD register types require SIMD support.");
+        }
+        if (type is TYP_SIMD32 or TYP_SIMD64)
+        {
+            Assume.That(Configuration.TARGET_XARCH, "These SIMD widths require the xarch target.");
+        }
+        else if (type == TYP_SIMD_ARM64)
+        {
+            Assume.That(Configuration.TARGET_ARM64, "This SIMD type requires the ARM64 target.");
+        }
+        else if (type == TYP_MASK)
+        {
+            Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
+                "Mask register types require masked hardware intrinsics.");
+        }
+
         var allocator = (LinearScan)RuntimeHelpers.GetUninitializedObject(typeof(LinearScan));
         AvailableIntegerRegisters(allocator) = (regMask)1;
         AvailableFloatRegisters(allocator) = (regMask)2;
@@ -58,101 +67,132 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
     public static void ConstructorPreservesTargetExclusionsAndCalleeSavePolicies(bool debugEnC, bool patchpoints)
     {
         WithConstructor(debugEnC, patchpoints, false, false, (_, allocator) => {
-#if TARGET_AMD64
-            var expectedInteger = SRBM_ALLINT_INIT;
-            var expectedFloat = SRBM_ALLFLOAT_INIT;
-            var expectedDouble = expectedFloat;
-            var expectedMask = SRBM_ALLMASK_INIT;
-#elif TARGET_WASM
-            var expectedInteger = SRBM_NONE;
-            var expectedFloat = SRBM_NONE;
-            var expectedDouble = SRBM_NONE;
-#else
-            var expectedInteger = SRBM_ALLINT;
-            var expectedFloat = SRBM_ALLFLOAT;
-            var expectedDouble = SRBM_ALLDOUBLE;
-#if TARGET_X86
-            var expectedMask = SRBM_ALLMASK_INIT;
-#elif TARGET_ARM64
-            var expectedMask = SRBM_ALLMASK;
-#endif
-#endif
+            regMask expectedInteger;
+            regMask expectedFloat;
+            regMask expectedDouble;
+            var expectedMask = SRBM_NONE;
+            if (Configuration.TARGET_AMD64)
+            {
+                expectedInteger = SRBM_ALLINT_INIT;
+                expectedFloat = SRBM_ALLFLOAT_INIT;
+                expectedDouble = expectedFloat;
+                expectedMask = SRBM_ALLMASK_INIT;
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                expectedInteger = SRBM_NONE;
+                expectedFloat = SRBM_NONE;
+                expectedDouble = SRBM_NONE;
+            }
+            else
+            {
+                expectedInteger = SRBM_ALLINT;
+                expectedFloat = SRBM_ALLFLOAT;
+                expectedDouble = SRBM_ALLDOUBLE;
+                if (Configuration.TARGET_X86)
+                {
+                    expectedMask = SRBM_ALLMASK_INIT;
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    expectedMask = SRBM_ALLMASK;
+                }
+            }
+
             expectedInteger &= ~ReservedIntegerRegister;
-#if TARGET_ARM64
-            expectedInteger &= ~(SRBM_ARM64_PR | SRBM_ARM64_FP | SRBM_ARM64_LR);
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-            expectedInteger &= ~(SRBM_FP | SRBM_RA);
-#endif
-#if ETW_EBP_FRAMED
-            expectedInteger &= ~SRBM_FPBASE;
-#endif
-#if TARGET_AMD64 || TARGET_ARM64
-            if (debugEnC)
+            if (Configuration.TARGET_ARM64)
             {
-                expectedInteger &= ~SRBM_INT_CALLEE_SAVED | SRBM_ENC_CALLEE_SAVED;
+                expectedInteger &= ~(SRBM_ARM64_PR | SRBM_ARM64_FP | SRBM_ARM64_LR);
+            }
+            else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            {
+                expectedInteger &= ~(SRBM_FP | SRBM_RA);
+            }
+            if (Configuration.ETW_EBP_FRAMED)
+            {
+                expectedInteger &= ~SRBM_FPBASE;
+            }
+            if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+            {
+                if (debugEnC)
+                {
+                    expectedInteger &= ~SRBM_INT_CALLEE_SAVED | SRBM_ENC_CALLEE_SAVED;
+                    expectedFloat &= ~SRBM_FLT_CALLEE_SAVED;
+                    expectedDouble &= ~SRBM_FLT_CALLEE_SAVED;
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        expectedMask &= ~SRBM_MSK_CALLEE_SAVED;
+                    }
+                }
+            }
+            if (Configuration.TARGET_AMD64 && patchpoints)
+            {
                 expectedFloat &= ~SRBM_FLT_CALLEE_SAVED;
                 expectedDouble &= ~SRBM_FLT_CALLEE_SAVED;
-#if TARGET_XARCH
-                expectedMask &= ~SRBM_MSK_CALLEE_SAVED;
-#endif
-            }
-#endif
-#if TARGET_AMD64
-            if (patchpoints)
-            {
-                expectedFloat &= ~SRBM_FLT_CALLEE_SAVED;
-                expectedDouble &= ~SRBM_FLT_CALLEE_SAVED;
                 expectedMask &= ~SRBM_MSK_CALLEE_SAVED;
             }
-#endif
             Assert.That(AvailableIntegerRegisters(allocator), Is.EqualTo(expectedInteger));
             Assert.That(AvailableFloatRegisters(allocator), Is.EqualTo(expectedFloat));
             Assert.That(AvailableDoubleRegisters(allocator), Is.EqualTo(expectedDouble));
             Assert.That(AvailableRegisters(allocator)[(int)TYP_DOUBLE], Is.EqualTo(expectedDouble));
-#if TARGET_XARCH || TARGET_ARM64
-            Assert.That(AvailableMaskRegisters(allocator), Is.EqualTo(expectedMask));
-#endif
-#if TARGET_AMD64
-            Assert.That(LowGeneralPurposeRegisters(allocator), Is.EqualTo(expectedInteger & SRBM_LOWINT));
-#elif TARGET_X86
-            Assert.That(LowGeneralPurposeRegisters(allocator), Is.EqualTo(expectedInteger));
-#endif
-#if TARGET_WASM
-            Assert.That(CallerSaveRegisters(allocator, TYP_INT), Is.EqualTo(SRBM_NONE));
-            Assert.That(CallerSaveRegisters(allocator, TYP_DOUBLE), Is.EqualTo(SRBM_NONE));
-            Assert.That(LinearScan.calleeSaveRegs(TYP_INT), Is.EqualTo(SRBM_NONE));
-            Assert.That(LinearScan.calleeSaveRegs(TYP_DOUBLE), Is.EqualTo(SRBM_NONE));
-#else
-#if TARGET_AMD64
-            Assert.That(CallerSaveRegisters(allocator, TYP_INT), Is.EqualTo(SRBM_INT_CALLEE_TRASH_INIT));
-            Assert.That(CallerSaveRegisters(allocator, TYP_DOUBLE), Is.EqualTo(SRBM_FLT_CALLEE_TRASH_INIT));
-#else
-            Assert.That(CallerSaveRegisters(allocator, TYP_INT), Is.EqualTo(SRBM_INT_CALLEE_TRASH));
-            Assert.That(CallerSaveRegisters(allocator, TYP_DOUBLE), Is.EqualTo(SRBM_FLT_CALLEE_TRASH));
-#endif
-            Assert.That(LinearScan.calleeSaveRegs(TYP_INT), Is.EqualTo(SRBM_INT_CALLEE_SAVED));
-            Assert.That(LinearScan.calleeSaveRegs(TYP_DOUBLE), Is.EqualTo(SRBM_FLT_CALLEE_SAVED));
-#endif
-            var indices = RegisterIndices(allocator);
-#if TARGET_AMD64
-            Assert.That(indices[15], Is.EqualTo(REG_X64_R15));
-            Assert.That(indices[16], Is.EqualTo(REG_X64_XMM0));
-            Assert.That(indices[^1], Is.EqualTo(REG_COUNT));
-#else
-            Assert.That(indices, Has.Length.EqualTo((int)ACTUAL_REG_COUNT + 1));
-            for (var index = 0; index < indices.Length; index++)
+            if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
             {
-                Assert.That(indices[index], Is.EqualTo((regNumber)index));
+                Assert.That(AvailableMaskRegisters(allocator), Is.EqualTo(expectedMask));
             }
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                Assert.That(LowGeneralPurposeRegisters(allocator), Is.EqualTo(expectedInteger & SRBM_LOWINT));
+            }
+            else if (Configuration.TARGET_X86)
+            {
+                Assert.That(LowGeneralPurposeRegisters(allocator), Is.EqualTo(expectedInteger));
+            }
+            if (Configuration.TARGET_WASM)
+            {
+                Assert.That(CallerSaveRegisters(allocator, TYP_INT), Is.EqualTo(SRBM_NONE));
+                Assert.That(CallerSaveRegisters(allocator, TYP_DOUBLE), Is.EqualTo(SRBM_NONE));
+                Assert.That(LinearScan.calleeSaveRegs(TYP_INT), Is.EqualTo(SRBM_NONE));
+                Assert.That(LinearScan.calleeSaveRegs(TYP_DOUBLE), Is.EqualTo(SRBM_NONE));
+            }
+            else
+            {
+                if (Configuration.TARGET_AMD64)
+                {
+                    Assert.That(CallerSaveRegisters(allocator, TYP_INT), Is.EqualTo(SRBM_INT_CALLEE_TRASH_INIT));
+                    Assert.That(CallerSaveRegisters(allocator, TYP_DOUBLE), Is.EqualTo(SRBM_FLT_CALLEE_TRASH_INIT));
+                }
+                else
+                {
+                    Assert.That(CallerSaveRegisters(allocator, TYP_INT), Is.EqualTo(SRBM_INT_CALLEE_TRASH));
+                    Assert.That(CallerSaveRegisters(allocator, TYP_DOUBLE), Is.EqualTo(SRBM_FLT_CALLEE_TRASH));
+                }
+                Assert.That(LinearScan.calleeSaveRegs(TYP_INT), Is.EqualTo(SRBM_INT_CALLEE_SAVED));
+                Assert.That(LinearScan.calleeSaveRegs(TYP_DOUBLE), Is.EqualTo(SRBM_FLT_CALLEE_SAVED));
+            }
+            var indices = RegisterIndices(allocator);
+            if (Configuration.TARGET_AMD64)
+            {
+                Assert.That(indices[15], Is.EqualTo(REG_X64_R15));
+                Assert.That(indices[16], Is.EqualTo(REG_X64_XMM0));
+                Assert.That(indices[^1], Is.EqualTo(REG_COUNT));
+            }
+            else
+            {
+                Assert.That(indices, Has.Length.EqualTo((int)ACTUAL_REG_COUNT + 1));
+                for (var index = 0; index < indices.Length; index++)
+                {
+                    Assert.That(indices[index], Is.EqualTo((regNumber)index));
+                }
+            }
         });
     }
 
-#if TARGET_XARCH
     [TestCase(false)]
     [TestCase(true)]
     public static void EvexPreservesNativeRegisterUpperBoundAndMaskBank(bool evex)
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires an xarch target.");
+
         WithConstructor(false, false, evex, false, (_, allocator) => {
             var expectedCount = (int)ACTUAL_REG_COUNT;
             if (!evex)
@@ -165,21 +205,18 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
                 Is.EqualTo(evex ? SRBM_ALLMASK_EVEX : SRBM_ALLMASK_INIT));
             Assert.That(CallerSaveRegisters(allocator, TYP_MASK),
                 Is.EqualTo(evex ? SRBM_MSK_CALLEE_TRASH_EVEX : SRBM_MSK_CALLEE_TRASH_INIT));
-#if TARGET_AMD64
-            Assert.That(AvailableFloatRegisters(allocator),
-                Is.EqualTo(evex ? SRBM_ALLFLOAT_INIT | SRBM_HIGHFLOAT : SRBM_ALLFLOAT_INIT));
-#else
-            Assert.That(AvailableFloatRegisters(allocator), Is.EqualTo(SRBM_ALLFLOAT));
-#endif
+            Assert.That(AvailableFloatRegisters(allocator), Is.EqualTo(Configuration.TARGET_AMD64
+                ? (evex ? SRBM_ALLFLOAT_INIT | SRBM_HIGHFLOAT : SRBM_ALLFLOAT_INIT)
+                : SRBM_ALLFLOAT));
         });
     }
-#endif
 
-#if TARGET_AMD64
     [TestCase(false)]
     [TestCase(true)]
     public static void ApxChoosesCompactOrIdentityRegisterIndices(bool apx)
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64.");
+
         WithConstructor(false, false, false, apx, (_, allocator) => {
             var indices = RegisterIndices(allocator);
             if (apx)
@@ -197,12 +234,12 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
             }
         });
     }
-#endif
 
-#if TARGET_ARM
     [Test]
     public static void ArmDoubleBankContainsOnlyEvenPhysicalHomes()
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires ARM32.");
+
         WithConstructor(false, false, false, false, (_, allocator) => {
             Assert.That(AvailableFloatRegisters(allocator) & (SRBM_F1 | SRBM_F31),
                 Is.EqualTo(SRBM_F1 | SRBM_F31));
@@ -211,31 +248,26 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
                 Is.EqualTo(SRBM_F0 | SRBM_F30));
         });
     }
-#elif TARGET_LOONGARCH64
+
     [Test]
     public static void LoongArchFloatBankPreservesPinnedRestrictedCallerBank()
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64, "This test requires LoongArch64.");
+
         WithConstructor(false, false, false, false, (_, allocator) => {
             Assert.That(AvailableFloatRegisters(allocator) & (SRBM_F8 | SRBM_F23), Is.EqualTo(SRBM_NONE));
             Assert.That(AvailableFloatRegisters(allocator) & (SRBM_F0 | SRBM_F7 | SRBM_F24 | SRBM_F31),
                 Is.EqualTo(SRBM_F0 | SRBM_F7 | SRBM_F24 | SRBM_F31));
         });
     }
-#endif
 
-#if TARGET_X86
-    private const regMask ReservedIntegerRegister = SRBM_EAX;
-#elif TARGET_AMD64
-    private const regMask ReservedIntegerRegister = SRBM_X64_RAX;
-#elif TARGET_ARM
-    private const regMask ReservedIntegerRegister = SRBM_R0;
-#elif TARGET_ARM64
-    private const regMask ReservedIntegerRegister = SRBM_ARM64_R0;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-    private const regMask ReservedIntegerRegister = SRBM_A0;
-#else
-    private const regMask ReservedIntegerRegister = SRBM_NONE;
-#endif
+    private static regMask ReservedIntegerRegister =>
+        Configuration.TARGET_X86 ? SRBM_EAX :
+        Configuration.TARGET_AMD64 ? SRBM_X64_RAX :
+        Configuration.TARGET_ARM ? SRBM_R0 :
+        Configuration.TARGET_ARM64 ? SRBM_ARM64_R0 :
+        Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? SRBM_A0 :
+        SRBM_NONE;
 
     private static void WithConstructor(
         bool debugEnC, bool patchpoints, bool evex, bool apx, Action<Compiler, LinearScan> action)
@@ -253,37 +285,33 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
             flags.Set(JitFlags.JIT_FLAG_DEBUG_EnC);
         }
 
-#if !TARGET_XARCH
-        _ = evex;
-#endif
-#if !TARGET_AMD64
-        _ = apx;
-#endif
-#if TARGET_AMD64
-        CompilerIntegerRegisters(compiler) = apx ? SRBM_ALLINT_INIT | SRBM_HIGHINT : SRBM_ALLINT_INIT;
-        CompilerFloatRegisters(compiler) = evex ? SRBM_ALLFLOAT_INIT | SRBM_HIGHFLOAT : SRBM_ALLFLOAT_INIT;
-        CompilerIntegerTrashRegisters(compiler) =
-            apx ? SRBM_INT_CALLEE_TRASH_INIT | SRBM_HIGHINT : SRBM_INT_CALLEE_TRASH_INIT;
-        CompilerFloatTrashRegisters(compiler) =
-            evex ? SRBM_FLT_CALLEE_TRASH_INIT | SRBM_HIGHFLOAT : SRBM_FLT_CALLEE_TRASH_INIT;
-        CompilerLastIntegerRegister(compiler) = apx ? REG_X64_R31 : REG_X64_R15;
-        if (apx)
+        if (Configuration.TARGET_AMD64)
         {
-            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_APX);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_APX);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_APX);
+            CompilerIntegerRegisters(compiler) = apx ? SRBM_ALLINT_INIT | SRBM_HIGHINT : SRBM_ALLINT_INIT;
+            CompilerFloatRegisters(compiler) = evex ? SRBM_ALLFLOAT_INIT | SRBM_HIGHFLOAT : SRBM_ALLFLOAT_INIT;
+            CompilerIntegerTrashRegisters(compiler) =
+                apx ? SRBM_INT_CALLEE_TRASH_INIT | SRBM_HIGHINT : SRBM_INT_CALLEE_TRASH_INIT;
+            CompilerFloatTrashRegisters(compiler) =
+                evex ? SRBM_FLT_CALLEE_TRASH_INIT | SRBM_HIGHFLOAT : SRBM_FLT_CALLEE_TRASH_INIT;
+            CompilerLastIntegerRegister(compiler) = apx ? REG_X64_R31 : REG_X64_R15;
+            if (apx)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_APX);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_APX);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_APX);
+            }
         }
-#endif
-#if TARGET_XARCH
-        CompilerMaskRegisters(compiler) = evex ? SRBM_ALLMASK_EVEX : SRBM_ALLMASK_INIT;
-        CompilerMaskTrashRegisters(compiler) = evex ? SRBM_MSK_CALLEE_TRASH_EVEX : SRBM_MSK_CALLEE_TRASH_INIT;
-        if (evex)
+        if (Configuration.TARGET_XARCH)
         {
-            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX512);
+            CompilerMaskRegisters(compiler) = evex ? SRBM_ALLMASK_EVEX : SRBM_ALLMASK_INIT;
+            CompilerMaskTrashRegisters(compiler) = evex ? SRBM_MSK_CALLEE_TRASH_EVEX : SRBM_MSK_CALLEE_TRASH_INIT;
+            if (evex)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVX512);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_AVX512);
+            }
         }
-#endif
         JitTls.Compiler = compiler;
         try
         {
@@ -323,7 +351,6 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "callerSaveRegs")]
     private static extern regMask CallerSaveRegisters(LinearScan allocator, var_types type);
 
-#if TARGET_XARCH
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableRegCount")]
     private static extern ref int AvailableRegisterCount(LinearScan allocator);
 
@@ -335,9 +362,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmMskCalleeTrash")]
     private static extern ref regMask CompilerMaskTrashRegisters(Compiler compiler);
-#endif
 
-#if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerIntegerRegisters(Compiler compiler);
 
@@ -352,5 +377,4 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "regIntLast")]
     private static extern ref regNumber CompilerLastIntegerRegister(Compiler compiler);
-#endif
 }

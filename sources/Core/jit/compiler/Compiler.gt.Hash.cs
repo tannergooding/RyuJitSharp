@@ -10,7 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private static uint genTreeHashAdd(uint old, uint add) => unchecked((old + (old / 2)) ^ add);
 
     public unsafe uint gtHashValue(GenTree tree)
@@ -357,5 +356,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }

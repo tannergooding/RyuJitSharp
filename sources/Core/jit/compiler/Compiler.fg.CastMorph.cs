@@ -60,12 +60,13 @@ public partial class Compiler
             _retClsHnd = null,
             _callMoreFlags = GTF_CALL_M_EMPTY,
             _controlExpr = null,
-#if DEBUG
-            _callDebugFlags = GTF_CALL_MD_EMPTY,
-            _inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER,
-            _callSig = default,
-#endif
         };
+        if (Configuration.DEBUG)
+        {
+            call._callDebugFlags = GTF_CALL_MD_EMPTY;
+            call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+            call._callSig = default;
+        }
         call.ClearInlineInfo();
         if (Configuration.UNIX_X86_ABI)
         {
@@ -96,12 +97,12 @@ public partial class Compiler
 
         if (arg2 is not null)
         {
-            call.Args.PushFront(NewCallArg.CreateForPrimitive(arg2));
+            _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(arg2));
             call.AddAllEffectsFlags(arg2);
         }
         if (arg1 is not null)
         {
-            call.Args.PushFront(NewCallArg.CreateForPrimitive(arg1));
+            _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(arg1));
             call.AddAllEffectsFlags(arg1);
         }
 

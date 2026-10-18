@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -15,6 +14,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64JumpRecordingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void GeneratedJumpMappingPreservesEveryNativeOrdinal()
     {
@@ -206,12 +211,13 @@ internal static unsafe class Arm64JumpRecordingTests
         JumpView.Check(id, target, emitter.emitCurIG, 0u, keepShort: false, keepLong: false);
     }
 
-#if DEBUG
     [Test]
     public static void ForcedShortOverridesDebugLongAddressAndRegionPolicy(
         [Values(false, true)] bool forceLong, [Values(false, true)] bool differentRegion,
         [Values(false, true)] bool keepShort)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug emitter metadata.");
+
         var (compiler, _, emitter) = CreateEmitter();
         var target = Label();
         compiler.opts.compLongAddress = forceLong;
@@ -236,6 +242,8 @@ internal static unsafe class Arm64JumpRecordingTests
     public static void FinallyCallMarkerIsSpecificToTheLocalCallInACallFinallyBlock(
         instruction ins, bool finallyBlock, bool expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug emitter metadata.");
+
         var (compiler, _, emitter) = CreateEmitter();
         var target = Label();
         if (finallyBlock)
@@ -261,7 +269,6 @@ internal static unsafe class Arm64JumpRecordingTests
         Assert.That(info.idNum, Is.EqualTo(1u));
         Assert.That(info.idSize, Is.EqualTo((nuint)48));
     }
-#endif
 
     private static BasicBlock Label()
     {
@@ -281,11 +288,14 @@ internal static unsafe class Arm64JumpRecordingTests
         var emitter = codeGen.Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        if (TestConfiguration.IsDebug)
+        {
+            emitter.emitBegFN(false, true);
+        }
+        else
+        {
+            emitter.emitBegFN(false);
+        }
 
         return (compiler, codeGen, emitter);
     }
@@ -342,4 +352,3 @@ internal static unsafe class Arm64JumpRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitContainsRemovableJmpCandidates")]
     private static extern ref bool ContainsRemovable(Emitter emitter);
 }
-#endif

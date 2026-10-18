@@ -101,10 +101,11 @@ internal static unsafe class ObjectAllocatorGraphTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void PreparationHonorsConditionalEscapeAndFieldTrackingRanges()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug object-allocation state.");
+
         var conditionalField = typeof(ObjectAllocator).GetField(
             "s_jitObjectStackAllocationConditionalEscapeRange", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("Missing conditional escape range.");
@@ -145,7 +146,6 @@ internal static unsafe class ObjectAllocatorGraphTests
             fieldsField.SetValue(null, previousFields);
         }
     }
-#endif
 
     [Test]
     public static void PreparationRetainsUnknownSourceWithoutTrackedLocals()
@@ -244,10 +244,8 @@ internal static unsafe class ObjectAllocatorGraphTests
         SetConfig(ref config, "_jitObjectStackAllocationConditionalEscape", conditionalEscape ? 1 : 0);
         JitConfig = (JitConfigValues)config;
 
-#if DEBUG
         ICorJitInfo jitInfo = default;
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.IsDebug ? TestConfiguration.CreateJitTls(&jitInfo) : null;
         var previousCompiler = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         TestConfiguration.SetCompilerFullName(compiler, "ObjectAllocatorGraphTests");

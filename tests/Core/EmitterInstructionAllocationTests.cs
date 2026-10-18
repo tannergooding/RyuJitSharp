@@ -3,9 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
-#endif
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -23,16 +21,17 @@ internal static unsafe class EmitterInstructionAllocationTests
     {
         get
         {
-#if DEBUG
-            return Configuration.TARGET_X86 || Configuration.TARGET_ARM ? 28 : 48;
-#else
+            if (TestConfiguration.IsDebug)
+            {
+                return Configuration.TARGET_X86 || Configuration.TARGET_ARM ? 28 : 48;
+            }
+
             if (Configuration.LATE_DISASM && Configuration.TARGET_ARM64)
             {
                 return 48;
             }
 
             return Configuration.TARGET_X86 || Configuration.TARGET_ARM ? 24 : 40;
-#endif
         }
     }
 
@@ -64,14 +63,17 @@ internal static unsafe class EmitterInstructionAllocationTests
         Assert.That(LastInstruction(emitter), Is.SameAs(second));
         Assert.That(emitter.emitCurIG!.igLastIns, Is.SameAs(second));
         Assert.That(CurrentCount(emitter), Is.EqualTo(2));
-#if DEBUG
-        Assert.That(first.idDebugOnlyInfo()?.idNum, Is.EqualTo(1u));
-        Assert.That(first.idDebugOnlyInfo()?.idSize, Is.EqualTo((nuint)16));
-        Assert.That(second.idDebugOnlyInfo()?.idNum, Is.EqualTo(2u));
-        Assert.That(second.idDebugOnlyInfo()?.idSize, Is.EqualTo((nuint)8));
-#else
-        Assert.That(first.idDebugOnlyInfo(), Is.Null);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(first.idDebugOnlyInfo()?.idNum, Is.EqualTo(1u));
+            Assert.That(first.idDebugOnlyInfo()?.idSize, Is.EqualTo((nuint)16));
+            Assert.That(second.idDebugOnlyInfo()?.idNum, Is.EqualTo(2u));
+            Assert.That(second.idDebugOnlyInfo()?.idSize, Is.EqualTo((nuint)8));
+        }
+        else
+        {
+            Assert.That(first.idDebugOnlyInfo(), Is.Null);
+        }
     }
 
     [TestCase(EA_64BIT_GCREF, GCtype.GCT_GCREF)]
@@ -232,11 +234,12 @@ internal static unsafe class EmitterInstructionAllocationTests
         Assert.That(InitVars(emitter)[0], Is.EqualTo(extend ? (nint)0 : (nint)1));
     }
 
-#if DEBUG
     [Test]
     [NonParallelizable]
     public static void BlockMappingDiagnosticPrintsBlockNumberWithoutDebugIdentifier()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug diagnostics.");
+
         var emitter = CreateEmitter(out var compiler);
         var block = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
         block.bbNum = 1;
@@ -254,6 +257,8 @@ internal static unsafe class EmitterInstructionAllocationTests
     [NonParallelizable]
     public static void EmitterStressSplitsUnlessTheGroupEndsWithAlignment(bool endsWithAlignment)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug stress configuration.");
+
         var emitter = CreateEmitter(out var compiler);
         compiler.compAllowStress = true;
         compiler.info.compMethodName = "Method";
@@ -284,7 +289,8 @@ internal static unsafe class EmitterInstructionAllocationTests
 
                 Assert.That(emitter.emitCurIG == original, Is.EqualTo(endsWithAlignment));
                 Assert.That(CurrentCount(emitter), Is.EqualTo(endsWithAlignment ? 2 : 1));
-                Assert.That(compiler.compActiveStressModes[(int)Compiler.compStressArea.STRESS_EMITTER], Is.EqualTo(1));
+                Assert.That(TestConfiguration.GetActiveStressMode(compiler, Compiler.compStressArea.STRESS_EMITTER),
+                    Is.EqualTo(1));
             }
             finally
             {
@@ -296,6 +302,8 @@ internal static unsafe class EmitterInstructionAllocationTests
     [Test]
     public static void AllocationMapsBlockTransitionsInOrder()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug instruction-group tracking.");
+
         var emitter = CreateEmitter(out var compiler);
         var first = compiler.compCurBB;
         _ = Allocate(emitter, EA_1BYTE);
@@ -316,7 +324,6 @@ internal static unsafe class EmitterInstructionAllocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
     private static extern ref byte* StressNames(ref JitConfigValues config);
-#endif
 
     internal static Emitter.instrDesc Allocate(Emitter emitter, emitAttr attr, bool small = false)
     {
@@ -338,11 +345,7 @@ internal static unsafe class EmitterInstructionAllocationTests
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false);
 
         return emitter;
     }

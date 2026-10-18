@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LinearScanAllocationDiagnosticsTests
 {
+    [SetUp]
+    public static void RequireDebugBuild()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture requires Debug diagnostics.");
+    }
+
     private static int s_assertionCount;
 
     [Test]
@@ -28,7 +33,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
             MaxNodeLocation(allocator) = 10;
             TestConfiguration.EnableVerbose(compiler);
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             var output = Capture(() => {
                 InitializeAllocationDumpFormat(allocator);
@@ -66,11 +71,12 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             _ = NewInterval(allocator, TYP_DOUBLE);
             _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
             TestConfiguration.EnableVerbose(compiler);
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             var output = Capture(() => {
                 InitializeAllocationDumpFormat(allocator);
-                AllocationDumpRegisters(allocator) |= new regMaskTP(SRBM_X64_XMM3);
+                SetAllocationDumpRegisters(allocator,
+                    AllocationDumpRegisters(allocator) | new regMaskTP(SRBM_X64_XMM3));
                 DumpAllocationRegisterTitleIfNeeded(allocator);
             });
 
@@ -92,7 +98,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var reference = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             TestConfiguration.EnableVerbose(compiler);
-            var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
+            var separator = TestConfiguration.ShouldDumpAsciiTrees(compiler) ? "|" : "│";
 
             var output = Capture(() => {
                 InitializeAllocationDumpFormat(allocator);
@@ -132,10 +138,12 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void UpperVectorRegisterRecordsUseTwoDigitSmallLocalNames()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE,
+            "This test requires partial SIMD callee-save support.");
+
         WithCompiler((compiler, codeGen) => {
             var allocator = CreateAllocator(compiler);
             var local = NewInterval(allocator, TYP_SIMD16);
@@ -149,7 +157,6 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             Assert.That(GetAllocationIntervalName(allocator, upperVector), Is.EqualTo("U03"));
         });
     }
-#endif
 
     [Test]
     public static void MinimalRegisterOrderSelectionIncrementsItsBlockStatistic()
@@ -222,7 +229,11 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     private static LinearScan CreateAllocator(Compiler compiler)
     {
         var allocator = new LinearScan(compiler);
-        BlockInfo(allocator) = [new LsraBlockInfo()];
+        var blockInfo = new LsraBlockInfo[1];
+        BlockInfo(allocator) = blockInfo;
+        var blockStats = Configuration.TRACK_LSRA_STATS ? new uint[]?[blockInfo.Length] : null;
+        BlockStats(allocator) = blockStats;
+        blockStats?[0] = new uint[(int)LsraStat.COUNT];
         for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             var register = allocator.physRegs[index];
@@ -249,10 +260,8 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     private static extern void DumpRefPositionShort(
         LinearScan allocator, RefPosition? reference, BasicBlock? block = null);
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getAllocationIntervalName")]
     private static extern string GetAllocationIntervalName(LinearScan allocator, Interval interval);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
@@ -260,11 +269,17 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regsBusyUntilKill")]
     private static extern ref regMaskTP BusyUntilKill(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRegisters")]
-    private static extern ref regMaskTP AllocationDumpRegisters(LinearScan allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get__allocationDumpRegisters")]
+    private static extern regMaskTP AllocationDumpRegisters(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__allocationDumpRegisters")]
+    private static extern void SetAllocationDumpRegisters(LinearScan allocator, regMaskTP value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_maxNodeLocation")]
     private static extern ref uint MaxNodeLocation(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
 
     private static string Capture(Action action)
     {
@@ -332,4 +347,3 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "regIntLast")]
     private static extern ref regNumber CompilerLastIntRegister(Compiler compiler);
 }
-#endif

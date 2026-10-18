@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.ManagedInstructionSet;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm64CodeGenLockedInstructionTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(GT_XORR, INS_ldsetal)]
     [TestCase(GT_XAND, INS_ldclral)]
     [TestCase(GT_XCHG, INS_swpal)]
@@ -291,4 +296,3 @@ internal static class Arm64CodeGenLockedInstructionTests
         compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Atomics);
     }
 }
-#endif

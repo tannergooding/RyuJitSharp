@@ -1,17 +1,12 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-#if TARGET_XARCH
 using static RyuJitSharp.ManagedInstructionSet;
-#endif
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
-#if TARGET_XARCH || TARGET_ARM64
 using static RyuJitSharp.genTreeOps;
-#endif
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -19,13 +14,20 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SimdRearrangementCompletionTests
 {
-#if TARGET_XARCH
+    [SetUp]
+    public static void RequireHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS, "This fixture requires hardware intrinsics.");
+    }
+
     [TestCase(TYP_INT, false, 0x88)]
     [TestCase(TYP_UINT, true, 0xDD)]
     [TestCase(TYP_FLOAT, false, 0x88)]
     [TestCase(TYP_FLOAT, true, 0xDD)]
     public static void Unzip128UsesNativeFourByteLaneControl(var_types baseType, bool odd, int control)
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires the xarch target.");
+
         WithCompiler(compiler => {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
@@ -49,6 +51,8 @@ internal static unsafe class SimdRearrangementCompletionTests
     public static void WideUnzipPreservesEverySelectorAndBothOperandIdentities(
         byte size, var_types baseType, bool odd, NamedIntrinsic intrinsic)
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires the xarch target.");
+
         WithCompiler(compiler => {
             Enable(compiler, InstructionSet_AVX512);
             Enable(compiler, InstructionSet_AVX512v2);
@@ -75,6 +79,8 @@ internal static unsafe class SimdRearrangementCompletionTests
     [TestCase(true, 0xDD)]
     public static void RecursiveUnzipExtractsEachSourceBeforeCombiningItsSelectedLanes(bool odd, int control)
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires the xarch target.");
+
         WithCompiler(compiler => {
             Enable(compiler, InstructionSet_AVX2);
             var left = Local(compiler, TYP_SIMD32);
@@ -105,6 +111,8 @@ internal static unsafe class SimdRearrangementCompletionTests
     public static void Reverse128KeepsNativeLanePermutationAndSourceEvaluation(var_types baseType,
         NamedIntrinsic intrinsic)
     {
+        Assume.That(Configuration.TARGET_XARCH, "This test requires the xarch target.");
+
         WithCompiler(compiler => {
             var source = Local(compiler, TYP_SIMD16);
             var result = compiler.gtNewSimdReverseNode(TYP_SIMD16, source, baseType, 16).AsHWIntrinsic();
@@ -114,13 +122,14 @@ internal static unsafe class SimdRearrangementCompletionTests
             Assert.That(CountReferences(result, source), Is.EqualTo(1));
         });
     }
-#endif
 
-#if TARGET_XARCH || TARGET_ARM64
     [TestCase(false)]
     [TestCase(true)]
     public static void SingleLaneUnzipSequencesBothEffectsAndReturnsOnlyTheRequestedValue(bool odd)
     {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64,
+            "This test requires the xarch or ARM64 target.");
+
         WithCompiler(compiler => {
             var leftEffect = compiler.gtNewStoreLclVarNode(Local(compiler, TYP_SIMD8).LclNum,
                 compiler.gtNewVconNode(TYP_SIMD8));
@@ -166,6 +175,9 @@ internal static unsafe class SimdRearrangementCompletionTests
     [Test]
     public static void SingleLaneReverseReturnsTheOriginalOperandEvenWithEffects()
     {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64,
+            "This test requires the xarch or ARM64 target.");
+
         WithCompiler(compiler => {
             var source = compiler.gtNewBinaryNode(GT_COMMA, TYP_SIMD8,
                 compiler.gtNewStoreLclVarNode(Local(compiler, TYP_SIMD8).LclNum, compiler.gtNewVconNode(TYP_SIMD8)),
@@ -173,13 +185,13 @@ internal static unsafe class SimdRearrangementCompletionTests
             Assert.That(compiler.gtNewSimdReverseNode(TYP_SIMD8, source, TYP_LONG, 8), Is.SameAs(source));
         });
     }
-#endif
 
-#if TARGET_ARM64
     [TestCase(false, NI_AdvSimd_Arm64_UnzipEven)]
     [TestCase(true, NI_AdvSimd_Arm64_UnzipOdd)]
     public static void Arm64UnzipUsesNativeHalfSelection(bool odd, NamedIntrinsic intrinsic)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
@@ -196,6 +208,8 @@ internal static unsafe class SimdRearrangementCompletionTests
     [TestCase(TYP_FLOAT)]
     public static void Arm64EightByteReverseUsesNativeInt64Reversal(var_types baseType)
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD8);
@@ -209,6 +223,8 @@ internal static unsafe class SimdRearrangementCompletionTests
     [Test]
     public static void Arm64GeneralReverseUsesTheNativeByteLookup()
     {
+        Assume.That(Configuration.TARGET_ARM64, "This test requires the ARM64 target.");
+
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
@@ -223,13 +239,12 @@ internal static unsafe class SimdRearrangementCompletionTests
             }
         });
     }
-#endif
-
-#if TARGET_WASM
     [TestCase(false)]
     [TestCase(true)]
     public static void WasmUnzipComposesTheExactEvenOrOddByteSelectors(bool odd)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
@@ -262,6 +277,8 @@ internal static unsafe class SimdRearrangementCompletionTests
     [Test]
     public static void WasmReverseUsesTheNativeByteSwizzle()
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
@@ -276,9 +293,6 @@ internal static unsafe class SimdRearrangementCompletionTests
             }
         });
     }
-#endif
-
-#if TARGET_XARCH || TARGET_ARM64
     private static int CountReferences(GenTree tree, GenTree value)
     {
         var count = ReferenceEquals(tree, value) ? 1 : 0;
@@ -289,7 +303,6 @@ internal static unsafe class SimdRearrangementCompletionTests
 
         return count;
     }
-#endif
 
     private static GenTreeLclVar Local(Compiler compiler, var_types type)
     {
@@ -299,14 +312,12 @@ internal static unsafe class SimdRearrangementCompletionTests
         return compiler.gtNewLclvNode(type, index);
     }
 
-#if TARGET_XARCH
     private static void Enable(Compiler compiler, ManagedInstructionSet instructionSet)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(instructionSet);
     }
-#endif
 
     private static void WithCompiler(Action<Compiler> action)
     {
@@ -334,4 +345,3 @@ internal static unsafe class SimdRearrangementCompletionTests
         }
     }
 }
-#endif

@@ -22,13 +22,11 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (JitConfig.JitDoOptimizeMaskConversions == 0)
+        if (Configuration.DEBUG && JitConfig.JitDoOptimizeMaskConversions == 0)
         {
             JITDUMP("Skipping. Disable by config option\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
 
         if (!compMaskConvertUsed)
         {

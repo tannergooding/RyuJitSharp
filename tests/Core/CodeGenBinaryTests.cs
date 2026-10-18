@@ -19,13 +19,14 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenBinaryTests
 {
-#if TARGET_X86
     [TestCase(GT_ADD_LO, INS_add)]
     [TestCase(GT_ADD_HI, INS_adc)]
     [TestCase(GT_SUB_LO, INS_sub)]
     [TestCase(GT_SUB_HI, INS_sbb)]
     public static void SplitIntegerOperationsPreserveCarryAndBorrow(genTreeOps oper, instruction expected)
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires the x86 target.");
+
         WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeOp(oper, TYP_INT,
@@ -41,8 +42,6 @@ internal static class CodeGenBinaryTests
             Assert.That(descriptors[0].idIns(), Is.EqualTo(expected));
         });
     }
-#endif
-
     [TestCase(GT_ADD, INS_add)]
     [TestCase(GT_SUB, INS_sub)]
     [TestCase(GT_AND, INS_and)]
@@ -354,10 +353,11 @@ internal static class CodeGenBinaryTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsArithmeticWithoutConsumingItTwice()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug disassembly.");
+
         WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeOp(GT_XOR, TYP_INT,
@@ -365,14 +365,13 @@ internal static class CodeGenBinaryTests
             {
                 RegNum = REG_RAX,
             };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForBinary(tree));
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(diagnostic, Does.Contain("xor"));
         });
     }
-#endif
 
     internal static void WithCodeGen(Action<Compiler, CodeGen> action, bool minopts = true)
     {

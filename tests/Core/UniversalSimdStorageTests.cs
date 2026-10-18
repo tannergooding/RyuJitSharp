@@ -76,9 +76,10 @@ internal static unsafe class UniversalSimdStorageTests
             left.SimdVal.AsSpan<byte>()[..type.Size].CopyTo(right.SimdVal.AsSpan<byte>());
 
             Assert.That(GenTreeVecCon.Equals(left, right), Is.True);
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(compiler.gtHashValue(left), Is.EqualTo(compiler.gtHashValue(right)));
-#endif
+            }
             var store = new ValueNumStore(compiler);
             var reference = new ValueNumStore(compiler);
             var expected = left.SimdVal.AsSpan<byte>()[..type.Size].ToArray();
@@ -124,7 +125,6 @@ internal static unsafe class UniversalSimdStorageTests
         });
     }
 
-#if FEATURE_SIMD
     [Test]
     public static void PatternConstructionUsesTheTargetCapacity()
     {
@@ -136,7 +136,6 @@ internal static unsafe class UniversalSimdStorageTests
             Assert.That(vector.SimdVal.AsSpan<byte>()[SimdStorageSize..].ToArray(), Is.All.EqualTo((byte)0));
         });
     }
-#endif
 
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
@@ -186,7 +185,6 @@ internal static unsafe class UniversalSimdStorageTests
         });
     }
 
-#if FEATURE_SIMD
     [TestCase(TYP_SIMD8, TYP_DOUBLE)]
     [TestCase(TYP_DOUBLE, TYP_SIMD8)]
     [TestCase(TYP_SIMD16, TYP_SIMD16)]
@@ -234,15 +232,16 @@ internal static unsafe class UniversalSimdStorageTests
             }
         });
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_INT)]
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
     public static void MaskConversionFoldingRetainsTheTargetWidePayload(var_types baseType)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.FEATURE_MASKED_HW_INTRINSICS,
+            "This test requires masked hardware intrinsics.");
+
         RequireSimd(TYP_SIMD16);
         WithCompiler(compiler =>
         {
@@ -261,14 +260,15 @@ internal static unsafe class UniversalSimdStorageTests
             Assert.That(extracted.RawBits, Is.EqualTo(1L));
         });
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_SHORT)]
     [TestCase(TYP_INT)]
     public static void WideShiftNarrowingUsesOnlyTheNativeSimd16View(var_types baseType)
     {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64,
+            "This test requires ARM64 hardware intrinsics.");
+
         WithCompiler(compiler =>
         {
             var value = compiler.gtNewVconNode(TYP_SIMD16);
@@ -293,9 +293,7 @@ internal static unsafe class UniversalSimdStorageTests
             Assert.That(shifts.SimdVal.AsSpan<byte>()[16..].ToArray(), Is.All.EqualTo((byte)0xA5));
         });
     }
-#endif
 
-#if FEATURE_SIMD && TARGET_XARCH
     [TestCase(4)]
     [TestCase(8)]
     [TestCase(16)]
@@ -303,6 +301,9 @@ internal static unsafe class UniversalSimdStorageTests
     [TestCase(64)]
     public static void EmittedConstantsUseOnlyTheRequestedPayload(int size)
     {
+        Assume.That(Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH,
+            "This test requires xarch SIMD.");
+
         WithCompiler(compiler =>
         {
             var codeGen = new CodeGen(compiler);
@@ -325,7 +326,6 @@ internal static unsafe class UniversalSimdStorageTests
             Assert.That(emitter.emitDataSize(), Is.EqualTo(size));
         });
     }
-#endif
 
     private static void RequireSimd(var_types type)
     {
@@ -355,11 +355,9 @@ internal static unsafe class UniversalSimdStorageTests
         }
     }
 
-#if FEATURE_SIMD
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBitCast")]
     private static extern GenTree? LowerBitCast(Lowering lowering, GenTreeUnOp bitcast);
-#endif
 }

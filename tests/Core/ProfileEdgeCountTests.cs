@@ -223,12 +223,13 @@ internal static unsafe class ProfileEdgeCountTests
         });
     }
 
-#if DEBUG
     [TestCase(1)]
     [TestCase(7)]
     [TestCase(int.MinValue)]
     public static void RandomCountsReuseTheInlineStrategyAndKeepTheLastReturnNonzero(int seed)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug random-edge-count state.");
+
         WithCompiler(compiler => {
             var config = JitConfig;
             RandomEdgeCounts(ref config) = 17;
@@ -259,7 +260,6 @@ internal static unsafe class ProfileEdgeCountTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_random")]
     private static extern ref CLRRandom? StrategyRandom(InlineStrategy strategy);
-#endif
 
     private readonly record struct Probe(int Source, int Target, ulong Count, bool Wide = false);
 

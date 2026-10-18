@@ -130,9 +130,7 @@ internal static unsafe class EmitterRegisterOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputRR(buffer, born);
             var birthOffset = (uint)(end - buffer);
             end = emitter.emitOutputRR(end, dead);
@@ -170,9 +168,7 @@ internal static unsafe class EmitterRegisterOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputRR(buffer, id);
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString("4887C1")));
@@ -224,9 +220,7 @@ internal static unsafe class EmitterRegisterOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputRR(buffer, id);
 
             Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_X64_RDX
@@ -289,9 +283,7 @@ internal static unsafe class EmitterRegisterOutputTests
             record(emitter);
             var id = Last(emitter);
             var buffer = stackalloc byte[24];
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = output(emitter, buffer, id);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
@@ -336,9 +328,7 @@ internal static unsafe class EmitterRegisterOutputTests
             var id = Last(emitter);
             var buffer = stackalloc byte[32];
             new Span<byte>(buffer, 32).Fill(0xA5);
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = output(emitter, buffer, id);
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),

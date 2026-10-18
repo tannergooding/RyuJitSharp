@@ -40,25 +40,20 @@ internal static unsafe class SsaLivenessTests
             _ = AddStatement(compiler, first, Store(compiler, 0, compiler.gtNewIconNode(TYP_INT, 1)));
             _ = AddStatement(compiler, last, Store(compiler, 1, new GenTreeLclVar(TYP_INT, 0)));
             SetDfs(compiler);
-#if DEBUG
             TestConfiguration.EnableVerbose(compiler);
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
-            Assert.That(Occurrences(text, "In Liveness::PerBlockLocalVarLiveness()"), Is.EqualTo(2));
-            Assert.That(Occurrences(text, "IngInterBlockLocalVarLiveness()"), Is.EqualTo(2));
-            Assert.That(Occurrences(text, "top level store"), Is.EqualTo(2));
-            Assert.That(Occurrences(text, "removing stmt with no side effects"), Is.EqualTo(2));
-            Assert.That(text, Does.Not.Contain("fgComputeLife modified tree:"));
-#else
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
-            Assert.That(Ordered(text, "Dead store has side effects...", "top level store",
-                "Extracted side effects list...", "fgComputeLife modified tree:"), Is.True);
-            Assert.That(Occurrences(text, "fgComputeLife modified tree:"), Is.EqualTo(1));
-#else
-            compiler.fgSsaLiveness();
-#endif
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
+                Assert.That(Occurrences(text, "In Liveness::PerBlockLocalVarLiveness()"), Is.EqualTo(2));
+                Assert.That(Occurrences(text, "IngInterBlockLocalVarLiveness()"), Is.EqualTo(2));
+                Assert.That(Occurrences(text, "top level store"), Is.EqualTo(2));
+                Assert.That(Occurrences(text, "removing stmt with no side effects"), Is.EqualTo(2));
+                Assert.That(text, Does.Not.Contain("fgComputeLife modified tree:"));
+            }
+            else
+            {
+                compiler.fgSsaLiveness();
+            }
             Assert.That(first.FirstStmt, Is.Null);
             Assert.That(last.FirstStmt, Is.Null);
             Assert.That(compiler.fgStmtRemoved, Is.True);
@@ -104,22 +99,25 @@ internal static unsafe class SsaLivenessTests
             TestConfiguration.EnableVerbose(compiler);
             SetDfs(compiler);
 
-#if DEBUG
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
-            if (hasSideEffects)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That(Ordered(text, "Dead store has side effects...",
-                    "Extracted side effects list from condition...", "fgComputeLife modified tree:"), Is.True);
+                var text = CodeGenLifeTransitionTests.Capture(compiler.fgSsaLiveness);
+                if (hasSideEffects)
+                {
+                    Assert.That(Ordered(text, "Dead store has side effects...",
+                        "Extracted side effects list from condition...", "fgComputeLife modified tree:"), Is.True);
+                }
+                else
+                {
+                    Assert.That(Ordered(text, $"Removing tree [{treeId:D6}]",
+                        " as useless", "fgComputeLife modified tree:"), Is.True);
+                }
+                Assert.That(Occurrences(text, "fgComputeLife modified tree:"), Is.EqualTo(1));
             }
             else
             {
-                Assert.That(Ordered(text, $"Removing tree [{treeId:D6}]",
-                    " as useless", "fgComputeLife modified tree:"), Is.True);
+                compiler.fgSsaLiveness();
             }
-            Assert.That(Occurrences(text, "fgComputeLife modified tree:"), Is.EqualTo(1));
-#else
-            compiler.fgSsaLiveness();
-#endif
 
             Assert.That(block.FirstStmt, Is.SameAs(statement));
             var replacement = root.Op1;
@@ -264,7 +262,6 @@ internal static unsafe class SsaLivenessTests
         });
     }
 
-#if DEBUG
     private static bool Ordered(string text, params string[] fragments)
     {
         var position = -1;
@@ -289,7 +286,6 @@ internal static unsafe class SsaLivenessTests
         }
         return count;
     }
-#endif
 
     private static GenTreeLclVar Store(Compiler compiler, int local, GenTree value) =>
         compiler.gtNewStoreLclVarNode(local, value);

@@ -447,12 +447,10 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 memory barrier generation requires LoongArch64.");
         }
 
-#if DEBUG
-        if (JitConfig.JitNoMemoryBarriers == 1)
+        if (Configuration.DEBUG && JitConfig.JitNoMemoryBarriers == 1)
         {
             return;
         }
-#endif
 
         // The pinned instr.h maps every LoongArch64 barrier kind to the full-barrier hint, zero.
         // TODO-LOONGARCH64: Use the exact barrier type depending on the CPU.

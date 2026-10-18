@@ -1,10 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -18,11 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanReferenceBuildingTests
 {
-#if DEBUG
     [Test]
     [NonParallelizable]
     public static void IntervalCreationDumpsBeforeAnyReferencesAreAttached()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug allocation diagnostics.");
+
         WithAllocator((compiler, allocator) => {
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
@@ -46,7 +45,6 @@ internal static unsafe class LinearScanReferenceBuildingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "newInterval")]
     private static extern Interval NewInterval(LinearScan allocator, var_types type);
-#endif
 
     [Test]
     public static void DefinitionsAndUsesShareTemporaryIntervalAndPreserveTargetPreferences()
@@ -218,10 +216,12 @@ internal static unsafe class LinearScanReferenceBuildingTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void UpperVectorRestoreForALiveLocalIsCreatedAsRegisterOptional()
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE,
+            "Upper-vector restore is available only when partial SIMD callee-save is enabled.");
+
         WithAllocator((compiler, allocator) => {
             compiler.compFloatingPointUsed = true;
             compiler.lvaTable = [
@@ -261,7 +261,6 @@ internal static unsafe class LinearScanReferenceBuildingTests
             Assert.That(localInterval.isPartiallySpilled, Is.False);
         });
     }
-#endif
 
     [Test]
     public static void RegisterTypeByIndexMapsScalarLongLocalsToIntegerRegisterType()

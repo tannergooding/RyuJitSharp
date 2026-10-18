@@ -157,10 +157,11 @@ internal static unsafe class GcInfoTableEncodingTests
         {
             var filterGroup = new insGroup { igOffs = 4 };
             var handlerGroup = new insGroup { igOffs = 8 };
-#if DEBUG
-            filterGroup.igSelf = filterGroup;
-            handlerGroup.igSelf = handlerGroup;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                filterGroup.igSelf = filterGroup;
+                handlerGroup.igSelf = handlerGroup;
+            }
             compiler.compHndBBtab =
             [
                 new EHblkDsc

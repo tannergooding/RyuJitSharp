@@ -224,13 +224,14 @@ internal static class EmitterLoopAlignmentRecordingTests
         }
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsAlignmentInstructions()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug disassembly diagnostics.");
+
         WithEmitter((compiler, emitter) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing current group.");
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => emitter.emitLoopAlignment(false));
@@ -240,21 +241,14 @@ internal static class EmitterLoopAlignmentRecordingTests
             Assert.That(diagnostic, Does.Contain("align"));
         });
     }
-#endif
 
-    private static int FullAlignSize =>
-#if DEBUG
-        48 + IntPtr.Size;
-#else
-        ExpectedAlignDescriptorSize;
-#endif
+    private static int FullAlignSize => TestConfiguration.IsDebug
+        ? 48 + IntPtr.Size
+        : ExpectedAlignDescriptorSize;
 
-    private static int ExpectedAlignDescriptorSize =>
-#if DEBUG
-        48;
-#else
-        Configuration.TARGET_ARM64 && Configuration.LATE_DISASM ? 48 : 40;
-#endif
+    private static int ExpectedAlignDescriptorSize => TestConfiguration.IsDebug
+        ? 48
+        : Configuration.TARGET_ARM64 && Configuration.LATE_DISASM ? 48 : 40;
 
     private static void Align(Emitter emitter, bool afterJump = false)
     {

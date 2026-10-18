@@ -26,15 +26,19 @@ internal static unsafe class AsyncResumeTableTargetTests
             Is.EqualTo((nint)0));
         Assert.That(Marshal.OffsetOf<CORINFO_AsyncResumeInfo>(nameof(CORINFO_AsyncResumeInfo.DiagnosticIP)),
             Is.EqualTo((nint)TARGET_POINTER_SIZE));
-#if TARGET_64BIT
-        Assert.That(entry.Resume, Is.TypeOf<ulong>());
-        Assert.That(entry.DiagnosticIP, Is.TypeOf<ulong>());
-#else
-        Assert.That(sizeof(CORINFO_AsyncResumeInfo), Is.EqualTo(8));
-        Assert.That(sizeof(nint), Is.EqualTo(8), "This selection must exercise a 32-bit target on the 64-bit test host.");
-        Assert.That(entry.Resume, Is.TypeOf<uint>());
-        Assert.That(entry.DiagnosticIP, Is.TypeOf<uint>());
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            Assert.That(entry.Resume, Is.TypeOf<ulong>());
+            Assert.That(entry.DiagnosticIP, Is.TypeOf<ulong>());
+        }
+        else
+        {
+            Assert.That(sizeof(CORINFO_AsyncResumeInfo), Is.EqualTo(8));
+            Assert.That(sizeof(nint), Is.EqualTo(8),
+                "This selection must exercise a 32-bit target on the 64-bit test host.");
+            Assert.That(entry.Resume, Is.TypeOf<uint>());
+            Assert.That(entry.DiagnosticIP, Is.TypeOf<uint>());
+        }
     }
 
     [Test]
@@ -129,10 +133,11 @@ internal static unsafe class AsyncResumeTableTargetTests
         });
     }
 
-#if TARGET_WASM
     [Test]
     public static void WasmSerializationUsesTargetWidthAndMethodRelativeDiagnosticRelocations()
     {
+        Assume.That(Configuration.TARGET_WASM, "This serialization test requires the WebAssembly target.");
+
         WithEmitter((compiler, emitter, context) =>
         {
             JitFlags flags = default;
@@ -181,14 +186,14 @@ internal static unsafe class AsyncResumeTableTargetTests
             Assert.That(context->Kinds[2], Is.EqualTo((int)CorInfoReloc.DIRECT));
         });
     }
-#endif
 
-#if !TARGET_WASM
     [TestCase(false, false)]
     [TestCase(true, false)]
     [TestCase(true, true)]
     public static void OutputUsesTargetStrideWritableAliasesAndNativeRelocationOrder(bool relocatable, bool matchedVm)
     {
+        Assume.That(!Configuration.TARGET_WASM, "This serialization test covers non-WebAssembly targets.");
+
         WithEmitter((compiler, emitter, context) =>
         {
             compiler.opts.compReloc = relocatable;
@@ -241,14 +246,14 @@ internal static unsafe class AsyncResumeTableTargetTests
             }
         });
     }
-#endif
 
-#if !TARGET_WASM
     [TestCase(1u)]
     [TestCase(3u)]
     [TestCase(4u)]
     public static void DiagnosticsPreserveOracleHostLocationDivisorDqAndTargetEntryLabels(uint count)
     {
+        Assume.That(!Configuration.TARGET_WASM, "This diagnostic test covers non-WebAssembly targets.");
+
         WithEmitter((compiler, emitter, context) =>
         {
             _ = emitter.emitDataConst(new byte[4], 4, TYP_INT);
@@ -293,7 +298,6 @@ internal static unsafe class AsyncResumeTableTargetTests
                 Is.EqualTo(expected.ToString().Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
         });
     }
-#endif
 
     private static void WritePointer(byte[] bytes, int offset, nuint value)
     {
@@ -307,9 +311,10 @@ internal static unsafe class AsyncResumeTableTargetTests
     {
         var group = new insGroup { igOffs = offset };
         group.InitializeNum(number);
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
 
         return group;
     }

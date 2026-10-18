@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -13,13 +12,19 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SsaVerificationTests
 {
+    [SetUp]
+    public static void RequireDebugBuild()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture requires Debug verification.");
+    }
+
     [Test]
     public static void InvalidSsaDoesNotRequireADfsTree()
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
             TestConfiguration.EnableVerbose(compiler);
 
-            Assert.That(CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckSsa), Is.Empty);
+            Assert.That(CodeGenLifeTransitionTests.Capture(() => TestConfiguration.CheckSsa(compiler)), Is.Empty);
         });
     }
 
@@ -40,7 +45,7 @@ internal static class SsaVerificationTests
             local.GetPerSsaData(ssaNum).AddUse(block);
             EnableVerification(compiler);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckSsa);
+            var text = CodeGenLifeTransitionTests.Capture(() => TestConfiguration.CheckSsa(compiler));
 
             Assert.That(text, Is.EqualTo($"SSA checks completed successfully{Environment.NewLine}"));
         });
@@ -63,7 +68,7 @@ internal static class SsaVerificationTests
             descriptor.AddUse(block);
             EnableVerification(compiler);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckSsa);
+            var text = CodeGenLifeTransitionTests.Capture(() => TestConfiguration.CheckSsa(compiler));
 
             Assert.That(text, Is.EqualTo(
                 $"[info] NumUses overestimated for V00.1: IR 1 SSA 2{Environment.NewLine}" +
@@ -89,7 +94,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.StartWith($"fgDebugCheckSsa: errors found{Environment.NewLine}"));
             Assert.That(text, Does.Contain($"{message} [{tree.TreeId:D6}] (V00)"));
@@ -118,7 +123,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain($"[error] NumUses underestimated for V00.1: IR 1 SSA 0{Environment.NewLine}"));
             Assert.That(text, Does.Contain($"[error] HasGlobalUse underestimated for V00.1{Environment.NewLine}"));
@@ -145,7 +150,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain($"[error] HasMultipleDef for V00.1{Environment.NewLine}"));
         });
@@ -165,7 +170,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain(definition
                 ? $"[error] Unexpected SSA number on def [{tree.TreeId:D6}] (V00)"
@@ -188,7 +193,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain($"[error] Composite SSA number on use [{use.TreeId:D6}] (V00)"));
         });
@@ -223,7 +228,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain($"[error] Wrong def block for V00.1 : IR " +
                                            $"{FMT_BB(first.bbNum)} SSA {FMT_BB(second.bbNum)}"));
@@ -243,7 +248,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain($"[error] {FMT_BB(block.bbNum)} PhiDef " +
                                            $"{FMT_STMT(phiDef.Id)} appears after non-PhiDef {FMT_STMT(ordinary.Id)}"));
@@ -283,7 +288,7 @@ internal static class SsaVerificationTests
             _ = AddStatement(compiler, handler, compiler.gtNewStoreLclVarNode(0, phi));
             EnableVerification(compiler);
 
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckSsa);
+            var text = CodeGenLifeTransitionTests.Capture(() => TestConfiguration.CheckSsa(compiler));
 
             Assert.That(text, Is.EqualTo($"SSA checks completed successfully{Environment.NewLine}"));
         });
@@ -302,7 +307,7 @@ internal static class SsaVerificationTests
 
             var dfsTree = compiler._dfsTree ?? throw new InvalidOperationException("Missing DFS tree.");
             Assert.That(dfsTree.Contains(unreachable), Is.False);
-            var text = CodeGenLifeTransitionTests.Capture(compiler.fgDebugCheckSsa);
+            var text = CodeGenLifeTransitionTests.Capture(() => TestConfiguration.CheckSsa(compiler));
 
             Assert.That(text, Is.EqualTo($"SSA checks completed successfully{Environment.NewLine}"));
         });
@@ -324,7 +329,7 @@ internal static class SsaVerificationTests
             EnableVerification(compiler);
 
             var text = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(() => compiler.fgDebugCheckSsa(), Throws.Exception));
+                Assert.That(() => TestConfiguration.CheckSsa(compiler), Throws.Exception));
 
             Assert.That(text, Does.Contain("[error] Wrong local V01 in PhiArg"));
             Assert.That(text, Does.Contain("multiple PhiArgs for predBlock"));
@@ -362,4 +367,3 @@ internal static class SsaVerificationTests
         return block;
     }
 }
-#endif

@@ -204,7 +204,6 @@ internal static unsafe class ExceptionalPredecessorTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -213,6 +212,8 @@ internal static unsafe class ExceptionalPredecessorTests
     [TestCase(-1)]
     public static void StressHashPreservesNativeSeedInterpretation(int seed)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug stress state.");
+
         WithCompiler(compiler => {
             var config = JitConfig;
             SsaStress(ref config) = seed;
@@ -231,6 +232,8 @@ internal static unsafe class ExceptionalPredecessorTests
     [TestCase(0x80000000u, 8)]
     public static void StressShuffleMatchesPositionalSwapsWithoutLosingEdges(uint hash, int count)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug stress state.");
+
         WithCompiler(compiler => {
             var blocks = CreateBlocks(compiler, BBJ_RETURN);
             var edges = new List<FlowEdge>();
@@ -268,7 +271,6 @@ internal static unsafe class ExceptionalPredecessorTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitSsaStress")]
     private static extern ref int SsaStress(ref JitConfigValues config);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgGetAllSuccessors")]
     private static extern List<BasicBlock> GetAllSuccessors(Compiler compiler, BasicBlock block, bool useProfile);

@@ -357,7 +357,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     private static void fgDebugCheckExceptionSetsTree(GenTree tree, ValueNumStore store)
     {
         assert(tree._vnPair.BothDefined() || (tree.Oper is GT_PHI_ARG));
@@ -379,6 +378,7 @@ public partial class Compiler
         assert(store.VNExcIsSubset(nodeExceptions.Conservative, operandExceptions.Conservative));
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgDebugCheckExceptionSets()
     {
         assert(vnStore is not null);
@@ -394,5 +394,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }

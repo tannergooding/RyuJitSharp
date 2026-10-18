@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -17,6 +16,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64RegisterCopyTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(TYP_INT, INS_mov)]
     [TestCase(TYP_REF, INS_mov)]
     [TestCase(TYP_BYREF, INS_mov)]
@@ -318,11 +323,15 @@ internal static unsafe class Arm64RegisterCopyTests
         var emitter = codeGen.Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        if (TestConfiguration.IsDebug)
+        {
+            emitter.emitBegFN(false, true);
+        }
+        else
+        {
+            emitter.emitBegFN(false);
+        }
+
         return codeGen;
     }
 
@@ -338,4 +347,3 @@ internal static unsafe class Arm64RegisterCopyTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
     private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
 }
-#endif

@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 // Keep the decoder available when MSBuild excludes the ARM64 backend.
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -329,4 +328,3 @@ public static partial class Globals
         jitprintf("\n");
     }
 }
-#endif

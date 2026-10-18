@@ -236,8 +236,7 @@ public sealed partial class LinearScan
             _doDoubleAlign = shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf("\nFP callee save candidate vars: ");
             if (!VarSetOps.IsEmpty(_compiler, _fpCalleeSaveCandidateVars))
@@ -250,13 +249,11 @@ public sealed partial class LinearScan
                 jitprintf("None\n\n");
             }
         }
-#endif
         var singleExit = (_compiler.fgReturnBlocks is null) || (_compiler.fgReturnBlocks.Next is null);
         JITDUMP($"floatVarCount = {floatVarCount}; hasLoops = {dspBool(_compiler.fgHasLoops)}, singleExit = {dspBool(singleExit)}\n");
         if ((floatVarCount > 6) && _compiler.fgHasLoops && singleExit)
         {
-#if DEBUG
-            if (VERBOSE)
+            if (Configuration.DEBUG && VERBOSE)
             {
                 jitprintf("Adding additional fp callee save candidates: \n");
                 if (!VarSetOps.IsEmpty(_compiler, fpMaybeCandidateVars))
@@ -269,7 +266,6 @@ public sealed partial class LinearScan
                     jitprintf("None\n\n");
                 }
             }
-#endif
             VarSetOps.UnionD(_compiler, _fpCalleeSaveCandidateVars, fpMaybeCandidateVars);
         }
         if (_compiler.compHndBBtabCount > 0)
@@ -288,16 +284,17 @@ public sealed partial class LinearScan
 
     private CanDoubleAlign getCanDoubleAlign()
     {
-#if DEBUG
-        if (_compiler.compStressCompile(Compiler.STRESS_DBL_ALN, 20))
+        if (Configuration.DEBUG)
         {
-            return CanDoubleAlign.MUST_DOUBLE_ALIGN;
+            if (_compiler.compStressCompile(Compiler.STRESS_DBL_ALN, 20))
+            {
+                return CanDoubleAlign.MUST_DOUBLE_ALIGN;
+            }
+
+            return (CanDoubleAlign)JitConfig.JitDoubleAlign;
         }
 
-        return (CanDoubleAlign)JitConfig.JitDoubleAlign;
-#else
         return CanDoubleAlign.DEFAULT_DOUBLE_ALIGN;
-#endif
     }
 
     // Estimate the bytes saved by frame-pointer-relative parameter references against

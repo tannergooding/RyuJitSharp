@@ -86,15 +86,13 @@ public sealed partial class ValueNumStore
         var loopIndex = loop?.Index ?? NoLoop;
         var result = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopIndex);
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"    VNForMapStore(${map:x}, ${index:x}, ${value:x}):{VNMapTypeName(TypeOfVN(result))} " +
                 $"in {FMT_BB(block.bbNum)} returns ");
             _compiler.vnPrint(result, 1);
             JITDUMP("\n");
         }
-#endif
         return result;
     }
 
@@ -104,14 +102,12 @@ public sealed partial class ValueNumStore
         var selector = EncodePhysicalSelector(offset, size);
         var result = VNForFunc(TypeOfVN(map), VNF_MapPhysicalStore, map, selector, value);
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"    VNForMapPhysicalStore:{VNMapTypeName(TypeOfVN(result))} returns ");
             _compiler.vnPrint(result, 1);
             JITDUMP("\n");
         }
-#endif
         return result;
     }
 
@@ -120,14 +116,12 @@ public sealed partial class ValueNumStore
         assert(MapIsPrecise(map));
         var result = VNForMapSelectInner(vnk, type, map, index);
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"    VNForMapSelect(${map:x}, ${index:x}):{VNMapTypeName(type)} returns ");
             _compiler.vnPrint(result, 1);
             JITDUMP("\n");
         }
-#endif
         return result;
     }
 
@@ -137,8 +131,7 @@ public sealed partial class ValueNumStore
         var selector = EncodePhysicalSelector(offset, size);
         var result = VNForMapSelectInner(vnk, type, map, selector);
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"    VNForMapPhysicalSelect(${map:x}, ");
             DumpPhysicalSelector(selector);
@@ -146,7 +139,6 @@ public sealed partial class ValueNumStore
             _compiler.vnPrint(result, 1);
             JITDUMP("\n");
         }
-#endif
         return result;
     }
 
@@ -240,8 +232,7 @@ public sealed partial class ValueNumStore
                     case VNF_MapPhysicalStore:
                     {
                         assert(MapIsPhysical(map));
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             JITDUMP("      select(");
                             _compiler.vnPrint(map, 1);
@@ -249,7 +240,6 @@ public sealed partial class ValueNumStore
                             DumpPhysicalSelector(index);
                             JITDUMP(")");
                         }
-#endif
                         var storeSelector = funcApp.GetArg(1);
                         if (index == storeSelector)
                         {

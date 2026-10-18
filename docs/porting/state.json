@@ -10,67 +10,53 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Packet 303 has passed combined acceptance and its 302 IDs are reconciled. Review the final diff and commit this batch, then build packet 304 from the next size-ranked complete-file groups after the 13,984-byte boundary without restarting repository-wide discovery. Preserve the 33 prerequisite-backed deferrals and keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "Commit reconciled packet 304 locally, then immediately select packet 305 from the next smallest complete Pending file groups. Keep packet 303's 33 and packet 304's 47 concrete deferrals open; preserve B209 genAsyncResumeInfo until its target-width table/emitter closure is ported and tested.",
+
+    "unresolvedConditionalCleanup": [
+      {
+        "batch": "conditional-cleanup-303-572aa772",
+        "deferredCount": 33,
+        "candidateLedger": "artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv"
+      },
+      {
+        "batch": "conditional-cleanup-304-7992524d",
+        "deferredCount": 47,
+        "candidateLedger": "artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv"
+      }
+    ],
 
     "activeBatch": {
-      "batch": "conditional-cleanup-303-572aa772",
-      "baselineCommit": "572aa7723d4c8f8316ee921ae730c9a33401c46b",
+      "batch": "conditional-cleanup-304-7992524d",
+      "baselineCommit": "7992524dc8025f96fe75ce284daf8923b4ec0c46",
       "sourceSnapshotCommit": "5a7c8fd5785e1672a08f25a771cabda0a0a112cb",
-      "scope": "302 candidate IDs across 103 complete source-file groups, ordered by pinned source_blob size (11,373-13,984 bytes); full source contexts are in artifacts\\conditional-cleanup\\batch-303-572aa772.",
+      "scope": "300 candidate IDs across 77 complete source-file groups, ordered by pinned source_blob size (14,004-16,281 bytes); full source contexts are in artifacts\\conditional-cleanup\\batch-304-7992524d.",
       "completionCondition": "Every selected ID has an evidence-backed Converted or concrete Deferred disposition; zero selected IDs remain Pending or Retained; every eligible selected guard and dependent surface is resolved and combined acceptance is met.",
       "validation": {
-        "core": "Full-analysis Core Debug/Release builds plus combined affected Core fixture selections in Debug/Release.",
-        "targets": "Combined affected Target fixture selections in Debug/Release for each affected target configuration; require nonempty executed coverage and record inapplicability/baseline outcomes. The linked win-x86 split-long-shift fixture passed 4/4 in Debug and Release."
+        "core": "Full-analysis Core Debug/Release builds plus one combined affected Core fixture selection per configuration.",
+        "targets": "Combined affected Target fixture selections in Debug/Release for each affected target configuration; require nonempty executed coverage and record inapplicability/baseline outcomes."
       },
       "deferrals": [
         {
-          "ids": ["CCB-0732", "CCB-0733", "CCB-0194", "CCB-0196"],
-          "prerequisite": "Loop diagnostics depend on Debug-only loop state and APIs, including Release-inaccessible NaturalLoopIterInfo.InitTree.",
-          "nextAction": "Close the loop-state/API declarations and callers using the approved external Debug-state approach, then run the focused loop fixtures in Debug and Release.",
-          "evidence": "Packet candidate branch contexts and verified Release API dependency; see artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv."
+          "ids": ["CCB-0107", "CCB-0262", "CCB-0265", "CCB-0266", "CCB-0267", "CCB-0269", "CCB-0272", "CCB-0274", "CCB-0276", "CCB-0277", "CCB-0279", "CCB-0280", "CCB-0281", "CCB-0282", "CCB-0977", "CCB-0978", "CCB-0979", "CCB-0980", "CCB-0981", "CCB-0982", "CCB-0984", "INV-89FD708CCA09", "INV-B15D39D3317E", "INV-B1D6BC6FF554"],
+          "prerequisite": "These candidates change optional statistics, measurement, dump, or DEBUG_EMIT behavior. The grouped G2 decision and an approved universal representation must precede conversion.",
+          "nextAction": "Obtain grouped G2 approval, establish approved runtime representations for the selected optional modes, then convert and validate each mode enabled and disabled in Debug and Release.",
+          "evidence": "Per-candidate mode and prerequisite details are in artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv; the G2 scope is in packet.json."
         },
         {
-          "ids": ["CGCOMMON-0044", "CGCOMMON-0049", "CGCOMMON-0050", "CGCOMMON-0051", "CGCOMMON-0052", "CGCOMMON-0055", "CGCOMMON-0056"],
-          "prerequisite": "Generation-phase references require Debug-only fields, parameters, or statistics state to become Release-bindable.",
-          "nextAction": "Resolve the missing API/state closure without adding Release diagnostic storage, then rerun full-analysis Core Debug/Release builds and the affected fixtures.",
-          "evidence": "Packet candidate branch contexts; CGCOMMON-0040 DISPLAY_SIZES and CGCOMMON-0054 TRACK_LSRA_STATS were separately converted using existing runtime predicates."
-        },
-        {
-          "ids": ["CCB-0136", "CCB-0129", "CCB-0739", "CCB-0760", "CCB-0761", "CCB-0765", "CCB-0131", "CCB-0134"],
-          "prerequisite": "Merge, funclet, debugger-display, timer, Swift argument-display, and GS diagnostic paths depend on Debug-only state or APIs.",
-          "nextAction": "Close each related state/API family with its callers, preserving Release layout and diagnostics, then run the owning fixtures in Debug and Release.",
-          "evidence": "Packet candidate branch contexts and per-ID dependency notes in artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv."
-        },
-        {
-          "ids": ["CGCOMMON-0041", "CCB-0116", "CCB-1235"],
-          "prerequisite": "DUMP_GC_TABLES decoder declarations, publication callers, types, and flowgraph dump APIs form one unresolved compile-time closure.",
-          "nextAction": "Resolve and validate the complete DUMP_GC_TABLES decoder/caller/type closure together before removing these guards.",
-          "evidence": "CGCOMMON-0041 guards dump publication, CCB-1235 guards the Jit32 decoder API, and CCB-0116 covers the related flowgraph dump boundary."
-        },
-        {
-          "ids": ["CCB-0910", "CCB-1057", "CCB-1058", "CCB-1062", "CCB-1052", "CCB-1063", "CCB-0963", "CCB-0964"],
-          "prerequisite": "Optional emitter modes require full navigation/layout, statistics, GC encoding, or DEBUG_EMIT behavior and caller closures; mode changes are not approved.",
-          "nextAction": "Resolve the required mode/API closures and obtain the applicable decision before conversion. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
-          "evidence": "Prior Sol G2 review and packet candidate branch contexts; see artifacts\\jit-analysis\\inventory\\conditional-compiler-packet-sol-review.csv."
-        },
-        {
-          "ids": ["CCB-1187"],
-          "prerequisite": "The xarch stack-output diagnostic depends on target-specific stack state without a complete Release-bindable closure.",
-          "nextAction": "Close the state/API dependency and validate xarch Debug/Release emission tests.",
-          "evidence": "Per-ID source and dependency notes in artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv."
-        },
-        {
-          "ids": ["INV-07F761183572", "INV-9061FD5671F1"],
-          "prerequisite": "The optional ARM64 SVE diagnostic test selection remains unsupported or unvalidated.",
-          "nextAction": "Enable and pass the supported ARM64 SVE selection, then reclassify the test diagnostic branches.",
-          "evidence": "Existing optional-SVE validation gap in this checkpoint and packet candidate branch contexts."
+          "ids": ["CCB-0103", "CCB-0124", "CCB-0137", "CCB-0261", "CCB-0286", "CCB-0741", "CCB-1066", "CCB-1067", "CCB-1068", "CGCOMMON-0111", "CGCOMMON-0122", "CGCOMMON-0125", "INV-287B697DCF60", "INV-37D55313015B", "INV-47FC6ADC4DDC", "INV-50B381D5AE6E", "INV-636059B59910", "INV-79F875AD1C3E", "INV-872C834DDD7A", "INV-9E8B7DD603E9", "INV-EBAA0A72FEC7", "INV-F9E8DDE28E64", "INV-FCBA51F20237"],
+          "prerequisite": "These candidates require specific Release-bindable Debug declarations, API, or state closures; candidate-level dependencies are recorded in the ledger.",
+          "nextAction": "Resolve each row's named declaration/state dependency across the verifier, emitter, LSRA, ValueNum, CodeGen diagnostic/test-hook, tree-flag, and disassembly configuration families; convert and validate the complete closures in Debug and Release.",
+          "evidence": "Exact symbols, branch contexts, and per-candidate next actions are recorded in artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv and branch-contexts.jsonl."
         }
       ],
+      "result": "Validated with 253 Converted and 47 concretely Deferred candidates; zero Pending or Retained.",
+      "acceptanceEvidence": "artifacts\\conditional-cleanup\\batch-304-7992524d\\validation\\batch-acceptance.json",
       "artifacts": {
-        "candidates": "artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv",
-        "files": "artifacts\\conditional-cleanup\\batch-303-572aa772\\files.json",
-        "branchContexts": "artifacts\\conditional-cleanup\\batch-303-572aa772\\branch-contexts.jsonl",
-        "validation": "artifacts\\conditional-cleanup\\batch-303-572aa772\\validation"
+        "candidates": "artifacts\\conditional-cleanup\\batch-304-7992524d\\candidates.csv",
+        "files": "artifacts\\conditional-cleanup\\batch-304-7992524d\\files.json",
+        "branchContexts": "artifacts\\conditional-cleanup\\batch-304-7992524d\\branch-contexts.jsonl",
+        "classificationPreflight": "artifacts\\conditional-cleanup\\batch-304-7992524d\\classification-preflight.json",
+        "validation": "artifacts\\conditional-cleanup\\batch-304-7992524d\\validation"
       }
     },
     "validationGaps": [

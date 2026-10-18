@@ -369,7 +369,6 @@ internal abstract class HashTableBase<TKey, TValue>
         return TryGetBucket(_keyInfo.GetHashCode(key), key, out _, out _);
     }
 
-#if DEBUG
     internal sealed class KeyValuePair
     {
         private readonly Bucket[]? _buckets;
@@ -471,7 +470,6 @@ internal abstract class HashTableBase<TKey, TValue>
     internal Iterator begin() => Iterator.Begin(this);
 
     internal Iterator end() => Iterator.End(this);
-#endif
 }
 
 internal sealed class HashTable<TKey, TValue> : HashTableBase<TKey, TValue>

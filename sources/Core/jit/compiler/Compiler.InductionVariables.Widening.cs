@@ -248,14 +248,15 @@ public partial class Compiler
                 JITDUMP("  Could not analyze header PHI\n");
                 continue;
             }
-#if DEBUG
-            JITDUMP("  => ");
-            if (verbose)
+            if (Configuration.DEBUG)
             {
-                scev.Dump(this);
+                JITDUMP("  => ");
+                if (verbose)
+                {
+                    scev.Dump(this);
+                }
+                JITDUMP("\n");
             }
-            JITDUMP("\n");
-#endif
             if (scev is not ScevAddRec addRec)
             {
                 JITDUMP("  Not an addrec\n");

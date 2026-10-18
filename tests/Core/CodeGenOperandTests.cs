@@ -329,15 +329,16 @@ internal static unsafe class CodeGenOperandTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DisassemblyRecordsSimdConstantOperands(bool immediate)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug disassembly.");
+
         WithCodeGen((compiler, codeGen) =>
         {
             var value = new GenTreeVecCon(TYP_SIMD16) { IsContained = true };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (immediate)
@@ -354,7 +355,6 @@ internal static unsafe class CodeGenOperandTests
             Assert.That(diagnostic, Does.Contain(immediate ? "pshufd" : "vpand"));
         });
     }
-#endif
 
     private static Emitter.dataSection Section(CodeGen codeGen)
         => codeGen.Emitter.emitConsDsc.dsdLast ?? throw new AssertionException("Missing constant data.");

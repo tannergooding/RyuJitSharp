@@ -37,12 +37,10 @@ public sealed partial class LinearScan
             ?? throw new FatalJitException("Block locations require an outgoing variable map.");
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVars,
             VarSetOps.Intersection(_compiler, _registerCandidateVars, currentBlock.bbLiveOut));
-#if DEBUG
         if (extendLifetimes())
         {
             VarSetOps.Assign(_compiler, ref _currentLiveVars, _registerCandidateVars);
         }
-#endif
         _ = VarSetOps.VisitBits(_compiler, _currentLiveVars, variableIndex =>
         {
             var interval = getIntervalForLocalVar(checked((uint)variableIndex));
@@ -96,13 +94,11 @@ public sealed partial class LinearScan
 
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVars,
             VarSetOps.Intersection(_compiler, _registerCandidateVars, currentBlock.bbLiveIn));
-#if DEBUG
         if (extendLifetimes())
         {
             VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVars, _registerCandidateVars);
         }
         var inactiveRegs = RBM_NONE;
-#endif
         var liveRegs = RBM_NONE;
         _ = VarSetOps.VisitBits(_compiler, _currentLiveVars, variableIndex =>
         {
@@ -144,10 +140,8 @@ public sealed partial class LinearScan
                 {
                     if (getVarReg(predecessorMap, trackedIndex) != REG_STK)
                     {
-#if DEBUG
                         assert((getVarReg(predecessorMap, trackedIndex) == targetReg) ||
                             ((_lsraStressMask & 0x300) == 0x200));
-#endif
                     }
                     else
                     {
@@ -196,9 +190,10 @@ public sealed partial class LinearScan
                     targetReg = interval.physReg;
                     interval.isActive = true;
                     liveRegs |= blockLiveRegMask(targetReg, interval.registerType);
-#if DEBUG
-                    inactiveRegs |= regMaskTP.CreateFromRegNum(targetReg, genSingleTypeRegMask(targetReg));
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        inactiveRegs |= regMaskTP.CreateFromRegNum(targetReg, genSingleTypeRegMask(targetReg));
+                    }
                     setVarReg(inMap, trackedIndex, targetReg);
                 }
                 else

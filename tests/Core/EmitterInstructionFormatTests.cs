@@ -166,11 +166,14 @@ internal static class EmitterInstructionFormatTests
     [TestCase(0x0F000000UL, false)]
     public static void LegacyMapOnePreservesTargetSpecificOpcodePacking(ulong code, bool amd64Result)
     {
-#if TARGET_AMD64
-        Assert.That(Emitter.IsLegacyMap1(code), Is.EqualTo(amd64Result));
-#else
-        Assert.That(Emitter.IsLegacyMap1(code), Is.False);
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Assert.That(Emitter.IsLegacyMap1(code), Is.EqualTo(amd64Result));
+        }
+        else
+        {
+            Assert.That(Emitter.IsLegacyMap1(code), Is.False);
+        }
     }
 
     [Test]
@@ -183,9 +186,10 @@ internal static class EmitterInstructionFormatTests
         Assert.That(IsSimdEvexEncodableInstruction(emitter, INS_addps), Is.True);
         Assert.That(IsSimdEvexEncodableInstruction(emitter, INS_add), Is.False);
         Assert.That(Emitter.IsApxZuCompatibleInstruction(INS_add), Is.False);
-#if TARGET_AMD64
-        Assert.That(Emitter.IsApxZuCompatibleInstruction(INS_seto_apx), Is.True);
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Assert.That(Emitter.IsApxZuCompatibleInstruction(INS_seto_apx), Is.True);
+        }
     }
 
     [TestCase(IF_NONE, ID_OP_NONE, IS_NONE)]
@@ -209,7 +213,6 @@ internal static class EmitterInstructionFormatTests
         Assert.That(Emitter.emitGetSchedInfo(format), Is.EqualTo(scheduling));
     }
 
-#if DEBUG && TARGET_XARCH
     [TestCase(IF_XARCH_RRW_SHF, false, false, false)]
     [TestCase(IF_XARCH_RWR_RRD_RRD_RRD, true, true, false)]
     [TestCase(IF_XARCH_MRW_RRW, false, false, true)]
@@ -217,6 +220,9 @@ internal static class EmitterInstructionFormatTests
     public static void SanityCheckAcceptsNativeRelocationOperandClasses(
         Emitter.insFormat format, bool largeConstant, bool constantRelocation, bool displacementRelocation)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_XARCH,
+            "This sanity-check test requires Debug xarch.");
+
         var descriptor = CreateDescriptor();
         descriptor.idInsFmt(format);
 
@@ -240,7 +246,6 @@ internal static class EmitterInstructionFormatTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsSanityCheck")]
     private static extern void CheckSanity(Emitter emitter, Emitter.instrDesc descriptor);
-#endif
 
     [Test]
     public static void EveryFormatRoundTripsWithoutChangingOtherDescriptorFieldsOrLogicalSizes()
@@ -333,17 +338,17 @@ internal static class EmitterInstructionFormatTests
         Assert.That(descriptor.idHasMemAndCns(), Is.EqualTo(expected));
     }
 
-#if !DEBUG
     [Test]
     public static void DescriptorFormatStorageRetainsTheNativeSevenBitTruncation()
     {
+        Assume.That(!TestConfiguration.IsDebug, "This storage test covers the Release descriptor layout.");
+
         var descriptor = CreateDescriptor();
         descriptor.idInsFmt((Emitter.insFormat)(0x180u | (uint)IF_XARCH_SWR_RRD));
 
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_XARCH_SWR_RRD));
         Assert.That(Emitter.emitGetSchedInfo(IF_XARCH_COUNT), Is.EqualTo(IS_NONE));
     }
-#endif
 
     private static Emitter CreateEmitter()
     {

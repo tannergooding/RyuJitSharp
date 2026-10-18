@@ -1,29 +1,30 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if !TARGET_WASM
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoOptions;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
-#if TARGET_AMD64 && SWIFT_SUPPORT
 using System.Linq;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class CodeGenParameterHomingClosureTests
 {
+    [SetUp]
+    public static void RequireSupportedTarget()
+    {
+        Assume.That(!Configuration.TARGET_WASM, "This fixture is not supported on WebAssembly.");
+    }
+
     [Test]
     public static void GraphLookupDoesNotCreateNodesAndPreservesRegisterIdentity()
     {
@@ -47,13 +48,14 @@ internal static unsafe class CodeGenParameterHomingClosureTests
         Assert.That(getOrAdd.Invoke(graph, [REG_INTRET]), Is.SameAs(integerNode));
     }
 
-#if DEBUG
     [TestCase(0u, "")]
     [TestCase(8u, " (offset: 8)")]
     [TestCase(0x80000000u, " (offset: -2147483648)")]
     [TestCase(uint.MaxValue, " (offset: -1)")]
     public static void GraphDumpRetainsNativeSignedOffsetText(uint offset, string offsetText)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug diagnostics.");
+
         var graphType = typeof(CodeGen).GetNestedType("RegGraph", BindingFlags.NonPublic)
             ?? throw new AssertionException("Missing parameter homing graph.");
         var graph = Activator.CreateInstance(graphType, nonPublic: true)
@@ -90,9 +92,7 @@ internal static unsafe class CodeGenParameterHomingClosureTests
             s_jitstdout = previous;
         }
     }
-#endif
 
-#if TARGET_LOONGARCH64
     [TestCase(long.MinValue, false)]
     [TestCase(-2049L, false)]
     [TestCase(-2048L, true)]
@@ -102,9 +102,10 @@ internal static unsafe class CodeGenParameterHomingClosureTests
     [TestCase(long.MaxValue, false)]
     public static void SignedTwelveBitImmediateUsesInclusiveLowerAndExclusiveUpperBound(long value, bool expected)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64, "This test requires LoongArch64.");
+
         Assert.That(Emitter.isValidSimm12(unchecked((nint)value)), Is.EqualTo(expected));
     }
-#endif
 
     [TestCase(1, false)]
     [TestCase(2, false)]
@@ -122,11 +123,14 @@ internal static unsafe class CodeGenParameterHomingClosureTests
             var expected = segment.GetRegisterType();
             if (!swift)
             {
-#if TARGET_ARM64
-                expected = TYP_I_IMPL;
-#elif TARGET_XARCH
-                expected = expected.ActualType;
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    expected = TYP_I_IMPL;
+                }
+                else if (Configuration.TARGET_XARCH)
+                {
+                    expected = expected.ActualType;
+                }
             }
 
             Assert.That(codeGen.genParamStackType(in descriptor, in segment), Is.EqualTo(expected));
@@ -145,14 +149,21 @@ internal static unsafe class CodeGenParameterHomingClosureTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.RegSet.rsSetRegsModified(modified);
             codeGen.RegSet.rsMaskResvd = reserveIncoming ? incoming : RBM_NONE;
-#if HAS_MORE_THAN_64_REGISTERS
-            var trash = new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH,
-                codeGen.SRBM_MSK_CALLEE_TRASH);
-#elif TARGET_XARCH
-            var trash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH | SRBM_MSK_CALLEE_TRASH);
-#else
-            var trash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
-#endif
+            regMaskTP trash;
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                trash = new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH,
+                    codeGen.SRBM_MSK_CALLEE_TRASH);
+            }
+            else if (Configuration.TARGET_XARCH)
+            {
+                trash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH |
+                    codeGen.SRBM_MSK_CALLEE_TRASH);
+            }
+            else
+            {
+                trash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
+            }
             var expected = (trash | incoming | modified) & ~codeGen.RegSet.rsMaskResvd;
 
             Assert.That(codeGen.genGetParameterHomingTempRegisterCandidates(), Is.EqualTo(expected));
@@ -221,10 +232,12 @@ internal static unsafe class CodeGenParameterHomingClosureTests
         });
     }
 
-#if !TARGET_RISCV64 && !TARGET_LOONGARCH64
     [Test]
     public static void PlatformsWithContiguousArgumentHomesRetainTheEmptySplitHomingBody()
     {
+        Assume.That(!Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64,
+            "This test covers targets with contiguous argument homes.");
+
         var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
         var zeroed = true;
 
@@ -232,10 +245,7 @@ internal static unsafe class CodeGenParameterHomingClosureTests
 
         Assert.That(zeroed, Is.True);
     }
-#endif
 
-#if TARGET_AMD64 && SWIFT_SUPPORT
-#if !UNIX_AMD64_ABI
     [TestCase(true, true, true)]
     [TestCase(false, true, true)]
     [TestCase(true, false, true)]
@@ -243,6 +253,9 @@ internal static unsafe class CodeGenParameterHomingClosureTests
     public static void SwiftReassemblyRunsOnlyInTheFirstBlockWithMixedSwiftSegments(
         bool firstBlock, bool split, bool swift)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT && !Configuration.UNIX_AMD64_ABI,
+            "This test requires Swift support on non-Unix AMD64.");
+
         CodeGenBlockDriverTests.WithDriver((compiler, codeGen) =>
         {
             var blocks = CodeGenBlockDriverTests.Blocks(compiler,
@@ -279,18 +292,23 @@ internal static unsafe class CodeGenParameterHomingClosureTests
             }
         });
     }
-#endif
 
     [TestCase(0, true)]
     [TestCase(1, false)]
     [TestCase(2, false)]
     [TestCase(3, false)]
     [TestCase(4, false)]
-#if FEATURE_IMPLICIT_BYREFS
     [TestCase(5, false)]
-#endif
     public static void SwiftHomingReassemblesOnlyEligibleStructStackSegments(int excludedKind, bool expectHome)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT,
+            "This test requires Swift calling-convention support on AMD64.");
+        if (excludedKind == 5)
+        {
+            Assume.That(Configuration.FEATURE_IMPLICIT_BYREFS,
+                "This case requires implicit by-reference arguments.");
+        }
+
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
         {
             compiler.info.compCallConv = CorInfoCallConvExtension.Swift;
@@ -310,9 +328,10 @@ internal static unsafe class CodeGenParameterHomingClosureTests
                 compiler.lvaTable[0].Layout = new ClassLayout(16);
             }
             compiler.lvaTable[0].StackOffset = -16;
-#if FEATURE_IMPLICIT_BYREFS
-            compiler.lvaTable[0].IsImplicitByRef = excludedKind == 5;
-#endif
+            if (Configuration.FEATURE_IMPLICIT_BYREFS)
+            {
+                compiler.lvaTable[0].IsImplicitByRef = excludedKind == 5;
+            }
             compiler.lvaParameterPassingInfo = [
                 AbiPassingInformation.FromSegments(compiler,
                     AbiPassingSegment.InRegister(REG_RCX, 0, 8), AbiPassingSegment.OnStack(24, 8, 3)),
@@ -332,8 +351,6 @@ internal static unsafe class CodeGenParameterHomingClosureTests
             }
         });
     }
-#endif
-
     private static void WithCompiler(Action<Compiler, CodeGen> action)
     {
         using var tls = TestConfiguration.CreateJitTls();
@@ -346,20 +363,22 @@ internal static unsafe class CodeGenParameterHomingClosureTests
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compIsStatic = true;
         compiler.info.compTypeCtxtArg = BAD_VAR_NUM;
-#if SWIFT_SUPPORT
-        compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
-#endif
+        if (Configuration.SWIFT_SUPPORT)
+        {
+            compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
+        }
         JitTls.Compiler = compiler;
         try
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
-#if TARGET_AMD64
-            compiler.srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
-            compiler.srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;
-            compiler.srbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH_INIT;
-            codeGen.CopyRegisterInfo();
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                compiler.srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
+                compiler.srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;
+                compiler.srbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH_INIT;
+                codeGen.CopyRegisterInfo();
+            }
             CurrentGroup(codeGen.Emitter) = new insGroup { igFlags = InsGroupFlags.Prolog };
             action(compiler, codeGen);
         }
@@ -377,4 +396,3 @@ internal static unsafe class CodeGenParameterHomingClosureTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
     private static extern ref int CurrentInstructionCount(Emitter emitter);
 }
-#endif

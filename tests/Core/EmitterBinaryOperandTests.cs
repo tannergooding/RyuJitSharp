@@ -290,10 +290,11 @@ internal static class EmitterBinaryOperandTests
         }, minopts);
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsBinarySpillOwnershipOnce()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug diagnostic recording.");
+
         WithCodeGen((compiler, codeGen) =>
         {
             PrepareTemps(codeGen, 1);
@@ -303,7 +304,7 @@ internal static class EmitterBinaryOperandTests
             src.Flags |= GTF_NOREG_AT_USE;
             src.IsRegOptional = true;
             var dst = Register(compiler, REG_X64_RCX);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src));
@@ -311,7 +312,6 @@ internal static class EmitterBinaryOperandTests
             Assert.That(diagnostic, Does.Contain("add"));
         });
     }
-#endif
 
     private static GenTreeIntCon Register(Compiler compiler, regNumber reg)
     {

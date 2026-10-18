@@ -2,10 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
@@ -101,10 +99,12 @@ internal static unsafe class RegisterTrackingTests
         });
     }
 
-#if TARGET_AMD64 && FEATURE_MASKED_HW_INTRINSICS
     [Test]
     public static void LocalRegisterMaskPreservesVectorAndMaskRegisterBanks()
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.FEATURE_MASKED_HW_INTRINSICS,
+            "This test requires AMD64 masked hardware intrinsics.");
+
         WithCompiler(minOpts: true, (compiler, codeGen) => {
             compiler.lvaTable = [
                 new() { Type = TYP_SIMD16, lvLRACandidate = true, RegNum = REG_X64_XMM31 },
@@ -116,7 +116,6 @@ internal static unsafe class RegisterTrackingTests
             Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[1]), Is.EqualTo(RBM_K1));
         });
     }
-#endif
 
     [Test]
     public static void GcRegisterStatePreservesLiveVariablesAndReclassifiesReferences()
@@ -185,10 +184,11 @@ internal static unsafe class RegisterTrackingTests
             Assert.That(codeGen.Emitter.emitRegName(reg, attr, varName: false), Is.EqualTo(expected)));
     }
 
-#if DEBUG
     [Test]
     public static void GcRegisterDiagnosticsPreserveTransitionsAndForcedUnchangedOutput()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug GC diagnostics.");
+
         WithCompiler(minOpts: true, (compiler, codeGen) => {
             TestConfiguration.EnableVerbose(compiler);
             using var stream = new MemoryStream();
@@ -215,7 +215,6 @@ internal static unsafe class RegisterTrackingTests
                 $"{indent}Byref regs: (unchanged) 0001 {{rax}}{Environment.NewLine}"));
         });
     }
-#endif
 
     [TestCase(TYP_INT)]
     [TestCase(TYP_LONG)]
@@ -223,20 +222,27 @@ internal static unsafe class RegisterTrackingTests
     [TestCase(TYP_BYREF)]
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
-#if FEATURE_SIMD
     [TestCase(TYP_SIMD16)]
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK)]
-#endif
     public static void TypeSelectsTheNativeRegisterMaskBankWithoutFiltering(var_types type)
     {
+        if (type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64)
+        {
+            Assume.That(Configuration.FEATURE_SIMD, "SIMD register types require SIMD support.");
+        }
+        else if (type == TYP_MASK)
+        {
+            Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
+                "Mask register types require masked hardware intrinsics.");
+        }
+
         var mask = new regMaskTP(SRBM_X64_RAX | SRBM_XMM6);
-#if FEATURE_MASKED_HW_INTRINSICS
-        mask |= regMaskTP.CreateFromRegNum(REG_X64_K1, genSingleTypeRegMask(REG_X64_K1));
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            mask |= regMaskTP.CreateFromRegNum(REG_X64_K1, genSingleTypeRegMask(REG_X64_K1));
+        }
         var expected = varTypeIsMask(type) ? mask.MskRegSet : mask.Lower;
 
         Assert.That(mask.GetRegSetForType(type), Is.EqualTo(expected));

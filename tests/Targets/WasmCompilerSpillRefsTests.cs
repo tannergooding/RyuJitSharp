@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -207,10 +206,8 @@ internal static unsafe class WasmCompilerSpillRefsTests
         WithCompiler([TYP_I_IMPL], compiler =>
         {
             compiler.fgNodeThreading = NodeThreading.LIR;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 
             var root = BasicBlock.New(compiler, BBJ_RETURN);
             root.MakeLir(null, null);
@@ -277,6 +274,11 @@ internal static unsafe class WasmCompilerSpillRefsTests
 
     private static void WithCompiler(var_types[] types, Action<Compiler> action)
     {
+        if (!Configuration.TARGET_WASM)
+        {
+            Assert.Ignore("This fixture exercises WebAssembly-specific compiler phases.");
+        }
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -306,4 +308,3 @@ internal static unsafe class WasmCompilerSpillRefsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_pLowering")]
     private static extern ref Lowering? CurrentLowering(Compiler compiler);
 }
-#endif

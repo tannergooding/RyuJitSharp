@@ -25,8 +25,7 @@ public partial class Compiler
 
         Emitter.emitDone();
 
-#if DEBUG
-        if (JitConfig.JitInlineDumpXmlFile is not null)
+        if (Configuration.DEBUG && JitConfig.JitInlineDumpXmlFile is not null)
         {
             var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(JitConfig.JitInlineDumpXmlFile));
             using var file = OpenJitOutputFile(path);
@@ -40,7 +39,6 @@ public partial class Compiler
                 InlineStrategy.FinalizeXml();
             }
         }
-#endif
 
         if ((Configuration.DEBUG ||
                 Configuration.MEASURE_NODE_SIZE ||
@@ -283,9 +281,7 @@ public partial class Compiler
         }
 
 #if LOOP_HOIST_STATS
-#if DEBUG
-        if (JitConfig.DisplayLoopHoistStats != 0)
-#endif
+        if (!Configuration.DEBUG || (JitConfig.DisplayLoopHoistStats != 0))
         {
             PrintAggregateLoopHoistStats(jitstdout());
         }

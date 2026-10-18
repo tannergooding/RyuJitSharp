@@ -29,37 +29,38 @@ public partial class Compiler
         var calleeArgStackSize = callee.Args.OutgoingArgsStackSize;
         var callerArgStackSize = roundUp(lvaParameterStackSize, Configuration.TARGET_POINTER_SIZE);
 
-#if !DEBUG
-        static
-#endif
-        void ReportFastTailCallDecision(string? reason, out string? result)
+        static void ReportFastTailCallDecision(Compiler compiler, GenTreeCall callee,
+            int callerArgStackSize, int calleeArgStackSize, string? reason, out string? result)
         {
             result = reason;
-#if DEBUG
-            if (JitConfig.JitReportFastTailCallDecisions == 1)
+            if (Configuration.DEBUG)
             {
-                var methodName = callee._callType is CT_INDIRECT ? "IndirectCall" : eeGetMethodFullName(callee._callMethHnd);
-                jitprintf($"[Fast tailcall decision]: Caller: {info.compFullName}\n" +
-                    $"[Fast tailcall decision]: Callee: {methodName} -- Decision: ");
-                if (reason is null)
+                if (JitConfig.JitReportFastTailCallDecisions == 1)
                 {
-                    jitprintf("Will fast tailcall");
+                    var methodName = callee._callType is CT_INDIRECT
+                        ? "IndirectCall"
+                        : compiler.eeGetMethodFullName(callee._callMethHnd);
+                    jitprintf($"[Fast tailcall decision]: Caller: {compiler.info.compFullName}\n" +
+                        $"[Fast tailcall decision]: Callee: {methodName} -- Decision: ");
+                    if (reason is null)
+                    {
+                        jitprintf("Will fast tailcall");
+                    }
+                    else
+                    {
+                        jitprintf($"Will not fast tailcall ({reason})");
+                    }
+                    jitprintf($" (CallerArgStackSize: {callerArgStackSize}, CalleeArgStackSize: {calleeArgStackSize})\n\n");
+                }
+                else if (reason is null)
+                {
+                    JITDUMP("[Fast tailcall decision]: Will fast tailcall\n");
                 }
                 else
                 {
-                    jitprintf($"Will not fast tailcall ({reason})");
+                    JITDUMP($"[Fast tailcall decision]: Will not fast tailcall ({reason})\n");
                 }
-                jitprintf($" (CallerArgStackSize: {callerArgStackSize}, CalleeArgStackSize: {calleeArgStackSize})\n\n");
             }
-            else if (reason is null)
-            {
-                JITDUMP("[Fast tailcall decision]: Will fast tailcall\n");
-            }
-            else
-            {
-                JITDUMP($"[Fast tailcall decision]: Will not fast tailcall ({reason})\n");
-            }
-#endif
         }
 
         if (Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
@@ -68,8 +69,8 @@ public partial class Compiler
             {
                 if (argument.AbiInfo.IsSplitAcrossRegistersAndStack)
                 {
-                    ReportFastTailCallDecision("Argument splitting in callee is not supported on " + TARGET_READABLE_NAME,
-                        out failReason);
+                    ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                        "Argument splitting in callee is not supported on " + TARGET_READABLE_NAME, out failReason);
                     return false;
                 }
             }
@@ -79,8 +80,8 @@ public partial class Compiler
                 var abiInfo = lvaGetParameterAbiInfo(localNumber);
                 if (abiInfo.IsSplitAcrossRegistersAndStack)
                 {
-                    ReportFastTailCallDecision("Argument splitting in caller is not supported on " + TARGET_READABLE_NAME,
-                        out failReason);
+                    ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                        "Argument splitting in caller is not supported on " + TARGET_READABLE_NAME, out failReason);
                     return false;
                 }
             }
@@ -90,59 +91,67 @@ public partial class Compiler
         {
             if (compIsProfilerHookNeeded)
             {
-                ReportFastTailCallDecision("Profiler is not supported on ARM32", out failReason);
+                ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                    "Profiler is not supported on ARM32", out failReason);
                 return false;
             }
 
             // ARM32's only non-parameter volatile register is needed for the cookie check.
             if (NeedsGSSecurityCookie)
             {
-                ReportFastTailCallDecision("Not enough registers available due to the GS security cookie check", out failReason);
+                ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                    "Not enough registers available due to the GS security cookie check", out failReason);
                 return false;
             }
         }
 
         if (!opts.compFastTailCalls)
         {
-            ReportFastTailCallDecision("Configuration doesn't allow fast tail calls", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Configuration doesn't allow fast tail calls", out failReason);
             return false;
         }
 
         if (callee.IsStressTailCall)
         {
-            ReportFastTailCallDecision("Fast tail calls are not performed under tail call stress", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Fast tail calls are not performed under tail call stress", out failReason);
             return false;
         }
 
         if (Configuration.TARGET_ARM && (callee.IsR2RRelativeIndir || callee.HasNonStandardAddedArgs(this)))
         {
-            ReportFastTailCallDecision("Method with non-standard args passed in callee saved register cannot be tail called",
-                out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Method with non-standard args passed in callee saved register cannot be tail called", out failReason);
             return false;
         }
         // A vararg caller guarantees space for its fixed arguments, but Windows ARM
         // varargs still require argument shuffling that fast tail calls do not support.
         if (TargetOS.IsWindows && TargetArchitecture.IsArmArch && (info.compIsVarArgs || callee.Args.IsVarArgs))
         {
-            ReportFastTailCallDecision("Fast tail calls with varargs not supported on Windows ARM/ARM64", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Fast tail calls with varargs not supported on Windows ARM/ARM64", out failReason);
             return false;
         }
 
         if (compLocallocUsed)
         {
-            ReportFastTailCallDecision("Localloc used", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Localloc used", out failReason);
             return false;
         }
 
         if (info.compHasNextCallRetAddr)
         {
-            ReportFastTailCallDecision("Uses NextCallReturnAddress intrinsic", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Uses NextCallReturnAddress intrinsic", out failReason);
             return false;
         }
 
         if (callee.Args.HasRetBuffer && (info.compRetBuffArg == BAD_VAR_NUM))
         {
-            ReportFastTailCallDecision("Callee has RetBuf but caller does not.", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Callee has RetBuf but caller does not.", out failReason);
             return false;
         }
 
@@ -150,16 +159,18 @@ public partial class Compiler
         // match because argument setup is non-interruptible. Wasm uses fresh locals.
         if (!Configuration.TARGET_WASM && (calleeArgStackSize > callerArgStackSize))
         {
-            ReportFastTailCallDecision("Not enough incoming arg space", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Not enough incoming arg space", out failReason);
             return false;
         }
         if (fgCallHasMustCopyByrefParameter(callee))
         {
-            ReportFastTailCallDecision("Callee has a byref parameter", out failReason);
+            ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize,
+                "Callee has a byref parameter", out failReason);
             return false;
         }
 
-        ReportFastTailCallDecision(null, out failReason);
+        ReportFastTailCallDecision(this, callee, callerArgStackSize, calleeArgStackSize, null, out failReason);
         return true;
     }
 
@@ -329,11 +340,12 @@ public partial class Compiler
                     if (firstField.lvParentLcl != localNumber)
                     {
                         // Undone implicit-byref promotion no longer uses this copy.
-#if DEBUG
-                        ref var parameter = ref lvaGetDesc(firstField.lvParentLcl);
-                        assert(parameter.IsImplicitByRef && !parameter.lvPromoted);
-                        assert(parameter.lvFieldLclStart == localNumber);
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            ref var parameter = ref lvaGetDesc(firstField.lvParentLcl);
+                            assert(parameter.IsImplicitByRef && !parameter.lvPromoted);
+                            assert(parameter.lvFieldLclStart == localNumber);
+                        }
                         continue;
                     }
                 }

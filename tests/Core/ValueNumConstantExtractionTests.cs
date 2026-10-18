@@ -2,14 +2,10 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#if DEBUG
 using static RyuJitSharp.var_types;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -72,13 +68,16 @@ internal static unsafe class ValueNumConstantExtractionTests
             Assert.That(s_assertions, Is.Zero, s_lastAssertion);
 
             Assert.That(store.ConstantValue<int>(handle), Is.EqualTo(unchecked((int)value)));
-#if DEBUG && HOST_WINDOWS
-            Assert.That(s_assertions,
-                Is.EqualTo((flags == GTF_ICON_OBJ_HDL) && (nuint.Size != sizeof(int)) ? 1 : 0),
-                s_lastAssertion);
-#else
-            Assert.That(s_assertions, Is.Zero, s_lastAssertion);
-#endif
+            if (TestConfiguration.IsDebug && Configuration.HOST_WINDOWS)
+            {
+                Assert.That(s_assertions,
+                    Is.EqualTo((flags == GTF_ICON_OBJ_HDL) && (nuint.Size != sizeof(int)) ? 1 : 0),
+                    s_lastAssertion);
+            }
+            else
+            {
+                Assert.That(s_assertions, Is.Zero, s_lastAssertion);
+            }
         });
     }
 
@@ -245,11 +244,12 @@ internal static unsafe class ValueNumConstantExtractionTests
         });
     }
 
-#if DEBUG
-#if HOST_WINDOWS
     [Test]
     public static void PointerDestinationDiagnosticRejectsSameSizedFloatingTypes()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.HOST_WINDOWS,
+            "This diagnostic test requires Debug on Windows.");
+
         WithStore(store =>
         {
             var byref = store.VNForByrefCon(1);
@@ -266,11 +266,12 @@ internal static unsafe class ValueNumConstantExtractionTests
             Assert.That(s_lastAssertion, Does.Contain("typeof(T) == typeof(nuint)"));
         });
     }
-#endif
 
     [Test]
     public static void StrictStorageWidthAssertionNeverReadsBeyondAnElementWhenTheHandlerContinues()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug value-number assertions.");
+
         WithStore(store =>
         {
             var vn = store.VNForFloatCon(1.75f);
@@ -295,6 +296,8 @@ internal static unsafe class ValueNumConstantExtractionTests
     public static void StrictDiagnosticsCompareReinterpretationWithCoercion(
         var_types type, long bits, int expectedAssertions)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug value-number assertions.");
+
         WithStore(store =>
         {
             switch (type)
@@ -344,16 +347,13 @@ internal static unsafe class ValueNumConstantExtractionTests
             }
         });
     }
-#endif
 
     private static void WithStore(Action<ValueNumStore> action)
     {
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&ee);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -373,7 +373,6 @@ internal static unsafe class ValueNumConstantExtractionTests
         }
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
     {
@@ -381,7 +380,6 @@ internal static unsafe class ValueNumConstantExtractionTests
         s_lastAssertion = Marshal.PtrToStringUTF8((nint)expression);
         return 0;
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEnableNoWayAssert")]
     private static extern ref int EnableNoWayAssert(ref JitConfigValues config);

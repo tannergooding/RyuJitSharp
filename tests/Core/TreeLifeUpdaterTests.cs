@@ -2,10 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.GenTreeFlags;
@@ -265,10 +263,11 @@ internal static unsafe class TreeLifeUpdaterTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DiagnosticsReportIndependentSnapshotsOfLocalAndGcLiveness()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug liveness diagnostics.");
+
         WithCompiler((compiler, _) =>
         {
             var tree = compiler.gtNewLclvNode(TYP_REF, 0);
@@ -295,7 +294,6 @@ internal static unsafe class TreeLifeUpdaterTests
                 $"{indent}GC vars after [{tree.TreeId:D6}]: {{}} => {{V00}}{Environment.NewLine}"));
         });
     }
-#endif
 
     private static void WithCompiler(Action<Compiler, CodeGen> action)
     {

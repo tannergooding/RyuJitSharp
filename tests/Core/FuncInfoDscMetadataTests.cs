@@ -3,14 +3,10 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if FEATURE_CFI_SUPPORT || DEBUG
 using System.Runtime.InteropServices;
-#endif
-#if TARGET_WASM && DEBUG
 using System.IO;
 using System.Text;
 using static RyuJitSharp.Globals;
-#endif
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -62,15 +58,16 @@ internal static class FuncInfoDscMetadataTests
         Assert.That(Unsafe.AreSame(in descriptor, in compiler.compFuncInfos[2]), Is.True);
     }
 
-#if DEBUG
     [Test]
     public static unsafe void LogicalUpperBoundIsExclusiveAndRetainsContinuingEeBehavior()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug assertions.");
+
         var compiler = NewCompilerWithDescriptors();
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &ContinueMetadataAssertion;
         var context = new MetadataAssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-        using var tls = new JitTls(&context.JitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
 
         Assert.That(compiler.compFuncInfos[4].GetFuncletIdx(compiler), Is.EqualTo(4u));
         Assert.That(context.Assertions, Is.EqualTo(1));
@@ -89,7 +86,6 @@ internal static class FuncInfoDscMetadataTests
         context->Assertions++;
         return 0;
     }
-#endif
 
     private static Compiler NewCompilerWithDescriptors()
     {
@@ -108,16 +104,11 @@ internal static class FuncInfoDscMetadataTests
         compiler.eeInfo.targetAbi = nativeAot
             ? CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI
             : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
-#if FEATURE_CFI_SUPPORT
-        var expected = TargetOS.IsUnix && nativeAot;
-#else
-        var expected = false;
-#endif
+        var expected = Configuration.FEATURE_CFI_SUPPORT && TargetOS.IsUnix && nativeAot;
 
         Assert.That(compiler.generateCFIUnwindCodes(), Is.EqualTo(expected));
     }
 
-#if FEATURE_CFI_SUPPORT
     [StructLayout(LayoutKind.Sequential)]
     private struct CfiAlignmentProbe
     {
@@ -129,6 +120,8 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void EmbeddedCfiRecordRetainsFourByteAlignment()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "This test requires CFI support.");
+
         var probe = new CfiAlignmentProbe { Prefix = 1, Code = new CFI_CODE(2, 3, 4, 5), Suffix = 6 };
 
         Assert.That(Unsafe.ByteOffset(in probe.Prefix, in Unsafe.As<CFI_CODE, byte>(ref probe.Code)), Is.EqualTo((nint)4));
@@ -141,6 +134,8 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void CfiRecordRestoresThePublishedEightByteLayout()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "This test requires CFI support.");
+
         Assert.That(Unsafe.SizeOf<CFI_CODE>(), Is.EqualTo(8));
         Assert.That(Marshal.SizeOf<CFI_CODE>(), Is.EqualTo(8));
         Assert.That(Marshal.OffsetOf<CFI_CODE>(nameof(CFI_CODE.CodeOffset)), Is.EqualTo((nint)0));
@@ -149,10 +144,12 @@ internal static class FuncInfoDscMetadataTests
         Assert.That(Marshal.OffsetOf<CFI_CODE>(nameof(CFI_CODE.Offset)), Is.EqualTo((nint)4));
     }
 
-#if TARGET_RISCV64
     [Test]
     public static void RiscvDwarfRegistersUseTheirNativeOrdinalRange()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT && Configuration.TARGET_RISCV64,
+            "This test requires RISC-V64 CFI support.");
+
         for (var value = (int)regNumber.REG_RISCV64_R0; value <= (int)regNumber.REG_RISCV64_FT11; value++)
         {
             Assert.That(MapRiscvDwarfRegister(null, (regNumber)value), Is.EqualTo((short)value));
@@ -161,7 +158,6 @@ internal static class FuncInfoDscMetadataTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MapCfiRegNumToDwarfReg")]
     private static extern short MapRiscvDwarfRegister(Compiler? compiler, regNumber reg);
-#endif
 
     [TestCase((byte)0, (byte)0, (short)-1, 0)]
     [TestCase(byte.MaxValue, (byte)1, short.MinValue, int.MinValue)]
@@ -171,6 +167,8 @@ internal static class FuncInfoDscMetadataTests
     [TestCase(byte.MaxValue, byte.MaxValue, short.MinValue, int.MaxValue)]
     public static void CfiConstructorPreservesAllNativeFields(byte codeOffset, byte opcode, short register, int offset)
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "This test requires CFI support.");
+
         var code = new CFI_CODE(codeOffset, opcode, register, offset);
 
         Assert.That(code.CodeOffset, Is.EqualTo(codeOffset));
@@ -182,6 +180,8 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void CfiVectorReferenceRetainsItsAliasAcrossMetadataCopies()
     {
+        Assume.That(Configuration.FEATURE_CFI_SUPPORT, "This test requires CFI support.");
+
         var descriptor = new FuncInfoDsc
         {
             cfiCodes = [new CFI_CODE(1, 2, -1, 4)],
@@ -190,12 +190,12 @@ internal static class FuncInfoDscMetadataTests
 
         Assert.That(copy.cfiCodes, Is.SameAs(descriptor.cfiCodes));
     }
-#endif
 
-#if TARGET_WASM
     [Test]
     public static void WasmValueTypePreservesTheUnsignedOrdinalsAndPointerAlias()
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         Assert.That(Enum.GetUnderlyingType(typeof(WasmValueType)), Is.EqualTo(typeof(uint)));
         WasmValueType[] types =
         [
@@ -208,16 +208,15 @@ internal static class FuncInfoDscMetadataTests
         }
 
         Assert.That(WasmValueType.First, Is.EqualTo(WasmValueType.I32));
-#if TARGET_64BIT
-        Assert.That(WasmValueType.I, Is.EqualTo(WasmValueType.I64));
-#else
-        Assert.That(WasmValueType.I, Is.EqualTo(WasmValueType.I32));
-#endif
+        Assert.That(WasmValueType.I, Is.EqualTo(
+            Configuration.TARGET_64BIT ? WasmValueType.I64 : WasmValueType.I32));
     }
 
     [Test]
     public static void WasmExceptionIndexDefaultIsPreservedForEveryClrCreationForm()
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         FuncInfoDsc descriptor = default;
         var constructed = new FuncInfoDsc();
         var descriptors = new FuncInfoDsc[1];
@@ -232,6 +231,8 @@ internal static class FuncInfoDscMetadataTests
     [TestCase(uint.MaxValue)]
     public static void WasmExceptionIndexPreservesTheFullUnsignedDomain(uint index)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         var descriptor = new FuncInfoDsc { funWasmExnRefLocalIndex = index };
         var copy = descriptor;
 
@@ -242,6 +243,8 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void WasmMetadataPreservesUnsignedFieldsAndDeclarationAliases()
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         var descriptor = new FuncInfoDsc
         {
             funWasmFrameSize = uint.MaxValue,
@@ -262,28 +265,30 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static unsafe void UnwindableMarkerDoesNotEvaluateTheIndexWhenTraceIsDisabled()
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the WebAssembly target.");
+
         var compiler = NewCompilerWithDescriptors();
         var descriptor = new FuncInfoDsc();
         ICorJitInfo jitInfo = default;
         using var tls = TestConfiguration.CreateJitTlsWithCompiler(compiler, &jitInfo);
-#if DEBUG
-        compiler.verbose = false;
-#endif
+        TestConfiguration.SetVerbose(compiler, false);
         descriptor.ensureUnwindableFrame(compiler);
         descriptor.ensureUnwindableFrame(compiler);
 
         Assert.That(descriptor.needsUnwindableFrame, Is.True);
     }
 
-#if DEBUG
     [Test]
     public static unsafe void UnwindableTraceObservesTheUnchangedMarkerBeforeTheWrite()
     {
+        Assume.That(Configuration.TARGET_WASM && TestConfiguration.IsDebug,
+            "This test requires Debug WebAssembly diagnostics.");
+
         var compiler = NewCompilerWithDescriptors();
         compiler.compFuncInfos[1].funKind = FuncKind.FUNC_HANDLER;
         TestConfiguration.EnableVerbose(compiler);
         ICorJitInfo jitInfo = default;
-        using var tls = new JitTls(&jitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         JitTls.Compiler = compiler;
         var stdout = s_jitstdout;
         var logFailed = LogToEeFailed();
@@ -333,13 +338,14 @@ internal static class FuncInfoDscMetadataTests
             base.Write(value);
         }
     }
-#endif
-#endif
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     [Test]
     public static void UnwindConstructionStartsWithoutAnEmitterLocation()
     {
+        Assume.That(
+            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "This test requires ARM, LoongArch64, or RISC-V64.");
+
         var unwindInfo = new UnwindInfo();
 
         Assert.That(unwindInfo.GetCurrentEmitterLocation(), Is.Null);
@@ -348,6 +354,10 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void UnwindReadRequiresStateOwnedByTheDescriptor()
     {
+        Assume.That(
+            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "This test requires ARM, LoongArch64, or RISC-V64.");
+
         FuncInfoDsc descriptor = default;
         var exception = Assert.Throws<InvalidOperationException>(() => _ = descriptor.GetUnwindInfo());
         Assert.That(exception, Is.Not.Null);
@@ -357,6 +367,10 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void HotUnwindInfoPersistsOnItsOwningArrayDescriptor()
     {
+        Assume.That(
+            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "This test requires ARM, LoongArch64, or RISC-V64.");
+
         var compiler = NewCompilerWithDescriptors();
         ref var descriptor = ref compiler.compFuncInfos[2];
         descriptor.uwi = new UnwindInfo();
@@ -374,6 +388,10 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void ColdUnwindReferenceRetainsSeparateOwnershipAndInvalidLocation()
     {
+        Assume.That(
+            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "This test requires ARM, LoongArch64, or RISC-V64.");
+
         var cold = new UnwindInfo();
         var descriptor = new FuncInfoDsc { uwiCold = cold };
         var copy = descriptor;
@@ -388,5 +406,4 @@ internal static class FuncInfoDscMetadataTests
     {
         return descriptor.GetUnwindInfo();
     }
-#endif
 }

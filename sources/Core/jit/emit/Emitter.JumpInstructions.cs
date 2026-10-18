@@ -383,12 +383,10 @@ public partial class Emitter
         id.idjTarget = dst;
 
         id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, dst);
-#if DEBUG
-        if (compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && compiler.opts.compLongAddress)
         {
             id.idjKeepLong = true;
         }
-#endif
 
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);

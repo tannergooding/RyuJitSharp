@@ -13,7 +13,6 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CompilerCodeAllocationTests
 {
-#if !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
     [TestCase(false, 0, 5u)]
     [TestCase(true, 0, 5u)]
     [TestCase(false, 2, 5u)]
@@ -21,6 +20,10 @@ internal static unsafe class CompilerCodeAllocationTests
     public static void AllocationPassesOrderedChunksAndExceptionCountAndCopiesBothAliases(
         bool hasCold, int dataCount, uint exceptionCount)
     {
+        Assume.That(
+            !Configuration.TARGET_ARM64 && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64,
+            "This allocation test covers x86, ARM32, and WebAssembly targets.");
+
         WithAllocation((compiler, context) =>
         {
             var captured = stackalloc AllocMemChunk[4];
@@ -112,14 +115,17 @@ internal static unsafe class CompilerCodeAllocationTests
             }
         });
     }
-#endif
 
-#if DEBUG && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
     [TestCase(19, 26)]
     [TestCase(unchecked((int)0x80000013u), unchecked((int)0x8000001Au))]
     public static void FakeSplittingCombinesAllocationThenRestoresColdExecutableAndWritableOffsets(
         int hotSize, int combinedSize)
     {
+        Assume.That(TestConfiguration.IsDebug, "Fake splitting is available only in Debug.");
+        Assume.That(
+            !Configuration.TARGET_ARM64 && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64,
+            "Fake splitting is unavailable on ARM64, LoongArch64, and RISC-V64.");
+
         WithAllocation((compiler, context) =>
         {
             var captured = stackalloc AllocMemChunk[2];
@@ -177,13 +183,15 @@ internal static unsafe class CompilerCodeAllocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
     private static extern ref int FakeProcedureSplitting(ref JitConfigValues config);
-#endif
 
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     [TestCase(false)]
     [TestCase(true)]
     public static void TargetDataChunksAreEmbeddedOrRelocated(bool compReloc)
     {
+        Assume.That(
+            Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64,
+            "This allocation test covers ARM64, LoongArch64, and RISC-V64 targets.");
+
         WithAllocation((compiler, context) =>
         {
             compiler.opts.compReloc = compReloc;
@@ -273,7 +281,6 @@ internal static unsafe class CompilerCodeAllocationTests
             }
         });
     }
-#endif
 
     private static void AssertChunk(AllocMemChunk chunk, int alignment, int size,
         CorJitAllocMemFlag flags, int initialBlock, int initialBlockRW)
@@ -293,17 +300,20 @@ internal static unsafe class CompilerCodeAllocationTests
         try
         {
             var config = default(JitConfigValues);
-#if DEBUG && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
             if (fakeSplitting)
             {
-                FakeProcedureSplitting(ref config) = 1;
+                if (TestConfiguration.IsDebug &&
+                    !Configuration.TARGET_ARM64 &&
+                    !Configuration.TARGET_LOONGARCH64 &&
+                    !Configuration.TARGET_RISCV64)
+                {
+                    FakeProcedureSplitting(ref config) = 1;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Fake splitting is only available in Debug on supported targets.");
+                }
             }
-#else
-            if (fakeSplitting)
-            {
-                throw new InvalidOperationException("Fake splitting is only available in DEBUG.");
-            }
-#endif
             Globals.JitConfig = config;
 
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;

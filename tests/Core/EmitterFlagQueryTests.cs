@@ -262,17 +262,13 @@ internal static class EmitterFlagQueryTests
             var beforeCount = CurrentCount(emitter);
             var beforeSize = CurrentSize(emitter);
             var before = Last(emitter);
-#if DEBUG
-            compiler.opts.dspCode = true;
-#endif
+            TestConfiguration.SetDspCode(compiler, true);
             Assert.That(emitter.AreFlagsSetToZeroCmp(REG_X64_RAX, EA_8BYTE, equal), Is.True);
             Assert.That(emitter.AreFlagsSetForSignJumpOpt(REG_X64_RAX, EA_8BYTE, signed), Is.True);
             Assert.That(CurrentCount(emitter), Is.EqualTo(beforeCount));
             Assert.That(CurrentSize(emitter), Is.EqualTo(beforeSize));
             Assert.That(Last(emitter), Is.SameAs(before));
-#if DEBUG
-            compiler.opts.dspCode = false;
-#endif
+            TestConfiguration.SetDspCode(compiler, false);
             emitter.emitIns_Nop(1);
             Assert.That(emitter.AreFlagsSetToZeroCmp(REG_X64_RAX, EA_8BYTE, equal), Is.False);
             Assert.That(emitter.AreFlagsSetForSignJumpOpt(REG_X64_RAX, EA_8BYTE, signed), Is.False);

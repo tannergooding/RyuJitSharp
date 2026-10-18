@@ -1,8 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -39,12 +37,13 @@ internal static class CodeGenRegisterArgumentTests
                 Is.EqualTo(type == TYP_REF ? Mask(targetReg) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(type == TYP_BYREF ? Mask(targetReg) : default));
-#if DEBUG
-            Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+            }
         });
     }
 
@@ -68,12 +67,13 @@ internal static class CodeGenRegisterArgumentTests
                 Is.EqualTo(type == TYP_REF ? Mask(reg) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(type == TYP_BYREF ? Mask(reg) : default));
-#if DEBUG
-            Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+            }
         });
     }
 
@@ -99,14 +99,15 @@ internal static class CodeGenRegisterArgumentTests
                 AssertMove(descriptors[1], INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RDX);
             }
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_X64_RCX)));
-#if DEBUG
-            Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(copy._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(copy._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+            }
         });
     }
 
@@ -147,18 +148,19 @@ internal static class CodeGenRegisterArgumentTests
             // RDX must reach RCX before the next placement overwrites RDX.
             AssertMove(descriptors[0], INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RDX);
             AssertMove(descriptors[1], INS_mov, EA_8BYTE, REG_X64_RDX, REG_X64_R8);
-#if DEBUG
-            Assert.That(first._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(second._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(stack._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo((GenTreeDebugFlags)0));
-            Assert.That(stackSource._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo((GenTreeDebugFlags)0));
-            Assert.That(early._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo((GenTreeDebugFlags)0));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(first._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(second._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(stack._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo((GenTreeDebugFlags)0));
+                Assert.That(stackSource._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo((GenTreeDebugFlags)0));
+                Assert.That(early._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo((GenTreeDebugFlags)0));
+            }
         });
     }
 
@@ -228,10 +230,11 @@ internal static class CodeGenRegisterArgumentTests
                 Is.EqualTo(tailCall && type == TYP_REF ? Mask(REG_X64_RCX) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(tailCall && type == TYP_BYREF ? Mask(REG_X64_RCX) : default));
-#if DEBUG
-            Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            }
         });
     }
 
@@ -277,13 +280,14 @@ internal static class CodeGenRegisterArgumentTests
         });
     }
 
-#if DEBUG
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
     public static void DspCodeRecordsRegisterArgumentsAndGcState(bool placement, bool alias)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug diagnostic recording.");
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var sourceReg = alias ? REG_X64_RCX : REG_X64_RAX;
@@ -296,7 +300,7 @@ internal static class CodeGenRegisterArgumentTests
             _ = AddArgument(compiler, call, argument, AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8));
             codeGen.GCInfo.gcMarkRegPtrVal(sourceReg, TYP_REF);
             codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_BYREF);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             void Generate()
             {
@@ -318,7 +322,6 @@ internal static class CodeGenRegisterArgumentTests
             Assert.That(diagnostic.Contains("mov", StringComparison.Ordinal), Is.EqualTo(!alias));
         });
     }
-#endif
 
     private static GenTreePhysReg Physical(var_types type, regNumber reg)
         => new(reg, type) { RegNum = reg };

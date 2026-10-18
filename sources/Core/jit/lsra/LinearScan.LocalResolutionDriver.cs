@@ -183,10 +183,8 @@ public sealed partial class LinearScan
                         {
                             if (!reference.skipSaveRestore)
                             {
-#if DEBUG
                                 assert((regMaskTP.CreateFromRegNum(local.physReg,
                                     genSingleTypeRegMask(local.physReg)) & getKillSetForNode(tree)).IsEmpty);
-#endif
                                 var referent = reference.referent
                                     ?? throw new FatalJitException("An upper-vector save requires its interval.");
                                 referent.recentRefPosition = reference;
@@ -266,11 +264,8 @@ public sealed partial class LinearScan
 
                     var nextReference = reference.nextRefPosition
                         ?? throw new FatalJitException("A spilled or moved temporary requires its next reference.");
-                    if (
-#if DEBUG
-                        alwaysInsertReload() ||
-#endif
-                        nextReference.assignedReg() != reference.assignedReg())
+                    if ((Configuration.DEBUG && alwaysInsertReload()) ||
+                        (nextReference.assignedReg() != reference.assignedReg()))
                     {
                         if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
                             !interval.isUpperVector &&
@@ -324,12 +319,12 @@ public sealed partial class LinearScan
         resolveEdges();
         finalizeLocalRegisterAssignments();
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             jitprintf("Trees after linear scan register allocator (LSRA)\n");
             _compiler.fgDispBasicBlocks(true);
         }
+#if DEBUG
         verifyFinalAllocationWithLocals();
 #endif
         _compiler.raMarkStkVars();

@@ -88,11 +88,8 @@ public sealed partial class Lowering
                         throw new InvalidOperationException("Foldable Wasm address is missing its base.");
                 }
 
-                SetMultiplyUsed(addressToReuse
-#if DEBUG
-                    , "LowerStoreIndir Addr (null check or simd12 lane store)"
-#endif
-                );
+                SetMultiplyUsed(addressToReuse,
+                    Configuration.DEBUG ? "LowerStoreIndir Addr (null check or simd12 lane store)" : null);
             }
 
             ContainCheckStoreIndir(node);

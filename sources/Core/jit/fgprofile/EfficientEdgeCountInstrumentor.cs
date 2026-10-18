@@ -343,7 +343,7 @@ public sealed unsafe class EfficientEdgeCountInstrumentor : Instrumentor
             : interlocked && scalable ? "both interlocked and scalable"
             : interlocked ? "interlocked" : "scalable")} probes\n");
 
-        _probeHeads.TryGetValue(block, out var head);
+        _ = _probeHeads.TryGetValue(block, out var head);
         for (var probe = head; probe is not null; probe = probe.Next)
         {
             if (probe.Kind is EdgeKind.Deleted)
@@ -358,8 +358,7 @@ public sealed unsafe class EfficientEdgeCountInstrumentor : Instrumentor
                 or ICorJitInfo.PgoInstrumentationKind.EdgeLongCount);
             var counter = profileMemory + entry.Offset;
 
-#if DEBUG
-            if (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0)
+            if (Configuration.DEBUG && JitConfig.JitPropagateSynthesizedCountsToProfileData > 0)
             {
                 var edge = Compiler.fgGetPredForBlock(probe.Target, probe.Source);
                 if (edge is not null)
@@ -373,10 +372,8 @@ public sealed unsafe class EfficientEdgeCountInstrumentor : Instrumentor
                         *(ulong*)counter = ConvertSynthesizedCount64(edge.LikelyWeight);
                     }
                 }
-
                 return;
             }
-#endif
             BasicBlock instrumentedBlock;
             switch (probe.Kind)
             {
