@@ -6,11 +6,6 @@ using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 using static RyuJitSharp.VNFunc;
-#if TARGET_64BIT
-using target_ssize_t = System.Int64;
-#else
-using target_ssize_t = System.Int32;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -23,30 +18,29 @@ internal static unsafe class ValueNumPairOperationTests
     {
         WithStore(store =>
         {
-            var constant = store.VNForPtrSizeIntCon((target_ssize_t)value);
-#if TARGET_64BIT
-            Assert.That(constant, Is.EqualTo(store.VNForLongCon(value)));
-            Assert.That(store.TypeOfVN(constant), Is.EqualTo(TYP_LONG));
-#else
-            Assert.That(constant, Is.EqualTo(store.VNForIntCon(value)));
-            Assert.That(store.TypeOfVN(constant), Is.EqualTo(TYP_INT));
-#endif
+            var constant = store.VNForPtrSizeIntCon(value);
+            var expected = Configuration.TARGET_64BIT
+                ? store.VNForLongCon(value)
+                : store.VNForIntCon(unchecked((int)value));
+            Assert.That(constant, Is.EqualTo(expected));
+            Assert.That(store.TypeOfVN(constant),
+                Is.EqualTo(Configuration.TARGET_64BIT ? TYP_LONG : TYP_INT));
         });
     }
 
-#if TARGET_64BIT
     [Test]
     public static void TargetPointerSizedConstantRetainsHighBits()
     {
+        Assume.That(Configuration.TARGET_64BIT, "High target pointer bits require a 64-bit target.");
+
         WithStore(store =>
         {
-            const target_ssize_t value = 0x1_0000_0000;
+            const long value = 0x1_0000_0000;
             var constant = store.VNForPtrSizeIntCon(value);
             Assert.That(constant, Is.EqualTo(store.VNForLongCon(value)));
             Assert.That(store.GetConstantInt64(constant), Is.EqualTo(value));
         });
     }
-#endif
 
     [Test]
     public static void PairFunctionsPreserveLaneOrderAndShareEqualResults()

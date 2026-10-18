@@ -8,10 +8,8 @@ using static RyuJitSharp.CorInfoType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -183,13 +181,14 @@ internal static unsafe class StructPromotionTests
         });
     }
 
-#if DEBUG
     [TestCase(false, false, "")]
     [TestCase(false, true, "")]
     [TestCase(true, false, "\u258C")]
     [TestCase(true, true, "*")]
     public static void OptionalIndentationMatchesNativeNullStack(bool present, bool ascii, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "Indentation output is available only in Debug.");
+
         WithCompiler((compiler, _) => {
             compiler.asciiTrees = ascii;
             using var stream = new MemoryStream();
@@ -209,7 +208,6 @@ internal static unsafe class StructPromotionTests
             }
         });
     }
-#endif
 
     private struct Metadata
     {
@@ -236,9 +234,10 @@ internal static unsafe class StructPromotionTests
                 vtable.Base.Base.getTypeLayout = &GetTypeLayout;
                 vtable.Base.Base.getHFAType = &GetNoHfaType;
                 vtable.Base.Base.getSystemVAmd64PassStructInRegisterDescriptor = &GetSystemVDescriptor;
-#if DEBUG
-                vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
+                }
                 ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
                 compiler.info.compCompHnd = &jitInfo;
                 compiler.opts.compFlags = CLFLG_STRUCTPROMOTE;

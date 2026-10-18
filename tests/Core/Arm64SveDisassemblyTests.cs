@@ -1,9 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -19,6 +21,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm64SveDisassemblyTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(IF_ARM64_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, z1.s")]
     [TestCase(IF_ARM64_SVE_AO_3A, INS_sve_asr, INS_OPTS_SCALABLE_H, "z0.h, p7/m, z0.h, z1.d")]
     [TestCase(IF_ARM64_SVE_AR_4A, INS_sve_mla, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z1.s, z31.s")]
@@ -219,11 +227,14 @@ internal static class Arm64SveDisassemblyTests
             var (output, assertions) = Capture(() => Display(emitter, id));
 
             Assert.That(output, Is.EqualTo("unexpected format IF_EN5A"));
-#if DEBUG
-            Assert.That(assertions, Is.EqualTo<string[]>(["!\"unexpectedFormat\""]));
-#else
-            Assert.That(assertions, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(assertions, Is.EqualTo<string[]>(["!\"unexpectedFormat\""]));
+            }
+            else
+            {
+                Assert.That(assertions, Is.Empty);
+            }
         });
     }
 
@@ -232,30 +243,56 @@ internal static class Arm64SveDisassemblyTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) => action(codeGen.Emitter));
     }
 
-    internal static (string Output, string[] Assertions) Capture(Action action)
+    internal static unsafe (string Output, string[] Assertions) Capture(Action action)
     {
-#if DEBUG
-        return Arm64SveInstructionSanityTests.Capture(action);
-#else
+        var isDebug = TestConfiguration.IsDebug;
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        ICorJitInfo jitInfo = default;
+        ICorJitInfo* jitInfoPointer = null;
+        if (isDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+            jitInfo.lpVtbl = &vtable;
+            jitInfoPointer = &jitInfo;
+        }
+
+        var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         var previousOutput = s_jitstdout;
+        var previousAssertions = s_assertions;
+        using var tls = TestConfiguration.CreateJitTls(jitInfoPointer);
+        JitTls.Compiler = previousCompiler;
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         JitConfig = new JitConfigValues();
         s_jitstdout = writer;
+        s_assertions = isDebug ? [] : null;
         try
         {
             action();
             writer.Flush();
 
-            return (Encoding.UTF8.GetString(stream.ToArray()), []);
+            return (Encoding.UTF8.GetString(stream.ToArray()), s_assertions?.ToArray() ?? []);
         }
         finally
         {
+            JitTls.Compiler = previousCompiler;
             JitConfig = previousConfig;
             s_jitstdout = previousOutput;
+            s_assertions = previousAssertions;
         }
-#endif
+    }
+
+    private static List<string>? s_assertions;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static unsafe int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        (s_assertions ?? throw new AssertionException("Unexpected SVE diagnostic assertion callback."))
+            .Add(Marshal.PtrToStringUTF8((nint)expression)
+                ?? throw new AssertionException("Missing native assertion text."));
+
+        return 0;
     }
 
     private static void AssertOutput(Emitter emitter, Emitter.instrDesc id, string expected)
@@ -300,4 +337,3 @@ internal static class Arm64SveDisassemblyTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispInsSveHelp")]
     private static extern void Display(Emitter emitter, Emitter.instrDesc id);
 }
-#endif

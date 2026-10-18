@@ -24,11 +24,8 @@ internal static unsafe class TreeCloneOrderTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.doAssert = &RecordAssertion;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-#if DEBUG
-            using var tls = new JitTls(&jitInfo);
-            JitTls.LogEnv.Compiler = compiler;
-            compiler.info.compFullName = nameof(LocalFieldClonesPreserveOptionalLayout);
-#endif
+            using var tls = TestConfiguration.CreateJitTlsWithCompilerAndLogEnv(compiler, &jitInfo);
+            TestConfiguration.SetCompilerFullName(compiler, nameof(LocalFieldClonesPreserveOptionalLayout));
             JitTls.Compiler = compiler;
             s_assertionCount = 0;
             var layout = type is TYP_STRUCT ? new ClassLayout(16) : null;

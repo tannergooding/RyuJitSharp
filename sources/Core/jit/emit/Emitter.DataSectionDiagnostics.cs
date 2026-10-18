@@ -19,12 +19,10 @@ public partial class Emitter
         var chunk = dataChunks;
         for (var data = section.dsdList; data is not null; data = data.dsNext, chunk++)
         {
-#if DEBUG
-            if (compiler.opts.disAddr)
+            if (Configuration.DEBUG && compiler.opts.disAddr)
             {
                 jitprintf($"; @{FMT_PTR((void*)dspPtr(chunk->block))}\n");
             }
-#endif
             var label = $"RWD{data.dsOffset:D2}";
             jitprintf($"{label,-7}");
 

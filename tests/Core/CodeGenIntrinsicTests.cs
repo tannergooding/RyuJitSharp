@@ -232,15 +232,16 @@ internal static unsafe class CodeGenIntrinsicTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsImmediateOperandConstants()
     {
+        Assume.That(TestConfiguration.IsDebug, "Intrinsic disassembly is Debug-only.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = compiler.gtNewDconNode(TYP_DOUBLE, -0.0);
             source.IsContained = true;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 codeGen.inst_RV_RV_TT_IV(INS_roundsd, EA_8BYTE, REG_XMM0, REG_XMM0,
@@ -257,6 +258,8 @@ internal static unsafe class CodeGenIntrinsicTests
     [TestCase(false)]
     public static void DisassemblyRecordsFiniteChecksAndIntrinsics(bool finite)
     {
+        Assume.That(TestConfiguration.IsDebug, "Intrinsic disassembly is Debug-only.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = compiler.gtNewDconNode(TYP_DOUBLE, 1.0);
@@ -278,11 +281,10 @@ internal static unsafe class CodeGenIntrinsicTests
             }
 
             _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_ARITH_EXCPN);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 }

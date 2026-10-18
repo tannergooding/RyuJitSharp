@@ -239,14 +239,12 @@ public sealed partial class LinearScan
         assert(_compiler.info.compNeedsConsecutiveRegisters);
         assert(first.isFirstRefPositionOfConsecutiveRegisters());
         var free = candidates & _availableRegs[(int)TYP_FLOAT];
-#if DEBUG
-        if ((_lsraStressMask & 0x3) != 0)
+        if (Configuration.DEBUG && ((_lsraStressMask & 0x3) != 0))
         {
             free &= SRBM_ARM64_V0 | SRBM_ARM64_V2 | SRBM_ARM64_V4 | SRBM_ARM64_V6 | SRBM_ARM64_V8 |
                 SRBM_ARM64_V10 | SRBM_ARM64_V12 | SRBM_ARM64_V14 | SRBM_ARM64_V16 | SRBM_ARM64_V18 |
                 SRBM_ARM64_V20 | SRBM_ARM64_V22 | SRBM_ARM64_V24 | SRBM_ARM64_V26 | SRBM_ARM64_V28 | SRBM_ARM64_V30;
         }
-#endif
         busyCandidates = SRBM_NONE;
         var needed = (uint)first.regCount;
         if (free != SRBM_NONE)

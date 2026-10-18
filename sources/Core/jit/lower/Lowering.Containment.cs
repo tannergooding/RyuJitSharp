@@ -10,9 +10,7 @@ public sealed partial class Lowering
     private void MakeSrcContained(GenTree parentNode, GenTree childNode)
     {
         assert(!parentNode.Oper.IsLeaf);
-#if DEBUG
         assert(childNode.CanBeContained);
-#endif
 
         childNode.IsContained = true;
         assert(childNode.IsContained);

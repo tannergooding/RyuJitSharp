@@ -33,12 +33,10 @@ public sealed partial class CodeGen
         genPrepForCompiler();
         Emitter.Init();
 
-#if DEBUG
-        if (_compiler.opts.disAsmSpilled && RegSet.NeededSpillReg)
+        if (Configuration.DEBUG && _compiler.opts.disAsmSpilled && RegSet.NeededSpillReg)
         {
             _compiler.opts.disAsm = true;
         }
-#endif
         _compiler.compCurBB = _compiler.fgFirstBB;
         if (_compiler.opts.disAsm)
         {
@@ -162,11 +160,9 @@ public sealed partial class CodeGen
         // LSRA has computed the exact concurrent spill requirements, so finalize
         // the frame before recording instructions rather than estimating it.
         genFinalizeFrame();
-        Emitter.emitBegFN(IsFramePointerUsed
-#if DEBUG
-            , (_compiler.compCodeOpt != Compiler.SMALL_CODE) && !_compiler.IsAot
-#endif
-            );
+        Emitter.emitBegFN(
+            IsFramePointerUsed,
+            Configuration.DEBUG && (_compiler.compCodeOpt != Compiler.SMALL_CODE) && !_compiler.IsAot);
         genCodeForBBlist();
         if (Configuration.DEBUG && _verbose)
         {
@@ -277,9 +273,7 @@ public sealed partial class CodeGen
                     assert(allocator is not null);
                     allocator.dumpLsraStatsSummary(jitstdout());
                 }
-#if DEBUG
                 jitprintf($" (MethodHash={_compiler.info.compMethodHash():x8}) for method {_compiler.info.compFullName} ({_compiler.compGetTieringName(true)})\n");
-#endif
                 if (!dspMetricsOnly)
                 {
                     jitprintf("; ============================================================\n\n");

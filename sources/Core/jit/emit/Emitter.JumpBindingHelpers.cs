@@ -67,62 +67,63 @@ public partial class Emitter
             assert(jump.idIsBound());
         }
 
-#if DEBUG
-        if (Configuration.TARGET_XARCH && jump.idIns() == INS_lea)
+        if (Configuration.DEBUG)
         {
-            return;
-        }
-
-        if (Configuration.TARGET_ARM64 && (emitIsLoadLabel(jump) || emitIsLoadConstant(jump)))
-        {
-            return;
-        }
-
-        var targetIG = jump.idjTargetIG
-            ?? throw new FatalJitException("A bound branch requires an instruction-group target.");
-        if (targetIG.igFuncIdx == jumpIG.igFuncIdx)
-        {
-            return;
-        }
-
-        var compiler = _compiler ?? throw new FatalJitException("Funclet branch checking requires an active compiler.");
-        var debugInfo = jump.idDebugOnlyInfo()
-            ?? throw new FatalJitException("Funclet branch validation requires debug information.");
-        if (debugInfo.idFinallyCall)
-        {
-            assert(targetIG.igFuncIdx > 0);
-            var targetFunc = compiler.funGetFunc(targetIG.igFuncIdx);
-            assert(targetFunc.funKind == FuncKind.FUNC_HANDLER);
-            var targetEH = compiler.ehGetDsc(targetFunc.funEHIndex);
-            assert(targetEH.HasFinallyHandler);
-            var targetBlock = targetFunc.GetStartBlock(compiler);
-            assert(compiler.bbIsFuncletBeg(targetBlock));
-            assert(ReferenceEquals(targetIG, emitCodeGetCookie(targetBlock)));
-            assert(targetIG.igFuncIdx == compiler.funGetFuncIdx(targetBlock));
-        }
-        else if (debugInfo.idCatchRet)
-        {
-            var sourceFunc = compiler.funGetFunc(jumpIG.igFuncIdx);
-            assert(sourceFunc.funKind == FuncKind.FUNC_HANDLER);
-            var sourceEH = compiler.ehGetDsc(sourceFunc.funEHIndex);
-            assert(sourceEH.HasCatchHandler);
-            var targetFunc = compiler.funGetFunc(targetIG.igFuncIdx);
-            if (targetFunc.funKind == FuncKind.FUNC_HANDLER)
+            if (Configuration.TARGET_XARCH && jump.idIns() == INS_lea)
             {
-                assert(sourceEH.ebdEnclosingHndIndex == targetFunc.funEHIndex);
+                return;
+            }
+
+            if (Configuration.TARGET_ARM64 && (emitIsLoadLabel(jump) || emitIsLoadConstant(jump)))
+            {
+                return;
+            }
+
+            var targetIG = jump.idjTargetIG
+                ?? throw new FatalJitException("A bound branch requires an instruction-group target.");
+            if (targetIG.igFuncIdx == jumpIG.igFuncIdx)
+            {
+                return;
+            }
+
+            var compiler = _compiler ?? throw new FatalJitException("Funclet branch checking requires an active compiler.");
+            var debugInfo = jump.idDebugOnlyInfo()
+                ?? throw new FatalJitException("Funclet branch validation requires debug information.");
+            if (debugInfo.idFinallyCall)
+            {
+                assert(targetIG.igFuncIdx > 0);
+                var targetFunc = compiler.funGetFunc(targetIG.igFuncIdx);
+                assert(targetFunc.funKind == FuncKind.FUNC_HANDLER);
+                var targetEH = compiler.ehGetDsc(targetFunc.funEHIndex);
+                assert(targetEH.HasFinallyHandler);
+                var targetBlock = targetFunc.GetStartBlock(compiler);
+                assert(compiler.bbIsFuncletBeg(targetBlock));
+                assert(ReferenceEquals(targetIG, emitCodeGetCookie(targetBlock)));
+                assert(targetIG.igFuncIdx == compiler.funGetFuncIdx(targetBlock));
+            }
+            else if (debugInfo.idCatchRet)
+            {
+                var sourceFunc = compiler.funGetFunc(jumpIG.igFuncIdx);
+                assert(sourceFunc.funKind == FuncKind.FUNC_HANDLER);
+                var sourceEH = compiler.ehGetDsc(sourceFunc.funEHIndex);
+                assert(sourceEH.HasCatchHandler);
+                var targetFunc = compiler.funGetFunc(targetIG.igFuncIdx);
+                if (targetFunc.funKind == FuncKind.FUNC_HANDLER)
+                {
+                    assert(sourceEH.ebdEnclosingHndIndex == targetFunc.funEHIndex);
+                }
+                else
+                {
+                    assert(targetFunc.funKind == FuncKind.FUNC_ROOT);
+                    assert(sourceEH.ebdEnclosingHndIndex == EHblkDsc.NO_ENCLOSING_INDEX);
+                }
             }
             else
             {
-                assert(targetFunc.funKind == FuncKind.FUNC_ROOT);
-                assert(sourceEH.ebdEnclosingHndIndex == EHblkDsc.NO_ENCLOSING_INDEX);
+                jitprintf("Hit an illegal branch between funclets!");
+                assert(targetIG.igFuncIdx == jumpIG.igFuncIdx);
             }
         }
-        else
-        {
-            jitprintf("Hit an illegal branch between funclets!");
-            assert(targetIG.igFuncIdx == jumpIG.igFuncIdx);
-        }
-#endif
     }
 
     private static bool emitIsCondJump(instrDesc jump)

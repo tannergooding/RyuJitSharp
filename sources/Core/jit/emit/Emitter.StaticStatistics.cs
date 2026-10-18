@@ -151,20 +151,22 @@ public partial class Emitter
 #if EMIT_BACKWARDS_NAVIGATION
         AddField(ref group, "igPrev             ", word, word, print);
 #endif
-#if DEBUG
-        AddField(ref group, "igSelf             ", word, word, print);
-#endif
+        if (Configuration.DEBUG)
+        {
+            AddField(ref group, "igSelf             ", word, word, print);
+        }
         if (Configuration.DEBUG || Configuration.LATE_DISASM)
         {
             AddField(ref group, "igWeight           ", sizeof(double), doubleAlignment, print);
             AddField(ref group, "igPerfScore        ", sizeof(double), doubleAlignment, print);
         }
-#if DEBUG
-        AddField(ref group, "lastGeneratedBlock ", word, word, print);
-        // The pinned jitstd::list<BasicBlock*> occupies five pointer-sized words.
-        AddField(ref group, "igBlocks           ", 5 * word, word, print);
-        AddField(ref group, "igDataSize         ", word, word, print);
-#endif
+        if (Configuration.DEBUG)
+        {
+            AddField(ref group, "lastGeneratedBlock ", word, word, print);
+            // The pinned jitstd::list<BasicBlock*> occupies five pointer-sized words.
+            AddField(ref group, "igBlocks           ", 5 * word, word, print);
+            AddField(ref group, "igDataSize         ", word, word, print);
+        }
         AddField(ref group, "igNum              ", sizeof(uint), sizeof(uint), print);
         AddField(ref group, "igOffs             ", sizeof(uint), sizeof(uint), print);
         AddField(ref group, "igFuncIdx          ", sizeof(uint), sizeof(uint), print);

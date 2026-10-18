@@ -32,13 +32,11 @@ public partial class Liveness<TLiveness>
                     if (TLiveness.EliminateDeadCode && ((call.Type is TYP_VOID) || call.IsUnusedValue) &&
                         !call.HasSideEffects(_compiler))
                     {
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("Removing dead call:\n");
                             _compiler.gtDispTree(call, topOnly: true);
                         }
-#endif
                         _ = node.VisitOperands(operand => {
                             if (operand.IsValue)
                             {
@@ -75,13 +73,11 @@ public partial class Liveness<TLiveness>
                     ref var descriptor = ref _compiler.lvaTable[local.LclNum];
                     if (TLiveness.EliminateDeadCode && node.IsUnusedValue)
                     {
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("Removing dead LclVar use:\n");
                             _compiler.gtDispTree(local, topOnly: true);
                         }
-#endif
                         block.Delete(node);
                         if (descriptor.lvTracked)
                         {
@@ -103,13 +99,11 @@ public partial class Liveness<TLiveness>
                 {
                     if (TLiveness.EliminateDeadCode && node.IsUnusedValue)
                     {
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("Removing dead LclVar address:\n");
                             _compiler.gtDispTree(node, topOnly: true);
                         }
-#endif
                         var tracked = _compiler.lvaTable[node.AsLclVarCommon().LclNum].lvTracked;
                         block.Delete(node);
                         if (tracked)
@@ -132,13 +126,11 @@ public partial class Liveness<TLiveness>
                             var store = use.User().AsIndir();
                             if (TryRemoveDeadStoreLIR(store, node.AsLclVarCommon(), block))
                             {
-#if DEBUG
-                                if (_compiler.verbose)
+                                if (Configuration.DEBUG && _compiler.verbose)
                                 {
                                     jitprintf("Removing dead LclVar address:\n");
                                     _compiler.gtDispTree(node, topOnly: true);
                                 }
-#endif
                                 block.Remove(node);
                                 var data = store.Data;
                                 data.IsUnusedValue = true;
@@ -152,13 +144,11 @@ public partial class Liveness<TLiveness>
                                 }
                                 else if (data.Oper is GT_LCL_VAR or GT_LCL_FLD)
                                 {
-#if DEBUG
-                                    if (_compiler.verbose)
+                                    if (Configuration.DEBUG && _compiler.verbose)
                                     {
                                         jitprintf("Removing dead store data:\n");
                                         _compiler.gtDispTree(data, topOnly: true);
                                     }
-#endif
                                     if (next == data)
                                     {
                                         next = data.Prev;
@@ -209,13 +199,11 @@ public partial class Liveness<TLiveness>
                 {
                     if (TLiveness.EliminateDeadCode && node.IsUnusedValue)
                     {
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf("Removing dead node:\n");
                             _compiler.gtDispTree(node, topOnly: true);
                         }
-#endif
                         block.Remove(node);
                     }
                     break;
@@ -287,12 +275,10 @@ public partial class Liveness<TLiveness>
                 {
                     if (!TryRemoveNonLocalLIR(node, block) && node.IsUnusedValue)
                     {
-#if DEBUG
-                        if (_compiler.verbose)
+                        if (Configuration.DEBUG && _compiler.verbose)
                         {
                             jitprintf($"Transform an unused BLK node [{node.TreeId:D6}]\n");
                         }
-#endif
                         _ = Lowering.TransformUnusedIndirection(node.AsIndir(), _compiler, block);
                     }
                     break;

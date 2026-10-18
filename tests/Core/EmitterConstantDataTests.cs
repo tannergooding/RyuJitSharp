@@ -37,11 +37,14 @@ internal static unsafe class EmitterConstantDataTests
             Assert.That(third.dsNext, Is.Null);
             Assert.That(emitter.emitConsDsc.dsdOffs, Is.EqualTo(28));
             Assert.That(emitter.emitDataSize(), Is.EqualTo(28));
-#if DEBUG
-            Assert.That(emitter.emitDataSecCur, Is.Null);
-#else
-            Assert.That(emitter.emitDataSecCur, Is.SameAs(third));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(emitter.emitDataSecCur, Is.Null);
+            }
+            else
+            {
+                Assert.That(emitter.emitDataSecCur, Is.SameAs(third));
+            }
         });
     }
 
@@ -247,17 +250,17 @@ internal static unsafe class EmitterConstantDataTests
         Assert.That(Compiler.eeGetJitDataOffs(handle), Is.EqualTo(-1));
     }
 
-#if !DEBUG
     [TestCase(0x10000000u, 0x10000000)]
     [TestCase(0x20000000u, -0x20000000)]
     [TestCase(0x3FFFFFFFu, -1)]
     public static void LargeTaggedOffsetsPreserveTheNativeSignedDecoder(uint offset, int decoded)
     {
+        Assume.That(!TestConfiguration.IsDebug, "Large tagged offsets are validated in Release.");
+
         var handle = Compiler.eeFindJitDataOffs(offset);
         Assert.That(Compiler.eeIsJitDataOffs(handle), Is.True);
         Assert.That(Compiler.eeGetJitDataOffs(handle), Is.EqualTo(decoded));
     }
-#endif
 
     private static Emitter.dataSection Required(Emitter.dataSection? section)
         => section ?? throw new AssertionException("Missing expected constant-data section.");

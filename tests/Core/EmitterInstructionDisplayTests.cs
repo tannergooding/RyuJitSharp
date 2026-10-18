@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -18,7 +17,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionDisplayTests
 {
-#if DEBUG && TARGET_AMD64
+    [SetUp]
+    public static void RequireXarchTarget()
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This fixture requires an xarch target.");
+    }
+
     [Test]
     public static void NonSimdFormatsRejectSimdEvexButAllowPromotedApx(
         [Values(IF_XARCH_CNS, IF_XARCH_ARD, IF_XARCH_SRD, IF_XARCH_RRD, IF_XARCH_RWR_MRD_OFF, IF_XARCH_MRD, IF_XARCH_MRD_OFF, IF_XARCH_LABEL, IF_XARCH_METHOD)]
@@ -26,6 +30,9 @@ internal static unsafe class EmitterInstructionDisplayTests
         [Values] bool evex,
         [Values] bool apx)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64,
+            "This test requires Debug AMD64 semantics.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableMetadata;
@@ -80,7 +87,6 @@ internal static unsafe class EmitterInstructionDisplayTests
     {
         return 0;
     }
-#endif
 
     [Test]
     public static void FormatNamesFollowNativeTableAndInvalidValueMarker()
@@ -141,7 +147,6 @@ internal static unsafe class EmitterInstructionDisplayTests
         Assert.That(new CodeGen(compiler).genInsName(ins).ToString(), Is.EqualTo(expected));
     }
 
-#if TARGET_AMD64
     [TestCase(instruction.INS_cmppd, 1, false, "cmpltpd")]
     [TestCase(instruction.INS_cmppd, 17, true, "vcmplt_oqpd")]
     [TestCase(instruction.INS_vpcmpuw, 6, true, "vpcmpgtuw")]
@@ -151,6 +156,8 @@ internal static unsafe class EmitterInstructionDisplayTests
     public static void PseudoNamesRespectControlAndEncoding(instruction ins, int control,
         bool vex, string expected)
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = vex;
         var id = Descriptor(ins, IF_NONE, emitAttr.EA_16BYTE,
@@ -167,6 +174,8 @@ internal static unsafe class EmitterInstructionDisplayTests
     public static void EvexNamesUseNativePseudoForms(instruction ins, emitAttr size,
         bool vex, bool evex, string expected)
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = vex;
         emitter.UseEvexEncodings = evex;
@@ -179,6 +188,8 @@ internal static unsafe class EmitterInstructionDisplayTests
     [TestCase(true, "pushp")]
     public static void ApxPpxContextAppendsSuffix(bool ppx, string expected)
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         var emitter = CreateEmitter();
         var id = Descriptor(instruction.INS_push, IF_NONE, emitAttr.EA_4BYTE,
             regNumber.REG_X64_NA, regNumber.REG_X64_NA);
@@ -189,7 +200,6 @@ internal static unsafe class EmitterInstructionDisplayTests
 
         Assert.That(DisplayName(emitter, id), Is.EqualTo(expected));
     }
-#endif
 
     [Test]
     public static void OperandlessInstructionKeepsEmptySizeAndOffsetColumn()
@@ -324,4 +334,3 @@ internal static unsafe class EmitterInstructionDisplayTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

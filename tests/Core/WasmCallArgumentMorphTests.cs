@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -18,6 +17,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class WasmCallArgumentMorphTests
 {
+    [SetUp]
+    public static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM, "This fixture requires the Wasm target.");
+    }
+
     [TestCase(0u, WasmValueType.I32)]
     [TestCase(21u, WasmValueType.I64)]
     [TestCase(100_000u, WasmValueType.V128)]
@@ -69,11 +74,7 @@ internal static unsafe class WasmCallArgumentMorphTests
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, TestConfiguration.IsDebug);
 
             emitter.emitIns_I_Ty(instruction.INS_local_decl, 1, WasmValueType.I32, 0);
             emitter.emitIns_S(instruction.INS_i32_store, RyuJitSharp.emitAttr.EA_4BYTE, 0, 0);
@@ -99,11 +100,7 @@ internal static unsafe class WasmCallArgumentMorphTests
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, TestConfiguration.IsDebug);
 
             emitter.emitFuncletAddressConstant(17);
 
@@ -197,11 +194,12 @@ internal static unsafe class WasmCallArgumentMorphTests
         WithCompiler(compiler => new CodeGen(compiler).genCaptureFuncletPrologEpilogInfo());
     }
 
-#if PROFILING_SUPPORTED
     [TestCase(CORINFO_HELP_PROF_FCN_LEAVE)]
     [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL)]
     public static void WasmProfilerLeaveCallbacksRemainEmpty(CorInfoHelpFunc helper)
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "Wasm profiling support is not enabled.");
+
         WithCompiler(compiler => {
             ProfilerHookNeeded(compiler) = true;
             var codeGen = new CodeGen(compiler);
@@ -212,7 +210,6 @@ internal static unsafe class WasmCallArgumentMorphTests
             Assert.That(compiler.info.compProfilerCallback, Is.False);
         });
     }
-#endif
 
     [Test]
     public static void WasmGSCookieChecksUseTheNYIBoundary()
@@ -299,9 +296,6 @@ internal static unsafe class WasmCallArgumentMorphTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptorsField(Emitter emitter);
 
-#if PROFILING_SUPPORTED
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
-#endif
 }
-#endif

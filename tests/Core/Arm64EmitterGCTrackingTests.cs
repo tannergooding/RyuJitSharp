@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -13,6 +12,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64EmitterGCTrackingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires an ARM64 target.");
+    }
+
     [Test]
     public static void SimpleStackTrackingPreservesPointerAndByrefBits()
     {
@@ -195,17 +200,11 @@ internal static unsafe class Arm64EmitterGCTrackingTests
         var emitter = new TestEmitter(codeGen);
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, TestConfiguration.IsDebug);
         var buffer = stackalloc byte[64];
         emitter.emitCodeBlock = buffer;
         emitter.emitTotalHotCodeSize = 64;
-#if DEBUG
-        emitter.emitIssuing = true;
-#endif
+        TestConfiguration.EnableEmitterIssuing(emitter);
         test(emitter, buffer);
     }
 
@@ -260,4 +259,3 @@ internal static unsafe class Arm64EmitterGCTrackingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
     private static extern ref regNumber SyncThisRegister(Emitter emitter);
 }
-#endif

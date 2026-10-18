@@ -229,9 +229,11 @@ public sealed partial class Lowering
                 case IAT_PVALUE:
                 {
                     var cell = AddrGen((nint)address);
-#if DEBUG
-                    cell.TargetHandle = (nint)call._callMethHnd;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        cell.TargetHandle = (nint)call._callMethHnd;
+                    }
+
                     result = Ind(cell);
                     break;
                 }
@@ -239,9 +241,11 @@ public sealed partial class Lowering
                 case IAT_PPVALUE:
                 {
                     var cell = AddrGen((nint)address);
-#if DEBUG
-                    cell.TargetHandle = (nint)call._callMethHnd;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        cell.TargetHandle = (nint)call._callMethHnd;
+                    }
+
                     result = Ind(Ind(cell));
                     break;
                 }

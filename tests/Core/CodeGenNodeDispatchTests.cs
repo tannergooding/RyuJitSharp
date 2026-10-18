@@ -101,10 +101,11 @@ internal static unsafe class CodeGenNodeDispatchTests
 
             Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(INS_mov));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
-#if DEBUG
-            Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+            }
         });
     }
 
@@ -123,12 +124,13 @@ internal static unsafe class CodeGenNodeDispatchTests
             Assert.That(Descriptors(codeGen).Select(id => id.idIns()),
                 Is.EqualTo((instruction[])[INS_cmp, set, INS_movzx]));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
-#if DEBUG
-            Assert.That(first._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-            Assert.That(second._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(first._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+                Assert.That(second._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
+            }
         });
     }
 
@@ -295,15 +297,19 @@ internal static unsafe class CodeGenNodeDispatchTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodePreservesGcPreemptionMarkerTransitions()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("DspCode diagnostics are available only in Debug.");
+        }
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             codeGen.GCInfo.gcMarkRegSetGCref(RBM_RBX);
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing current group.");
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             _ = InstructionRecordingTestSupport.Capture(() =>
                 codeGen.genCodeForTreeNode(new GenTree(GT_START_PREEMPTGC, TYP_VOID)));
 
@@ -313,7 +319,6 @@ internal static unsafe class CodeGenNodeDispatchTests
             Assert.That(AddedLabel(codeGen.Emitter), Is.True);
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "genPendingCallLabel")]
     private static extern ref BasicBlock? PendingLabel(CodeGen codeGen);

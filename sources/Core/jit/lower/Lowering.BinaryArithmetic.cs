@@ -343,16 +343,8 @@ public sealed partial class Lowering
             ContainCheckBinary(binOp);
             if (binOp.HasOverflowCheckEx)
             {
-                SetMultiplyUsed(binOp.Op1
-#if DEBUG
-                    , "LowerBinaryArithmetic op1 (overflow exception)"
-#endif
-                );
-                SetMultiplyUsed(binOp.Op2
-#if DEBUG
-                    , "LowerBinaryArithmetic op2 (overflow exception)"
-#endif
-                );
+                SetMultiplyUsed(binOp.Op1, Configuration.DEBUG ? "LowerBinaryArithmetic op1 (overflow exception)" : null);
+                SetMultiplyUsed(binOp.Op2, Configuration.DEBUG ? "LowerBinaryArithmetic op2 (overflow exception)" : null);
             }
 
             return binOp.Next;

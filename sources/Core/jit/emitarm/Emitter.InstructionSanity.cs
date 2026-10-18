@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -12,6 +11,11 @@ public partial class Emitter
 {
     private void emitInsSanityCheckArm32(instrDesc id)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         switch (id.idInsFmt())
         {
             case IF_ARM32_T1_A:
@@ -440,4 +444,3 @@ public partial class Emitter
         }
     }
 }
-#endif

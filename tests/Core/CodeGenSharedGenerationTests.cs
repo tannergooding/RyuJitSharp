@@ -32,30 +32,37 @@ internal static unsafe class CodeGenSharedGenerationTests
             Assert.That(codeGen.Interruptible, Is.False);
             Assert.That(codeGen.CalleeRegArgMaskLiveIn, Is.EqualTo(Globals.RBM_NONE));
             Assert.That(compiler.genCallSite2DebugInfoMap, Is.Null);
-#if !TARGET_X86
-            Assert.That(StackArgumentVariable(codeGen), Is.EqualTo(Globals.BAD_VAR_NUM));
-#endif
-#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-            Assert.That(codeGen.HasTailCalls, Is.False);
-#endif
-#if UNIX_X86_ABI
-            Assert.That(CurrentNestedAlignment(codeGen), Is.EqualTo(0u));
-            Assert.That(MaximumNestedAlignment(codeGen), Is.EqualTo(0u));
-#endif
-#if TARGET_ARM64
-            Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
-            Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
-            Assert.That(codeGen.genReverseAndPairCalleeSavedRegisters, Is.False);
-#endif
+            if (!Configuration.TARGET_X86)
+            {
+                Assert.That(StackArgumentVariable(codeGen), Is.EqualTo(Globals.BAD_VAR_NUM));
+            }
+            if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+                Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            {
+                Assert.That(codeGen.HasTailCalls, Is.False);
+            }
+            if (Configuration.UNIX_X86_ABI)
+            {
+                Assert.That(CurrentNestedAlignment(codeGen), Is.EqualTo(0u));
+                Assert.That(MaximumNestedAlignment(codeGen), Is.EqualTo(0u));
+            }
+            if (Configuration.TARGET_ARM64)
+            {
+                Assert.That(codeGen.IsSaveFpLrWithAllCalleeSavedRegisters, Is.False);
+                Assert.That(codeGen.genForceFuncletFrameType5, Is.False);
+                Assert.That(codeGen.genReverseAndPairCalleeSavedRegisters, Is.False);
+            }
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(CurrentDisplayOffset(codeGen), Is.EqualTo(uint.MaxValue));
-#if HAS_FIXED_REGISTER_SET
-                Assert.That(compiler.compCalleeRegsPushed, Is.EqualTo(unchecked((int)Globals.INVALID_POINT_CD)));
-#endif
-#if TARGET_XARCH
-                Assert.That(compiler.compCalleeFPRegsSavedMask, Is.EqualTo(unchecked((regMask)(-1))));
-#endif
+                if (Configuration.HAS_FIXED_REGISTER_SET)
+                {
+                    Assert.That(compiler.compCalleeRegsPushed, Is.EqualTo(unchecked((int)Globals.INVALID_POINT_CD)));
+                }
+                if (Configuration.TARGET_XARCH)
+                {
+                    Assert.That(compiler.compCalleeFPRegsSavedMask, Is.EqualTo(unchecked((regMask)(-1))));
+                }
             }
         });
     }
@@ -92,16 +99,21 @@ internal static unsafe class CodeGenSharedGenerationTests
         });
     }
 
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
     [Test]
     public static void UnsupportedMachinePhaseStillClearsBorrowedOutputAddresses()
     {
+        Assume.That(
+            !Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI,
+            "This test covers targets outside the Windows AMD64 ABI.");
+
         var previousConfig = Globals.JitConfig;
         try
         {
-#if TARGET_WASM
-            WasmFunclets(ref Globals.JitConfig) = 1;
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                WasmFunclets(ref Globals.JitConfig) = 1;
+            }
+
             WithGeneration((compiler, codeGen) =>
             {
                 var code = (void*)0x1234;
@@ -124,7 +136,6 @@ internal static unsafe class CodeGenSharedGenerationTests
             Globals.JitConfig = previousConfig;
         }
     }
-#endif
 
     [Test]
     public static void LateDisassemblyRejectsBeforeBorrowingOutputsOrStartingAPhase()
@@ -149,16 +160,17 @@ internal static unsafe class CodeGenSharedGenerationTests
         });
     }
 
-#if TARGET_WASM
-    [TestCase(0, 0, false)]
-    [TestCase(0, 1, false)]
-    [TestCase(0, 2, true)]
-    [TestCase(0, 3, true)]
-    [TestCase(1, 2, false)]
-    [TestCase(-1, 2, false)]
+    [TestCase(0, (ushort)0, false)]
+    [TestCase(0, (ushort)1, false)]
+    [TestCase(0, (ushort)2, true)]
+    [TestCase(0, (ushort)3, true)]
+    [TestCase(1, (ushort)2, false)]
+    [TestCase(-1, (ushort)2, false)]
     public static void WasmFuncletPredicatePreservesConfigurationAndCount(
         int enabled, ushort count, bool rejected)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the Wasm target.");
+
         var previousConfig = Globals.JitConfig;
         try
         {
@@ -189,6 +201,8 @@ internal static unsafe class CodeGenSharedGenerationTests
     [Test]
     public static void WasmFuncletRejectionPrecedesPhaseAndOutputMutation()
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the Wasm target.");
+
         var previousConfig = Globals.JitConfig;
         try
         {
@@ -230,6 +244,7 @@ internal static unsafe class CodeGenSharedGenerationTests
     [TestCase("00001230-00001240", true)]
     public static void WasmDebugRangeUsesTheInlineRootAndExcludesEmptyConfiguration(string range, bool rejected)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires the Wasm target.");
         Assume.That(TestConfiguration.IsDebug);
 
         var previousConfig = Globals.JitConfig;
@@ -280,7 +295,6 @@ internal static unsafe class CodeGenSharedGenerationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCheckWasmR2RRange")]
     private static extern void CheckWasmRange(CodeGen codeGen);
-#endif
 
     private static void WithGeneration(Action<Compiler, CodeGen> action, bool verbose = false)
     {
@@ -319,18 +333,14 @@ internal static unsafe class CodeGenSharedGenerationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_verbose")]
     private static extern ref bool VerboseField(CodeGen codeGen);
 
-#if !TARGET_X86
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_stkArgVarNum")]
     private static extern ref int StackArgumentVariable(CodeGen codeGen);
-#endif
 
-#if UNIX_X86_ABI
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_curNestedAlignment")]
     private static extern uint CurrentNestedAlignment(CodeGen codeGen);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "maxNestedAlignment")]
     private static extern ref uint MaximumNestedAlignment(CodeGen codeGen);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_genCurDispOffset")]
     private static extern ref uint CurrentDisplayOffset(CodeGen codeGen);

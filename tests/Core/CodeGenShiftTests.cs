@@ -12,7 +12,6 @@ using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
-using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -150,42 +149,6 @@ internal static unsafe class CodeGenShiftTests
         });
     }
 
-#if TARGET_X86
-    [TestCase(GT_LSH_HI, 1, INS_shld, REG_EDX, REG_EAX, REG_EDX, 1)]
-    [TestCase(GT_LSH_HI, 33, INS_shld, REG_EBX, REG_EAX, REG_EDX, 2)]
-    [TestCase(GT_RSH_LO, 1, INS_shrd, REG_EAX, REG_EDX, REG_EAX, 1)]
-    [TestCase(GT_RSH_LO, 33, INS_shrd, REG_EBX, REG_EDX, REG_EAX, 2)]
-    public static void SplitLongShiftsMoveTheCorrectHalfBeforeCombining(
-        genTreeOps oper, int count, instruction expected, regNumber destination, regNumber otherHalf,
-        regNumber copiedHalf, int instructionCount)
-    {
-        WithCodeGen((compiler, codeGen) =>
-        {
-            var low = Register(compiler, TYP_INT, REG_EAX);
-            var high = Register(compiler, TYP_INT, REG_EDX);
-            var pair = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
-            var amount = compiler.gtNewIconNode(TYP_INT, count);
-            amount.IsContained = true;
-            var tree = new GenTreeOp(oper, TYP_INT, pair, amount) { RegNum = destination };
-
-            codeGen.genCodeForShiftLong(tree);
-
-            var descriptors = Descriptors(codeGen);
-            Assert.That(descriptors, Has.Count.EqualTo(instructionCount));
-            if (instructionCount == 2)
-            {
-                Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(destination));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(copiedHalf));
-            }
-            Assert.That(descriptors[^1].idIns(), Is.EqualTo(expected));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(destination));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(otherHalf));
-            Assert.That(InstructionConstant(codeGen.Emitter, descriptors[^1]), Is.EqualTo((nint)count));
-        });
-    }
-#endif
-
     [TestCase(false)]
     [TestCase(true)]
     public static void Bmi2ReadsContainedLocalsForVariableShiftsAndImmediateRotates(bool rotate)
@@ -259,22 +222,22 @@ internal static unsafe class CodeGenShiftTests
         Assert.That(CodeGen.genMapShiftInsToShiftByConstantIns(ins, 33), Is.EqualTo(many));
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsShiftOperandsOnce()
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly diagnostics are available only in Debug.");
+
         WithCodeGen((compiler, codeGen) =>
         {
             var value = Register(compiler, TYP_INT, REG_RAX);
             var count = Register(compiler, TYP_INT, REG_RCX);
             var tree = new GenTreeOp(GT_LSH, TYP_INT, value, count) { RegNum = REG_RDX };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForShift(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
             Assert.That(diagnostic, Does.Contain("shl"));
         });
     }
-#endif
 
     internal static GenTreeIntCon Register(Compiler compiler, var_types type, regNumber reg)
     {
@@ -295,23 +258,11 @@ internal static unsafe class CodeGenShiftTests
 
     internal static void WithCodeGen(Action<Compiler, CodeGen> action, bool minopts = true)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
-        {
-            compiler.eeInfoInitialized = true;
-            compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
-            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
-            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
-            compiler.lvaTable[0].lvLRACandidate = false;
-            codeGen.RegSet.ClearMaskVars();
-            action(compiler, codeGen);
-        }, minopts);
+        CodeGenTestSupport.WithCodeGen(TYP_INT, REG_RAX, action, minopts);
     }
 
     internal static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)
         => CurrentDescriptors(codeGen.Emitter) ?? throw new AssertionException("Missing descriptor buffer.");
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
-    private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);

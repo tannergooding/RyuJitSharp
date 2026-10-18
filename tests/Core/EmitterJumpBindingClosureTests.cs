@@ -1,25 +1,25 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if (DEBUG && TARGET_AMD64) || !TARGET_XARCH
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#if DEBUG
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
-#endif
-#if DEBUG && TARGET_AMD64
-using System.Collections.Generic;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class EmitterJumpBindingClosureTests
 {
-#if DEBUG && TARGET_AMD64
+    [SetUp]
+    public static void RequireApplicableTarget()
+    {
+        Assume.That(
+            (TestConfiguration.IsDebug && Configuration.TARGET_AMD64) || !Configuration.TARGET_XARCH,
+            "This fixture covers Debug AMD64 or non-xarch targets.");
+    }
+
     [ThreadStatic]
     private static List<(string? File, string? Expression)>? s_assertionDetails;
 
@@ -27,6 +27,10 @@ internal static unsafe class EmitterJumpBindingClosureTests
     [TestCase(true)]
     public static void VerboseBindingPreservesTargetAndDistanceTraceOrdering(bool backward)
     {
+        Assume.That(
+            TestConfiguration.IsDebug && Configuration.TARGET_AMD64,
+            "Verbose jump binding diagnostics are available only on Debug AMD64.");
+
         CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_X64_RAX,
             (compiler, codeGen, tree) =>
             {
@@ -78,10 +82,14 @@ internal static unsafe class EmitterJumpBindingClosureTests
     [Test]
     public static void IllegalCrossFuncletBranchReportsBeforeTheNativeAssertion()
     {
+        Assume.That(
+            TestConfiguration.IsDebug && Configuration.TARGET_AMD64,
+            "Funclet branch diagnostics are available only on Debug AMD64.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-        using var tls = new JitTls(&context.JitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
         var emitter = new View(CreateCompiler());
         var source = new insGroup { igFuncIdx = 0 };
         var target = new insGroup { igFuncIdx = 1 };
@@ -97,13 +105,17 @@ internal static unsafe class EmitterJumpBindingClosureTests
     [Test]
     public static void MisplacedRemovalCandidatePrintsBothInstructionsAndGroups()
     {
+        Assume.That(
+            TestConfiguration.IsDebug && Configuration.TARGET_AMD64,
+            "Jump-removal diagnostics are available only on Debug AMD64.");
+
         CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_X64_RAX,
             (compiler, codeGen, _) =>
             {
                 ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
                 vtable.doAssert = &RecordAssertion;
                 var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-                using var tls = new JitTls(&context.JitInfo);
+                using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
                 JitTls.Compiler = compiler;
                 compiler.info.compMethodName = "Mismatch";
                 var emitter = codeGen.Emitter;
@@ -174,12 +186,12 @@ internal static unsafe class EmitterJumpBindingClosureTests
 
         return 0;
     }
-#endif
 
-#if !TARGET_XARCH
     [Test]
     public static void JumpRemovalIsTheNativeEmptyOperationOutsideXarch()
     {
+        Assume.That(!Configuration.TARGET_XARCH, "This test covers non-xarch targets.");
+
         var emitter = new View(CreateCompiler());
         View.Total(emitter) = 123;
 
@@ -187,16 +199,15 @@ internal static unsafe class EmitterJumpBindingClosureTests
 
         Assert.That(View.Total(emitter), Is.EqualTo(123));
     }
-#endif
 
-#if TARGET_ARM || TARGET_ARM64
     [Test]
     public static void DeferredConditionalClassifierTerminatesRatherThanChoosingAnEncoding()
     {
+        Assume.That(Configuration.TARGET_ARM || Configuration.TARGET_ARM64, "This test covers ARM targets.");
+
         var exception = Assert.Throws<FatalJitException>(() => View.Classify(View.Descriptor()));
         Assert.That(exception, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
     }
-#endif
 
     private static Compiler CreateCompiler()
     {
@@ -213,7 +224,6 @@ internal static unsafe class EmitterJumpBindingClosureTests
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitTotalCodeSize")]
         public static extern ref int Total(Emitter emitter);
 
-#if DEBUG && TARGET_AMD64
         public static instrDescJmp BoundJump(insGroup target)
         {
             var jump = new instrDescJmp { idjTargetIG = target };
@@ -233,9 +243,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitCheckFuncletBranch")]
         private static extern void CheckBranch(Emitter emitter, instrDescJmp jump, insGroup source);
-#endif
 
-#if TARGET_ARM || TARGET_ARM64
         public static instrDesc Descriptor()
         {
             var id = new instrDescBasic();
@@ -248,28 +256,10 @@ internal static unsafe class EmitterJumpBindingClosureTests
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitIsCondJump")]
         private static extern bool ClassifyConditional(Emitter? emitter, instrDesc jump);
-#endif
     }
 
-#if DEBUG
     private static string Capture(Action action)
     {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
-        {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
+        return TestConfiguration.CaptureDebugOutput(action);
     }
-#endif
 }
-#endif

@@ -37,13 +37,16 @@ public partial class Emitter
         {
             get
             {
-#if DEBUG
-                if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
+                if (Configuration.DEBUG)
                 {
-                    return 28;
+                    if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
+                    {
+                        return 28;
+                    }
+
+                    return 48;
                 }
-                return 48;
-#else
+
                 if (Configuration.LATE_DISASM && Configuration.TARGET_ARM64)
                 {
                     return 48;
@@ -52,8 +55,8 @@ public partial class Emitter
                 {
                     return 24;
                 }
+
                 return 40;
-#endif
             }
         }
         internal static int DebugPrefix => Uses32BitLayout ? 4 : 8;

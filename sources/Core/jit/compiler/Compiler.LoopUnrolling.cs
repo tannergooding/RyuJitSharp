@@ -29,12 +29,10 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (JitConfig.JitNoUnroll != 0)
+        if (Configuration.DEBUG && JitConfig.JitNoUnroll != 0)
         {
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
 
         var unrollCount = 0;
         var anyIRchange = false;
@@ -209,9 +207,7 @@ public partial class Compiler
         }
 
         var unrollLoopsWithEH = false;
-#if DEBUG
-        unrollLoopsWithEH = JitConfig.JitUnrollLoopsWithEH > 0;
-#endif
+        unrollLoopsWithEH = Configuration.DEBUG && JitConfig.JitUnrollLoopsWithEH > 0;
         if (!optCanDuplicateLoop(loop, unrollLoopsWithEH, out var reason))
         {
             JITDUMP($"Failed to unroll loop L{loop.Index:D2}: {reason}\n");

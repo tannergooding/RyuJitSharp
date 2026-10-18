@@ -13,13 +13,14 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CompilerFinalFrameLayoutTests
 {
-#if DEBUG
     [TestCase(-24, 8, 4294967272u, 4294967280u)]
     [TestCase(-8, 8, 4294967288u, 0u)]
     [TestCase(24, 8, 24u, 32u)]
     public static void PromotedFieldOffsetsUseNativeUnsignedDiagnostics(
         int parentOffset, byte fieldOffset, uint displayedParent, uint displayedOffset)
     {
+        Assume.That(TestConfiguration.IsDebug, "Frame-layout diagnostics are available only in Debug.");
+
         WithFrame((compiler, _) =>
         {
             compiler.lvaTable =
@@ -53,7 +54,7 @@ internal static unsafe class CompilerFinalFrameLayoutTests
                 $"field {fieldOffset} net {displayedOffset}{Environment.NewLine}"));
             Assert.That(compiler.lvaTable[1].StackOffset, Is.EqualTo(parentOffset + fieldOffset));
 
-            compiler.verbose = false;
+            TestConfiguration.SetVerbose(compiler, false);
             Assert.That(CodeGenLifeTransitionTests.Capture(compiler.lvaAssignFrameOffsetsToPromotedStructs), Is.Empty);
         });
     }
@@ -65,6 +66,8 @@ internal static unsafe class CompilerFinalFrameLayoutTests
     [TestCase(true, -0x1234, -1, "[rbp-0x1234] ")]
     public static void FrameLocationPaddingFollowsTheLocation(bool framePointer, int offset, int width, string location)
     {
+        Assume.That(TestConfiguration.IsDebug, "Frame-layout diagnostics are available only in Debug.");
+
         WithFrame((compiler, codeGen) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
@@ -78,7 +81,6 @@ internal static unsafe class CompilerFinalFrameLayoutTests
             Assert.That(text, Is.EqualTo(location.PadRight(int.Max(width, location.Length))));
         });
     }
-#endif
 
     [TestCase(Compiler.TENTATIVE_FRAME_LAYOUT, -20, -35, 15)]
     [TestCase(Compiler.FINAL_FRAME_LAYOUT, -20, -32, 12)]

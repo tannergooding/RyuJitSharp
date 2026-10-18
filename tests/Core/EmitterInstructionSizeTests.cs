@@ -29,7 +29,6 @@ internal static unsafe class EmitterInstructionSizeTests
         Assert.That(size, Is.EqualTo((byte)length));
     }
 
-#if TARGET_X86
     [TestCase(INS_addps, EA_16BYTE, IF_XARCH_RWR_SRD, 4, 256, 16, true)]
     [TestCase(INS_pslld, EA_16BYTE, IF_XARCH_RWR_RRD_SRD, 4, 16, 1, true)]
     [TestCase(INS_addps, EA_16BYTE, IF_XARCH_RWR_SRD, 4, 257, 257, false)]
@@ -37,6 +36,8 @@ internal static unsafe class EmitterInstructionSizeTests
         instruction ins, emitAttr attr, Emitter.insFormat format, int inputSize,
         int displacement, int expectedDisplacement, bool expected)
     {
+        Assume.That(Configuration.TARGET_X86, "This test covers the x86 instruction encoding.");
+
         var emitter = CreateEmitter(false, 0);
         var id = CreateDescriptor(ins, attr, format);
         id.idSetEvexCompressedDisplacementBit();
@@ -48,7 +49,6 @@ internal static unsafe class EmitterInstructionSizeTests
         Assert.That(compressed, Is.EqualTo((nint)expectedDisplacement));
         Assert.That(fits, Is.EqualTo(expected));
     }
-#endif
 
     [TestCase(false, 0, 0u, EA_4BYTE, REG_X64_RAX, 3u)]
     [TestCase(true, 0, 0u, EA_4BYTE, REG_X64_RAX, 3u)]

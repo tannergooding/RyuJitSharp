@@ -241,22 +241,22 @@ internal static class CodeGenConditionalTests
         Assert.That(CodeGen.JumpKindToCmov(condition), Is.EqualTo(expected));
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsSelectionInstructions()
     {
+        Assume.That(TestConfiguration.IsDebug, "Selection instruction disassembly is Debug-only.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeConditional(GT_SELECT, TYP_INT,
                 Register(compiler, TYP_INT, REG_X64_R8), Register(compiler, TYP_INT, REG_X64_RAX),
                 Register(compiler, TYP_INT, REG_X64_RCX)) { RegNum = REG_X64_RDX };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForSelect(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(3));
             Assert.That(diagnostic, Does.Contain("cmov"));
         });
     }
-#endif
 
     private static (BasicBlock WhenTrue, BasicBlock WhenFalse) SetConditionalBlock(
         Compiler compiler, bool nextIsFalse, bool coldBoundary)

@@ -246,10 +246,11 @@ internal static unsafe class RedundantZeroInitTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void VerboseScanReportsBlockAndExplicitInitialization()
     {
+        Assume.That(TestConfiguration.IsDebug, "Verbose compiler diagnostics are available only in Debug.");
+
         WithGraph(1, compiler => {
             var block = AddBlock(compiler);
             AddStatement(compiler, block,
@@ -264,7 +265,6 @@ internal static unsafe class RedundantZeroInitTests
             Assert.That(output, Does.Contain("Marking V00 as having an explicit init"));
         });
     }
-#endif
 
     private static void WithGraph(int count, Action<Compiler> action)
     {
@@ -274,9 +274,10 @@ internal static unsafe class RedundantZeroInitTests
             compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
-#if TARGET_ARM64
-            compiler.lvaFfrRegister = BAD_VAR_NUM;
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                compiler.lvaFfrRegister = BAD_VAR_NUM;
+            }
             action(compiler);
         });
     }

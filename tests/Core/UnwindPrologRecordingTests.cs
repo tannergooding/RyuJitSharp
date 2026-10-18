@@ -43,11 +43,15 @@ internal static class UnwindPrologRecordingTests
     {
         WithProlog((compiler, _) =>
         {
-#if DEBUG
-            Assert.That(() => compiler.unwindBegProlog(), Throws.Exception);
-#else
-            compiler.unwindBegProlog();
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(() => compiler.unwindBegProlog(), Throws.Exception);
+            }
+            else
+            {
+                compiler.unwindBegProlog();
+            }
+
             Assert.That(compiler.compGeneratingUnwindProlog, Is.True);
         });
     }
@@ -189,11 +193,9 @@ internal static class UnwindPrologRecordingTests
             compiler.unwindBegProlog();
 
             var func = compiler.funCurrentFunc();
-#if DEBUG
-            var hotEnd = JitConfig.JitFakeProcedureSplitting != 0 ? funcletGroup : coldGroup;
-#else
-            var hotEnd = coldGroup;
-#endif
+            var hotEnd = TestConfiguration.IsDebug && (JitConfig.JitFakeProcedureSplitting != 0)
+                ? funcletGroup : coldGroup;
+
             Assert.That(func.endLoc?.GetIG(), Is.SameAs(hotEnd));
             Assert.That(func.coldStartLoc?.GetIG(), Is.SameAs(coldGroup));
             Assert.That(func.coldEndLoc?.GetIG(), Is.SameAs(funcletGroup));

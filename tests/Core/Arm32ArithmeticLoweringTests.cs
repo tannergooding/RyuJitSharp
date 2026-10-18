@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -18,6 +17,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm32ArithmeticLoweringTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(TestConfiguration.IsArm32, "This fixture requires the ARM32 target.");
+    }
+
     [TestCase(GT_ADD, 4095, false, true)]
     [TestCase(GT_ADD, 4095, true, false)]
     [TestCase(GT_ADD, 4096, false, true)]
@@ -332,4 +337,3 @@ internal static unsafe class Arm32ArithmeticLoweringTests
         }
     }
 }
-#endif

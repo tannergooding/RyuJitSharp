@@ -58,9 +58,10 @@ internal static class CodeGenLocalStoreTests
             else
             {
                 tree = compiler.gtNewStoreLclVarNode(0, value);
-#if DEBUG
-                tree.AsLclVar().LclIlOffs = immediate ? 0x24 : unchecked((int)BAD_IL_OFFSET);
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    tree.AsLclVar().LclIlOffs = immediate ? 0x24 : unchecked((int)BAD_IL_OFFSET);
+                }
             }
             tree.RegNum = REG_NA;
 
@@ -82,14 +83,12 @@ internal static class CodeGenLocalStoreTests
             {
                 Assert.That(InstructionConstant(codeGen.Emitter, descriptors[0]), Is.EqualTo((nint)7));
             }
-#if DEBUG
-            if (!field)
+            if (TestConfiguration.IsDebug && !field)
             {
                 var info = descriptors[0].idDebugOnlyInfo() ??
                     throw new AssertionException("Missing store debug information.");
                 Assert.That(info.idVarRefOffs, Is.EqualTo(immediate ? 0x24u : unchecked((uint)BAD_IL_OFFSET)));
             }
-#endif
         });
     }
 
@@ -277,10 +276,11 @@ internal static class CodeGenLocalStoreTests
             Assert.That(codeGen.ins_Move_Extend(type, sourceInRegister), Is.EqualTo(ins)));
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsLocalStoresAndZeroRewriting()
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly diagnostics are available only in Debug.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].lvLRACandidate = true;
@@ -289,11 +289,10 @@ internal static class CodeGenLocalStoreTests
             source.IsReuseRegVal = true;
             var tree = compiler.gtNewStoreLclVarNode(0, source);
             tree.RegNum = REG_RAX;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForStoreLclVar(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(diagnostic, Does.Contain("xor"));
         });
     }
-#endif
 }

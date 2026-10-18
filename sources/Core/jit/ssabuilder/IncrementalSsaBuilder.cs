@@ -218,8 +218,7 @@ public sealed class IncrementalSsaBuilder
         assert(!_finalizedDefs);
 #endif
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"Finalizing defs for SSA insertion of V{_lclNum:D2}\n");
             jitprintf($"  {_defs.Count} defs:");
@@ -230,7 +229,6 @@ public sealed class IncrementalSsaBuilder
             }
             jitprintf("\n");
         }
-#endif
 
         ref var descriptor = ref _compiler.lvaGetDesc(_lclNum);
         if (_defs.Count == 1)
@@ -323,12 +321,13 @@ public sealed class IncrementalSsaBuilder
             if (!dfsTree.Contains(use.Block))
             {
                 reachingDef = _defs[0];
-#if DEBUG
-                var unreachableDefTree = reachingDef.Tree ??
-                    throw new InvalidOperationException("SSA definition has no tree.");
-                JITDUMP($"  Use is in unreachable block {FMT_BB(use.Block.bbNum)}, using first def " +
-                    $"[{unreachableDefTree.TreeId:D6}] in {FMT_BB(reachingDef.Block.bbNum)}\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    var unreachableDefTree = reachingDef.Tree ??
+                        throw new InvalidOperationException("SSA definition has no tree.");
+                    JITDUMP($"  Use is in unreachable block {FMT_BB(use.Block.bbNum)}, using first def " +
+                        $"[{unreachableDefTree.TreeId:D6}] in {FMT_BB(reachingDef.Block.bbNum)}\n");
+                }
             }
             else
             {

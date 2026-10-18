@@ -44,8 +44,7 @@ public sealed partial class ObjectAllocator
             ComputeConnGraphClosure(_bitVecTraits, _definitelyUsedPointers, "used");
         }
 
-#if DEBUG
-        if (JitConfig.JitObjectStackAllocationDumpConnGraph > 0)
+        if (Configuration.DEBUG && JitConfig.JitObjectStackAllocationDumpConnGraph > 0)
         {
             JITDUMP("digraph ConnectionGraph {\n");
             var adjacencyMatrix = _connGraphAdjacencyMatrix;
@@ -53,7 +52,7 @@ public sealed partial class ObjectAllocator
 
             for (var index = 0; index < _bvCount; index++)
             {
-                BitVecOps.VisitBits(_bitVecTraits, adjacencyMatrix[index], source => {
+                _ = BitVecOps.VisitBits(_bitVecTraits, adjacencyMatrix[index], source => {
                     if (CompilerInstance.verbose)
                     {
                         DumpIndex(source);
@@ -78,7 +77,6 @@ public sealed partial class ObjectAllocator
             }
             JITDUMP("}\n");
         }
-#endif
         _analysisDone = true;
     }
 

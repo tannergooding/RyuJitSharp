@@ -100,6 +100,7 @@ public sealed partial class LinearScan
 #if DEBUG
         dumpLsraAllocationEvent(LsraDumpEvent.FREE_REGS, null, null);
 #endif
+
         makeRegsAvailable(registersToFree);
 
         freeRegistersSingleType(registersToFree.Lower, REG_LOW_BASE);
@@ -170,6 +171,7 @@ public sealed partial class LinearScan
                 dumpLsraAllocationEvent(
                     LsraDumpEvent.LAST_USE_DELAYED, interval, refPosition, assignedRegister);
 #endif
+
                 delayRegistersToFree |= busyMask;
                 _regsInUseNextLocation |= busyMask;
             }
@@ -178,6 +180,7 @@ public sealed partial class LinearScan
 #if DEBUG
                 dumpLsraAllocationEvent(LsraDumpEvent.LAST_USE, interval, refPosition, assignedRegister);
 #endif
+
                 registersToFree |= busyMask;
             }
         }
@@ -325,9 +328,5 @@ public sealed partial class LinearScan
         return getWeight(recentRefPosition);
     }
 
-#if DEBUG
-    private bool spillAlways() => (_lsraStressMask & 0x800) != 0;
-#else
-    private bool spillAlways() => false;
-#endif
+    private bool spillAlways() => Configuration.DEBUG && ((_lsraStressMask & 0x800) != 0);
 }

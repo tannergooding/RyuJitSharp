@@ -12,6 +12,9 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class TrackedLocalSelectionTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "lvaTrackedVars")]
+    private static extern ref nint[] TrackedVars(Compiler compiler);
+
     private readonly struct LatePolicy : ILivenessPolicy
     {
     }
@@ -190,17 +193,18 @@ internal static unsafe class TrackedLocalSelectionTests
             var full = BitSetOps<Compiler, TrackedVarBitSetTraits>.MakeFull(compiler);
             Assert.That(BitSetOps<Compiler, TrackedVarBitSetTraits>.Count(compiler, full), Is.EqualTo((nint)count));
             Assert.That(BitSetOps<Compiler, TrackedVarBitSetTraits>.IsMember(compiler, full, count - 1), Is.True);
-#if DEBUG
-            Assert.That(compiler.lvaTrackedVars.Length, Is.EqualTo((count + 63) / 64));
-            for (var index = 0; index < count; index++)
+            if (TestConfiguration.IsDebug)
             {
-                Assert.That((compiler.lvaTrackedVars[index / 64] & ((nint)1 << (index % 64))) != 0, Is.True);
+                Assert.That(TrackedVars(compiler).Length, Is.EqualTo((count + 63) / 64));
+                for (var index = 0; index < count; index++)
+                {
+                    Assert.That((TrackedVars(compiler)[index / 64] & ((nint)1 << (index % 64))) != 0, Is.True);
+                }
+                if ((count % 64) != 0)
+                {
+                    Assert.That(TrackedVars(compiler)[^1] >>> (count % 64), Is.EqualTo((nint)0));
+                }
             }
-            if ((count % 64) != 0)
-            {
-                Assert.That(compiler.lvaTrackedVars[^1] >>> (count % 64), Is.EqualTo((nint)0));
-            }
-#endif
         });
     }
 
@@ -220,9 +224,10 @@ internal static unsafe class TrackedLocalSelectionTests
             Assert.That(compiler.lvaTrackedCountInSizeTUnits, Is.Zero);
             Assert.That(compiler.lvaCurEpoch, Is.EqualTo(21));
             Assert.That(compiler.lvaTrackedToVarNum, Is.SameAs(previousMapping));
-#if DEBUG
-                Assert.That(compiler.lvaTrackedVars, Is.Empty);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(TrackedVars(compiler), Is.Empty);
+            }
         });
     }
 

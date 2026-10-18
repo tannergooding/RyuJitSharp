@@ -65,10 +65,11 @@ internal static class LinearScanLocalCandidatesTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void FloatingCandidateDumpUsesLocalNumbersWithNonidentityTrackedOrder()
     {
+        Assume.That(TestConfiguration.IsDebug, "Linear-scan diagnostics are available only in Debug.");
+
         WithCandidates(2, (compiler, allocator) => {
             compiler.lvaTable[0]._varIndex = 1;
             compiler.lvaTable[1]._varIndex = 0;
@@ -87,7 +88,6 @@ internal static class LinearScanLocalCandidatesTests
                 $"{Environment.NewLine}FP callee save candidate vars: {{V00}}{Environment.NewLine}"));
         });
     }
-#endif
 
     [TestCase(6, true, true, false)]
     [TestCase(7, false, true, false)]
@@ -148,12 +148,15 @@ internal static class LinearScanLocalCandidatesTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(TYP_SIMD32, 3.999, false)]
     [TestCase(TYP_SIMD32, 4.0, true)]
     [TestCase(TYP_SIMD64, 4.0, true)]
     public static void LargeVectorCandidatesCreateRelatedUpperIntervals(var_types type, double weight, bool preferred)
     {
+        Assume.That(
+            Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE,
+            "Partial SIMD callee-save candidates are available only on supported targets.");
+
         WithCandidates(1, (compiler, allocator) => {
             compiler.lvaTable[0].Type = type;
             compiler.lvaTable[0].setLvRefCntWtd(weight * BB_UNITY_WEIGHT);
@@ -167,7 +170,6 @@ internal static class LinearScanLocalCandidatesTests
             Assert.That(allocator.intervals[1].relatedInterval, Is.SameAs(mappings[0]));
         });
     }
-#endif
 
     [Test]
     public static void RejectingOnePromotedFieldRevokesEarlierFieldCandidates()
@@ -247,11 +249,9 @@ internal static class LinearScanLocalCandidatesTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__lvLiveInOutOfHandler")]
     private static extern void LiveInOutOfHandler(ref LclVarDsc local, bool value);
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_largeVectorVars")]
     private static extern ref nint[] LargeVectors(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_largeVectorCalleeSaveCandidateVars")]
     private static extern ref nint[] LargeVectorCandidates(LinearScan allocator);
-#endif
 }

@@ -2,10 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Reflection;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.EHHandlerType;
@@ -147,10 +145,14 @@ internal static unsafe class EarlyLivenessTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DebugMethodRangeCanExcludeOptimizedEarlyLiveness()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("The early-liveness method-range option is Debug-only.");
+        }
+
         WithCompiler(1, minOpts: false, compiler => {
             var block = AddBlock(compiler);
             var statement = AddStatement(compiler, block, Store(compiler, 0, compiler.gtNewIconNode(TYP_INT, 1)));
@@ -184,6 +186,11 @@ internal static unsafe class EarlyLivenessTests
     [Test]
     public static void DeadStorePropagationRepeatsTheNativePhaseSequence()
     {
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.Ignore("The early-liveness diagnostic output is Debug-only.");
+        }
+
         WithCompiler(2, minOpts: false, compiler => {
             var first = AddBlock(compiler);
             var last = AddBlock(compiler);
@@ -211,8 +218,6 @@ internal static unsafe class EarlyLivenessTests
         }
         return count;
     }
-
-#endif
 
     [Test]
     public static void EarlyTreeDriverRejectsOtherTreeAndSsaPoliciesBeforeMutation()

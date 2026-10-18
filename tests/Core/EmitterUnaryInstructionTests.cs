@@ -218,16 +218,17 @@ internal static unsafe class EmitterUnaryInstructionTests
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void DisassemblyRecordsUnaryInstructionsAndRequiredCopies(int entrypoint)
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly diagnostics are available only in Debug.");
+
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             var emitter = codeGen.Emitter;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -248,7 +249,6 @@ internal static unsafe class EmitterUnaryInstructionTests
             Assert.That(diagnostic, Does.Contain("neg"));
         });
     }
-#endif
 
     private static void WithEmitter(Action<Emitter> action)
     {

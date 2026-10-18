@@ -1,11 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.genTreeOps;
@@ -17,6 +14,14 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareConditionalSelectLoweringTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(
+            Configuration.TARGET_XARCH && Configuration.FEATURE_HW_INTRINSICS,
+            "This fixture requires xarch hardware intrinsics.");
+    }
+
     [Test]
     public static void MaskConversionSelectsBlendWithUnderlyingElementWidth()
     {
@@ -144,10 +149,11 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
         }, supportsAvx512: false);
     }
 
-#if DEBUG
     [Test]
     public static void Vector256FloatingBlendDoesNotReportAvxFromDebugAssertion()
     {
+        Assume.That(TestConfiguration.IsDebug, "The Debug assertion check is available only in Debug.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.notifyInstructionSetUsage =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
@@ -200,7 +206,6 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
         }
         return supported;
     }
-#endif
 
     private static GenTreeHWIntrinsic ConditionalSelect(GenTree condition, GenTree whenTrue, GenTree whenFalse)
         => new(TYP_SIMD16, NI_Vector_ConditionalSelect, TYP_INT, 16, condition, whenTrue, whenFalse);
@@ -267,4 +272,3 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
         }
     }
 }
-#endif

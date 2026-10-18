@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64HardwareLoweringTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [TestCase(TYP_BYTE, SveMaskPatternAll, 0xFFFFUL)]
     [TestCase(TYP_SHORT, SveMaskPatternVectorCount3, 0x15UL)]
     [TestCase(TYP_INT, SveMaskPatternVectorCount8, 0UL)]
@@ -28,7 +33,6 @@ internal static unsafe class Arm64HardwareLoweringTests
         Assert.That(mask.u64[0], Is.EqualTo(expected));
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_BYTE, SveMaskPatternAll, 16)]
     [TestCase(TYP_SHORT, SveMaskPatternVectorCount3, 3)]
     [TestCase(TYP_INT, SveMaskPatternVectorCount8, 4)]
@@ -36,6 +40,8 @@ internal static unsafe class Arm64HardwareLoweringTests
     public static void VectorPatternsRespectElementWidthsAndUnavailableLanes(
         var_types baseType, SveMaskPattern pattern, int expectedSetLanes)
     {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
+
         simd16_t vector = default;
         var result = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref vector, 1));
 
@@ -51,6 +57,8 @@ internal static unsafe class Arm64HardwareLoweringTests
     [Test]
     public static void UnsupportedVectorPatternLeavesResultUnchanged()
     {
+        Assume.That(Configuration.FEATURE_MASKED_HW_INTRINSICS, "Masked hardware intrinsics are unavailable.");
+
         simd16_t vector = default;
         var result = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref vector, 1));
         result.Fill(0xA5);
@@ -59,7 +67,6 @@ internal static unsafe class Arm64HardwareLoweringTests
         Assert.That(EvaluateSimdPatternToVector(TYP_BYTE, ref vector, SveMaskPatternNone), Is.False);
         Assert.That(result.ToArray(), Is.EqualTo(original));
     }
-#endif
 
     [TestCase(0, NI_Vector_Create, NI_AdvSimd_DuplicateToVector128)]
     [TestCase(1, NI_Vector_CreateScalar, NI_AdvSimd_Insert)]
@@ -327,4 +334,3 @@ internal static unsafe class Arm64HardwareLoweringTests
         }
     }
 }
-#endif

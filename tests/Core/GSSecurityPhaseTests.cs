@@ -25,11 +25,8 @@ internal static unsafe class GSSecurityPhaseTests
             lvIsRegArg = isRegArg,
         };
 
-#if WINDOWS_AMD64_ABI
-        Assert.That(Compiler.ShadowParamVarInfo.MayNeedShadowCopy(in descriptor), Is.EqualTo(isParam));
-#else
-        Assert.That(Compiler.ShadowParamVarInfo.MayNeedShadowCopy(in descriptor), Is.EqualTo(isParam && !isRegArg));
-#endif
+        var expected = Configuration.WINDOWS_AMD64_ABI ? isParam : isParam && !isRegArg;
+        Assert.That(Compiler.ShadowParamVarInfo.MayNeedShadowCopy(in descriptor), Is.EqualTo(expected));
     }
 
     [Test]

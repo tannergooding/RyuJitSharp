@@ -3,10 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-#if DEBUG
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
@@ -36,31 +34,35 @@ internal static unsafe class SharedBitShapeTests
     [TestCase(1UL, 1U)]
     [TestCase(0x80000000UL, 1U)]
     [TestCase(0xFFFFFFFFUL, 32U)]
-#if REGMASK_BITS_64
     [TestCase(0x8000000000000000UL, 1U)]
     [TestCase(ulong.MaxValue, 64U)]
-#endif
     public static void BitCountLowerMaskPreservesUnsignedWidth(ulong value, uint expected)
     {
+        if (value > uint.MaxValue)
+        {
+            Assume.That(Configuration.REGMASK_BITS_64, "This case requires 64-bit register masks.");
+        }
+
         WithoutNativeAssertions(() => {
             var mask = new regMaskTP(unchecked((regMask)value));
             Assert.That(genCountBits(mask), Is.EqualTo(expected));
         });
     }
 
-#if HAS_MORE_THAN_64_REGISTERS
     [TestCase(0UL, ulong.MaxValue, 64U)]
     [TestCase(1UL, 1UL, 2U)]
     [TestCase(0x8000000000000000UL, 0x8000000000000000UL, 2U)]
     [TestCase(ulong.MaxValue, ulong.MaxValue, 128U)]
     public static void BitCountFullMaskCountsBothBanks(ulong lower, ulong upper, uint expected)
     {
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS,
+            "This test requires more than 64 target registers.");
+
         WithoutNativeAssertions(() => {
             var mask = new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
             Assert.That(genCountBits(mask), Is.EqualTo(expected));
         });
     }
-#endif
 
     [TestCase(0, 1)]
     [TestCase(0, 2)]
@@ -219,29 +221,32 @@ internal static unsafe class SharedBitShapeTests
     [TestCase(0x80000000UL, 0x80000000UL, true, true)]
     [TestCase(0x80000001UL, 1UL, false, false)]
     [TestCase(0xFFFFFFFFUL, 1UL, false, false)]
-#if REGMASK_BITS_64
     [TestCase(0x8000000000000000UL, 0x8000000000000000UL, true, true)]
     [TestCase(0x8000000080000000UL, 0x80000000UL, false, false)]
     [TestCase(ulong.MaxValue, 1UL, false, false)]
     [TestCase(ulong.MaxValue - 1, 2UL, false, false)]
-#endif
     public static void LowerOnlyMasksPreserveTheCompleteUnsignedBank(
         ulong bits, ulong lowest, bool atMostOne, bool exactlyOne)
     {
+        if (bits > uint.MaxValue || lowest > uint.MaxValue)
+        {
+            Assume.That(Configuration.REGMASK_BITS_64, "This case requires 64-bit register masks.");
+        }
+
         WithoutNativeAssertions(() => {
             var mask = new regMaskTP(unchecked((regMask)bits));
             var result = genFindLowestBit(mask);
 
             Assert.That(result.Lower, Is.EqualTo(unchecked((regMask)lowest)));
-#if HAS_MORE_THAN_64_REGISTERS
-            Assert.That(result.Upper, Is.EqualTo(SRBM_NONE));
-#endif
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                Assert.That(result.Upper, Is.EqualTo(SRBM_NONE));
+            }
             Assert.That(genMaxOneBit(mask), Is.EqualTo(atMostOne));
             Assert.That(genExactlyOneBit(mask), Is.EqualTo(exactlyOne));
         });
     }
 
-#if HAS_MORE_THAN_64_REGISTERS
     [TestCase(0UL, 1UL, 0UL, 1UL, true, true)]
     [TestCase(0UL, 0x80000000UL, 0UL, 0x80000000UL, true, true)]
     [TestCase(0UL, 0x8000000000000000UL, 0UL, 0x8000000000000000UL, true, true)]
@@ -258,6 +263,9 @@ internal static unsafe class SharedBitShapeTests
     public static void FullMasksPreferTheLowerBankButCountBothBanksForOneBit(
         ulong lower, ulong upper, ulong lowestLower, ulong lowestUpper, bool atMostOne, bool exactlyOne)
     {
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS,
+            "This test requires more than 64 target registers.");
+
         WithoutNativeAssertions(() => {
             var mask = new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
             var result = genFindLowestBit(mask);
@@ -268,7 +276,6 @@ internal static unsafe class SharedBitShapeTests
             Assert.That(genExactlyOneBit(mask), Is.EqualTo(exactlyOne));
         });
     }
-#endif
 
     private static IEnumerable<TestCaseData> Powers32()
     {
@@ -300,15 +307,17 @@ internal static unsafe class SharedBitShapeTests
 
     private static void WithoutNativeAssertions(Action action)
     {
-#if DEBUG
-        WithAssertionRecorder(action);
-        Assert.That(s_assertions, Is.Empty);
-#else
-        action();
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            WithAssertionRecorder(action);
+            Assert.That(s_assertions, Is.Empty);
+        }
+        else
+        {
+            action();
+        }
     }
 
-#if DEBUG
     private static readonly List<string?> s_assertions = [];
     private static readonly string[] s_exactlyOneAssertion = ["genExactlyOneBit(value)"];
 
@@ -319,6 +328,8 @@ internal static unsafe class SharedBitShapeTests
     [TestCase(3UL, 2UL, "start < end|(start & (start - 1)) == 0")]
     public static void BitsBetweenReportsOrderedNativePreconditions(ulong start, ulong end, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "Native assertion capture is available only in Debug.");
+
         WithAssertionRecorder(() => _ = BitsBetween(ulong.MaxValue, end, start));
 
         Assert.That(s_assertions, Is.EqualTo(expected.Split('|')));
@@ -328,6 +339,8 @@ internal static unsafe class SharedBitShapeTests
     [TestCase(true)]
     public static void ZeroLog2ReportsExactlyOneBeforeTheScanNonzeroAssertion(bool wide)
     {
+        Assume.That(TestConfiguration.IsDebug, "Native assertion capture is available only in Debug.");
+
         WithAssertionRecorder(() => {
             if (wide)
             {
@@ -355,6 +368,8 @@ internal static unsafe class SharedBitShapeTests
     [TestCase(uint.MaxValue - 1, 1U)]
     public static void MultiBitLog2ReportsOnlyTheExactlyOneAssertion32(uint value, uint expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "Native assertion capture is available only in Debug.");
+
         WithAssertionRecorder(() => Assert.That(genLog2(value), Is.EqualTo(expected)));
 
         Assert.That(s_assertions, Is.EqualTo(s_exactlyOneAssertion));
@@ -365,6 +380,8 @@ internal static unsafe class SharedBitShapeTests
     [TestCase(ulong.MaxValue - 1, 1U)]
     public static void MultiBitLog2ReportsOnlyTheExactlyOneAssertion64(ulong value, uint expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "Native assertion capture is available only in Debug.");
+
         WithAssertionRecorder(() => Assert.That(genLog2(value), Is.EqualTo(expected)));
 
         Assert.That(s_assertions, Is.EqualTo(s_exactlyOneAssertion));
@@ -375,7 +392,7 @@ internal static unsafe class SharedBitShapeTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&ee);
+        using var tls = TestConfiguration.CreateJitTls(&ee);
         s_assertions.Clear();
         action();
     }
@@ -387,5 +404,4 @@ internal static unsafe class SharedBitShapeTests
 
         return 0;
     }
-#endif
 }

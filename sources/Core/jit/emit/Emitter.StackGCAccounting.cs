@@ -157,7 +157,6 @@ public partial class Emitter
             throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
         }
 
-#if EMIT_GENERATE_GCINFO
         if (Configuration.DEBUG)
         {
             assert(emitIssuing);
@@ -248,7 +247,6 @@ public partial class Emitter
             assert(argRecCnt <= ushort.MaxValue);
         }
         descriptor.rpdCallData.rpdPtrArg = argRecValue;
-#endif
     }
 
     internal unsafe void emitStackKillArgs(byte* addr, uint count, byte callInstrSize)

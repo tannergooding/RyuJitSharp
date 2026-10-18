@@ -9,9 +9,7 @@ public sealed partial class Lowering
 {
     private GenTree? LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic node)
     {
-#if DEBUG
         assert(CompilerInstance.canUseEvexEncodingDebugOnly());
-#endif
         const byte A = 0xF0;
         const byte B = 0xCC;
         const byte C = 0xAA;

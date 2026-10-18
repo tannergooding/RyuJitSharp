@@ -244,20 +244,20 @@ public partial class Emitter
             assert(_compiler is not null);
         }
 
-#if DEBUG
-        if (_compiler.opts.disAsm || _compiler.verbose)
-        {
-            emitDispInsWasm(id, false, _compiler.opts.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
-                unchecked((nuint)(dst - *dp)), ig);
-        }
-#else
         var compiler = _compiler;
-        if ((compiler is not null) && compiler.opts.disAsm)
+        if (Configuration.DEBUG)
+        {
+            if (compiler!.opts.disAsm || compiler.verbose)
+            {
+                emitDispInsWasm(id, false, compiler.opts.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
+                    unchecked((nuint)(dst - *dp)), ig);
+            }
+        }
+        else if ((compiler is not null) && compiler.opts.disAsm)
         {
             emitDispInsWasm(id, false, false, true, emitCurCodeOffs(*dp), *dp,
                 unchecked((nuint)(dst - *dp)), ig);
         }
-#endif
         *dp = dst;
         return unchecked((nuint)size);
     }

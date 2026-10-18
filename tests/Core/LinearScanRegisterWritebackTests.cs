@@ -8,9 +8,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeCallFlags;
-#if DEBUG
 using static RyuJitSharp.GenTreeDebugFlags;
-#endif
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
@@ -22,10 +20,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanRegisterWritebackTests
 {
-#if TARGET_X86
     [Test]
     public static void MultiRegisterResultsCanBeAssignedAndCopiedIndependently()
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires the x86 target.");
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -41,15 +40,15 @@ internal static unsafe class LinearScanRegisterWritebackTests
             Assert.That(source.GetRegType(1), Is.EqualTo(TYP_INT));
             Assert.That(source.GetRegSpillFlagByIdx(1), Is.EqualTo(default(GenTreeFlags)));
 
-            lsraAssignRegToTree(source, regNumber.REG_EAX, 0);
+            lsraAssignRegToTree(source, REG_EAX, 0);
             lsraAssignRegToTree(source, regNumber.REG_X64_EDX, 1);
             source.SetRegSpillFlagByIdx(GTF_SPILLED, 1);
-            copy.RegNum = regNumber.REG_ECX;
+            copy.RegNum = REG_ECX;
             copy.CopyOtherRegs(source);
 
-            Assert.That(source.GetRegNumByIdx(0), Is.EqualTo(regNumber.REG_EAX));
+            Assert.That(source.GetRegNumByIdx(0), Is.EqualTo(REG_EAX));
             Assert.That(source.GetRegNumByIdx(1), Is.EqualTo(regNumber.REG_X64_EDX));
-            Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_ECX));
+            Assert.That(copy.RegNum, Is.EqualTo(REG_ECX));
             Assert.That(copy.OtherReg, Is.EqualTo(regNumber.REG_X64_EDX));
             Assert.That(copy.GetRegSpillFlagByIdx(1), Is.EqualTo(GTF_SPILLED));
             copy.ClearOtherRegFlags();
@@ -61,7 +60,6 @@ internal static unsafe class LinearScanRegisterWritebackTests
             JitTls.Compiler = previous;
         }
     }
-#endif
 
     [TestCase(false, false)]
     [TestCase(true, false)]
@@ -141,10 +139,12 @@ internal static unsafe class LinearScanRegisterWritebackTests
             Assert.That(source.Next, Is.SameAs(copy));
             Assert.That(copy.Next, Is.SameAs(intervening));
             Assert.That(intervening.Next, Is.SameAs(parent));
-#if DEBUG
-            Assert.That(allocator.getLsraStat(LsraStat.STAT_COPY_REG, checked((uint)block.bbNum)), Is.EqualTo(reload ? 0u : 1u));
-            Assert.That((copy._debugFlags & GTF_DEBUG_NODE_LSRA_ADDED) != 0, Is.True);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(allocator.getLsraStat(LsraStat.STAT_COPY_REG, checked((uint)block.bbNum)),
+                    Is.EqualTo(reload ? 0u : 1u));
+                Assert.That((copy._debugFlags & GTF_DEBUG_NODE_LSRA_ADDED) != 0, Is.True);
+            }
         });
     }
 
@@ -231,6 +231,9 @@ internal static unsafe class LinearScanRegisterWritebackTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
     private static extern ref uint BbNumMaxBeforeResolution(LinearScan allocator);
 
@@ -279,6 +282,14 @@ internal static unsafe class LinearScanRegisterWritebackTests
                 allocator.physRegs[index].init((regNumber)index);
             }
             BlockInfo(allocator) = [new LsraBlockInfo(), new LsraBlockInfo()];
+            if (Configuration.TRACK_LSRA_STATS)
+            {
+                BlockStats(allocator) =
+                [
+                    new uint[(int)LsraStat.COUNT],
+                    new uint[(int)LsraStat.COUNT],
+                ];
+            }
             BbNumMaxBeforeResolution(allocator) = 1;
             action(compiler, allocator);
         }

@@ -34,13 +34,19 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
                 RegNum = REG_STK, lvOnFrame = true,
             };
             var slots = (uint)(roundUp(homeSize, TARGET_POINTER_SIZE) / sizeof(int));
-#if TARGET_WASM
-            var expectedBlock = slots > 0;
-#elif TARGET_64BIT && !TARGET_AMD64
-            var expectedBlock = slots > 8;
-#else
-            var expectedBlock = slots > 4;
-#endif
+            bool expectedBlock;
+            if (Configuration.TARGET_WASM)
+            {
+                expectedBlock = slots > 0;
+            }
+            else if (Configuration.TARGET_64BIT && !Configuration.TARGET_AMD64)
+            {
+                expectedBlock = slots > 8;
+            }
+            else
+            {
+                expectedBlock = slots > 4;
+            }
 
             codeGen.genCheckUseBlockInit();
 
@@ -50,10 +56,11 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
         });
     }
 
-#if TARGET_ARM
     [Test]
     public static void BlockInitializationDoesNotForceSpillMappedPrespilledArguments()
     {
+        Assume.That(Configuration.TARGET_ARM, "This test requires ARM32 semantics.");
+
         WithFrame((compiler, codeGen) =>
         {
             compiler.info.compInitMem = true;
@@ -83,13 +90,13 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_R4)));
         });
     }
-#endif
 
-#if TARGET_WASM
     [TestCase(TYP_REF)]
     [TestCase(TYP_BYREF)]
     public static void WasmTrackedGcHomesAreInitializedEvenWhenDeadAtEntry(var_types type)
     {
+        Assume.That(Configuration.TARGET_WASM, "This test requires WebAssembly semantics.");
+
         WithFrame((compiler, codeGen) =>
         {
             compiler.lvaTable[0] = new LclVarDsc
@@ -106,32 +113,29 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
             Assert.That(codeGen.UseBlockInit, Is.True);
         });
     }
-#endif
 
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     [TestCase(false)]
     [TestCase(true)]
     public static void ArchitecturalZeroRegisterDoesNotTouchScratchState(bool initiallyZero)
     {
+        Assume.That(Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64, "This test requires a target with an architectural zero register.");
+
         WithFrame((_, codeGen) =>
         {
             var zeroed = initiallyZero;
-#if TARGET_ARM64
-            var expected = REG_ARM64_ZR;
-#else
-            var expected = REG_R0;
-#endif
+            var expected = Configuration.TARGET_ARM64 ? REG_ARM64_ZR : REG_R0;
 
             Assert.That(codeGen.genGetZeroReg(REG_INT_FIRST, ref zeroed), Is.EqualTo(expected));
             Assert.That(zeroed, Is.EqualTo(initiallyZero));
         });
     }
-#endif
 
-#if TARGET_AMD64
     [Test]
     public static void OverlappingFloatingMasksInitializeTheRegisterOnlyOnce()
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         WithFrame((_, codeGen) =>
         {
             BeginProlog(codeGen);
@@ -149,6 +153,8 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
     [Test]
     public static void FourByteScalarHomeDoesNotUseAPointerSizedStore()
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         WithFrame((compiler, codeGen) =>
         {
             compiler.info.compInitMem = true;
@@ -169,9 +175,7 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
             Assert.That(zeroed, Is.True);
         });
     }
-#endif
 
-#if TARGET_AMD64 && SWIFT_SUPPORT
     [TestCase(1, true, EA_1BYTE, INS_movzx)]
     [TestCase(2, true, EA_2BYTE, INS_movzx)]
     [TestCase(3, true, EA_4BYTE, INS_mov)]
@@ -191,6 +195,9 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
     public static void StackSegmentsRetainRoundedLoadWidthAndFrameBase(
         int segmentSize, bool useFramePointer, emitAttr size, instruction loadIns)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT,
+            "This test requires AMD64 Swift ABI support.");
+
         WithFrame((compiler, codeGen) =>
         {
             codeGen.resetFramePointerUsedWritePhase();
@@ -227,6 +234,9 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
     [TestCase(true)]
     public static void StackSegmentHomingUpdatesOnlyExplicitlyPassedScratchState(bool trackState)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT,
+            "This test requires AMD64 Swift ABI support.");
+
         WithFrame((compiler, codeGen) =>
         {
             compiler.lvaTable[0] = new LclVarDsc
@@ -251,7 +261,6 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
             Assert.That(zeroed, Is.EqualTo(!trackState));
         });
     }
-#endif
 
     private static void WithFrame(Action<Compiler, CodeGen> action)
     {
@@ -273,30 +282,29 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
             PrepareFrame(compiler);
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
-#if TARGET_AMD64
-            codeGen.IsFramePointerUsed = true;
-            compiler.compCalleeRegsPushed = 0;
-            compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
-            codeGen.RegSet.rsClearRegsModified();
-            codeGen.RegSet.ClearMaskVars();
-            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
-            AllIntRegisters(compiler) = SRBM_ALLINT_INIT;
-            LastIntRegister(compiler) = REG_R15;
-            codeGen.CopyRegisterInfo();
-            codeGen.GCInfo.gcTrkStkPtrLcls = VarSetOps.MakeEmpty(compiler);
-            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
-            codeGen.Emitter.emitBegCG(compiler, default);
-            codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(true
-#if DEBUG
-                , false
-#endif
-                );
-            codeGen.Emitter.UseVexEncodings = true;
-            codeGen.Emitter.UseEvexEncodings = true;
-#else
-            CurrentGroup(codeGen.Emitter) = new insGroup();
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                codeGen.IsFramePointerUsed = true;
+                compiler.compCalleeRegsPushed = 0;
+                compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
+                codeGen.RegSet.rsClearRegsModified();
+                codeGen.RegSet.ClearMaskVars();
+                compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+                AllIntRegisters(compiler) = SRBM_ALLINT_INIT;
+                LastIntRegister(compiler) = REG_R15;
+                codeGen.CopyRegisterInfo();
+                codeGen.GCInfo.gcTrkStkPtrLcls = VarSetOps.MakeEmpty(compiler);
+                codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+                codeGen.Emitter.emitBegCG(compiler, default);
+                codeGen.Emitter.Init();
+                codeGen.Emitter.emitBegFN(true, false);
+                codeGen.Emitter.UseVexEncodings = true;
+                codeGen.Emitter.UseEvexEncodings = true;
+            }
+            else
+            {
+                CurrentGroup(codeGen.Emitter) = new insGroup();
+            }
             action(compiler, codeGen);
         }
         finally
@@ -316,20 +324,22 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
         compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
         compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
         compiler.lvaRetAddrVar = BAD_VAR_NUM;
-#if SWIFT_SUPPORT
-        compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
-#endif
-#if FEATURE_FIXED_OUT_ARGS
-        compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
-#endif
-#if TARGET_ARM64
-        compiler.lvaFfrRegister = BAD_VAR_NUM;
-#endif
+        if (Configuration.SWIFT_SUPPORT)
+        {
+            compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
+        }
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        }
+        if (Configuration.TARGET_ARM64)
+        {
+            compiler.lvaFfrRegister = BAD_VAR_NUM;
+        }
         compiler.fgFirstBB = new BasicBlock(null, null) { bbLiveIn = VarSetOps.MakeEmpty(compiler) };
         compiler.compCurBB = compiler.fgFirstBB;
     }
 
-#if TARGET_AMD64
     private static void BeginProlog(CodeGen codeGen)
     {
         var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
@@ -350,12 +360,9 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "regIntLast")]
     private static extern ref regNumber LastIntRegister(Compiler compiler);
 
-#if SWIFT_SUPPORT
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
     private static extern nint Displacement(Emitter emitter, Emitter.instrDesc descriptor);
-#endif
-#else
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
     private static extern ref insGroup? CurrentGroup(Emitter emitter);
-#endif
 }

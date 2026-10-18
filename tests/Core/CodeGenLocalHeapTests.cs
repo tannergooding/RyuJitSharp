@@ -186,23 +186,25 @@ internal static class CodeGenLocalHeapTests
             Assert.That(registers.Count(tree), Is.EqualTo(2u));
             Assert.That(registers.Count(tree, RBM_RAX), Is.EqualTo(1u));
             Assert.That(registers.Count(tree, RBM_RCX), Is.Zero);
-#if HAS_MORE_THAN_64_REGISTERS
-            registers.Add(tree, regMaskTP.CreateFromRegNum(REG_X64_K1, REG_X64_K1.SingleTypeMask));
-            Assert.That(registers.Count(tree), Is.EqualTo(3u));
-#endif
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                registers.Add(tree, regMaskTP.CreateFromRegNum(REG_X64_K1, REG_X64_K1.SingleTypeMask));
+                Assert.That(registers.Count(tree), Is.EqualTo(3u));
+            }
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsLocalHeapAndConsumesScratchRegisters()
     {
+        Assume.That(TestConfiguration.IsDebug, "Dsp-code recording requires a Debug build.");
+
         WithHeap(32, false, (compiler, codeGen) =>
         {
             var tree = Heap(compiler, 7, contained: false);
             var first = codeGen.Emitter.emitCurIG;
             codeGen.InternalRegisters.Add(tree, RBM_RDX);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genLclHeap(tree));
             Assert.That(AllDescriptors(first, codeGen), Is.Not.Empty);
             Assert.That(diagnostic, Is.Not.Empty);
@@ -215,6 +217,8 @@ internal static class CodeGenLocalHeapTests
     [Test]
     public static void DebugStackChecksPrecedeAllocationAndRecordTheNewSP()
     {
+        Assume.That(TestConfiguration.IsDebug, "Debug stack checks require a Debug build.");
+
         WithHeap(0, false, (compiler, codeGen) =>
         {
             compiler.compStackCheckOnRet = true;
@@ -229,7 +233,6 @@ internal static class CodeGenLocalHeapTests
             Assert.That(ids.Last().idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(0));
         });
     }
-#endif
 
     private static GenTreeUnOp Heap(Compiler compiler, nint amount, bool contained, var_types sizeType = TYP_LONG)
     {

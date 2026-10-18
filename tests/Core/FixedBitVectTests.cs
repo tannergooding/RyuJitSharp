@@ -2,10 +2,8 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -284,7 +282,6 @@ internal static unsafe class FixedBitVectTests
         }
     }
 
-#if DEBUG
     private static readonly List<string?> s_assertions = [];
 
     [TestCase("Set")]
@@ -294,6 +291,8 @@ internal static unsafe class FixedBitVectTests
     [TestCase("GetNextAndClear")]
     public static void SizeAssertionTextIsRetainedWithSafeInChunkContinuation(string operation)
     {
+        Assume.That(TestConfiguration.IsDebug, "FixedBitVect assertion diagnostics are Debug-only.");
+
         WithAssertionRecorder(() => {
             var vector = Create(33);
 
@@ -346,6 +345,8 @@ internal static unsafe class FixedBitVectTests
     [TestCase(true, "bitVectSize == bv.bitVectSize")]
     public static void SizeMismatchAssertionsRetainNativeTextWithEqualChunkCounts(bool intersect, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "FixedBitVect assertion diagnostics are Debug-only.");
+
         WithAssertionRecorder(() => {
             var left = Create(33);
             var right = Create(34);
@@ -367,6 +368,8 @@ internal static unsafe class FixedBitVectTests
     [TestCaseSource(nameof(SizeCases))]
     public static void ValidOperationsDoNotAssert(uint size)
     {
+        Assume.That(TestConfiguration.IsDebug, "FixedBitVect assertion diagnostics are Debug-only.");
+
         WithAssertionRecorder(() => {
             var vector = Create(size);
             var other = Create(size);
@@ -406,5 +409,4 @@ internal static unsafe class FixedBitVectTests
         s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression));
         return 0;
     }
-#endif
 }

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareDispatchLoweringTests
 {
+    [SetUp]
+    public static void RequireXarchTarget()
+    {
+        Assume.That(Configuration.TARGET_XARCH, "This fixture requires an xarch target.");
+    }
+
     [TestCase(NI_AVX512_Add, 2, false)]
     [TestCase(NI_AVX512_Add, 3, true)]
     [TestCase(NI_AVX512_FusedMultiplyAdd, 3, false)]
@@ -183,10 +188,11 @@ internal static unsafe class HardwareDispatchLoweringTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void FloatingExtractReportsBothInvalidShapeAssertions()
     {
+        Assume.That(TestConfiguration.IsDebug, "Assertion reporting requires a Debug build.");
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
@@ -216,7 +222,6 @@ internal static unsafe class HardwareDispatchLoweringTests
         ((AssertionContext*)self)->Assertions++;
         return 0;
     }
-#endif
 
     private static GenTreeVecCon AllBitsSet()
     {
@@ -287,4 +292,3 @@ internal static unsafe class HardwareDispatchLoweringTests
         }
     }
 }
-#endif

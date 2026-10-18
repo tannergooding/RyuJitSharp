@@ -107,10 +107,11 @@ internal static unsafe class CodeGenRichDebugInfoPublicationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void FileRecordPreservesReverseSiblingOrderAndNativeJsonFields()
     {
+        Assume.That(TestConfiguration.IsDebug, "Rich debug-info file output is available only in Debug.");
+
         WithPublication((compiler, codeGen, context) =>
         {
             var root = compiler.compInlineContext ?? throw new AssertionException("Missing root context.");
@@ -142,7 +143,6 @@ internal static unsafe class CodeGenRichDebugInfoPublicationTests
             Assert.That(context->AllocationCount, Is.Zero);
         });
     }
-#endif
 
     private static InlineContext NewInline(Compiler compiler, int ordinal, nint method, int offset)
     {
@@ -164,9 +164,11 @@ internal static unsafe class CodeGenRichDebugInfoPublicationTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var previousRichConfig = RichDebugConfig(ref JitConfig);
-#if DEBUG
-            var previousFileConfig = RichFileConfig(ref JitConfig);
-#endif
+            byte* previousFileConfig = null;
+            if (TestConfiguration.IsDebug)
+            {
+                previousFileConfig = RichFileConfig(ref JitConfig);
+            }
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.allocateArray = &AllocateArray;
             vtable.Base.Base.reportRichMappings = &ReportRichMappings;
@@ -186,9 +188,10 @@ internal static unsafe class CodeGenRichDebugInfoPublicationTests
                 _actualCallOffset = 0,
             };
             compiler.genRichIPmappings = [];
-#if DEBUG
-            RichFileConfig(ref JitConfig) = null;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                RichFileConfig(ref JitConfig) = null;
+            }
 
             try
             {
@@ -197,9 +200,10 @@ internal static unsafe class CodeGenRichDebugInfoPublicationTests
             finally
             {
                 RichDebugConfig(ref JitConfig) = previousRichConfig;
-#if DEBUG
-                RichFileConfig(ref JitConfig) = previousFileConfig;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    RichFileConfig(ref JitConfig) = previousFileConfig;
+                }
                 NativeMemory.Free(context.InlineTree);
                 NativeMemory.Free(context.Mappings);
             }
@@ -263,10 +267,8 @@ internal static unsafe class CodeGenRichDebugInfoPublicationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_richDebugInfo")]
     private static extern ref int RichDebugConfig(ref JitConfigValues config);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_writeRichDebugInfoFile")]
     private static extern ref byte* RichFileConfig(ref JitConfigValues config);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_ordinal")]
     private static extern ref int Ordinal(InlineContext context);

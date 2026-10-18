@@ -16,6 +16,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class PhaseInvariantTests
 {
+    private static void RequireDebug()
+    {
+        Assume.That(TestConfiguration.IsDebug, "Phase invariant checks require Debug compiler diagnostics.");
+    }
+
     [TestCase("valid")]
     [TestCase("missing")]
     [TestCase("try")]
@@ -24,6 +29,8 @@ internal static unsafe class PhaseInvariantTests
     [TestCase("debug-internal")]
     public static void EntryBlockContract(string state)
     {
+        RequireDebug();
+
         SsaLivenessTests.WithCompiler(0, compiler => {
             var block = CreateGraph(compiler, [[]])[0];
             if (state == "missing")
@@ -65,6 +72,8 @@ internal static unsafe class PhaseInvariantTests
     [TestCase("missing-dfs")]
     public static void GraphAnnotationsAreCheckedWithoutRepair(string state)
     {
+        RequireDebug();
+
         SsaLivenessTests.WithCompiler(0, compiler => {
             var blocks = CreateGraph(compiler, [[1], []]);
             var dfs = compiler._dfsTree = compiler.fgComputeDfs();
@@ -135,6 +144,8 @@ internal static unsafe class PhaseInvariantTests
     public static void AnnotationWalkPreservesProfileOrderAndExtraRoots(
         [Values] bool profile, [Values("ordinary", "osr", "return")] string root)
     {
+        RequireDebug();
+
         SsaLivenessTests.WithCompiler(0, compiler => {
             var blocks = CreateGraph(compiler, [[1, 2], [], [], []]);
             blocks[0].TrueEdge.Likelihood = 0.1;
@@ -162,6 +173,8 @@ internal static unsafe class PhaseInvariantTests
     public static void UniquenessCoversEachIrRepresentation(
         [Values("tree", "locals", "threaded", "lir")] string representation, [Values] bool duplicate)
     {
+        RequireDebug();
+
         SsaLivenessTests.WithCompiler(2, compiler => {
             var block = CreateGraph(compiler, [[]])[0];
             var first = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -194,7 +207,7 @@ internal static unsafe class PhaseInvariantTests
             compiler.fgDebugCheckNodesUniqueness();
             if (duplicate)
             {
-                TreeId(second) = first.TreeId;
+                SetTreeId(second, first.TreeId);
             }
 
             TestConfiguration.EnableVerbose(compiler);
@@ -209,6 +222,8 @@ internal static unsafe class PhaseInvariantTests
     public static void LinkedLocalsFollowExecutionOrderAndRejectBrokenLists(
         [Values] bool reverse, [Values("valid", "head", "tail", "prev", "order")] string state)
     {
+        RequireDebug();
+
         SsaLivenessTests.WithCompiler(2, compiler => {
             var block = CreateGraph(compiler, [[]])[0];
             var left = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -267,6 +282,8 @@ internal static unsafe class PhaseInvariantTests
     [TestCase("exit-predecessor")]
     public static void CanonicalLoopsRejectInvalidBoundaries(string state)
     {
+        RequireDebug();
+
         SsaLivenessTests.WithCompiler(0, compiler => {
             _ = CreateGraph(compiler, [[1], [2, 3], [1], []]);
             compiler._dfsTree = compiler.fgComputeDfs();
@@ -347,7 +364,7 @@ internal static unsafe class PhaseInvariantTests
         return blocks;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_treeId")]
-    private static extern ref int TreeId(GenTree tree);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__treeId")]
+    private static extern void SetTreeId(GenTree tree, int value);
 }
 #endif

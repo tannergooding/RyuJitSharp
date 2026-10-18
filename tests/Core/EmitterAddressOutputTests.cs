@@ -177,9 +177,7 @@ internal static unsafe class EmitterAddressOutputTests
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var end = emitter.emitOutputAM(buffer, born, insCodeRM(INS_mov), null);
             var birthOffset = (uint)(end - buffer);
             end = emitter.emitOutputAM(end, dead, insCodeRM(INS_mov), null);
@@ -233,9 +231,7 @@ internal static unsafe class EmitterAddressOutputTests
             var emitter = codeGen.Emitter;
             emitter.UseVexEncodings = false;
             emitter.UseEvexEncodings = false;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             action(compiler, emitter);
         });
     }

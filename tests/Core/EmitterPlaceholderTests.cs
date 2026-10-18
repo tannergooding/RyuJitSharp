@@ -198,16 +198,17 @@ internal static class EmitterPlaceholderTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void RequiredCallPaddingSupportsDisassemblyDuringEpilogReservation()
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly diagnostics are available only in Debug.");
+
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
             var emitter = codeGen.Emitter;
             var group = emitter.emitCurIG;
             var call = EmitterLabelTests.RecordCallDescriptor(emitter, noGc: false);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.genReserveEpilog(new BasicBlock(null, null)));
@@ -217,7 +218,6 @@ internal static class EmitterPlaceholderTests
             Assert.That(diagnostic, Does.Contain("nop"));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitPlaceholderList")]
     private static extern ref insGroup? FirstPlaceholder(Emitter emitter);

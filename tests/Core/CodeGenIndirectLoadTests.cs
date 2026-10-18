@@ -48,10 +48,11 @@ internal static unsafe class CodeGenIndirectLoadTests
         });
     }
 
-#if TARGET_AMD64
     [Test]
     public static void TlsReadsUseTheGsSegmentWithoutConsumingTheHandle()
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_LONG, 0x58);
@@ -63,18 +64,19 @@ internal static unsafe class CodeGenIndirectLoadTests
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(Descriptors(codeGen)[0].idAddr().iiaFieldHnd == FLD_GLOBAL_GS, Is.True);
-#if DEBUG
-            Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+            }
         });
     }
-#endif
 
-#if TARGET_X86
     [Test]
     public static void X86TlsReadsUseTheFsSegmentWithoutConsumingTheHandle()
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires x86 semantics.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_LONG, 0x58);
@@ -86,13 +88,13 @@ internal static unsafe class CodeGenIndirectLoadTests
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(Descriptors(codeGen)[0].idAddr().iiaFieldHnd == FLD_GLOBAL_FS, Is.True);
-#if DEBUG
-            Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+            }
         });
     }
-#endif
 
     [Test]
     public static void Simd12ReadsPreserveAllNativeAddressForms(
@@ -104,9 +106,10 @@ internal static unsafe class CodeGenIndirectLoadTests
             vtable.getRelocTypeHint = &GetRelocTypeHint;
             var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
-#if DEBUG
-            compiler.opts.compEnablePCRelAddr = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.SetCompEnablePCRelAddr(compiler, true);
+            }
             codeGen.Emitter.UseVexEncodings = vex;
             codeGen.Emitter.UseEvexEncodings = vex;
             GenTree address = addressKind switch
@@ -194,11 +197,8 @@ internal static unsafe class CodeGenIndirectLoadTests
             {
                 Assert.That(descriptors[nativeIndex ? 2 : 1].idIns(), Is.EqualTo(INS_jae));
             }
-#if DEBUG
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_NONE));
-#else
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_R11));
-#endif
+            Assert.That(codeGen.InternalRegisters.GetAll(tree),
+                Is.EqualTo(TestConfiguration.IsDebug ? RBM_NONE : RBM_R11));
         });
     }
 
@@ -215,11 +215,8 @@ internal static unsafe class CodeGenIndirectLoadTests
             codeGen.InternalRegisters.Add(tree, selected | RBM_RDX);
 
             Assert.That(codeGen.InternalRegisters.GetSingle(tree, selected), Is.EqualTo(reg));
-#if DEBUG
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_RDX));
-#else
-            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(selected | RBM_RDX));
-#endif
+            Assert.That(codeGen.InternalRegisters.GetAll(tree),
+                Is.EqualTo(TestConfiguration.IsDebug ? RBM_RDX : selected | RBM_RDX));
         });
     }
 
@@ -288,10 +285,11 @@ internal static unsafe class CodeGenIndirectLoadTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsSimdLoadsAndAdvancesAddress()
     {
+        Assume.That(TestConfiguration.IsDebug, "Disassembly diagnostics are available only in Debug.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_X64_RAX), null, 0, 4)
@@ -299,14 +297,13 @@ internal static unsafe class CodeGenIndirectLoadTests
                 IsContained = true,
             };
             var tree = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_X64_XMM0 };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForIndir(tree));
             Assert.That(address.Offset, Is.EqualTo(12));
             Assert.That(Descriptors(codeGen), Is.Not.Empty);
             Assert.That(diagnostic, Is.Not.Empty);
         });
     }
-#endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoReloc GetRelocTypeHint(ICorJitInfo* _, void* address) => CorInfoReloc.NONE;

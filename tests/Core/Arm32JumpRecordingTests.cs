@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm32JumpRecordingTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(TestConfiguration.IsArm32, "This fixture requires the ARM32 target.");
+    }
+
     [TestCase(INS_b, IF_ARM32_T2_J2, ISZ_32BIT, 4u, false)]
     [TestCase(INS_bl, IF_ARM32_T2_J2, ISZ_32BIT, 4u, true)]
     [TestCase(INS_beq, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
@@ -63,9 +68,10 @@ internal static class Arm32JumpRecordingTests
             Assert.That(jump.idjKeepLong, Is.EqualTo(expectedKeepLong));
             Assert.That(PendingJump(emitter), Is.SameAs(jump));
             Assert.That(jump.idjNext, Is.Null);
-#if !DEBUG
-            Assert.That(GroupSize(emitter), Is.EqualTo(initialGroupSize + (int)expectedCodeSize));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(emitter), Is.EqualTo(initialGroupSize + (int)expectedCodeSize));
+            }
         });
     }
 
@@ -84,9 +90,10 @@ internal static class Arm32JumpRecordingTests
             Assert.That(jump.idCodeSize(), Is.EqualTo(2u));
             Assert.That(jump.idjShort, Is.True);
             Assert.That(jump.idjKeepLong, Is.False);
-#if !DEBUG
-            Assert.That(GroupSize(emitter), Is.EqualTo(2));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(emitter), Is.EqualTo(2));
+            }
         });
     }
 
@@ -139,6 +146,11 @@ internal static class Arm32JumpRecordingTests
 
     private static IEnumerable<TestCaseData> CompareAndBranchCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(INS_cbz, REG_R0);
         yield return new TestCaseData(INS_cbnz, REG_R7);
     }
@@ -169,16 +181,18 @@ internal static class Arm32JumpRecordingTests
             Assert.That(jump.idjKeepLong, Is.False);
             Assert.That(jump.idjNext, Is.Null);
             Assert.That(PendingJump(emitter), Is.SameAs(jump));
-#if !DEBUG
-            Assert.That(GroupSize(emitter), Is.EqualTo(initialGroupSize + 2));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(emitter), Is.EqualTo(initialGroupSize + 2));
+            }
         });
     }
 
-#if DEBUG
     [Test]
     public static void LongAddressModeForcesLongBranches()
     {
+        Assume.That(TestConfiguration.IsDebug, "Long-address diagnostics are available only in Debug.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
@@ -193,6 +207,8 @@ internal static class Arm32JumpRecordingTests
     [Test]
     public static void FinallyCallBranchSetsItsDebugMarker()
     {
+        Assume.That(TestConfiguration.IsDebug, "Jump debug information is available only in Debug.");
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var source = compiler.compCurBB = new BasicBlock(null, null);
@@ -204,7 +220,6 @@ internal static class Arm32JumpRecordingTests
             Assert.That(debugInfo.idFinallyCall, Is.True);
         });
     }
-#endif
 
     private static void AssertBackwardBranch(
         instruction ins, int codeOffset, Emitter.insFormat expectedFormat,
@@ -233,17 +248,20 @@ internal static class Arm32JumpRecordingTests
     private static Emitter.instrDescJmp RecordJump(
         Emitter emitter, instruction ins, BasicBlock target, bool keepShort = false)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                emitter.emitIns_J(ins, target, keepShort);
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             emitter.emitIns_J(ins, target, keepShort);
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        emitter.emitIns_J(ins, target, keepShort);
-#endif
         return LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No jump descriptor was recorded.");
     }
@@ -251,17 +269,20 @@ internal static class Arm32JumpRecordingTests
     private static Emitter.instrDescJmp RecordConditionalRegisterBranch(
         Emitter emitter, instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
-#if DEBUG
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            try
+            {
+                emitter.emitIns_J_R(ins, attr, target, reg);
+            }
+            catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+            {
+            }
+        }
+        else
         {
             emitter.emitIns_J_R(ins, attr, target, reg);
         }
-        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
-        {
-        }
-#else
-        emitter.emitIns_J_R(ins, attr, target, reg);
-#endif
         return LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No conditional register-branch descriptor was recorded.");
     }
@@ -289,4 +310,3 @@ internal static class Arm32JumpRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGjmpList")]
     private static extern ref Emitter.instrDescJmp? PendingJump(Emitter emitter);
 }
-#endif

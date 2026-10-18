@@ -18,6 +18,8 @@
       <Aliases>global,RyuJitSharpCore</Aliases>
     </ProjectReference>
     <Compile Include="..\Core\TestConfiguration.cs" Link="TestConfiguration.cs" />
+    <Compile Include="..\Core\TestConfiguration.Debug.cs" Link="TestConfiguration.Debug.cs" />
+    <Compile Include="..\Core\CodeGenTestSupport.cs" Link="CodeGenTestSupport.cs" />
     <Compile Include="..\Core\X86EmitterStaticOutputTests.cs" Link="X86EmitterStaticOutputTests.cs" />
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
@@ -91,6 +93,7 @@
     <Compile Include="..\Core\ValueNumConstantExtractionTests.cs" Link="ValueNumConstantExtractionTests.cs" />
     <Compile Include="..\Core\EmitterOpcodeTests.cs" Link="EmitterOpcodeTests.cs" />
     <Compile Include="..\Core\CodeGenXarchFrameClosureTests.cs" Link="CodeGenXarchFrameClosureTests.cs" />
+    <Compile Include="..\Core\CodeGenX86SplitLongShiftTests.cs" Link="CodeGenX86SplitLongShiftTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">

@@ -1,8 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
-#endif
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -195,14 +193,14 @@ internal static unsafe class AsyncResumeGenerationTests
             Assert.That(Compiler.eeGetJitDataOffs(id.idAddr().iiaFieldHnd), Is.EqualTo(24));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
             Assert.That(context->Queries, Is.EqualTo(1));
-#if DEBUG
-            Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
-                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED,
+                    Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED));
+            }
         });
     }
 
-#if DEBUG
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -210,9 +208,11 @@ internal static unsafe class AsyncResumeGenerationTests
     [TestCase(4)]
     public static void DspCodeRecordsAsyncResumeTablesAndInstructions(int operation)
     {
+        Assume.That(TestConfiguration.IsDebug, "DspCode diagnostics are available only in Debug.");
+
         WithResumeEmitter(1, (compiler, codeGen, context) =>
         {
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -259,7 +259,6 @@ internal static unsafe class AsyncResumeGenerationTests
             Assert.That(diagnostic.Contains("lea", StringComparison.Ordinal), Is.EqualTo(operation == 4));
         });
     }
-#endif
 
     private static void WithResumeEmitter(int count, ResumeTest action)
     {

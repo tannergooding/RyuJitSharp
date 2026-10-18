@@ -35,9 +35,10 @@ internal static unsafe class NarrowingTests
                 Assert.That(compiler.optNarrowTree(ref tree, TYP_LONG, target, numbers, true), Is.True);
                 Assert.That(tree.Type, Is.EqualTo(TYP_INT));
                 Assert.That(tree.AsIntCon().IconValue, Is.EqualTo((nint)unchecked((int)value)));
-#if !TARGET_64BIT
-                Assert.That(tree, Is.Not.SameAs(original));
-#endif
+                if (!Configuration.TARGET_64BIT)
+                {
+                    Assert.That(tree, Is.Not.SameAs(original));
+                }
                 if (TestConfiguration.IsDebug)
                 {
                     Assert.That(tree.TreeId, Is.EqualTo(originalTreeId));
@@ -46,24 +47,26 @@ internal static unsafe class NarrowingTests
         });
     }
 
-#if HOST_64BIT && !TARGET_64BIT
     [Test]
     public static void SetOperRejectsInPlaceLongConstantRetyping()
     {
+        Assume.That(Configuration.HOST_64BIT && !Configuration.TARGET_64BIT,
+            "This test requires a 64-bit host and a 32-bit target.");
+
         WithCompiler(compiler => {
             var tree = compiler.gtNewLconNode(1);
             _ = Assert.Throws<InvalidOperationException>(() => tree.SetOper(GT_CNS_INT));
         });
     }
-#endif
 
-#if !TARGET_64BIT
     [TestCase(123L, true)]
     [TestCase(2147483647L, true)]
     [TestCase(0x80000000L, false)]
     [TestCase(-1L, false)]
     public static void LongComparisonNarrowsOnlyWhenConstantFitsSignedInt(long value, bool narrowed)
     {
+        Assume.That(!Configuration.TARGET_64BIT, "This test covers 32-bit target narrowing.");
+
         WithCompiler(compiler => {
             var input = compiler.gtNewLclvNode(TYP_INT, 0);
             var cast = compiler.gtNewCastNode(TYP_LONG, input, false, TYP_LONG);
@@ -90,7 +93,6 @@ internal static unsafe class NarrowingTests
             }
         });
     }
-#endif
 
     [Test]
     public static void FailedBinaryProbeDoesNotPartiallyNarrowItsFirstOperand()
@@ -132,9 +134,10 @@ internal static unsafe class NarrowingTests
             Assert.That(narrowedConstant.Type, Is.EqualTo(TYP_INT));
             Assert.That(tree.Type, Is.EqualTo(TYP_INT));
             Assert.That(tree._vnPair, Is.EqualTo(numbers));
-#if !TARGET_64BIT
-            Assert.That(narrowedConstant, Is.Not.SameAs(constant));
-#endif
+            if (!Configuration.TARGET_64BIT)
+            {
+                Assert.That(narrowedConstant, Is.Not.SameAs(constant));
+            }
             if (TestConfiguration.IsDebug)
             {
                 Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
@@ -169,9 +172,10 @@ internal static unsafe class NarrowingTests
                 Assert.That(narrowedConstant.Type, Is.EqualTo(TYP_INT));
                 Assert.That(tree._vnPair, Is.EqualTo(numbers));
                 Assert.That(local._vnPair, Is.EqualTo(new ValueNumPair()));
-#if !TARGET_64BIT
-                Assert.That(narrowedConstant, Is.Not.SameAs(constant));
-#endif
+                if (!Configuration.TARGET_64BIT)
+                {
+                    Assert.That(narrowedConstant, Is.Not.SameAs(constant));
+                }
                 if (TestConfiguration.IsDebug)
                 {
                     Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));

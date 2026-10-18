@@ -70,7 +70,6 @@ internal static unsafe class CodeGenHelperCallTests
         });
     }
 
-#if TARGET_AMD64
     [TestCase(0L, true)]
     [TestCase(2147483647L, true)]
     [TestCase(2147483648L, false)]
@@ -79,6 +78,8 @@ internal static unsafe class CodeGenHelperCallTests
     [TestCase(-1L, true)]
     public static void IndirectZeroRelativeAddressesRetainSigned32BitBoundaries(long address, bool encodable)
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 semantics.");
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var bits = unchecked((nuint)(nint)address);
@@ -90,16 +91,17 @@ internal static unsafe class CodeGenHelperCallTests
             Assert.That(codeGen.genCodeIndirAddrNeedsReloc(bits), Is.True);
         });
     }
-#elif TARGET_X86
+
     [TestCase(0U)]
     [TestCase(0x7FFFFFFFU)]
     [TestCase(0x80000000U)]
     [TestCase(uint.MaxValue)]
     public static void X86IndirectAddressesFitZeroRelativeDisplacements(uint address)
     {
+        Assume.That(Configuration.TARGET_X86, "This test requires x86 semantics.");
+
         Assert.That(CodeGen.genCodeIndirAddrCanBeEncodedAsZeroRelOffset(address), Is.True);
     }
-#endif
 
     [Test]
     public static void CurrentGcStateIsCapturedWithoutReplacingTheCallParameters()
@@ -227,14 +229,15 @@ internal static unsafe class CodeGenHelperCallTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DspCodeRecordsHelperCallsAndCapturesGcRegisters()
     {
+        Assume.That(TestConfiguration.IsDebug, "DspCode diagnostics are available only in Debug.");
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = true;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.getHelperFtn = &GetHelperFtn;
             vtable.getRelocTypeHint = &GetRelocTypeHint;
@@ -262,7 +265,6 @@ internal static unsafe class CodeGenHelperCallTests
             Assert.That(gcDiagnostic, Does.Contain("call"));
         });
     }
-#endif
 
     private static EmitCallParams Parameters()
     {

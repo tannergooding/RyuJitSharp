@@ -223,12 +223,13 @@ internal static class CodeGenAtomicTests
         });
     }
 
-#if DEBUG
     [TestCase(GT_LOCKADD)]
     [TestCase(GT_XADD)]
     [TestCase(GT_CMPXCHG)]
     public static void DspCodeRecordsAtomicInstructionsAndConsumesOperands(genTreeOps oper)
     {
+        Assume.That(TestConfiguration.IsDebug, "Atomic instruction diagnostic recording is Debug-only.");
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) => {
             var address = Register(compiler, TYP_BYREF, REG_RCX);
             var value = Register(compiler, TYP_INT, REG_RDX);
@@ -236,7 +237,7 @@ internal static class CodeGenAtomicTests
                 ? new GenTreeCmpXchg(TYP_INT, address, value, Register(compiler, TYP_INT, REG_R9))
                 : new GenTreeIndir(oper, TYP_INT, address, value);
             tree.RegNum = REG_R8;
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 if (oper == GT_CMPXCHG)
@@ -260,5 +261,4 @@ internal static class CodeGenAtomicTests
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
-#endif
 }

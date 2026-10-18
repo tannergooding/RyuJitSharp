@@ -136,9 +136,7 @@ public partial class Emitter
             assert(offset >= group.igOffs);
         }
         emitTotalCodeSize = unchecked((int)offset);
-#if DEBUG
         emitCheckIGList();
-#endif
     }
 
     public void emitBegProlog()

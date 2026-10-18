@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
 
@@ -11,6 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    [System.Diagnostics.Conditional("DEBUG")]
     private unsafe void emitInsPairSanityCheck(instrDesc? previousId, instrDesc id)
     {
         if (previousId is null || JitConfig.JitEmitUnitTestsSections is not null)
@@ -286,4 +286,3 @@ public partial class Emitter
         };
     }
 }
-#endif

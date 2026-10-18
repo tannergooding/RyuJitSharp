@@ -336,15 +336,13 @@ public partial class Emitter
         if (isNoGCHelper)
         {
             var savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helper);
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf("NoGC Call: savedSet=");
                 printRegMaskInt(savedSet);
                 emitDispRegSet(savedSet);
                 jitprintf("\n");
             }
-#endif
             return savedSet;
         }
 

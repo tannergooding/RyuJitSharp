@@ -182,7 +182,6 @@ public sealed partial class CodeGen
 
         genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
             if (genIsRegCandidateLocal(tree))
@@ -230,7 +229,6 @@ public sealed partial class CodeGen
                 _gcInfo.gcMarkRegSetNpt(tree.RegMask);
             }
         }
-#endif
 
         genCheckConsumeNode(tree);
         return tree.RegNum;

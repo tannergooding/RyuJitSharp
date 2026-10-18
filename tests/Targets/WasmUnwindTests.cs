@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT).
 // See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,6 +11,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class WasmUnwindTests
 {
+    [SetUp]
+    public static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM, "This fixture requires the Wasm target.");
+    }
+
     [Test]
     public static void StackAllocationsAreAccumulatedAndPublishedForEveryFunction()
     {
@@ -192,9 +197,11 @@ internal static unsafe class WasmUnwindTests
     private static insGroup Group(uint offset)
     {
         var group = new insGroup { igOffs = offset };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
+
         return group;
     }
 
@@ -287,4 +294,3 @@ internal static unsafe class WasmUnwindTests
         public fixed byte Bytes[10];
     }
 }
-#endif

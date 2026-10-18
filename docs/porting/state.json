@@ -10,8 +10,69 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Select the next complete Pending file-group packet from the master ledger by pinned source_blob byte size. Keep packet 302's 54 Deferred IDs open under G2 and the named Release-bindable debug-API closures; use artifacts\\conditional-cleanup\\batch-302-35121879\\candidates.csv and validation\\batch-acceptance.json for their specific gates and next actions. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Packet 303 has passed combined acceptance and its 302 IDs are reconciled. Review the final diff and commit this batch, then build packet 304 from the next size-ranked complete-file groups after the 13,984-byte boundary without restarting repository-wide discovery. Preserve the 33 prerequisite-backed deferrals and keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
 
+    "activeBatch": {
+      "batch": "conditional-cleanup-303-572aa772",
+      "baselineCommit": "572aa7723d4c8f8316ee921ae730c9a33401c46b",
+      "sourceSnapshotCommit": "5a7c8fd5785e1672a08f25a771cabda0a0a112cb",
+      "scope": "302 candidate IDs across 103 complete source-file groups, ordered by pinned source_blob size (11,373-13,984 bytes); full source contexts are in artifacts\\conditional-cleanup\\batch-303-572aa772.",
+      "completionCondition": "Every selected ID has an evidence-backed Converted or concrete Deferred disposition; zero selected IDs remain Pending or Retained; every eligible selected guard and dependent surface is resolved and combined acceptance is met.",
+      "validation": {
+        "core": "Full-analysis Core Debug/Release builds plus combined affected Core fixture selections in Debug/Release.",
+        "targets": "Combined affected Target fixture selections in Debug/Release for each affected target configuration; require nonempty executed coverage and record inapplicability/baseline outcomes. The linked win-x86 split-long-shift fixture passed 4/4 in Debug and Release."
+      },
+      "deferrals": [
+        {
+          "ids": ["CCB-0732", "CCB-0733", "CCB-0194", "CCB-0196"],
+          "prerequisite": "Loop diagnostics depend on Debug-only loop state and APIs, including Release-inaccessible NaturalLoopIterInfo.InitTree.",
+          "nextAction": "Close the loop-state/API declarations and callers using the approved external Debug-state approach, then run the focused loop fixtures in Debug and Release.",
+          "evidence": "Packet candidate branch contexts and verified Release API dependency; see artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv."
+        },
+        {
+          "ids": ["CGCOMMON-0044", "CGCOMMON-0049", "CGCOMMON-0050", "CGCOMMON-0051", "CGCOMMON-0052", "CGCOMMON-0055", "CGCOMMON-0056"],
+          "prerequisite": "Generation-phase references require Debug-only fields, parameters, or statistics state to become Release-bindable.",
+          "nextAction": "Resolve the missing API/state closure without adding Release diagnostic storage, then rerun full-analysis Core Debug/Release builds and the affected fixtures.",
+          "evidence": "Packet candidate branch contexts; CGCOMMON-0040 DISPLAY_SIZES and CGCOMMON-0054 TRACK_LSRA_STATS were separately converted using existing runtime predicates."
+        },
+        {
+          "ids": ["CCB-0136", "CCB-0129", "CCB-0739", "CCB-0760", "CCB-0761", "CCB-0765", "CCB-0131", "CCB-0134"],
+          "prerequisite": "Merge, funclet, debugger-display, timer, Swift argument-display, and GS diagnostic paths depend on Debug-only state or APIs.",
+          "nextAction": "Close each related state/API family with its callers, preserving Release layout and diagnostics, then run the owning fixtures in Debug and Release.",
+          "evidence": "Packet candidate branch contexts and per-ID dependency notes in artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv."
+        },
+        {
+          "ids": ["CGCOMMON-0041", "CCB-0116", "CCB-1235"],
+          "prerequisite": "DUMP_GC_TABLES decoder declarations, publication callers, types, and flowgraph dump APIs form one unresolved compile-time closure.",
+          "nextAction": "Resolve and validate the complete DUMP_GC_TABLES decoder/caller/type closure together before removing these guards.",
+          "evidence": "CGCOMMON-0041 guards dump publication, CCB-1235 guards the Jit32 decoder API, and CCB-0116 covers the related flowgraph dump boundary."
+        },
+        {
+          "ids": ["CCB-0910", "CCB-1057", "CCB-1058", "CCB-1062", "CCB-1052", "CCB-1063", "CCB-0963", "CCB-0964"],
+          "prerequisite": "Optional emitter modes require full navigation/layout, statistics, GC encoding, or DEBUG_EMIT behavior and caller closures; mode changes are not approved.",
+          "nextAction": "Resolve the required mode/API closures and obtain the applicable decision before conversion. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
+          "evidence": "Prior Sol G2 review and packet candidate branch contexts; see artifacts\\jit-analysis\\inventory\\conditional-compiler-packet-sol-review.csv."
+        },
+        {
+          "ids": ["CCB-1187"],
+          "prerequisite": "The xarch stack-output diagnostic depends on target-specific stack state without a complete Release-bindable closure.",
+          "nextAction": "Close the state/API dependency and validate xarch Debug/Release emission tests.",
+          "evidence": "Per-ID source and dependency notes in artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv."
+        },
+        {
+          "ids": ["INV-07F761183572", "INV-9061FD5671F1"],
+          "prerequisite": "The optional ARM64 SVE diagnostic test selection remains unsupported or unvalidated.",
+          "nextAction": "Enable and pass the supported ARM64 SVE selection, then reclassify the test diagnostic branches.",
+          "evidence": "Existing optional-SVE validation gap in this checkpoint and packet candidate branch contexts."
+        }
+      ],
+      "artifacts": {
+        "candidates": "artifacts\\conditional-cleanup\\batch-303-572aa772\\candidates.csv",
+        "files": "artifacts\\conditional-cleanup\\batch-303-572aa772\\files.json",
+        "branchContexts": "artifacts\\conditional-cleanup\\batch-303-572aa772\\branch-contexts.jsonl",
+        "validation": "artifacts\\conditional-cleanup\\batch-303-572aa772\\validation"
+      }
+    },
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",
       "The optional ARM64 emitter recording selection failed 18/642 Debug and 12/606 Release cases on existing unsupported target register-recording and diagnostic paths; no pass is claimed from that selection. ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED remains undefined by default, so its guarded bodies were not executed. TRX: artifacts\\tst\\EmitterTestHarnessGuard\\Debug\\EmitterTestHarnessGuard.win-arm64.Debug.trx and Release equivalent.",

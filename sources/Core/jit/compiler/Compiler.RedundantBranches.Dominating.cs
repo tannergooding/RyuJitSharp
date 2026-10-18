@@ -208,8 +208,7 @@ public partial class Compiler
                         }
                     }
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         vnStore.vnDump(this, blockPathVN);
                         JITDUMP(" AND");
@@ -217,7 +216,6 @@ public partial class Compiler
                         JITDUMP(" ==>");
                         vnStore.vnDump(this, andVN);
                     }
-#endif
                 }
 
                 if (newRelopFunc != VNF_NONE)

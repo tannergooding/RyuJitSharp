@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if UNIX_AMD64_ABI
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +21,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64ParameterHomingTests
 {
+    [SetUp]
+    public static void RequireUnixAmd64Abi()
+    {
+        Assume.That(Configuration.UNIX_AMD64_ABI, "This fixture requires the Unix AMD64 ABI.");
+    }
+
     [Test]
     public static void MinoptsHomesBothIntegerAndFloatStructSegments()
     {
@@ -272,4 +277,3 @@ internal static unsafe class SysVX64ParameterHomingTests
         return CurrentDescriptors(codeGen.Emitter) ?? throw new AssertionException("Missing instruction descriptors.");
     }
 }
-#endif

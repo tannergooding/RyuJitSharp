@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm32InstructionOutputTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(TestConfiguration.IsArm32, "This fixture requires the ARM32 target.");
+    }
+
     [Test]
     public static void ShortThumbBranchUsesTheNativePcRelativeDisplacement()
     {
@@ -261,9 +266,10 @@ internal static unsafe class Arm32InstructionOutputTests
             jump.idInsOpt(INS_OPTS_NONE);
             jump.idSetIsBound();
             jump.idjTargetIG = target;
-#if DEBUG
-            jump.idDebugOnlyInfo(new Emitter.instrDescDebugInfo());
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                jump.idDebugOnlyInfo(new Emitter.instrDescDebugInfo());
+            }
             compiler.opts.disCodeBytes = true;
             var buffer = stackalloc byte[16];
             new Span<byte>(buffer, 16).Fill(0xA5);
@@ -349,12 +355,12 @@ internal static unsafe class Arm32InstructionOutputTests
             id.idReg1(REG_R0);
             id.idReg2(REG_R1);
             id.idSmallCns(immediate);
-#if DEBUG
-            id.idDebugOnlyInfo(new Emitter.instrDescDebugInfo());
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                id.idDebugOnlyInfo(new Emitter.instrDescDebugInfo());
+            }
 
             return id;
         }
     }
 }
-#endif

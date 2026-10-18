@@ -21,12 +21,13 @@ internal static unsafe class ArrayMorphingTests
 {
     private static PhaseStatus MorphArrayOps(Compiler compiler) => compiler.fgMorphArrayOps();
 
-#if DEBUG
     [TestCase(1, "  ARR_ELEM[]")]
     [TestCase(2, "  ARR_ELEM[,]")]
     [TestCase(3, "  ARR_ELEM[,,]")]
     public static void DisplayUsesOneFewerCommasThanDimensions(int rank, string expected)
     {
+        Assume.That(TestConfiguration.IsDebug, "Array-node display is available only in Debug.");
+
         WithCompiler((compiler, _) => {
             var element = NewElement(compiler, rank);
 
@@ -36,7 +37,6 @@ internal static unsafe class ArrayMorphingTests
             Assert.That(element.ArrRank, Is.EqualTo(rank));
         });
     }
-#endif
 
     [TestCase(false, true)]
     [TestCase(true, false)]

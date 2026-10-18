@@ -4,14 +4,10 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if DEBUG
 using System.IO;
-#endif
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if DEBUG
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_EH_CLAUSE_FLAGS;
 using static RyuJitSharp.EHHandlerType;
@@ -149,11 +145,12 @@ internal static unsafe class CodeGenEHReportingTests
         });
     }
 
-#if DEBUG
     [TestCase(true, "EH#0: try [G_M000_IG01..G_M000_IG03) handled by [G_M000_IG04..END) (class: 0123)")]
     [TestCase(false, "EH#0: try [0000..0014) handled by [001E..0028) (class: 0123)")]
     public static void OutgoingDiagnosticsPreserveDiffableLabelsAndNumericOffsets(bool diffable, string line)
     {
+        Assume.That(TestConfiguration.IsDebug, "EH diagnostic output is available only in Debug.");
+
         WithReporting((compiler, codeGen, context) =>
         {
             var blocks = SetBlocks(compiler, codeGen, 4);
@@ -171,7 +168,7 @@ internal static unsafe class CodeGenEHReportingTests
             compiler.compEHTabOrderToVMClauseOrder = [0];
             compiler.compVMClauseOrderToEHTabOrder = [0];
             compiler.info.compNativeCodeSize = 40;
-            compiler.opts.dspEHTable = true;
+            TestConfiguration.SetDspEHTable(compiler, true);
             compiler.opts.dspDiffable = diffable;
 
             using var stream = new MemoryStream();
@@ -196,7 +193,6 @@ internal static unsafe class CodeGenEHReportingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? GroupList(Emitter emitter);
-#endif
 
     private static EHblkDsc Clause(BasicBlock tryBeg, BasicBlock tryLast, BasicBlock handlerBeg,
         BasicBlock handlerLast, EHHandlerType kind, int token, ushort funcIndex, BasicBlock? filter = null)
@@ -223,9 +219,10 @@ internal static unsafe class CodeGenEHReportingTests
         {
             groups[i] = new insGroup { igOffs = (uint)(i * 10), igSize = 10 };
             groups[i].InitializeNum((uint)(i + 1));
-#if DEBUG
-            groups[i].igSelf = groups[i];
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                groups[i].igSelf = groups[i];
+            }
             blocks[i] = new BasicBlock(null, null) { bbEmitCookie = groups[i] };
             if (i > 0)
             {
@@ -234,9 +231,10 @@ internal static unsafe class CodeGenEHReportingTests
             }
         }
         compiler.fgLastBB = blocks[^1];
-#if DEBUG
-        GroupList(codeGen.Emitter) = groups[0];
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            GroupList(codeGen.Emitter) = groups[0];
+        }
         return blocks;
     }
 

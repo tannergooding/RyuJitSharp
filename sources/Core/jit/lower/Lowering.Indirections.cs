@@ -239,11 +239,9 @@ public sealed partial class Lowering
                         throw new InvalidOperationException("Foldable Wasm address is missing its base.");
                 }
 
-                SetMultiplyUsed(addressToReuse
-#if DEBUG
-                    , "ContainCheckIndir load Addr (null check or simd12 lane load)"
-#endif
-                );
+                SetMultiplyUsed(
+                    addressToReuse,
+                    Configuration.DEBUG ? "ContainCheckIndir load Addr (null check or simd12 lane load)" : null);
             }
 
             if (foldable is not null)

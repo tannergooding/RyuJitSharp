@@ -269,9 +269,7 @@ internal static unsafe class EmitterInstructionOutputTests
             var end = executable;
             var originalInstruction = id.idIns();
             var originalFormat = id.idInsFmt();
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            TestConfiguration.EnableEmitterIssuing(emitter);
             var descriptorSize = emitter.emitOutputInstr(group, id, &end);
             var length = checked((int)(end - executable));
 

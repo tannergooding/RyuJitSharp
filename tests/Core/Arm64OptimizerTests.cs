@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections;
 using System.Reflection;
@@ -19,6 +18,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64OptimizerTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "largeFrame")]
     private static extern ref bool LargeFrame(CSE_Heuristic heuristic);
 
@@ -259,4 +264,3 @@ internal static unsafe class Arm64OptimizerTests
         }
     }
 }
-#endif

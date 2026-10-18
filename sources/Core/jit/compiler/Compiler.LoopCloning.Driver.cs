@@ -104,22 +104,18 @@ public partial class Compiler
             {
                 var level = levels[i];
                 JITDUMP($"Adding loop L{loop.Index:D2} level {i} block conditions\n    ");
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     context.PrintBlockLevelConditions(i, level);
                 }
-#endif
                 insertAfter = context.CondToStmtInBlock(this, level, slowPreheader, insertAfter, total);
             }
         }
         JITDUMP($"Adding loop L{loop.Index:D2} cloning conditions\n    ");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             context.PrintConditions(loopNum);
         }
-#endif
         JITDUMP("\n");
         return context.CondToStmtInBlock(this, context.GetConditions(loopNum)!,
             slowPreheader, insertAfter, total);
@@ -150,9 +146,10 @@ public partial class Compiler
             FlowGraphNaturalLoop.Dump(loop);
         }
         var withEH = true;
-#if DEBUG
-        withEH = JitConfig.JitCloneLoopsWithEH > 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            withEH = JitConfig.JitCloneLoopsWithEH > 0;
+        }
         assert(loop.EntryEdges.Length == 1);
         var preheader = loop.EntryEdge(0).SourceBlock;
         JITDUMP("Create new preheader block for fast loop\n");

@@ -7,10 +7,8 @@ namespace RyuJitSharp;
 
 public sealed partial class ObjectAllocator
 {
-#if DEBUG
     private static ConfigMethodRange s_jitObjectStackAllocationConditionalEscapeRange;
     private static ConfigMethodRange s_jitObjectStackAllocationTrackFieldsRange;
-#endif
 
     private void MarkLclVarAsEscaping(int lclNum)
     {
@@ -99,12 +97,8 @@ public sealed partial class ObjectAllocator
 
             if (enableConditionalEscape && !isOSR)
             {
-#if DEBUG
-                s_jitObjectStackAllocationConditionalEscapeRange.EnsureInit(JitConfig.JitObjectStackAllocationConditionalEscapeRange);
-                var inRange = s_jitObjectStackAllocationConditionalEscapeRange.Contains(compiler.info.compMethodHash());
-#else
-                const bool inRange = true;
-#endif
+                var inRange = !Configuration.DEBUG || IsInConditionalEscapeRange(compiler);
+
                 if (inRange)
                 {
                     JITDUMP($"Enabling conditional escape analysis [{enumeratorLocalCount} pseudos]\n");
@@ -122,8 +116,7 @@ public sealed partial class ObjectAllocator
             }
         }
 
-#if DEBUG
-        if (_trackFields)
+        if (Configuration.DEBUG && _trackFields)
         {
             s_jitObjectStackAllocationTrackFieldsRange.EnsureInit(JitConfig.JitObjectStackAllocationTrackFieldsRange);
             var inRange = s_jitObjectStackAllocationTrackFieldsRange.Contains(compiler.info.compMethodHash());
@@ -134,7 +127,6 @@ public sealed partial class ObjectAllocator
                 _trackFields = false;
             }
         }
-#endif
 
         // With N tracked locals and M possible clones, [N, N+M) holds new locals,
         // [N+M, N+2M) holds pseudos, and N+2M denotes the unknown source.
@@ -297,5 +289,12 @@ public sealed partial class ObjectAllocator
             });
             jitprintf("\n");
         }
+    }
+
+    private static unsafe bool IsInConditionalEscapeRange(Compiler compiler)
+    {
+        s_jitObjectStackAllocationConditionalEscapeRange.EnsureInit(
+            JitConfig.JitObjectStackAllocationConditionalEscapeRange);
+        return s_jitObjectStackAllocationConditionalEscapeRange.Contains(compiler.info.compMethodHash());
     }
 }

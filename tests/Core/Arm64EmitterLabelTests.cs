@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -14,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64EmitterLabelTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     [Test]
     public static void EmptyLabelsOwnTheirGcSetsAndRetainTheCurrentGroup()
     {
@@ -112,22 +117,22 @@ internal static unsafe class Arm64EmitterLabelTests
         Assert.That(GroupSize(emitter), Is.EqualTo(8));
     }
 
-#if DEBUG
     [TestCase(Emitter.insFormat.IF_ARM64_LARGEADR, INS_adrp)]
     [TestCase(Emitter.insFormat.IF_ARM64_LARGELDC, INS_ldr)]
     public static void JumpListDiagnosticDisplaysArm64LargeAddressRegisters(Emitter.insFormat format, instruction ins)
     {
+        Assume.That(TestConfiguration.IsDebug, "Jump-list diagnostics are available only in Debug.");
+
         var (_, emitter) = CreateEmitter();
         var descriptor = LabelEmitter.LargeAddressJump(emitter, format, ins, regNumber.REG_ARM64_R5);
 
-        var diagnostic = Arm64SveInstructionSanityTests.Capture(emitter.emitDispJumpList).Output;
+        var diagnostic = TestConfiguration.CaptureDebugOutput(() => EmitDispJumpList(emitter));
 
         Assert.That(descriptor.idCodeSize(), Is.GreaterThan(0));
         Assert.That(diagnostic, Does.Contain($"{ins.ToString()[4..]}["));
         Assert.That(diagnostic, Does.Contain(" -> x5"));
         Assert.That(diagnostic, Does.Contain("  total jump count: 1"));
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -194,11 +199,7 @@ internal static unsafe class Arm64EmitterLabelTests
         emitter.Init();
         if (beginFunction)
         {
-            emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            emitter.emitBegFN(false, TestConfiguration.IsDebug);
         }
         else
         {
@@ -237,6 +238,9 @@ internal static unsafe class Arm64EmitterLabelTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGenIG")]
     private static extern void Prepare(Emitter emitter, insGroup group);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispJumpList")]
+    private static extern void EmitDispJumpList(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitLastInsIsCallWithGC")]
     private static extern bool LastCallCanGc(Emitter emitter);
@@ -277,4 +281,3 @@ internal static unsafe class Arm64EmitterLabelTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitInitByrefRegs")]
     private static extern ref regMask InitByrefs(Emitter emitter);
 }
-#endif

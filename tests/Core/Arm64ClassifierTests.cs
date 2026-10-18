@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -13,6 +12,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64ClassifierTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires the ARM64 target.");
+    }
+
     private static Compiler NewCompiler() => (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 
     [TestCase(CORINFO_HFA_ELEM_FLOAT, 4, 3, false)]
@@ -112,10 +117,11 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(classifier.StackSize, Is.Zero);
     }
 
-#if TARGET_WINDOWS
     [Test]
     public static void InstanceReturnBufferUsesOrdinaryRegisterOnWindows()
     {
+        Assume.That(Configuration.TARGET_WINDOWS, "This test covers the Windows ARM64 ABI.");
+
         var compiler = NewCompiler();
         var classifier = new Arm64Classifier(new ClassifierInfo {
             CallConv = CorInfoCallConvExtension.CMemberFunction,
@@ -126,7 +132,6 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].Register,
             Is.EqualTo(REG_ARM64_R1));
     }
-#endif
 
     [Test]
     public static void StructsUseTwoRegistersOrOneImplicitByReferencePointer()
@@ -213,10 +218,11 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(classifier.StackSize, Is.EqualTo(8));
     }
 
-#if TARGET_WINDOWS
     [Test]
     public static void VarArgsPairSplitsAtTheLastIntegerRegister()
     {
+        Assume.That(Configuration.TARGET_WINDOWS, "This test covers the Windows ARM64 ABI.");
+
         var compiler = NewCompiler();
         var classifier = new Arm64Classifier(new ClassifierInfo { IsVarArgs = true });
 
@@ -239,6 +245,8 @@ internal static unsafe class Arm64ClassifierTests
     [Test]
     public static void VarArgsFloatingPointValueUsesIntegerRegister()
     {
+        Assume.That(Configuration.TARGET_WINDOWS, "This test covers the Windows ARM64 ABI.");
+
         var compiler = NewCompiler();
         var classifier = new Arm64Classifier(new ClassifierInfo { IsVarArgs = true });
         var value = classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None);
@@ -247,12 +255,12 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None).Segments[0].Register,
             Is.EqualTo(REG_ARM64_R1));
     }
-#endif
 
-#if TARGET_APPLE
     [Test]
     public static void SmallStackPrimitivesPackAtTheirNaturalAlignment()
     {
+        Assume.That(Configuration.TARGET_APPLE, "This test covers the Apple ARM64 ABI.");
+
         var compiler = NewCompiler();
         var classifier = new Arm64Classifier(new ClassifierInfo());
 
@@ -272,7 +280,6 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(intArg.Segments[0].StackSize, Is.EqualTo(4));
         Assert.That(classifier.StackSize, Is.EqualTo(8));
     }
-#endif
 
     private struct HfaState
     {
@@ -289,4 +296,3 @@ internal static unsafe class Arm64ClassifierTests
     private static int GetClassSize(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* cls)
         => ((HfaState*)self)->Size;
 }
-#endif

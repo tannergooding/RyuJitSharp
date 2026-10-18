@@ -2,17 +2,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.IO;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regNumber;
-#if DEBUG
 using static RyuJitSharp.var_types;
 using SetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -92,13 +88,14 @@ internal static unsafe class LinearScanSmallRegisterMapTests
         });
     }
 
-#if DEBUG
     [TestCase(256u)]
     [TestCase(0x1_0000u)]
     [TestCase(0x2000_0000u)]
     [TestCase(uint.MaxValue)]
     public static void FullWidthValuesCannotBeTruncatedIntoVariableMaps(uint value)
     {
+        Assume.That(TestConfiguration.IsDebug, "Debug map overflow validation is available only in Debug.");
+
         WithMaps(1, (unusedCompiler, allocator) =>
         {
             var map = allocator.getInVarToRegMap(1) ?? throw new AssertionException("Missing incoming map.");
@@ -109,7 +106,6 @@ internal static unsafe class LinearScanSmallRegisterMapTests
             Assert.That(allocator.getVarReg(map, 0), Is.EqualTo(REG_NA));
         });
     }
-#endif
 
     [Test]
     public static void MapCopyIncludesPaddingAndPreservesSplitBlockAliases()
@@ -137,11 +133,12 @@ internal static unsafe class LinearScanSmallRegisterMapTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void VariableMapDumpPreservesRegisterNamesAndSkipsStackAndPadding(bool stackOnly)
     {
+        Assume.That(TestConfiguration.IsDebug, "Variable-map diagnostics are available only in Debug.");
+
         WithMaps(3, (compiler, allocator) =>
         {
             compiler.lvaTrackedToVarNum = [12, 34, 7];
@@ -176,6 +173,8 @@ internal static unsafe class LinearScanSmallRegisterMapTests
     [Test]
     public static void DebuggerMapsExposeFullWidthRegisterIdentitiesForLiveLocalsOnly()
     {
+        Assume.That(TestConfiguration.IsDebug, "Debugger register maps are available only in Debug.");
+
         WithMaps(3, (compiler, allocator) =>
         {
             compiler.lvaTrackedCountInSizeTUnits = 1;
@@ -210,7 +209,6 @@ internal static unsafe class LinearScanSmallRegisterMapTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpVarToRegMap")]
     private static extern void DumpVarToRegMap(LinearScan allocator, byte[] map);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compiler")]
     private static extern ref Compiler CompilerInstance(LinearScan allocator);

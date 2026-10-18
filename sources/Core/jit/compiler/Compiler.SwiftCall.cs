@@ -196,9 +196,7 @@ public partial class Compiler
 
                 if (lowering.byReference)
                 {
-#if DEBUG
                     JITDUMP($"  Argument {argIndexAfterPop} of type {typGetObjLayout(arg.SignatureClassHandle).ClassName} must be passed by reference\n");
-#endif
 
                     var addrNode = gtNewLclAddrNode(TYP_I_IMPL, structVal.LclNum, structVal.LclOffs);
                     var newArg = NewCallArg.CreateForPrimitive(addrNode, TYP_I_IMPL);
@@ -212,14 +210,15 @@ public partial class Compiler
                 }
                 else
                 {
-#if DEBUG
-                    JITDUMP($"  Argument {argIndexAfterPop} of type {typGetObjLayout(arg.SignatureClassHandle).ClassName} must be passed as {lowering.numLoweredElements} primitive(s)\n");
-
-                    for (var i = 0; i < lowering.numLoweredElements; i++)
+                    if (Configuration.DEBUG)
                     {
-                        JITDUMP($"    [{i}] @ +{lowering.offsets[i]:D2}: {lowering.loweredElements[i].PreciseVarType.Name}\n");
+                        JITDUMP($"  Argument {argIndexAfterPop} of type {typGetObjLayout(arg.SignatureClassHandle).ClassName} must be passed as {lowering.numLoweredElements} primitive(s)\n");
+
+                        for (var i = 0; i < lowering.numLoweredElements; i++)
+                        {
+                            JITDUMP($"    [{i}] @ +{lowering.offsets[i]:D2}: {lowering.loweredElements[i].PreciseVarType.Name}\n");
+                        }
                     }
-#endif
 
                     for (var i = 0; i < lowering.numLoweredElements; i++)
                     {
@@ -305,8 +304,7 @@ public partial class Compiler
             call.Args.Remove(swiftErrorArg);
         }
 
-#if DEBUG
-        if (verbose && call.Type == TYP_STRUCT && sig.retTypeClass != NO_CLASS_HANDLE)
+        if (Configuration.DEBUG && verbose && call.Type == TYP_STRUCT && sig.retTypeClass != NO_CLASS_HANDLE)
         {
             ref readonly var lowering = ref GetSwiftLowering(sig.retTypeClass);
             if (lowering.byReference)
@@ -322,7 +320,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         JITDUMP("Final result after Swift call lowering:\n");
         DISPTREE(call);

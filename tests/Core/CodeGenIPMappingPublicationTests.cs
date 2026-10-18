@@ -151,10 +151,11 @@ internal static unsafe class CodeGenIPMappingPublicationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DiagnosticOutputIncludesSpecialOffsetsAndAsyncFlags()
     {
+        Assume.That(TestConfiguration.IsDebug, "IP mapping diagnostic output is Debug-only.");
+
         var output = CodeGenLifeTransitionTests.Capture(() =>
         {
             var mapping = new ICorDebugInfo.OffsetMapping
@@ -176,6 +177,8 @@ internal static unsafe class CodeGenIPMappingPublicationTests
     [Test]
     public static void DiagnosticLineDumpTreatsBoundaryCountAsUnsigned()
     {
+        Assume.That(TestConfiguration.IsDebug, "IP mapping diagnostic output is Debug-only.");
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var mapping = new ICorDebugInfo.OffsetMapping
         {
@@ -215,7 +218,6 @@ internal static unsafe class CodeGenIPMappingPublicationTests
             base.Write(value);
         }
     }
-#endif
 
     private static void Add(Compiler compiler, CodeGen codeGen, IPmappingDscKind kind, int ilOffset,
         bool isLabel, ICorDebugInfo.SourceTypes source = 0)
