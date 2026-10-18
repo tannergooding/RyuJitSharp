@@ -157,11 +157,11 @@ internal static unsafe class LinearScanSpillAccountingTests
         });
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(false)]
     [TestCase(true)]
     public static void UpperVectorReferencesDoNotDoubleCountSpilledTempsOrLocalHomes(bool local)
     {
+        Assume.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE);
         WithAllocator((compiler, allocator) => {
             var definition = CreateDefinition(TYP_SIMD32);
             var interval = definition.getInterval();
@@ -191,7 +191,6 @@ internal static unsafe class LinearScanSpillAccountingTests
             Assert.That(MaxSpill(allocator)[(int)TYP_SIMD32], Is.EqualTo(local ? 0 : 1));
         });
     }
-#endif
 
     private static RefPosition CreateDefinition(var_types type)
     {

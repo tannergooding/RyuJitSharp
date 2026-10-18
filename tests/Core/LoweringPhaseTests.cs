@@ -121,15 +121,18 @@ internal static unsafe class LoweringPhaseTests
             Assert.That(compiler._dfsTree, Is.Not.Null);
             Assert.That(compiler.fgLocalVarLivenessDone, Is.False);
 
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = CodeGenLifeTransitionTests.Capture(() =>
-                Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
-            Assert.That(Occurrences(output, "had to run another liveness pass:"), Is.EqualTo(1));
-            Assert.That(Occurrences(output, "In Liveness::Init"), Is.EqualTo(2));
-#else
-            Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = CodeGenLifeTransitionTests.Capture(() =>
+                    Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
+                Assert.That(Occurrences(output, "had to run another liveness pass:"), Is.EqualTo(1));
+                Assert.That(Occurrences(output, "In Liveness::Init"), Is.EqualTo(2));
+            }
+            else
+            {
+                Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            }
             Assert.That(unused.Prev, Is.Null);
             Assert.That(entry.FirstNode, Is.Null);
             Assert.That(compiler.fgBBcount, Is.EqualTo(1));
@@ -175,7 +178,6 @@ internal static unsafe class LoweringPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitMaxLocalsToTrack")]
     private static extern ref int MaxLocalsToTrack(ref JitConfigValues config);
 
-#if DEBUG
     private static int Occurrences(string text, string value)
     {
         var count = 0;
@@ -187,7 +189,6 @@ internal static unsafe class LoweringPhaseTests
 
         return count;
     }
-#endif
 
     private static void WithCompiler(Action<Compiler, LinearScan> action, bool minOpts = true)
     {

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -200,6 +199,8 @@ internal static unsafe class WasmCallLoweringTests
 
     private static void WithLowering(Action<Compiler, Lowering, BasicBlock> action)
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -229,4 +230,3 @@ internal static unsafe class WasmCallLoweringTests
         }
     }
 }
-#endif

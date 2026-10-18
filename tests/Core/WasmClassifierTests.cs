@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class WasmClassifierTests
 {
+    [SetUp]
+    public static void RequireWasmTarget()
+    {
+        Assume.That(Configuration.TARGET_WASM);
+    }
+
     [TestCase(CORINFO_WASM_TYPE_I32, TYP_INT)]
     [TestCase(CORINFO_WASM_TYPE_I64, TYP_LONG)]
     [TestCase(CORINFO_WASM_TYPE_F32, TYP_FLOAT)]
@@ -251,4 +256,3 @@ internal static unsafe class WasmClassifierTests
         return (CorInfoWasmType)(nuint)classHandle;
     }
 }
-#endif

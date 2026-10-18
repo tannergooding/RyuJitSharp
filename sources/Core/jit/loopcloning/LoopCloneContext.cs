@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
@@ -73,7 +74,7 @@ public sealed class LoopCloneContext
         return false;
     }
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public void PrintBlockConditions(int loopNum)
     {
         jitprintf("Block conditions:\n");
@@ -89,6 +90,7 @@ public sealed class LoopCloneContext
         }
     }
 
+    [Conditional("DEBUG")]
     public void PrintBlockLevelConditions(int level, List<LC_Condition> conditions)
     {
         jitprintf($"{level} = ");
@@ -105,6 +107,7 @@ public sealed class LoopCloneContext
         jitprintf("\n");
     }
 
+    [Conditional("DEBUG")]
     public void PrintConditions(int loopNum)
     {
         var conditions = _conditions[loopNum];
@@ -129,8 +132,6 @@ public sealed class LoopCloneContext
             jitprintf(")");
         }
     }
-#endif
-
     public List<List<LC_Condition>> GetBlockConditions(int loopNum)
     {
         assert(HasBlockConditions(loopNum));
@@ -164,9 +165,7 @@ public sealed class LoopCloneContext
             if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"Considering condition {i}: (");
-#if DEBUG
                 condition.Print();
-#endif
             }
             if (condition.Evaluates(out var result))
             {
@@ -231,18 +230,14 @@ public sealed class LoopCloneContext
         if (Configuration.DEBUG && verbose)
         {
             jitprintf("Before optimizing cloning conditions\n\t");
-#if DEBUG
             PrintConditions(loopNum);
-#endif
             jitprintf("\n");
         }
         OptimizeConditions(_conditions[loopNum]!);
         if (Configuration.DEBUG && verbose)
         {
             jitprintf("After optimizing cloning conditions\n\t");
-#if DEBUG
             PrintConditions(loopNum);
-#endif
             jitprintf("\n");
         }
     }
@@ -260,9 +255,7 @@ public sealed class LoopCloneContext
         if (Configuration.DEBUG && verbose)
         {
             jitprintf("After optimizing block-level cloning conditions\n\t");
-#if DEBUG
             PrintConditions(loopNum);
-#endif
             jitprintf("\n");
         }
     }

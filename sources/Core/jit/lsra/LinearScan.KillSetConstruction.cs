@@ -202,7 +202,6 @@ public sealed partial class LinearScan
             ? _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
             : new regMaskTP(SRBM_NONE);
 
-#if DEBUG
     private regMaskTP getKillSetForNode(GenTree tree)
     {
         var killMask = new regMaskTP(SRBM_NONE);
@@ -303,7 +302,6 @@ public sealed partial class LinearScan
 
         return killMask;
     }
-#endif
 
     private regMaskTP getCalleeTrashKillMask()
     {

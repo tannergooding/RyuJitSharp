@@ -144,9 +144,10 @@ public partial class Compiler
                 throw new UnreachableException("unexpected accessType for R2R field access");
             }
             var offset = gtNewIndOfIconHandleNode(TYP_I_IMPL, (nint)field.FieldLookup.addr, GTF_ICON_CONST_PTR);
-#if DEBUG
-            offset.Addr.AsIntCon().TargetHandle = (nint)fieldHandle;
-#endif
+            if (Configuration.DEBUG)
+            {
+                offset.Addr.AsIntCon().TargetHandle = (nint)fieldHandle;
+            }
             address = gtNewBinaryNode(GT_ADD, (objectType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, address, offset);
             if (explicitNullCheck && (address.Type is TYP_BYREF))
             {

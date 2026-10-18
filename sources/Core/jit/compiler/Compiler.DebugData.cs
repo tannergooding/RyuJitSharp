@@ -20,6 +20,8 @@ public partial class Compiler
         internal int InlineMethodXmlFilePosition;
         internal Dictionary<int, LocalDebugData>? LocalVariables;
         internal GenTree? LastConsumedNode;
+        internal bool TreesBeforeAfterMorph;
+        internal int MorphNum;
         internal bool SafeBasicBlockCreation = true;
         internal bool SafeFlowEdgeCreation = true;
         internal bool StackCheckOnRet;
@@ -51,6 +53,40 @@ public partial class Compiler
         set
         {
             GetDebugData().AsciiTrees = value;
+        }
+    }
+
+    /// <summary>If true, print trees before and after morphing.</summary>
+    public bool treesBeforeAfterMorph
+    {
+        get
+        {
+            return Configuration.DEBUG && (GetExistingDebugData()?.TreesBeforeAfterMorph ?? false);
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().TreesBeforeAfterMorph = value;
+            }
+        }
+    }
+
+    /// <summary>This counts morphed trees to label their diagnostic output.</summary>
+    public int morphNum
+    {
+        get
+        {
+            return Configuration.DEBUG ? (GetExistingDebugData()?.MorphNum ?? 0) : 0;
+        }
+
+        set
+        {
+            if (Configuration.DEBUG)
+            {
+                GetDebugData().MorphNum = value;
+            }
         }
     }
 

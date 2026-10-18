@@ -1,15 +1,12 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG && TARGET_AMD64
 using System;
-#endif
+using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
-#if TARGET_ARM
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -60,10 +57,11 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void InvalidVerboseLayoutStateTerminatesAfterUnknownWithoutANewline()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, _) =>
         {
             var previousConfig = JitConfig;
@@ -94,13 +92,13 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
             }
         });
     }
-#endif
 
-#if DEBUG && TARGET_AMD64
     [TestCase(0)]
     [TestCase(8)]
     public static void OsrPromotedFieldDiagnosticsRetainParentAndFieldOffsetIdentity(byte fieldOffset)
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
         {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
@@ -154,13 +152,13 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
             Assert.That(compiler.compLclFrameSize, Is.Zero);
         });
     }
-#endif
 
-#if TARGET_X86 || TARGET_ARM
     [TestCase(Compiler.TENTATIVE_FRAME_LAYOUT)]
     [TestCase(Compiler.FINAL_FRAME_LAYOUT)]
     public static void RawThirtyTwoBitSlotAssignmentDoesNotAddEightBytePadding(Compiler.FrameLayoutState state)
     {
+        Assume.That(Configuration.TARGET_X86 || Configuration.TARGET_ARM);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, _) =>
         {
             compiler.lvaDoneFrameLayout = state;
@@ -173,15 +171,13 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
             Assert.That(compiler.compLclFrameSize, Is.EqualTo(8));
         });
     }
-#endif
 
-#if TARGET_ARM
-    [TestCase(REG_R0, -12, 0, false)]
-    [TestCase(REG_R2, -8, 4, false)]
-    [TestCase(REG_R3, -4, 8, true)]
+    [TestCaseSource(nameof(ArmPrespillOffsetCases))]
     public static void ArmPrespillOffsetsIncludeAlignmentButStackHomeSelectionDoesNot(
         regNumber register, int callerOffset, int virtualOffset, bool requiresLocalHome)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
         {
             compiler.info.compArgsCount = 1;
@@ -203,10 +199,24 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
         });
     }
 
+    private static IEnumerable<TestCaseData> ArmPrespillOffsetCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(REG_R0, -12, 0, false);
+        yield return new TestCaseData(REG_R2, -8, 4, false);
+        yield return new TestCaseData(REG_R3, -4, 8, true);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ArmPrespillClassificationUsesTheParentAbiForPromotedFields(bool field)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, _) =>
         {
             compiler.info.compArgsCount = 1;
@@ -229,5 +239,4 @@ internal static unsafe class CompilerFrameOffsetCompletionTests
             Assert.That(compiler.lvaIsPreSpilled(field ? 1 : 0, new regMaskTP(SRBM_R0)), Is.False);
         });
     }
-#endif
 }

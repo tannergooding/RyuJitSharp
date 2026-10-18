@@ -4,9 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#if TARGET_XARCH || TARGET_ARM64
 using static RyuJitSharp.instruction;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -31,26 +29,28 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
         signature.retType = CorInfoType.CORINFO_TYPE_INT;
         signature.numArgs = 23;
 
-        View.RecordSite(emitter, offset, explicitSignature ? &signature : null,
-            (CORINFO_METHOD_STRUCT_*)(nuint)methodValue);
+        if (TestConfiguration.IsDebug)
+        {
+            View.RecordSite(emitter, offset, explicitSignature ? &signature : null,
+                (CORINFO_METHOD_STRUCT_*)(nuint)methodValue);
 
-#if DEBUG
-        var query = !explicitSignature && methodValue == 0x2000;
-        Assert.That(context.Queries, Is.EqualTo(query ? 1 : 0));
-        Assert.That(context.CallSites, Is.EqualTo(1));
-        Assert.That(context.QueryOrder, Is.EqualTo(query ? 1 : 0));
-        Assert.That(context.CallOrder, Is.EqualTo(query ? 2 : 1));
-        Assert.That(context.Offset, Is.EqualTo(unchecked((int)offset)));
-        Assert.That(context.Method, Is.EqualTo((nuint)methodValue));
-        Assert.That(context.HadSignature, Is.EqualTo(explicitSignature || query));
-        Assert.That(context.Arguments, Is.EqualTo(explicitSignature ? 23 : query ? 17 : 0));
-#else
-        Assert.That(context.Queries, Is.Zero);
-        Assert.That(context.CallSites, Is.Zero);
-#endif
+            var query = !explicitSignature && methodValue == 0x2000;
+            Assert.That(context.Queries, Is.EqualTo(query ? 1 : 0));
+            Assert.That(context.CallSites, Is.EqualTo(1));
+            Assert.That(context.QueryOrder, Is.EqualTo(query ? 1 : 0));
+            Assert.That(context.CallOrder, Is.EqualTo(query ? 2 : 1));
+            Assert.That(context.Offset, Is.EqualTo(unchecked((int)offset)));
+            Assert.That(context.Method, Is.EqualTo((nuint)methodValue));
+            Assert.That(context.HadSignature, Is.EqualTo(explicitSignature || query));
+            Assert.That(context.Arguments, Is.EqualTo(explicitSignature ? 23 : query ? 17 : 0));
+        }
+        else
+        {
+            Assert.That(context.Queries, Is.Zero);
+            Assert.That(context.CallSites, Is.Zero);
+        }
     }
 
-#if TARGET_XARCH || TARGET_ARM64
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -58,6 +58,8 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
     [TestCase(-1)]
     public static void FindingInstructionNumbersPreservesTheFirstAndOnePastEndPositions(int index)
     {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new View(compiler);
         var group = View.Group(index < 0 ? 0 : 3);
@@ -70,6 +72,8 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
     [Test]
     public static void MissingInstructionRetainsTheNativeAssertionAndUnsignedSentinel()
     {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new CallbackContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
@@ -84,26 +88,28 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
         {
             JitTls.Compiler = compiler;
             Assert.That(View.Find(emitter, group, View.Basic()), Is.EqualTo(uint.MaxValue));
-#if DEBUG
-            Assert.That(context.Assertions, Is.EqualTo(1));
-            Assert.That(context.FindFailureAssertions, Is.EqualTo(1));
-#else
-            Assert.That(context.Assertions, Is.Zero);
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(context.Assertions, Is.EqualTo(1));
+                Assert.That(context.FindFailureAssertions, Is.EqualTo(1));
+            }
+            else
+            {
+                Assert.That(context.Assertions, Is.Zero);
+            }
         }
         finally
         {
             JitTls.Compiler = previousCompiler;
         }
     }
-#endif
-
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
     [TestCase(0, 1)]
     [TestCase(int.MaxValue, int.MinValue)]
     [TestCase(-1, 0)]
     public static void IssueShrinkageWrapsTheNativeSignedAdjustment(int initial, int expected)
     {
+        Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
@@ -112,9 +118,7 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
             var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing return instruction.");
             descriptor.idCodeSize(2);
             var tracksPerformance = Configuration.LATE_DISASM;
-#if DEBUG
-            tracksPerformance = true;
-#endif
+            tracksPerformance |= TestConfiguration.IsDebug;
             if (tracksPerformance)
             {
                 group.igWeight = 16_777_217;
@@ -123,9 +127,10 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 16;
             emitter.writeableOffset = 0;
-#if DEBUG
-            emitter.emitIssuing = true;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                View.SetIssuing(emitter);
+            }
             OffsetAdjustment(emitter) = initial;
             var cost = View.ExecutionCost(emitter, descriptor);
             var score = group.igWeight / (double)BB_UNITY_WEIGHT * cost;
@@ -154,7 +159,6 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitOffsAdj")]
     private static extern ref int OffsetAdjustment(Emitter emitter);
-#endif
 
     private struct CallbackContext
     {
@@ -217,7 +221,6 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
             _compiler = compiler;
         }
 
-#if TARGET_XARCH || TARGET_ARM64
         public static insGroup Group(int count)
         {
             var descriptors = new instrDesc[count];
@@ -241,29 +244,32 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
         {
             var descriptor = new instrDescBasic();
             descriptor.idIns(INS_nop);
-#if TARGET_XARCH
-            descriptor.idInsFmt(insFormat.IF_NONE);
-#else
-            descriptor.idInsFmt(insFormat.IF_ARM64_SN_0A);
-#endif
+            descriptor.idInsFmt(Configuration.TARGET_XARCH
+                ? insFormat.IF_NONE
+                : insFormat.IF_ARM64_SN_0A);
 
             return descriptor;
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitFindInsNum")]
         public static extern uint Find(Emitter emitter, insGroup group, instrDesc? match);
-#endif
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitRecordCallSite")]
         public static extern void RecordSite(Emitter emitter, uint offset,
             CORINFO_SIG_INFO* signature, CORINFO_METHOD_STRUCT_* method);
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIssue1Instr")]
         public static extern nuint Issue(Emitter emitter, insGroup group, instrDesc descriptor, byte** code);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insEvaluateExecutionCost")]
         public static extern float ExecutionCost(Emitter emitter, instrDesc descriptor);
-#endif
+
+        public static void SetIssuing(Emitter emitter)
+        {
+            EmitIssuing(emitter) = true;
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIssuing")]
+        private static extern ref bool EmitIssuing(Emitter emitter);
     }
 }

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -22,6 +21,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64BlockMemoryUnrollTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase(1, new[] { INS_strb })]
     [TestCase(2, new[] { INS_strh })]
     [TestCase(3, new[] { INS_strh, INS_strb })]
@@ -248,4 +253,3 @@ internal static class Arm64BlockMemoryUnrollTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

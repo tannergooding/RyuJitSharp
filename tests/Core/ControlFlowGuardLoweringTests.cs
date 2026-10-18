@@ -81,13 +81,10 @@ internal static unsafe class ControlFlowGuardLoweringTests
                 Flags = GTF_CALL_VIRT_STUB,
             };
             Assert.That(call.IndirectionCellArgKind, Is.EqualTo(WellKnownArg.VirtualStubCell));
-#if DEBUG
-            var expected = TargetArchitecture.IsArm64 && (JitConfig.JitCFGUseDispatcher == 1)
+            var expected = TestConfiguration.IsDebug && TargetArchitecture.IsArm64 &&
+                (JitConfig.JitCFGUseDispatcher == 1)
                 ? "Dispatch"
                 : "ValidateAndCall";
-#else
-            const string expected = "ValidateAndCall";
-#endif
             Assert.That(GetCFGCallKind(lowering, call), Is.EqualTo(expected));
         });
     }
@@ -97,22 +94,21 @@ internal static unsafe class ControlFlowGuardLoweringTests
     {
         WithCompiler((compiler, block, lowering) => {
             var call = new GenTreeCall(TYP_VOID) { _callType = CT_INDIRECT };
-#if DEBUG
-            var dispatch = (JitConfig.JitCFGUseDispatcher == 1) ||
-                ((JitConfig.JitCFGUseDispatcher != 0) && TargetArchitecture.IsX64);
-#else
-            var dispatch = TargetArchitecture.IsX64;
-#endif
+            var dispatch = TestConfiguration.IsDebug
+                ? (JitConfig.JitCFGUseDispatcher == 1) ||
+                    ((JitConfig.JitCFGUseDispatcher != 0) && TargetArchitecture.IsX64)
+                : TargetArchitecture.IsX64;
             Assert.That(call.IndirectionCellArgKind, Is.EqualTo(WellKnownArg.None));
             Assert.That(GetCFGCallKind(lowering, call), Is.EqualTo(dispatch ? "Dispatch" : "ValidateAndCall"));
         });
     }
 
-#if TARGET_AMD64 || DEBUG
     // ARM64 dispatch is only selectable through the Debug policy override.
     [Test]
     public static void DispatchMovesTargetIntoItsRegisterArgumentAndRewritesTheCall()
     {
+        Assume.That(Configuration.TARGET_AMD64 || TestConfiguration.IsDebug);
+
         WithDispatchPolicy(() => WithCompiler((compiler, block, lowering) => {
             var target = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
             var call = new GenTreeCall(TYP_VOID) {
@@ -150,7 +146,6 @@ internal static unsafe class ControlFlowGuardLoweringTests
             }
         }));
     }
-#endif
 
     [Test]
     public static void LateTargetArgumentAppendsAfterExistingLateArguments()
@@ -190,25 +185,26 @@ internal static unsafe class ControlFlowGuardLoweringTests
         return method.Invoke(lowering, [call])?.ToString() ?? throw new InvalidOperationException();
     }
 
-#if TARGET_AMD64 || DEBUG
     private static void WithDispatchPolicy(Action action)
     {
-#if DEBUG
-        var previousPolicy = CFGDispatchPolicy(ref Globals.JitConfig);
-        CFGDispatchPolicy(ref Globals.JitConfig) = 1;
-        try
+        if (TestConfiguration.IsDebug)
+        {
+            var previousPolicy = CFGDispatchPolicy(ref Globals.JitConfig);
+            CFGDispatchPolicy(ref Globals.JitConfig) = 1;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                CFGDispatchPolicy(ref Globals.JitConfig) = previousPolicy;
+            }
+        }
+        else
         {
             action();
         }
-        finally
-        {
-            CFGDispatchPolicy(ref Globals.JitConfig) = previousPolicy;
-        }
-#else
-        action();
-#endif
     }
-#endif
 
     private static void WithCompiler(Action<Compiler, BasicBlock, Lowering> action)
     {
@@ -245,10 +241,8 @@ internal static unsafe class ControlFlowGuardLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitCFGUseDispatcher")]
     private static extern ref int CFGDispatchPolicy(ref JitConfigValues config);
-#endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,

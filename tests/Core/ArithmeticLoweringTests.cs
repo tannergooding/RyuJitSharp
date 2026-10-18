@@ -171,13 +171,14 @@ internal static unsafe class ArithmeticLoweringTests
         });
     }
 
-#if TARGET_AMD64
     [TestCase(-2147483649L, false)]
     [TestCase(-2147483648L, true)]
     [TestCase(2147483647L, true)]
     [TestCase(2147483648L, false)]
     public static void ImmediateContainmentRequiresSignedInt32Value(long value, bool expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithCompiler(true, (compiler, _, lowering) => {
             var source = compiler.gtNewLclvNode(TYP_LONG, 1);
             var constant = compiler.gtNewIconNode(TYP_LONG, (nint)value);
@@ -190,6 +191,8 @@ internal static unsafe class ArithmeticLoweringTests
     [Test]
     public static void ImmediateContainmentRejectsRelocations()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithCompiler(true, (compiler, _, lowering) => {
             compiler.opts.compReloc = true;
             var source = compiler.gtNewLclvNode(TYP_LONG, 1);
@@ -201,7 +204,6 @@ internal static unsafe class ArithmeticLoweringTests
             Assert.That(lowering.IsContainableImmed(parent, constant), Is.False);
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

@@ -3,26 +3,28 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 || TARGET_ARM64
 using System;
-using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
-#if TARGET_AMD64
 using static RyuJitSharp.regMask;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class LinearScanSequencingInitializationTests
 {
+    [SetUp]
+    public static void RequireSupportedTarget()
+    {
+        Assume.That(Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64,
+            "LSRA block sequencing tests require an x64 or ARM64 target.");
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void RestartClearsVisitationAndPeekDoesNotAdvance(bool minOpts)
@@ -97,10 +99,11 @@ internal static unsafe class LinearScanSequencingInitializationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void UnreachableMetadataIsVisitedBeforeItsSequenceEntryIsPublished()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator(false, (compiler, allocator) => {
             var blocks = CreateBlocks(compiler, BBJ_ALWAYS, BBJ_RETURN, BBJ_RETURN, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Connect(compiler, blocks[0], blocks[3]));
@@ -143,7 +146,6 @@ internal static unsafe class LinearScanSequencingInitializationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockSequenceCount")]
     private static extern ref int SequenceCount(LinearScan allocator);
-#endif
 
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
@@ -187,11 +189,12 @@ internal static unsafe class LinearScanSequencingInitializationTests
         compiler.opts.compFlags = minOpts ? CLFLG_MINOPT : 0;
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-#if TARGET_AMD64
-        CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
-        CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
-        CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
+            CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
+            CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
+        }
         JitTls.Compiler = compiler;
         try
         {
@@ -230,7 +233,6 @@ internal static unsafe class LinearScanSequencingInitializationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
     private static extern ref uint CurrentBlockNumber(LinearScan allocator);
 
-#if TARGET_AMD64
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
 
@@ -239,6 +241,4 @@ internal static unsafe class LinearScanSequencingInitializationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
     private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
-#endif
 }
-#endif

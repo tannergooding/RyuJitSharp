@@ -1,13 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if HAS_FIXED_REGISTER_SET
-using System.Collections.Generic;
-
-#if DEBUG
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
@@ -27,23 +23,22 @@ internal static unsafe class RegisterMaskConstructionTests
         yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterLast);
         yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst);
         yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast);
-#if FEATURE_MASKED_HW_INTRINSICS
-        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
-        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
+            yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
+        }
     }
 
     [TestCaseSource(nameof(RegisterCases))]
     public static void ConstructionUsesTheLookupBitAndTheFullRegisterBank(regNumber reg)
     {
+        RequireFixedRegisterSet();
+
         var expectedBit = reg == REG_STK ? SRBM_NONE : unchecked((regMask)(1UL << ((int)reg % 64)));
-#if HAS_MORE_THAN_64_REGISTERS
-        var expectedMask = (int)reg < 64
+        var expectedMask = !Configuration.HAS_MORE_THAN_64_REGISTERS || (int)reg < 64
             ? new regMaskTP(expectedBit)
             : new regMaskTP(SRBM_NONE, expectedBit);
-#else
-        var expectedMask = new regMaskTP(expectedBit);
-#endif
         var type = reg.IsFltReg ? TYP_FLOAT : TYP_INT;
 
         Assert.That(genSingleTypeRegMask(reg), Is.EqualTo(expectedBit));
@@ -55,6 +50,8 @@ internal static unsafe class RegisterMaskConstructionTests
     [Test]
     public static void EachConstructionReturnsAnIndependentValue()
     {
+        RequireFixedRegisterSet();
+
         var firstRegister = TargetRuntimeMetadata.IntegerRegisterFirst;
         var lastRegister = TargetRuntimeMetadata.IntegerRegisterLast;
         var firstFloatRegister = TargetRuntimeMetadata.FloatingRegisterFirst;
@@ -73,10 +70,12 @@ internal static unsafe class RegisterMaskConstructionTests
         Assert.That(first, Is.EqualTo(original | last));
     }
 
-#if HAS_MORE_THAN_64_REGISTERS && FEATURE_MASKED_HW_INTRINSICS
     [Test]
     public static void ScalarMasksAreBankLocalWhileFullMasksKeepOverlappingBanksSeparate()
     {
+        RequireFixedRegisterSet();
+        Assume.That(Configuration.HAS_MORE_THAN_64_REGISTERS && Configuration.FEATURE_MASKED_HW_INTRINSICS);
+
         var integerRegister = TargetRuntimeMetadata.IntegerRegisterFirst;
         var maskRegister = TargetRuntimeMetadata.MaskRegisterFirst;
         var integer = genSingleTypeRegMask(integerRegister);
@@ -88,32 +87,40 @@ internal static unsafe class RegisterMaskConstructionTests
         Assert.That(genRegMask(maskRegister, TYP_MASK), Is.EqualTo(new regMaskTP(SRBM_NONE, masked)));
         Assert.That(genRegMask(integerRegister), Is.Not.EqualTo(genRegMask(maskRegister)));
     }
-#endif
 
-#if !TARGET_ARM
     [TestCase(TYP_UNDEF)]
     [TestCase(TYP_INT)]
     [TestCase(TYP_DOUBLE)]
     [TestCase(TYP_STRUCT)]
     public static void NonArmTypedConstructionIgnoresTheType(var_types type)
     {
-        regNumber[] registers = [REG_STK, TargetRuntimeMetadata.IntegerRegisterLast,
-            TargetRuntimeMetadata.FloatingRegisterLast
-#if FEATURE_MASKED_HW_INTRINSICS
-            , TargetRuntimeMetadata.MaskRegisterLast
-#endif
-        ];
+        RequireFixedRegisterSet();
+        Assume.That(!Configuration.TARGET_ARM);
+
+        var registers = new List<regNumber>
+        {
+            REG_STK,
+            TargetRuntimeMetadata.IntegerRegisterLast,
+            TargetRuntimeMetadata.FloatingRegisterLast,
+        };
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            registers.Add(TargetRuntimeMetadata.MaskRegisterLast);
+        }
+
         foreach (var reg in registers)
         {
             Assert.That(genSingleTypeRegMask(reg, type), Is.EqualTo(genSingleTypeRegMask(reg)));
             Assert.That(genRegMask(reg, type), Is.EqualTo(genRegMask(reg)));
         }
     }
-#else
     [TestCase(0)]
     [TestCase(30)]
     public static void ArmDoubleConstructionPairsFromTheFirstHalfWithoutNormalizing(int offset)
     {
+        RequireFixedRegisterSet();
+        Assume.That(Configuration.TARGET_ARM);
+
         var first = (regNumber)((int)REG_F0 + offset);
         var second = first + 1;
         var pair = first.SingleTypeMask | second.SingleTypeMask;
@@ -130,20 +137,19 @@ internal static unsafe class RegisterMaskConstructionTests
     [Test]
     public static void ArmLongConstructionDoesNotIncludeTheNextIntegerRegister()
     {
+        RequireFixedRegisterSet();
+        Assume.That(Configuration.TARGET_ARM);
+
         var reg = REG_INT_FIRST;
 
         Assert.That(genSingleTypeRegMask(reg, TYP_LONG), Is.EqualTo(reg.SingleTypeMask));
         Assert.That(genRegMask(reg, TYP_LONG), Is.EqualTo(new regMaskTP(reg.SingleTypeMask)));
     }
-#endif
 
-#if DEBUG
     private static int s_assertions;
     private static string? s_lastAssertion;
-#if TARGET_ARM
     private static bool s_returned;
     private static bool s_returnedAtAssertion;
-#endif
 
     [TestCase(false, false)]
     [TestCase(false, true)]
@@ -151,6 +157,9 @@ internal static unsafe class RegisterMaskConstructionTests
     [TestCase(true, true)]
     public static void InvalidLookupAssertsBeforeRetainingTheArrayIndexFailure(bool fullMask, bool typed)
     {
+        RequireFixedRegisterSet();
+        Assume.That(TestConfiguration.IsDebug);
+
         regNumber[] invalidRegisters = [unchecked((regNumber)(-1)), REG_COUNT];
         foreach (var reg in invalidRegisters)
         {
@@ -172,11 +181,13 @@ internal static unsafe class RegisterMaskConstructionTests
         }
     }
 
-#if TARGET_ARM
     [TestCase(false)]
     [TestCase(true)]
     public static void ArmOddDoubleAssertsBeforeReturningTheUnnormalizedPair(bool fullMask)
     {
+        RequireFixedRegisterSet();
+        Assume.That(Configuration.TARGET_ARM && TestConfiguration.IsDebug);
+
         var odd = REG_F1;
         var expected = odd.SingleTypeMask | (odd + 1).SingleTypeMask;
 
@@ -197,6 +208,9 @@ internal static unsafe class RegisterMaskConstructionTests
     [TestCase(true)]
     public static void ArmStructRetainsTheTypeAssertionBeforeReturningItsSingleHalf(bool fullMask)
     {
+        RequireFixedRegisterSet();
+        Assume.That(Configuration.TARGET_ARM && TestConfiguration.IsDebug);
+
         WithAssertionRecorder(() => {
             var result = fullMask ? genRegMask(REG_F1, TYP_STRUCT).Lower : genSingleTypeRegMask(REG_F1, TYP_STRUCT);
             s_returned = true;
@@ -212,7 +226,6 @@ internal static unsafe class RegisterMaskConstructionTests
             Assert.That(result, Is.EqualTo(REG_F1.SingleTypeMask));
         });
     }
-#endif
 
     private static void WithAssertionRecorder(Action action)
     {
@@ -224,10 +237,8 @@ internal static unsafe class RegisterMaskConstructionTests
         JitTls.Compiler = null;
         s_assertions = 0;
         s_lastAssertion = null;
-#if TARGET_ARM
         s_returned = false;
         s_returnedAtAssertion = false;
-#endif
         try
         {
             action();
@@ -243,12 +254,13 @@ internal static unsafe class RegisterMaskConstructionTests
     {
         s_assertions++;
         s_lastAssertion = Marshal.PtrToStringUTF8((nint)expression);
-#if TARGET_ARM
         s_returnedAtAssertion = s_returned;
-#endif
 
         return 0;
     }
-#endif
+
+    private static void RequireFixedRegisterSet()
+    {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET);
+    }
 }
-#endif

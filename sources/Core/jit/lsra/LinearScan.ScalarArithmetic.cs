@@ -98,11 +98,7 @@ public sealed partial class LinearScan
                 _ = buildKillPositionsForNode(tree, _referenceBuildLocation + 1, new regMaskTP(countRegister));
             }
 
-#if DEBUG
-            var assignedRegister = tree.Reg;
-#else
-            var assignedRegister = tree.RegNum;
-#endif
+            var assignedRegister = Configuration.DEBUG ? tree.Reg : tree.RegNum;
             if (assignedRegister == REG_NA)
             {
                 dstCandidates = forceLowGprForApxIfNeeded(tree, dstCandidates, _evexIsSupported);

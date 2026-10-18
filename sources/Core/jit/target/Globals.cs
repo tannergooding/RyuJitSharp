@@ -163,7 +163,6 @@ public static partial class Globals
 
     public const int REG_HIGH_BASE = 64;
 
-#if DEBUG
     public const int DSP_SRC_OPER_LEFT  = 0;
 
     public const int DSP_SRC_OPER_RIGHT = 1;
@@ -171,7 +170,6 @@ public static partial class Globals
     public const int DSP_DST_OPER_LEFT  = 1;
 
     public const int DSP_DST_OPER_RIGHT = 0;
-#endif
 
     // Thumb branch limits and minimum sizes from targetarm.h.
     public static int JMP_DIST_SMALL_MAX_NEG =>

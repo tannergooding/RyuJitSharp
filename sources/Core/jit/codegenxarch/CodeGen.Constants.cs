@@ -27,9 +27,7 @@ public sealed partial class CodeGen
                 {
                     if (Emitter.isHighSimdReg(targetReg))
                     {
-#if DEBUG
                         assert(_compiler.canUseEvexEncodingDebugOnly());
-#endif
                         emit.emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg, -1, INS_OPTS_NONE);
                     }
                     else
@@ -54,9 +52,7 @@ public sealed partial class CodeGen
                 {
                     if (Emitter.isHighSimdReg(targetReg))
                     {
-#if DEBUG
                         assert(_compiler.canUseEvexEncodingDebugOnly());
-#endif
                         emit.emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg, -1, INS_OPTS_NONE);
                     }
                     else
@@ -82,9 +78,7 @@ public sealed partial class CodeGen
                 {
                     if (Emitter.isHighSimdReg(targetReg))
                     {
-#if DEBUG
                         assert(_compiler.canUseEvexEncodingDebugOnly());
-#endif
                         emit.emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg, -1, INS_OPTS_NONE);
                     }
                     else
@@ -110,9 +104,7 @@ public sealed partial class CodeGen
                 {
                     if (Emitter.isHighSimdReg(targetReg))
                     {
-#if DEBUG
                         assert(_compiler.canUseEvexEncodingDebugOnly());
-#endif
                         emit.emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg, -1, INS_OPTS_NONE);
                     }
                     else
@@ -238,9 +230,7 @@ public sealed partial class CodeGen
                 {
                     if (Emitter.isHighSimdReg(targetReg))
                     {
-#if DEBUG
                         assert(_compiler.canUseEvexEncodingDebugOnly());
-#endif
                         emit.emitIns_SIMD_R_R_R_I(INS_vpternlogd, EA_16BYTE, targetReg, targetReg, targetReg, -1, INS_OPTS_NONE);
                     }
                     else

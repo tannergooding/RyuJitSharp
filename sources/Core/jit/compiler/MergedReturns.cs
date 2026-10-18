@@ -134,10 +134,11 @@ public sealed class MergedReturns
                 _compiler.compFloatingPointUsed = true;
             }
 
-#if DEBUG
-            // Assignments to this local are introduced after stress type conversion.
-            retVarDsc.lvKeepType = true;
-#endif
+            if (Configuration.DEBUG)
+            {
+                // Assignments to this local are introduced after stress type conversion.
+                retVarDsc.lvKeepType = true;
+            }
             var retTemp = _compiler.gtNewLclvNode(retVarDsc.Type, retLclNum);
             retTemp.Flags |= GTF_DONT_CSE;
             returnExpr = _compiler.gtNewUnaryNode(GT_RETURN, retTemp.Type, retTemp);
@@ -217,12 +218,10 @@ public sealed class MergedReturns
                         var newWeight = oldWeight + returnBlock.bbWeight;
                         JITDUMP($"merging profile weight {FMT_WT(returnBlock.bbWeight)} from {FMT_BB(returnBlock.bbNum)} to const return {FMT_BB(mergedReturnBlock.bbNum)}\n");
                         mergedReturnBlock.setBBProfileWeight(newWeight);
-#if DEBUG
                         if (_compiler.verbose)
                         {
                             _compiler.fgTableDispBasicBlock(mergedReturnBlock);
                         }
-#endif
                     }
                 }
             }

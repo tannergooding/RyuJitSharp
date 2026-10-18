@@ -121,9 +121,10 @@ public partial class Emitter
         }
 
         emitForceNewIG = false;
-#if DEBUG
-        emitCurIG.lastGeneratedBlock = null;
-#endif
+        if (Configuration.DEBUG)
+        {
+            emitCurIG.lastGeneratedBlock = null;
+        }
     }
 
     private insGroup emitSavIG(bool emitAdd)
@@ -175,9 +176,10 @@ public partial class Emitter
 
         assert((ig.igFlags & InsGroupFlags.Placeholder) == 0);
         ig.igData = [.. emitCurIGfreeBase];
-#if DEBUG
-        ig.igDataSize = sz;
-#endif
+        if (Configuration.DEBUG)
+        {
+            ig.igDataSize = sz;
+        }
 
         noway_assert(unchecked((byte)emitCurIGinsCnt) == emitCurIGinsCnt);
         noway_assert(unchecked((ushort)emitCurIGsize) == emitCurIGsize);

@@ -180,11 +180,12 @@ internal static class EmitterGCInterruptibilityTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DspCodePreservesGcInterruptibilityTransitions(bool enable)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
@@ -194,7 +195,7 @@ internal static class EmitterGCInterruptibilityTests
             }
             emitter.emitIns(INS_nop);
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing group.");
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -216,7 +217,6 @@ internal static class EmitterGCInterruptibilityTests
             Assert.That(diagnostic.Contains("G_M", StringComparison.Ordinal), Is.EqualTo(!enable));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitNoGCRequestCount")]
     private static extern ref int RequestCount(Emitter emitter);

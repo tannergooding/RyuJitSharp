@@ -20,12 +20,13 @@ internal static unsafe class CodeGenImmediateTests
     private static nuint s_address;
     private static int s_hintCalls;
 
-#if TARGET_X86
     [TestCase(0, INS_xor)]
     [TestCase(1, INS_mov)]
     [TestCase(-1, INS_mov)]
     public static void X86ImmediateValuesUseTheTargetWidth(int value, instruction expected)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithCodeGen(CorInfoReloc.NONE, (_, codeGen) =>
         {
             codeGen.instGen_Set_Reg_To_Imm(EA_4BYTE, REG_EAX, value);
@@ -37,6 +38,8 @@ internal static unsafe class CodeGenImmediateTests
     [Test]
     public static void X86RelocatableImmediateUsesMovWithoutAPcRelativeDataAddress()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithCodeGen(CorInfoReloc.RELATIVE32, (compiler, codeGen) =>
         {
             compiler.opts.compReloc = true;
@@ -47,7 +50,6 @@ internal static unsafe class CodeGenImmediateTests
             Assert.That(s_hintCalls, Is.Zero);
         });
     }
-#endif
 
     [TestCase(0L, INS_xor)]
     [TestCase(1L, INS_mov)]

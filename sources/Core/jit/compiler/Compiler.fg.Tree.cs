@@ -13,24 +13,25 @@ public partial class Compiler
         assert(!optValnumCSE_phase);
         var thisMorphNum = 0;
 
-#if DEBUG
-        if (verbose && (unchecked((uint)JitConfig.JitBreakMorphTree) == (uint)tree.TreeId))
+        if (Configuration.DEBUG)
         {
-            NO_WAY("JitBreakMorphTree hit");
-        }
+            if (verbose && (unchecked((uint)JitConfig.JitBreakMorphTree) == (uint)tree.TreeId))
+            {
+                NO_WAY("JitBreakMorphTree hit");
+            }
 
-        if (verbose && treesBeforeAfterMorph)
-        {
-            thisMorphNum = morphNum++;
-            jitprintf($"\nfgMorphTree (before {thisMorphNum}):\n");
-            gtDispTree(tree);
-        }
+            if (verbose && treesBeforeAfterMorph)
+            {
+                thisMorphNum = morphNum++;
+                jitprintf($"\nfgMorphTree (before {thisMorphNum}):\n");
+                gtDispTree(tree);
+            }
 
-        if (compStressCompile(STRESS_GENERIC_CHECK, 0))
-        {
-            tree = tree.CloneForMorphStress(this);
+            if (compStressCompile(STRESS_GENERIC_CHECK, 0))
+            {
+                tree = tree.CloneForMorphStress(this);
+            }
         }
-#endif
 
         var assertionPropDone = false;
 
@@ -231,9 +232,10 @@ public partial class Compiler
                 case IAT_PVALUE:
                 {
                     indirection = gtNewIndOfIconHandleNode(TYP_I_IMPL, (nint)address.handle, GTF_ICON_FTN_ADDR);
-#if DEBUG
-                    indirection.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)method;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        indirection.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)method;
+                    }
                     break;
                 }
 
@@ -244,9 +246,10 @@ public partial class Compiler
                     };
                     constant._vnPair.SetBoth(ValueNumStore.NoVN);
                     fgUpdateConstTreeValueNumber(constant);
-#if DEBUG
-                    constant.TargetHandle = (nint)method;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        constant.TargetHandle = (nint)method;
+                    }
                     tree = constant;
                     break;
                 }

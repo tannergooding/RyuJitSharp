@@ -59,9 +59,10 @@ internal static class CodeGenInitializationTests
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, reg, (compiler, codeGen, _) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
-#if SWIFT_SUPPORT
-            compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
-#endif
+            if (Configuration.SWIFT_SUPPORT)
+            {
+                compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
+            }
             codeGen.RegSet.rsClearRegsModified();
             compiler.fgFirstBB = new BasicBlock(null, null) { bbLiveIn = VarSetOps.MakeEmpty(compiler) };
             ref var local = ref compiler.lvaTable[0];

@@ -5,9 +5,7 @@
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.CorInfoHelpFunc;
-#if DEBUG
 using static RyuJitSharp.GenTreeCallDebugFlags;
-#endif
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -34,9 +32,10 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
-        call._callDebugFlags |= GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            call._callDebugFlags |= GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED;
+        }
         if (call.IsTailCall)
         {
             return false;

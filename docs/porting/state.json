@@ -10,8 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Create packet 302 by grouping the remaining Pending IDs in artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv by complete original source file, ordering files by pinned source_blob byte size, and taking complete groups until at least 300 rows are selected. Use the accepted packet-301 commit as the managed baseline; keep all Deferred rows open and do not repeat the full inventory scan.",
-    "activeBatch": null,
+    "nextAction": "Select the next complete Pending file-group packet from the master ledger by pinned source_blob byte size. Keep packet 302's 54 Deferred IDs open under G2 and the named Release-bindable debug-API closures; use artifacts\\conditional-cleanup\\batch-302-35121879\\candidates.csv and validation\\batch-acceptance.json for their specific gates and next actions. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
+
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",
       "The optional ARM64 emitter recording selection failed 18/642 Debug and 12/606 Release cases on existing unsupported target register-recording and diagnostic paths; no pass is claimed from that selection. ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED remains undefined by default, so its guarded bodies were not executed. TRX: artifacts\\tst\\EmitterTestHarnessGuard\\Debug\\EmitterTestHarnessGuard.win-arm64.Debug.trx and Release equivalent.",

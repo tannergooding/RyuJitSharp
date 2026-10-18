@@ -103,7 +103,9 @@ public sealed partial class LinearScan
         });
         assert(!foundDifference);
     }
+#endif
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void stressSetRandomParameterPreferences()
     {
         var random = new CLRRandom(_compiler.info.compMethodHash());
@@ -162,6 +164,7 @@ public sealed partial class LinearScan
         }
     }
 
+#if DEBUG
     private void validateIntervals()
     {
         if (!_enregisterLocalVars)

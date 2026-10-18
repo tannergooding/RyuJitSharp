@@ -129,9 +129,7 @@ public partial class Compiler
                 var otherLayout = _compiler.typGetObjLayout(previous.RetClsHnd);
                 if (!ClassLayout.AreCompatible(thisLayout, otherLayout))
                 {
-#if DEBUG
                     JITDUMP($"    No; disagreement on return type ({thisLayout.ClassName} vs {otherLayout.ClassName})\n");
-#endif
                     return false;
                 }
             }

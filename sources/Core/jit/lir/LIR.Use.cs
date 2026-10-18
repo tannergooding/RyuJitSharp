@@ -83,13 +83,11 @@ public partial class LIR
         [Conditional("DEBUG")]
         public readonly void AssertIsValid()
         {
-#if DEBUG
             assert(IsInitialized());
             assert(!IsDummyUse());
             assert(_range.Contains(_user));
             assert(Def() is not null);
             assert(Unsafe.AreSame(in _user.GetUseRefOrNullRef(Def()), in _edge));
-#endif
         }
 
         /// <summary>Indicates whether or not a use is a dummy use.</summary>
@@ -148,10 +146,8 @@ public partial class LIR
                 assert(IsInitialized());
             }
 
-#if DEBUG
             assert(IsDummyUse() || _range.Contains(_user));
             assert(_range.Contains(replacement));
-#endif
 
             if (!IsDummyUse())
             {
@@ -219,10 +215,8 @@ public partial class LIR
                 assert(IsInitialized());
             }
 
-#if DEBUG
             assert(_range.Contains(_user));
             assert(_range.Contains(Def()));
-#endif
 
             var node = Def();
 

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -219,4 +218,3 @@ public static partial class Globals
         jitprintf("\n");
     }
 }
-#endif

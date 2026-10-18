@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,7 @@ internal static class CodeGenSiVarLocDiagnosticsTests
     [Test]
     public static void VariableLocationDiagnosticsPreserveNativeFormatting()
     {
+        Assume.That(TestConfiguration.IsDebug);
         var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
 
         var integerRegister = new CodeGen.siVarLoc { vlType = VLT_REG };
@@ -272,4 +272,3 @@ internal static class CodeGenSiVarLocDiagnosticsTests
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 }
-#endif

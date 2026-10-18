@@ -51,7 +51,6 @@ public sealed partial class RangeCheck
         return true;
     }
 
-#if DEBUG
     private void IndentRangeCheckDump(int indent)
     {
         for (var i = 0; i < indent; i++)
@@ -59,16 +58,10 @@ public sealed partial class RangeCheck
             JITDUMP("   ");
         }
     }
-#endif
 
-    private Range GetRangeWorker(BasicBlock block, GenTree tree, bool monotonicallyIncreasing
-#if DEBUG
-        , int indent = 0
-#endif
-    )
+    private Range GetRangeWorker(BasicBlock block, GenTree tree, bool monotonicallyIncreasing, int indent = 0)
     {
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             IndentRangeCheckDump(indent);
             JITDUMP($"[RangeCheck::GetRangeWorker] BB{block.bbNum:D2} ");
@@ -76,33 +69,23 @@ public sealed partial class RangeCheck
             IndentRangeCheckDump(indent);
             JITDUMP("{\n");
         }
-#endif
         var found = _rangeMap.TryGetValue(tree, out var cached);
         var range = found
             ? cached
-            : ComputeRange(block, tree, monotonicallyIncreasing
-#if DEBUG
-                , indent
-#endif
-            );
-#if DEBUG
-        if (_compiler.verbose)
+            : ComputeRange(block, tree, monotonicallyIncreasing, indent);
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             IndentRangeCheckDump(indent);
             JITDUMP($"   {(found ? "Cached" : "Computed")} Range [{tree.TreeId:D6}] => {range}\n");
             IndentRangeCheckDump(indent);
             JITDUMP("}\n");
         }
-#endif
         return range;
     }
 
-    private Range ComputeRange(BasicBlock block, GenTree tree, bool monotonicallyIncreasing
-#if DEBUG
-        , int indent
-#endif
-    )
+    private Range ComputeRange(BasicBlock block, GenTree tree, bool monotonicallyIncreasing, int indent)
     {
+        var childIndent = Configuration.DEBUG ? indent + 1 : 0;
         var newlyAdded = !_searchPath.ContainsKey(tree);
         _searchPath[tree] = block;
         var result = new Range(new Limit(LimitType.Undef));
@@ -150,38 +133,24 @@ public sealed partial class RangeCheck
             {
                 var def = definition.Value;
                 assert((def.Block is not null) && (def.DefNode is not null));
-#if DEBUG
-                if (_compiler.verbose)
+                if (Configuration.DEBUG && _compiler.verbose)
                 {
                     JITDUMP("----------------------------------------------------\n");
                     _compiler.gtDispTree(def.DefNode);
                     JITDUMP("----------------------------------------------------\n");
                 }
-#endif
-                result = GetRangeWorker(def.Block, def.DefNode.Data, monotonicallyIncreasing
-#if DEBUG
-                    , indent + 1
-#endif
-                );
+                result = GetRangeWorker(def.Block, def.DefNode.Data, monotonicallyIncreasing, childIndent);
             }
 
             MergeAssertion(block, tree, ref result);
         }
         else if (tree.Oper is GT_XOR or GT_OR or GT_ADD or GT_AND or GT_RSH or GT_RSZ or GT_LSH or GT_UMOD or GT_MUL)
         {
-            result = ComputeRangeForBinOp(block, tree.AsOp(), monotonicallyIncreasing
-#if DEBUG
-                , indent + 1
-#endif
-            );
+            result = ComputeRangeForBinOp(block, tree.AsOp(), monotonicallyIncreasing, childIndent);
         }
         else if (tree.Oper is GT_NEG)
         {
-            result = RangeOps.Negate(GetRangeWorker(block, tree.AsUnOp().Op1, monotonicallyIncreasing
-#if DEBUG
-                , indent + 1
-#endif
-            ));
+            result = RangeOps.Negate(GetRangeWorker(block, tree.AsUnOp().Op1, monotonicallyIncreasing, childIndent));
         }
         else if (tree.Oper is GT_PHI)
         {
@@ -196,11 +165,7 @@ public sealed partial class RangeCheck
                 }
                 else
                 {
-                    argRange = GetRangeWorker(block, arg, monotonicallyIncreasing
-#if DEBUG
-                        , indent + 1
-#endif
-                    );
+                    argRange = GetRangeWorker(block, arg, monotonicallyIncreasing, childIndent);
                 }
 
                 assert(!argRange.LowerLimit.IsUndef && !argRange.UpperLimit.IsUndef);
@@ -212,11 +177,7 @@ public sealed partial class RangeCheck
         }
         else if (tree.Oper is GT_COMMA)
         {
-            result = GetRangeWorker(block, tree.EffectiveVal, monotonicallyIncreasing
-#if DEBUG
-                , indent + 1
-#endif
-            );
+            result = GetRangeWorker(block, tree.EffectiveVal, monotonicallyIncreasing, childIndent);
         }
         else if (tree.Oper is GT_ARR_LENGTH)
         {
@@ -232,11 +193,7 @@ public sealed partial class RangeCheck
         return result;
     }
 
-    private Range ComputeRangeForBinOp(BasicBlock block, GenTreeOp binary, bool monotonicallyIncreasing
-#if DEBUG
-        , int indent
-#endif
-    )
+    private Range ComputeRangeForBinOp(BasicBlock block, GenTreeOp binary, bool monotonicallyIncreasing, int indent)
     {
         assert(binary.Type.ActualType == TYP_INT);
         var store = _compiler.vnStore;
@@ -267,11 +224,7 @@ public sealed partial class RangeCheck
 
             var value = _searchPath.ContainsKey(operand)
                 ? new Range(new Limit(LimitType.Dependent))
-                : GetRangeWorker(block, operand, monotonicallyIncreasing
-#if DEBUG
-                    , indent
-#endif
-                );
+                : GetRangeWorker(block, operand, monotonicallyIncreasing, indent);
             MergeAssertion(block, operand, ref value);
             assert(value.IsValid());
             return value;

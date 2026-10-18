@@ -227,12 +227,10 @@ public partial class Compiler
 
             case GT_CAST:
             {
-#if DEBUG
-                if ((tree._debugFlags & GTF_DEBUG_CAST_DONT_FOLD) != 0)
+                if (Configuration.DEBUG && ((tree._debugFlags & GTF_DEBUG_CAST_DONT_FOLD) != 0))
                 {
                     return false;
                 }
-#endif
                 var cast = tree.AsCast();
                 // An unsigned widening cast can have CastType == ULONG but
                 // Type == LONG. Compare actual types before canceling int->long->int.

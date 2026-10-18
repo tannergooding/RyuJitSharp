@@ -7,9 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if DEBUG
     private bool alwaysInsertReload() => (_lsraStressMask & 0x400) != 0;
-#endif
 
     private void resolveRegistersMinimal()
     {
@@ -155,10 +153,7 @@ public sealed partial class LinearScan
 
                         var nextReference = reference.nextRefPosition;
                         noway_assert(nextReference is not null);
-                        if (
-#if DEBUG
-                            alwaysInsertReload() ||
-#endif
+                        if ((Configuration.DEBUG && alwaysInsertReload()) ||
                             (nextReference.assignedReg() != reference.assignedReg()))
                         {
                             if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&

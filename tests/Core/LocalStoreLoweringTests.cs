@@ -163,10 +163,10 @@ internal static unsafe class LocalStoreLoweringTests
         });
     }
 
-#if TARGET_XARCH
     [Test]
     public static void ScalarStructBlockLoadReplacesTheLocalStoreOperand()
     {
+        Assume.That(Configuration.TARGET_XARCH);
         WithCompiler(compiler => {
             var layout = new ClassLayout(4);
             compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
@@ -208,7 +208,6 @@ internal static unsafe class LocalStoreLoweringTests
             }
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

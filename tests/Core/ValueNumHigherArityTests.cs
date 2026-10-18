@@ -136,11 +136,9 @@ internal static unsafe class ValueNumHigherArityTests
     public static void ZeroArityAttributePermitsBothRecordedArgumentCounts()
     {
         WithStore(store => {
-#if FEATURE_HW_INTRINSICS
-            var func = VNFunc.VNF_HWI_Vector_Create;
-#else
-            var func = VNFunc.VNF_LoopCloneChoiceAddr;
-#endif
+            var func = Configuration.FEATURE_HW_INTRINSICS
+                ? VNFunc.VNF_HWI_Vector_Create
+                : VNFunc.VNF_LoopCloneChoiceAddr;
             Assert.That(ValueNumStore.VNFuncArity(func), Is.Zero);
             var a = store.VNForExpr(null, TYP_INT);
             var b = store.VNForExpr(null, TYP_INT);

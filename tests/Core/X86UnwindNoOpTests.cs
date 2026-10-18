@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT).
 // See License.md in the repository root for more information.
 
-#if TARGET_X86
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -14,6 +13,8 @@ internal static unsafe class X86UnwindNoOpTests
     [Test]
     public static void X86PrologAndEpilogRecordingRemainsANoOp()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 
         compiler.unwindBegProlog();
@@ -29,6 +30,8 @@ internal static unsafe class X86UnwindNoOpTests
     [Test]
     public static void EmptyMethodReservesAndPublishesX86FunctionLength()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithPublication((compiler, context, hotCode, _) =>
         {
             compiler.unwindReserve();
@@ -52,6 +55,8 @@ internal static unsafe class X86UnwindNoOpTests
     [Test]
     public static void SplitRootPublishesHotAndColdFunctionLengths()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithPublication((compiler, context, hotCode, coldCode) =>
         {
             var coldStart = new BasicBlock(null, null) { bbEmitCookie = Group(32) };
@@ -83,10 +88,11 @@ internal static unsafe class X86UnwindNoOpTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void FakeSplitKeepsColdRootInHotSection()
     {
+        Assume.That(Configuration.TARGET_X86 && TestConfiguration.IsDebug);
+
         WithPublication((compiler, context, hotCode, coldCode) =>
         {
             FakeSplit(ref Globals.JitConfig) = 1;
@@ -109,7 +115,6 @@ internal static unsafe class X86UnwindNoOpTests
             Assert.That(context->Allocations[0].FunctionLength, Is.EqualTo(64u));
         });
     }
-#endif
 
     [Test]
     public static void FuncKindValuesMatchEeUnwindContract()
@@ -167,17 +172,17 @@ internal static unsafe class X86UnwindNoOpTests
     private delegate void PublicationAction(
         Compiler compiler, PublicationContext* context, byte* hotCode, byte* coldCode);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
     private static extern ref int FakeSplit(ref JitConfigValues config);
-#endif
 
     private static insGroup Group(uint offset)
     {
         var group = new insGroup { igOffs = offset };
-#if DEBUG
-        group.igSelf = group;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            group.igSelf = group;
+        }
+
         return group;
     }
 
@@ -237,4 +242,3 @@ internal static unsafe class X86UnwindNoOpTests
         public uint FunctionLength;
     }
 }
-#endif

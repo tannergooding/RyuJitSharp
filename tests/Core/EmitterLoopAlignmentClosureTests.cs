@@ -1,28 +1,25 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using NUnit.Framework;
-#if TARGET_ARM64
-using System.Collections.Generic;
-#endif
-#if DEBUG && TARGET_AMD64
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using NUnit.Framework;
 using static RyuJitSharp.Globals;
-#endif
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
 internal static unsafe class EmitterLoopAlignmentClosureTests
 {
-#if !TARGET_AMD64
     [Test]
     public static void EmptyAlignmentListIsTheNativeEarlyReturn()
     {
+        Assume.That(!Configuration.TARGET_AMD64);
+
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new View(compiler);
         View.Total(emitter) = 37;
@@ -37,6 +34,8 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
     [TestCase(uint.MaxValue - 3, 4u)]
     public static void FixedPaddingUsesTheNativeSizedOffset(uint lowOffset, uint expected)
     {
+        Assume.That(!Configuration.TARGET_AMD64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -64,10 +63,11 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
         }
     }
 
-#if TARGET_ARM64
     [Test]
     public static void ArmAlignmentDescriptorCarriesTheNativeFormatAndPaddingOption()
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -92,14 +92,16 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
         }
     }
 
-    [TestCase(4u, 28, 0u)]
-    [TestCase(16u, 28, 16u)]
-    [TestCase(20u, 28, 12u)]
-    [TestCase(24u, 64, 8u)]
-    [TestCase(28u, 128, 0u)]
+    [TestCase(4u, (ushort)28, 0u)]
+    [TestCase(16u, (ushort)28, 16u)]
+    [TestCase(20u, (ushort)28, 12u)]
+    [TestCase(24u, (ushort)64, 8u)]
+    [TestCase(28u, (ushort)128, 0u)]
     public static void ArmAdaptivePaddingKeepsTheThirtyTwoByteBoundary(
         uint offset, ushort loopSize, uint expected)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
@@ -121,16 +123,15 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
             JitTls.Compiler = previousCompiler;
         }
     }
-#endif
-#endif
 
-#if DEBUG && TARGET_AMD64
     [ThreadStatic]
     private static MemoryStream? s_assertionOutput;
 
     [Test]
     public static void MismatchContextIsBufferedUntilItsDescriptorAssertionHasRun()
     {
+        Assume.That(TestConfiguration.IsDebug && Configuration.TARGET_AMD64);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext
@@ -210,10 +211,8 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
             }
             context->LastPosition = stream.Position;
         }
-
         return 0;
     }
-#endif
 
     [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used by target-specific alignment tests.")]
     private sealed class View : Emitter
@@ -225,14 +224,9 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
 
         public uint Padding(insGroup header, nuint offset)
         {
-            return Calculate(this, header, offset
-#if DEBUG
-                , false, header, header
-#endif
-                );
+            return Calculate(this, header, offset, false, header, header);
         }
 
-#if TARGET_ARM64
         public instrDesc NewAlignment()
         {
             emitCurIG = new insGroup();
@@ -249,9 +243,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrAlign")]
         private static extern instrDescAlign AllocateAlignment(Emitter emitter);
-#endif
 
-#if DEBUG && TARGET_AMD64
         public uint LoopSize(insGroup header, insGroup containing, insGroup predecessor)
         {
             return CalculateLoopSize(this, header, 128, false, containing, predecessor);
@@ -261,18 +253,13 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
         {
             group.igLastIns = new instrDescAlign { idaIG = wrongGroup, idaLoopHeadPredIG = predecessor };
         }
-
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getLoopSize")]
         private static extern uint CalculateLoopSize(Emitter emitter, insGroup header, uint maximum,
             bool adjusted, insGroup containing, insGroup predecessor);
-#endif
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitCalculatePaddingForLoopAlignment")]
-        private static extern uint Calculate(Emitter emitter, insGroup header, nuint offset
-#if DEBUG
-            , bool adjusted, insGroup containing, insGroup predecessor
-#endif
-            );
+        private static extern uint Calculate(Emitter emitter, insGroup header, nuint offset,
+            bool adjusted, insGroup containing, insGroup predecessor);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitTotalCodeSize")]
         public static extern ref int Total(Emitter emitter);

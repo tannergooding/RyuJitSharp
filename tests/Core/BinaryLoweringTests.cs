@@ -11,13 +11,17 @@ internal static unsafe class BinaryLoweringTests
 {
     [TestCase(genTreeOps.GT_ADD, var_types.TYP_INT, var_types.TYP_INT, true)]
     [TestCase(genTreeOps.GT_ADD, var_types.TYP_INT, var_types.TYP_LONG, false)]
-#if TARGET_XARCH
     [TestCase(genTreeOps.GT_AND, var_types.TYP_INT, var_types.TYP_LONG, true)]
     [TestCase(genTreeOps.GT_AND, var_types.TYP_INT, var_types.TYP_SHORT, false)]
-#endif
     public static void ContainableMemoryOperandSizePreservesTargetWidthRules(
         genTreeOps oper, var_types parentType, var_types childType, bool expected)
     {
+        if ((oper is genTreeOps.GT_AND) && (parentType is var_types.TYP_INT)
+            && (childType is var_types.TYP_LONG or var_types.TYP_SHORT))
+        {
+            Assume.That(Configuration.TARGET_XARCH);
+        }
+
         WithCompiler(compiler => {
             var parent = new GenTreeOp(
                 oper,

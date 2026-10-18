@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if UNIX_AMD64_ABI && FEATURE_SIMD
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +23,8 @@ internal static unsafe class SysVX64RootPrologTests
     [Test]
     public static void StackVector3ClearsOnlyTheUpperLaneBeforeParameterHoming()
     {
+        AssumeSysVSimdTarget();
+
         WithRoot((compiler, codeGen) =>
         {
             compiler.lvaTable =
@@ -50,6 +51,8 @@ internal static unsafe class SysVX64RootPrologTests
     [Test]
     public static void RegisterVector3ClearsTheUpperLaneInItsSecondAbiRegister()
     {
+        AssumeSysVSimdTarget();
+
         WithRoot((compiler, codeGen) =>
         {
             var first = AbiPassingSegment.InRegister(REG_XMM0, 0, 8);
@@ -78,6 +81,8 @@ internal static unsafe class SysVX64RootPrologTests
     [Test]
     public static void RootPrologClearsStackVector3BeforeArgumentHoming()
     {
+        AssumeSysVSimdTarget();
+
         WithRoot((compiler, codeGen) =>
         {
             compiler.lvaTable =
@@ -107,6 +112,8 @@ internal static unsafe class SysVX64RootPrologTests
     [TestCase(true, 32)]
     public static void RootPrologMaterializesSysVFrameAndUnwind(bool framePointer, int frameSize)
     {
+        AssumeSysVSimdTarget();
+
         WithRoot((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = framePointer;
@@ -127,6 +134,8 @@ internal static unsafe class SysVX64RootPrologTests
     [Test]
     public static void OsrRootPrologReconstructsTierZeroFrameBeforeSavingFramePointer()
     {
+        AssumeSysVSimdTarget();
+
         WithRoot((compiler, codeGen) =>
         {
             var storage = stackalloc byte[PatchpointInfo.ComputeSize(0)];
@@ -150,6 +159,8 @@ internal static unsafe class SysVX64RootPrologTests
     [Test]
     public static void PrologAndEpilogMaterializationCompletesWithSysVUnwind()
     {
+        AssumeSysVSimdTarget();
+
         WithRoot((compiler, codeGen) =>
         {
             codeGen.IsFramePointerUsed = true;
@@ -172,6 +183,11 @@ internal static unsafe class SysVX64RootPrologTests
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
             Assert.That(compiler.funCurrentFunc().unwindCodes, Is.Not.Null);
         });
+    }
+
+    private static void AssumeSysVSimdTarget()
+    {
+        Assume.That(Configuration.UNIX_AMD64_ABI && Configuration.FEATURE_SIMD);
     }
 
     private static void WithRoot(Action<Compiler, CodeGen> action)
@@ -197,23 +213,26 @@ internal static unsafe class SysVX64RootPrologTests
             compiler.compCalleeRegsPushed = 0;
             compiler.compCalleeFPRegsSavedMask = SRBM_NONE;
             codeGen.resetFramePointerUsedWritePhase();
-#if DEBUG
-            var savedHalt = HaltSelection(ref JitConfig);
-            var savedHash = HaltHash(ref JitConfig);
-            HaltSelection(ref JitConfig) = new(null, null);
-            HaltHash(ref JitConfig) = -1;
-            try
+            if (TestConfiguration.IsDebug)
             {
-#endif
-            action(compiler, codeGen);
-#if DEBUG
+                var savedHalt = HaltSelection(ref JitConfig);
+                var savedHash = HaltHash(ref JitConfig);
+                HaltSelection(ref JitConfig) = new(null, null);
+                HaltHash(ref JitConfig) = -1;
+                try
+                {
+                    action(compiler, codeGen);
+                }
+                finally
+                {
+                    HaltSelection(ref JitConfig) = savedHalt;
+                    HaltHash(ref JitConfig) = savedHash;
+                }
             }
-            finally
+            else
             {
-                HaltSelection(ref JitConfig) = savedHalt;
-                HaltHash(ref JitConfig) = savedHash;
+                action(compiler, codeGen);
             }
-#endif
         });
     }
 
@@ -235,12 +254,9 @@ internal static unsafe class SysVX64RootPrologTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? Allocator(Compiler compiler);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHalt")]
     private static extern ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHashHalt")]
     private static extern ref int HaltHash(ref JitConfigValues config);
-#endif
 }
-#endif

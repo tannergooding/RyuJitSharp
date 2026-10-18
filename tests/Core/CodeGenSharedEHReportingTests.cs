@@ -11,10 +11,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CodeGenSharedEHReportingTests
 {
-#if !TARGET_WASM
     [Test]
     public static void EmptyEhTableLeavesCallbacksAndMetricsUntouched()
     {
+        Assume.That(!Configuration.TARGET_WASM);
+
         WithReporting((compiler, codeGen, context) =>
         {
             compiler.Metrics.EHClauseCount = 19;
@@ -30,6 +31,8 @@ internal static unsafe class CodeGenSharedEHReportingTests
     [TestCase(false)]
     public static void SharedReportingPreservesVmOrderFilterOffsetsAndSameTry(bool matchedVm)
     {
+        Assume.That(!Configuration.TARGET_WASM);
+
         WithReporting((compiler, codeGen, context) =>
         {
             var blocks = Blocks(compiler, 10);
@@ -71,6 +74,8 @@ internal static unsafe class CodeGenSharedEHReportingTests
     public static void SharedReportingRetainsEveryNativeHandlerKind(
         EHHandlerType kind, CORINFO_EH_CLAUSE_FLAGS flags)
     {
+        Assume.That(!Configuration.TARGET_WASM);
+
         WithReporting((compiler, codeGen, context) =>
         {
             var blocks = Blocks(compiler, 4);
@@ -96,6 +101,8 @@ internal static unsafe class CodeGenSharedEHReportingTests
     [Test]
     public static void SharedOffsetsRetainUnsignedNativeOffsetBits()
     {
+        Assume.That(!Configuration.TARGET_WASM);
+
         WithReporting((compiler, codeGen, context) =>
         {
             var blocks = Blocks(compiler, 3);
@@ -118,17 +125,18 @@ internal static unsafe class CodeGenSharedEHReportingTests
                 unchecked((int)0x80000020u), unchecked((int)0x80000030u), 0x123);
         });
     }
-#else
+
     [Test]
     public static void WasmRetainsTheExcludedTableConstructionBoundary()
     {
+        Assume.That(Configuration.TARGET_WASM);
+
         WithReporting((_compiler, codeGen, context) =>
         {
             _ = Assert.Throws<FatalJitException>(codeGen.genReportEH);
             Assert.That(context->Calls, Is.Zero);
         });
     }
-#endif
 
     [TestCase(true)]
     [TestCase(false)]
@@ -200,9 +208,10 @@ internal static unsafe class CodeGenSharedEHReportingTests
         for (var index = 0; index < count; index++)
         {
             var group = new insGroup { igOffs = (uint)(index * 10), igSize = 10 };
-#if DEBUG
-            group.igSelf = group;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                group.igSelf = group;
+            }
             blocks[index] = new BasicBlock(null, null) { bbEmitCookie = group };
             if (index > 0)
             {

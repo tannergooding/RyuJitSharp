@@ -64,12 +64,10 @@ internal static unsafe class CodeGenLabelTests
             var reg = type is var_types.TYP_INT ? REG_INT_FIRST : REG_FP_FIRST;
             var local = new LclVarDsc { Type = type, RegNum = reg, lvLRACandidate = true };
             var expected = reg.SingleTypeMask;
-#if TARGET_ARM
-            if (type is var_types.TYP_DOUBLE)
+            if (Configuration.TARGET_ARM && (type is var_types.TYP_DOUBLE))
             {
                 expected |= (reg + 1).SingleTypeMask;
             }
-#endif
 
             Assert.That(codeGen.genGetRegMask(in local),
                 Is.EqualTo(regMaskTP.CreateFromRegNum(reg, expected)));

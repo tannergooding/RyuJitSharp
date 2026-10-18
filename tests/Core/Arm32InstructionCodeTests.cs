@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -37,6 +36,8 @@ internal static class Arm32InstructionCodeTests
     public static void NativeGoldenOpcodesPreserveEncodingColumnsAndDirectFormatBehavior(
         instruction ins, Emitter.insFormat format, uint expected)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         Assert.That(Code(NewEmitter(), ins, format), Is.EqualTo(expected));
     }
 
@@ -44,11 +45,13 @@ internal static class Arm32InstructionCodeTests
     public static void EveryGroupedInstructionSelectsEachAvailableNativeColumn(
         Emitter.insFormat group, Emitter.insFormat[] formats)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var emitter = NewEmitter();
         var instructions = 0;
         for (var ordinal = 1; ordinal < Codes(1).Length; ordinal++)
         {
-            var ins = (instruction)ordinal;
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(ordinal);
             if (Format(emitter, ins) != group)
             {
                 continue;
@@ -80,11 +83,13 @@ internal static class Arm32InstructionCodeTests
     [Test]
     public static void DirectFormatsSelectColumnOne()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var emitter = NewEmitter();
         var direct = 0;
         for (var ordinal = 1; ordinal < Codes(1).Length; ordinal++)
         {
-            var ins = (instruction)ordinal;
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(ordinal);
             var format = Format(emitter, ins);
             if (IsGroupedFormat(format))
             {
@@ -104,32 +109,29 @@ internal static class Arm32InstructionCodeTests
         Assert.That(direct, Is.GreaterThan(0));
     }
 
-#if FEATURE_ITINSTRUCTION
-    [TestCase(1, 146)]
-#else
-    [TestCase(1, 130)]
-#endif
-#if FEATURE_PLI_INSTRUCTION
-    [TestCase(2, 61)]
-    [TestCase(3, 37)]
-    [TestCase(4, 22)]
-#else
-    [TestCase(2, 60)]
-    [TestCase(3, 36)]
-    [TestCase(4, 21)]
-#endif
-    [TestCase(5, 13)]
-    [TestCase(6, 11)]
-    [TestCase(7, 4)]
-    [TestCase(8, 4)]
-    [TestCase(9, 3)]
+    [TestCaseSource(nameof(CompactInstructionPrefixCases))]
     public static void TablesPreserveCompactInstructionPrefixes(int encoding, int expectedLength)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         var codes = Codes(encoding);
         Assert.That(codes.Length, Is.EqualTo(expectedLength));
         Assert.That(codes[0], Is.EqualTo(BAD_CODE));
         Assert.That((int)INS_invalid, Is.Zero);
-        Assert.That((int)INS_add, Is.EqualTo(1));
+        Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_add), Is.EqualTo(1));
+    }
+
+    private static IEnumerable<TestCaseData> CompactInstructionPrefixCases()
+    {
+        yield return new TestCaseData(1, Configuration.FEATURE_ITINSTRUCTION ? 146 : 130);
+        yield return new TestCaseData(2, Configuration.FEATURE_PLI_INSTRUCTION ? 61 : 60);
+        yield return new TestCaseData(3, Configuration.FEATURE_PLI_INSTRUCTION ? 37 : 36);
+        yield return new TestCaseData(4, Configuration.FEATURE_PLI_INSTRUCTION ? 22 : 21);
+        yield return new TestCaseData(5, 13);
+        yield return new TestCaseData(6, 11);
+        yield return new TestCaseData(7, 4);
+        yield return new TestCaseData(8, 4);
+        yield return new TestCaseData(9, 3);
     }
 
     private static IEnumerable<TestCaseData> EncodingGroups()
@@ -194,29 +196,28 @@ internal static class Arm32InstructionCodeTests
         };
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsCode")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsCodeArm32")]
     private static extern uint Code(Emitter emitter, instruction ins, Emitter.insFormat format);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsFormat")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsFormatArm32")]
     private static extern Emitter.insFormat Format(Emitter emitter, instruction ins);
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes1")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes1_ARM")]
     private static extern ReadOnlySpan<uint> Codes1(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes2")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes2_ARM")]
     private static extern ReadOnlySpan<uint> Codes2(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes3")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes3_ARM")]
     private static extern ReadOnlySpan<uint> Codes3(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes4")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes4_ARM")]
     private static extern ReadOnlySpan<uint> Codes4(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes5")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes5_ARM")]
     private static extern ReadOnlySpan<uint> Codes5(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes6")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes6_ARM")]
     private static extern ReadOnlySpan<uint> Codes6(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes7")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes7_ARM")]
     private static extern ReadOnlySpan<uint> Codes7(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes8")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes8_ARM")]
     private static extern ReadOnlySpan<uint> Codes8(Emitter? emitter);
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes9")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_ordinaryInsCodes9_ARM")]
     private static extern ReadOnlySpan<uint> Codes9(Emitter? emitter);
 }
-#endif

@@ -161,11 +161,12 @@ internal static unsafe class CodeGenUpperLaneTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsUpperLaneTransfersAndLifetimeChanges(
         [Values(false, true)] bool restore, [Values(false, true)] bool memory)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var local = ConfigureLocal(compiler, codeGen, TYP_SIMD32, evex: false);
@@ -177,7 +178,7 @@ internal static unsafe class CodeGenUpperLaneTests
             {
                 RegNum = memory ? REG_X64_NA : REG_X64_XMM7,
             };
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() => Emit(codeGen, node, restore));
 
@@ -187,7 +188,6 @@ internal static unsafe class CodeGenUpperLaneTests
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
         });
     }
-#endif
 
     private static GenTreeLclVar ConfigureLocal(Compiler compiler, CodeGen codeGen, var_types type, bool evex)
     {
@@ -229,16 +229,19 @@ internal static unsafe class CodeGenUpperLaneTests
 
     private static void AssertLifetimeMarkers(GenTree local, GenTree node, bool produced)
     {
-#if DEBUG
-        Assert.That(local._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
-            Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
-        Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED) != 0, Is.EqualTo(produced));
-#else
-        Assert.That(local.RegNum, Is.Not.EqualTo(REG_X64_NA));
-        if (produced)
+        if (TestConfiguration.IsDebug)
         {
-            Assert.That(node.RegNum, Is.Not.EqualTo(REG_X64_NA));
+            Assert.That(local._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+            Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED) != 0, Is.EqualTo(produced));
         }
-#endif
+        else
+        {
+            Assert.That(local.RegNum, Is.Not.EqualTo(REG_X64_NA));
+            if (produced)
+            {
+                Assert.That(node.RegNum, Is.Not.EqualTo(REG_X64_NA));
+            }
+        }
     }
 }

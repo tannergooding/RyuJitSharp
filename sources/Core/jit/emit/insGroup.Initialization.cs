@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Collections.Generic;
-
 namespace RyuJitSharp;
 
 public sealed partial class insGroup
@@ -14,12 +12,6 @@ public sealed partial class insGroup
     public insGroup? igPrev;
 
     public insGroup? igSelf;
-
-#if DEBUG
-    public BasicBlock? lastGeneratedBlock;
-    public List<BasicBlock> igBlocks = [];
-    public nuint igDataSize;
-#endif
 
     public weight_t igWeight;
     public double igPerfScore;

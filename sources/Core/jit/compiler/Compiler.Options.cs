@@ -345,6 +345,19 @@ public partial class Compiler
 #if DEBUG
         /// <summary>If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.</summary>
         public bool compJitAlignLoopForJcc;
+#else
+        public bool compJitAlignLoopForJcc
+        {
+            readonly get
+            {
+                throw new System.InvalidOperationException("Loop-alignment diagnostic options are only available in Debug builds.");
+            }
+
+            set
+            {
+                throw new System.InvalidOperationException("Loop-alignment diagnostic options are only available in Debug builds.");
+            }
+        }
 #endif
 
         /// <summary>For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.</summary>

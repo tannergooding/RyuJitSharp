@@ -41,10 +41,12 @@ internal static unsafe class EmitterStackStoreTests
         Assert.That(CurrentSize(emitter), Is.EqualTo((int)expectedSize));
         Assert.That(CurrentCount(emitter), Is.EqualTo(1));
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(16));
-#if DEBUG
-        var debugInfo = descriptor.idDebugOnlyInfo() ?? throw new AssertionException("Missing descriptor debug information.");
-        Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(emitVarRefOffset));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var debugInfo = descriptor.idDebugOnlyInfo()
+                ?? throw new AssertionException("Missing descriptor debug information.");
+            Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(emitVarRefOffset));
+        }
     }
 
     [TestCase(0u)]
@@ -126,13 +128,14 @@ internal static unsafe class EmitterStackStoreTests
         Assert.That(CurrentSize(emitter), Is.EqualTo(7));
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void InstructionDisplayRecordsStackStoresAndTheirNativeSizes(bool immediate)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out var compiler);
-        compiler.opts.dspCode = true;
+        TestConfiguration.SetDspCode(compiler, true);
         var before = Used(emitter);
         var diagnostic = InstructionRecordingTestSupport.Capture(() =>
         {
@@ -152,11 +155,8 @@ internal static unsafe class EmitterStackStoreTests
         Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(immediate ? INS_extractps : INS_mov));
         Assert.That(diagnostic, Does.Contain(immediate ? "extractps" : "mov"));
     }
-#endif
 
-#if DEBUG
     private const int emitVarRefOffset = 11;
-#endif
 
     private static Emitter CreateEmitter(out Compiler compiler, bool minopts = true)
     {
@@ -179,16 +179,13 @@ internal static unsafe class EmitterStackStoreTests
         var emitter = compiler.codeGen.Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false, false);
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
-#if DEBUG
-        VarRefOffset(emitter) = emitVarRefOffset;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            VarRefOffset(emitter) = emitVarRefOffset;
+        }
         return emitter;
     }
 
@@ -204,8 +201,6 @@ internal static unsafe class EmitterStackStoreTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeNext")]
     private static extern ref nuint Used(Emitter emitter);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
     private static extern ref int VarRefOffset(Emitter emitter);
-#endif
 }

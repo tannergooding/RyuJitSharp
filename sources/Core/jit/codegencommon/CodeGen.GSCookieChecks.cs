@@ -34,11 +34,8 @@ public sealed partial class CodeGen
             {
                 // AOT cookie constants are accessed through an indirection.
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE | EA_CNS_RELOC_FLG, regGSConst,
-                    unchecked((nint)_compiler.gsGlobalSecurityCookieAddr), INS_FLAGS_DONT_CARE
-#if DEBUG
-                    , (nuint)THT_GSCookieCheck, GTF_EMPTY
-#endif
-                    );
+                    unchecked((nint)_compiler.gsGlobalSecurityCookieAddr), INS_FLAGS_DONT_CARE,
+                    Configuration.DEBUG ? (nuint)THT_GSCookieCheck : 0, GTF_EMPTY);
                 if (Configuration.TARGET_ARM)
                 {
                     Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0, INS_FLAGS_DONT_CARE);

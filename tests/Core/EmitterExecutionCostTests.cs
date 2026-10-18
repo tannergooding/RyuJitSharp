@@ -10,7 +10,6 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if TARGET_AMD64
 internal static class EmitterExecutionCostTests
 {
     [TestCase(IF_XARCH_RRD, IF_NONE)]
@@ -26,6 +25,8 @@ internal static class EmitterExecutionCostTests
     public static void MemoryFormatFollowsNativeSchedulingMetadata(Emitter.insFormat format,
         Emitter.insFormat expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         var id = View.Basic(INS_mov, EA_8BYTE, format);
         Assert.That(Emitter.ExtractMemoryFormat(format), Is.EqualTo(expected));
         Assert.That(Emitter.getMemoryOperation(id), Is.EqualTo(expected));
@@ -55,6 +56,8 @@ internal static class EmitterExecutionCostTests
         emitAttr size, Emitter.insFormat format, float throughput, float latency,
         Emitter.PerfScoreMemoryAccessKind memoryKind, float cost)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithEmitter(emitter =>
         {
             var id = View.Basic(ins, size, format);
@@ -70,6 +73,8 @@ internal static class EmitterExecutionCostTests
     [Test]
     public static void DirectAndIndirectCallsUseDifferentThroughputs()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithEmitter(emitter =>
         {
             var direct = View.Basic(INS_call, EA_8BYTE, IF_XARCH_METHOD);
@@ -86,6 +91,8 @@ internal static class EmitterExecutionCostTests
     [Test]
     public static void PseudoInstructionsAndRemovableJumpDoNotAccumulateCost()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithEmitter(emitter =>
         {
             var nop = View.Basic(INS_nop, EA_1BYTE, IF_NONE);
@@ -102,26 +109,21 @@ internal static class EmitterExecutionCostTests
 
             var zeroAlign = View.Align(0, false);
             Assert.That(emitter.insEvaluateExecutionCost(zeroAlign), Is.Zero);
-#if DEBUG
-            var emittedAlign = View.Align(8, false);
-            var placedAfterJump = View.Align(8, true);
-            Assert.That(emitter.insEvaluateExecutionCost(placedAfterJump), Is.Zero);
-            Assert.That(emitter.insEvaluateExecutionCost(emittedAlign), Is.EqualTo(0.25f));
-#else
-            if (Configuration.LATE_DISASM)
+            if (TestConfiguration.IsDebug || Configuration.LATE_DISASM)
             {
                 var emittedAlign = View.Align(8, false);
                 var placedAfterJump = View.Align(8, true);
                 Assert.That(emitter.insEvaluateExecutionCost(placedAfterJump), Is.Zero);
                 Assert.That(emitter.insEvaluateExecutionCost(emittedAlign), Is.EqualTo(0.25f));
             }
-#endif
         });
     }
 
     [Test]
     public static void LeaAddressComplexityChangesThroughputAndLatencyWithoutMemoryAccess()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithEmitter(emitter =>
         {
             var id = View.AddressLea(REG_X64_RAX, REG_X64_RCX, 0);
@@ -143,6 +145,8 @@ internal static class EmitterExecutionCostTests
     [Test]
     public static void FloatRegisterMovqKeepsNativeSinglePrecisionReciprocalThroughput()
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         WithEmitter(emitter =>
         {
             var id = View.Basic(INS_movq, EA_8BYTE, IF_XARCH_RWR_RRD);
@@ -210,4 +214,3 @@ internal static class EmitterExecutionCostTests
         }
     }
 }
-#endif

@@ -190,23 +190,25 @@ internal static unsafe class CodeGenPrologTests
             compiler.compCalleeFPRegsSavedMask = SRBM_NONE;
             codeGen.resetFramePointerUsedWritePhase();
             compiler.unwindEndProlog();
-#if DEBUG
+            if (!TestConfiguration.IsDebug)
+            {
+                action(compiler, codeGen);
+                return;
+            }
+
             var savedHalt = HaltSelection(ref JitConfig);
             var savedHash = HaltHash(ref JitConfig);
             HaltSelection(ref JitConfig) = new(null, null);
             HaltHash(ref JitConfig) = -1;
             try
             {
-#endif
-            action(compiler, codeGen);
-#if DEBUG
+                action(compiler, codeGen);
             }
             finally
             {
                 HaltSelection(ref JitConfig) = savedHalt;
                 HaltHash(ref JitConfig) = savedHash;
             }
-#endif
         });
     }
 
@@ -242,11 +244,9 @@ internal static unsafe class CodeGenPrologTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? Allocator(Compiler compiler);
 
-#if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHalt")]
     private static extern ref JitConfigValues.MethodSet HaltSelection(ref JitConfigValues config);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitHashHalt")]
     private static extern ref int HaltHash(ref JitConfigValues config);
-#endif
 }

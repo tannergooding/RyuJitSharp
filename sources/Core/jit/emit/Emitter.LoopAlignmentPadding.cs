@@ -25,8 +25,9 @@ public partial class Emitter
 
             if (group.endsWithAlignInstr() || group.hadAlignInstr())
             {
-#if DEBUG
-                if ((group.igLoopBackEdge is not null) && !ReferenceEquals(group.igLoopBackEdge, loopHeader))
+                if (Configuration.DEBUG
+                    && (group.igLoopBackEdge is not null)
+                    && !ReferenceEquals(group.igLoopBackEdge, loopHeader))
                 {
                     var buffer = new StringBuilder("Mismatch in align instruction.\n");
                     buffer.Append(CultureInfo.InvariantCulture,
@@ -72,7 +73,7 @@ public partial class Emitter
                     assert(false, "false && !\"Mismatch in align instruction\"");
                 }
 
-                if (isAlignAdjusted)
+                if (Configuration.DEBUG && isAlignAdjusted)
                 {
                     var align = emitAlignList;
                     while ((align is not null) && !ReferenceEquals(align.idaIG, group))
@@ -99,7 +100,6 @@ public partial class Emitter
                     loopSize = unchecked(loopSize - adjustedPadding);
                 }
                 else
-#endif
                 {
                     JITDUMP($" but ends with align instruction, taking off " +
                         $"{compiler.opts.compJitAlignPaddingLimit} bytes.");
@@ -222,12 +222,10 @@ public partial class Emitter
             var extraBytesNotInLoop = unchecked((alignmentBoundary * minBlocksNeededForLoop) - loopSize);
             var currentOffset = unchecked((uint)(offset % alignmentBoundary));
 
-#if DEBUG
-            if (compiler.opts.compJitAlignLoopForJcc)
+            if (Configuration.DEBUG && compiler.opts.compJitAlignLoopForJcc)
             {
                 currentOffset = unchecked(currentOffset + 1);
             }
-#endif
             if (currentOffset > extraBytesNotInLoop)
             {
                 paddingToAdd = unchecked((uint)-(int)offset) & (alignmentBoundary - 1);

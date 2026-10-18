@@ -92,7 +92,6 @@ public partial class Emitter
 
 #if DEBUG
         ig.lastGeneratedBlock = null;
-        ig.igBlocks = [];
 #endif
     }
 

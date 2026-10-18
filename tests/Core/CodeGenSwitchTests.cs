@@ -144,10 +144,12 @@ internal static class CodeGenSwitchTests
             Assert.That(JumpView.KeepLong(label), Is.True);
             Assert.That(JumpLists.PendingJump(codeGen.Emitter), Is.SameAs(label));
             Assert.That(JumpLists.NextJump(label), Is.SameAs(previous));
-#if DEBUG
-            var info = label.idDebugOnlyInfo() ?? throw new AssertionException("Missing instruction metadata.");
-            Assert.That(info.idCatchRet, Is.EqualTo(catchReturn));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                var info = label.idDebugOnlyInfo()
+                    ?? throw new AssertionException("Missing instruction metadata.");
+                Assert.That(info.idCatchRet, Is.EqualTo(catchReturn));
+            }
             label.idSetRelocFlags(EA_4BYTE | EA_CNS_RELOC_FLG);
             Assert.That(label.idIsCnsReloc(), Is.True);
             Assert.That(label.idIsDspReloc(), Is.False);
@@ -156,10 +158,11 @@ internal static class CodeGenSwitchTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void DisassemblyRecordsJumpTablesAndSwitchDispatch()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var targets = PrepareSwitch(compiler);
@@ -168,7 +171,7 @@ internal static class CodeGenSwitchTests
             var tree = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID,
                 Register(compiler, TYP_I_IMPL, REG_RAX), Register(compiler, TYP_I_IMPL, REG_RCX));
             codeGen.InternalRegisters.Add(tree, RBM_R11);
-            compiler.opts.dspCode = true;
+            TestConfiguration.SetDspCode(compiler, true);
 
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
@@ -181,7 +184,6 @@ internal static class CodeGenSwitchTests
             Assert.That(diagnostic, Does.Contain("lea"));
         });
     }
-#endif
 
     private static BasicBlock[] PrepareSwitch(Compiler compiler)
     {

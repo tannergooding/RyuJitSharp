@@ -240,7 +240,7 @@ public struct EHblkDsc
     public readonly bool ebdIsSameTry(BasicBlock? ebdTryBeg, BasicBlock? ebdTryLast)
         => ((this.ebdTryBeg == ebdTryBeg) && (this.ebdTryLast == ebdTryLast));
 
-#if DEBUG
+    [Conditional("DEBUG")]
     public readonly void DispEntry(ushort XTnum)
     {
         jitprintf($" {ebdID,2}     {XTnum,2}  ::");
@@ -303,5 +303,4 @@ public struct EHblkDsc
         jitprintf($" [{_ebdHndBegOffset:X3}..{_ebdHndEndOffset:X3})");
         jitprintf("\n");
     }
-#endif
 }

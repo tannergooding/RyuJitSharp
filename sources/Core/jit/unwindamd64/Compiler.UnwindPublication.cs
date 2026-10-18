@@ -25,13 +25,11 @@ public partial class Compiler
 
     private void unwindReserveFuncAmd64(ref FuncInfoDsc func)
     {
-#if DEBUG
-        if (JitConfig.JitFakeProcedureSplitting != 0)
+        if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0))
         {
             unwindReserveFuncHelper(ref func, true);
             return;
         }
-#endif
 
         if (func.funKind == FuncKind.FUNC_ROOT)
         {
@@ -103,13 +101,11 @@ public partial class Compiler
 
     private unsafe void unwindEmitFuncAmd64(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
-#if DEBUG
-        if (JitConfig.JitFakeProcedureSplitting != 0)
+        if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0))
         {
             unwindEmitFuncHelperAmd64(in func, pHotCode, pColdCode, true);
             return;
         }
-#endif
 
         if (func.funKind == FuncKind.FUNC_ROOT)
         {
@@ -146,22 +142,19 @@ public partial class Compiler
             var cfiCodes = codes is null ? default : CollectionsMarshal.AsSpan(codes);
             var unwindCodeBytes = unchecked(cfiCodes.Length * 8);
 
-#if DEBUG
-            if (opts.dspUnwind)
+            if (Configuration.DEBUG && opts.dspUnwind)
             {
                 DumpCfiInfo(isHotCode, startOffset, endOffset, cfiCodes);
             }
-#endif
 
             if (isHotCode)
             {
-#if DEBUG
-                if ((JitConfig.JitFakeProcedureSplitting != 0) && (fgFirstColdBlock is not null))
+                if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) &&
+                    (fgFirstColdBlock is not null))
                 {
                     assert(endOffset <= info.compNativeCodeSize);
                 }
                 else
-#endif
                 {
                     assert(endOffset <= info.compTotalHotCodeSize);
                 }
@@ -195,22 +188,19 @@ public partial class Compiler
                 noway_assert(unwindCodeBytes == 4 + (unwindCodes[func.unwindCodeSlot + 2] * 2));
             }
 
-#if DEBUG
-            if (opts.dspUnwind)
+            if (Configuration.DEBUG && opts.dspUnwind)
             {
                 DumpUnwindInfo(isHotCode, startOffset, endOffset, unwindCodes, func.unwindCodeSlot);
             }
-#endif
 
             if (isHotCode)
             {
-#if DEBUG
-                if ((JitConfig.JitFakeProcedureSplitting != 0) && (fgFirstColdBlock is not null))
+                if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) &&
+                    (fgFirstColdBlock is not null))
                 {
                     noway_assert(endOffset <= info.compNativeCodeSize);
                 }
                 else
-#endif
                 {
                     noway_assert(endOffset <= info.compTotalHotCodeSize);
                 }

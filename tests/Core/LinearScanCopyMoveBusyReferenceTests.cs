@@ -2,9 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
 using System.Runtime.InteropServices;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
@@ -209,13 +207,15 @@ internal static unsafe class LinearScanCopyMoveBusyReferenceTests
     {
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.doAssert = &RecordAssertion;
-        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-        using var tls = new JitTls(&jitInfo);
-        compiler.info.compCompHnd = &jitInfo;
-#endif
+        ICorJitInfo jitInfo = default;
+        if (TestConfiguration.IsDebug)
+        {
+            vtable.doAssert = &RecordAssertion;
+            jitInfo.lpVtbl = &vtable;
+            compiler.info.compCompHnd = &jitInfo;
+        }
+        using var tls = TestConfiguration.CreateJitTls(TestConfiguration.IsDebug ? &jitInfo : null);
         JitTls.Compiler = compiler;
         try
         {
@@ -227,8 +227,6 @@ internal static unsafe class LinearScanCopyMoveBusyReferenceTests
         }
     }
 
-#if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression) => 0;
-#endif
 }

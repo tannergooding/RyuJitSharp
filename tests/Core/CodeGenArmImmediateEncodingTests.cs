@@ -1,8 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.emitAttr;
@@ -13,6 +14,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenArmImmediateEncodingTests
 {
+    [SetUp]
+    public static void RequireArm32Target()
+    {
+        Assume.That(Configuration.TARGET_ARM, "This fixture requires the ARM32 target.");
+    }
+
     [TestCase(INS_ldr, true)]
     [TestCase(INS_str, true)]
     [TestCase(INS_vldr, true)]
@@ -141,9 +148,7 @@ internal static class CodeGenArmImmediateEncodingTests
         Assert.That(codeGen.validDispForLdSt(displacement, type), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0, true)]
-    [TestCase(REG_R7, true)]
-    [TestCase(REG_R8, false)]
+    [TestCaseSource(nameof(LowRegisterSelectionCases))]
     public static void LowRegisterSelectionMatchesThumbEncoding(regNumber reg, bool expected)
     {
         Assert.That(Emitter.isLowRegister(reg), Is.EqualTo(expected));
@@ -169,14 +174,36 @@ internal static class CodeGenArmImmediateEncodingTests
         Assert.That(Emitter.encodeModImmConst(immediate), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0, 0xff, INS_FLAGS_SET, true)]
-    [TestCase(REG_R7, 0x100, INS_FLAGS_SET, false)]
-    [TestCase(REG_R8, 0xff, INS_FLAGS_SET, false)]
-    [TestCase(REG_R0, 0xff, INS_FLAGS_DONT_CARE, true)]
+    [TestCaseSource(nameof(SmallMoveImmediateCases))]
     public static void SmallMoveImmediateRequiresLowRegisterAndFlagSetting(
         regNumber reg, int immediate, insFlags flags, bool expected)
     {
         Assert.That(Emitter.emitIns_valid_imm_for_small_mov(reg, immediate, flags), Is.EqualTo(expected));
+    }
+
+    private static IEnumerable<TestCaseData> LowRegisterSelectionCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(REG_R0, true);
+        yield return new TestCaseData(REG_R7, true);
+        yield return new TestCaseData(REG_R8, false);
+    }
+
+    private static IEnumerable<TestCaseData> SmallMoveImmediateCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(REG_R0, 0xff, INS_FLAGS_SET, true);
+        yield return new TestCaseData(REG_R7, 0x100, INS_FLAGS_SET, false);
+        yield return new TestCaseData(REG_R8, 0xff, INS_FLAGS_SET, false);
+        yield return new TestCaseData(REG_R0, 0xff, INS_FLAGS_DONT_CARE, true);
     }
 
     [TestCase(0xff, INS_FLAGS_DONT_CARE, true)]
@@ -225,4 +252,3 @@ internal static class CodeGenArmImmediateEncodingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsStore")]
     private static extern bool EmitInsIsStore(Emitter emitter, instruction ins);
 }
-#endif

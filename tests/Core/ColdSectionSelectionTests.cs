@@ -152,15 +152,16 @@ internal static class ColdSectionSelectionTests
         });
     }
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void DebugEHGatePreservesNoChangeStatus(bool allowEH)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, 100, 0, 0);
             compiler.compHndBBtabCount = 1;
-            compiler.opts.compProcedureSplittingEH = allowEH;
+            ProcedureSplittingEH(ref compiler.opts) = allowEH;
             Assert.That(compiler.fgDetermineFirstColdBlock(), Is.EqualTo(allowEH
                 ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.fgFirstColdBlock, Is.SameAs(allowEH ? blocks[1] : null));
@@ -170,6 +171,8 @@ internal static class ColdSectionSelectionTests
     [Test]
     public static void StressSplittingBypassesWeightAndSingleBlockSize()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var blocks = Blocks(compiler, 100, 100);
             StressProcedureSplitting(ref JitConfig) = 1;
@@ -184,6 +187,8 @@ internal static class ColdSectionSelectionTests
     [TestCase(true)]
     public static void StressSplittingDoesNotCreateAnEmptyColdSection(bool finallyPair)
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var blocks = finallyPair ? Blocks(compiler, 100, 100) : Blocks(compiler, 100);
             if (finallyPair)
@@ -199,7 +204,9 @@ internal static class ColdSectionSelectionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressProcedureSplitting")]
     private static extern ref int StressProcedureSplitting(ref JitConfigValues config);
-#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProcedureSplittingEH")]
+    private static extern ref bool ProcedureSplittingEH(ref Compiler.Options options);
 
     private static void AddCost(Compiler compiler, BasicBlock block, byte cost)
     {
@@ -233,9 +240,10 @@ internal static class ColdSectionSelectionTests
         {
             FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
                 compiler.opts.compProcedureSplitting = true;
-#if DEBUG
-                compiler.opts.compProcedureSplittingEH = true;
-#endif
+                if (TestConfiguration.IsDebug)
+                {
+                    ProcedureSplittingEH(ref compiler.opts) = true;
+                }
                 action(compiler);
             });
         }

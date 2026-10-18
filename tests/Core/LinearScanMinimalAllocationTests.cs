@@ -1,11 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
-#if DEBUG
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
-#endif
 using NUnit.Framework;
 using SingleTypeRegSet = RyuJitSharp.regMask;
 using static RyuJitSharp.Globals;
@@ -112,10 +110,11 @@ internal static unsafe class LinearScanMinimalAllocationTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void SpillingEmitsNativeAllocationEventText()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithAllocator((compiler, allocator) => {
             TestConfiguration.EnableVerbose(compiler);
             var interval = NewInterval(allocator, TYP_INT);
@@ -136,7 +135,6 @@ internal static unsafe class LinearScanMinimalAllocationTests
             Assert.That(register.assignedInterval, Is.Null);
         });
     }
-#endif
 
     private static Interval NewInterval(LinearScan allocator, var_types type) => NewIntervalCore(allocator, type);
 
@@ -191,6 +189,11 @@ internal static unsafe class LinearScanMinimalAllocationTests
             }
 
             BlockInfo(allocator) = [new LsraBlockInfo { weight = 1 }];
+            if (Configuration.TRACK_LSRA_STATS)
+            {
+                BlockStats(allocator) = [new uint[(int)LsraStat.COUNT]];
+            }
+
             action(compiler, allocator);
         }
         finally
@@ -211,7 +214,9 @@ internal static unsafe class LinearScanMinimalAllocationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
     private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
 
-#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
+    private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
+
     private static string Capture(Action action)
     {
         using var stream = new MemoryStream();
@@ -230,5 +235,4 @@ internal static unsafe class LinearScanMinimalAllocationTests
 
         return Encoding.UTF8.GetString(stream.ToArray());
     }
-#endif
 }

@@ -118,14 +118,12 @@ public sealed partial class SsaBuilder
         {
             _renameStack.PushMemory(ByrefExposed, block, ssaNum);
             _compiler.GetMemorySsaMap(ByrefExposed)[defNode] = ssaNum;
-#if DEBUG
-            if (_compiler.verboseSsa)
+            if (Configuration.DEBUG && _compiler.verboseSsa)
             {
                 jitprintf("Node ");
                 Compiler.printTreeId(defNode);
                 jitprintf($" (in try block) may define memory; ssa # = {ssaNum}.\n");
             }
-#endif
             AddMemoryDefToEHSuccessorPhis(ByrefExposed, block, ssaNum);
         }
 
@@ -178,12 +176,10 @@ public sealed partial class SsaBuilder
         ref var varDsc = ref _compiler.lvaTable[lclNum];
         assert(varDsc.lvTracked);
 
-#if DEBUG
-        if (_compiler.verboseSsa)
+        if (Configuration.DEBUG && _compiler.verboseSsa)
         {
             logf($"Definition of local V{lclNum:D2}/d:{ssaNum} in block {FMT_BB(block.bbNum)} has potential EH successors; adding as phi arg to EH successors\n");
         }
-#endif
         var lclIndex = varDsc._varIndex;
         _ = block.VisitEHSuccs(_compiler, succ => {
             if (!VarSetOps.IsMember(_compiler, succ.bbLiveIn, lclIndex))
@@ -228,12 +224,10 @@ public sealed partial class SsaBuilder
             return;
         }
 
-#if DEBUG
-        if (_compiler.verboseSsa)
+        if (Configuration.DEBUG && _compiler.verboseSsa)
         {
             logf($"Definition of {kind}/d:{ssaNum} in block {FMT_BB(block.bbNum)} has potential EH successors; adding as phi arg to EH successors.\n");
         }
-#endif
         _ = block.VisitEHSuccs(_compiler, succ => {
             if ((succ.bbMemoryLiveIn & (1 << (int)kind)) == 0)
             {
@@ -268,12 +262,10 @@ public sealed partial class SsaBuilder
                 handlerMemoryPhi = new BasicBlock.MemoryPhiArg(ssaNum, handlerMemoryPhi);
             }
 
-#if DEBUG
-            if (_compiler.verboseSsa)
+            if (Configuration.DEBUG && _compiler.verboseSsa)
             {
                 logf($"   Added phi arg u:{ssaNum} for {kind} to phi defn in handler block {FMT_BB(succ.bbNum)}.\n");
             }
-#endif
             if ((kind is ByrefExposed) && _compiler.byrefStatesMatchGcHeapStates)
             {
                 succ.bbMemorySsaPhiFunc[(int)GcHeap] = handlerMemoryPhi;

@@ -3,10 +3,8 @@
 #if DEBUG
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using static RyuJitSharp.GCInfo.rpdArgType_t;
@@ -17,29 +15,31 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class EmitterSharedGCDiagnosticClosureTests
 {
+    [SetUp]
+    public static void RequireDebugConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug, "This fixture exercises Debug-only diagnostics.");
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void IndentationUsesTheNativeTargetsAndLiteralLength(bool diffable)
     {
         var emitter = CreateEmitter(out var compiler);
         compiler.opts.disDiffable = diffable;
-#if TARGET_AMD64
-        var expected = diffable ? 7 : 28;
-#elif TARGET_X86
-        var expected = diffable ? 7 : 20;
-#elif TARGET_ARM
-        var expected = diffable ? 12 : 23;
-#else
-        var expected = diffable ? 12 : 29;
-#endif
-        Assert.That(Capture(() => View.DisplayIndent(emitter)), Is.EqualTo(new string(' ', expected)));
+        var expected = Configuration.TARGET_AMD64 ? diffable ? 7 : 28 :
+            Configuration.TARGET_X86 ? diffable ? 7 : 20 :
+            Configuration.TARGET_ARM ? diffable ? 12 : 23 :
+            diffable ? 12 : 29;
+        Assert.That(TestConfiguration.CaptureDebugOutput(() => View.DisplayIndent(emitter)),
+            Is.EqualTo(new string(' ', expected)));
     }
 
     [TestCase(false)]
     [TestCase(true)]
     public static void TrackingStatePrintsRealFieldAddressesWithNativeDiffableMasking(bool diffable)
     {
-        using var tls = new JitTls(null);
+        using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateEmitter(out var compiler);
         JitTls.Compiler = compiler;
         compiler.opts.dspDiffable = diffable;
@@ -50,7 +50,7 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         View.CurrentGCref(emitter) = (regMask)5;
         View.CurrentByref(emitter) = (regMask)6;
 
-        var output = Capture(emitter.emitDispGCinfo);
+        var output = TestConfiguration.CaptureDebugOutput(emitter.emitDispGCinfo);
         var addresses = Regex.Matches(output, @"\(0x([0-9A-F]+)\)=");
         Assert.That(addresses, Has.Count.EqualTo(6));
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -75,7 +75,7 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         for (var index = 0; index < registers.Length; index++)
         {
             var maskValue = new regMaskTP((regMask)(index + 1));
-            registers[index] = Capture(() =>
+            registers[index] = TestConfiguration.CaptureDebugOutput(() =>
             {
                 printRegMaskInt(maskValue);
                 emitter.emitDispRegSet(maskValue);
@@ -117,13 +117,13 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         RegPtrList(ref emitter.GCInfo) = descriptor;
         RegPtrLast(ref emitter.GCInfo) = descriptor;
 
-        var output = Capture(() => View.DisplayArgumentDelta(emitter));
+        var output = TestConfiguration.CaptureDebugOutput(() => View.DisplayArgumentDelta(emitter));
 
         Assert.That(context.Assertions, Is.EqualTo(1));
         Assert.That(context.InvalidTypeAssertions, Is.EqualTo(1));
-        var indent = Capture(() => View.DisplayIndent(emitter));
+        var indent = TestConfiguration.CaptureDebugOutput(() => View.DisplayIndent(emitter));
         Assert.That(output, Is.EqualTo($"{indent}; err arg pop 65535{Environment.NewLine}"));
-        Assert.That(Capture(() => View.DisplayArgumentDelta(emitter)), Is.Empty);
+        Assert.That(TestConfiguration.CaptureDebugOutput(() => View.DisplayArgumentDelta(emitter)), Is.Empty);
     }
 
     [Test]
@@ -143,7 +143,8 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
             igPhData = new insPlaceholderGroupData(),
         };
 
-        var output = Capture(() => emitter.emitDispIG(group, displayLocation: false));
+        var output = TestConfiguration.CaptureDebugOutput(() =>
+            emitter.emitDispIG(group, displayLocation: false));
 
         Assert.That(output, Does.Contain("prolog placeholder, next placeholder=<END>, gcvars, byref"));
         Assert.That(output, Does.Contain(";   InitGCVars="));
@@ -152,24 +153,25 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
         Assert.That(context.PlaceholderByrefAssertion, Is.EqualTo(2));
     }
 
-#if !TARGET_AMD64
     [Test]
     public static void MetadataOnlyGroupDisplayUsesTheSharedNativeBody()
     {
+        Assume.That(!Configuration.TARGET_AMD64);
+
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = 17;
         var group = new insGroup { igWeight = 100 };
         group.InitializeNum(3);
-        var registers = Capture(() =>
+        var registers = TestConfiguration.CaptureDebugOutput(() =>
         {
             printRegMaskInt(default);
             emitter.emitDispRegSet(default);
         });
 
-        Assert.That(Capture(() => emitter.emitDispIG(group, displayLocation: false)), Is.EqualTo(
-            $"G_M017_IG03:        ; bbWeight=1, gcrefRegs={registers}{Environment.NewLine}"));
+        Assert.That(TestConfiguration.CaptureDebugOutput(
+            () => emitter.emitDispIG(group, displayLocation: false)),
+            Is.EqualTo($"G_M017_IG03:        ; bbWeight=1, gcrefRegs={registers}{Environment.NewLine}"));
     }
-#endif
 
     private static View CreateEmitter(out Compiler compiler)
     {
@@ -222,25 +224,6 @@ internal static unsafe class EmitterSharedGCDiagnosticClosureTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrLast")]
     private static extern ref GCInfo.regPtrDsc? RegPtrLast(ref GCInfo info);
-
-    private static string Capture(Action action)
-    {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
-        {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
 
     private sealed class View : Emitter
     {

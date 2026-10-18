@@ -12,26 +12,7 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterByteOutputTests
 {
-    [TestCase(1, -1L, "FF", 16)]
-#if TARGET_X86
-    [TestCase(1, 4294967295L, "FF", 16)]
-    [TestCase(1, long.MaxValue, "FF", 16)]
-    [TestCase(2, 4294967295L, "FFFF", 16)]
-    [TestCase(2, long.MaxValue, "FFFF", 16)]
-#endif
-    [TestCase(2, -2L, "FEFF", 16)]
-    [TestCase(2, 0x12345678L, "7856", 16)]
-#if TARGET_X86
-    [TestCase(4, 4294967295L, "FFFFFFFF", 16)]
-    [TestCase(4, long.MaxValue, "FFFFFFFF", 16)]
-#endif
-    [TestCase(4, 0xFEDCBA98L, "98BADCFE", 16)]
-    [TestCase(8, 0x123456789ABCDEFL, "EFCDAB8967452301", 16)]
-    [TestCase(8, -1L, "FFFFFFFFFFFFFFFF", 16)]
-    [TestCase(1, -1L, "FF", -16)]
-    [TestCase(2, -2L, "FEFF", -16)]
-    [TestCase(4, 0xFEDCBA98L, "98BADCFE", -16)]
-    [TestCase(8, -1L, "FFFFFFFFFFFFFFFF", -16)]
+    [TestCaseSource(nameof(IntegerOutputCases))]
     public static void IntegerOutputUsesUnalignedWritableAliasAndNativeTruncation(int width, long value, string hex, int aliasOffset)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
@@ -62,11 +43,38 @@ internal static unsafe class EmitterByteOutputTests
         });
     }
 
-#if TARGET_X86
+    private static IEnumerable<TestCaseData> IntegerOutputCases()
+    {
+        yield return new TestCaseData(1, -1L, "FF", 16);
+        if (Configuration.TARGET_X86)
+        {
+            yield return new TestCaseData(1, 4294967295L, "FF", 16);
+            yield return new TestCaseData(1, long.MaxValue, "FF", 16);
+            yield return new TestCaseData(2, 4294967295L, "FFFF", 16);
+            yield return new TestCaseData(2, long.MaxValue, "FFFF", 16);
+        }
+        yield return new TestCaseData(2, -2L, "FEFF", 16);
+        yield return new TestCaseData(2, 0x12345678L, "7856", 16);
+        if (Configuration.TARGET_X86)
+        {
+            yield return new TestCaseData(4, 4294967295L, "FFFFFFFF", 16);
+            yield return new TestCaseData(4, long.MaxValue, "FFFFFFFF", 16);
+        }
+        yield return new TestCaseData(4, 0xFEDCBA98L, "98BADCFE", 16);
+        yield return new TestCaseData(8, 0x123456789ABCDEFL, "EFCDAB8967452301", 16);
+        yield return new TestCaseData(8, -1L, "FFFFFFFFFFFFFFFF", 16);
+        yield return new TestCaseData(1, -1L, "FF", -16);
+        yield return new TestCaseData(2, -2L, "FEFF", -16);
+        yield return new TestCaseData(4, 0xFEDCBA98L, "98BADCFE", -16);
+        yield return new TestCaseData(8, -1L, "FFFFFFFFFFFFFFFF", -16);
+    }
+
     [TestCase(4294967295L)]
     [TestCase(long.MaxValue)]
     public static void X86SizeTOutputUsesTheNativePointerWidth(long value)
     {
+        Assume.That(Configuration.TARGET_X86);
+
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
             var emitter = codeGen.Emitter;
@@ -83,7 +91,6 @@ internal static unsafe class EmitterByteOutputTests
             Assert.That(buffer[5], Is.EqualTo(0xA5));
         });
     }
-#endif
 
     [TestCase(INS_mov, 0x000000000000C08BUL, "", 0xC08BUL)]
     [TestCase(INS_mov, 0x000000480000C08BUL, "48", 0xC08BUL)]

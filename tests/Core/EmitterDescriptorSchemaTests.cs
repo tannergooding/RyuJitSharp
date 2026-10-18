@@ -34,9 +34,17 @@ internal static unsafe class EmitterDescriptorSchemaTests
         public nint next;
         public nint group;
         public nint loopHeadPredecessor;
-#if DEBUG
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeDebugAlignLayout
+    {
+        public ulong packedDescriptor;
+        public nint addressUnion;
+        public nint next;
+        public nint group;
+        public nint loopHeadPredecessor;
         public bool placedAfterJump;
-#endif
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -63,11 +71,10 @@ internal static unsafe class EmitterDescriptorSchemaTests
         Assert.That(Marshal.OffsetOf<NativeJumpLayout>(nameof(NativeJumpLayout.group)), Is.EqualTo((nint)24));
         Assert.That(Marshal.OffsetOf<NativeJumpLayout>(nameof(NativeJumpLayout.patchAddress)), Is.EqualTo((nint)32));
         Assert.That(Marshal.OffsetOf<NativeJumpLayout>(nameof(NativeJumpLayout.offsetAndFlags)), Is.EqualTo((nint)40));
-#if DEBUG
-        Assert.That(Unsafe.SizeOf<NativeAlignLayout>(), Is.EqualTo(48));
-#else
-        Assert.That(Unsafe.SizeOf<NativeAlignLayout>(), Is.EqualTo(40));
-#endif
+        var expectedAlignSize = TestConfiguration.IsDebug
+            ? Unsafe.SizeOf<NativeDebugAlignLayout>()
+            : Unsafe.SizeOf<NativeAlignLayout>();
+        Assert.That(expectedAlignSize, Is.EqualTo(TestConfiguration.IsDebug ? 48 : 40));
         Assert.That(Marshal.OffsetOf<NativeAlignLayout>(nameof(NativeAlignLayout.next)), Is.EqualTo((nint)16));
         Assert.That(Marshal.OffsetOf<NativeAlignLayout>(nameof(NativeAlignLayout.group)), Is.EqualTo((nint)24));
         Assert.That(Marshal.OffsetOf<NativeAlignLayout>(nameof(NativeAlignLayout.loopHeadPredecessor)), Is.EqualTo((nint)32));
@@ -83,15 +90,18 @@ internal static unsafe class EmitterDescriptorSchemaTests
             .GetValue(null), Is.EqualTo(IntPtr.Size));
     }
 
-    [TestCase("instrDescBasic", 16)]
-    [TestCase("instrDescJmp", 48)]
-#if DEBUG
-    [TestCase("instrDescAlign", 48)]
-#else
-    [TestCase("instrDescAlign", 40)]
-#endif
-    public static void DescriptorLogicalSizeMatchesNativeLayout(string typeName, int size)
+    [TestCase("instrDescBasic")]
+    [TestCase("instrDescJmp")]
+    [TestCase("instrDescAlign")]
+    public static void DescriptorLogicalSizeMatchesNativeLayout(string typeName)
     {
+        var size = typeName switch
+        {
+            "instrDescBasic" => 16,
+            "instrDescJmp" => 48,
+            "instrDescAlign" => TestConfiguration.IsDebug ? 48 : 40,
+            _ => throw new ArgumentOutOfRangeException(nameof(typeName)),
+        };
         var descriptor = Create(typeName);
         descriptor.idIns(typeName switch
         {
@@ -118,11 +128,12 @@ internal static unsafe class EmitterDescriptorSchemaTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
-#if !DEBUG
-        Assert.That(DebugPrefixSize(emitter), Is.Zero);
-        compiler.opts.disAsm = true;
-        emitter.emitBegCG(compiler, default);
-#endif
+        if (!TestConfiguration.IsDebug)
+        {
+            Assert.That(DebugPrefixSize(emitter), Is.Zero);
+            compiler.opts.disAsm = true;
+            emitter.emitBegCG(compiler, default);
+        }
         Assert.That(DebugPrefixSize(emitter), Is.EqualTo(IntPtr.Size));
 
         var info = new Emitter.instrDescDebugInfo { idNum = 9, idSize = 8 };

@@ -54,27 +54,20 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
     public static void InstructionAddressesPreserveRawHostPointerFormatting(bool display, bool diffable)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        compiler.opts.disAddr = display;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            compiler.opts.disAddr = display;
+        }
+
         compiler.opts.disDiffable = diffable;
         var emitter = new View(compiler);
-#if HOST_64BIT
-        var address = unchecked((nuint)0x12345678ABCDEF01ul);
-#if DEBUG
-        const string formatted = " 12345678`abcdef01 ";
-#endif
-#else
-        var address = unchecked((nuint)0xABCDEF01u);
-#if DEBUG
-        const string formatted = " abcdef01 ";
-#endif
-#endif
-#if DEBUG
-        var expected = display ? formatted : "";
-#else
-        const string expected = "";
-#endif
+        var isHost64Bit = IntPtr.Size == 8;
+        var address = isHost64Bit
+            ? unchecked((nuint)0x12345678ABCDEF01ul)
+            : unchecked((nuint)0xABCDEF01u);
+        var formatted = isHost64Bit ? " 12345678`abcdef01 " : " abcdef01 ";
+        var expected = TestConfiguration.IsDebug && display ? formatted : "";
+
         Assert.That(Capture(() => DisplayAddress(emitter, (byte*)address)), Is.EqualTo(expected));
     }
 
@@ -96,11 +89,7 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
             insLatency = latency,
             insMemoryAccessKind = memoryAccess,
         };
-#if TARGET_XARCH
-        var expected = xarchCost;
-#else
-        var expected = otherCost;
-#endif
+        var expected = Configuration.TARGET_XARCH ? xarchCost : otherCost;
         Assert.That(Emitter.insEvaluateExecutionCost(characteristics), Is.EqualTo(expected));
     }
 
@@ -120,23 +109,22 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
             Is.EqualTo(int.MinValue));
     }
 
-#if !TARGET_XARCH
     [Test]
     public static void UnportedCharacteristicsTerminateBeforeCostEvaluation()
     {
+        Assume.That(!Configuration.TARGET_XARCH);
+
         var emitter = new View(CreateCompiler());
         _ = Assert.Throws<FatalJitException>(() => emitter.insEvaluateExecutionCost(View.Descriptor()));
     }
-#endif
 
-#if DEBUG
     [Test]
-    public static void UnhandledInstructionPrintsBeforeAssertionAndOnlyDefaultsCosts()
+    public static void UnhandledInstructionPrintsOnlyInDebugAndOnlyDefaultsCosts()
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
-        using var tls = new JitTls(&context.JitInfo);
+        using var tls = TestConfiguration.CreateJitTls(&context.JitInfo);
         var emitter = new View(CreateCompiler());
         var id = View.Descriptor();
         var result = new Emitter.insExecutionCharacteristics
@@ -148,9 +136,17 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
 
         var text = Capture(() => UnhandledInstruction(emitter, id, ref result));
 
-        Assert.That(text, Is.EqualTo("PerfScore: unhandled instruction: nop, format IF_NONE"));
-        Assert.That(context.Assertions, Is.EqualTo(1));
-        Assert.That(context.CostsPrintedBeforeAssertion, Is.True);
+        if (TestConfiguration.IsDebug)
+        {
+            Assert.That(text, Is.EqualTo("PerfScore: unhandled instruction: nop, format IF_NONE"));
+            Assert.That(context.Assertions, Is.EqualTo(1));
+            Assert.That(context.CostsPrintedBeforeAssertion, Is.True);
+        }
+        else
+        {
+            Assert.That(text, Is.Empty);
+        }
+
         Assert.That(result.insThroughput, Is.EqualTo(1.0f));
         Assert.That(result.insLatency, Is.EqualTo(1.0f));
         Assert.That(result.insMemoryAccessKind, Is.EqualTo(Emitter.PerfScoreMemoryAccessKind.ReadWrite));
@@ -171,24 +167,6 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
         context->CostsPrintedBeforeAssertion = t_captureStream is MemoryStream output && output.Length > 0;
         return 0;
     }
-#else
-    [Test]
-    public static void UnhandledInstructionOnlyDefaultsCostsWithoutDebugOutput()
-    {
-        var emitter = new View(CreateCompiler());
-        var result = new Emitter.insExecutionCharacteristics
-        {
-            insThroughput = -2.0f,
-            insLatency = -3.0f,
-            insMemoryAccessKind = Emitter.PerfScoreMemoryAccessKind.ReadWrite,
-        };
-
-        Assert.That(Capture(() => UnhandledInstruction(emitter, View.Descriptor(), ref result)), Is.Empty);
-        Assert.That(result.insThroughput, Is.EqualTo(1.0f));
-        Assert.That(result.insLatency, Is.EqualTo(1.0f));
-        Assert.That(result.insMemoryAccessKind, Is.EqualTo(Emitter.PerfScoreMemoryAccessKind.ReadWrite));
-    }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "perfScoreUnhandledInstruction")]
     private static extern void UnhandledInstruction(Emitter emitter, Emitter.instrDesc id,

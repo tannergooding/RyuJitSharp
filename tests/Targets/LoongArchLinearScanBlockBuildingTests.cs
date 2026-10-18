@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -172,20 +171,19 @@ internal static unsafe class LoongArchLinearScanBlockBuildingTests
         });
     }
 
-#if FEATURE_HW_INTRINSICS
     [Test]
     public static void HardwareIntrinsicNodeBuildingSkipsForUnportedLoongArchBackend()
     {
-        WithAllocator((_, allocator) =>
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS);
+        WithAllocator((unusedCompiler, allocator) =>
         {
             var intrinsic = (GenTreeHWIntrinsic)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeHWIntrinsic));
             var failure = Assert.Throws<FatalJitException>(() =>
                 BuildHWIntrinsic(allocator, intrinsic, out _));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         });
     }
-#endif
 
     [Test]
     public static void ArithmeticNodeConsumesOperandsAndDefinesItsResult()
@@ -220,11 +218,9 @@ internal static unsafe class LoongArchLinearScanBlockBuildingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildDef")]
     private static extern RefPosition BuildDef(LinearScan allocator, GenTree tree, regMask candidates, int multiRegIndex);
 
-#if FEATURE_HW_INTRINSICS
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildHWIntrinsic")]
     private static extern int BuildHWIntrinsic(
         LinearScan allocator, GenTreeHWIntrinsic intrinsic, out int destinationCount);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);
@@ -237,6 +233,7 @@ internal static unsafe class LoongArchLinearScanBlockBuildingTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -265,4 +262,3 @@ internal static unsafe class LoongArchLinearScanBlockBuildingTests
         }
     }
 }
-#endif

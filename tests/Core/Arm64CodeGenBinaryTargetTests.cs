@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -278,6 +277,8 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     private static void WithCodeGen(Action<Compiler, CodeGen> action,
         CORINFO_RUNTIME_ABI targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -295,11 +296,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
-            codeGen.Emitter.emitBegFN(false
-#if DEBUG
-                , true
-#endif
-                );
+            codeGen.Emitter.emitBegFN(false, TestConfiguration.IsDebug);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
             action(compiler, codeGen);
@@ -321,4 +318,3 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 }
-#endif

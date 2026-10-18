@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -27,6 +27,8 @@ internal static class LoongArchEmitterClassifierTests
     [TestCase(INS_movfr2gr_d)]
     public static void IsMovInstructionRecognizesEveryLoongArchMove(instruction ins)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         Assert.That(Emitter.IsMovInstruction(ins), Is.True);
     }
 
@@ -35,6 +37,8 @@ internal static class LoongArchEmitterClassifierTests
     [TestCase(INS_movfcsr2gr)]
     public static void IsMovInstructionRejectsNonElidableMoveLikeInstructions(instruction ins)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         Assert.That(Emitter.IsMovInstruction(ins), Is.False);
     }
 
@@ -44,22 +48,18 @@ internal static class LoongArchEmitterClassifierTests
     [TestCase(REG_LOONGARCH64_F31, "f31")]
     public static void RegisterNamesMatchTheLoongArchAbi(regNumber reg, string expected)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
 
         Assert.That(emitter.emitRegName(reg, EA_4BYTE, varName: false), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_nop, 4.0f)]
-    [TestCase(INS_b, 1.0f)]
-    [TestCase(INS_ld_d, 3.0f)]
-    [TestCase(INS_st_d, 2.0f)]
-#if FEATURE_SIMD
-    [TestCase(INS_vadd_b, 4.0f)]
-    [TestCase(INS_xvadd_b, 4.0f)]
-    [TestCase(INS_xvbitsel_v, 2.0f)]
-#endif
+    [TestCaseSource(nameof(ExecutionCostCases))]
     public static void ExecutionCostUsesLoongArchInstructionCharacteristics(instruction ins, float expectedCost)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         var descriptor = NewDescriptor(ins, isLocal: false);
         descriptor.idInsOpt(INS_OPTS_NONE);
@@ -77,6 +77,8 @@ internal static class LoongArchEmitterClassifierTests
         uint codeSize,
         float expectedCost)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         var descriptor = NewDescriptor(ins, isLocal: false);
         descriptor.idInsOpt(options);
@@ -92,11 +94,13 @@ internal static class LoongArchEmitterClassifierTests
         uint expectedMask,
         string expectedFormat)
     {
-        var codeLookup = typeof(Emitter).GetMethod("emitInsCode", BindingFlags.NonPublic | BindingFlags.Static)
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        var codeLookup = typeof(Emitter).GetMethod("emitInsCodeLoongArch64", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("The LoongArch instruction-code lookup is unavailable.");
-        var maskLookup = typeof(Emitter).GetMethod("emitGetInsMask", BindingFlags.NonPublic | BindingFlags.Static)
+        var maskLookup = typeof(Emitter).GetMethod("emitGetInsMaskLoongArch64", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("The LoongArch instruction-mask lookup is unavailable.");
-        var formatLookup = typeof(Emitter).GetMethod("emitGetInsFmt", BindingFlags.NonPublic | BindingFlags.Static)
+        var formatLookup = typeof(Emitter).GetMethod("emitGetInsFmtLoongArch64", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("The LoongArch disassembly-format lookup is unavailable.");
 
         Assert.That(codeLookup.Invoke(null, [ins]), Is.EqualTo(expectedCode));
@@ -111,6 +115,8 @@ internal static class LoongArchEmitterClassifierTests
         long immediateValue,
         int specialSequenceMarker)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         var descriptor = NewDescriptor(INS_lu12i_w, isLocal: false);
         var immediate = unchecked((nint)immediateValue);
@@ -152,23 +158,11 @@ internal static class LoongArchEmitterClassifierTests
         Assert.That(output[1], Is.EqualTo(expectedSecond));
     }
 
-    [TestCase(INS_mov, true)]
-    [TestCase(INS_jirl, true)]
-    [TestCase(INS_movfcsr2gr, true)]
-    [TestCase(INS_movcf2gr, true)]
-    [TestCase(INS_addi_d, true)]
-    [TestCase(INS_fadd_s, false)]
-#if FEATURE_SIMD
-    [TestCase(INS_vpickve2gr_d, true)]
-    [TestCase(INS_vpickve2gr_wu, true)]
-    [TestCase(INS_vpickve2gr_h, true)]
-    [TestCase(INS_vpickve2gr_bu, true)]
-    [TestCase(INS_xvpickve2gr_d, true)]
-    [TestCase(INS_xvpickve2gr_wu, true)]
-    [TestCase(INS_vadd_b, false)]
-#endif
+    [TestCaseSource(nameof(MayWriteToGCCases))]
     public static void MayWriteToGCRegisterMatchesLoongArchInstructionRanges(instruction ins, bool expected)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
 
         Assert.That(emitter.emitInsMayWriteToGCReg(ins), Is.EqualTo(expected));
@@ -191,6 +185,8 @@ internal static class LoongArchEmitterClassifierTests
         bool isLocal,
         bool expected)
     {
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         var descriptor = NewDescriptor(ins, isLocal);
 
@@ -200,10 +196,48 @@ internal static class LoongArchEmitterClassifierTests
     [Test]
     public static void InstructionToJumpKindLookupRemainsATerminatingUnsupportedStub()
     {
-        var failure = Assert.Throws<FatalJitException>(() => Emitter.emitInsToJumpKind(INS_beq));
+        Assume.That(Configuration.TARGET_LOONGARCH64);
+
+        var failure = Assert.Throws<FatalJitException>(() => Emitter.emitInsToJumpKindLoongArch64(INS_beq));
 
         Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         Assert.That(failure?.Message, Is.EqualTo("emitInsToJumpKind-----unimplemented on LOONGARCH64 yet----"));
+    }
+
+    private static IEnumerable<TestCaseData> ExecutionCostCases()
+    {
+        yield return new TestCaseData(INS_nop, 4.0f);
+        yield return new TestCaseData(INS_b, 1.0f);
+        yield return new TestCaseData(INS_ld_d, 3.0f);
+        yield return new TestCaseData(INS_st_d, 2.0f);
+
+        if (Configuration.FEATURE_SIMD)
+        {
+            yield return new TestCaseData(INS_vadd_b, 4.0f);
+            yield return new TestCaseData(INS_xvadd_b, 4.0f);
+            yield return new TestCaseData(INS_xvbitsel_v, 2.0f);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> MayWriteToGCCases()
+    {
+        yield return new TestCaseData(INS_mov, true);
+        yield return new TestCaseData(INS_jirl, true);
+        yield return new TestCaseData(INS_movfcsr2gr, true);
+        yield return new TestCaseData(INS_movcf2gr, true);
+        yield return new TestCaseData(INS_addi_d, true);
+        yield return new TestCaseData(INS_fadd_s, false);
+
+        if (Configuration.FEATURE_SIMD)
+        {
+            yield return new TestCaseData(INS_vpickve2gr_d, true);
+            yield return new TestCaseData(INS_vpickve2gr_wu, true);
+            yield return new TestCaseData(INS_vpickve2gr_h, true);
+            yield return new TestCaseData(INS_vpickve2gr_bu, true);
+            yield return new TestCaseData(INS_xvpickve2gr_d, true);
+            yield return new TestCaseData(INS_xvpickve2gr_wu, true);
+            yield return new TestCaseData(INS_vadd_b, false);
+        }
     }
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, bool isLocal)
@@ -223,7 +257,7 @@ internal static class LoongArchEmitterClassifierTests
 
     private static uint InstructionCode(instruction ins)
     {
-        var codeLookup = typeof(Emitter).GetMethod("emitInsCode", BindingFlags.NonPublic | BindingFlags.Static)
+        var codeLookup = typeof(Emitter).GetMethod("emitInsCodeLoongArch64", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("The LoongArch instruction-code lookup is unavailable.");
         return (uint)(codeLookup.Invoke(null, [ins])
             ?? throw new InvalidOperationException("The LoongArch instruction-code lookup returned no value."));
@@ -235,4 +269,3 @@ internal static class LoongArchEmitterClassifierTests
         byte* dst,
         Emitter.instrDesc id);
 }
-#endif

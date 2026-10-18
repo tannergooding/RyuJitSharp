@@ -2,10 +2,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-#if DEBUG
-using System.IO;
-using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
@@ -54,23 +50,26 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             var allocator = new LinearScan(compiler) {
                 localVarIntervals = existingMappings,
             };
-#if TARGET_X86
-            DoDoubleAlign(allocator) = true;
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                DoDoubleAlign(allocator) = true;
+            }
 
             IdentifyCandidatesMinimal(allocator);
 
             Assert.That(allocator.localVarIntervals, Is.SameAs(existingMappings));
-#if TARGET_X86
-            Assert.That(DoDoubleAlign(allocator), Is.True);
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                Assert.That(DoDoubleAlign(allocator), Is.True);
+            }
         });
     }
 
-#if TARGET_X86
     [Test]
     public static void MinimalCandidatePreparationResetsDoubleAlignmentForMinoptsWithLocals()
     {
+        Assume.That(Configuration.TARGET_X86);
+
         WithCompiler(compiler => {
             compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true }];
             compiler.lvaCount = 1;
@@ -84,7 +83,6 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             Assert.That(compiler.lvaTable[0].lvLRACandidate, Is.False);
         });
     }
-#endif
 
     [Test]
     public static void MinimalCandidatePreparationBuildsExceptionAndFinallyVariableSets()
@@ -129,12 +127,17 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             AddTrackedVar(handler.bbLiveIn, 0);
             AddTrackedVar(finallyReturn.bbLiveOut, 1);
 
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = Capture(() => IdentifyCandidatesMinimal(allocator));
-#else
-            IdentifyCandidatesMinimal(allocator);
-#endif
+            string output;
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                output = InstructionRecordingTestSupport.Capture(() => IdentifyCandidatesMinimal(allocator));
+            }
+            else
+            {
+                IdentifyCandidatesMinimal(allocator);
+                output = string.Empty;
+            }
 
             Assert.That(ContainsTrackedVar(ExceptVars(allocator), 0), Is.True);
             Assert.That(ContainsTrackedVar(ExceptVars(allocator), 1), Is.True);
@@ -142,13 +145,14 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             Assert.That(ContainsTrackedVar(FinallyVars(allocator), 1), Is.True);
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
             Assert.That(compiler.lvaTable[1].RegNum, Is.EqualTo(REG_STK));
-#if DEBUG
-            Assert.That(output, Is.EqualTo(
-                $"EH Vars: {{V00 V01}}{Environment.NewLine}" +
-                $"Finally Vars: {{V00}}{Environment.NewLine}{Environment.NewLine}{Environment.NewLine}" +
-                $"FP callee save candidate vars: None{Environment.NewLine}{Environment.NewLine}" +
-                $"floatVarCount = 0; hasLoops = false, singleExit = true{Environment.NewLine}"));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(output, Is.EqualTo(
+                    $"EH Vars: {{V00 V01}}{Environment.NewLine}" +
+                    $"Finally Vars: {{V00}}{Environment.NewLine}{Environment.NewLine}{Environment.NewLine}" +
+                    $"FP callee save candidate vars: None{Environment.NewLine}{Environment.NewLine}" +
+                    $"floatVarCount = 0; hasLoops = false, singleExit = true{Environment.NewLine}"));
+            }
         });
     }
 
@@ -161,10 +165,8 @@ internal static unsafe class LinearScanMinimalCandidatesTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_finallyVars")]
     private static extern ref nint[] FinallyVars(LinearScan allocator);
 
-#if TARGET_X86
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_doDoubleAlign")]
     private static extern ref bool DoDoubleAlign(LinearScan allocator);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__lvLiveInOutOfHandler")]
     private static extern void LiveInOutOfHandler(ref LclVarDsc local, bool value);
@@ -229,27 +231,6 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             JitTls.Compiler = previous;
         }
     }
-
-#if DEBUG
-    private static string Capture(Action action)
-    {
-        using var stream = new MemoryStream();
-        using var writer = new JitTextWriter(stream, leaveOpen: true);
-        var previous = s_jitstdout;
-        try
-        {
-            s_jitstdout = writer;
-            action();
-            writer.Flush();
-        }
-        finally
-        {
-            s_jitstdout = previous;
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
-#endif
 
     private static void AddTrackedVar(nint[] set, int varIndex)
     {

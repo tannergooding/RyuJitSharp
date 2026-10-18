@@ -175,10 +175,11 @@ internal static unsafe class EmitterLocationTests
         Assert.That(first != differentGroup, Is.True);
     }
 
-#if DEBUG
     [Test]
     public static void LocationPrintingPreservesTheUnsignedMethodNumber()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter();
         var location = new emitLocation(emitter.emitCurIG, Emitter.emitSpecifiedOffset(2, 5));
         using var stream = new MemoryStream();
@@ -199,7 +200,6 @@ internal static unsafe class EmitterLocationTests
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
             Is.EqualTo("(G_M4294967295_IG02,ins#2,ofs#5)"));
     }
-#endif
 
     private static Emitter CreateEmitter()
     {
@@ -208,11 +208,7 @@ internal static unsafe class EmitterLocationTests
         var emitter = new CodeGen(compiler).Emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false, false);
 
         return emitter;
     }

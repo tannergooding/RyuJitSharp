@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+using System.Diagnostics;
 using System.Collections.Generic;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -13,6 +13,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    [Conditional("DEBUG")]
     public void fgDebugCheckInitBB()
     {
         assert(fgFirstBB is not null);
@@ -21,6 +22,7 @@ public partial class Compiler
         assert(!opts.compDbgCode || fgFirstBB.HasFlag(BBF_INTERNAL));
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckFlowGraphAnnotations()
     {
         var dfsTree = _dfsTree;
@@ -66,6 +68,7 @@ public partial class Compiler
         assert((_reachabilitySets is null) || (_reachabilitySets.GetDfsTree() == dfsTree));
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckLoops()
     {
         if (_loops is null)
@@ -98,6 +101,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckNodesUniqueness()
     {
         var walker = new UniquenessCheckWalker(this);
@@ -130,6 +134,7 @@ public partial class Compiler
         }
     }
 
+    [Conditional("DEBUG")]
     public void fgDebugCheckLinkedLocals()
     {
         if (fgNodeThreading is not NodeThreading.AllLocals)
@@ -293,4 +298,3 @@ public partial class Compiler
             => IGenTreeVisitor<DebugLocalSequencer>.WalkTree(ref this, ref use, user, _ancestors);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -29,6 +28,8 @@ internal static unsafe class Arm32CallInstructionTests
     [Test]
     public static void DirectCallNodesMaterializeOutOfRangeTargets()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -55,6 +56,8 @@ internal static unsafe class Arm32CallInstructionTests
     [Test]
     public static void ReturnTrapEmitsTheConditionalStopForGcHelperCall()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -66,9 +69,7 @@ internal static unsafe class Arm32CallInstructionTests
             compiler.fgFirstBB = currentBlock;
             compiler.fgLastBB = currentBlock;
             compiler.compCurBB = currentBlock;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = false;
-#endif
+            TestConfiguration.DisableSafeBasicBlockCreation(compiler);
 
             var data = compiler.gtNewIconNode(TYP_INT, 1);
             data.RegNum = REG_R3;
@@ -87,6 +88,8 @@ internal static unsafe class Arm32CallInstructionTests
     [TestCase(4100u)]
     public static void FreeLocalFrameUsesAnUnwindableStackAdjustment(uint frameSize)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var group = CurrentGroup(codeGen.Emitter)
@@ -125,6 +128,8 @@ internal static unsafe class Arm32CallInstructionTests
     [TestCase(true, INS_b)]
     public static void DirectCallsRecordThumb2BranchesAndGcState(bool isJump, instruction expectedInstruction)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -149,16 +154,19 @@ internal static unsafe class Arm32CallInstructionTests
             Assert.That(id.NativeLogicalSize, Is.EqualTo(48));
             Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(SRBM_R0 | SRBM_R4));
             Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(SRBM_R5));
-#if !DEBUG
-            Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
-            Assert.That(LastMemBarrier(codeGen.Emitter), Is.Null);
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
+                Assert.That(LastMemBarrier(codeGen.Emitter), Is.Null);
+            }
         });
     }
 
     [Test]
     public static void DirectCallWithoutLiveGcReferencesUsesTheBaseDescriptor()
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.info.compMatchedVM = false;
@@ -175,9 +183,10 @@ internal static unsafe class Arm32CallInstructionTests
             Assert.That(id.idIsLargeCall(), Is.False);
             Assert.That(id.NativeLogicalSize, Is.EqualTo(12));
             Assert.That(id.idCodeSize(), Is.EqualTo(4u));
-#if !DEBUG
-            Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
+            }
         });
     }
 
@@ -185,6 +194,8 @@ internal static unsafe class Arm32CallInstructionTests
     [TestCase(true, INS_bx)]
     public static void RegisterCallsRecordThumbBranchesAndClearRelocation(bool isJump, instruction expectedInstruction)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             var parameters = Parameters(compiler, EC_INDIR_R);
@@ -203,15 +214,21 @@ internal static unsafe class Arm32CallInstructionTests
             Assert.That(id.idReg3(), Is.EqualTo(REG_R7));
             Assert.That(id.idIsNoGC(), Is.True);
             Assert.That(id.idIsDspReloc(), Is.False);
-#if !DEBUG
-            Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(2));
-            Assert.That(LastMemBarrier(codeGen.Emitter), Is.Null);
-#endif
+            if (!TestConfiguration.IsDebug)
+            {
+                Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(2));
+                Assert.That(LastMemBarrier(codeGen.Emitter), Is.Null);
+            }
         });
     }
 
     private static IEnumerable<TestCaseData> NoGcCallMaskCases()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(CORINFO_HELP_ASSIGN_REF, SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_R12);
         yield return new TestCaseData(CORINFO_HELP_PROF_FCN_ENTER, SRBM_NONE);
         yield return new TestCaseData(CORINFO_HELP_PROF_FCN_LEAVE, SRBM_NONE);
@@ -222,6 +239,8 @@ internal static unsafe class Arm32CallInstructionTests
     [TestCaseSource(nameof(NoGcCallMaskCases))]
     public static void NoGcCallMasksMatchTheArm32HelperContracts(CorInfoHelpFunc helper, regMask expected)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var mask = codeGen.Emitter.emitGetGCRegsKilledByNoGCCall(helper);
@@ -243,7 +262,7 @@ internal static unsafe class Arm32CallInstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? Last(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genFreeLclFrame")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genFreeLclFrameArm")]
     private static extern void FreeLocalFrame(CodeGen codeGen, uint frameSize, ref bool unwindStarted);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
@@ -265,4 +284,3 @@ internal static unsafe class Arm32CallInstructionTests
 
     private static ref Emitter.instrDesc? LastMemBarrier(Emitter emitter) => ref PendingMemBarrier(emitter);
 }
-#endif

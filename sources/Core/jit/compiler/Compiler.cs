@@ -66,12 +66,6 @@ public partial class Compiler
 #endif
 
 #if DEBUG
-    /// <summary>If true, print trees before/after morphing (paired by an intra-compilation id:</summary>
-    public bool treesBeforeAfterMorph;
-
-    /// <summary>This counts the trees that have been morphed, allowing us to label each uniquely.</summary>
-    public int morphNum;
-
     public int expensiveDebugCheckLevel;
 #endif
 
@@ -1059,12 +1053,17 @@ public partial class Compiler
     public bool canUseEvexEncoding() =>
         Configuration.TARGET_XARCH && compOpportunisticallyDependsOn(InstructionSet_AVX512);
 
-#if DEBUG
     /// <summary>Answer the question: Is Evex encoding supported on this target.</summary>
     /// <returns>`true` if Evex encoding is supported, `false` if not.</returns>
-    public bool canUseEvexEncodingDebugOnly() =>
-        Configuration.TARGET_XARCH && compIsaSupportedDebugOnly(InstructionSet_AVX512);
-#endif
+    public bool canUseEvexEncodingDebugOnly()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("EVEX debug support checks are unavailable in Release.");
+        }
+
+        return Configuration.TARGET_XARCH && compIsaSupportedDebugOnly(InstructionSet_AVX512);
+    }
 
     /// <summary>Answer the question: Are APX encodings supported on this target.</summary>
     /// <returns></returns>

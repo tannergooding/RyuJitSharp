@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -10,7 +11,6 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if DEBUG
 [NonParallelizable]
 internal static unsafe class MorphStressTests
 {

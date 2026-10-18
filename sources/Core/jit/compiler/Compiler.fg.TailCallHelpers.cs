@@ -9,31 +9,32 @@ public partial class Compiler
 {
     public void fgValidateIRForTailCall(GenTreeCall call)
     {
-#if DEBUG
-        // Struct-field forwarding makes valid return patterns hard to track.
-        if (call.Type is TYP_STRUCT)
+        if (Configuration.DEBUG)
         {
-            return;
-        }
+            // Struct-field forwarding makes valid return patterns hard to track.
+            if (call.Type is TYP_STRUCT)
+            {
+                return;
+            }
 
-        var visitor = new TailCallIRValidatorVisitor(this, call);
-        for (var statement = compCurStmt; statement is not null; statement = statement.NextStmt)
-        {
-            _ = visitor.WalkTree(ref statement.RootNodeRef, null);
-        }
-
-        var block = compCurBB;
-        assert(block is not null);
-        while (block.Kind is not BBJ_RETURN)
-        {
-            block = block.UniqueSucc;
-            assert(block is not null, "Expected straight flow after tailcall");
-            foreach (var statement in block.Statements)
+            var visitor = new TailCallIRValidatorVisitor(this, call);
+            for (var statement = compCurStmt; statement is not null; statement = statement.NextStmt)
             {
                 _ = visitor.WalkTree(ref statement.RootNodeRef, null);
             }
+
+            var block = compCurBB;
+            assert(block is not null);
+            while (block.Kind is not BBJ_RETURN)
+            {
+                block = block.UniqueSucc;
+                assert(block is not null, "Expected straight flow after tailcall");
+                foreach (var statement in block.Statements)
+                {
+                    _ = visitor.WalkTree(ref statement.RootNodeRef, null);
+                }
+            }
         }
-#endif
     }
 
     public bool fgCanTailCallViaJitHelper(GenTreeCall call)

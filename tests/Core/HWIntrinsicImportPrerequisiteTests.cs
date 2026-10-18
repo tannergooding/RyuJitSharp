@@ -16,10 +16,15 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 [NonParallelizable]
 internal static unsafe class HWIntrinsicImportPrerequisiteTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH);
+    }
+
     private static readonly CorInfoType[] s_signatureTypes =
         [CORINFO_TYPE_UINT, CORINFO_TYPE_NATIVEUINT, CORINFO_TYPE_UBYTE, CORINFO_TYPE_CLASS];
     private static readonly List<nuint> s_signatureQueries = [];
@@ -257,4 +262,3 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
     private static extern GenTree AddRangeCheckIfNeeded(
         Compiler compiler, NamedIntrinsic intrinsic, GenTree operand, int lower, int upper);
 }
-#endif

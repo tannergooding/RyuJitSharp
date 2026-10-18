@@ -198,10 +198,10 @@ internal static class EHCloneFeasibilityTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void EnclosingHandlerPrecedesTryAndReportsInsertionPosition()
     {
+        Assume.That(TestConfiguration.IsDebug);
         WithGraph(4, (compiler, blocks) =>
         {
             var (entry, handler, enclosingTry, enclosingHandler) =
@@ -243,7 +243,6 @@ internal static class EHCloneFeasibilityTests
             Assert.That(compiler.compHndBBtabCount, Is.EqualTo(3));
         });
     }
-#endif
 
     private static void WithGraph(int blockCount, Action<Compiler, BasicBlock[]> action)
     {

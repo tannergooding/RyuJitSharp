@@ -40,9 +40,7 @@ public sealed partial class Lowering
 
             case NI_AVX512_TernaryLogic:
             {
-#if DEBUG
                 assert(CompilerInstance.canUseEvexEncodingDebugOnly());
-#endif
                 if (!isContainedImm)
                 {
                     break;

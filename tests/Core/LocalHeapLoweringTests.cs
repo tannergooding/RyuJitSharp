@@ -141,12 +141,15 @@ internal static unsafe class LocalHeapLoweringTests
             var heap = NewHeap(size);
             var user = new GenTreeUnOp(GT_RETURN, TYP_VOID, heap);
             var block = NewBlock(size, heap, user);
-#if DEBUG
-            Assert.That(() => _ = LowerHeap(NewLowering(compiler, block), heap), Throws.Exception);
-#else
-            _ = LowerHeap(NewLowering(compiler, block), heap);
-            Assert.That(user.Prev!.AsBlk().Size, Is.EqualTo(0u));
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(() => _ = LowerHeap(NewLowering(compiler, block), heap), Throws.Exception);
+            }
+            else
+            {
+                _ = LowerHeap(NewLowering(compiler, block), heap);
+                Assert.That(user.Prev!.AsBlk().Size, Is.EqualTo(0u));
+            }
             Assert.That(size.IconValue, Is.EqualTo((nint)0));
         });
     }

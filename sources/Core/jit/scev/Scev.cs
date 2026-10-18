@@ -166,7 +166,7 @@ public class Scev
         };
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void Dump(Compiler comp)
     {
         switch (this)
@@ -226,7 +226,6 @@ public class Scev
             }
         }
     }
-#endif
 }
 
 public sealed class ScevConstant : Scev
@@ -288,21 +287,47 @@ public sealed class ScevBinop : ScevUnop
 
 public sealed class ScevAddRec : Scev
 {
+    private sealed class DebugData
+    {
+        internal FlowGraphNaturalLoop? Loop;
+    }
+
+    private static class DebugDataStorage
+    {
+        internal static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ScevAddRec, DebugData> Table = [];
+    }
+
     public Scev Start { get; }
 
     public Scev Step { get; }
 
-#if DEBUG
-    public FlowGraphNaturalLoop Loop { get; }
-#endif
+    public FlowGraphNaturalLoop Loop
+    {
+        get
+        {
+            return GetDebugData().Loop
+                ?? throw new System.InvalidOperationException("Scalar-evolution loop data is unavailable.");
+        }
+    }
 
     public ScevAddRec(var_types type, Scev start, Scev step, FlowGraphNaturalLoop loop)
         : base(ScevOper.AddRec, type)
     {
         Start = start;
         Step = step;
-#if DEBUG
-        Loop = loop;
-#endif
+        if (Configuration.DEBUG)
+        {
+            DebugDataStorage.Table.GetValue(this, static _ => new DebugData()).Loop = loop;
+        }
+    }
+
+    private DebugData GetDebugData()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Scalar-evolution debug data is only available in Debug builds.");
+        }
+
+        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
     }
 }

@@ -207,8 +207,7 @@ public sealed partial class ScalarEvolutionContext
         }
 
         assert(lhs is ScevAddRec);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"  L{loop.Index:D2} exits when:\n  ");
             lhs.Dump(_compiler);
@@ -222,7 +221,6 @@ public sealed partial class ScalarEvolutionContext
             rhs.Dump(_compiler);
             jitprintf("\n");
         }
-#endif
 
         var exitOpVNF = MapRelopToVNFunc(exitOp, cond.AsOp().IsUnsigned);
         if (MayOverflowBeforeExit((ScevAddRec)lhs, rhs, exitOpVNF))
@@ -287,19 +285,15 @@ public sealed partial class ScalarEvolutionContext
         lowerBound = Simplify(lowerBound);
         upperBound = Simplify(upperBound);
         JITDUMP("  Need to prove ");
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             lowerBound.Dump(_compiler);
         }
-#endif
         JITDUMP(" <= ");
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             upperBound.Dump(_compiler);
         }
-#endif
 
         var store = _compiler.vnStore ?? throw new InvalidOperationException("Scalar evolution requires value numbering.");
         var relopFunc = ValueNumStore.VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
@@ -343,12 +337,10 @@ public sealed partial class ScalarEvolutionContext
 
         backedgeCount = Simplify(backedgeCount);
         JITDUMP("  Backedge count: ");
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             backedgeCount.Dump(_compiler);
         }
-#endif
         JITDUMP("\n");
         return backedgeCount;
     }

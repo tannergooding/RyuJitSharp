@@ -19,6 +19,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void LabelUsesUnsignedMethodAndGroupNumbers()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = -1;
         var group = new insGroup();
@@ -31,6 +33,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void GroupFlagsFollowNativeDisplayOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out _);
         var flags =
             InsGroupFlags.GCVars | InsGroupFlags.ByrefRegs | InsGroupFlags.Prolog |
@@ -47,6 +51,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void ConvertedTrackedVariablesArePrintedInLocalNumberOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         _ = CreateEmitter(out var compiler);
         compiler.lvaCount = 10;
         compiler.lvaTrackedCount = 3;
@@ -64,6 +70,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void OrdinaryGroupReportsNativeMetadataAndFlags()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = 7;
         compiler.compCodeGenDone = true;
@@ -101,6 +109,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void PlaceholderGroupReportsPreviousAndInitialGCStates()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = 42;
         compiler.lvaCount = 4;
@@ -149,6 +159,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void NonVerboseExtendedGroupOmitsOffsetsGCRegistersAndBlockList()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out var compiler);
         compiler.compMethodID = 5;
         var group = new insGroup
@@ -171,6 +183,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void GroupInstructionDisplayUsesFinalOffsetsAndListSelection()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
@@ -197,6 +211,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void EmptyGroupCanBeDisplayedWithInstructionsEnabled()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out _);
         var group = new insGroup();
         Assert.That(Capture(() => emitter.emitDispIG(group, displayInstructions: true)),
@@ -206,6 +222,8 @@ internal static unsafe class EmitterGroupDiagnosticsTests
     [Test]
     public static void GroupListMarksOnlyFuncletTransitions()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         var emitter = CreateEmitter(out var compiler);
         TestConfiguration.EnableVerbose(compiler);
         var first = new insGroup { igFuncIdx = 0, igWeight = 100 };

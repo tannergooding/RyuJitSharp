@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -14,6 +13,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareComparisonLoweringTests
 {
+    [SetUp]
+    public static void RequireXarchHardwareIntrinsics()
+    {
+        Assume.That(Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH);
+    }
+
     [TestCase(false, GT_EQ, GenCondition.EQ)]
     [TestCase(false, GT_NE, GenCondition.NE)]
     [TestCase(true, GT_EQ, GenCondition.C)]
@@ -232,4 +237,3 @@ internal static unsafe class HardwareComparisonLoweringTests
         }
     }
 }
-#endif

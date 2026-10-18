@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoOptions;
 using static RyuJitSharp.Globals;
@@ -11,15 +12,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CompilerFrameHelperCompletionTests
 {
-#if TARGET_ARM
-    [TestCase(REG_R0, 4, SRBM_R0, true, SRBM_R0)]
-    [TestCase(REG_F0, 4, SRBM_R0, false, SRBM_F0)]
-    [TestCase(REG_F0, 8, SRBM_R0 | SRBM_R1, false, SRBM_F0 | SRBM_F1)]
-    [TestCase(REG_F0, 8, SRBM_F0, true, SRBM_F0 | SRBM_F1)]
-    [TestCase(REG_F0, 8, SRBM_F1, true, SRBM_F0 | SRBM_F1)]
+    [TestCaseSource(nameof(ArmPrespillMaskCases))]
     public static void ArmPrespillMasksUseFullRegisterPositionsAndRetainBothDoubleHalves(
         regNumber register, int size, regMask prespill, bool expected, regMask expectedFullMask)
     {
+        Assume.That(Configuration.TARGET_ARM);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, _) =>
         {
             compiler.info.compArgsCount = 1;
@@ -34,7 +32,20 @@ internal static unsafe class CompilerFrameHelperCompletionTests
             Assert.That(compiler.lvaIsPreSpilled(0, new regMaskTP(prespill)), Is.EqualTo(expected));
         });
     }
-#endif
+
+    private static IEnumerable<TestCaseData> ArmPrespillMaskCases()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            yield break;
+        }
+
+        yield return new TestCaseData(REG_R0, 4, SRBM_R0, true, SRBM_R0);
+        yield return new TestCaseData(REG_F0, 4, SRBM_R0, false, SRBM_F0);
+        yield return new TestCaseData(REG_F0, 8, SRBM_R0 | SRBM_R1, false, SRBM_F0 | SRBM_F1);
+        yield return new TestCaseData(REG_F0, 8, SRBM_F0, true, SRBM_F0 | SRBM_F1);
+        yield return new TestCaseData(REG_F0, 8, SRBM_F1, true, SRBM_F0 | SRBM_F1);
+    }
 
     [TestCase(false, false)]
     [TestCase(false, true)]
@@ -48,11 +59,8 @@ internal static unsafe class CompilerFrameHelperCompletionTests
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = framePointer;
 
-#if TARGET_ARM
-            Assert.That(compiler.lvaTempsHaveLargerOffsetThanVars(), Is.False);
-#else
-            Assert.That(compiler.lvaTempsHaveLargerOffsetThanVars(), Is.EqualTo(!reorder || framePointer));
-#endif
+            var expected = !Configuration.TARGET_ARM && (!reorder || framePointer);
+            Assert.That(compiler.lvaTempsHaveLargerOffsetThanVars(), Is.EqualTo(expected));
         });
     }
 
@@ -103,13 +111,14 @@ internal static unsafe class CompilerFrameHelperCompletionTests
         });
     }
 
-#if TARGET_AMD64
     [TestCase(false, 0, 0)]
     [TestCase(false, 24, 24)]
     [TestCase(true, -80, 0)]
     [TestCase(true, -8, 72)]
     public static void StackAndInitialStackGettersConvertTheLocalHome(bool framePointerBased, int offset, int expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
@@ -134,6 +143,8 @@ internal static unsafe class CompilerFrameHelperCompletionTests
     public static void InitialStackConversionRetainsTheNativeUnsignedOffsetBits(
         bool framePointerBased, uint offset, int expected)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
@@ -145,13 +156,13 @@ internal static unsafe class CompilerFrameHelperCompletionTests
             Assert.That(compiler.lvaToInitialSPRelativeOffset(offset, framePointerBased), Is.EqualTo(expected));
         });
     }
-#endif
 
-#if TARGET_AMD64 || TARGET_X86
     [TestCase(false)]
     [TestCase(true)]
     public static void CallerStackConversionDistinguishesRootAndOsrFrames(bool framePointerBased)
     {
+        Assume.That(Configuration.TARGET_AMD64 || Configuration.TARGET_X86);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
@@ -161,13 +172,10 @@ internal static unsafe class CompilerFrameHelperCompletionTests
             compiler.lvaTable[0].lvFramePointerBased = framePointerBased;
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = true;
-#if TARGET_AMD64
-            var expected = framePointerBased ? 8 : -72;
-            const int rootAdjustment = 104;
-#else
-            var expected = framePointerBased ? 16 : -56;
-            const int rootAdjustment = 96;
-#endif
+            var expected = Configuration.TARGET_AMD64
+                ? (framePointerBased ? 8 : -72)
+                : (framePointerBased ? 16 : -56);
+            var rootAdjustment = Configuration.TARGET_AMD64 ? 104 : 96;
 
             Assert.That(compiler.lvaToCallerSPRelativeOffset(24, framePointerBased), Is.EqualTo(expected));
             Assert.That(compiler.lvaGetCallerSPRelativeOffset(0), Is.EqualTo(expected));
@@ -184,9 +192,7 @@ internal static unsafe class CompilerFrameHelperCompletionTests
             Assert.That(compiler.lvaGetCallerSPRelativeOffset(0), Is.EqualTo(expected - rootAdjustment));
         });
     }
-#endif
 
-#if TARGET_AMD64
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
@@ -194,6 +200,8 @@ internal static unsafe class CompilerFrameHelperCompletionTests
     public static void FrameEstimateReservesNativeCalleeSavesBeforeTentativeLayout(
         bool framePointer, bool floatingPointUsed)
     {
+        Assume.That(Configuration.TARGET_AMD64);
+
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
         {
             compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
@@ -210,5 +218,4 @@ internal static unsafe class CompilerFrameHelperCompletionTests
             Assert.That(size, Is.EqualTo((uint)compiler.compLclFrameSize + CALLEE_SAVED_REG_MAXSZ));
         });
     }
-#endif
 }

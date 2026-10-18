@@ -268,12 +268,10 @@ public partial class Emitter
         id.idjTarget = dst;
         id.idjShort = false;
         id.idjKeepLong = _compiler.fgInDifferentRegions(_compiler.compCurBB, dst);
-#if DEBUG
-        if (_compiler.opts.compLongAddress)
+        if (Configuration.DEBUG && _compiler.opts.compLongAddress)
         {
             id.idjKeepLong = true;
         }
-#endif
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;

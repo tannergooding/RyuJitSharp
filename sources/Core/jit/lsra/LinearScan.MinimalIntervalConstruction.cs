@@ -108,12 +108,10 @@ public sealed partial class LinearScan
 
         // identifyCandidates<false> leaves no local candidates, so the parameter-definition
         // iteration is empty. The stress check can still activate the native diagnostic mode.
-#if DEBUG
-        if (stressInitialParamReg())
+        if (Configuration.DEBUG && stressInitialParamReg())
         {
             stressSetRandomParameterPreferences();
         }
-#endif
 
         _placedArgumentLocalCount = 0;
         _placedArgumentRegisters = RBM_NONE;

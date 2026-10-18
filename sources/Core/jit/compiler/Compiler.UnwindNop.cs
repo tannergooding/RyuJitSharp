@@ -194,12 +194,10 @@ public partial class Compiler
             var funcHasColdSection = fgFirstColdBlock is not null;
             if (Configuration.TARGET_ARMARCH)
             {
-#if DEBUG
-                if ((JitConfig.JitFakeProcedureSplitting != 0) && funcHasColdSection)
+                if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) && funcHasColdSection)
                 {
                     funcHasColdSection = false;
                 }
-#endif
 
                 var splitAtFirstFunclet = funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB);
                 if (!isFunclet && splitAtFirstFunclet)
@@ -224,12 +222,10 @@ public partial class Compiler
             var funcHasColdSection = fgFirstColdBlock is not null;
             UnwindInfo? coldUnwindInfo = null;
 
-#if DEBUG
-            if ((JitConfig.JitFakeProcedureSplitting != 0) && funcHasColdSection)
+            if (Configuration.DEBUG && (JitConfig.JitFakeProcedureSplitting != 0) && funcHasColdSection)
             {
                 funcHasColdSection = false;
             }
-#endif
 
             var splitAtFirstFunclet = funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB);
             if (!isFunclet && splitAtFirstFunclet)

@@ -1061,6 +1061,19 @@ public partial struct LclVarDsc
         }
     }
 #else
+    public bool lvKeepType
+    {
+        readonly get
+        {
+            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+        }
+    }
+
     public byte lvSingleDefDisqualifyReason
     {
         readonly get

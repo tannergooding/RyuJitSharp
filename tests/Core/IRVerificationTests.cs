@@ -15,6 +15,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class IRVerificationTests
 {
+    [SetUp]
+    public static void RequireDebugConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug, "IR verification checks are Debug-only.");
+    }
+
     [TestCase(GT_NOP)]
     [TestCase(GT_JTRUE)]
     [TestCase(GT_BOUNDS_CHECK)]
@@ -61,11 +67,14 @@ internal static class IRVerificationTests
                 compiler.gtNewIconNode(TYP_INT, 2));
             addition.Flags |= GTF_REVERSE_OPS;
 
-#if TARGET_WASM
-            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Exception);
-#else
-            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Nothing);
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Exception);
+            }
+            else
+            {
+                Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Nothing);
+            }
 
             var comma = new GenTreeOp(GT_COMMA, TYP_INT,
                 compiler.gtNewIconNode(TYP_INT, 1),
