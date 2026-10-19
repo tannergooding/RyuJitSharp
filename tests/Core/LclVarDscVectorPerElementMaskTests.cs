@@ -109,12 +109,10 @@ internal static class LclVarDscVectorPerElementMaskTests
         }
 
         var config = JitConfig;
-#if MEASURE_FATAL
         var fatalCount = s_fatalNoWayAssertBodyCount;
-#if DEBUG
-        var fatalArgsCount = s_fatalNoWayAssertBodyArgsCount;
-#endif
-#endif
+        var fatalArgsCount = TestConfiguration.IsDebug
+            ? s_fatalNoWayAssertBodyArgsCount
+            : 0;
         JitConfig = new JitConfigValues();
         try
         {
@@ -132,23 +130,23 @@ internal static class LclVarDscVectorPerElementMaskTests
             var queryException = Assert.Throws<FatalJitException>(() => descriptor.IsVectorPerElementMask(invalidType));
             Assert.That(queryException?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
             Assert.That(GetFlags(descriptor), Is.EqualTo(markedFlags));
-#if MEASURE_FATAL
-            Assert.That(s_fatalNoWayAssertBodyCount, Is.EqualTo(unchecked(fatalCount + 2)));
-            if (TestConfiguration.IsDebug)
+            if (Configuration.MEASURE_FATAL)
             {
-                Assert.That(s_fatalNoWayAssertBodyArgsCount, Is.EqualTo(unchecked(fatalArgsCount + 2)));
+                Assert.That(s_fatalNoWayAssertBodyCount, Is.EqualTo(unchecked(fatalCount + 2)));
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(s_fatalNoWayAssertBodyArgsCount, Is.EqualTo(unchecked(fatalArgsCount + 2)));
+                }
             }
-#endif
         }
         finally
         {
             JitConfig = config;
-#if MEASURE_FATAL
             s_fatalNoWayAssertBodyCount = fatalCount;
-#if DEBUG
-            s_fatalNoWayAssertBodyArgsCount = fatalArgsCount;
-#endif
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                s_fatalNoWayAssertBodyArgsCount = fatalArgsCount;
+            }
         }
     }
 

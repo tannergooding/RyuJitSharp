@@ -194,6 +194,7 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(text, Does.Not.Contain("All allocations:"));
             Assert.That(text, Does.Not.Contain("Largest method:"));
             Assert.That(text, Does.Not.Contain("GC pointer table stats"));
+            Assert.That(text, Does.Not.Contain("Fatal errors stats"));
         });
     }
 
@@ -261,6 +262,11 @@ internal static class CompilerShutdownFamilyTests
         if (!Configuration.OPTIONAL_STATISTICS)
         {
             Assert.Ignore("Optional statistics are disabled for this build.");
+        }
+
+        if (Configuration.MEASURE_FATAL)
+        {
+            Assert.Ignore("Fatal counter reporting is covered by CompilerShutdownTests.");
         }
 
         if (Configuration.MEASURE_NODE_SIZE &&

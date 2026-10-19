@@ -523,7 +523,7 @@
     <!-- MEASURE_BLOCK_SIZE: Collect stats about basic block and FlowEdge node sizes and memory allocations. -->
     <!-- <DefineConstants>$(DefineConstants);MEASURE_BLOCK_SIZE</DefineConstants> -->
 
-    <!-- MEASURE_FATAL: Count the number of calls to fatal(), including NYIs and noway_asserts. -->
+    <!-- MEASURE_FATAL: Enable runtime-gated counts of fatal calls, including NYIs and noway_asserts. -->
     <!-- <DefineConstants>$(DefineConstants);MEASURE_FATAL</DefineConstants> -->
 
     <!-- MEASURE_NODE_SIZE: Collect stats about GenTree node allocations. -->

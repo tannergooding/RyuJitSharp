@@ -201,9 +201,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         var previousCompiler = JitTls.Compiler;
         var previousConfig = JitConfig;
         var previousFunctionLog = Compiler.compJitFuncInfoFile;
-#if MEASURE_FATAL
         var previousNyiCount = s_fatalNyiCount;
-#endif
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         if (altJit)
@@ -227,9 +225,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             JitTls.Compiler = previousCompiler;
             JitConfig = previousConfig;
             Compiler.compJitFuncInfoFile = previousFunctionLog;
-#if MEASURE_FATAL
             s_fatalNyiCount = previousNyiCount;
-#endif
         }
     }
 

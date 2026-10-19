@@ -323,21 +323,23 @@ public partial class Compiler
 
         emitterStats(jitstdout());
 
-#if MEASURE_FATAL
-        jitprintf("\n");
-        jitprintf("---------------------------------------------------\n");
-        jitprintf("Fatal errors stats\n");
-        jitprintf("---------------------------------------------------\n");
-        jitprintf($"   badCode:             {s_fatalBadCodeCount}\n");
-        jitprintf($"   noWay:               {s_fatalNoWayCount}\n");
-        jitprintf($"   implLimitation:      {s_fatalImplLimitationCount}\n");
-        jitprintf($"   NOMEM:               {s_fatalNoMemCount}\n");
-        jitprintf($"   noWayAssertBody:     {s_fatalNoWayAssertBodyCount}\n");
-#if DEBUG
-        jitprintf($"   noWayAssertBodyArgs: {s_fatalNoWayAssertBodyArgsCount}\n");
-#endif
-        jitprintf($"   NYI:                 {s_fatalNyiCount}\n");
-#endif
+        if (Configuration.MEASURE_FATAL)
+        {
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("Fatal errors stats\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf($"   badCode:             {s_fatalBadCodeCount}\n");
+            jitprintf($"   noWay:               {s_fatalNoWayCount}\n");
+            jitprintf($"   implLimitation:      {s_fatalImplLimitationCount}\n");
+            jitprintf($"   NOMEM:               {s_fatalNoMemCount}\n");
+            jitprintf($"   noWayAssertBody:     {s_fatalNoWayAssertBodyCount}\n");
+            if (Configuration.DEBUG)
+            {
+                jitprintf($"   noWayAssertBodyArgs: {s_fatalNoWayAssertBodyArgsCount}\n");
+            }
+            jitprintf($"   NYI:                 {s_fatalNyiCount}\n");
+        }
 
         DumpOnShutdown.DumpAll();
     }

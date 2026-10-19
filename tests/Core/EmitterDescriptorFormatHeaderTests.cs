@@ -195,9 +195,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         using var tls = TestConfiguration.CreateJitTls();
         var previousCompiler = JitTls.Compiler;
         var functionLog = Compiler.compJitFuncInfoFile;
-#if MEASURE_FATAL
         var nyiCount = s_fatalNyiCount;
-#endif
         var configuration = new JitConfigValues();
         NyiConfiguration(configuration) = continueAfterNyi ? 2 : 0;
         var descriptor = new Descriptor();
@@ -222,9 +220,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
             JitConfig = config;
             JitTls.Compiler = previousCompiler;
             Compiler.compJitFuncInfoFile = functionLog;
-#if MEASURE_FATAL
             s_fatalNyiCount = nyiCount;
-#endif
         }
     }
 

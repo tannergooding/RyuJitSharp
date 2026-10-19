@@ -16,17 +16,13 @@ public partial class Globals
 {
     public const int FATAL_JIT_EXCEPTION = 0x02345678;
 
-#if MEASURE_FATAL
     internal static uint s_fatalBadCodeCount;
     internal static uint s_fatalNoWayCount;
     internal static uint s_fatalImplLimitationCount;
     internal static uint s_fatalNoMemCount;
     internal static uint s_fatalNoWayAssertBodyCount;
-#if DEBUG
     internal static uint s_fatalNoWayAssertBodyArgsCount;
-#endif
     internal static uint s_fatalNyiCount;
-#endif
 
     [Conditional("DEBUG")]
     private static void debugError(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
@@ -53,9 +49,10 @@ public partial class Globals
     [DoesNotReturn]
     public static void badCode()
     {
-#if MEASURE_FATAL
-        s_fatalBadCodeCount = unchecked(s_fatalBadCodeCount + 1);
-#endif
+        if (Configuration.MEASURE_FATAL)
+        {
+            s_fatalBadCodeCount = unchecked(s_fatalBadCodeCount + 1);
+        }
 
         fatal(CORJIT_BADCODE);
     }
@@ -71,9 +68,10 @@ public partial class Globals
     [DoesNotReturn]
     public static void noWay()
     {
-#if MEASURE_FATAL
-        s_fatalNoWayCount = unchecked(s_fatalNoWayCount + 1);
-#endif
+        if (Configuration.MEASURE_FATAL)
+        {
+            s_fatalNoWayCount = unchecked(s_fatalNoWayCount + 1);
+        }
 
         fatal(CORJIT_INTERNALERROR);
     }
@@ -81,9 +79,10 @@ public partial class Globals
     [DoesNotReturn]
     public static void implLimitation()
     {
-#if MEASURE_FATAL
-        s_fatalImplLimitationCount = unchecked(s_fatalImplLimitationCount + 1);
-#endif
+        if (Configuration.MEASURE_FATAL)
+        {
+            s_fatalImplLimitationCount = unchecked(s_fatalImplLimitationCount + 1);
+        }
 
         fatal(CORJIT_IMPLLIMITATION);
     }
@@ -94,9 +93,10 @@ public partial class Globals
     [DoesNotReturn]
     public static void NOMEM()
     {
-#if MEASURE_FATAL
-        s_fatalNoMemCount = unchecked(s_fatalNoMemCount + 1);
-#endif
+        if (Configuration.MEASURE_FATAL)
+        {
+            s_fatalNoMemCount = unchecked(s_fatalNoMemCount + 1);
+        }
 
         fatal(CORJIT_OUTOFMEM);
     }
@@ -122,9 +122,10 @@ public partial class Globals
     [DoesNotReturn]
     public static void noWayAssertBody()
     {
-#if MEASURE_FATAL
-        s_fatalNoWayAssertBodyCount = unchecked(s_fatalNoWayAssertBodyCount + 1);
-#endif
+        if (Configuration.MEASURE_FATAL)
+        {
+            s_fatalNoWayAssertBodyCount = unchecked(s_fatalNoWayAssertBodyCount + 1);
+        }
 
         if (!Configuration.DEBUG)
         {
@@ -145,9 +146,10 @@ public partial class Globals
     [DoesNotReturn]
     public static void noWayAssertBody(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
-#if MEASURE_FATAL && DEBUG
-        s_fatalNoWayAssertBodyArgsCount = unchecked(s_fatalNoWayAssertBodyArgsCount + 1);
-#endif
+        if (Configuration.MEASURE_FATAL && Configuration.DEBUG)
+        {
+            s_fatalNoWayAssertBodyArgsCount = unchecked(s_fatalNoWayAssertBodyArgsCount + 1);
+        }
 
         noWayAssertAbortHelper(message, filePath, lineNumber);
         noWayAssertBody();
@@ -331,9 +333,10 @@ public partial class Globals
 
         if ((altJitAssertOnNyi & 2) == 0)
         {
-#if MEASURE_FATAL
-            s_fatalNyiCount = unchecked(s_fatalNyiCount + 1);
-#endif
+            if (Configuration.MEASURE_FATAL)
+            {
+                s_fatalNyiCount = unchecked(s_fatalNyiCount + 1);
+            }
 
             fatal(CORJIT_SKIPPED);
         }

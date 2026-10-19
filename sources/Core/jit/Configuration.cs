@@ -20,6 +20,8 @@ internal static class Configuration
 
     internal static bool DISPLAY_SIZES => BuildFeatures.DisplaySizes;
 
+    internal static bool MEASURE_FATAL => BuildFeatures.MeasureFatal;
+
     internal static bool CALL_ARG_STATS => BuildFeatures.CallArgumentStatistics;
 
     internal static bool NODEBASH_STATS => BuildFeatures.NodeBashStatistics;
@@ -52,6 +54,7 @@ internal static class Configuration
         private static bool s_measureBlockSize;
         private static bool s_measurePointerTableSize;
         private static bool s_displaySizes;
+        private static bool s_measureFatal;
         private static bool s_callArgumentStatistics;
         private static bool s_nodeBashStatistics;
         private static bool s_countBasicBlocks;
@@ -72,6 +75,7 @@ internal static class Configuration
             EnableMeasureBlockSize();
             EnableMeasurePointerTableSize();
             EnableDisplaySizes();
+            EnableMeasureFatal();
             EnableCallArgumentStatistics();
             EnableNodeBashStatistics();
             EnableCountBasicBlocks();
@@ -94,6 +98,8 @@ internal static class Configuration
         internal static bool MeasurePointerTableSize => s_measurePointerTableSize;
 
         internal static bool DisplaySizes => s_displaySizes;
+
+        internal static bool MeasureFatal => s_measureFatal;
 
         internal static bool CallArgumentStatistics => s_callArgumentStatistics;
 
@@ -132,6 +138,9 @@ internal static class Configuration
 
         [Conditional("DISPLAY_SIZES")]
         private static void EnableDisplaySizes() => s_displaySizes = true;
+
+        [Conditional("MEASURE_FATAL")]
+        private static void EnableMeasureFatal() => s_measureFatal = true;
 
         [Conditional("CALL_ARG_STATS")]
         private static void EnableCallArgumentStatistics() => s_callArgumentStatistics = true;
@@ -176,6 +185,7 @@ internal static class Configuration
         [Conditional("MEASURE_NODE_SIZE")]
         [Conditional("MEASURE_BLOCK_SIZE")]
         [Conditional("MEASURE_PTRTAB_SIZE")]
+        [Conditional("MEASURE_FATAL")]
         [Conditional("EMITTER_STATS")]
         private static void EnableOptionalStatistics() => s_optionalStatistics = true;
     }

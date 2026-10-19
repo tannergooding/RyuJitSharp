@@ -134,10 +134,15 @@ internal static unsafe class CompilerShutdownTests
 
         return Encoding.UTF8.GetString(output.ToArray());
     }
-#if MEASURE_FATAL
+
     [Test]
     public static void FatalCountersPreserveResultsAndReportNativeLabels()
     {
+        if (!Configuration.MEASURE_FATAL)
+        {
+            Assert.Ignore("Fatal counters are disabled for this build.");
+        }
+
         WithState(() => {
             var saved = (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
                 s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount);
@@ -208,6 +213,11 @@ internal static unsafe class CompilerShutdownTests
     [TestCase(uint.MaxValue, 0U)]
     public static void FatalCountersUseUnsignedWrappingAndOutput(uint initial, uint expected)
     {
+        if (!Configuration.MEASURE_FATAL)
+        {
+            Assert.Ignore("Fatal counters are disabled for this build.");
+        }
+
         WithState(() => {
             var saved = s_fatalBadCodeCount;
             using var output = new MemoryStream();
@@ -230,7 +240,26 @@ internal static unsafe class CompilerShutdownTests
             }
         });
     }
-#endif
+    [Test]
+    public static void FatalCountersRemainDisabledWithoutMeasurement()
+    {
+        if (Configuration.MEASURE_FATAL)
+        {
+            Assert.Ignore("Fatal counters are enabled for this build.");
+        }
+
+        var previous = s_fatalBadCodeCount;
+        try
+        {
+            var exception = Assert.Throws<FatalJitException>(badCode);
+            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_BADCODE));
+            Assert.That(s_fatalBadCodeCount, Is.EqualTo(previous));
+        }
+        finally
+        {
+            s_fatalBadCodeCount = previous;
+        }
+    }
 
     [Test]
     public static void ShutdownPrintsBlockStatisticsBeforeRegisteredDumps()
