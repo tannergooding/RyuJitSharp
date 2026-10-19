@@ -27,6 +27,8 @@ internal sealed unsafe class EmitterMethodStatisticsTests
     [Test]
     public static void MethodStartResetsLocalCountersAndAccountsForTwoNativeGroups()
     {
+        Assume.That(Configuration.TARGET_64BIT, "The native group-size assertions require 64-bit target semantics.");
+
         var previousMethods = TotalMethods(null);
         var previousGroups = TotalGroups(null);
         var previousGroupBytes = TotalGroupBytes(null);
@@ -54,11 +56,7 @@ internal sealed unsafe class EmitterMethodStatisticsTests
             emitter.emitBegCG(compiler, default);
             emitter.Init();
 
-#if DEBUG
-            const nuint groupSize = 136;
-#else
-            const nuint groupSize = 56;
-#endif
+            var groupSize = TestConfiguration.IsDebug ? (nuint)136 : (nuint)56;
 
             Begin(emitter);
             var allocation = (2 * groupSize) + Capacity(emitter);
@@ -117,7 +115,7 @@ internal sealed unsafe class EmitterMethodStatisticsTests
             var debugInfo = descriptor.idDebugOnlyInfo() ?? throw new AssertionException("Missing descriptor debug info.");
 
             Assert.That(debugInfo.idSize, Is.EqualTo((nuint)16));
-            Assert.That(TotalMemory(null), Is.EqualTo(before + 56));
+            Assert.That(TotalMemory(null), Is.EqualTo(before + (nuint)Emitter.DescriptorSizes.DebugInfo));
             Assert.That(TotalInstructions(null), Is.EqualTo(((uint?)previousInstructions ?? 0u) + 1));
         }
         finally
@@ -160,6 +158,8 @@ internal sealed unsafe class EmitterMethodStatisticsTests
     [Test]
     public static void ConstantAndDisplacementAllocationCountsNativeStatistics()
     {
+        Assume.That(Configuration.TARGET_AMD64, "The constant-size histogram assertions are AMD64-specific.");
+
         var smallCnsBuckets = SmallCnsBuckets(null)
             ?? throw new AssertionException("Missing emitter constant statistics.");
         var previousBasicDescriptors = TotalBasicDescriptors(null);
@@ -262,31 +262,33 @@ internal sealed unsafe class EmitterMethodStatisticsTests
     [Test]
     public static void DescriptorKindAllocationsCountNativeStatistics()
     {
+        var targetWasm = Configuration.TARGET_WASM;
+        var targetXarch = Configuration.TARGET_XARCH;
         var previousBasicDescriptors = TotalBasicDescriptors(null);
         var previousJumpDescriptors = TotalJumpDescriptors(null);
-#if !TARGET_WASM
         var previousCallDescriptors = TotalCallDescriptors(null);
-#endif
         var previousInstructions = TotalInstructions(null);
         var previousMemory = TotalMemory(null);
-#if TARGET_XARCH
         var previousAddressModeDescriptors = TotalAddressModeDescriptors(null);
         var previousConstantAddressModeDescriptors = TotalConstantAddressModeDescriptors(null);
-#endif
         var previousAlignmentDescriptors = TotalAlignmentDescriptors(null);
 
         try
         {
             TotalBasicDescriptors(null) = 0;
             TotalJumpDescriptors(null) = 0;
-#if !TARGET_WASM
-            TotalCallDescriptors(null) = 0;
-#endif
+            if (!targetWasm)
+            {
+                TotalCallDescriptors(null) = 0;
+            }
+
             TotalInstructions(null) = 0;
-#if TARGET_XARCH
-            TotalAddressModeDescriptors(null) = 0;
-            TotalConstantAddressModeDescriptors(null) = 0;
-#endif
+            if (targetXarch)
+            {
+                TotalAddressModeDescriptors(null) = 0;
+                TotalConstantAddressModeDescriptors(null) = 0;
+            }
+
             TotalAlignmentDescriptors(null) = 0;
 
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -297,49 +299,60 @@ internal sealed unsafe class EmitterMethodStatisticsTests
 
             _ = emitter.AllocateDescriptor(emitAttr.EA_4BYTE);
             _ = emitter.AllocateJumpDescriptor();
-#if !TARGET_WASM
-            _ = emitter.AllocateCallDescriptor(emitAttr.EA_4BYTE);
-#endif
-#if TARGET_XARCH
-            _ = emitter.AllocateAddressModeDescriptor(emitAttr.EA_4BYTE);
-            _ = emitter.AllocateConstantAddressModeDescriptor(emitAttr.EA_4BYTE);
-#endif
+            if (!targetWasm)
+            {
+                _ = emitter.AllocateCallDescriptor(emitAttr.EA_4BYTE);
+            }
+
+            if (targetXarch)
+            {
+                _ = emitter.AllocateAddressModeDescriptor(emitAttr.EA_4BYTE);
+                _ = emitter.AllocateConstantAddressModeDescriptor(emitAttr.EA_4BYTE);
+            }
+
             _ = emitter.AllocateAlignmentDescriptor();
 
             Assert.That(TotalBasicDescriptors(null), Is.EqualTo(1u));
             Assert.That(TotalJumpDescriptors(null), Is.EqualTo(1u));
-#if !TARGET_WASM
-            Assert.That(TotalCallDescriptors(null), Is.EqualTo(1u));
-#endif
-            Assert.That(TotalInstructions(null), Is.EqualTo((uint)(
-                2
-#if !TARGET_WASM
-                + 1
-#endif
-#if TARGET_XARCH
-                + 2
-#endif
-                + 1
-            )));
-#if TARGET_XARCH
-            Assert.That(TotalAddressModeDescriptors(null), Is.EqualTo(1u));
-            Assert.That(TotalConstantAddressModeDescriptors(null), Is.EqualTo(1u));
-#endif
+            if (!targetWasm)
+            {
+                Assert.That(TotalCallDescriptors(null), Is.EqualTo(1u));
+            }
+
+            var expectedInstructions = 2u;
+            if (!targetWasm)
+            {
+                expectedInstructions++;
+            }
+
+            if (targetXarch)
+            {
+                expectedInstructions += 2;
+                Assert.That(TotalAddressModeDescriptors(null), Is.EqualTo(1u));
+                Assert.That(TotalConstantAddressModeDescriptors(null), Is.EqualTo(1u));
+            }
+
+            expectedInstructions++;
+            Assert.That(TotalInstructions(null), Is.EqualTo(expectedInstructions));
             Assert.That(TotalAlignmentDescriptors(null), Is.EqualTo(1u));
         }
         finally
         {
             TotalBasicDescriptors(null) = previousBasicDescriptors;
             TotalJumpDescriptors(null) = previousJumpDescriptors;
-#if !TARGET_WASM
-            TotalCallDescriptors(null) = previousCallDescriptors;
-#endif
+            if (!targetWasm)
+            {
+                TotalCallDescriptors(null) = previousCallDescriptors;
+            }
+
             TotalInstructions(null) = previousInstructions;
             TotalMemory(null) = previousMemory;
-#if TARGET_XARCH
-            TotalAddressModeDescriptors(null) = previousAddressModeDescriptors;
-            TotalConstantAddressModeDescriptors(null) = previousConstantAddressModeDescriptors;
-#endif
+            if (targetXarch)
+            {
+                TotalAddressModeDescriptors(null) = previousAddressModeDescriptors;
+                TotalConstantAddressModeDescriptors(null) = previousConstantAddressModeDescriptors;
+            }
+
             TotalAlignmentDescriptors(null) = previousAlignmentDescriptors;
         }
     }
@@ -369,6 +382,8 @@ internal sealed unsafe class EmitterMethodStatisticsTests
     [Test]
     public static void StaticLayoutReportUsesNativeGroupAndDescriptorSizes()
     {
+        Assume.That(Configuration.TARGET_AMD64, "The native descriptor-size assertions require AMD64 target semantics.");
+
         var previous = Globals.s_jitstdout;
         using var stream = new MemoryStream();
         using var output = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true) { AutoFlush = true };
@@ -378,19 +393,29 @@ internal sealed unsafe class EmitterMethodStatisticsTests
             Globals.s_jitstdout = output;
             StaticReport(null);
 
-#if DEBUG
-            const int groupSize = 136;
-            const int groupNumberOffset = 88;
-            const int groupRegisterOffset = 112;
-            const int groupDataOffset = 120;
-            const int groupInstructionOffset = 132;
-#else
-            const int groupSize = 56;
-            const int groupNumberOffset = 8;
-            const int groupRegisterOffset = 32;
-            const int groupDataOffset = 40;
-            const int groupInstructionOffset = 52;
-#endif
+            int groupSize;
+            int groupNumberOffset;
+            int groupRegisterOffset;
+            int groupDataOffset;
+            int groupInstructionOffset;
+
+            if (TestConfiguration.IsDebug)
+            {
+                groupSize = 136;
+                groupNumberOffset = 88;
+                groupRegisterOffset = 112;
+                groupDataOffset = 120;
+                groupInstructionOffset = 132;
+            }
+            else
+            {
+                groupSize = 56;
+                groupNumberOffset = 8;
+                groupRegisterOffset = 32;
+                groupDataOffset = 40;
+                groupInstructionOffset = 52;
+            }
+
             var text = Encoding.UTF8.GetString(stream.ToArray());
             Assert.That(text, Does.Contain($"Size of insGroup                    = {groupSize}"));
             Assert.That(text, Does.Contain("Size of insPlaceholderGroupData     = 104"));
@@ -412,10 +437,11 @@ internal sealed unsafe class EmitterMethodStatisticsTests
         }
     }
 
-#if TARGET_XARCH
     [Test]
     public static void StatisticsReportFormatsFrequencyDescriptorAndExceptionalCounts()
     {
+        Assume.That(Configuration.TARGET_XARCH, "This report format is xarch-specific.");
+
         var formats = InstructionFormats(null);
         var previousFormats = (uint[])formats.Clone();
         var previousMethods = TotalMethods(null);
@@ -469,8 +495,6 @@ internal sealed unsafe class EmitterMethodStatisticsTests
         }
     }
 
-#endif
-
     private static void AssertField(string report, string name, int offset, int size)
     {
         var match = Regex.Match(report, $@"(?m)^Offset / size of {Regex.Escape(name)}\s+=\s*(\d+)\s*/\s*(\d+)\s*$");
@@ -521,14 +545,11 @@ internal sealed unsafe class EmitterMethodStatisticsTests
             return NewJumpDescriptor(this);
         }
 
-#if !TARGET_WASM
         public instrDesc AllocateCallDescriptor(emitAttr attr)
         {
             return NewCallDescriptor(this, attr);
         }
-#endif
 
-#if TARGET_XARCH
         public instrDesc AllocateAddressModeDescriptor(emitAttr attr)
         {
             return NewAddressModeDescriptor(this, attr);
@@ -538,7 +559,6 @@ internal sealed unsafe class EmitterMethodStatisticsTests
         {
             return NewConstantAddressModeDescriptor(this, attr);
         }
-#endif
 
         public instrDesc AllocateAlignmentDescriptor()
         {
@@ -570,18 +590,14 @@ internal sealed unsafe class EmitterMethodStatisticsTests
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrJmp")]
         private static extern instrDescJmp NewJumpDescriptor(Emitter emitter);
 
-#if !TARGET_WASM
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrCGCA")]
         private static extern instrDescCGCA NewCallDescriptor(Emitter emitter, emitAttr attr);
-#endif
 
-#if TARGET_XARCH
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrAmd")]
         private static extern instrDescAmd NewAddressModeDescriptor(Emitter emitter, emitAttr attr);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrCnsAmd")]
         private static extern instrDescCnsAmd NewConstantAddressModeDescriptor(Emitter emitter, emitAttr attr);
-#endif
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrAlign")]
         private static extern instrDescAlign NewAlignmentDescriptor(Emitter emitter);
@@ -589,11 +605,7 @@ internal sealed unsafe class EmitterMethodStatisticsTests
 
     private static void Begin(Emitter emitter)
     {
-        emitter.emitBegFN(false
-#if DEBUG
-            , false
-#endif
-            );
+        emitter.emitBegFN(false);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIGmcnt")]
@@ -659,18 +671,14 @@ internal sealed unsafe class EmitterMethodStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescJmpCnt")]
     private static extern ref uint TotalJumpDescriptors(Emitter? emitter);
 
-#if !TARGET_WASM
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCGCACnt")]
     private static extern ref uint TotalCallDescriptors(Emitter? emitter);
-#endif
 
-#if TARGET_XARCH
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescAmdCnt")]
     private static extern ref uint TotalAddressModeDescriptors(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnsAmdCnt")]
     private static extern ref uint TotalConstantAddressModeDescriptors(Emitter? emitter);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescAlignCnt")]
     private static extern ref uint TotalAlignmentDescriptors(Emitter? emitter);
