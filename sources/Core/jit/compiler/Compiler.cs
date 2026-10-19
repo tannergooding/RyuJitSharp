@@ -47,20 +47,53 @@ public partial class Compiler
 #if DEBUG
     public bool verbose;
 #else
-    public bool verbose => false;
+    public bool verbose
+    {
+        get
+        {
+            return false;
+        }
+
+        private set
+        {
+            throw new InvalidOperationException("Verbose output is only available in Debug builds.");
+        }
+    }
 #endif
 
 #if DEBUG
     public bool verboseTrees;
 
 #else
-    public bool verboseTrees => false;
+    public bool verboseTrees
+    {
+        get
+        {
+            return false;
+        }
+
+        private set
+        {
+            throw new InvalidOperationException("Verbose tree output is only available in Debug builds.");
+        }
+    }
 #endif
     /// <summary>If true, produce especially verbose dump output in SSA construction.</summary>
 #if DEBUG
     public bool verboseSsa;
 #else
-    public bool verboseSsa => false;
+    public bool verboseSsa
+    {
+        get
+        {
+            return false;
+        }
+
+        private set
+        {
+            throw new InvalidOperationException("Verbose SSA output is only available in Debug builds.");
+        }
+    }
 #endif
 
     // This table is useful for memoization of BlockDominancePreds.

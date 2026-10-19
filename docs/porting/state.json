@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue at pending CCB-0139 in sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs; process its complete 7-candidate file group and the adjacent 54-candidate Compiler.comp.cs group together, then validate and accept the combined file batch. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue with the complete 19-candidate Compiler.lva.cs group starting at CCB-0699; revalidate candidate identities against current source and convert eligible guards before acceptance.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {
@@ -73,13 +73,54 @@
       },
       {
         "batch": "GS diagnostic blocker state/layout closure",
-        "deferredCount": 2,
+        "deferredCount": 3,
         "candidateIds": [
+          "CCB-0347",
           "CCB-0454",
           "CCB-0455"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Map compGSSecurityCheckBlocker writers and readers, then choose a representation preserving Debug diagnostics and Release Compiler layout."
+      },
+      {
+        "batch": "Compiler debug stress state and implementation closure",
+        "deferredCount": 2,
+        "candidateIds": [
+          "CCB-0348",
+          "CCB-0406"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map stress tables, mode state, and callers; resolve the Debug-only stress API family while preserving Debug behavior and avoiding Release allocations."
+      },
+      {
+        "batch": "Compiler method/tree diagnostic ID closure",
+        "deferredCount": 3,
+        "candidateIds": [
+          "CCB-0349",
+          "CCB-0350",
+          "CCB-0376"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map method-counter and tree-ID reads, writes, and copies; preserve Debug numbering, hot-path cost, and Release layout before removing these guards."
+      },
+      {
+        "batch": "Compiler option and ARM64 debug-methodset closure",
+        "deferredCount": 2,
+        "candidateIds": [
+          "CCB-0391",
+          "CCB-0403"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map Debug-only option and method-set inputs, including the ARM64 save-FP/LR override; preserve Release defaults and target behavior."
+      },
+      {
+        "batch": "Compiler tree stress routine closure",
+        "deferredCount": 1,
+        "candidateIds": [
+          "CCB-0411"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Port the lvaStressLclFld and fgStress64RsltMul implementation family to Release-bindable declarations while preserving Debug stress behavior, then remove the callsite guard."
       },
       {
         "batch": "Debug importer diagnostic/state closure",

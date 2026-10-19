@@ -90,8 +90,7 @@ public partial class Compiler
                 // We rule out inlinees with explicit tail calls in fgMakeBasicBlocks.
                 assert((prefixFlags & PREFIX_TAILCALL_EXPLICIT) is 0);
             }
-#if DEBUG
-            else if (compiler.compTailCallStress)
+            else if (Configuration.DEBUG && compiler.compTailCallStress)
             {
                 // Have we created a new BB after the "call" instruction in fgMakeBasicBlocks()?
                 // Tail call stress only recognizes call+ret patterns and forces them to be
@@ -156,7 +155,6 @@ public partial class Compiler
                     }
                 }
             }
-#endif
 
             var isRecursive = !compiler.compIsForInlining && (callInfo.hMethod == compiler.info.compMethodHnd);
 
@@ -337,13 +335,11 @@ public partial class Compiler
                 // We don't know the target method, so we have to infer the flags,   or assume the worst-case.
                 mflags = ((sigInfo.callConv & CORINFO_CALLCONV_HASTHIS) is not 0) ? 0 : CORINFO_FLG_STATIC;
 
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     var structSize = (callRetTyp is TYP_STRUCT) ? compiler.eeTryGetClassSize(sigInfo.retTypeSigClass) : 0;
                     jitprintf($"\nIn Compiler::impImportCall: opcode is {opcode.Name}, kind={(int)(callInfo.kind)}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
                 }
-#endif
             }
             else
             {
@@ -360,13 +356,11 @@ public partial class Compiler
 
                 mflags = callInfo.methodFlags;
 
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     var structSize = (callRetTyp is TYP_STRUCT) ? compiler.eeTryGetClassSize(sigInfo.retTypeSigClass) : 0;
                     jitprintf($"\nIn Compiler::impImportCall: opcode is {opcode.Name}, kind={(int)(callInfo.kind)}, callRetType is {callRetTyp.Name}, structSize is {structSize}\n");
                 }
-#endif
                 if (compiler.compIsForInlining)
                 {
                     // Does the inlinee use StackCrawlMark
@@ -395,34 +389,35 @@ public partial class Compiler
                 clsHnd = resolvedToken.hClass;
                 clsFlags = callInfo.classFlags;
 
-#if DEBUG
-                // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
-
-                // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
-                // These should be in corelib.h, and available through a JIT/EE interface call.
-                byte* pNamespaceName, pClassName;
-                var pMethodName = compiler.info.compCompHnd->getMethodNameFromMetadata(methHnd, &pClassName, &pNamespaceName, enclosingClassName: null, maxEnclosingClassNames: 0);
-
-                if ((pNamespaceName is not null) && (pClassName is not null) && (pMethodName is not null))
+                if (Configuration.DEBUG)
                 {
-                    var namespaceNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pNamespaceName);
+                    // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
 
-                    if (namespaceNameUtf8.SequenceEqual("System.Runtime.CompilerServices"u8))
+                    // This recognition should really be done by knowing the methHnd of the relevant Mark method(s).
+                    // These should be in corelib.h, and available through a JIT/EE interface call.
+                    byte* pNamespaceName, pClassName;
+                    var pMethodName = compiler.info.compCompHnd->getMethodNameFromMetadata(methHnd, &pClassName, &pNamespaceName, enclosingClassName: null, maxEnclosingClassNames: 0);
+
+                    if ((pNamespaceName is not null) && (pClassName is not null) && (pMethodName is not null))
                     {
-                        var classNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pClassName);
+                        var namespaceNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pNamespaceName);
 
-                        if (classNameUtf8.SequenceEqual("JitTestLabel"u8))
+                        if (namespaceNameUtf8.SequenceEqual("System.Runtime.CompilerServices"u8))
                         {
-                            var methodNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pMethodName);
+                            var classNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pClassName);
 
-                            if (methodNameUtf8.SequenceEqual("Mark"u8))
+                            if (classNameUtf8.SequenceEqual("JitTestLabel"u8))
                             {
-                                return compiler.impImportJitTestLabelMark(sigInfo.numArgs);
+                                var methodNameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pMethodName);
+
+                                if (methodNameUtf8.SequenceEqual("Mark"u8))
+                                {
+                                    return compiler.impImportJitTestLabelMark(sigInfo.numArgs);
+                                }
                             }
                         }
                     }
                 }
-#endif
 
                 var isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) is not 0;
 
@@ -653,7 +648,7 @@ public partial class Compiler
                         var fptr = compiler.impImportLdvirtftn(thisPtr, resolvedToken, callInfo);
                         assert(fptr is not null);
 
-                        indCall.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtrCopy).WithWellKnownArg(WellKnownArg.ThisPointer));
+                        _ = indCall.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtrCopy).WithWellKnownArg(WellKnownArg.ThisPointer));
                         indCall.Flags |= thisPtrCopy.Flags & GTF_ALL_EFFECT;
 
                         // Now make an indirect call through the function pointer
@@ -1032,19 +1027,19 @@ public partial class Compiler
                 {
                     if (varArgsCookie is not null)
                     {
-                        call.Args.PushFront(NewCallArg.CreateForPrimitive(varArgsCookie).WithWellKnownArg(WellKnownArg.VarArgsCookie));
+                        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(varArgsCookie).WithWellKnownArg(WellKnownArg.VarArgsCookie));
                         call.Flags |= varArgsCookie.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (asyncContinuation is not null)
                     {
-                        call.Args.PushFront(NewCallArg.CreateForPrimitive(asyncContinuation).WithWellKnownArg(WellKnownArg.AsyncContinuation));
+                        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(asyncContinuation).WithWellKnownArg(WellKnownArg.AsyncContinuation));
                         call.Flags |= asyncContinuation.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (instParam is not null)
                     {
-                        call.Args.PushFront(NewCallArg.CreateForPrimitive(instParam).WithWellKnownArg(WellKnownArg.InstParam));
+                        _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(instParam).WithWellKnownArg(WellKnownArg.InstParam));
                         call.Flags |= instParam.Flags & GTF_ALL_EFFECT;
                     }
                 }
@@ -1052,19 +1047,19 @@ public partial class Compiler
                 {
                     if (asyncContinuation is not null)
                     {
-                        call.Args.PushBack(NewCallArg.CreateForPrimitive(asyncContinuation).WithWellKnownArg(WellKnownArg.AsyncContinuation));
+                        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(asyncContinuation).WithWellKnownArg(WellKnownArg.AsyncContinuation));
                         call.Flags |= asyncContinuation.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (instParam is not null)
                     {
-                        call.Args.PushBack(NewCallArg.CreateForPrimitive(instParam).WithWellKnownArg(WellKnownArg.InstParam));
+                        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(instParam).WithWellKnownArg(WellKnownArg.InstParam));
                         call.Flags |= instParam.Flags & GTF_ALL_EFFECT;
                     }
 
                     if (varArgsCookie is not null)
                     {
-                        call.Args.PushBack(NewCallArg.CreateForPrimitive(varArgsCookie).WithWellKnownArg(WellKnownArg.VarArgsCookie));
+                        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(varArgsCookie).WithWellKnownArg(WellKnownArg.VarArgsCookie));
                         call.Flags |= varArgsCookie.Flags & GTF_ALL_EFFECT;
                     }
                 }
@@ -1099,7 +1094,7 @@ public partial class Compiler
 
                 // Store the "this" value in the call
                 call.Flags |= obj.Flags & GTF_ALL_EFFECT;
-                call.Args.PushFront(NewCallArg.CreateForPrimitive(obj).WithWellKnownArg(WellKnownArg.ThisPointer));
+                _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(obj).WithWellKnownArg(WellKnownArg.ThisPointer));
 
                 if (compiler.impIsThis(obj))
                 {
@@ -3924,17 +3919,18 @@ public partial class Compiler
                     {
                         assert(compiler.compInlineContext is not null);
 
-#if DEBUG
-                        // Keep track of the raw IL offset of the call
-                        call._rawILOffset = opcodeOffs;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            // Keep track of the raw IL offset of the call
+                            call._rawILOffset = opcodeOffs;
+                        }
 
                         // Is it an inline candidate?
                         compiler.impMarkInlineCandidate(call, exactContextHnd, callInfo, compiler.compInlineContext);
                     }
 
                     // append the call node.
-                    compiler.impAppendTree(call, CHECK_SPILL_ALL, compiler.impCurStmtDI);
+                    _ = compiler.impAppendTree(call, CHECK_SPILL_ALL, compiler.impCurStmtDI);
 
                     // Now push the value of the 'new onto the stack
 
@@ -4054,13 +4050,11 @@ public partial class Compiler
                             call._callMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
 
                             JITDUMP($"\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
-#if DEBUG
-                            if ((prefixFlags & PREFIX_TAILCALL_STRESS) is not 0)
+                            if (Configuration.DEBUG && (prefixFlags & PREFIX_TAILCALL_STRESS) is not 0)
                             {
                                 call._callDebugFlags |= GTF_CALL_MD_STRESS_TAILCALL;
                                 JITDUMP($"\nGTF_CALL_MD_STRESS_TAILCALL set for call [{call.TreeId:D6}]\n");
                             }
-#endif
                         }
                         else
                         {
@@ -4163,10 +4157,11 @@ public partial class Compiler
 
                 assert(compiler.compInlineContext is not null);
 
-#if DEBUG
-                // Keep track of the raw IL offset of the call
-                call._rawILOffset = opcodeOffs;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    // Keep track of the raw IL offset of the call
+                    call._rawILOffset = opcodeOffs;
+                }
 
                 // Is it an inline candidate?
                 compiler.impMarkInlineCandidate(call, exactContextHnd, callInfo, compiler.compInlineContext);
