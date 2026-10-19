@@ -698,6 +698,40 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
+    [Test]
+    public static void PopOfLoadedStructPreservesKnownNonNullAddressAsNullCheck()
+    {
+        WithCompiler(compiler => {
+            compiler.info.compMaxStack = 1;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.stackState.esStack = new StackEntry[1];
+
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = 1 };
+            compiler.fgFirstBB = compiler.compCurBB = block;
+
+            var instance = compiler.gtNewLclvNode(var_types.TYP_REF, 0);
+            var address = compiler.gtNewFieldAddrNode(instance, (CORINFO_FIELD_STRUCT_*)0x1000, 0);
+            var value = compiler.gtNewBlkIndir(address, new ClassLayout(8));
+
+            Assert.That(compiler.fgAddrCouldBeNull(address), Is.False);
+            Assert.That((value.Flags & GenTreeFlags.GTF_SIDE_EFFECT) != 0, Is.True);
+
+            compiler.impPushOnStack(value, new typeInfo());
+            var code = (byte)OPCODE.CEE_POP;
+            compiler.info.compCode = &code;
+            compiler.info.compILCodeSize = 1;
+            compiler.impImportBlockCode(block);
+
+            var statement = ImporterStatements(compiler) ?? throw new AssertionException("Missing null check.");
+            Assert.That(statement.NextStmt, Is.Null);
+            var root = statement.RootNode;
+            Assert.That(root.Oper, Is.EqualTo(genTreeOps.GT_COMMA));
+            Assert.That(root.AsOp().Op1.Oper, Is.EqualTo(genTreeOps.GT_NULLCHECK));
+            Assert.That(root.AsOp().Op1.AsIndir().Addr, Is.SameAs(address));
+            Assert.That(root.AsOp().Op2.Oper, Is.EqualTo(genTreeOps.GT_NOP));
+        });
+    }
+
     [TestCase(99)]
     [TestCase(100)]
     [TestCase(107)]

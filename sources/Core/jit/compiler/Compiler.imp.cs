@@ -8096,8 +8096,7 @@ public partial class Compiler
                             // via an underlying address, just null check the address.
                             if (op1.Oper.IsLoad)
                             {
-                                op1 = gtNewNullCheck(op1.AsIndir().Op1);
-                                op1.SetIndirExceptionFlags(this);
+                                op1 = gtChangeOperToNullCheck(op1);
                             }
                             else
                             {
