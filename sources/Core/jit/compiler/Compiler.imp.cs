@@ -547,17 +547,46 @@ public partial class Compiler
     /// <summary>The last statement for the current BB.</summary>
     protected Statement? impLastStmt;
 
-#if DEBUG
-    private int impCurOpcOffs;
+    private int impCurOpcOffs
+    {
+        get
+        {
+            return JitTls.CurrentImporterDebugState.CurrentOpcodeOffset;
+        }
 
-    private string? impCurOpcName;
+        set
+        {
+            JitTls.CurrentImporterDebugState.CurrentOpcodeOffset = value;
+        }
+    }
 
-    private bool impNestedStackSpill;
+    private string? impCurOpcName
+    {
+        get
+        {
+            return JitTls.CurrentImporterDebugState.CurrentOpcodeName;
+        }
 
-    /// <summary>oldest stmt added for which we did not call SetLastILOffset().</summary>
-    /// <remarks>For displaying instrs with generated native code (-n:B)</remarks>
-    private Statement? impLastILoffsStmt;
-#endif
+        set
+        {
+            JitTls.CurrentImporterDebugState.CurrentOpcodeName = value;
+        }
+    }
+
+    private ref bool impNestedStackSpill => ref JitTls.CurrentImporterDebugState.NestedStackSpill;
+
+    private Statement? impLastILoffsStmt
+    {
+        get
+        {
+            return JitTls.CurrentImporterDebugState.PendingStatement;
+        }
+
+        set
+        {
+            JitTls.CurrentImporterDebugState.PendingStatement = value;
+        }
+    }
 
     /// <summary>The context used for looking up tokens.</summary>
     private unsafe CORINFO_CONTEXT_HANDLE impTokenLookupContextHandle;
@@ -1484,15 +1513,16 @@ public partial class Compiler
             impCurStmtOffsSet(BAD_IL_OFFSET);
         }
 
-#if DEBUG
-        impLastILoffsStmt ??= stmt;
-
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf("\n\n");
-            gtDispStmt(stmt);
+            impLastILoffsStmt ??= stmt;
+
+            if (verbose)
+            {
+                jitprintf("\n\n");
+                gtDispStmt(stmt);
+            }
         }
-#endif
     }
 
     /// <summary>Check that storing the given tree doesnt mess up the semantic order.</summary>
@@ -3630,10 +3660,11 @@ public partial class Compiler
             impEndTreeList(block, impStmtList, impLastStmt);
         }
 
-#if DEBUG
-        impLastILoffsStmt?.LastILOffset = compIsForInlining ? BAD_IL_OFFSET : impCurOpcOffs;
-        impLastILoffsStmt = null;
-#endif
+        if (Configuration.DEBUG)
+        {
+            impLastILoffsStmt?.LastILOffset = compIsForInlining ? BAD_IL_OFFSET : impCurOpcOffs;
+            impLastILoffsStmt = null;
+        }
 
         impLastStmt = null;
         impStmtList = null;
@@ -5239,10 +5270,11 @@ public partial class Compiler
 
         impBlockListNodeFreeList = null;
 
-#if DEBUG
-        impLastILoffsStmt = null;
-        impNestedStackSpill = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            impLastILoffsStmt = null;
+            impNestedStackSpill = false;
+        }
         impBoxTemp = BAD_VAR_NUM;
 
         impPendingFree = null;
@@ -5776,11 +5808,12 @@ public partial class Compiler
         // Make the block globally available
         compCurBB = block;
 
-#if DEBUG
-        // Initialize the debug variables
-        impCurOpcName = "unknown";
-        impCurOpcOffs = block.bbCodeOffs;
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Initialize the debug variables
+            impCurOpcName = "unknown";
+            impCurOpcOffs = block.bbCodeOffs;
+        }
 
         // Set the current stack state to the merged result
         resetCurrentState(block, ref stackState);
@@ -5812,7 +5845,7 @@ public partial class Compiler
             // input temps assigned to successor blocks
             var baseTmp = NO_BASE_TMP;
 
-            var tgtBlock = null as BasicBlock;
+            BasicBlock? tgtBlock;
             var addStmt = null as Statement;
 
             // if a box temp is used in a block that leaves something on the stack, its lifetime is hard to determine, simply don't reuse such temps.
@@ -6001,7 +6034,8 @@ public partial class Compiler
                         assert(compare.Oper.IsCompare);
 
                         ref var compareOp1Ref = ref compare.Op1Ref;
-                        var type = compareOp1Ref.Type.ActualType;
+                        _ = compareOp1Ref.Type.ActualType;
+                        var_types type;
 
                         if (gtHasRef(compareOp1Ref, tempNum))
                         {
@@ -6410,7 +6444,7 @@ public partial class Compiler
                 foreach (var succ in block.Succs)
                 {
                     // We may have degenerate flow, make sure to fully remove
-                    fgRemoveAllRefPreds(succ, block);
+                    _ = fgRemoveAllRefPreds(succ, block);
                 }
 
                 // Change block to BBJ_THROW so we won't trigger importation of successors.
@@ -6499,7 +6533,7 @@ public partial class Compiler
                     if (impCurStmtDI.IsValid && opts.compDbgCode)
                     {
                         var placeHolder = new GenTree(GT_NO_OP, TYP_VOID);
-                        impAppendTree(placeHolder, CHECK_SPILL_NONE, impCurStmtDI);
+                        _ = impAppendTree(placeHolder, CHECK_SPILL_NONE, impCurStmtDI);
                         assert(!impCurStmtDI.IsValid);
                     }
 
@@ -6574,10 +6608,11 @@ public partial class Compiler
             var opcode = (OPCODE)(codeAddr[0]);
             codeAddr += sizeof(byte);
 
-#if DEBUG
-            impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
-            JITDUMP($"\n    [{stackState.esStackDepth,2}] {impCurOpcOffs,3} (0x{impCurOpcOffs:x3}) ");
-#endif
+            if (Configuration.DEBUG)
+            {
+                impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
+                JITDUMP($"\n    [{stackState.esStackDepth,2}] {impCurOpcOffs,3} (0x{impCurOpcOffs:x3}) ");
+            }
             var constrainedResolvedToken = new CORINFO_RESOLVED_TOKEN();
 
             while (opcode == CEE_PREFIX1)
@@ -6703,15 +6738,16 @@ public partial class Compiler
             // Get the size of additional parameters
             var sz = opcode.Size;
 
-#if DEBUG
-            impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
-            impCurOpcName = opcode.Name;
-
-            if (verbose && (opcode != CEE_PREFIX1))
+            if (Configuration.DEBUG)
             {
-                jitprintf(impCurOpcName);
+                impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
+                impCurOpcName = opcode.Name;
+
+                if (verbose && (opcode != CEE_PREFIX1))
+                {
+                    jitprintf(impCurOpcName);
+                }
             }
-#endif
 
             switch (opcode)
             {
@@ -6941,7 +6977,7 @@ public partial class Compiler
                     lvaSetStruct(argListTmp, clsHnd, unsafeValueClsCheck: false);
 
                     var op1 = gtNewLclVarAddrNode(TYP_I_IMPL, lvaVarargsHandleArg) as GenTreeLclVarCommon;
-                    impAppendTree(gtNewStoreLclFldNode(TYP_I_IMPL, argListTmp, offset: 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
+                    _ = impAppendTree(gtNewStoreLclFldNode(TYP_I_IMPL, argListTmp, offset: 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
 
                     op1 = gtNewLclVarNode(TYP_STRUCT, argListTmp);
                     impPushOnStack(op1, makeTypeInfo(clsHnd));
@@ -7533,7 +7569,7 @@ public partial class Compiler
                 {
                     var jmpDist = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
                     var jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int)) + jmpDist);
-                    TryLeave(this, block, jmpAddr);
+                    _ = TryLeave(this, block, jmpAddr);
                     break;
                 }
 
@@ -7541,7 +7577,7 @@ public partial class Compiler
                 {
                     var jumpDist = unchecked((sbyte)(codeAddr[0]));
                     var jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(sbyte)) + jumpDist);
-                    TryLeave(this, block, jmpAddr);
+                    _ = TryLeave(this, block, jmpAddr);
                     break;
                 }
 
@@ -8098,7 +8134,7 @@ public partial class Compiler
                         if (box.IsBoxedValue)
                         {
                             JITDUMP("\n CEE_POP box...\n");
-                            gtTryRemoveBoxUpstreamEffects(box);
+                            _ = gtTryRemoveBoxUpstreamEffects(box);
                         }
                     }
 
@@ -8358,7 +8394,7 @@ public partial class Compiler
                             if ((op1.Flags & GTF_SIDE_EFFECT) is not 0)
                             {
                                 op1 = gtUnusedValNode(op1);
-                                impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                                _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
                             }
 
                             if (!TryDoLdftn(this, prefixFlags, resolvedToken, constrainedResolvedToken, callInfo))
@@ -8374,7 +8410,7 @@ public partial class Compiler
                         if ((op1.Flags & GTF_SIDE_EFFECT) is not 0)
                         {
                             op1 = gtUnusedValNode(op1);
-                            impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                            _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
                         }
 
                         if (!TryDoLdftn(this, prefixFlags, resolvedToken, constrainedResolvedToken, callInfo))
@@ -8604,7 +8640,7 @@ public partial class Compiler
                                 {
                                     JITDUMP($"Flagging [{op1.TreeId:D6}] for enumerator cloning via V{enumeratorLcl:D2}\n");
 
-                                    map.Remove(call);
+                                    _ = map.Remove(call);
                                     map[op1] = enumeratorLcl;
                                 }
                             }
@@ -8891,7 +8927,7 @@ public partial class Compiler
                         if ((obj.Flags & GTF_SIDE_EFFECT) is not 0)
                         {
                             obj = gtUnusedValNode(obj);
-                            impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
+                            _ = impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
                         }
 
                         obj = null;
@@ -9156,7 +9192,7 @@ public partial class Compiler
                         {
                             var isHoistable = (info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT) is not 0;
                             var checkSpill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
-                            impAppendTree(helperNode, checkSpill, impCurStmtDI);
+                            _ = impAppendTree(helperNode, checkSpill, impCurStmtDI);
                         }
                     }
 
@@ -9184,7 +9220,7 @@ public partial class Compiler
                             // so no spill is needed.
                             if (!expandAddrInline && !impCanReorderWithNullCheck(impStackTop().val) && fgAddrCouldBeNull(impStackTop(1).val))
                             {
-                                impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM, assertOnRecursion: false, "non-reorderable data to stfld");
+                                _ = impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM, assertOnRecursion: false, "non-reorderable data to stfld");
                             }
 
                             break;
@@ -9256,7 +9292,7 @@ public partial class Compiler
                         if ((obj.Flags & GTF_SIDE_EFFECT) is not 0)
                         {
                             obj = gtUnusedValNode(obj);
-                            impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
+                            _ = impAppendTree(obj, CHECK_SPILL_ALL, impCurStmtDI);
                         }
 
                         obj = null;
@@ -9611,7 +9647,7 @@ public partial class Compiler
                             var extraQueryClass = resolvedToken.hClass;
                             eeRunExtraSuperPmiQueries(() => {
                                 void* pEmbedClsHnd;
-                                info.compCompHnd->embedClassHandle(extraQueryClass, &pEmbedClsHnd);
+                                _ = info.compCompHnd->embedClassHandle(extraQueryClass, &pEmbedClsHnd);
                             });
 
                             var elemClsHnd = NO_CLASS_HANDLE;
@@ -9624,7 +9660,7 @@ public partial class Compiler
                             {
                                 // Layout creation is JIT work, not a trapped EE query, and may set this flag.
                                 var savedFloatingPointUsed = compFloatingPointUsed;
-                                typGetObjLayout(elemClsHnd);
+                                _ = typGetObjLayout(elemClsHnd);
                                 compFloatingPointUsed = savedFloatingPointUsed;
 
                                 var queriedClass = elemClsHnd;
@@ -9884,8 +9920,8 @@ public partial class Compiler
                     var clsHandleArg = NewCallArg.CreateForPrimitive(op2);
                     var typedRefArg = NewCallArg.CreateForStruct(op1, TYP_STRUCT, typGetObjLayout(impRefAnyClass));
 
-                    helperCall.Args.PushFront(typedRefArg);
-                    helperCall.Args.PushFront(clsHandleArg);
+                    _ = helperCall.Args.PushFront(typedRefArg);
+                    _ = helperCall.Args.PushFront(clsHandleArg);
                     helperCall.Flags |= (op1.Flags | op2.Flags) & GTF_ALL_EFFECT;
 
                     impPushOnStack(helperCall, new typeInfo());
@@ -9927,7 +9963,7 @@ public partial class Compiler
                     // Physical promotion cannot decompose struct stores inside QMARK arms.
                     optMethodFlags |= OMF_HAS_EARLY_QMARKS;
                     qmark.IsEarlyExpandableQmark = true;
-                    impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+                    _ = impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
                     impPushOnStack(gtNewLclVarNode(TYP_STRUCT, resultTmp), new typeInfo(TYP_STRUCT));
                     break;
                 }
@@ -10135,7 +10171,7 @@ public partial class Compiler
                         // may be other trees on the evaluation stack that side-effect the
                         // sources of the UNBOX operation we must spill the stack.
 
-                        impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                        _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
 
                         // Create the address-expression to reference past the object header
                         // to the beginning of the value-type. Today this means adjusting
@@ -10415,12 +10451,12 @@ public partial class Compiler
                         {
                             if ((op1.Flags & GTF_SIDE_EFFECT) is not 0)
                             {
-                                impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
+                                _ = impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
                             }
 
                             if ((op2.Flags & GTF_SIDE_EFFECT) is not 0)
                             {
-                                impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_ALL, impCurStmtDI);
+                                _ = impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_ALL, impCurStmtDI);
                             }
 
                             break;
@@ -10472,8 +10508,8 @@ public partial class Compiler
                         if (isVolatile)
                         {
                             // Wrap with memory barriers: store-barrier + call + load-barrier
-                            impAppendTree(gtNewMemoryBarrierNode(BARRIER_STORE_ONLY), CHECK_SPILL_ALL, impCurStmtDI);
-                            impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+                            _ = impAppendTree(gtNewMemoryBarrierNode(BARRIER_STORE_ONLY), CHECK_SPILL_ALL, impCurStmtDI);
+                            _ = impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
                             op1 = gtNewMemoryBarrierNode(BARRIER_LOAD_ONLY);
                         }
                         else
@@ -10585,8 +10621,8 @@ public partial class Compiler
                     var storeData = gtNewStoreLclFldNode(op1.Type, refAnyLcl, OFFSETOF__CORINFO_TypedReference__dataPtr, op1);
                     var storeType = gtNewStoreLclFldNode(op2.Type, refAnyLcl, OFFSETOF__CORINFO_TypedReference__type, op2);
 
-                    impAppendTree(storeData, CHECK_SPILL_ALL, impCurStmtDI);
-                    impAppendTree(storeType, CHECK_SPILL_ALL, impCurStmtDI);
+                    _ = impAppendTree(storeData, CHECK_SPILL_ALL, impCurStmtDI);
+                    _ = impAppendTree(storeType, CHECK_SPILL_ALL, impCurStmtDI);
 
                     impPushOnStack(gtNewLclVarNode(TYP_STRUCT, refAnyLcl), makeTypeInfo(impRefAnyClass));
                     break;
@@ -10696,12 +10732,10 @@ public partial class Compiler
 
         static void Append(Compiler compiler, GenTree op1, int chkLevel = CHECK_SPILL_NONE)
         {
-            compiler.impAppendTree(op1, chkLevel, compiler.impCurStmtDI);
+            _ = compiler.impAppendTree(op1, chkLevel, compiler.impCurStmtDI);
 
-#if DEBUG
             // Remember at which BC offset the tree was finished
             compiler.impNoteLastILoffs();
-#endif
         }
 
         static void ArrSt(Compiler compiler, var_types lclTyp, CORINFO_CLASS_HANDLE stelemClsHnd)
@@ -10858,22 +10892,19 @@ public partial class Compiler
                     if ((op1.Flags & GTF_GLOB_EFFECT) != 0)
                     {
                         compiler.impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "Branch to next Optimization, op1 side effect");
-                        compiler.impAppendTree(compiler.gtUnusedValNode(op1), CHECK_SPILL_NONE, compiler.impCurStmtDI);
+                        _ = compiler.impAppendTree(compiler.gtUnusedValNode(op1), CHECK_SPILL_NONE, compiler.impCurStmtDI);
                     }
 
                     if ((op2.Flags & GTF_GLOB_EFFECT) != 0)
                     {
                         compiler.impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "Branch to next Optimization, op2 side effect");
-                        compiler.impAppendTree(compiler.gtUnusedValNode(op2), CHECK_SPILL_NONE, compiler.impCurStmtDI);
+                        _ = compiler.impAppendTree(compiler.gtUnusedValNode(op2), CHECK_SPILL_NONE, compiler.impCurStmtDI);
                     }
 
-#if DEBUG
-                    if (((op1.Flags | op2.Flags) & GTF_GLOB_EFFECT) != 0)
+                    if (Configuration.DEBUG && (((op1.Flags | op2.Flags) & GTF_GLOB_EFFECT) != 0))
                     {
                         compiler.impNoteLastILoffs();
                     }
-
-#endif
                     return;
                 }
             }
@@ -15427,15 +15458,20 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     /// <summary>Remember the instr offset for the statements</summary>
     /// <remarks>
     ///   <para>When we do impAppendTree(tree), we can't set stmt->SetLastILOffset(impCurOpcOffs), if the append was done because of a partial stack spill, as some of the trees corresponding to code up to impCurOpcOffs might still be sitting on the stack.</para>
     ///   <para>So we delay calling of SetLastILOffset() until impNoteLastILoffs().</para>
     ///   <para>This should be called when an opcode finally/explicitly causes impAppendTree(tree) to be called (as opposed to being called because of a spill caused by the opcode)</para>
     /// </remarks>
+    [System.Diagnostics.Conditional("DEBUG")]
     public void impNoteLastILoffs()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Importer IL-offset tracking is only available in Debug builds.");
+        }
+
         if (impLastILoffsStmt is null)
         {
             // We should have added a statement for the current basic block
@@ -15450,7 +15486,6 @@ public partial class Compiler
             impLastILoffsStmt = null;
         }
     }
-#endif
 
     /// <summary>Normalize a struct call argument</summary>
     /// <param name="structVal">The node to normalize</param>
@@ -17484,7 +17519,7 @@ public partial class Compiler
 
             assert(op2 is not null);
             op2 = impStoreStructPtr(retBuffAddr, op2, CHECK_SPILL_ALL, GTF_IND_TGT_NOT_HEAP);
-            impAppendTree(op2, CHECK_SPILL_NONE, impCurStmtDI);
+            _ = impAppendTree(op2, CHECK_SPILL_NONE, impCurStmtDI);
 
             // There are cases where the address of the implicit RetBuf should be returned explicitly.
             if (compMethodReturnsRetBufAddr)
@@ -17534,10 +17569,8 @@ public partial class Compiler
 
         _ = impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
 
-#if DEBUG
         // Remember at which BC offset the tree was finished
         impNoteLastILoffs();
-#endif
 
         return true;
     }
@@ -18278,9 +18311,9 @@ public partial class Compiler
 
     public unsafe bool impSpillStackEntry(int level, int tnum, bool assertOnRecursion, string reason)
     {
-#if DEBUG
-        using var guard = new RecursiveGuard(ref impNestedStackSpill, assertOnRecursion);
-#endif
+        var releaseNestedStackSpill = false;
+        ref var nestedStackSpill = ref (Configuration.DEBUG ? ref impNestedStackSpill : ref releaseNestedStackSpill);
+        using var guard = new RecursiveGuard(ref nestedStackSpill, assertOnRecursion);
 
         ref var stackEntry = ref stackState.esStack[level];
         var tree = stackEntry.val;

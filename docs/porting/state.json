@@ -10,7 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Map the CCB-0459/CCB-0641 importer-state closure in Compiler.imp.cs: trace all readers, writers, resets, and copies; resolve the Debug state/API dependency without changing ManagedBytesAllocated or Release Compiler layout, then convert eligible guards as one batch.",
+    "activeBatch": null,
+    "nextAction": "Map LclVarDsc debug backing fields, their callers/copies/resets, and Release descriptor layout/allocation; coordinate DoNotEnregisterReason callers CCB-0530/0601 and CCB-0722, then obtain bounded design review before conversion.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -92,27 +93,6 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Resolve whether the DebugData representation may add a per-Compiler sidecar allocation and per-GenTree ConditionalWeakTable lookup, or identify an alternative that preserves the tree-construction hot path and ManagedBytesAllocated while keeping Release Compiler layout unchanged."
-      },
-      {
-        "batch": "Debug importer diagnostic/state closure",
-        "deferredCount": 13,
-        "candidateIds": [
-          "CCB-0459",
-          "CCB-0641",
-          "CCB-0646",
-          "CCB-0655",
-          "CCB-0656",
-          "CCB-0657",
-          "CCB-0665",
-          "CCB-0668",
-          "CCB-0673",
-          "CCB-0674",
-          "CCB-0682",
-          "CCB-0689",
-          "CCB-0691"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map all importer-state reads, writes, resets, and copies in Compiler.imp.cs; resolve CCB-0641 before removing CCB-0459's guard while preserving ManagedBytesAllocated and Release layout."
       },
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",

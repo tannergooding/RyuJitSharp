@@ -14,6 +14,14 @@ namespace RyuJitSharp;
 
 public sealed class JitTls : IDisposable
 {
+    internal struct ImporterDebugState
+    {
+        internal int CurrentOpcodeOffset;
+        internal string? CurrentOpcodeName;
+        internal bool NestedStackSpill;
+        internal Statement? PendingStatement;
+    }
+
     [ThreadStatic]
     private static JitTls? t_jitTls;
 
@@ -22,6 +30,7 @@ public sealed class JitTls : IDisposable
 
     private Compiler? _compiler;
     private LogEnv _logEnv;
+    private ImporterDebugState _importerDebugState;
     private readonly JitTls? _next;
 
     public unsafe JitTls(ICorJitInfo* jitInfo)
@@ -41,12 +50,62 @@ public sealed class JitTls : IDisposable
         return Configuration.DEBUG ? new JitTls(jitInfo) : null;
     }
 
+    internal static ref ImporterDebugState CurrentImporterDebugState
+    {
+        get
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Importer debug state is only available in Debug builds.");
+            }
+
+            var jitTls = t_jitTls
+                ?? throw new InvalidOperationException("Importer debug state requires an active JitTls scope.");
+
+            return ref jitTls._importerDebugState;
+        }
+    }
+
+    internal static ImporterDebugStateScope PushImporterDebugState()
+    {
+        if (!Configuration.DEBUG)
+        {
+            return default;
+        }
+
+        var jitTls = t_jitTls
+            ?? throw new InvalidOperationException("Importer debug state requires an active JitTls scope.");
+
+        return new ImporterDebugStateScope(jitTls);
+    }
+
     // Native JitTls is a stack scope; restore TLS on the owning thread, not a finalizer thread.
     public void Dispose()
     {
         if (Configuration.DEBUG)
         {
             t_jitTls = _next;
+        }
+    }
+
+    internal readonly ref struct ImporterDebugStateScope : IDisposable
+    {
+        private readonly JitTls? _jitTls;
+        private readonly ImporterDebugState _previousState;
+
+        internal ImporterDebugStateScope(JitTls jitTls)
+        {
+            _jitTls = jitTls;
+            _previousState = jitTls._importerDebugState;
+            jitTls._importerDebugState = default;
+        }
+
+        public readonly void Dispose()
+        {
+            if (_jitTls is { } jitTls)
+            {
+                jitTls._importerDebugState = _previousState;
+            }
         }
     }
 

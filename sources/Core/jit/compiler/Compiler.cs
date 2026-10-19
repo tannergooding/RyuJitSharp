@@ -993,11 +993,9 @@ public partial class Compiler
     [Conditional("DEBUG")]
     public void assertImp([DoesNotReturnIf(false)] bool condition, GenTree? op1 = null, GenTree? op2 = null, [CallerArgumentExpression(nameof(condition))] string conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
-        if (!condition)
+        if (!condition && Configuration.DEBUG)
         {
-#if DEBUG
             assertAbort($"{conditionExpression} : Possibly bad IL with CEE_{impCurOpcName} at offset {impCurOpcOffs:X4} (op1={(op1 is not null ? op1.Type.Name : "NULL")} op2={(op2 is not null ? op2.Type.Name : "NULL")} stkDepth={stackState.esStackDepth})\"", filePath, lineNumber);
-#endif
         }
     }
 

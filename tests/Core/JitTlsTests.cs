@@ -11,6 +11,50 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class JitTlsTests
 {
+    [Test]
+    public static void ImporterDebugStateScopesRestoreNestedCompilerState()
+    {
+        using var tls = TestConfiguration.CreateJitTls();
+        using var outerScope = JitTls.PushImporterDebugState();
+
+        if (!TestConfiguration.IsDebug)
+        {
+            return;
+        }
+
+        var statement = (Statement)RuntimeHelpers.GetUninitializedObject(typeof(Statement));
+        ref var state = ref JitTls.CurrentImporterDebugState;
+        state.CurrentOpcodeOffset = 17;
+        state.CurrentOpcodeName = "outer";
+        state.NestedStackSpill = true;
+        state.PendingStatement = statement;
+
+        using (JitTls.PushImporterDebugState())
+        {
+            Assert.That(state.CurrentOpcodeOffset, Is.Zero);
+            Assert.That(state.CurrentOpcodeName, Is.Null);
+            Assert.That(state.NestedStackSpill, Is.False);
+            Assert.That(state.PendingStatement, Is.Null);
+
+            state.CurrentOpcodeOffset = 29;
+            state.CurrentOpcodeName = "inner";
+
+            using (JitTls.PushImporterDebugState())
+            {
+                Assert.That(state.CurrentOpcodeOffset, Is.Zero);
+                Assert.That(state.CurrentOpcodeName, Is.Null);
+            }
+
+            Assert.That(state.CurrentOpcodeOffset, Is.EqualTo(29));
+            Assert.That(state.CurrentOpcodeName, Is.EqualTo("inner"));
+        }
+
+        Assert.That(state.CurrentOpcodeOffset, Is.EqualTo(17));
+        Assert.That(state.CurrentOpcodeName, Is.EqualTo("outer"));
+        Assert.That(state.NestedStackSpill, Is.True);
+        Assert.That(state.PendingStatement, Is.SameAs(statement));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void NestedScopesRestoreEachThreadsCompilerAndLog(bool throwFromInnerScope)

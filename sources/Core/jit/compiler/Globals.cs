@@ -392,6 +392,7 @@ public partial class Globals
         static CorJitResult JitNativeCodeCore(CORINFO_METHOD_HANDLE methodHandle, CORINFO_MODULE_HANDLE classHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags, InlineInfo? inlineInfo, bool jitFallbackCompile)
         {
             var result = CORJIT_INTERNALERROR;
+            using var importerDebugStateScope = JitTls.PushImporterDebugState();
 
             try
             {
