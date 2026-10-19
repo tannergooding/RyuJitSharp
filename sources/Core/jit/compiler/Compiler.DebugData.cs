@@ -94,6 +94,7 @@ public partial class Compiler
         internal bool Verbose;
         internal bool VerboseTrees;
         internal bool VerboseSsa;
+        internal string? GSSecurityCheckBlocker;
         internal VARSET_TP TrackedVars = [];
         internal int LoopsConsidered;
         internal bool CurrentLoopHasHoistedExpression;

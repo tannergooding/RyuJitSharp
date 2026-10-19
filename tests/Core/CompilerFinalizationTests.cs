@@ -209,12 +209,19 @@ internal static unsafe class CompilerFinalizationTests
             TestConfiguration.SetVerbose(compiler, true);
             TestConfiguration.SetVerboseTrees(compiler, true);
             TestConfiguration.SetVerboseSsa(compiler, true);
+            compiler.opts.compDbgEnC = true;
+            compiler.NeedsGSSecurityCookie = true;
             Assert.That(compiler.verbose, Is.True);
             Assert.That(compiler.verboseTrees, Is.True);
             Assert.That(compiler.verboseSsa, Is.True);
+            Assert.That(compiler.compGSSecurityCheckBlocker, Is.EqualTo("incompatible with EnC"));
+            var blocker = compiler.compGSSecurityCheckBlocker;
             AllocationStart(compiler) = GC.GetAllocatedBytesForCurrentThread();
             var before = compiler.ManagedBytesAllocated;
             compiler.BeginLoopHoistStats();
+            var afterLoopStats = compiler.ManagedBytesAllocated;
+            SetGSSecurityCheckBlocker(compiler, blocker);
+            var afterGsBlocker = compiler.ManagedBytesAllocated;
             TestConfiguration.SetVerbose(compiler, false);
             TestConfiguration.SetVerboseTrees(compiler, false);
             TestConfiguration.SetVerboseSsa(compiler, false);
@@ -225,7 +232,10 @@ internal static unsafe class CompilerFinalizationTests
             Assert.That(verbose, Is.False);
             Assert.That(verboseTrees, Is.False);
             Assert.That(verboseSsa, Is.False);
-            Assert.That(after, Is.EqualTo(before));
+            Assert.That(blocker, Is.EqualTo("incompatible with EnC"));
+            Assert.That(after, Is.EqualTo(before),
+                $"Loop stats: {afterLoopStats - before}, GS blocker: {afterGsBlocker - afterLoopStats}, " +
+                $"verbose state: {after - afterGsBlocker}");
         });
     }
 
@@ -263,9 +273,11 @@ internal static unsafe class CompilerFinalizationTests
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verbose"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseTrees"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseSsa"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("compGSSecurityCheckBlocker"));
             Assert.That(compiler.verbose, Is.False);
             Assert.That(compiler.verboseTrees, Is.False);
             Assert.That(compiler.verboseSsa, Is.False);
+            Assert.That(compiler.compGSSecurityCheckBlocker, Is.Null);
         });
     }
 
@@ -503,6 +515,9 @@ internal static unsafe class CompilerFinalizationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocatedBytesAtStart")]
     private static extern ref long AllocationStart(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_compGSSecurityCheckBlocker")]
+    private static extern void SetGSSecurityCheckBlocker(Compiler compiler, string? value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitReportMetrics")]
     private static extern ref int ReportMetrics(ref JitConfigValues values);

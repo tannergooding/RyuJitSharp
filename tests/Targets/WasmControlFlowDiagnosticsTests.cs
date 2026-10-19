@@ -15,6 +15,21 @@ namespace RyuJitSharp.Target.UnitTests;
 internal static unsafe class WasmControlFlowDiagnosticsTests
 {
     [Test]
+    public static void GSSecurityBlockerPreservesUnsupportedWasmDiagnostic()
+    {
+        WithCompiler(compiler => {
+            compiler.NeedsGSSecurityCookie = true;
+            var status = PhaseStatus.MODIFIED_EVERYTHING;
+            var output = Capture(compiler, () => status = compiler.gsPhase());
+
+            Assert.That(compiler.compGSSecurityCheckBlocker, Is.EqualTo("Not currently enabled for Wasm"));
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(output, Is.EqualTo(
+                "GS security check requested, but not provided: Not currently enabled for Wasm\n"));
+        });
+    }
+
+    [Test]
     public static void QuietDumpDoesNotRequireIntervals()
     {
         WithCompiler(compiler => {
@@ -126,6 +141,9 @@ internal static unsafe class WasmControlFlowDiagnosticsTests
     }
 
     private static string CaptureDump(Compiler compiler)
+        => Capture(compiler, compiler.fgDumpWasmControlFlow);
+
+    private static string Capture(Compiler compiler, Action action)
     {
         var previousWriter = s_jitstdout;
         using var stream = new MemoryStream();
@@ -134,7 +152,7 @@ internal static unsafe class WasmControlFlowDiagnosticsTests
 
         try
         {
-            compiler.fgDumpWasmControlFlow();
+            action();
             writer.Flush();
 
             return Encoding.UTF8.GetString(stream.ToArray());

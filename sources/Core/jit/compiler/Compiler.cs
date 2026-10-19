@@ -780,17 +780,20 @@ public partial class Compiler
         {
             if (Configuration.TARGET_WASM)
             {
-#if DEBUG
-                compGSSecurityCheckBlocker = "Not currently enabled for Wasm";
-#endif
+                if (Configuration.DEBUG)
+                {
+                    compGSSecurityCheckBlocker = "Not currently enabled for Wasm";
+                }
+
                 return;
             }
 
             if (opts.compDbgEnC)
             {
-#if DEBUG
-                compGSSecurityCheckBlocker = "incompatible with EnC";
-#endif
+                if (Configuration.DEBUG)
+                {
+                    compGSSecurityCheckBlocker = "incompatible with EnC";
+                }
             }
             else
             {

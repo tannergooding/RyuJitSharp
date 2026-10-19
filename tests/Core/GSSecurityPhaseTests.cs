@@ -1,8 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -33,9 +35,32 @@ internal static unsafe class GSSecurityPhaseTests
     public static void PhaseWithoutCookieDoesNotCreateLocal()
     {
         WithCompiler(1, compiler => {
-            Assert.That(compiler.gsPhase(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            TestConfiguration.SetVerbose(compiler, true);
+            var status = PhaseStatus.MODIFIED_EVERYTHING;
+            var output = Capture(() => status = compiler.gsPhase());
+
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.lvaCount, Is.EqualTo(1));
             Assert.That(compiler.gsShadowVarInfo, Is.Null);
+            Assert.That(output, Is.EqualTo(TestConfiguration.IsDebug ? "No GS security needed\n" : string.Empty));
+        });
+    }
+
+    [Test]
+    public static void DebugPhaseReportsEnCBlockerWithoutCreatingCookie()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+        WithCompiler(1, compiler => {
+            TestConfiguration.SetVerbose(compiler, true);
+            compiler.opts.compDbgEnC = true;
+            compiler.NeedsGSSecurityCookie = true;
+            var status = PhaseStatus.MODIFIED_EVERYTHING;
+            var output = Capture(() => status = compiler.gsPhase());
+
+            Assert.That(compiler.compGSSecurityCheckBlocker, Is.EqualTo("incompatible with EnC"));
+            Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(output, Is.EqualTo(
+                "GS security check requested, but not provided: incompatible with EnC\n"));
         });
     }
 
@@ -299,6 +324,25 @@ internal static unsafe class GSSecurityPhaseTests
         compiler.fgFirstBB = block;
         compiler.fgLastBB = block;
         return block;
+    }
+
+    private static string Capture(Action action)
+    {
+        var previousWriter = s_jitstdout;
+        using var stream = new MemoryStream();
+        using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true);
+        s_jitstdout = writer;
+
+        try
+        {
+            action();
+            writer.Flush();
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+        finally
+        {
+            s_jitstdout = previousWriter;
+        }
     }
 
     private static void WithCompiler(int count, Action<Compiler> action)

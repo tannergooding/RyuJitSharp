@@ -126,9 +126,23 @@ public partial class Compiler
     /// <summary>There is an unsafe buffer on the stack, reorder locals and make local copies of susceptible parameters to avoid buffer overrun attacks through locals/params</summary>
     public bool compGSReorderStackLayout;
 
-#if DEBUG
-    public string? compGSSecurityCheckBlocker;
-#endif
+    public string? compGSSecurityCheckBlocker
+    {
+        get
+        {
+            return Configuration.DEBUG ? GetExistingCompilerDebugSidecar()?.GSSecurityCheckBlocker : null;
+        }
+
+        private set
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new System.InvalidOperationException("GS security blocker diagnostics are only available in Debug builds.");
+            }
+
+            GetOrCreateCompilerDebugSidecar().GSSecurityCheckBlocker = value;
+        }
+    }
 
     // Keep stress-only arrays out of Release JIT initialization.
     private static class CompStressData

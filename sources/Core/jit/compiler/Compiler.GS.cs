@@ -23,16 +23,17 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_EVERYTHING;
         }
 
-#if DEBUG
-        if (compGSSecurityCheckBlocker is not null)
+        if (Configuration.DEBUG)
         {
-            JITDUMP($"GS security check requested, but not provided: {compGSSecurityCheckBlocker}\n");
+            if (compGSSecurityCheckBlocker is not null)
+            {
+                JITDUMP($"GS security check requested, but not provided: {compGSSecurityCheckBlocker}\n");
+            }
+            else
+            {
+                JITDUMP("No GS security needed\n");
+            }
         }
-        else
-        {
-            JITDUMP("No GS security needed\n");
-        }
-#endif
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
