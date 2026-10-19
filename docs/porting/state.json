@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Start the compiler method/tree diagnostic ID closure at CCB-0349, CCB-0350, and CCB-0376: map method-counter and tree-ID reads, writes, initialization, and copies; preserve Debug numbering, hot-path cost, and Release layout. Keep CCB-0131/CCB-0347 deferred in the GS blocker-state closure and B209 candidates deferred until target-width table/emitter dependencies are ported and tested.",
+    "nextAction": "Resolve CCB-0350's tree-ID storage constraint: preserve Debug numbering, ManagedBytesAllocated, tree-construction cost, and Release Compiler layout. A DebugData sidecar adds an allocation on first access and a ConditionalWeakTable lookup per GenTree; choose a compatible representation or authorize that Debug-only cost. Keep CCB-0131/CCB-0347 deferred in the GS blocker-state closure and B209 candidates deferred until target-width table/emitter dependencies are ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -95,14 +95,12 @@
       },
       {
         "batch": "Compiler method/tree diagnostic ID closure",
-        "deferredCount": 3,
+        "deferredCount": 1,
         "candidateIds": [
-          "CCB-0349",
-          "CCB-0350",
-          "CCB-0376"
+          "CCB-0350"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map method-counter and tree-ID reads, writes, and copies; preserve Debug numbering, hot-path cost, and Release layout before removing these guards."
+        "nextAction": "Resolve whether the DebugData representation may add a per-Compiler sidecar allocation and per-GenTree ConditionalWeakTable lookup, or identify an alternative that preserves the tree-construction hot path and ManagedBytesAllocated while keeping Release Compiler layout unchanged."
       },
       {
         "batch": "Compiler option and ARM64 debug-methodset closure",

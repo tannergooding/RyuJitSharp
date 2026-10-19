@@ -143,10 +143,8 @@ public partial class Compiler
     /// <summary>ABI return type descriptor for the method</summary>
     public ReturnTypeDesc compRetTypeDesc;
 
-#if DEBUG
     /// <summary>to produce unique label names</summary>
     private static int s_compMethodsCount;
-#endif
 
 #if DEBUG
     internal int compGenTreeID;
@@ -1385,18 +1383,19 @@ public partial class Compiler
             fgDispBasicBlocks();
         }
 
-#if DEBUG
-        /* Give the function a unique number */
+        if (Configuration.DEBUG)
+        {
+            /* Give the function a unique number */
 
-        if (opts.disAsm || verbose)
-        {
-            compMethodID = ~info.compMethodHash() & 0xffff;
+            if (opts.disAsm || verbose)
+            {
+                compMethodID = ~info.compMethodHash() & 0xffff;
+            }
+            else
+            {
+                compMethodID = Interlocked.Increment(ref s_compMethodsCount);
+            }
         }
-        else
-        {
-            compMethodID = Interlocked.Increment(ref s_compMethodsCount);
-        }
-#endif
 
         if (compIsForInlining)
         {
