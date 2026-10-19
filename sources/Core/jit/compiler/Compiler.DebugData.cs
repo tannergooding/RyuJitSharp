@@ -95,6 +95,7 @@ public partial class Compiler
         internal bool VerboseTrees;
         internal bool VerboseSsa;
         internal string? GSSecurityCheckBlocker;
+        internal int CompGenTreeID;
         internal VARSET_TP TrackedVars = [];
         internal int LoopsConsidered;
         internal bool CurrentLoopHasHoistedExpression;
@@ -611,6 +612,41 @@ public partial class Compiler
 
     private CompilerDebugSidecar? GetExistingCompilerDebugSidecar()
         => CompilerDebugSidecarStorage.Table.TryGetValue(this, out var data) ? data : null;
+
+    internal int GetCompGenTreeIDFromDebugSidecar()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        return GetExistingCompilerDebugSidecar()?.CompGenTreeID ?? 0;
+    }
+
+    internal void SetCompGenTreeIDInDebugSidecar(int value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        if ((value == 0) && (GetExistingCompilerDebugSidecar() is null))
+        {
+            return;
+        }
+
+        GetOrCreateCompilerDebugSidecar().CompGenTreeID = value;
+    }
+
+    internal void IncrementCompGenTreeIDInDebugSidecar()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        GetOrCreateCompilerDebugSidecar().CompGenTreeID++;
+    }
 
     private LocalDebugData GetLocalDebugData(int localNumber)
     {

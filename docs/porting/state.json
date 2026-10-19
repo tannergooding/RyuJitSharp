@@ -10,17 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Resolve CCB-0350, the Compiler method/tree diagnostic ID closure: map compGenTreeID reads, writes, constructor/clone numbering, and fixture consumers; choose storage that preserves Debug IDs, allocation accounting, tree-construction cost, and Release layout.",
+    "nextAction": "Re-evaluate the Compiler.fg.cs debug state/API dependency closure (CCB-0511, CCB-0524, CCB-0526, CCB-0528, CCB-0534, CCB-0548, CCB-0549, CCB-0574, CCB-0642); convert candidates with Release-visible dependency closure and retain only concrete blockers.",
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "Compiler method/tree diagnostic ID closure",
-        "deferredCount": 1,
-        "candidateIds": [
-          "CCB-0350"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Resolve whether the DebugData representation may add a per-Compiler sidecar allocation and per-GenTree ConditionalWeakTable lookup, or identify an alternative that preserves the tree-construction hot path and ManagedBytesAllocated while keeping Release Compiler layout unchanged."
-      },
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
         "deferredCount": 4,

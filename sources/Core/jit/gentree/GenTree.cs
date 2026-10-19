@@ -86,11 +86,15 @@ public partial class GenTree
 
         if (Configuration.DEBUG)
         {
-            var compiler = JitTls.Compiler ??
+            var jitTls = JitTls.t_jitTls ??
                 throw new InvalidOperationException("GenTree construction requires an active compiler in Debug builds.");
+            if (jitTls._compiler is null)
+            {
+                throw new InvalidOperationException("GenTree construction requires an active compiler in Debug builds.");
+            }
 
             _useNum = -1;
-            _treeId = compiler.compGenTreeID++;
+            _treeId = jitTls._compGenTreeID++;
         }
     }
 
@@ -2860,7 +2864,7 @@ public partial class GenTree
         clone._seqNum = 0;
 
         // Native allocates a destination before ReplaceWith restores the source ID.
-        compiler.compGenTreeID++;
+        JitTls.IncrementCompGenTreeID(compiler);
         return clone;
     }
 

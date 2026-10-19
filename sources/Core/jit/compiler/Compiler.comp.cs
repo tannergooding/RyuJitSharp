@@ -160,22 +160,18 @@ public partial class Compiler
     /// <summary>to produce unique label names</summary>
     private static int s_compMethodsCount;
 
-#if DEBUG
-    internal int compGenTreeID;
-#else
     internal int compGenTreeID
     {
         get
         {
-            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+            return JitTls.GetCompGenTreeID(this);
         }
 
         set
         {
-            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitTls.SetCompGenTreeID(this, value);
         }
     }
-#endif
 
     public int compStatementID;
 

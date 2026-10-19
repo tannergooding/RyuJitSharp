@@ -23,12 +23,13 @@ public sealed class JitTls : IDisposable
     }
 
     [ThreadStatic]
-    private static JitTls? t_jitTls;
+    internal static JitTls? t_jitTls;
 
     [ThreadStatic]
     private static Compiler? t_compiler;
 
-    private Compiler? _compiler;
+    internal Compiler? _compiler;
+    internal int _compGenTreeID;
     private LogEnv _logEnv;
     private ImporterDebugState _importerDebugState;
     private readonly JitTls? _next;
@@ -39,7 +40,7 @@ public sealed class JitTls : IDisposable
         {
             throw new InvalidOperationException("JitTls scopes are only available in Debug builds.");
         }
-
+        t_jitTls?.FlushCompGenTreeID();
         _logEnv = new LogEnv(jitInfo);
         _next = t_jitTls;
         t_jitTls = this;
@@ -82,9 +83,11 @@ public sealed class JitTls : IDisposable
     // Native JitTls is a stack scope; restore TLS on the owning thread, not a finalizer thread.
     public void Dispose()
     {
-        if (Configuration.DEBUG)
+        if (Configuration.DEBUG && ReferenceEquals(t_jitTls, this))
         {
+            FlushCompGenTreeID();
             t_jitTls = _next;
+            t_jitTls?.ReloadCompGenTreeID();
         }
     }
 
@@ -132,7 +135,67 @@ public sealed class JitTls : IDisposable
 
             var jitTls = t_jitTls;
             assert(jitTls is not null);
+
+            if (ReferenceEquals(jitTls._compiler, value))
+            {
+                return;
+            }
+
+            jitTls.FlushCompGenTreeID();
             jitTls._compiler = value;
+            jitTls.ReloadCompGenTreeID();
+        }
+    }
+
+    internal static int GetCompGenTreeID(Compiler compiler)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        var jitTls = t_jitTls;
+        if (jitTls is { } active && ReferenceEquals(active._compiler, compiler))
+        {
+            return active._compGenTreeID;
+        }
+
+        return compiler.GetCompGenTreeIDFromDebugSidecar();
+    }
+
+    internal static void SetCompGenTreeID(Compiler compiler, int value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        var jitTls = t_jitTls;
+        if (jitTls is { } active && ReferenceEquals(active._compiler, compiler))
+        {
+            active._compGenTreeID = value;
+        }
+        else
+        {
+            compiler.SetCompGenTreeIDInDebugSidecar(value);
+        }
+    }
+
+    internal static void IncrementCompGenTreeID(Compiler compiler)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+        }
+
+        var jitTls = t_jitTls;
+        if (jitTls is { } active && ReferenceEquals(active._compiler, compiler))
+        {
+            active._compGenTreeID++;
+        }
+        else
+        {
+            compiler.IncrementCompGenTreeIDInDebugSidecar();
         }
     }
 
@@ -148,5 +211,15 @@ public sealed class JitTls : IDisposable
             var jitTls = t_jitTls;
             return ref ((jitTls is not null) ? ref jitTls._logEnv : ref Unsafe.NullRef<LogEnv>());
         }
+    }
+
+    private void FlushCompGenTreeID()
+    {
+        _compiler?.SetCompGenTreeIDInDebugSidecar(_compGenTreeID);
+    }
+
+    private void ReloadCompGenTreeID()
+    {
+        _compGenTreeID = _compiler?.GetCompGenTreeIDFromDebugSidecar() ?? 0;
     }
 }
