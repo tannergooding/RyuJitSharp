@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue with CCB-0131 in Compiler.GS.cs. Re-evaluate its compGSSecurityCheckBlocker dependency and complete the whole file/caller group before removing any guard; validate Core Debug/Release and applicable Target coverage. Keep the ten LOOP_HOIST_STATS/TRACK_ENREG_STATS candidates Deferred until a representation preserving Debug ManagedBytesAllocated and Release Compiler layout is verified. Keep ABI-0001, CCB-0910, CCB-1058, and CCB-1062 deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue with CCB-0194 in Compiler.LoopUnrolling.cs. Its recorded fgDebugCheckBBlist dependency is already Release-bindable and Conditional(\"DEBUG\"); inspect the complete guarded callsite and its caller context, then validate the affected Core Debug/Release selection. CCB-0131/CCB-0347 remain Deferred in the GS blocker-state closure because external storage must preserve per-compiler request state and phase-time diagnostic order without Release Compiler layout or allocation changes. Skip already classified G2/statistics and unresolved dependency candidates until their named prerequisites close. Keep ABI-0001, CCB-0910, CCB-1058, and CCB-1062 deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -58,7 +58,7 @@
           "CCB-0441"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Keep these ten candidates Deferred: moving the per-compiler counters into DebugData changes the measured ManagedBytesAllocated value because DebugData is allocated after Compiler._allocatedBytesAtStart; adding instance fields changes Release Compiler layout. No existing allocation-free per-compiler representation was verified. CCB-0509, CCB-0129, and CCB-0130 are closed-accepted; the next open ledger candidate is CCB-0131."
+        "nextAction": "Keep these ten candidates Deferred: moving the per-compiler counters into DebugData changes the measured ManagedBytesAllocated value because DebugData is allocated after Compiler._allocatedBytesAtStart; adding instance fields changes Release Compiler layout. No existing allocation-free per-compiler representation was verified. CCB-0509, CCB-0129, CCB-0130, and CCB-0134 are closed-accepted. CCB-0131/CCB-0347 remain in the GS blocker-state closure; the next eligible open ledger candidate is CCB-0194."
       },
       {
         "batch": "Compiler verbose state/layout dependency closure",
@@ -83,14 +83,15 @@
       },
       {
         "batch": "GS diagnostic blocker state/layout closure",
-        "deferredCount": 3,
+        "deferredCount": 4,
         "candidateIds": [
+          "CCB-0131",
           "CCB-0347",
           "CCB-0454",
           "CCB-0455"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map compGSSecurityCheckBlocker writers and readers, then choose a representation preserving Debug diagnostics and Release Compiler layout."
+        "nextAction": "Keep CCB-0131 and CCB-0347 together with CCB-0454/0455: preserve the per-Compiler blocked-request state and GS-phase diagnostic order without adding a Release Compiler field or changing allocation metrics. Map all writers/readers/resets, then review an external-state design before conversion."
       },
       {
         "batch": "Compiler debug stress state and implementation closure",

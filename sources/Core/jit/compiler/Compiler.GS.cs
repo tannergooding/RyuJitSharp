@@ -326,10 +326,11 @@ public partial class Compiler
             shadow.SetAddressExposed(descriptor.IsAddressExposed, descriptor.AddrExposedReason);
             shadow.lvDoNotEnregister = descriptor.lvDoNotEnregister;
             shadow.lvSingleDefRegCandidate = descriptor.lvSingleDefRegCandidate;
-#if DEBUG
-            shadow.DoNotEnregisterReason = descriptor.DoNotEnregisterReason;
-            shadow.IsDefinedViaAddress = descriptor.IsDefinedViaAddress;
-#endif
+            if (Configuration.DEBUG)
+            {
+                shadow.DoNotEnregisterReason = descriptor.DoNotEnregisterReason;
+                shadow.IsDefinedViaAddress = descriptor.IsDefinedViaAddress;
+            }
             if (varTypeIsStruct(type))
             {
                 var layout = descriptor.Layout;

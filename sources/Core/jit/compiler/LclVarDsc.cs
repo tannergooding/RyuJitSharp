@@ -1198,7 +1198,18 @@ public partial struct LclVarDsc
         }
     }
 #else
-    public readonly DoNotEnregisterReason DoNotEnregisterReason => DoNotEnregisterReason.None;
+    public DoNotEnregisterReason DoNotEnregisterReason
+    {
+        readonly get
+        {
+            return DoNotEnregisterReason.None;
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("The do-not-enregister reason is only available in Debug builds.");
+        }
+    }
 #endif
 
 #if DEBUG

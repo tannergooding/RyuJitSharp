@@ -216,6 +216,41 @@ internal static unsafe class GSSecurityPhaseTests
     }
 
     [Test]
+    public static void ShadowCopyPreservesDebugOnlyDescriptorMetadata()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+
+        WithCompiler(1, compiler => {
+            ref var original = ref compiler.lvaGetDesc(0);
+            original.lvIsParam = true;
+            original.lvIsPtr = true;
+            original.Type = TYP_BYREF;
+            original.lvDoNotEnregister = true;
+            original.DoNotEnregisterReason = DoNotEnregisterReason.BlockOp;
+            original.IsDefinedViaAddress = true;
+            _ = Block(compiler);
+            compiler.gsShadowVarInfoCount = 1;
+            compiler.gsShadowVarInfo = MakeShadowInfo(1);
+
+            Assert.That(compiler.gsCreateShadowingLocals(), Is.True);
+
+            ref var shadow = ref compiler.lvaGetDesc(compiler.gsShadowVarInfo[0].ShadowCopy);
+            Assert.That(shadow.DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.BlockOp));
+            Assert.That(shadow.IsDefinedViaAddress, Is.True);
+        });
+    }
+
+    [Test]
+    public static void ReleaseDoNotEnregisterReasonSetterFailsExplicitly()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+        var descriptor = new LclVarDsc();
+
+        _ = Assert.Throws<InvalidOperationException>(
+            () => descriptor.DoNotEnregisterReason = DoNotEnregisterReason.BlockOp);
+    }
+
+    [Test]
     public static void NonSpecialStructArgumentUsesDirectShadowCopy()
     {
         Assume.That(Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS);
