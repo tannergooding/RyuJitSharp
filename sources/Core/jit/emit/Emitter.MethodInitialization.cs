@@ -23,9 +23,10 @@ public partial class Emitter
         }
 
         emitHasFramePtr = hasFramePtr;
-#if DEBUG
-        emitChkAlign = chkAlign;
-#endif
+        if (Configuration.DEBUG)
+        {
+            emitChkAlign = chkAlign;
+        }
         emitPrologEndPos.Init();
         emitEpilogSize = 0;
         emitEpilogCnt = 0;
@@ -68,9 +69,10 @@ public partial class Emitter
         emitForceStoreGCState = false;
         emitAddedLabel = false;
 
-#if DEBUG
-        emitIssuing = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            emitIssuing = false;
+        }
         emitGCrFrameOffsMin = 0;
         emitGCrFrameOffsMax = 0;
         emitGCrFrameOffsCnt = 0;

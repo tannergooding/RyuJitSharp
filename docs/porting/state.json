@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Close CCB-1018 and CCB-1019 as the shared Emitter alignment/issuing state closure; preserve Debug-only validation and Release Emitter layout.",
+    "nextAction": "Resolve CCB-1052 FPO_INTERRUPTIBLE by verifying its pinned target semantics and existing runtime metadata, then convert through an equivalent Configuration target predicate only if that preserves GC stack-record behavior.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",

@@ -17,6 +17,7 @@ internal static unsafe class EmitterMethodInitializationTests
     public static void StartupCreatesThePrologAndPreparedBodyGroups(bool hasFramePointer)
     {
         var emitter = CreateEmitter();
+        emitter.emitIssuing = true;
         emitter.emitCurStackLvl = 32;
         emitter.emitMaxStackDepth = 32;
         emitter.emitCntStackDepth = 0;
@@ -41,9 +42,10 @@ internal static unsafe class EmitterMethodInitializationTests
         Assert.That(emitter.emitCntStackDepth, Is.EqualTo(sizeof(int)));
         Assert.That(body.igStkLvl, Is.Zero);
         Assert.That(LastInstruction(emitter), Is.Null);
+        Assert.That(emitter.emitChkAlign, Is.EqualTo(TestConfiguration.IsDebug));
+        Assert.That(emitter.emitIssuing, Is.False);
         if (TestConfiguration.IsDebug)
         {
-            Assert.That(emitter.emitChkAlign, Is.True);
             Assert.That(prolog.igWeight, Is.EqualTo(100.0));
             Assert.That(body.igWeight, Is.EqualTo(100.0));
         }
