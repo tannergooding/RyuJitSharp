@@ -2,14 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-#if DEBUG
 using System.IO;
-#endif
 using System.Linq;
 using System.Reflection;
-#if DEBUG
 using System.Text;
-#endif
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
@@ -55,10 +51,11 @@ internal static class PhysicalPromotionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void AccessDumpsPreserveNativeCountersAndInducedMetrics()
     {
+        Assume.That(TestConfiguration.IsDebug, "Physical promotion access dumps are available only in Debug.");
+
         var uses = new Compiler.PhysicalPromotionLocalUses();
         var flags = Compiler.PhysicalPromotionAccessKindFlags.IsCallArg |
             Compiler.PhysicalPromotionAccessKindFlags.IsRegCallArg |
@@ -94,7 +91,6 @@ internal static class PhysicalPromotionTests
             s_jitstdout = previousOutput;
         }
     }
-#endif
 
     [TestCase(0, 4, true, 0, 1)]
     [TestCase(3, 2, true, 0, 2)]
@@ -606,14 +602,15 @@ internal static class PhysicalPromotionTests
         });
     }
 
-#if TARGET_64BIT
     [TestCase(8, TYP_LONG)]
-#endif
     [TestCase(1, TYP_UBYTE)]
     [TestCase(2, TYP_USHORT)]
     [TestCase(4, TYP_INT)]
     public static void DecompositionSelectsSupportedScalarRemainderWidths(int layoutSize, var_types expectedType)
     {
+        Assume.That(expectedType != TYP_LONG || Configuration.TARGET_64BIT,
+            "Long scalar remainders require a 64-bit target.");
+
         FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
             SetStructLayout(compiler, new ClassLayout(layoutSize));
             var plan = CreateRemainderPlan(compiler, compiler.gtNewLclvNode(TYP_STRUCT, 1));
@@ -626,14 +623,15 @@ internal static class PhysicalPromotionTests
         });
     }
 
-#if FEATURE_SIMD
     [TestCase(16, TYP_SIMD16)]
-#if TARGET_XARCH
     [TestCase(32, TYP_SIMD32)]
     [TestCase(64, TYP_SIMD64)]
-#endif
     public static void DecompositionSelectsOnlyAvailableSimdRemainderWidths(int size, var_types expectedType)
     {
+        Assume.That(Configuration.FEATURE_SIMD, "SIMD remainder tests require SIMD support.");
+        Assume.That(Configuration.TARGET_XARCH || size == 16,
+            "Extended SIMD remainder widths require an xarch target.");
+
         FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
             SetStructLayout(compiler, new ClassLayout(size));
             var plan = CreateRemainderPlan(compiler, compiler.gtNewLclvNode(TYP_STRUCT, 1));
@@ -652,7 +650,6 @@ internal static class PhysicalPromotionTests
             }
         });
     }
-#endif
 
     [Test]
     public static void DecompositionAllowsNonzeroScalarRemainderInitialization()
@@ -670,11 +667,12 @@ internal static class PhysicalPromotionTests
         });
     }
 
-#if FEATURE_SIMD
     [TestCase(0)]
     [TestCase(1)]
     public static void DecompositionChecksInitPatternBeforeChoosingSimdRemainder(int initPattern)
     {
+        Assume.That(Configuration.FEATURE_SIMD, "SIMD remainder tests require SIMD support.");
+
         FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
             SetStructLayout(compiler, new ClassLayout(16));
             var source = compiler.gtNewUnaryNode(GT_INIT_VAL, TYP_INT,
@@ -696,7 +694,6 @@ internal static class PhysicalPromotionTests
             }
         });
     }
-#endif
 
     [TestCase(TYP_REF, false, 0, Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive)]
     [TestCase(TYP_BYREF, false, 0, Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive)]
@@ -935,30 +932,34 @@ internal static class PhysicalPromotionTests
             TestConfiguration.EnableVerbose(compiler);
             compiler._dfsTree = compiler.fgComputeDfs();
             var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
-#if DEBUG
-            var previousOutput = s_jitstdout;
-            using var stream = new MemoryStream();
-            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
-            try
+            if (TestConfiguration.IsDebug)
             {
-                s_jitstdout = writer;
-                liveness.Run();
-                writer.Flush();
+                var previousOutput = s_jitstdout;
+                using var stream = new MemoryStream();
+                using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+                try
+                {
+                    s_jitstdout = writer;
+                    liveness.Run();
+                    writer.Flush();
 
-                var dump = Encoding.UTF8.GetString(stream.ToArray());
-                Assert.That(dump, Does.Contain("BB01 USE("));
-                Assert.That(dump, Does.Contain("BB01 DEF("));
-                Assert.That(dump, Does.Contain("BB01 IN ("));
-                Assert.That(dump, Does.Contain("BB01 OUT("));
-                Assert.That(dump, Does.Contain("V00.[000..008)"));
+                    var dump = Encoding.UTF8.GetString(stream.ToArray());
+                    Assert.That(dump, Does.Contain("BB01 USE("));
+                    Assert.That(dump, Does.Contain("BB01 DEF("));
+                    Assert.That(dump, Does.Contain("BB01 IN ("));
+                    Assert.That(dump, Does.Contain("BB01 OUT("));
+                    Assert.That(dump, Does.Contain("V00.[000..008)"));
+                }
+                finally
+                {
+                    s_jitstdout = previousOutput;
+                }
             }
-            finally
+            else
             {
-                s_jitstdout = previousOutput;
+                liveness.Run();
             }
-#else
-            liveness.Run();
-#endif
+
             var firstDeaths = liveness.GetDeathsForStructLocal(firstCopy.RootNode.AsLclVarCommon());
             var secondDeaths = liveness.GetDeathsForStructLocal(secondCopy.RootNode.AsLclVarCommon());
             Assert.That(firstDeaths.IsRemainderDying(), Is.True);
@@ -1704,13 +1705,14 @@ internal static class PhysicalPromotionTests
         });
     }
 
-#if HAS_FIXED_REGISTER_SET
     [TestCase(TYP_BYTE, 1)]
     [TestCase(TYP_SHORT, 2)]
     [TestCase(TYP_UBYTE, 1)]
     [TestCase(TYP_USHORT, 2)]
     public static void RareSmallRegisterParameterFieldsReceiveExtractionCredit(var_types type, int offset)
     {
+        Assume.That(Configuration.HAS_FIXED_REGISTER_SET, "This test requires a fixed register set.");
+
         FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
             var blocks = CreatePromotionGraph(compiler, [[]], layoutSize: TARGET_POINTER_SIZE);
             compiler.lvaTable[0].lvIsOSRLocal = false;
@@ -1741,9 +1743,7 @@ internal static class PhysicalPromotionTests
             Assert.That(blocks[0].FirstStmt!.RootNode.Data.Type, Is.EqualTo(type));
         });
     }
-#endif
 
-#if TARGET_AMD64
     [TestCase("split", TYP_SHORT, 9, true)]
     [TestCase("split", TYP_LONG, 4, false)]
     [TestCase("floating", TYP_BYTE, 0, true)]
@@ -1757,6 +1757,8 @@ internal static class PhysicalPromotionTests
     public static void ParameterSegmentAndRegisterClassRulesPreserveLazyTypedReadBacks(
         string shape, var_types type, int offset, bool mapsToRegister)
     {
+        Assume.That(Configuration.TARGET_AMD64, "This test requires AMD64 target semantics.");
+
         FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
             var blocks = CreatePromotionGraph(compiler, [[]], layoutSize: 16);
             compiler.lvaTable[0].lvIsOSRLocal = false;
@@ -1807,7 +1809,6 @@ internal static class PhysicalPromotionTests
             Assert.That(fieldUse.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
         });
     }
-#endif
 
     private static unsafe GenTreeCall CreatePromotionRetbufferCall(Compiler compiler)
     {

@@ -1013,10 +1013,11 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if PROFILING_SUPPORTED
     [Test]
     public static void UnhookedProfilerCallbacksDoNotRecordInstructions()
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "Profiler callback tests require profiling support.");
+
         WithProfilerCallbacks((compiler, codeGen) =>
         {
             var initRegZeroed = true;
@@ -1033,6 +1034,8 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(true)]
     public static void HookedProfilerEntryPreparesArgumentsBeforeTheCallBoundary(bool indirect)
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "Profiler callback tests require profiling support.");
+
         WithProfilerCallbacks((compiler, codeGen) =>
         {
             ProfilerHookNeeded(compiler) = true;
@@ -1056,6 +1059,8 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL)]
     public static void HookedProfilerLeavePreparesAndUntracksArgumentsBeforeTheCallBoundary(CorInfoHelpFunc helper)
     {
+        Assume.That(Configuration.PROFILING_SUPPORTED, "Profiler callback tests require profiling support.");
+
         WithProfilerCallbacks((compiler, codeGen) =>
         {
             ProfilerHookNeeded(compiler) = true;
@@ -3069,12 +3074,10 @@ internal static unsafe class RiscVCodeGenPortTests
         }
     }
 
-#if PROFILING_SUPPORTED
     private static void AssertProfilerCallbackBoundary(FatalJitException? failure)
     {
         Assert.That(failure, Is.Null);
     }
-#endif
 
     private static void AssertRiscVInstructionBoundary(
         CodeGen codeGen,
@@ -3287,7 +3290,6 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-#if PROFILING_SUPPORTED
     private static void WithProfilerCallbacks(Action<Compiler, CodeGen> action)
     {
         WithProlog((compiler, codeGen) =>
@@ -3308,7 +3310,6 @@ internal static unsafe class RiscVCodeGenPortTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genInstrWithConstant")]
     private static extern bool GenInstrWithConstant(
@@ -3361,4 +3362,3 @@ internal static unsafe class RiscVCodeGenPortTests
             => throw new AssertionException("RISC-V descriptor size must be selected by instruction options.");
     }
 }
-#endif

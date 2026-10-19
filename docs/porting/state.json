@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Process the remaining pending candidates in ledger order: classify and close 10 candidates in tests\\Core\\PhysicalPromotionTests.cs starting at INV-69F43D90824B, then 4 candidates in tests\\Core\\RiscVCodeGenPortTests.cs starting at INV-33B3899CE73B. Finish the pending queue before revisiting concrete deferrals.",
+    "nextAction": "Re-evaluate deferred candidates in ledger order, skipping ABI-0001, CCB-0910, CCB-1058, and CCB-1062 until the B209 target-width table/emitter dependency closure is ported and tested. Start with CCB-0089, CCB-0091, CCB-0093, CCB-0107, CCB-0186, CCB-0188, CCB-0274, CCB-0276, CCB-0440, and CCB-0441: resolve their optional-mode and diagnostic-metric representation without changing Release layout or ManagedBytesAllocated, then continue at CCB-0509 in Compiler.fg.cs.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
