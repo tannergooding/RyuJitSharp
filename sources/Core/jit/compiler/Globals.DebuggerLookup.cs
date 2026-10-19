@@ -3,11 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if DEBUG
     // Debugger lookups publish these references for watch windows and data breakpoints.
     public static GenTree? dbTree;
     public static Statement? dbStmt;
@@ -17,6 +18,8 @@ public static partial class Globals
 
     public static GenTree? dFindTreeInTree(GenTree? tree, uint id)
     {
+        EnsureDebuggerLookupAvailable();
+
         if (tree is null)
         {
             return null;
@@ -41,6 +44,8 @@ public static partial class Globals
 
     public static GenTree? dFindTree(uint id)
     {
+        EnsureDebuggerLookupAvailable();
+
         var comp = GetDebuggerCompiler();
         dbTreeBlock = null;
         dbTree = null;
@@ -64,6 +69,8 @@ public static partial class Globals
 
     public static Statement? dFindStmt(uint id)
     {
+        EnsureDebuggerLookupAvailable();
+
         var comp = GetDebuggerCompiler();
         dbStmt = null;
 
@@ -86,6 +93,8 @@ public static partial class Globals
 
     public static BasicBlock? dFindBlock(uint bbNum)
     {
+        EnsureDebuggerLookupAvailable();
+
         var comp = GetDebuggerCompiler();
         dbBlock = null;
 
@@ -103,6 +112,8 @@ public static partial class Globals
 
     public static FlowGraphNaturalLoop? dFindLoop(uint index)
     {
+        EnsureDebuggerLookupAvailable();
+
         var comp = GetDebuggerCompiler();
         dbLoop = null;
 
@@ -115,5 +126,12 @@ public static partial class Globals
         dbLoop = comp._loops.GetLoopByIndex((int)index);
         return dbLoop;
     }
-#endif
+
+    private static void EnsureDebuggerLookupAvailable()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Debugger lookups are only available in Debug builds.");
+        }
+    }
 }

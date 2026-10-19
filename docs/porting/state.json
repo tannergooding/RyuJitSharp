@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Close the cTreeFlags Release-binding prerequisite in Globals.DebuggerTreeFlags.cs, then convert CCB-0739 and CCB-0740 as one Globals.DebuggerDisplays.cs/Globals.DebuggerLookup.cs closure while preserving Debug output and Release layout.",
+    "nextAction": "Convert CCB-0900, CCB-0906, CCB-0985, CCB-0988, CCB-0990, and CCB-1029 as one emitter diagnostic-call closure across Emitter.GroupBuffers.cs, Emitter.JumpRemoval.cs, and Emitter.Placeholders.cs; their emitDispIG/list/jump helpers are already Release-bindable.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",

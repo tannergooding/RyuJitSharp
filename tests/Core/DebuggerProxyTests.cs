@@ -113,6 +113,36 @@ internal static class DebuggerProxyTests
     }
 
     [Test]
+    public static void DebuggerDisplayEntrypointsRemainInertInRelease()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+
+        Assert.DoesNotThrow(() => Globals.cBlocks(compiler));
+        Assert.DoesNotThrow(Globals.dBlocks);
+    }
+
+    [Test]
+    public static void DebuggerLookupEntrypointsFailExplicitlyInRelease()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => Globals.dFindTree(0));
+
+        Assert.That(exception!.Message, Is.EqualTo("Debugger lookups are only available in Debug builds."));
+    }
+
+    [Test]
+    public static void DebuggerDisplayEntrypointsRemainAvailableInDebug()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+
+        var output = TestConfiguration.CaptureDebugOutput(() => Globals.dIsa(default));
+
+        Assert.That(output, Does.Contain("dIsa "));
+    }
+
+    [Test]
     public static void StatementAndFlowGraphDebuggerMetadataIsAvailableInAllConfigurations()
     {
         AssertDebuggerProxy<Statement>(typeof(StatementDebuggerProxy));
