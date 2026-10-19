@@ -192,7 +192,6 @@ public partial class Globals
         RecordNowayAssertGlobal(filePath, lineNumber, message);
     }
 
-#if DEBUG
     [DoesNotReturn]
     public static void BADCODE(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
@@ -201,7 +200,11 @@ public partial class Globals
     }
 
     [DoesNotReturn]
-    public static void BADCODE3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => badCode3(message, message2, arg, filePath, lineNumber);
+    public static void BADCODE3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+    {
+        badCode3(message, message2, arg, filePath, lineNumber);
+        badCode();
+    }
 
     // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
     public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
@@ -210,23 +213,71 @@ public partial class Globals
 
         if (!condition)                                                                                                   
         {
-            noWayAssertBodyConditional(conditionExpression, filePath, lineNumber);
+            if (Configuration.DEBUG)
+            {
+                noWayAssertBodyConditional(conditionExpression, filePath, lineNumber);
+            }
+            else
+            {
+                noWayAssertBodyConditional();
+            }
         }
     }
 
     [DoesNotReturn]
-    public static void unreached([CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => noWayAssertBody("unreached", filePath, lineNumber);
+    public static void unreached([CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.DEBUG)
+        {
+            noWayAssertBody("unreached", filePath, lineNumber);
+        }
+        else
+        {
+            noWayAssertBody();
+        }
+    }
 
     [DoesNotReturn]
-    public static void NO_WAY(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => noWayAssertBody(message, filePath, lineNumber);
+    public static void NO_WAY(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.DEBUG)
+        {
+            noWayAssertBody(message, filePath, lineNumber);
+        }
+        else
+        {
+            noWay();
+        }
+    }
 
     // Used for fallback stress mode
     [DoesNotReturn]
+    [Conditional("DEBUG")]
     public static void NO_WAY_NOASSERT(ReadOnlySpan<char> message) => noWay();
 
-    public static void NOWAY_MSG(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => noWayAssertBodyConditional(message, filePath, lineNumber);
+    public static void NOWAY_MSG(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.DEBUG)
+        {
+            noWayAssertBodyConditional(message, filePath, lineNumber);
+        }
+        else
+        {
+            noWayAssertBodyConditional();
+        }
+    }
 
-    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber) => noWayAssertBodyConditional(message, filePath, lineNumber);
+    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
+    {
+        if (Configuration.DEBUG)
+        {
+            noWayAssertBodyConditional(message, filePath, lineNumber);
+        }
+        else
+        {
+            noWayAssertBodyConditional();
+        }
+    }
 
     // IMPL_LIMITATION is called when we encounter valid IL that is not
     // supported by our current implementation because of various
@@ -237,40 +288,6 @@ public partial class Globals
         debugError(message, filePath, lineNumber);
         implLimitation();
     }
-#else
-    [DoesNotReturn]
-    public static void BADCODE(ReadOnlySpan<char> message) => badCode();
-
-    [DoesNotReturn]
-    public static void BADCODE3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg) => badCode();
-
-    // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
-    public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
-    {
-        RECORD_NOWAY_ASSERT(conditionExpression, filePath, lineNumber);
-
-        if (!condition)
-        {
-            noWayAssertBodyConditional();
-        }
-    }
-
-    [DoesNotReturn]
-    public static void unreached() => noWayAssertBody();
-
-    [DoesNotReturn]
-    public static void NO_WAY(ReadOnlySpan<char> message) => noWay();
-
-    public static void NOWAY_MSG(ReadOnlySpan<char> message) => noWayAssertBodyConditional();
-
-    public static void NOWAY_MSG_FILE_AND_LINE(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber) => noWayAssertBodyConditional();
-
-    // IMPL_LIMITATION is called when we encounter valid IL that is not
-    // supported by our current implementation because of various
-    // limitations (that could be removed in the future)
-    [DoesNotReturn]
-    public static void IMPL_LIMITATION(ReadOnlySpan<char> message) => implLimitation();
-#endif
 
     // This can return based on Config flag/Debugger
     public static unsafe void notYetImplemented(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)

@@ -10,17 +10,10 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate CCB-1205 in sources/Core/jit/error/Globals.cs across its full declaration and call-site closure; determine whether a universal API can preserve Debug caller metadata while omitting Release call-site overhead. Then revisit INV-A6698B8BBC3D during full-oracle closeout.",
-    "unresolvedConditionalCleanup": [
-      {
-        "batch": "Remaining non-B209 deferred conditional-cleanup candidates",
-        "deferredCount": 1,
-        "candidateIds": [
-          "CCB-1205"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Trace the Debug/Release error API split through every caller and metadata path before choosing a universal signature/helper."
-      }
+    "nextAction": "Resolve INV-A6698B8BBC3D in tests/Core/CSELiveAcrossCallCostTests.cs: reconstruct a nonempty Linux x64 Core/Target selection despite the existing SysV fixture compile failures, then verify the converted branch in Debug and Release.",
+    "unresolvedConditionalCleanup": [],
+    "evidenceLinks": [
+      "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json"
     ],
 
     "validationGaps": [

@@ -1,6 +1,7 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -32,6 +33,35 @@ internal static unsafe class ErrorTrapTests
         Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
         Assert.That(failure.Message, Is.EqualTo("failure"));
         Assert.That(failure.InnerException, Is.SameAs(inner));
+    }
+
+    [Test]
+    public static void ErrorApisPreserveFailureResultsAndDebugCallerLocations()
+    {
+        AssertDebugError(() => Globals.BADCODE("bad-code sentinel"),
+            CorJitResult.CORJIT_BADCODE,
+            "bad-code sentinel");
+        AssertDebugError(() => Globals.BADCODE3("bad {0}", " code", 42),
+            CorJitResult.CORJIT_BADCODE,
+            "bad 42 code");
+        AssertDebugError(() => Globals.IMPL_LIMITATION("implementation limit sentinel"),
+            CorJitResult.CORJIT_IMPLLIMITATION,
+            "implementation limit sentinel");
+
+        AssertFatalResult(
+            () => Globals.NO_WAY("no-way sentinel"),
+            TestConfiguration.IsDebug ? CorJitResult.CORJIT_RECOVERABLEERROR : CorJitResult.CORJIT_INTERNALERROR);
+        AssertFatalResult(() => Globals.unreached(), CorJitResult.CORJIT_RECOVERABLEERROR);
+        AssertFatalResult(() => Globals.NOWAY_MSG("noway message sentinel"), CorJitResult.CORJIT_RECOVERABLEERROR);
+        AssertFatalResult(
+            () => Globals.NOWAY_MSG_FILE_AND_LINE("noway location sentinel", "ErrorTrapTests.cs", 1),
+            CorJitResult.CORJIT_RECOVERABLEERROR);
+        AssertFatalResult(() => Globals.noway_assert(false), CorJitResult.CORJIT_RECOVERABLEERROR);
+
+        if (TestConfiguration.IsDebug)
+        {
+            AssertFatalResult(() => Globals.NO_WAY_NOASSERT("no-assert sentinel"), CorJitResult.CORJIT_INTERNALERROR);
+        }
     }
 
     [TestCase(false, 0)]
@@ -147,6 +177,61 @@ internal static unsafe class ErrorTrapTests
         s_reject = false;
         s_spmiOnly = false;
         action(compiler);
+    }
+
+    private static void AssertDebugError(
+        Action action,
+        CorJitResult expectedResult,
+        string expectedMessage,
+        [CallerFilePath] string callerFilePath = "",
+        [CallerLineNumber] int callerLineNumber = 0)
+    {
+        var previousConfig = Globals.JitConfig;
+        Globals.JitConfig = new JitConfigValues();
+
+        try
+        {
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            compiler.info.compFullName = nameof(ErrorTrapTests);
+            TestConfiguration.EnableVerbose(compiler);
+            using var tls = TestConfiguration.CreateJitTlsWithCompilerAndLogEnv(compiler, null);
+            FatalJitException? failure = null;
+
+            if (TestConfiguration.IsDebug)
+            {
+                var output = TestConfiguration.CaptureDebugOutput(
+                    () => failure = Assert.Throws<FatalJitException>(() => action()));
+                var expectedLocation = $"{Path.GetFileName(callerFilePath)}:{callerLineNumber}";
+                Assert.That(output, Does.Contain($"COMPILATION FAILED: {expectedMessage} ({expectedLocation})"));
+            }
+            else
+            {
+                failure = Assert.Throws<FatalJitException>(() => action());
+            }
+
+            Assert.That(failure?.Result, Is.EqualTo(expectedResult));
+        }
+        finally
+        {
+            Globals.JitConfig = previousConfig;
+        }
+    }
+
+    private static void AssertFatalResult(Action action, CorJitResult expectedResult)
+    {
+        var previousConfig = Globals.JitConfig;
+        Globals.JitConfig = new JitConfigValues();
+
+        try
+        {
+            using var tls = TestConfiguration.CreateJitTlsWithCompilerAndLogEnv(null, null);
+            var failure = Assert.Throws<FatalJitException>(() => action());
+            Assert.That(failure?.Result, Is.EqualTo(expectedResult));
+        }
+        finally
+        {
+            Globals.JitConfig = previousConfig;
+        }
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
