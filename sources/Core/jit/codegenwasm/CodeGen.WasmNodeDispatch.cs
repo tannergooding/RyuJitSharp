@@ -1063,7 +1063,19 @@ public sealed partial class CodeGen
         {
             assert(addr.IsIconHandle() && type is not TYP_SIMD12);
             assert(addr.AsIntConCommon().ImmedValNeedsReloc(_compiler));
-            WasmCodegenDependencyNotPorted(tree, "Emitter.emitImageBase and Emitter.emitIns_MemargAddress");
+            if (_compiler.IsNativeAot)
+            {
+                GetEmitter().emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
+            }
+            else
+            {
+                GetEmitter().emitImageBase();
+            }
+
+            GetEmitter().emitIns_MemargAddress(
+                ins_Load(type),
+                type.EmitActualSize,
+                unchecked((nint)addr.AsIntConCommon().IntegralValue));
         }
         else if (type is TYP_SIMD12)
         {

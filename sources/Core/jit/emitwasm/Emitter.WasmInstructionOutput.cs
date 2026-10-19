@@ -14,6 +14,8 @@ public partial class Emitter
 {
     private unsafe nuint emitOutputInstrWasm(insGroup ig, instrDesc id, byte** dp)
     {
+        assert(_compiler is not null);
+
         const bool SIGNED = true;
         const bool UNSIGNED = false;
 
@@ -56,7 +58,10 @@ public partial class Emitter
             case IF_MEMADDR:
             {
                 dst += emitOutputOpcode(dst, ins);
-                dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB);
+                var relocationType = _compiler.IsNativeAot
+                    ? CorInfoReloc.WASM_MEMORY_ADDR_SLEB
+                    : CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB;
+                dst += emitOutputConstant(dst, id, SIGNED, relocationType);
                 break;
             }
 
@@ -88,7 +93,10 @@ public partial class Emitter
                 dst += emitOutputOpcode(dst, ins);
                 var dataOffset = unchecked((uint)emitGetInsSC(id));
                 var target = emitDataOffsetToPtr(dataOffset);
-                emitRecordRelocation(dst, target, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB);
+                var relocationType = _compiler.IsNativeAot
+                    ? CorInfoReloc.WASM_MEMORY_ADDR_SLEB
+                    : CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB;
+                emitRecordRelocation(dst, target, relocationType);
                 dst += emitOutputPaddedReloc(dst);
                 break;
             }
@@ -155,7 +163,10 @@ public partial class Emitter
                 assert(align <= uint.MaxValue);
                 assert(align < 64);
                 dst += emitOutputULEB128(dst, align);
-                dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB);
+                var relocationType = _compiler.IsNativeAot
+                    ? CorInfoReloc.WASM_MEMORY_ADDR_LEB
+                    : CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB;
+                dst += emitOutputConstant(dst, id, UNSIGNED, relocationType);
                 break;
             }
 

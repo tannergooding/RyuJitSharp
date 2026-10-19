@@ -102,6 +102,184 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [TestCase(true, INS_i32_const)]
+    [TestCase(false, INS_global_get)]
+    public static void ContainedHandleIndirectionUsesTheTargetAddressBase(
+        bool nativeAot, instruction expectedBaseInstruction)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
+            var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.eeInfoInitialized = true;
+            compiler.eeInfo.targetAbi = nativeAot
+                ? CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI
+                : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            compiler.opts.compReloc = true;
+
+            var address = compiler.gtNewIconHandleNode(0x1234, Globals.GTF_ICON_CLASS_HDL);
+            address.IsContained = true;
+            var indir = new GenTreeIndir(GT_IND, TYP_INT, address)
+            {
+                RegNum = regNumberExtensions.MakeWasmReg(1, WasmValueType.I32),
+            };
+            indir.Flags |= GTF_IND_NONFAULTING;
+
+            GenCodeForIndir(codeGen, indir);
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing Wasm emitter instruction buffer.");
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(expectedBaseInstruction));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_i32_load));
+            Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_local_tee));
+        });
+    }
+
+    [TestCase(true, CorInfoReloc.WASM_MEMORY_ADDR_SLEB, CorInfoReloc.WASM_MEMORY_ADDR_LEB)]
+    [TestCase(false, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB, CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB)]
+    public static void MemoryAddressRelocationsFollowTheNativeAotAddressModel(
+        bool nativeAot, CorInfoReloc expectedSigned, CorInfoReloc expectedUnsigned)
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.recordRelocation = &RecordRelocation;
+            var callbacks = new CallbackContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+            };
+            ConfigureAddressModel(compiler, nativeAot);
+            compiler.info.compMatchedVM = true;
+            compiler.info.compCompHnd = &callbacks.JitInfo;
+            emitter.emitCmpHandle = &callbacks.JitInfo;
+
+            var buffer = stackalloc byte[32];
+            new Span<byte>(buffer, 32).Fill(0xA5);
+            emitter.writeableOffset = 8;
+            emitter.emitCodeBlock = buffer;
+
+            AssertMemoryAddressRelocation(
+                emitter,
+                buffer,
+                INS_i32_const_address,
+                Emitter.insFormat.IF_MEMADDR);
+            Assert.That(callbacks.RelocationType, Is.EqualTo(expectedSigned));
+
+            AssertMemoryAddressRelocation(
+                emitter,
+                buffer,
+                INS_i32_load,
+                Emitter.insFormat.IF_MEMARG);
+            Assert.That(callbacks.RelocationType, Is.EqualTo(expectedUnsigned));
+        });
+    }
+
+    [TestCase(true, CorInfoReloc.WASM_MEMORY_ADDR_SLEB)]
+    [TestCase(false, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB)]
+    public static void DataOffsetRelocationsFollowTheNativeAotAddressModel(
+        bool nativeAot, CorInfoReloc expectedRelocation)
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.recordRelocation = &RecordRelocation;
+            var callbacks = new CallbackContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+            };
+            ConfigureAddressModel(compiler, nativeAot);
+            compiler.info.compMatchedVM = true;
+            compiler.info.compCompHnd = &callbacks.JitInfo;
+            emitter.emitCmpHandle = &callbacks.JitInfo;
+
+            var data = stackalloc byte[64];
+            var chunk = stackalloc AllocMemChunk[1];
+            var offsets = stackalloc int[1];
+            chunk[0] = new AllocMemChunk { size = 64, block = data };
+            offsets[0] = 0;
+            emitter.emitConsDsc.dsdOffs = 64;
+            emitter.emitDataChunks = chunk;
+            emitter.emitDataChunkOffsets = offsets;
+            emitter.emitNumDataChunks = 1;
+
+            var buffer = stackalloc byte[16];
+            new Span<byte>(buffer, 16).Fill(0xA5);
+            emitter.writeableOffset = 8;
+            emitter.emitCodeBlock = buffer;
+
+            var descriptor = TestEmitter.Constant(32);
+            descriptor.idSetIsCnsReloc();
+            descriptor.idIns(INS_i32_const_dataoffs);
+            descriptor.idInsFmt(Emitter.insFormat.IF_DATAOFFS);
+            var destination = buffer + 2;
+            var next = destination;
+            _ = EmitOutputInstrWasm(emitter, new insGroup(), descriptor, &next);
+
+            Assert.That(callbacks.Relocations, Is.EqualTo(1));
+            Assert.That(callbacks.RelocationType, Is.EqualTo(expectedRelocation));
+            Assert.That((nuint)callbacks.Target, Is.EqualTo((nuint)(data + 32)));
+        });
+    }
+
+    [TestCase(true, 1, INS_i32_const_address)]
+    [TestCase(false, 3, INS_global_get)]
+    public static void AddressConstantUsesAnImageBaseOnlyForReadyToRun(
+        bool nativeAot, int expectedInstructionCount, instruction expectedFirstInstruction)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
+            var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            ConfigureAddressModel(compiler, nativeAot);
+
+            emitter.emitAddressConstant(0x1234);
+
+            var descriptors = CurrentDescriptors(emitter)
+                ?? throw new AssertionException("Missing Wasm emitter instruction buffer.");
+            Assert.That(descriptors, Has.Count.EqualTo(expectedInstructionCount));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(expectedFirstInstruction));
+            if (!nativeAot)
+            {
+                Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_i32_const_address));
+                Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_i32_add));
+            }
+        });
+    }
+
+    [TestCase(true, 1, INS_i32_const_dataoffs)]
+    [TestCase(false, 3, INS_global_get)]
+    public static void DataOffsetConstantUsesAnImageBaseOnlyForReadyToRun(
+        bool nativeAot, int expectedInstructionCount, instruction expectedFirstInstruction)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
+            var jitInfo = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            ConfigureAddressModel(compiler, nativeAot);
+
+            emitter.emitDataOffsetConstant(32);
+
+            var descriptors = CurrentDescriptors(emitter)
+                ?? throw new AssertionException("Missing Wasm emitter instruction buffer.");
+            Assert.That(descriptors, Has.Count.EqualTo(expectedInstructionCount));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(expectedFirstInstruction));
+            if (!nativeAot)
+            {
+                Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_i32_const_dataoffs));
+                Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_i32_add));
+            }
+        });
+    }
+
     [Test]
     public static void FloatingDiagnosticsUseInvariantCrtFormatting()
     {
@@ -299,6 +477,31 @@ internal static unsafe class WasmEmitterOutputTests
         }
     }
 
+    private static void ConfigureAddressModel(Compiler compiler, bool nativeAot)
+    {
+        compiler.eeInfoInitialized = true;
+        compiler.eeInfo.targetAbi = nativeAot
+            ? CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI
+            : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+        compiler.opts.compReloc = true;
+    }
+
+    private static void AssertMemoryAddressRelocation(
+        Emitter emitter,
+        byte* buffer,
+        instruction ins,
+        Emitter.insFormat format)
+    {
+        var descriptor = TestEmitter.Constant(0x1234);
+        descriptor.idSetIsCnsReloc();
+        descriptor.idIns(ins);
+        descriptor.idInsFmt(format);
+        var destination = buffer + 2;
+        var next = destination;
+        _ = EmitOutputInstrWasm(emitter, new insGroup(), descriptor, &next);
+    }
+
     private static void WithEmitter(Action<Compiler, TestEmitter> action)
     {
 #if DEBUG
@@ -422,6 +625,17 @@ internal static unsafe class WasmEmitterOutputTests
         *info = default;
         info->targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetWasmWellKnownGlobals(
+        ICorJitInfo* self, CORINFO_WASM_WELLKNOWN_GLOBALS* result)
+    {
+        _ = self;
+        *result = default;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCodeForIndir")]
+    private static extern void GenCodeForIndir(CodeGen codeGen, GenTreeIndir indir);
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genEmitWasmEmitterTestSkipBlock")]

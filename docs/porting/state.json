@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "d80abfc4b04f85722596e8d83af7f9a61dcf49da",
-    "targetObservedAt": "2026-10-17",
-    "reconciledCommit": "d80abfc4b04f85722596e8d83af7f9a61dcf49da"
+    "targetCommit": "91b63bf88257142d4ffcb61d1728659ee0a51064",
+    "targetObservedAt": "2026-10-19",
+    "reconciledCommit": "91b63bf88257142d4ffcb61d1728659ee0a51064"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Resume the dynamic TLS input-ownership investigation using artifacts\\dynamic-tls-inputs: identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of the matching compilation inputs, followed by full primary-JIT dump comparison at pinned oracle revision d80abfc4b04f85722596e8d83af7f9a61dcf49da. Keep genAsyncResumeInfo deferred until B209's target-width table/emitter dependency closure is ported and tested; source reconciliation is not full runtime parity.",
+    "nextAction": "Recover the missing artifacts\\dynamic-tls-inputs captures before resuming the dynamic TLS input-ownership investigation; identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of matching inputs, followed by full primary-JIT dump comparison at pinned oracle revision 91b63bf88257142d4ffcb61d1728659ee0a51064. Keep genAsyncResumeInfo deferred until B209's target-width table/emitter dependency closure is ported and tested; source reconciliation is not full runtime parity.",
     "activeBatch": null,
     "validationGaps": [
       "Full-analysis Core build succeeded; the suite completed with 17,751 passed and the same 3 clean-baseline failures: EmitterDataSectionOutputTests.FloatingDataDumpRetainsBitPatternsAndDecimalComments, HWIntrinsicDispatchTests.GatherImmediateRejectsInvalidScaleWithoutPopping, and LinearScanEdgeResolutionTests.ResolveTypeDiagnosticNamesMatchEnumOrder. Current log: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-17_01_17_12_net11.0.trx; clean-baseline log: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-15_01_32_36_net11.0.trx.",
@@ -60,8 +60,8 @@
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",
-      "nextAction": "Use the preserved input captures to identify the allocation boundary before claiming parity or changing compiler constants.",
-      "evidence": "artifacts\\dynamic-tls-inputs"
+      "nextAction": "Recover the missing input captures, then identify the allocation boundary before claiming parity or changing compiler constants.",
+      "evidence": "artifacts\\dynamic-tls-inputs (not present in the current worktree; recovery required)"
     }
   },
   "sourceMap": [
@@ -387,6 +387,24 @@
       "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
     },
     {
+      "area": "wasm-nativeaot-address-relocations",
+      "native": [
+        "src\\coreclr\\jit\\codegenwasm.cpp",
+        "src\\coreclr\\jit\\emitwasm.cpp",
+        "src\\coreclr\\jit\\lowerwasm.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmConstants.cs",
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmNodeDispatch.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmInstructionOutput.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmSizing.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Indirections.cs",
+        "tests\\Core\\WasmCallArgumentMorphTests.cs",
+        "tests\\Targets\\WasmEmitterOutputTests.cs"
+      ],
+      "sourceCommit": "91b63bf88257142d4ffcb61d1728659ee0a51064"
+    },
+    {
       "area": "importercalls-managed-importer-partial",
       "native": [
         "src\\coreclr\\jit\\importercalls.cpp"
@@ -406,7 +424,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e",
-    "reconciledCommit": "d80abfc4b04f85722596e8d83af7f9a61dcf49da",
+    "reconciledCommit": "91b63bf88257142d4ffcb61d1728659ee0a51064",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

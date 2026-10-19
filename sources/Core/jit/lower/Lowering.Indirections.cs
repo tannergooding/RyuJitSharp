@@ -236,11 +236,15 @@ public sealed partial class Lowering
         }
 
         var address = node.Addr;
+        var isNativeAotFunctionAddress =
+            CompilerInstance.IsNativeAot && address.IsIconHandle(Globals.GTF_ICON_FTN_ADDR);
         if ((node.Oper is GT_IND) && (node.Type is not TYP_SIMD12) && address.IsIconHandle() &&
+            !isNativeAotFunctionAddress &&
             address.AsIntConCommon().ImmedValNeedsReloc(CompilerInstance) &&
             ((address._lirFlags & LIR.Flags.MultiplyUsed) == LIR.Flags.None))
         {
             // Only loads can replace the address computation with a relocated memarg while preserving operand order.
+            // NativeAOT function addresses must remain full-width linker-relocated constants.
             MakeSrcContained(node, address);
         }
 #else

@@ -25,8 +25,7 @@ public sealed partial class CodeGen
             var icon = treeNode.AsIntConCommon();
             if (icon.IsIconHandle())
             {
-                // Wasm has no absolute-address literals; handles are materialized as relocated module-base-relative
-                // constants. Real AOT compilation always enables relocation; only cross-VM SuperPMI replay may not.
+                // R2R relocations are module-base-relative; NativeAOT linker relocations are absolute.
                 assert(icon.ImmedValNeedsReloc(_compiler) || _compiler.RunningSuperPmiReplay);
                 GetEmitter().emitAddressConstant(unchecked((nint)icon.IntegralValue));
                 WasmProduceReg(treeNode);
