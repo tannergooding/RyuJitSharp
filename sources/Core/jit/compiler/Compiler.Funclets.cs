@@ -242,10 +242,8 @@ public partial class Compiler
                 fgDispHandlerTab();
             }
 
-#if DEBUG
             fgVerifyHandlerTab();
             fgDebugCheckBBlist();
-#endif
         }
     }
 
