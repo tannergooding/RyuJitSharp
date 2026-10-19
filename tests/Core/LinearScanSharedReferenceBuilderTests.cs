@@ -233,10 +233,6 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
             ref var descriptor = ref CallReturnDescriptor(call);
             SetReturnType(ref descriptor, 0, TYP_FLOAT);
             SetReturnType(ref descriptor, 1, TYP_FLOAT);
-            if (TestConfiguration.IsDebug)
-            {
-                ReturnDescriptorInitialized(ref descriptor) = true;
-            }
             var xmm0 = GetXmmMask(0);
             var xmm1 = GetXmmMask(1);
             var xmm31 = GetXmmMask(31);
@@ -288,9 +284,6 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         var register = Enum.Parse<regNumber>($"REG_XMM{index}");
         return (regMask)regMaskTP.CreateFromRegNum(register, register.SingleTypeMask);
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inited")]
-    private static extern ref bool ReturnDescriptorInitialized(ref ReturnTypeDesc descriptor);
 
     [TestCase(false)]
     [TestCase(true)]

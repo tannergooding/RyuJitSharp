@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Start the 10-candidate debug-gentree-api-state family in sources/Core/jit/gentree/ReturnTypeDesc.cs. Capture its current source snapshot, inspect the type declarations and consumers, and convert or concretely defer every guard; keep the four B209 target-width candidates deferred until their table/emitter closure is ported and tested.",
+    "nextAction": "Start the next size-ranked cohort of ten eligible deferred files: UnwindInfo.cs (INV-58C557EEFF24), Compiler.UnwindPadding.cs (INV-0C415D36FE43, INV-BF12E65DC0C7, INV-BE8AE34F8FFF, INV-ED3F9CBCD4CD), LinearScan.LocalResolutionDriverVerificationMoves.cs (INV-84FD2A66FCBD), LinearScan.EdgeResolutionRegisters.cs (INV-5AB7F41B577B), LinearScan.AllocationTraversalDiagnostics.cs (INV-5B8D30F8467C), Liveness.LocalTracking.cs (INV-774E981B789B, INV-0D3AE727FAE9), Phase.cs (INV-516DA3F9FBF9), LinearScan.LocalResolutionDriverFinalization.cs (INV-D1C669258E03), CodeSeqSM.cs (INV-5266E8BB82A0), and var_typesExtensions.cs (INV-107B261D1DEE). Capture their source snapshots and classify the complete file group before editing; keep the four B209 candidates deferred until the table/emitter closure is ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",

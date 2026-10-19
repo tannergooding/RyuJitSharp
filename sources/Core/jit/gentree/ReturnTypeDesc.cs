@@ -36,10 +36,6 @@ public struct ReturnTypeDesc
     // We need size (can be derived from _regType) & offset of each field for memory load/stores
     private InlineArrayMaxRetRegCount<int> _fieldOffset;
 
-#if DEBUG
-    private bool _inited;
-#endif
-
     public ReturnTypeDesc()
     {
         Reset();
@@ -55,9 +51,7 @@ public struct ReturnTypeDesc
 
             if (Configuration.FEATURE_MULTIREG_RET && (Configuration.MAX_RET_REG_COUNT >= 2))
             {
-#if DEBUG
-                assert(Debugger.IsAttached || _inited);
-#endif
+                assert(Debugger.IsAttached || IsInitialized);
                 result = HasReturnRegType(0) && HasReturnRegType(1);
             }
 
@@ -65,10 +59,14 @@ public struct ReturnTypeDesc
         }
     }
 
+    // TYP_VOID marks initialized descriptors with no return registers.
+    // TYP_UNKNOWN and default TYP_UNDEF mark uninitialized storage.
+    private readonly bool IsInitialized => _regType[0] is not (TYP_UNDEF or TYP_UNKNOWN);
+
     private readonly bool HasReturnRegType(byte index)
     {
         assert(index < Configuration.MAX_RET_REG_COUNT);
-        return _regType[index] != TYP_UNKNOWN;
+        return _regType[index] is not (TYP_UNDEF or TYP_UNKNOWN or TYP_VOID);
     }
 
     /// <summary>Get the count of return registers in which the return value is returned.</summary>
@@ -76,15 +74,13 @@ public struct ReturnTypeDesc
     {
         get
         {
-#if DEBUG
-            assert(Debugger.IsAttached || _inited);
-#endif
+            assert(Debugger.IsAttached || IsInitialized);
 
             byte regCount = 0;
 
             for (var i = 0; i < Configuration.MAX_RET_REG_COUNT; i++)
             {
-                if (_regType[i] == TYP_UNKNOWN)
+                if (_regType[i] is TYP_UNDEF or TYP_UNKNOWN or TYP_VOID)
                 {
                     break;
                 }
@@ -95,10 +91,10 @@ public struct ReturnTypeDesc
 
             if (Configuration.DEBUG)
             {
-                // Any remaining elements in _regTypes[] should also be TYP_UNKNOWN
+                // Any remaining elements in _regTypes[] should be unset.
                 for (var i = regCount + 1; i < Configuration.MAX_RET_REG_COUNT; i++)
                 {
-                    assert(_regType[i] == TYP_UNKNOWN);
+                    assert(_regType[i] is TYP_UNDEF or TYP_UNKNOWN);
 
                     assert(_fieldOffset[i] == 0);
                 }
@@ -108,18 +104,16 @@ public struct ReturnTypeDesc
         }
     }
 
-#if DEBUG
     // NOTE: we only use this function when writing out IR dumps.
     // These dumps may take place before the ReturnTypeDesc has been initialized.
-    public readonly byte ReturnRegCountOrDefault => (byte)(_inited ? ReturnRegCount : 0);
-#endif
+    public readonly byte ReturnRegCountOrDefault => (byte)(IsInitialized ? ReturnRegCount : 0);
 
     public readonly int SingleReturnFieldOffset
     {
         get
         {
             assert(!IsMultiRegRetType);
-            assert(_regType[0] != TYP_UNKNOWN);
+            assert(HasReturnRegType(0));
 
             return _fieldOffset[0];
         }
@@ -133,9 +127,7 @@ public struct ReturnTypeDesc
     /// <remarks>Only needed for X86 and arm32.</remarks>
     public void InitializeLongReturnType()
     {
-#if DEBUG
-        assert(!_inited);
-#endif
+        assert(!IsInitialized);
 
         if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
         {
@@ -149,10 +141,6 @@ public struct ReturnTypeDesc
         {
             _regType[0] = TYP_LONG;
         }
-
-#if DEBUG
-        _inited = true;
-#endif
     }
 
     /// <summary>Initialize the descriptor for a method that returns any type.</summary>
@@ -172,15 +160,15 @@ public struct ReturnTypeDesc
         }
         else
         {
-            if (type is not TYP_VOID)
+            if (type is TYP_VOID)
+            {
+                _regType[0] = TYP_VOID;
+            }
+            else
             {
                 assert(varTypeIsEnregisterable(type));
                 _regType[0] = type;
             }
-
-#if DEBUG
-            _inited = true;
-#endif
         }
     }
 
@@ -190,9 +178,7 @@ public struct ReturnTypeDesc
     /// <param name="callConv"></param>
     public unsafe void InitializeStructReturnType(Compiler compiler, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv)
     {
-#if DEBUG
-        assert(!_inited);
-#endif
+        assert(!IsInitialized);
 
         assert(retClsHnd != NO_CLASS_HANDLE);
         var structSize = compiler.info.compCompHnd->getClassSize(retClsHnd);
@@ -273,7 +259,7 @@ public struct ReturnTypeDesc
                         (structSize <= (2 * Configuration.TARGET_POINTER_SIZE)));
 
                     var gcPtrs = stackalloc CorInfoGCType[2] { TYPE_GC_NONE, TYPE_GC_NONE };
-                    compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrs);
+                    _ = compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrs);
 
                     for (byte i = 0; i < 2; i++)
                     {
@@ -291,7 +277,7 @@ public struct ReturnTypeDesc
 
                     fixed (CorInfoGCType* gcPtrsPointer = gcPtrs)
                     {
-                        compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrsPointer);
+                        _ = compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrsPointer);
                     }
 
                     var lowering = compiler.GetFpStructLowering(retClsHnd);
@@ -342,7 +328,7 @@ public struct ReturnTypeDesc
 
                     Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
                     var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
-                    compiler.info.compCompHnd->getClassGClayout(retClsHnd, &inlineGcPtrs.e0);
+                    _ = compiler.info.compCompHnd->getClassGClayout(retClsHnd, &inlineGcPtrs.e0);
 
                     for (byte i = 0; i < 2; i++)
                     {
@@ -376,9 +362,10 @@ public struct ReturnTypeDesc
             }
         }
 
-#if DEBUG
-        _inited = true;
-#endif
+        if (_regType[0] is TYP_UNKNOWN or TYP_UNDEF)
+        {
+            _regType[0] = TYP_VOID;
+        }
     }
 
     // Reset type descriptor to defaults
@@ -390,10 +377,6 @@ public struct ReturnTypeDesc
 
             _fieldOffset[i] = 0;
         }
-
-#if DEBUG
-        _inited = false;
-#endif
     }
 
     /// <summary>Get var_type of the return register specified by index.</summary>
@@ -403,7 +386,7 @@ public struct ReturnTypeDesc
     public readonly var_types GetReturnRegType(byte index)
     {
         var result = _regType[index];
-        assert(result != TYP_UNKNOWN);
+        assert(HasReturnRegType(index));
         return result;
     }
 
@@ -412,7 +395,7 @@ public struct ReturnTypeDesc
     /// <returns>Starting offset of data returned in that register.</returns>
     public readonly int GetReturnFieldOffset(byte index)
     {
-        assert(_regType[index] is not TYP_UNKNOWN);
+        assert(HasReturnRegType(index));
 
         if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
         {
