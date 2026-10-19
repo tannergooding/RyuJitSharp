@@ -10,20 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Map all verbose-state readers/writers and select a representation that preserves Debug output and ManagedBytesAllocated without growing Release Compiler instance layout.",
+    "nextAction": "Keep CCB-0131 and CCB-0347 together with CCB-0454/0455: preserve the per-Compiler blocked-request state and GS-phase diagnostic order without adding a Release Compiler field or changing allocation metrics. Map all writers/readers/resets, then review an external-state design before conversion.",
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "Compiler verbose state/layout dependency closure",
-        "deferredCount": 4,
-        "candidateIds": [
-          "CCB-0432",
-          "CCB-0433",
-          "CCB-0434",
-          "CCB-0447"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map all verbose-state readers/writers and select a representation that preserves Debug output and ManagedBytesAllocated without growing Release Compiler instance layout."
-      },
       {
         "batch": "GS diagnostic blocker state/layout closure",
         "deferredCount": 4,

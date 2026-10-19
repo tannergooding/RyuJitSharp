@@ -44,57 +44,60 @@ public partial class Compiler
 
     private const int PREFIX_IS_ADAPTED_FROM_VALUETASK = 0x00000400;
 
-#if DEBUG
-    public bool verbose;
-#else
     public bool verbose
     {
         get
         {
-            return false;
+            return Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.Verbose ?? false);
         }
 
         private set
         {
-            throw new InvalidOperationException("Verbose output is only available in Debug builds.");
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Verbose output is only available in Debug builds.");
+            }
+
+            GetOrCreateCompilerDebugSidecar().Verbose = value;
         }
     }
-#endif
 
-#if DEBUG
-    public bool verboseTrees;
-
-#else
     public bool verboseTrees
     {
         get
         {
-            return false;
+            return Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.VerboseTrees ?? false);
         }
 
         private set
         {
-            throw new InvalidOperationException("Verbose tree output is only available in Debug builds.");
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Verbose tree output is only available in Debug builds.");
+            }
+
+            GetOrCreateCompilerDebugSidecar().VerboseTrees = value;
         }
     }
-#endif
+
     /// <summary>If true, produce especially verbose dump output in SSA construction.</summary>
-#if DEBUG
-    public bool verboseSsa;
-#else
     public bool verboseSsa
     {
         get
         {
-            return false;
+            return Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.VerboseSsa ?? false);
         }
 
         private set
         {
-            throw new InvalidOperationException("Verbose SSA output is only available in Debug builds.");
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Verbose SSA output is only available in Debug builds.");
+            }
+
+            GetOrCreateCompilerDebugSidecar().VerboseSsa = value;
         }
     }
-#endif
 
     // This table is useful for memoization of BlockDominancePreds.
     public BlockToFlowEdgeMap? _blockToEHPreds;
@@ -423,12 +426,10 @@ public partial class Compiler
         info.compMethodInfo = methodInfo;
         info.compClassHnd = jitInfo->getMethodClass(methodHandle);
 
-#if DEBUG
-        if (compIsForInlining)
+        if (Configuration.DEBUG && compIsForInlining)
         {
             verbose = impInlineInfo.InlinerCompiler.verbose;
         }
-#endif
 
         var shouldCaptureMethodNames = Configuration.DEBUG ||
                                        Configuration.DUMP_FLOWGRAPHS ||

@@ -359,7 +359,7 @@ internal static unsafe class ProfileCountTests
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previous = s_jitstdout;
-        var verbose = TestConfiguration.IsDebug && Verbose(compiler);
+        var verbose = compiler.verbose;
 
         try
         {
@@ -371,10 +371,7 @@ internal static unsafe class ProfileCountTests
         finally
         {
             s_jitstdout = previous;
-            if (TestConfiguration.IsDebug)
-            {
-                Verbose(compiler) = verbose;
-            }
+            TestConfiguration.SetVerbose(compiler, verbose);
         }
 
         return Encoding.UTF8.GetString(stream.ToArray());
@@ -413,9 +410,6 @@ internal static unsafe class ProfileCountTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressBBProf")]
     private static extern ref int StressSeed(ref JitConfigValues config);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verbose")]
-    private static extern ref bool Verbose(Compiler compiler);
 
     private static void WithCompiler(Action<Compiler> action)
     {

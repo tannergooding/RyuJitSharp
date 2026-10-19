@@ -206,10 +206,26 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             compiler.SetLocalTrackedVars([]);
+            TestConfiguration.SetVerbose(compiler, true);
+            TestConfiguration.SetVerboseTrees(compiler, true);
+            TestConfiguration.SetVerboseSsa(compiler, true);
+            Assert.That(compiler.verbose, Is.True);
+            Assert.That(compiler.verboseTrees, Is.True);
+            Assert.That(compiler.verboseSsa, Is.True);
             AllocationStart(compiler) = GC.GetAllocatedBytesForCurrentThread();
             var before = compiler.ManagedBytesAllocated;
             compiler.BeginLoopHoistStats();
-            Assert.That(compiler.ManagedBytesAllocated, Is.EqualTo(before));
+            TestConfiguration.SetVerbose(compiler, false);
+            TestConfiguration.SetVerboseTrees(compiler, false);
+            TestConfiguration.SetVerboseSsa(compiler, false);
+            var verbose = compiler.verbose;
+            var verboseTrees = compiler.verboseTrees;
+            var verboseSsa = compiler.verboseSsa;
+            var after = compiler.ManagedBytesAllocated;
+            Assert.That(verbose, Is.False);
+            Assert.That(verboseTrees, Is.False);
+            Assert.That(verboseSsa, Is.False);
+            Assert.That(after, Is.EqualTo(before));
         });
     }
 
@@ -235,14 +251,22 @@ internal static unsafe class CompilerFinalizationTests
     }
 
     [Test]
-    public static void ReleaseCompilerDoesNotStoreDebugLoopHoistCounters()
+    public static void ReleaseCompilerDoesNotStoreDebugCompilerState()
     {
         Assume.That(!TestConfiguration.IsDebug);
-        var fields = typeof(Compiler).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_loopsConsidered"));
-        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_curLoopHasHoistedExpression"));
-        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_loopsWithHoistedExpressions"));
-        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_totalHoistedExpressions"));
+        WithCompiler(compiler => {
+            var fields = typeof(Compiler).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_loopsConsidered"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_curLoopHasHoistedExpression"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_loopsWithHoistedExpressions"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_totalHoistedExpressions"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verbose"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseTrees"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseSsa"));
+            Assert.That(compiler.verbose, Is.False);
+            Assert.That(compiler.verboseTrees, Is.False);
+            Assert.That(compiler.verboseSsa, Is.False);
+        });
     }
 
     [TestCase(DoNotEnregisterReason.HiddenBufferStructArg, "m_hiddenStructArg")]

@@ -8,11 +8,14 @@ namespace RyuJitSharp.UnitTests;
 
 internal static partial class TestConfiguration
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verbose")]
-    private static extern ref bool Verbose(Compiler compiler);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_verbose")]
+    private static extern void SetVerboseProperty(Compiler compiler, bool value);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "verboseSsa")]
-    private static extern ref bool VerboseSsa(Compiler compiler);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_verboseTrees")]
+    private static extern void SetVerboseTreesProperty(Compiler compiler, bool value);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_verboseSsa")]
+    private static extern void SetVerboseSsaProperty(Compiler compiler, bool value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
     private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
@@ -194,7 +197,7 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            Verbose(compiler) = enabled;
+            SetVerboseProperty(compiler, enabled);
         }
     }
 
@@ -202,7 +205,15 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            VerboseSsa(compiler) = enabled;
+            SetVerboseSsaProperty(compiler, enabled);
+        }
+    }
+
+    public static void SetVerboseTrees(Compiler compiler, bool enabled)
+    {
+        if (IsDebug)
+        {
+            SetVerboseTreesProperty(compiler, enabled);
         }
     }
 }
