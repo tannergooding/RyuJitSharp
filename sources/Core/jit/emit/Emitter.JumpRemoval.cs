@@ -25,12 +25,10 @@ public partial class Emitter
         assert(_compiler is not null);
         JITDUMP("*************** In emitRemoveJumpToNextInst()\n");
         // EMIT_INSTLIST_VERBOSE is disabled in the pinned emitter.
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             emitDispJumpList();
         }
-#endif
 
         uint totalRemovedSize = 0;
         var jmp = emitJumpList;
@@ -85,28 +83,30 @@ public partial class Emitter
                         assert(jmpGroup.igData.Length == jmpGroup.igInsCnt);
                     }
 
-#if DEBUG
-                    var lastInstruction = jmpGroup.igData[^1];
-                    if (!ReferenceEquals(jmp, lastInstruction))
+                    if (Configuration.DEBUG)
                     {
-                        jitprintf("jmp != id, dumping context information\n");
-                        jitprintf($"method: {_compiler.impInlineRoot.info.compMethodName}\n");
-                        jitprintf($"  jmp: {debugInfo!.idNum}: ");
-                        emitDispIns(jmp, false, true, false, 0, null, 0, jmpGroup);
-                        var lastDebugInfo = lastInstruction.idDebugOnlyInfo();
-                        assert(lastDebugInfo is not null);
-                        jitprintf($"   id: {lastDebugInfo!.idNum}: ");
-                        emitDispIns(lastInstruction, false, true, false, 0, null, 0, jmpGroup);
-                        jitprintf("jump group:\n");
-                        emitDispIG(jmpGroup, false, true);
-                        jitprintf("target group:\n");
-                        emitDispIG(targetGroup, false, false);
-                        assert(ReferenceEquals(jmp, lastInstruction));
+                        var lastInstruction = jmpGroup.igData[^1];
+                        if (!ReferenceEquals(jmp, lastInstruction))
+                        {
+                            jitprintf("jmp != id, dumping context information\n");
+                            jitprintf($"method: {_compiler.impInlineRoot.info.compMethodName}\n");
+                            jitprintf($"  jmp: {debugInfo!.idNum}: ");
+                            emitDispIns(jmp, false, true, false, 0, null, 0, jmpGroup);
+                            var lastDebugInfo = lastInstruction.idDebugOnlyInfo();
+                            assert(lastDebugInfo is not null);
+                            jitprintf($"   id: {lastDebugInfo!.idNum}: ");
+                            emitDispIns(lastInstruction, false, true, false, 0, null, 0, jmpGroup);
+                            jitprintf("jump group:\n");
+                            emitDispIG(jmpGroup, false, true);
+                            jitprintf("target group:\n");
+                            emitDispIG(targetGroup, false, false);
+                            assert(ReferenceEquals(jmp, lastInstruction));
+                        }
+
+                        JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo!.idNum:x4} is the last instruction in the group " +
+                            $"and jumps to the next instruction group IG{targetGroup.GetDisplayId():D2} " +
+                            $"{emitLabelString(targetGroup)}, removing.\n");
                     }
-                    JITDUMP($"IG{jmpGroup.GetDisplayId():D2} IN{debugInfo!.idNum:x4} is the last instruction in the group " +
-                        $"and jumps to the next instruction group IG{targetGroup.GetDisplayId():D2} " +
-                        $"{emitLabelString(targetGroup)}, removing.\n");
-#endif
                     if (previousJmp is not null)
                     {
                         previousJmp.idjNext = nextJmp;
@@ -188,21 +188,22 @@ public partial class Emitter
             jmp = nextJmp;
         }
 
-#if DEBUG
-        if (totalRemovedSize > 0)
+        if (Configuration.DEBUG)
         {
-            emitCheckIGList();
-            if (_compiler.verbose)
+            if (totalRemovedSize > 0)
             {
-                emitDispJumpList();
-            }
+                emitCheckIGList();
+                if (_compiler.verbose)
+                {
+                    emitDispJumpList();
+                }
 
-            JITDUMP($"emitRemoveJumpToNextInst removed {totalRemovedSize} bytes of unconditional jumps\n");
+                JITDUMP($"emitRemoveJumpToNextInst removed {totalRemovedSize} bytes of unconditional jumps\n");
+            }
+            else
+            {
+                JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
+            }
         }
-        else
-        {
-            JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
-        }
-#endif
     }
 }

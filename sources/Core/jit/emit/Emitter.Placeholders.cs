@@ -128,13 +128,11 @@ public partial class Emitter
         emitLastIns = null;
         emitLastInsIG = null;
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("*************** After placeholder IG creation\n");
             emitDispIGlist(displayInstructions: false);
         }
-#endif
     }
 
     internal bool emitIsLastInsCall()

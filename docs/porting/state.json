@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Convert CCB-0900, CCB-0906, CCB-0985, CCB-0988, CCB-0990, and CCB-1029 as one emitter diagnostic-call closure across Emitter.GroupBuffers.cs, Emitter.JumpRemoval.cs, and Emitter.Placeholders.cs; their emitDispIG/list/jump helpers are already Release-bindable.",
+    "nextAction": "Close CCB-0954 and CCB-0957 as the dispIns/emitInsSanityCheck dependency closure across Emitter.InstructionRecording.cs and target-specific InstructionSanity partials; preserve explicit unsupported-target failures.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",

@@ -77,13 +77,11 @@ public partial class Emitter
         {
             assert(_compiler is not null);
         }
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf("Created:\n      ");
             emitDispIG(ig, displayFunc: false, displayInstructions: false, displayLocation: false);
         }
-#endif
     }
 
     private bool emitHasLastIns()
@@ -239,13 +237,11 @@ public partial class Emitter
             jitprintf($"      {emitLabelString(ig)}:        ; funclet={ig.igFuncIdx:D2}\n");
         }
 
-#if DEBUG
-        if (_compiler.opts.dspCode && _compiler.verbose)
+        if (Configuration.DEBUG && _compiler.opts.dspCode && _compiler.verbose)
         {
             jitprintf("Saved:\n      ");
             emitDispIG(ig, displayFunc: false, displayInstructions: false, displayLocation: false);
         }
-#endif
 
         if (Configuration.FEATURE_LOOP_ALIGN && (emitCurIGAlignList is not null))
         {
