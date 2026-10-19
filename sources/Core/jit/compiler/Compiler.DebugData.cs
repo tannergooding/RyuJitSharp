@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -96,6 +97,10 @@ public partial class Compiler
         internal bool VerboseSsa;
         internal string? GSSecurityCheckBlocker;
         internal int CompGenTreeID;
+        internal List<BasicBlock>? FlowGraphBlockOrder;
+        internal bool PrintInlinedMethods;
+        internal bool EHNormalizationDone;
+        internal int InlinedCodeSize;
         internal VARSET_TP TrackedVars = [];
         internal int LoopsConsidered;
         internal bool CurrentLoopHasHoistedExpression;
@@ -646,6 +651,92 @@ public partial class Compiler
         }
 
         GetOrCreateCompilerDebugSidecar().CompGenTreeID++;
+    }
+
+    internal void AddInlinedCodeSize(int value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
+        }
+
+        GetOrCreateCompilerDebugSidecar().InlinedCodeSize += value;
+    }
+
+    internal int GetInlinedCodeSize()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
+        }
+
+        return GetExistingCompilerDebugSidecar()?.InlinedCodeSize ?? 0;
+    }
+
+    internal void SetInlinedCodeSize(int value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
+        }
+
+        if ((value == 0) && (GetExistingCompilerDebugSidecar() is null))
+        {
+            return;
+        }
+
+        GetOrCreateCompilerDebugSidecar().InlinedCodeSize = value;
+    }
+
+    internal List<BasicBlock>? GetFlowGraphBlockOrder()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Basic block dump order is only available in Debug builds.");
+        }
+
+        return GetExistingCompilerDebugSidecar()?.FlowGraphBlockOrder;
+    }
+
+    internal void SetFlowGraphBlockOrder(List<BasicBlock>? value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Basic block dump order is only available in Debug builds.");
+        }
+
+        if ((value is null) && (GetExistingCompilerDebugSidecar() is null))
+        {
+            return;
+        }
+
+        GetOrCreateCompilerDebugSidecar().FlowGraphBlockOrder = value;
+    }
+
+    internal bool GetPrintInlinedMethods()
+        => Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.PrintInlinedMethods ?? false);
+
+    internal void SetPrintInlinedMethods(bool value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Inline method diagnostics are only available in Debug builds.");
+        }
+
+        GetOrCreateCompilerDebugSidecar().PrintInlinedMethods = value;
+    }
+
+    internal bool GetEHNormalizationDone()
+        => Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.EHNormalizationDone ?? false);
+
+    internal void SetEHNormalizationDone(bool value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("EH normalization diagnostics are only available in Debug builds.");
+        }
+
+        GetOrCreateCompilerDebugSidecar().EHNormalizationDone = value;
     }
 
     private LocalDebugData GetLocalDebugData(int localNumber)

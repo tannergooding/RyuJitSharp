@@ -20,9 +20,6 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compEnablePCRelAddr")]
     private static extern ref bool CompEnablePCRelAddr(ref Compiler.Options options);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgNormalizeEHDone")]
-    private static extern ref bool EhNormalizationDone(Compiler compiler);
-
     private static FieldInfo FatalNoWayAssertBodyArgsCountField =>
         typeof(Globals).GetField(
             "s_fatalNoWayAssertBodyArgsCount",
@@ -189,7 +186,7 @@ internal static partial class TestConfiguration
     {
         if (IsDebug)
         {
-            EhNormalizationDone(compiler) = done;
+            compiler.fgNormalizeEHDone = done;
         }
     }
 

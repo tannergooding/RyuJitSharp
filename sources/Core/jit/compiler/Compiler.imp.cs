@@ -626,9 +626,18 @@ public partial class Compiler
     /// <summary>a temporary that is used for boxing</summary>
     public int impBoxTemp;
 
-#if DEBUG
-    public int impInlinedCodeSize;
-#endif
+    public int impInlinedCodeSize
+    {
+        get
+        {
+            return GetInlinedCodeSize();
+        }
+
+        set
+        {
+            SetInlinedCodeSize(value);
+        }
+    }
 
     public bool hasImpEnumeratorGdvLocalMap => impInlineRoot.impEnumeratorGdvLocalMap is not null;
 

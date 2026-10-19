@@ -274,10 +274,20 @@ internal static unsafe class CompilerFinalizationTests
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseTrees"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("verboseSsa"));
             Assert.That(fields.Select(field => field.Name), Does.Not.Contain("compGSSecurityCheckBlocker"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgBBOrder"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgPrintInlinedMethods"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("fgNormalizeEHDone"));
+            Assert.That(fields.Select(field => field.Name), Does.Not.Contain("impInlinedCodeSize"));
             Assert.That(compiler.verbose, Is.False);
             Assert.That(compiler.verboseTrees, Is.False);
             Assert.That(compiler.verboseSsa, Is.False);
             Assert.That(compiler.compGSSecurityCheckBlocker, Is.Null);
+            Assert.That(compiler.fgPrintInlinedMethods, Is.False);
+            Assert.That(compiler.fgNormalizeEHDone, Is.False);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = compiler.fgBBOrder);
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.fgPrintInlinedMethods = true);
+            _ = Assert.Throws<InvalidOperationException>(() => compiler.fgNormalizeEHDone = true);
+            _ = Assert.Throws<InvalidOperationException>(() => _ = compiler.impInlinedCodeSize);
         });
     }
 

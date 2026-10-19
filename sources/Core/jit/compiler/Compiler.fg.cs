@@ -265,9 +265,10 @@ public partial class Compiler
             jitprintf("--------------------------------------------------------------------------------------------\n");
         }
 
-#if DEBUG
-        impInlinedCodeSize += inlineCandidateInfo.methInfo.ILCodeSize;
-#endif
+        if (Configuration.DEBUG)
+        {
+            AddInlinedCodeSize(inlineCandidateInfo.methInfo.ILCodeSize);
+        }
 
         // We inlined...
         inlineResult.NoteSuccess();
@@ -2024,10 +2025,8 @@ public partial class Compiler
     /// <summary># of BBs in the method (in the linked list that starts with fgFirstBB)</summary>
     public int fgBBcount;
 
-#if DEBUG
     /// <summary>ordered vector of BBs</summary>
-    public List<BasicBlock>? fgBBOrder;
-#endif
+    public List<BasicBlock>? fgBBOrder => GetFlowGraphBlockOrder();
 
     /// <summary>Used as a quick check for whether phases downstream of loop finding should look for natural loops.</summary>
     /// <remarks>true if there may be any natural loops in the flow graph, so try to find them; otherwise, false</remarks>
@@ -2113,11 +2112,18 @@ public partial class Compiler
 
     public bool fgGlobalMorphDone;
 
-#if DEBUG
-    public bool fgPrintInlinedMethods;
-#else
-    public bool fgPrintInlinedMethods => false;
-#endif
+    public bool fgPrintInlinedMethods
+    {
+        get
+        {
+            return GetPrintInlinedMethods();
+        }
+
+        set
+        {
+            SetPrintInlinedMethods(value);
+        }
+    }
 
     public List<FlowEdge>? fgPredListSortVector;
 
@@ -2203,11 +2209,18 @@ public partial class Compiler
     public bool fgHasLoops;
 
     /// <summary>Has the flowgraph EH normalization phase been done?</summary>
-#if DEBUG
-    public bool fgNormalizeEHDone;
-#else
-    public bool fgNormalizeEHDone => false;
-#endif
+    public bool fgNormalizeEHDone
+    {
+        get
+        {
+            return GetEHNormalizationDone();
+        }
+
+        set
+        {
+            SetEHNormalizationDone(value);
+        }
+    }
 
     /// <summary>Note that this one is used outside of debug.</summary>
     public bool fgLocalVarLivenessDone;
@@ -3784,11 +3797,17 @@ public partial class Compiler
         return FMT_PTR((void*)Unsafe.As<FlowEdge, nint>(ref edge));
     }
 
-#if DEBUG
     /// <summary>Dump all basic blocks in the function.</summary>
     /// <param name="dumpTrees">if true, also dump the trees in each block</param>
     public void fgDispBasicBlocks(bool dumpTrees = false)
-        => fgDispBasicBlocks(fgFirstBB, lastBlock: null, dumpTrees);
+    {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
+        fgDispBasicBlocks(fgFirstBB, lastBlock: null, dumpTrees);
+    }
 
     /// <summary>Dump blocks from "firstBlock" to "lastBlock".</summary>
     /// <param name="firstBlock">the first block to dump</param>
@@ -3796,11 +3815,21 @@ public partial class Compiler
     /// <param name="dumpTrees">if true, also dump the trees in each block</param>
     public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
     {
-        // Build vector of blocks in order.
-        fgBBOrder ??= [];
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
 
-        _ = fgBBOrder.EnsureCapacity(fgBBcount);
-        fgBBOrder.Clear();
+        // Build vector of blocks in order.
+        var blockOrder = fgBBOrder;
+        if (blockOrder is null)
+        {
+            blockOrder = [];
+            SetFlowGraphBlockOrder(blockOrder);
+        }
+
+        _ = blockOrder.EnsureCapacity(fgBBcount);
+        blockOrder.Clear();
 
         var ibcColWidth = 0;
 
@@ -3812,7 +3841,7 @@ public partial class Compiler
                 ibcColWidth = int.Max(ibcColWidth, thisIbcWidth);
             }
 
-            fgBBOrder.Add(block);
+            blockOrder.Add(block);
 
             if (block == lastBlock)
             {
@@ -3830,12 +3859,12 @@ public partial class Compiler
         // Optionally sort
         if (JitConfig.JitDumpFgBlockOrder == 1)
         {
-            fgBBOrder.Sort((bb1, bb2) => bb1.bbNum.CompareTo(bb2.bbNum));
+            blockOrder.Sort((bb1, bb2) => bb1.bbNum.CompareTo(bb2.bbNum));
             inDefaultOrder = false;
         }
         else if (JitConfig.JitDumpFgBlockOrder == 2)
         {
-            fgBBOrder.Sort((bb1, bb2) => bb1.bbID.CompareTo(bb2.bbID));
+            blockOrder.Sort((bb1, bb2) => bb1.bbID.CompareTo(bb2.bbID));
             inDefaultOrder = false;
         }
 
@@ -3889,12 +3918,12 @@ public partial class Compiler
                                 blockTargetFieldWidth,
                                 46))}--------------------------\n");
 
-        for (var blockIndex = 0; blockIndex < fgBBOrder.Count; blockIndex++)
+        for (var blockIndex = 0; blockIndex < blockOrder.Count; blockIndex++)
         {
-            var block = fgBBOrder[blockIndex];
+            var block = blockOrder[blockIndex];
 
             var nextBlockIndex = blockIndex + 1;
-            var nextBlock = (nextBlockIndex < fgBBOrder.Count) ? fgBBOrder[nextBlockIndex] : null;
+            var nextBlock = (nextBlockIndex < blockOrder.Count) ? blockOrder[nextBlockIndex] : null;
 
             // First, do some checking on the bbPrev links
             if (!block.IsFirst)
@@ -3969,7 +3998,7 @@ public partial class Compiler
 
         if (dumpTrees)
         {
-            foreach (var block in fgBBOrder)
+            foreach (var block in blockOrder)
             {
                 fgDumpBlock(block);
             }
@@ -3980,6 +4009,11 @@ public partial class Compiler
 
     public void fgDispHandlerTab()
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         jitprintf("\n***************  Exception Handling table");
 
         if (compHndBBtabCount == 0)
@@ -3997,23 +4031,6 @@ public partial class Compiler
             HBtab.DispEntry(XTnum);
         }
     }
-#else
-    public List<BasicBlock>? fgBBOrder
-        => throw new InvalidOperationException("Basic block dump order is only available in Debug builds.");
-
-    public void fgDispBasicBlocks(bool dumpTrees = false)
-    {
-    }
-
-    public void fgDispBasicBlocks(BasicBlock? firstBlock, BasicBlock? lastBlock, bool dumpTrees)
-    {
-    }
-
-    public void fgDispHandlerTab()
-    {
-    }
-#endif
-
     [System.Diagnostics.Conditional("DEBUG")]
     public void fgDumpTrees(BasicBlock? firstBlock, BasicBlock? lastBlock)
     {
@@ -8997,10 +9014,11 @@ public partial class Compiler
         if (compHndBBtabCount == 0)
         {
             // No EH? Nothing to do.
-#if DEBUG
-            fgNormalizeEHDone = true;
+            if (Configuration.DEBUG)
+            {
+                fgNormalizeEHDone = true;
+            }
 
-#endif
             return;
         }
 
@@ -9026,9 +9044,10 @@ public partial class Compiler
 
         _ = modified;
 
-#if DEBUG
-        fgNormalizeEHDone = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            fgNormalizeEHDone = true;
+        }
 
         if (modified)
         {
@@ -13667,10 +13686,11 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods.contains(
-            info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
-#endif
+        if (Configuration.DEBUG)
+        {
+            fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods.contains(
+                info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+        }
 
         if (fgPgoConsistent)
         {

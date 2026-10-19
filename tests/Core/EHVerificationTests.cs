@@ -4,6 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static RyuJitSharp.BasicBlockFlags;
@@ -19,10 +20,11 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class EHVerificationTests
 {
     [Test]
-    public static void HandlerTableCheckerExistsOnlyInDebug()
+    public static void HandlerTableCheckerIsConditionalInDebug()
     {
         var method = typeof(Compiler).GetMethod("fgVerifyHandlerTab", BindingFlags.Instance | BindingFlags.Public);
-        Assert.That(method is not null, Is.EqualTo(TestConfiguration.IsDebug));
+        Assert.That(method, Is.Not.Null);
+        Assert.That(method!.GetCustomAttribute<ConditionalAttribute>()?.ConditionString, Is.EqualTo("DEBUG"));
     }
 
     [Test]

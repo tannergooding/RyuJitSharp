@@ -53,6 +53,61 @@ internal static unsafe class JitTlsTests
     }
 
     [Test]
+    public static void CompilerDiagnosticStatePersistsAcrossCompilerAndScopeSwitches()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+        using var tls = TestConfiguration.CreateJitTls();
+        var previousCompiler = JitTls.Compiler;
+        var firstCompiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var secondCompiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+
+        try
+        {
+            JitTls.Compiler = firstCompiler;
+            firstCompiler.fgPrintInlinedMethods = true;
+            firstCompiler.fgNormalizeEHDone = true;
+            firstCompiler.impInlinedCodeSize = 3;
+
+            JitTls.Compiler = secondCompiler;
+            Assert.That(secondCompiler.fgPrintInlinedMethods, Is.False);
+            Assert.That(secondCompiler.fgNormalizeEHDone, Is.False);
+            Assert.That(secondCompiler.impInlinedCodeSize, Is.Zero);
+
+            secondCompiler.fgPrintInlinedMethods = true;
+            secondCompiler.fgNormalizeEHDone = true;
+            secondCompiler.impInlinedCodeSize = 7;
+
+            JitTls.Compiler = firstCompiler;
+            Assert.That(firstCompiler.fgPrintInlinedMethods, Is.True);
+            Assert.That(firstCompiler.fgNormalizeEHDone, Is.True);
+            Assert.That(firstCompiler.impInlinedCodeSize, Is.EqualTo(3));
+
+            using (new JitTls(null))
+            {
+                Assert.That(firstCompiler.fgPrintInlinedMethods, Is.True);
+                Assert.That(firstCompiler.fgNormalizeEHDone, Is.True);
+                Assert.That(firstCompiler.impInlinedCodeSize, Is.EqualTo(3));
+
+                firstCompiler.fgPrintInlinedMethods = false;
+                firstCompiler.fgNormalizeEHDone = false;
+                firstCompiler.impInlinedCodeSize = 5;
+            }
+
+            Assert.That(firstCompiler.fgPrintInlinedMethods, Is.False);
+            Assert.That(firstCompiler.fgNormalizeEHDone, Is.False);
+            Assert.That(firstCompiler.impInlinedCodeSize, Is.EqualTo(5));
+            JitTls.Compiler = secondCompiler;
+            Assert.That(secondCompiler.fgPrintInlinedMethods, Is.True);
+            Assert.That(secondCompiler.fgNormalizeEHDone, Is.True);
+            Assert.That(secondCompiler.impInlinedCodeSize, Is.EqualTo(7));
+        }
+        finally
+        {
+            JitTls.Compiler = previousCompiler;
+        }
+    }
+
+    [Test]
     public static void ImporterDebugStateScopesRestoreNestedCompilerState()
     {
         using var tls = TestConfiguration.CreateJitTls();
