@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate CCB-0285 in Compiler.SsaDiagnostics.cs after the optional G2 and stats candidates are skipped. Its `_nodeTestData`/NodeTestData dependency is Debug-only; inspect the complete diagnostic/caller closure, record the exact blocker if it cannot be closed without Release layout or allocation changes, and continue to the next eligible candidate. CCB-0131/CCB-0347 remain Deferred in the GS blocker-state closure. Keep ABI-0001, CCB-0910, CCB-1058, and CCB-1062 deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue with CCB-0306 in Compiler.TreeStress.cs: verify the live LclVarDsc.lvNoLclFldStress Release API and the complete stress mode/metadata closure, including CCB-0348/0406; convert only after Release binding can be closed without changing Release descriptor/compiler layout or Debug stress behavior. CCB-0131/CCB-0347 remain Deferred in the GS blocker-state closure. Keep ABI-0001, CCB-0910, CCB-1058, and CCB-1062 deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
