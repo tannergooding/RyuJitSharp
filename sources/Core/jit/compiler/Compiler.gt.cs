@@ -90,9 +90,10 @@ public partial class Compiler
         }
 
         var node = arg.Node;
-#if DEBUG
-        assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+        }
 
         return node.AsLclVarCommon();
     }
@@ -131,9 +132,10 @@ public partial class Compiler
         // This may be called very late to check validity of LIR.
         node = node.SkipCopyOrReload;
 
-#if DEBUG
-        assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+        }
         return node.AsLclVarCommon();
     }
 
@@ -559,7 +561,7 @@ public partial class Compiler
         }
 
         var oper = tree.Oper;
-        var copy = null as GenTree;
+        GenTree copy;
 
         if (oper.IsLeaf)
         {
@@ -585,10 +587,11 @@ public partial class Compiler
         copy._vnPair = tree._vnPair;
         copy.Flags = tree.Flags;
 
-#if DEBUG
-        // Non-node debug flags should be propagated from 'tree' to 'copy'
-        copy._debugFlags |= (tree._debugFlags & ~GTF_DEBUG_NODE_MASK);
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Non-node debug flags should be propagated from 'tree' to 'copy'
+            copy._debugFlags |= (tree._debugFlags & ~GTF_DEBUG_NODE_MASK);
+        }
 
         // Make sure to copy back fields that may have been initialized
 
@@ -600,7 +603,7 @@ public partial class Compiler
         static GenTreeOp gtCloneBinary(Compiler compiler, GenTreeOp tree)
         {
             var oper = tree.Oper;
-            var copy = null as GenTreeOp;
+            GenTreeOp copy;
 
             switch (oper)
             {
@@ -1100,7 +1103,7 @@ public partial class Compiler
         static GenTreeUnOp gtCloneUnary(Compiler compiler, GenTreeUnOp tree)
         {
             var oper = tree.Oper;
-            var copy = null as GenTreeUnOp;
+            GenTreeUnOp copy;
 
             switch (oper)
             {
@@ -1364,11 +1367,12 @@ public partial class Compiler
             copy._entryPoint = tree._entryPoint;
         }
 
-#if DEBUG
-        copy._callDebugFlags = tree._callDebugFlags;
-        copy._inlineObservation = tree._inlineObservation;
-        copy._rawILOffset = tree._rawILOffset;
-#endif
+        if (Configuration.DEBUG)
+        {
+            copy._callDebugFlags = tree._callDebugFlags;
+            copy._inlineObservation = tree._inlineObservation;
+            copy._rawILOffset = tree._rawILOffset;
+        }
 
         copy._inlineContext = tree._inlineContext;
 
@@ -1388,9 +1392,10 @@ public partial class Compiler
         var result = gtCloneCall(this, call);
         result.Flags |= call.Flags;
 
-#if DEBUG
-        result._debugFlags |= call._debugFlags & ~GTF_DEBUG_NODE_MASK;
-#endif
+        if (Configuration.DEBUG)
+        {
+            result._debugFlags |= call._debugFlags & ~GTF_DEBUG_NODE_MASK;
+        }
 
         result.CopyReg(call);
         return result;
@@ -5906,18 +5911,17 @@ public partial class Compiler
             // Optionally, look at the actual type of the field's value
             var queryForCurrentClass = true;
 
-#if DEBUG
-            queryForCurrentClass = JitConfig.JitQueryCurrentStaticFieldClass > 0;
-#endif
+            if (Configuration.DEBUG)
+            {
+                queryForCurrentClass = JitConfig.JitQueryCurrentStaticFieldClass > 0;
+            }
 
             if (queryForCurrentClass)
             {
-#if DEBUG
-                if (verbose || (JitConfig.EnableExtraSuperPmiQueries != 0))
+                if (Configuration.DEBUG && (verbose || (JitConfig.EnableExtraSuperPmiQueries != 0)))
                 {
                     JITDUMP($"\nQuerying runtime about current class of field {eeGetFieldName(fieldHnd, true)} (declared as {eeGetClassName(fieldClass)})\n");
                 }
-#endif
 
                 // Is this a fully initialized init-only static field?
                 //
@@ -5932,12 +5936,10 @@ public partial class Compiler
                     isExact = true;
                     isNonNull = true;
 
-#if DEBUG
-                    if (verbose || (JitConfig.EnableExtraSuperPmiQueries != 0))
+                    if (Configuration.DEBUG && (verbose || (JitConfig.EnableExtraSuperPmiQueries != 0)))
                     {
                         JITDUMP($"Runtime reports field is init-only and initialized and has class {eeGetClassName(fieldClass)}\n");
                     }
-#endif
                 }
                 else
                 {
@@ -6801,9 +6803,10 @@ public partial class Compiler
             {
                 assert(!isScalar);
             }
-#if DEBUG
-            assert(canUseEvexEncodingDebugOnly());
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(canUseEvexEncodingDebugOnly());
+            }
         }
         else if (Configuration.TARGET_XARCH && (simdSize is 32))
         {
@@ -6901,10 +6904,11 @@ public partial class Compiler
                     }
                     else if (varTypeIsIntegral(simdBaseType))
                     {
-#if DEBUG
-                        // This should have been handled by the caller setting type = TYP_MASK
-                        assert(!canUseEvexEncodingDebugOnly());
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            // This should have been handled by the caller setting type = TYP_MASK
+                            assert(!canUseEvexEncodingDebugOnly());
+                        }
                     }
                     else if (simdSize is 32)
                     {
@@ -6964,10 +6968,11 @@ public partial class Compiler
                         }
                         else
                         {
-#if DEBUG
-                            // This should have been handled by the caller setting type = TYP_MASK
-                            assert(!canUseEvexEncodingDebugOnly());
-#endif
+                            if (Configuration.DEBUG)
+                            {
+                                // This should have been handled by the caller setting type = TYP_MASK
+                                assert(!canUseEvexEncodingDebugOnly());
+                            }
                         }
                     }
                     else if (simdSize is 32)
@@ -7014,10 +7019,11 @@ public partial class Compiler
                     }
                     else if (varTypeIsIntegral(simdBaseType))
                     {
-#if DEBUG
-                        // This should have been handled by the caller setting type = TYP_MASK
-                        assert(!canUseEvexEncodingDebugOnly());
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            // This should have been handled by the caller setting type = TYP_MASK
+                            assert(!canUseEvexEncodingDebugOnly());
+                        }
                     }
                     else if (simdSize is 32)
                     {
@@ -7079,10 +7085,11 @@ public partial class Compiler
                         }
                         else
                         {
-#if DEBUG
-                            // This should have been handled by the caller setting type = TYP_MASK
-                            assert(!canUseEvexEncodingDebugOnly());
-#endif
+                            if (Configuration.DEBUG)
+                            {
+                                // This should have been handled by the caller setting type = TYP_MASK
+                                assert(!canUseEvexEncodingDebugOnly());
+                            }
                         }
                     }
                     else if (simdSize is 32)
@@ -7129,10 +7136,11 @@ public partial class Compiler
                     }
                     else if (varTypeIsIntegral(simdBaseType))
                     {
-#if DEBUG
-                        // This should have been handled by the caller setting type = TYP_MASK
-                        assert(!canUseEvexEncodingDebugOnly());
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            // This should have been handled by the caller setting type = TYP_MASK
+                            assert(!canUseEvexEncodingDebugOnly());
+                        }
                     }
                     else if (simdSize is 32)
                     {
@@ -8432,11 +8440,12 @@ public partial class Compiler
             _callType = callType,
             _returnType = type,
             _callMethHnd = callHnd,
-#if DEBUG
-            _rawILOffset = BAD_IL_OFFSET,
-#endif
-            _inlineContext = compInlineContext,
         };
+        if (Configuration.DEBUG)
+        {
+            node._rawILOffset = BAD_IL_OFFSET;
+        }
+        node._inlineContext = compInlineContext;
         node.Flags |= (GTF_CALL | GTF_GLOB_REF);
 
         if (Configuration.UNIX_X86_ABI && (callType is CT_INDIRECT or CT_HELPER))
@@ -8693,10 +8702,11 @@ public partial class Compiler
                 setCallDoesNotReturn(result);
             }
         }
-#if DEBUG
-        // Helper calls are never candidates.
-        result._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Helper calls are never candidates.
+            result._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+        }
 
         ref var callArgs = ref result.Args;
 
@@ -8705,7 +8715,7 @@ public partial class Compiler
             var arg = args[i];
 
             var callArg = NewCallArg.CreateForPrimitive(arg);
-            callArgs.PushFront(callArg);
+            _ = callArgs.PushFront(callArg);
 
             result.Flags |= (arg.Flags & GTF_ALL_EFFECT);
         }
@@ -8779,17 +8789,18 @@ public partial class Compiler
 
         iconNode.CompileTimeHandle = unchecked((nint)(compileTimeHandle));
 
-#if DEBUG
-        if (iconNode.IsIconHandle(GTF_ICON_CLASS_HDL, GTF_ICON_METHOD_HDL, GTF_ICON_FTN_ADDR))
+        if (Configuration.DEBUG)
         {
-            iconNode.TargetHandle = unchecked((nint)(compileTimeHandle));
-        }
+            if (iconNode.IsIconHandle(GTF_ICON_CLASS_HDL, GTF_ICON_METHOD_HDL, GTF_ICON_FTN_ADDR))
+            {
+                iconNode.TargetHandle = unchecked((nint)(compileTimeHandle));
+            }
 
-        if (iconNode.IsIconHandle(GTF_ICON_OBJ_HDL))
-        {
-            iconNode.TargetHandle = (value is not null) ? unchecked((nint)(value)) : unchecked((nint)(pValue));
+            if (iconNode.IsIconHandle(GTF_ICON_OBJ_HDL))
+            {
+                iconNode.TargetHandle = (value is not null) ? unchecked((nint)(value)) : unchecked((nint)(pValue));
+            }
         }
-#endif
 
         return handleNode;
     }
@@ -8896,11 +8907,11 @@ public partial class Compiler
     {
         var elemSize = (elemType is TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : elemType.Size;
 
-#if DEBUG
-        var boundsCheck = JitConfig.JitSkipArrayBoundCheck is not 1;
-#else
         var boundsCheck = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            boundsCheck = JitConfig.JitSkipArrayBoundCheck is not 1;
+        }
 
         return new GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset, boundsCheck);
     }
@@ -10107,10 +10118,11 @@ public partial class Compiler
                         //
                         // aLo * bLo + ((aLo * bHi + aHi * bLo) << 32)
 
-#if DEBUG
-                        assert(!canUseEvexEncodingDebugOnly());
-                        assert((simdSize is 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            assert(!canUseEvexEncodingDebugOnly());
+                            assert((simdSize is 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                        }
 
                         var muludq = (simdSize is 16) ? NI_X86Base_Multiply : NI_AVX2_Multiply;
 
@@ -10394,9 +10406,10 @@ public partial class Compiler
             {
                 assert(varTypeIsIntegral(simdBaseType));
             }
-#if DEBUG
-            assert(!canUseEvexEncodingDebugOnly());
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(!canUseEvexEncodingDebugOnly());
+            }
             if (Configuration.DEBUG)
             {
                 assert((simdSize is 16) || ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
@@ -10653,12 +10666,10 @@ public partial class Compiler
 
         assert(varTypeIsArithmetic(simdBaseType));
 
-#if DEBUG
-        if (Configuration.TARGET_XARCH && (simdSize is 64))
+        if (Configuration.DEBUG && Configuration.TARGET_XARCH && (simdSize is 64))
         {
             assert(canUseEvexEncodingDebugOnly());
         }
-#endif
 
         if (Configuration.TARGET_XARCH)
         {
@@ -13479,18 +13490,20 @@ public partial class Compiler
             case IAT_PVALUE:
             {
                 var tree = gtNewIndOfIconHandleNode(TYP_REF, (nint)value, GTF_ICON_STR_HDL);
-#if DEBUG
-                tree.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)value;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    tree.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)value;
+                }
                 return tree;
             }
 
             case IAT_PPVALUE:
             {
                 var tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (nint)value, GTF_ICON_CONST_PTR);
-#if DEBUG
-                tree.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)value;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    tree.AsUnOp().Op1.AsIntCon().TargetHandle = (nint)value;
+                }
                 return gtNewIndir(TYP_REF, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
             }
 
@@ -13728,9 +13741,10 @@ public partial class Compiler
             call.Flags |= GTF_CALL_POP_ARGS;
         }
 
-#if DEBUG
-        call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
-#endif
+        if (Configuration.DEBUG)
+        {
+            call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+        }
         if (Configuration.FEATURE_READYTORUN)
         {
             call._entryPoint.accessType = IAT_VALUE;
@@ -13757,7 +13771,7 @@ public partial class Compiler
         for (var i = args.Length - 1; i >= 0; i--)
         {
             var arg = args[i];
-            call.Args.PushFront(NewCallArg.CreateForPrimitive(arg));
+            _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(arg));
             call.Flags |= arg.Flags & GTF_ALL_EFFECT;
         }
 
@@ -13785,25 +13799,26 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        // Helper calls are never candidates.
-        result._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Helper calls are never candidates.
+            result._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
+        }
 
         assert(methHnd is not null);
 
-        result.Args.PushFront(NewCallArg.CreateForPrimitive(methHnd).WithWellKnownArg(WellKnownArg.RuntimeMethodHandle));
+        _ = result.Args.PushFront(NewCallArg.CreateForPrimitive(methHnd).WithWellKnownArg(WellKnownArg.RuntimeMethodHandle));
         result.Flags |= methHnd.Flags & GTF_ALL_EFFECT;
 
         if (clsHnd is not null)
         {
-            result.Args.PushFront(NewCallArg.CreateForPrimitive(clsHnd));
+            _ = result.Args.PushFront(NewCallArg.CreateForPrimitive(clsHnd));
             result.Flags |= clsHnd.Flags & GTF_ALL_EFFECT;
         }
 
         assert(thisPtr is not null);
 
-        result.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtr).WithWellKnownArg(WellKnownArg.ThisPointer));
+        _ = result.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtr).WithWellKnownArg(WellKnownArg.ThisPointer));
         result.Flags |= thisPtr.Flags & GTF_ALL_EFFECT;
 
         return result;

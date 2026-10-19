@@ -10,8 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue the conditional-cleanup inventory at CCB-0607 in sources\\Core\\jit\\compiler\\Compiler.gt.cs. Keep CCB-0511, CCB-0524, CCB-0526, CCB-0528, CCB-0530, CCB-0534, CCB-0548, CCB-0549, CCB-0574, and CCB-0601 deferred until their specific Release state/API and layout closures are resolved. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
-
+    "nextAction": "Continue the conditional-cleanup inventory at CCB-0640 in sources\\Core\\jit\\compiler\\Compiler.imp.cs; process the complete 48-row Pending file group and validate/retire eligible guards together. Re-evaluate CCB-0641 only after mapping importer-state reads, writes, resets, copies, ManagedBytesAllocated effects, and Release layout. Keep CCB-0511, CCB-0524, CCB-0526, CCB-0528, CCB-0530, CCB-0534, CCB-0548, CCB-0549, CCB-0574, and CCB-0601 deferred until their specific Release state/API and layout closures are resolved. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
+    "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
