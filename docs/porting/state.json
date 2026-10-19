@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate deferred candidates in ledger order, skipping ABI-0001, CCB-0910, CCB-1058, and CCB-1062 until the B209 target-width table/emitter dependency closure is ported and tested. Start with CCB-0089, CCB-0091, CCB-0093, CCB-0107, CCB-0186, CCB-0188, CCB-0274, CCB-0276, CCB-0440, and CCB-0441: resolve their optional-mode and diagnostic-metric representation without changing Release layout or ManagedBytesAllocated, then continue at CCB-0509 in Compiler.fg.cs.",
+    "nextAction": "Continue with the next open ledger candidate, CCB-0129 in Compiler.Funclets.cs (DEBUG at original line 245): inspect the full enclosing function and its Release-visible APIs, then batch the complete linked file group. CCB-0509 is already closed-accepted. Keep the ten LOOP_HOIST_STATS/TRACK_ENREG_STATS candidates Deferred until a representation preserving Debug ManagedBytesAllocated and Release Compiler layout is verified. Keep ABI-0001, CCB-0910, CCB-1058, and CCB-1062 deferred until the B209 target-width table/emitter dependency closure is ported and tested. Latest accepted packet evidence: artifacts\\conditional-cleanup\\batch-316-flowgraph-dump-77eadbed\\validation and the conditional inventory CSV.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -58,7 +58,7 @@
           "CCB-0441"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Resolve the grouped G2 representation and diagnostic-metric policy before conversion. The optional symbols are Debug-only; per-compiler counters can use existing DebugData, but its allocation occurs after Compiler._allocatedBytesAtStart and contributes to ManagedBytesAllocated, so enlarging it changes Debug memory-stat output. Avoid Release Compiler layout growth and preserve optional defaults. Continue independent original-order work at CCB-0509 in Compiler.fg.cs."
+        "nextAction": "Keep these ten candidates Deferred: moving the per-compiler counters into DebugData changes the measured ManagedBytesAllocated value because DebugData is allocated after Compiler._allocatedBytesAtStart; adding instance fields changes Release Compiler layout. No existing allocation-free per-compiler representation was verified. CCB-0509 is already closed-accepted; the next open ledger candidate after this group is CCB-0129."
       },
       {
         "batch": "Compiler verbose state/layout dependency closure",

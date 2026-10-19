@@ -158,11 +158,9 @@ public abstract partial class Phase
             }
         }
 
-#if DUMP_FLOWGRAPHS
         if (Configuration.DUMP_FLOWGRAPHS)
         {
             _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PrePhase);
         }
-#endif
     }
 }

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System;
 using System.Globalization;
 using System.IO;
@@ -105,7 +104,8 @@ internal static unsafe class FlowGraphDumpTests
             };
             using var writer = new StringWriter();
             fgDumpTree(writer, tree);
-            Assert.That(writer.ToString(), Is.EqualTo(expected));
+            var expectedValue = (kind == "fallback") && !Configuration.DEBUG ? "[GT_ADD]" : expected;
+            Assert.That(writer.ToString(), Is.EqualTo(expectedValue));
         });
     }
 
@@ -147,6 +147,8 @@ internal static unsafe class FlowGraphDumpTests
     [Test]
     public static void EdgeWeightDumpPreservesPredecessorOrderAndMaxSentinel()
     {
+        RequireDebugFlowGraphDumpConfiguration();
+
         WithGraph(compiler => {
             var entry = compiler.fgFirstBB;
             var body = entry?.Next;
@@ -234,6 +236,8 @@ internal static unsafe class FlowGraphDumpTests
     [TestCase(BBJ_ALWAYS, "note")]
     public static void DotBlockShapesAndSelectedFlags(BBKinds kind, string shape)
     {
+        RequireDebugFlowGraphDumpConfiguration();
+
         WithGraph(compiler => {
             var block = compiler.fgLastBB;
             assert(block is not null);
@@ -253,6 +257,8 @@ internal static unsafe class FlowGraphDumpTests
     [TestCase(true)]
     public static void PerMethodFilenamesCropUtf8BytesAndReserveCollisionSuffix(bool multibyte)
     {
+        RequireDebugFlowGraphDumpConfiguration();
+
         WithGraph(compiler => {
             compiler.info.compFullName = new string(multibyte ? '\u00e9' : 'a', 300);
             var directory = Path.Combine(TestContext.CurrentContext.WorkDirectory, "flowgraph-" + Guid.NewGuid().ToString("N"));
@@ -284,6 +290,8 @@ internal static unsafe class FlowGraphDumpTests
     [Test]
     public static void MemorySsaIncludesPhiArgumentsHavocAndOutgoingValue()
     {
+        RequireDebugFlowGraphDumpConfiguration();
+
         WithGraph(compiler => {
             MemorySsa(ref JitConfig) = 1;
             compiler.fgSsaPassesCompleted = 1;
@@ -309,6 +317,8 @@ internal static unsafe class FlowGraphDumpTests
     [TestCase("append")]
     public static void SelectedOutputRespectsOwnershipAppendAndExclusiveCreation(string file)
     {
+        RequireDebugFlowGraphDumpConfiguration();
+
         WithGraph(compiler => {
             using var memory = new MemoryStream();
             using var borrowed = new StreamWriter(memory, new UTF8Encoding(false), leaveOpen: true);
@@ -369,6 +379,8 @@ internal static unsafe class FlowGraphDumpTests
     [TestCase("jit")]
     public static void FileSelectionGatesDoNotCreateFiles(string gate)
     {
+        RequireDebugFlowGraphDumpConfiguration();
+
         WithGraph(compiler =>
             WithFileConfig(compiler, gate is "hash" or "single-block" or "tier0" ? "stdout" : gate, null, () => {
                 if (gate == "hash")
@@ -388,6 +400,11 @@ internal static unsafe class FlowGraphDumpTests
                 Assert.That(writer, Is.Null);
                 Assert.That(borrowed, Is.False);
             }));
+    }
+
+    private static void RequireDebugFlowGraphDumpConfiguration()
+    {
+        Assume.That(TestConfiguration.IsDebug && Configuration.DUMP_FLOWGRAPHS, "Flowgraph dump tests require Debug flowgraph support.");
     }
 
     private static void WithGraph(Action<Compiler> action)
@@ -472,4 +489,3 @@ internal static unsafe class FlowGraphDumpTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDumpFgDir")]
     private static extern ref byte* DirectoryName(ref JitConfigValues values);
 }
-#endif
