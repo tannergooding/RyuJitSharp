@@ -251,6 +251,7 @@ internal static class LinearScanGeneralAllocationTests
             }
             codeGen.RegSet.rsClearRegsModified();
             BlockInfo(allocator) = [new LsraBlockInfo { weight = 1 }];
+            TestConfiguration.InitializeLsraStatistics(allocator, 1);
             for (var index = 0; index < (int)ACTUAL_REG_COUNT; index++)
             {
                 allocator.physRegs[index].init((regNumber)index);
