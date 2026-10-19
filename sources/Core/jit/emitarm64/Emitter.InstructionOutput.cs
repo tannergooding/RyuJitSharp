@@ -24,11 +24,9 @@ public partial class Emitter
             var fmt = id.idInsFmt();
             var size = id.idOpSize();
 #if DEBUG
-#if DUMP_GC_TABLES
-            var dspOffs = compiler.opts.dspGCtbls;
-#else
-            var dspOffs = !compiler.opts.disDiffable;
-#endif
+            var dspOffs = Configuration.DUMP_GC_TABLES
+                ? compiler.opts.dspGCtbls
+                : !compiler.opts.disDiffable;
 #endif
             assert((int)REG_ARM64_NA == (int)REG_ARM64_NA);
             nint imm;

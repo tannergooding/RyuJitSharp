@@ -42,6 +42,8 @@ internal static class Configuration
 
     internal static bool DUMP_GC_TABLES => BuildFeatures.DumpGcTables;
 
+    internal static bool VERIFY_GC_TABLES => BuildFeatures.VerifyGcTables;
+
     internal static bool OPTIONAL_STATISTICS => BuildFeatures.OptionalStatistics;
 
     private static class BuildFeatures
@@ -61,6 +63,7 @@ internal static class Configuration
         private static bool s_trackLsraStatistics;
         private static bool s_dumpFlowgraphs;
         private static bool s_dumpGcTables;
+        private static bool s_verifyGcTables;
         private static bool s_optionalStatistics;
 
         static BuildFeatures()
@@ -80,6 +83,7 @@ internal static class Configuration
             EnableTrackLsraStatistics();
             EnableDumpFlowgraphs();
             EnableDumpGcTables();
+            EnableVerifyGcTables();
             EnableOptionalStatistics();
         }
 
@@ -112,6 +116,8 @@ internal static class Configuration
         internal static bool DumpFlowgraphs => s_dumpFlowgraphs;
 
         internal static bool DumpGcTables => s_dumpGcTables;
+
+        internal static bool VerifyGcTables => s_verifyGcTables;
 
         internal static bool OptionalStatistics => s_optionalStatistics;
 
@@ -159,6 +165,9 @@ internal static class Configuration
 
         [Conditional("DUMP_GC_TABLES")]
         private static void EnableDumpGcTables() => s_dumpGcTables = true;
+
+        [Conditional("VERIFY_GC_TABLES")]
+        private static void EnableVerifyGcTables() => s_verifyGcTables = true;
 
         [Conditional("NODEBASH_STATS")]
         [Conditional("COUNT_BASIC_BLOCKS")]

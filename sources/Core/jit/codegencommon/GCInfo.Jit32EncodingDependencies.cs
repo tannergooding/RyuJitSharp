@@ -207,6 +207,19 @@ public partial struct GCInfo
         noGCRegionCount = noGCRegions;
     }
 
+    [System.Diagnostics.Conditional("VERIFY_GC_TABLES")]
+    private static unsafe void WriteVerificationMarker(ref byte* destination, ref nuint size,
+        bool writeMarker, ushort marker)
+    {
+        if (writeMarker)
+        {
+            *(ushort*)destination = marker;
+            destination += sizeof(ushort);
+        }
+
+        size += sizeof(ushort);
+    }
+
     internal unsafe nuint gcInfoBlockHdrSave(byte* destination, int write,
         uint codeSize, uint prologSize, uint epilogSize, ref InfoHdr header, ref int cached)
     {
@@ -216,11 +229,7 @@ public partial struct GCInfo
         }
         nuint size = 0;
 
-#if VERIFY_GC_TABLES
-        *(ushort*)destination = 0xFEEF;
-        size += sizeof(ushort);
-        destination += sizeof(ushort);
-#endif
+        WriteVerificationMarker(ref destination, ref size, true, 0xFEEF);
 
         if (Configuration.DEBUG && Compiler.verbose && (write != 0))
         {
@@ -449,11 +458,7 @@ public partial struct GCInfo
 
         if (header.epilogCount != 0 && ((header.epilogAtEnd == 0) || (header.epilogCount != 1)))
         {
-#if VERIFY_GC_TABLES
-            *(ushort*)destination = 0xFACE;
-            size += sizeof(ushort);
-            destination += sizeof(ushort);
-#endif
+            WriteVerificationMarker(ref destination, ref size, true, 0xFACE);
 
             var writer = new EpilogTableWriter
             {

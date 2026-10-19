@@ -11,6 +11,12 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    [System.Diagnostics.Conditional("EMITTER_STATS")]
+    private static void IncrementTotalIGjmps()
+    {
+        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+    }
+
     internal static void emitterStats(StreamWriter output)
     {
         if (!Configuration.EMITTER_STATS)

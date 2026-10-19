@@ -968,11 +968,9 @@ public partial class Emitter
         {
             if (compiler.opts.disAsm || compiler.verbose)
             {
-#if DUMP_GC_TABLES
-                var displayOffsets = compiler.opts.dspGCtbls;
-#else
-                var displayOffsets = !compiler.opts.disDiffable;
-#endif
+                var displayOffsets = Configuration.DUMP_GC_TABLES
+                    ? compiler.opts.dspGCtbls
+                    : !compiler.opts.disDiffable;
                 emitDispInsRiscV64(id, false, displayOffsets, true, emitCurCodeOffs(originalDst), *dp,
                     (nuint)(dst - originalDst), ig);
             }

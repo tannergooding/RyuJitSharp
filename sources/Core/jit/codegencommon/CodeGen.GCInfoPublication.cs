@@ -68,7 +68,16 @@ public sealed partial class CodeGen
             assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize + ptrMapSize));
         }
 
-#if DUMP_GC_TABLES
+        genDumpGCInfoJIT32(infoPtr);
+
+        noway_assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + (nuint)_compiler.compInfoBlkSize));
+
+        return infoPtr;
+    }
+
+    [System.Diagnostics.Conditional("DUMP_GC_TABLES")]
+    private unsafe void genDumpGCInfoJIT32(byte* infoPtr)
+    {
         if (_compiler.opts.dspGCtbls)
         {
             var basePtr = infoPtr;
@@ -87,11 +96,6 @@ public sealed partial class CodeGen
                 noway_assert(_compiler.compInfoBlkAddr == (byte*)((nuint)basePtr + size));
             }
         }
-#endif
-
-        noway_assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + (nuint)_compiler.compInfoBlkSize));
-
-        return infoPtr;
     }
 
     internal unsafe void genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize)

@@ -347,7 +347,19 @@ public partial class Compiler
         public bool compLongAddress;
 
         /// <summary>Display the GC tables</summary>
-        public bool dspGCtbls;
+        private bool _dspGCtbls;
+        public bool dspGCtbls
+        {
+            readonly get
+            {
+                return (Configuration.DUMP_GC_TABLES && !Configuration.DEBUG) || _dspGCtbls;
+            }
+
+            set
+            {
+                _dspGCtbls = value;
+            }
+        }
 
         /// <summary>Display metrics</summary>
         private bool _dspMetrics;
@@ -422,11 +434,6 @@ public partial class Compiler
 
         /// <summary>Run the late disassembler</summary>
         public bool doLateDisasm;
-
-#if DUMP_GC_TABLES && !DEBUG
-#warning NOTE: this non-debug build has GC ptr table dumping always enabled!
-        public const bool dspGCtbls = true;
-#endif
 
         /// <summary>Whether to emit Enter/Leave/TailCall hooks using a dummy stub (DummyProfilerELTStub()).</summary>
         /// <remarks>This option helps make the JIT behave as if it is running under a profiler.</remarks>

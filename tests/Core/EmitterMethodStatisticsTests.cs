@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if EMITTER_STATS
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -470,6 +469,8 @@ internal sealed unsafe class EmitterMethodStatisticsTests
         }
     }
 
+#endif
+
     private static void AssertField(string report, string name, int offset, int size)
     {
         var match = Regex.Match(report, $@"(?m)^Offset / size of {Regex.Escape(name)}\s+=\s*(\d+)\s*/\s*(\d+)\s*$");
@@ -526,7 +527,6 @@ internal sealed unsafe class EmitterMethodStatisticsTests
             return NewCallDescriptor(this, attr);
         }
 #endif
-        #endif
 
 #if TARGET_XARCH
         public instrDesc AllocateAddressModeDescriptor(emitAttr attr)
@@ -714,4 +714,3 @@ internal sealed unsafe class EmitterMethodStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetMem")]
     private static extern byte[] AllocateBytes(Emitter emitter, nuint size);
 }
-#endif

@@ -10,35 +10,10 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Prepare bounded design proposals for packet 310's 17 G2 and 11 Debug-state/layout Deferred IDs; in parallel, select the next original-order dependency-ready complete-file family without crossing those gates or B209.",
+    "nextAction": "Close the next original-order CodeGen.GenerationPhases dependency closure: reconcile CGCOMMON-0044/0049/0051/0056 with their current Debug/Release contracts (fgDebugCheckBBlist, jitFallbackCompile/NO_WAY_NOASSERT, compCodeGenDone, emitDispIGlist) before converting the affected callers and declarations; preserve the separate 11-row Debug state/layout gate and B209.",
     "activeBatch": null,
 
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "G2 optional instrumentation and compile-time verification modes",
-        "deferredCount": 17,
-        "candidateIds": [
-          "CGCOMMON-0099",
-          "CGCOMMON-0101",
-          "CGCOMMON-0102",
-          "CGCOMMON-0103",
-          "CCB-1158",
-          "CCB-1175",
-          "INV-7704B86E4462",
-          "INV-6ABB67A1FDBC",
-          "INV-0D59539C19D6",
-          "INV-C579B7D88751",
-          "INV-E5D1DC80D7E9",
-          "INV-1596457124A3",
-          "INV-7665CF245B21",
-          "INV-4E7EBCF2854C",
-          "INV-2C86A5AE4F17",
-          "INV-94F69A1CE669",
-          "INV-D5A80176A260"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Obtain one grouped design proposal and explicit user approval before changing optional-mode defaults, opt-ins, lifecycle, output, or Release rooting."
-      },
       {
         "batch": "Debug-only state/layout dependency closure",
         "deferredCount": 11,

@@ -374,14 +374,7 @@ public partial struct GCInfo
             totalSize += size;
         }
 
-#if VERIFY_GC_TABLES
-        if (mask == -1)
-        {
-            *(ushort*)destination = 0xBEEF;
-            destination += sizeof(ushort);
-        }
-        totalSize += sizeof(ushort);
-#endif
+        WriteVerificationMarker(ref destination, ref totalSize, mask == -1, 0xBEEF);
 
         if (Configuration.DEBUG)
         {
@@ -507,14 +500,7 @@ public partial struct GCInfo
             }
         }
 
-#if VERIFY_GC_TABLES
-        if (mask != 0)
-        {
-            *(ushort*)destination = 0xCAFE;
-            destination += sizeof(ushort);
-        }
-        totalSize += sizeof(ushort);
-#endif
+        WriteVerificationMarker(ref destination, ref totalSize, mask != 0, 0xCAFE);
 
         if (!compiler.info.compIsStatic)
         {
@@ -556,14 +542,7 @@ public partial struct GCInfo
 
         argTabOffset = totalSize;
 
-#if VERIFY_GC_TABLES
-        if (mask != 0)
-        {
-            *(ushort*)destination = 0xBABE;
-            destination += sizeof(ushort);
-        }
-        totalSize += sizeof(ushort);
-#endif
+        WriteVerificationMarker(ref destination, ref totalSize, mask != 0, 0xBABE);
 
         if ((mask == 0) && emitArgTabOffset)
         {
@@ -1145,14 +1124,7 @@ public partial struct GCInfo
             totalSize++;
         }
 
-#if VERIFY_GC_TABLES
-        if (mask != 0)
-        {
-            *(ushort*)destination = 0xBEEB;
-            destination += sizeof(ushort);
-        }
-        totalSize += sizeof(ushort);
-#endif
+        WriteVerificationMarker(ref destination, ref totalSize, mask != 0, 0xBEEB);
 
         if (Configuration.MEASURE_PTRTAB_SIZE && (mask != 0))
         {

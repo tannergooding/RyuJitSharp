@@ -4,11 +4,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    [System.Diagnostics.Conditional("EMITTER_STATS")]
     private static void emitterStaticStats()
     {
-        if (Configuration.EMITTER_STATS)
-        {
-            Emitter.emitStaticStats();
-        }
+        Emitter.emitStaticStats();
     }
 }

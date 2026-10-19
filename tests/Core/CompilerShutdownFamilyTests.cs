@@ -117,6 +117,23 @@ internal static class CompilerShutdownFamilyTests
     }
 
     [Test]
+    public static void DisabledEmitterStatisticsDoNotAllocateStorage()
+    {
+        if (Configuration.EMITTER_STATS)
+        {
+            Assert.Ignore("Emitter statistics are enabled for this build.");
+        }
+
+        foreach (var fieldName in new[] { "emitSmallCns", "emitIFcounts", "emitSizeTable", "GCrefsTable", "stkDepthTable" })
+        {
+            var field = typeof(Emitter).GetField(fieldName, StaticMemberBindingFlags) ??
+                throw new InvalidOperationException($"{typeof(Emitter).FullName}.{fieldName} is not available.");
+
+            Assert.That(field.GetValue(null), Is.Null, fieldName);
+        }
+    }
+
+    [Test]
     public static void ZeroMethodGuardPrecedesEveryOptionalStatisticsDependency()
     {
         if (!TestConfiguration.IsDebug &&

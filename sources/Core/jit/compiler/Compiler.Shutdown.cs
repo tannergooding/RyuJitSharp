@@ -324,9 +324,7 @@ public partial class Compiler
             jitprintf(".\n");
         }
 
-#if EMITTER_STATS
         emitterStats(jitstdout());
-#endif
 
 #if MEASURE_FATAL
         jitprintf("\n");

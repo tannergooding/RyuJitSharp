@@ -76,6 +76,11 @@
     <Error Condition="!Exists('$(RyuJitLateDisasmSubstitutionsFile)')" Text="No LATE_DISASM substitution was generated for RyuJit target RID '$(RyuJitTargetRuntimeIdentifier)'." />
   </Target>
 
+  <Target Name="ValidateRyuJitGcTableVerificationConfiguration" BeforeTargets="CoreCompile">
+    <Error Condition="'$(Configuration)' != 'Debug' and $(DefineConstants.Contains('VERIFY_GC_TABLES'))"
+           Text="VERIFY_GC_TABLES requires the Debug configuration." />
+  </Target>
+
   <Target Name="WriteRyuJitLateDisasmSubstitution" BeforeTargets="PrepareForPublish" Condition="'$(PublishAot)' == 'true'">
     <MakeDir Directories="$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)" />
     <WriteLinesToFile File="$(RyuJitLateDisasmSubstitutionsFile)" Lines="@(RyuJitLateDisasmSubstitutionLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />

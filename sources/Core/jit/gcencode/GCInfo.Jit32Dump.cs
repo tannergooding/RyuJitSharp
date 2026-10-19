@@ -13,12 +13,6 @@ public partial struct GCInfo
     // src/coreclr/inc/gcinfo.h: the JIT always emits the current (v5) format.
     private const uint GCINFO_VERSION = 5;
 
-#if VERIFY_GC_TABLES
-    private const bool verifyGCTables = true;
-#else
-    private const bool verifyGCTables = false;
-#endif
-
     internal readonly unsafe nuint gcInfoBlockHdrDump(byte* table, ref InfoHdr header, out uint methodSize)
     {
         EnsureJit32GCDump();
@@ -36,7 +30,7 @@ public partial struct GCInfo
         Console.Write("Method info block:\n");
 #pragma warning restore CA1303
 
-        return gcDump.DumpInfoHdr(table, out header, out methodSize, verifyGCTables);
+        return gcDump.DumpInfoHdr(table, out header, out methodSize, Configuration.VERIFY_GC_TABLES);
     }
 
     internal readonly unsafe nuint gcDumpPtrTable(byte* table, InfoHdr header, uint methodSize)
@@ -65,7 +59,7 @@ public partial struct GCInfo
             gcDump.gcPrintf = Console.Write;
         }
 
-        return gcDump.DumpGCTable(table, in header, methodSize, verifyGCTables);
+        return gcDump.DumpGCTable(table, in header, methodSize, Configuration.VERIFY_GC_TABLES);
     }
 
     internal readonly unsafe void gcFindPtrsInFrame(void* infoBlock, void* codeBlock, uint offs)
@@ -81,7 +75,7 @@ public partial struct GCInfo
             gcDump.gcPrintf = Console.Write;
         }
 
-        gcDump.DumpPtrsInFrame((byte*)infoBlock, (byte*)codeBlock, offs, verifyGCTables);
+        gcDump.DumpPtrsInFrame((byte*)infoBlock, (byte*)codeBlock, offs, Configuration.VERIFY_GC_TABLES);
     }
 
     private static void EnsureJit32GCDump()

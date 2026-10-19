@@ -235,14 +235,17 @@ internal sealed unsafe class Jit32GcInfoTests
 
             Assert.That(serializedSize, Is.EqualTo(measuredSize));
             Assert.That(header.returnKind, Is.EqualTo(1));
-#if VERIFY_GC_TABLES
-            Assert.That(*(ushort*)destination, Is.EqualTo(0xFEEF));
-            Assert.That(destination[2], Is.EqualTo(0x82));
-            Assert.That(destination[3], Is.EqualTo(0x23));
-#else
-            Assert.That(destination[0], Is.EqualTo(0x82));
-            Assert.That(destination[1], Is.EqualTo(0x23));
-#endif
+            if (Configuration.VERIFY_GC_TABLES)
+            {
+                Assert.That(*(ushort*)destination, Is.EqualTo(0xFEEF));
+                Assert.That(destination[2], Is.EqualTo(0x82));
+                Assert.That(destination[3], Is.EqualTo(0x23));
+            }
+            else
+            {
+                Assert.That(destination[0], Is.EqualTo(0x82));
+                Assert.That(destination[1], Is.EqualTo(0x23));
+            }
         }
         finally
         {
@@ -279,17 +282,20 @@ internal sealed unsafe class Jit32GcInfoTests
             var end = codeGen.GCInfo.gcPtrTableSave(destination, header, 0, ref argTabOffset);
 
             Assert.That((nuint)(end - destination), Is.EqualTo(measuredSize));
-#if VERIFY_GC_TABLES
-            Assert.That(argTabOffset, Is.EqualTo((nuint)4));
-            Assert.That(*(ushort*)destination, Is.EqualTo(0xBEEF));
-            Assert.That(*(ushort*)(destination + 2), Is.EqualTo(0xCAFE));
-            Assert.That(*(ushort*)(destination + 4), Is.EqualTo(0xBABE));
-            Assert.That(destination[6], Is.EqualTo(0xFF));
-            Assert.That(*(ushort*)(destination + 7), Is.EqualTo(0xBEEB));
-#else
-            Assert.That(argTabOffset, Is.EqualTo((nuint)0));
-            Assert.That(destination[0], Is.EqualTo(0xFF));
-#endif
+            if (Configuration.VERIFY_GC_TABLES)
+            {
+                Assert.That(argTabOffset, Is.EqualTo((nuint)4));
+                Assert.That(*(ushort*)destination, Is.EqualTo(0xBEEF));
+                Assert.That(*(ushort*)(destination + 2), Is.EqualTo(0xCAFE));
+                Assert.That(*(ushort*)(destination + 4), Is.EqualTo(0xBABE));
+                Assert.That(destination[6], Is.EqualTo(0xFF));
+                Assert.That(*(ushort*)(destination + 7), Is.EqualTo(0xBEEB));
+            }
+            else
+            {
+                Assert.That(argTabOffset, Is.EqualTo((nuint)0));
+                Assert.That(destination[0], Is.EqualTo(0xFF));
+            }
         }
         finally
         {
@@ -326,39 +332,35 @@ internal sealed unsafe class Jit32GcInfoTests
             var header = new GCInfo.InfoHdr { varPtrTableSize = 1 };
             nuint argTabOffset = 0;
             var measuredSize = codeGen.GCInfo.gcPtrTableSize(header, 0, ref argTabOffset);
-#if VERIFY_GC_TABLES
-            Assert.That(argTabOffset, Is.EqualTo((nuint)7));
-#else
-            Assert.That(argTabOffset, Is.EqualTo((nuint)3));
-#endif
+            Assert.That(argTabOffset, Is.EqualTo(Configuration.VERIFY_GC_TABLES ? (nuint)7 : (nuint)3));
 #pragma warning disable IDE0007
             byte* destination = stackalloc byte[32];
 #pragma warning restore IDE0007
             var end = codeGen.GCInfo.gcPtrTableSave(destination, header, 0, ref argTabOffset);
 
             Assert.That((nuint)(end - destination), Is.EqualTo(measuredSize));
-#if VERIFY_GC_TABLES
-            Assert.That(argTabOffset, Is.EqualTo((nuint)8));
-#else
-            Assert.That(argTabOffset, Is.EqualTo((nuint)4));
-#endif
-#if VERIFY_GC_TABLES
-            Assert.That(destination[0], Is.EqualTo(7));
-            Assert.That(*(ushort*)(destination + 1), Is.EqualTo(0xBEEF));
-            Assert.That(*(ushort*)(destination + 3), Is.EqualTo(0xCAFE));
-            Assert.That(destination[5], Is.EqualTo(4));
-            Assert.That(destination[6], Is.EqualTo(3));
-            Assert.That(destination[7], Is.EqualTo(4));
-            Assert.That(*(ushort*)(destination + 8), Is.EqualTo(0xBABE));
-            Assert.That(destination[10], Is.EqualTo(0xFF));
-            Assert.That(*(ushort*)(destination + 11), Is.EqualTo(0xBEEB));
-#else
-            Assert.That(destination[0], Is.EqualTo(3));
-            Assert.That(destination[1], Is.EqualTo(4));
-            Assert.That(destination[2], Is.EqualTo(3));
-            Assert.That(destination[3], Is.EqualTo(4));
-            Assert.That(destination[4], Is.EqualTo(0xFF));
-#endif
+            if (Configuration.VERIFY_GC_TABLES)
+            {
+                Assert.That(argTabOffset, Is.EqualTo((nuint)8));
+                Assert.That(destination[0], Is.EqualTo(7));
+                Assert.That(*(ushort*)(destination + 1), Is.EqualTo(0xBEEF));
+                Assert.That(*(ushort*)(destination + 3), Is.EqualTo(0xCAFE));
+                Assert.That(destination[5], Is.EqualTo(4));
+                Assert.That(destination[6], Is.EqualTo(3));
+                Assert.That(destination[7], Is.EqualTo(4));
+                Assert.That(*(ushort*)(destination + 8), Is.EqualTo(0xBABE));
+                Assert.That(destination[10], Is.EqualTo(0xFF));
+                Assert.That(*(ushort*)(destination + 11), Is.EqualTo(0xBEEB));
+            }
+            else
+            {
+                Assert.That(argTabOffset, Is.EqualTo((nuint)4));
+                Assert.That(destination[0], Is.EqualTo(3));
+                Assert.That(destination[1], Is.EqualTo(4));
+                Assert.That(destination[2], Is.EqualTo(3));
+                Assert.That(destination[3], Is.EqualTo(4));
+                Assert.That(destination[4], Is.EqualTo(0xFF));
+            }
         }
         finally
         {
@@ -366,12 +368,7 @@ internal sealed unsafe class Jit32GcInfoTests
         }
     }
 
-#if DUMP_GC_TABLES
-#if DEBUG
-    private const bool VerifyDumpMarkers = true;
-#else
-    private const bool VerifyDumpMarkers = false;
-#endif
+    private const bool VerifyDumpMarkers = Configuration.DEBUG;
 
     [TestCase(0u)]
     [TestCase(0x7Fu)]
@@ -422,10 +419,16 @@ internal sealed unsafe class Jit32GcInfoTests
         Assert.That(value, Is.EqualTo(1u));
     }
 
-    [TestCase(false)]
-#if DEBUG
-    [TestCase(true)]
-#endif
+    private static IEnumerable<TestCaseData> DumpHeaderVerificationCases()
+    {
+        yield return new TestCaseData(false);
+        if (TestConfiguration.IsDebug)
+        {
+            yield return new TestCaseData(true);
+        }
+    }
+
+    [TestCaseSource(nameof(DumpHeaderVerificationCases))]
     public void DumpHeaderDecodesWideFieldsOptionalPayloadAndEpilogDeltas(bool verify)
     {
         var header = new GCInfo.InfoHdr
@@ -545,11 +548,7 @@ internal sealed unsafe class Jit32GcInfoTests
             interruptible = interruptible ? (byte)1 : (byte)0,
             ebpFrame = ebpFrame ? (byte)1 : (byte)0,
         };
-#if DEBUG
-        bool[] verificationModes = [false, true];
-#else
-        bool[] verificationModes = [false];
-#endif
+        bool[] verificationModes = TestConfiguration.IsDebug ? [false, true] : [false];
         foreach (var verify in verificationModes)
         {
             var buffer = new byte[encoding.Length + 8];
@@ -746,10 +745,7 @@ internal sealed unsafe class Jit32GcInfoTests
         var buffer = new byte[256];
         fixed (byte* table = buffer)
         {
-            var verify = false;
-#if VERIFY_GC_TABLES
-            verify = true;
-#endif
+            var verify = Configuration.VERIFY_GC_TABLES;
             var pointerTable = WriteDumpHeader(table, header, 0x20, [], verify);
             var end = pointerTable;
             if (verify)
@@ -795,14 +791,18 @@ internal sealed unsafe class Jit32GcInfoTests
                 Assert.That(headerSize, Is.EqualTo((nuint)(pointerTable - table)));
                 Assert.That(pointerSize, Is.EqualTo((nuint)(end - pointerTable)));
                 var banner = noGcRegion ? "No GC regions and pointer table:\n" : "Pointer table:\n";
-#if DEBUG
-                Assert.That(console.ToString(), Is.EqualTo("Method info block:\n" + banner));
-                var diagnostics = Encoding.UTF8.GetString(stream.ToArray()).Replace("\r\n", "\n", StringComparison.Ordinal);
-#else
-                var diagnostics = console.ToString();
-                Assert.That(diagnostics, Does.StartWith("Method info block:\n"));
-                Assert.That(diagnostics, Does.Contain(banner));
-#endif
+                string diagnostics;
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(console.ToString(), Is.EqualTo("Method info block:\n" + banner));
+                    diagnostics = Encoding.UTF8.GetString(stream.ToArray()).Replace("\r\n", "\n", StringComparison.Ordinal);
+                }
+                else
+                {
+                    diagnostics = console.ToString();
+                    Assert.That(diagnostics, Does.StartWith("Method info block:\n"));
+                    Assert.That(diagnostics, Does.Contain(banner));
+                }
                 Assert.That(diagnostics, Does.Contain("    method      size   = 0020\n"));
                 if (noGcRegion)
                 {
@@ -886,5 +886,4 @@ internal sealed unsafe class Jit32GcInfoTests
 
         return table;
     }
-#endif
 }
