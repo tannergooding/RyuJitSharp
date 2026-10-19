@@ -201,9 +201,6 @@ public partial class Compiler
             fgInsertStmtAtEnd(bottom, stmt);
         }
 
-#if ENABLE_FAST_GCPOLL_HELPER
-        noway_assert(pAddrOfCaptureThreadGlobal == null);
-#endif
         GenTree value;
         if (pAddrOfCaptureThreadGlobal != null)
         {
