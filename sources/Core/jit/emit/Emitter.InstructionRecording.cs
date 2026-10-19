@@ -16,19 +16,20 @@ public partial class Emitter
             throw new FatalJitException(CORJIT_SKIPPED, "Instruction display is not used on LoongArch64.");
         }
 
-#if DEBUG
-        if (Configuration.TARGET_AMD64)
+        if (Configuration.DEBUG)
         {
-            RequireSupportedInstructionRecording();
-        }
+            if (Configuration.TARGET_AMD64)
+            {
+                RequireSupportedInstructionRecording();
+            }
 
-        emitInsSanityCheck(id);
-        assert(_compiler is not null);
-        if (_compiler.opts.dspCode)
-        {
-            emitDispIns(id, true, false, false);
+            emitInsSanityCheck(id);
+            assert(_compiler is not null);
+            if (_compiler.opts.dspCode)
+            {
+                emitDispIns(id, true, false, false);
+            }
         }
-#endif
 
         if (Configuration.DEBUG)
         {
@@ -95,9 +96,13 @@ public partial class Emitter
     private static readonly uint[] emitIFcounts =
         Configuration.EMITTER_STATS ? new uint[emitFmtToOps.Length] : null!;
 
-#if DEBUG
     private void emitInsSanityCheck(instrDesc id)
     {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         if (Configuration.TARGET_XARCH)
         {
             emitInsSanityCheckXarch(id);
@@ -131,7 +136,6 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED,
             "Instruction sanity checking is not implemented for this target.");
     }
-#endif
 
     public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
