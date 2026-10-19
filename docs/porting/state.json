@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate deferred CGCOMMON-0134 in sources\\Core\\jit\\codegenlinear\\CodeGen.UnspillRegisters.cs against the current Release dependency closure, then continue the remaining original-order conditional inventory. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "Re-evaluate the original-order deferred entries CCB-0089, CCB-0091, and CCB-0093 in sources\\Core\\jit\\compiler\\Compiler.CompilationFinish.cs against the current Release dependency closure, then continue the remaining original-order conditional inventory. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
 
     "unresolvedConditionalCleanup": [
       {

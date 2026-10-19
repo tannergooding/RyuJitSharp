@@ -28,9 +28,10 @@ public partial class Emitter
             assert(_compiler is not null);
             assert((uint)tree.LclNum < _compiler.lvaCount);
         }
-#if DEBUG
-        emitVarRefOffs = unchecked((int)tree.AsLclVar().LclIlOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            emitVarRefOffs = unchecked((int)tree.AsLclVar().LclIlOffs);
+        }
         if (data.IsContainedIntOrIImmed)
         {
             emitIns_S_I(ins, attr, tree.LclNum, 0, unchecked((int)data.AsIntConCommon().IconValue));

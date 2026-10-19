@@ -33,17 +33,18 @@ public sealed partial class CodeGen
 
     public void inst_set_SV_var(GenTree tree)
     {
-#if DEBUG
-        assert(tree is not null && ((tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR) ||
-            ((tree.Oper is GT_LCL_ADDR) && (tree.AsLclFld().LclOffs == 0))));
-        assert((uint)tree.AsLclVarCommon().LclNum < (uint)_compiler.lvaCount);
-
-        if (tree is not GenTreeLclVar local)
+        if (Configuration.DEBUG)
         {
-            throw new FatalJitException(CORJIT_INTERNALERROR, "Stack variable reference requires a local variable or store.");
-        }
+            assert(tree is not null && ((tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR) ||
+                ((tree.Oper is GT_LCL_ADDR) && (tree.AsLclFld().LclOffs == 0))));
+            assert((uint)tree.AsLclVarCommon().LclNum < (uint)_compiler.lvaCount);
 
-        Emitter.emitVarRefOffs = local.LclIlOffs;
-#endif
+            if (tree is not GenTreeLclVar local)
+            {
+                throw new FatalJitException(CORJIT_INTERNALERROR, "Stack variable reference requires a local variable or store.");
+            }
+
+            Emitter.emitVarRefOffs = local.LclIlOffs;
+        }
     }
 }

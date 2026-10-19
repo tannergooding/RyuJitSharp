@@ -30,9 +30,10 @@ public sealed partial class CodeGen
         {
             assert((uint)lclNode.LclNum < (uint)_compiler.lvaCount);
         }
-#if DEBUG
-        Emitter.emitVarRefOffs = unchecked((int)lclNode.LclIlOffs);
-#endif
+        if (Configuration.DEBUG)
+        {
+            Emitter.emitVarRefOffs = unchecked((int)lclNode.LclIlOffs);
+        }
         var ins = ins_Load(type, _compiler.isSIMDTypeLocalAligned(varNum));
         Emitter.emitIns_R_S(ins, type.EmitSize, regNum, varNum, 0);
 
