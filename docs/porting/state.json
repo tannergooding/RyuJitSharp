@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Start the next size-ranked cohort of ten eligible deferred files: UnwindInfo.cs (INV-58C557EEFF24), Compiler.UnwindPadding.cs (INV-0C415D36FE43, INV-BF12E65DC0C7, INV-BE8AE34F8FFF, INV-ED3F9CBCD4CD), LinearScan.LocalResolutionDriverVerificationMoves.cs (INV-84FD2A66FCBD), LinearScan.EdgeResolutionRegisters.cs (INV-5AB7F41B577B), LinearScan.AllocationTraversalDiagnostics.cs (INV-5B8D30F8467C), Liveness.LocalTracking.cs (INV-774E981B789B, INV-0D3AE727FAE9), Phase.cs (INV-516DA3F9FBF9), LinearScan.LocalResolutionDriverFinalization.cs (INV-D1C669258E03), CodeSeqSM.cs (INV-5266E8BB82A0), and var_typesExtensions.cs (INV-107B261D1DEE). Capture their source snapshots and classify the complete file group before editing; keep the four B209 candidates deferred until the table/emitter closure is ported and tested.",
+    "nextAction": "Begin the next size-ranked re-evaluation of non-B209 deferred candidates, starting with CCB-1350, INV-90F76B0C310F, and INV-A0B6775A3F42; resolve concrete Release dependency closures and continue eligible Debug guard conversions. Preserve optional feature semantics at explicit G1/G2 decision gates and keep the four B209 candidates deferred until the table/emitter closure is ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
@@ -23,6 +23,26 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Port and test the target-width table/emitter dependency closure before re-evaluating these candidates."
+      },
+      {
+        "batch": "Remaining non-B209 deferred conditional-cleanup candidates",
+        "deferredCount": 12,
+        "candidateIds": [
+          "CCB-1350",
+          "INV-90F76B0C310F",
+          "INV-A0B6775A3F42",
+          "INV-B46DE597FD51",
+          "INV-E310D3CAFF48",
+          "INV-B99795A1AA57",
+          "INV-8CCBDE11EE21",
+          "INV-89FD708CCA09",
+          "INV-B1D6BC6FF554",
+          "CCB-1205",
+          "CCB-1209",
+          "INV-1A9208FC08F9"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Continue in size-ranked file cohorts, resolving concrete Release dependency closures; preserve optional feature semantics at the G1/G2 decision gates while converting all other eligible candidates."
       }
     ],
 

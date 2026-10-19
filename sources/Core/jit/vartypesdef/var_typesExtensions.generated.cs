@@ -256,34 +256,6 @@ public static partial class var_typesExtensions
         (emitAttr)(0), // TYP_UNKNOWN
     ];
 
-#if DEBUG
-    private static readonly string[] s_names = [
-        "<UNDEF>", // TYP_UNDEF
-        "void", // TYP_VOID
-        "byte", // TYP_BYTE
-        "ubyte", // TYP_UBYTE
-        "short", // TYP_SHORT
-        "ushort", // TYP_USHORT
-        "int", // TYP_INT
-        "uint", // TYP_UINT
-        "long", // TYP_LONG
-        "ulong", // TYP_ULONG
-        "float", // TYP_FLOAT
-        "double", // TYP_DOUBLE
-        "ref", // TYP_REF
-        "byref", // TYP_BYREF
-        "struct", // TYP_STRUCT
-        "simd8", // TYP_SIMD8
-        "simd12", // TYP_SIMD12
-        "simd16", // TYP_SIMD16
-        "simd32", // TYP_SIMD32
-        "simd64", // TYP_SIMD64
-        "simd", // TYP_SIMD_ARM64
-        "mask", // TYP_MASK
-        "unknown", // TYP_UNKNOWN
-    ];
-#endif
-
     private static ReadOnlySpan<var_types_register> s_registers => [
         VTR_INT, // TYP_UNDEF
         VTR_INT, // TYP_VOID
@@ -419,4 +391,46 @@ public static partial class var_typesExtensions
         2, // TYP_MASK
         0, // TYP_UNKNOWN
     ];
+
+    extension(var_types varType)
+    {
+        public string Name
+        {
+            get
+            {
+                if (Configuration.DEBUG)
+                {
+                    return varType switch
+                    {
+                        var_types.TYP_UNDEF => "<UNDEF>", // TYP_UNDEF
+                        var_types.TYP_VOID => "void", // TYP_VOID
+                        var_types.TYP_BYTE => "byte", // TYP_BYTE
+                        var_types.TYP_UBYTE => "ubyte", // TYP_UBYTE
+                        var_types.TYP_SHORT => "short", // TYP_SHORT
+                        var_types.TYP_USHORT => "ushort", // TYP_USHORT
+                        var_types.TYP_INT => "int", // TYP_INT
+                        var_types.TYP_UINT => "uint", // TYP_UINT
+                        var_types.TYP_LONG => "long", // TYP_LONG
+                        var_types.TYP_ULONG => "ulong", // TYP_ULONG
+                        var_types.TYP_FLOAT => "float", // TYP_FLOAT
+                        var_types.TYP_DOUBLE => "double", // TYP_DOUBLE
+                        var_types.TYP_REF => "ref", // TYP_REF
+                        var_types.TYP_BYREF => "byref", // TYP_BYREF
+                        var_types.TYP_STRUCT => "struct", // TYP_STRUCT
+                        var_types.TYP_SIMD8 => "simd8", // TYP_SIMD8
+                        var_types.TYP_SIMD12 => "simd12", // TYP_SIMD12
+                        var_types.TYP_SIMD16 => "simd16", // TYP_SIMD16
+                        var_types.TYP_SIMD32 => "simd32", // TYP_SIMD32
+                        var_types.TYP_SIMD64 => "simd64", // TYP_SIMD64
+                        var_types.TYP_SIMD_ARM64 => "simd", // TYP_SIMD_ARM64
+                        var_types.TYP_MASK => "mask", // TYP_MASK
+                        var_types.TYP_UNKNOWN => "unknown", // TYP_UNKNOWN
+                        _ => throw new IndexOutOfRangeException(),
+                    };
+                }
+
+                return varType.ToString();
+            }
+        }
+    }
 }

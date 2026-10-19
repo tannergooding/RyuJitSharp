@@ -171,19 +171,6 @@ public static partial class var_typesExtensions
             }
         }
 
-#if DEBUG
-        public string Name
-        {
-            get
-            {
-                assert(s_names.Length == (int)(TYP_COUNT));
-                return s_names[(int)(varType)];
-            }
-        }
-#else
-        public string Name => varType.ToString();
-#endif
-
         public var_types_register Register
         {
             get

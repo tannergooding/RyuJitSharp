@@ -130,12 +130,13 @@ public sealed partial class CodeSeqSM
     {
         assert(s_smStates[stateId].term);
 
-#if DEBUG && !SMGEN_COMPILE
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"weight={StateWeights[stateId],3} : state {stateId,3} [ {StateDesc(stateId)} ]\n");
+            if (verbose)
+            {
+                jitprintf($"weight={StateWeights[stateId],3} : state {stateId,3} [ {StateDesc(stateId)} ]\n");
+            }
         }
-#endif
 
         _nativeSize += StateWeights[stateId];
     }

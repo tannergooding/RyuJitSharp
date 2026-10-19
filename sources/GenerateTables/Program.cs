@@ -6468,7 +6468,7 @@ public enum var_types : byte
 
     private static void GenerateVarTypesExtensions()
     {
-        var varTypeNameBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
+        var varTypeNameCasesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -6477,7 +6477,7 @@ public enum var_types : byte
             var name = parts[0].AsSpan().Trim();
             var nameString = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {nameString}, // TYP_{name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                        var_types.TYP_{name} => {nameString}, // TYP_{name}");
         });
 
         var genActualTypesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
@@ -6572,11 +6572,6 @@ public static partial class var_typesExtensions
     private static ReadOnlySpan<emitAttr> s_emitSizes64 => [
 {{emitTypeSizesBuilder64}}    ];
 
-#if DEBUG
-    private static readonly string[] s_names = [
-{{varTypeNameBuilder}}    ];
-#endif
-
     private static ReadOnlySpan<var_types_register> s_registers => [
 {{varTypeRegisterBuilder}}    ];
 
@@ -6597,6 +6592,25 @@ public static partial class var_typesExtensions
 
     private static ReadOnlySpan<byte> s_stSzs64 => [
 {{genTypeStSzsBuilder64}}    ];
+
+    extension(var_types varType)
+    {
+        public string Name
+        {
+            get
+            {
+                if (Configuration.DEBUG)
+                {
+                    return varType switch
+                    {
+{{varTypeNameCasesBuilder}}                        _ => throw new IndexOutOfRangeException(),
+                    };
+                }
+
+                return varType.ToString();
+            }
+        }
+    }
 }
 """);
     }

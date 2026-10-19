@@ -39,97 +39,98 @@ public abstract partial class Phase
         var compiler = _compiler;
         compiler.EndPhase(_phase);
 
-#if DEBUG
-        if (Configuration.DUMP_FLOWGRAPHS)
+        if (Configuration.DEBUG)
         {
-            _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
-        }
-
-        // Don't dump or check post phase unless the phase made changes.
-        var doPostPhase = status != PhaseStatus.MODIFIED_NOTHING;
-        var doPostPhaseChecks = (compiler.activePhaseChecks != PhaseChecks.CHECK_NONE) && (JitConfig.JitEnablePhaseChecks != 0);
-        var doPostPhaseDumps = compiler.activePhaseDumps == PhaseDumps.DUMP_ALL;
-
-        var statusMessage = doPostPhase ? "" : " [no changes]";
-
-        if (VERBOSE)
-        {
-            if (compiler.compIsForInlining)
+            if (Configuration.DUMP_FLOWGRAPHS)
             {
-                assert(compiler.impInlineInfo.iciCall is not null);
-                jitprintf($"\n*************** Inline @[{compiler.impInlineInfo.iciCall.TreeId:D6}] Finishing PHASE {_name}{statusMessage}\n");
+                _ = compiler.fgDumpFlowGraph(_phase, Compiler.PhasePosition.PostPhase);
             }
-            else
+
+            // Don't dump or check post phase unless the phase made changes.
+            var doPostPhase = status != PhaseStatus.MODIFIED_NOTHING;
+            var doPostPhaseChecks = (compiler.activePhaseChecks != PhaseChecks.CHECK_NONE) && (JitConfig.JitEnablePhaseChecks != 0);
+            var doPostPhaseDumps = compiler.activePhaseDumps == PhaseDumps.DUMP_ALL;
+
+            var statusMessage = doPostPhase ? "" : " [no changes]";
+
+            if (VERBOSE)
             {
-                if (compiler.opts.optRepeatActive)
+                if (compiler.compIsForInlining)
                 {
-                    jitprintf($"\n*************** Finishing PHASE {_name}{statusMessage} (OptRepeat iteration {compiler.opts.optRepeatIteration} of {compiler.opts.optRepeatCount})\n");
+                    assert(compiler.impInlineInfo.iciCall is not null);
+                    jitprintf($"\n*************** Inline @[{compiler.impInlineInfo.iciCall.TreeId:D6}] Finishing PHASE {_name}{statusMessage}\n");
                 }
                 else
                 {
-                    jitprintf($"\n*************** Finishing PHASE {_name}{statusMessage}\n");
+                    if (compiler.opts.optRepeatActive)
+                    {
+                        jitprintf($"\n*************** Finishing PHASE {_name}{statusMessage} (OptRepeat iteration {compiler.opts.optRepeatIteration} of {compiler.opts.optRepeatCount})\n");
+                    }
+                    else
+                    {
+                        jitprintf($"\n*************** Finishing PHASE {_name}{statusMessage}\n");
+                    }
+                }
+
+                if (doPostPhase && doPostPhaseDumps)
+                {
+                    jitprintf($"Trees after {_name}\n");
+                    compiler.fgDispBasicBlocks(true);
                 }
             }
 
-            if (doPostPhase && doPostPhaseDumps)
+            if (doPostPhase && doPostPhaseChecks)
             {
-                jitprintf($"Trees after {_name}\n");
-                compiler.fgDispBasicBlocks(true);
+                var checks = compiler.activePhaseChecks;
+
+                if ((checks & PhaseChecks.CHECK_UNIQUE) != 0)
+                {
+                    compiler.fgDebugCheckNodesUniqueness();
+                }
+
+                if ((checks & PhaseChecks.CHECK_FG) != 0)
+                {
+                    compiler.fgDebugCheckBBlist();
+                }
+
+                if ((checks & PhaseChecks.CHECK_FG_INIT_BLOCK) != 0)
+                {
+                    compiler.fgDebugCheckInitBB();
+                }
+
+                assert(((checks & PhaseChecks.CHECK_IR_RELAXED) == 0) || ((checks & PhaseChecks.CHECK_IR) != 0));
+
+                if ((checks & PhaseChecks.CHECK_IR) != 0)
+                {
+                    var extraFlagsBefore = compiler.Metrics.IRExtraFlags;
+                    compiler.fgDebugCheckLinks();
+                    var extraFlags = compiler.Metrics.IRExtraFlags - extraFlagsBefore;
+                    JITDUMP($"IR flag check found {extraFlags} extra flags after {_name}\n");
+                }
+
+                if ((checks & PhaseChecks.CHECK_EH) != 0)
+                {
+                    compiler.fgVerifyHandlerTab();
+                }
+
+                if ((checks & PhaseChecks.CHECK_LOOPS) != 0)
+                {
+                    compiler.fgDebugCheckLoops();
+                }
+
+                if ((checks & PhaseChecks.CHECK_PROFILE) != 0 || (checks & PhaseChecks.CHECK_LIKELIHOODS) != 0)
+                {
+                    compiler.fgDebugCheckProfile(checks);
+                }
+
+                if ((checks & PhaseChecks.CHECK_LINKED_LOCALS) != 0)
+                {
+                    compiler.fgDebugCheckLinkedLocals();
+                }
+
+                compiler.fgDebugCheckFlowGraphAnnotations();
             }
         }
-
-        if (doPostPhase && doPostPhaseChecks)
-        {
-            var checks = compiler.activePhaseChecks;
-
-            if ((checks & PhaseChecks.CHECK_UNIQUE) != 0)
-            {
-                compiler.fgDebugCheckNodesUniqueness();
-            }
-
-            if ((checks & PhaseChecks.CHECK_FG) != 0)
-            {
-                compiler.fgDebugCheckBBlist();
-            }
-
-            if ((checks & PhaseChecks.CHECK_FG_INIT_BLOCK) != 0)
-            {
-                compiler.fgDebugCheckInitBB();
-            }
-
-            assert(((checks & PhaseChecks.CHECK_IR_RELAXED) == 0) || ((checks & PhaseChecks.CHECK_IR) != 0));
-
-            if ((checks & PhaseChecks.CHECK_IR) != 0)
-            {
-                var extraFlagsBefore = compiler.Metrics.IRExtraFlags;
-                compiler.fgDebugCheckLinks();
-                var extraFlags = compiler.Metrics.IRExtraFlags - extraFlagsBefore;
-                JITDUMP($"IR flag check found {extraFlags} extra flags after {_name}\n");
-            }
-
-            if ((checks & PhaseChecks.CHECK_EH) != 0)
-            {
-                compiler.fgVerifyHandlerTab();
-            }
-
-            if ((checks & PhaseChecks.CHECK_LOOPS) != 0)
-            {
-                compiler.fgDebugCheckLoops();
-            }
-
-            if ((checks & PhaseChecks.CHECK_PROFILE) != 0 || (checks & PhaseChecks.CHECK_LIKELIHOODS) != 0)
-            {
-                compiler.fgDebugCheckProfile(checks);
-            }
-
-            if ((checks & PhaseChecks.CHECK_LINKED_LOCALS) != 0)
-            {
-                compiler.fgDebugCheckLinkedLocals();
-            }
-
-            compiler.fgDebugCheckFlowGraphAnnotations();
-        }
-#endif
     }
 
     /// <summary>perform dumps and checks before a phase executes</summary>

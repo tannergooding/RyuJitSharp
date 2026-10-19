@@ -18,25 +18,27 @@ public partial class Compiler
 
         RequireUnwindEETarget();
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            if (Configuration.TARGET_RISCV64)
+            if (verbose)
             {
-                jitprintf("unwindNop: adding NOP\n");
+                if (Configuration.TARGET_RISCV64)
+                {
+                    jitprintf("unwindNop: adding NOP\n");
+                }
+                else
+                {
+                    logf("unwindNop: adding NOP\n");
+                }
             }
-            else
-            {
-                logf("unwindNop: adding NOP\n");
-            }
-        }
 
-        unwindInfo.uwiAddingNOP = true;
-#endif
+            unwindInfo.uwiAddingNOP = true;
+        }
         unwindInfo.AddCode(0xE3);
-#if DEBUG
-        unwindInfo.uwiAddingNOP = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            unwindInfo.uwiAddingNOP = false;
+        }
     }
 
     public void unwindNop(uint codeSizeInBytes)
@@ -52,14 +54,15 @@ public partial class Compiler
         }
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            logf($"unwindNop: adding NOP for {codeSizeInBytes} byte instruction\n");
-        }
+            if (verbose)
+            {
+                logf($"unwindNop: adding NOP for {codeSizeInBytes} byte instruction\n");
+            }
 
-        unwindInfo.uwiAddingNOP = true;
-#endif
+            unwindInfo.uwiAddingNOP = true;
+        }
         if (codeSizeInBytes == 2)
         {
             unwindInfo.AddCode(0xFB);
@@ -70,8 +73,9 @@ public partial class Compiler
             unwindInfo.AddCode(0xFC);
         }
 
-#if DEBUG
-        unwindInfo.uwiAddingNOP = false;
-#endif
+        if (Configuration.DEBUG)
+        {
+            unwindInfo.uwiAddingNOP = false;
+        }
     }
 }

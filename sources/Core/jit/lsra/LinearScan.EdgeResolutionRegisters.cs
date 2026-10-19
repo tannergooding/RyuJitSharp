@@ -20,14 +20,16 @@ public sealed partial class LinearScan
         var freeRegs = Configuration.TARGET_ARM
             ? allRegs(type is TYP_DOUBLE ? TYP_FLOAT : type)
             : getAvailableGPRsForType(allRegs(type), type is TYP_INT ? TYP_REF : type);
-#if DEBUG
-        // The small-set stress mode deliberately forces integer cycles through XCHG.
-        if ((_lsraStressMask & 0x3) == 0x3)
+        if (Configuration.DEBUG)
         {
-            return REG_NA;
+            // The small-set stress mode deliberately forces integer cycles through XCHG.
+            if ((_lsraStressMask & 0x3) == 0x3)
+            {
+                return REG_NA;
+            }
+
+            freeRegs = stressLimitRegs(null, type, freeRegs);
         }
-        freeRegs = stressLimitRegs(null, type, freeRegs);
-#endif
         freeRegs &= ~terminatorConsumedRegs.GetRegSetForType(type);
 
         var liveVariables = toBlock is null ? fromBlock.bbLiveOut : toBlock.bbLiveIn;
