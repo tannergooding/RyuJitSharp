@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Convert CCB-0411's lvaStressLclFld and fgStress64RsltMul implementation family to Release-bindable declarations while preserving Debug stress behavior, then remove the callsite guard. Keep the independent Compiler storage/layout constraints and B209 dependency closure explicitly deferred.",
+    "nextAction": "Map the CCB-0459/CCB-0641 importer-state closure in Compiler.imp.cs: trace all readers, writers, resets, and copies; resolve the Debug state/API dependency without changing ManagedBytesAllocated or Release Compiler layout, then convert eligible guards as one batch.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -92,15 +92,6 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Resolve whether the DebugData representation may add a per-Compiler sidecar allocation and per-GenTree ConditionalWeakTable lookup, or identify an alternative that preserves the tree-construction hot path and ManagedBytesAllocated while keeping Release Compiler layout unchanged."
-      },
-      {
-        "batch": "Compiler tree stress routine closure",
-        "deferredCount": 1,
-        "candidateIds": [
-          "CCB-0411"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Port the lvaStressLclFld and fgStress64RsltMul implementation family to Release-bindable declarations while preserving Debug stress behavior, then remove the callsite guard."
       },
       {
         "batch": "Debug importer diagnostic/state closure",

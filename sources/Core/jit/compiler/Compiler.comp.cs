@@ -3419,11 +3419,12 @@ public partial class Compiler
         }
         DoPhase(this, PHASE_MORPH_IMPBYREF, fgRetypeImplicitByRefArgs);
 
-#if DEBUG
-        // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
-        lvaStressLclFld();
-        fgStress64RsltMul();
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
+            lvaStressLclFld();
+            fgStress64RsltMul();
+        }
 
         // Morph the trees in all the blocks of the method
         if (Configuration.DEBUG)
