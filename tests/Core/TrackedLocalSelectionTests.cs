@@ -12,9 +12,6 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class TrackedLocalSelectionTests
 {
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "lvaTrackedVars")]
-    private static extern ref nint[] TrackedVars(Compiler compiler);
-
     private readonly struct LatePolicy : ILivenessPolicy
     {
     }
@@ -195,14 +192,15 @@ internal static unsafe class TrackedLocalSelectionTests
             Assert.That(BitSetOps<Compiler, TrackedVarBitSetTraits>.IsMember(compiler, full, count - 1), Is.True);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(TrackedVars(compiler).Length, Is.EqualTo((count + 63) / 64));
+                var trackedVars = compiler.GetLocalTrackedVars();
+                Assert.That(trackedVars.Length, Is.EqualTo((count + 63) / 64));
                 for (var index = 0; index < count; index++)
                 {
-                    Assert.That((TrackedVars(compiler)[index / 64] & ((nint)1 << (index % 64))) != 0, Is.True);
+                    Assert.That((trackedVars[index / 64] & ((nint)1 << (index % 64))) != 0, Is.True);
                 }
                 if ((count % 64) != 0)
                 {
-                    Assert.That(TrackedVars(compiler)[^1] >>> (count % 64), Is.EqualTo((nint)0));
+                    Assert.That(trackedVars[^1] >>> (count % 64), Is.EqualTo((nint)0));
                 }
             }
         });
@@ -226,7 +224,7 @@ internal static unsafe class TrackedLocalSelectionTests
             Assert.That(compiler.lvaTrackedToVarNum, Is.SameAs(previousMapping));
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(TrackedVars(compiler), Is.Empty);
+                Assert.That(compiler.GetLocalTrackedVars(), Is.Empty);
             }
         });
     }

@@ -89,6 +89,16 @@ public partial class Compiler
         internal static readonly ConditionalWeakTable<Compiler, DebugData> Table = [];
     }
 
+    private sealed class LocalTrackedVarsData
+    {
+        internal VARSET_TP TrackedVars = [];
+    }
+
+    private static class LocalTrackedVarsDataStorage
+    {
+        internal static readonly ConditionalWeakTable<Compiler, LocalTrackedVarsData> Table = [];
+    }
+
     /// <summary>If true, dump trees using only ASCII characters.</summary>
     public bool asciiTrees
     {
@@ -520,6 +530,28 @@ public partial class Compiler
 
     internal void CopyLocalDebugData(in LclVarDsc source, in LclVarDsc destination, LocalDebugDataCopyFlags fields)
         => CopyLocalDebugData(lvaGetLclNum(in source), lvaGetLclNum(in destination), fields);
+
+    [Conditional("DEBUG")]
+    internal void SetLocalTrackedVars(VARSET_TP trackedVars)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
+        }
+
+        var data = LocalTrackedVarsDataStorage.Table.GetValue(this, static _ => new LocalTrackedVarsData());
+        VarSetOps.AssignNoCopy(this, ref data.TrackedVars, trackedVars);
+    }
+
+    internal VARSET_TP GetLocalTrackedVars()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
+        }
+
+        return LocalTrackedVarsDataStorage.Table.TryGetValue(this, out var data) ? data.TrackedVars : [];
+    }
 
     [Conditional("DEBUG")]
     internal void ResetLocalDebugData(int localNumber)

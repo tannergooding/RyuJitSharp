@@ -10,17 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Map CCB-0699 in Liveness.LocalTracking.cs: trace lvaTrackedVars initialization and every consumer, then close its Debug state/API dependency without changing Release Compiler layout, allocation, or liveness semantics.",
+    "nextAction": "Re-evaluate the ten LOOP_HOIST_STATS and TRACK_ENREG_STATS candidates as one state/API/lifecycle closure. Establish whether runtime Configuration gating can preserve each mode's defaults and opt-ins, ManagedBytesAllocated, and Release Compiler layout; do not change optional-mode defaults or Release rooting without approval.",
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "Compiler local tracked-variable liveness closure",
-        "deferredCount": 1,
-        "candidateIds": [
-          "CCB-0699"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map lvaTrackedVars initialization and all Liveness.LocalTracking.cs consumers; close the Debug state/API dependency without adding Release Compiler layout or changing liveness semantics."
-      },
       {
         "batch": "LOOP_HOIST_STATS and TRACK_ENREG_STATS optional statistics closure",
         "deferredCount": 10,
@@ -37,7 +28,7 @@
           "CCB-0441"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Keep these ten candidates Deferred: moving the per-compiler counters into DebugData changes the measured ManagedBytesAllocated value because DebugData is allocated after Compiler._allocatedBytesAtStart; adding instance fields changes Release Compiler layout. No existing allocation-free per-compiler representation was verified. CCB-0509, CCB-0129, CCB-0130, CCB-0134, and CCB-0194 are closed-accepted. CCB-0131/CCB-0347 remain in the GS blocker-state closure; CCB-0285 is the next candidate to re-evaluate after skipping recorded G2 dependencies."
+        "nextAction": "Keep these ten candidates deferred pending the grouped G2 optional-statistics decision. Preserve each mode's defaults and opt-ins, Debug ManagedBytesAllocated output, and Release Compiler layout/rooting. Identify a universal state/API/lifecycle representation before converting the complete closure; do not change defaults or Release rooting without approval."
       },
       {
         "batch": "Compiler verbose state/layout dependency closure",

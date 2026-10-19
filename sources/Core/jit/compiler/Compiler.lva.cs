@@ -77,11 +77,6 @@ public partial class Compiler
     /// <summary>min # of size_t's sufficient to hold a bit for all the locals being tracked</summary>
     public int lvaTrackedCountInSizeTUnits;
 
-#if DEBUG
-    /// <summary>set of tracked variables</summary>
-    public VARSET_TP lvaTrackedVars = [];
-#endif
-
     /// <summary>set of long (64-bit) variables</summary>
     public VARSET_TP lvaLongVars = [];
 
