@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -23,6 +22,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64EmitterRecordingTests
 {
+    [SetUp]
+    public static void RequireArm64Target()
+    {
+        Assume.That(Configuration.TARGET_ARM64, "This fixture requires ARM64 target semantics.");
+    }
+
     [TestCase("general", false, 21u, INS_ldr, INS_isb)]
     [TestCase("general", true, 21u, INS_ldr, INS_isb)]
     [TestCase("advsimd", false, 10u, INS_ldr, INS_sm3ss1)]
@@ -520,19 +525,22 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(INS_mvn, EA_8BYTE, REG_ARM64_R19, REG_ARM64_R20, INS_OPTS_ROR, IF_ARM64_DR_2F,
         "insOptsNone(id.idInsOpt()) || insOptsAluShift(id.idInsOpt())")]
     [TestCase(INS_dup, EA_4BYTE, REG_ARM64_V19, REG_ARM64_R20, INS_OPTS_NONE, IF_ARM64_DV_2C,
-        "isValidVectorDatasize(datasize)")]
+        "isValidVectorDatasizeArm64(datasize)")]
     public static void PairImmediateNativeDiagnosticRestrictions(instruction ins, emitAttr size,
         regNumber reg1, regNumber reg2, insOpts opt, Emitter.insFormat format, string condition)
     {
-#if DEBUG
-        var emitter = CreateEmitter();
-        var error = Assert.Catch(() =>
-            RecordPair(emitter, ins, size, reg1, reg2, 3, opt, INS_SCALABLE_OPTS_NONE));
-        Assert.That(error, Has.Message.Contains(condition));
-        Assert.That(GroupSize(emitter), Is.Zero);
-#else
-        CheckPair(ins, size, reg1, reg2, 3, opt, format, 3, ins);
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var emitter = CreateEmitter();
+            var error = Assert.Catch(() =>
+                RecordPair(emitter, ins, size, reg1, reg2, 3, opt, INS_SCALABLE_OPTS_NONE));
+            Assert.That(error, Has.Message.Contains(condition));
+            Assert.That(GroupSize(emitter), Is.Zero);
+        }
+        else
+        {
+            CheckPair(ins, size, reg1, reg2, 3, opt, format, 3, ins);
+        }
     }
 
     [TestCase(INS_ldrsb, EA_8BYTE, REG_ARM64_R19, 255, INS_OPTS_NONE, IF_ARM64_LS_2B, 255)]
@@ -1277,11 +1285,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         RecordLocalPair(emitter, INS_ldp, EA_GCREF, attr2, REG_ARM64_R19, REG_ARM64_R20, REG_SPBASE,
-            16, first, second, 24, 40
-#if DEBUG
-            , 101, 202
-#endif
-            );
+            16, first, second, 24, 40, 101, 202);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No local pair was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_LS_3C));
         Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_ZR));
@@ -1302,11 +1306,12 @@ internal static unsafe class Arm64EmitterRecordingTests
             Assert.That(address.lvaVarNum(), Is.EqualTo(second));
             Assert.That(address.lvaOffset(), Is.EqualTo(40));
         }
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing local-reference metadata.");
-        Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(101));
-        Assert.That(debugInfo.idVarRefOffs2, Is.EqualTo(202));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing local-reference metadata.");
+            Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(101));
+            Assert.That(debugInfo.idVarRefOffs2, Is.EqualTo(202));
+        }
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
@@ -1334,11 +1339,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         RecordLocalPair(emitter, INS_stp, EA_16BYTE, EA_16BYTE, REG_ARM64_V19, REG_ARM64_V20, REG_SPBASE,
-            imm, 3, 4, 0, 16
-#if DEBUG
-            , 0, 16
-#endif
-            );
+            imm, 3, 4, 0, 16, 0, 16);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No vector local pair was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(imm == 0 ? IF_ARM64_LS_3B : IF_ARM64_LS_3C));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)scaled));
@@ -1348,7 +1349,6 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idIsLclVarPair(), Is.True);
     }
 
-#if DEBUG
     [TestCase(INS_mul, EA_16BYTE, INS_OPTS_8H)]
     [TestCase(INS_smlal, EA_8BYTE, INS_OPTS_4H)]
     [TestCase(INS_sqdmull, EA_2BYTE, INS_OPTS_NONE)]
@@ -1356,6 +1356,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(INS_smlal2, EA_16BYTE, INS_OPTS_8H)]
     public static void IndexedHalfwordRejectsUnencodableRegister(instruction ins, emitAttr size, insOpts opt)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var emitter = CreateEmitter();
         var error = Assert.Catch(() => RecordThreeImmediate(emitter, ins, size,
             REG_ARM64_V19, REG_ARM64_V20, REG_ARM64_V16, 0, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
@@ -1376,13 +1377,13 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ImmediatePairRejectsReservedEncoding(instruction ins, regNumber reg1,
         regNumber reg2, regNumber reg3, int imm, insOpts opt, string condition)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var emitter = CreateEmitter();
         var error = Assert.Catch(() => RecordThreeImmediate(emitter, ins, EA_8BYTE,
             reg1, reg2, reg3, imm, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
         Assert.That(error, Has.Message.Contains(condition));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
-#endif
 
     [Test]
     public static void ImmediateSveDependencyRemainsExplicit()
@@ -1656,11 +1657,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
-#if DEBUG
     [TestCase(32)]
     [TestCase(-32)]
     public static void ConditionalImmediateRejectsWideOperands(int imm)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var emitter = CreateEmitter();
         var error = Assert.Catch(() => RecordImmediateCondition(emitter, INS_ccmp, EA_8BYTE,
             REG_ARM64_R19, imm, insCFlags.INS_FLAGS_NONE, insCond.INS_COND_EQ));
@@ -1672,12 +1673,12 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(15)]
     public static void ConditionalCodeRejectsReservedValues(int condition)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var emitter = CreateEmitter();
         var error = Assert.Catch(() => RecordCondition(emitter, INS_cset, EA_8BYTE, REG_ARM64_R19, (insCond)condition));
         Assert.That(error, Has.Message.Contains("isValidImmCond"));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_I_I")]
     private static extern void RecordTwoImmediates(Emitter emitter, instruction ins, emitAttr size,
@@ -1742,11 +1743,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidSimm")]
     private static extern bool ValidSignedImmediate(Emitter? emitter, nint value, int bits);
 
-#if DEBUG
     [TestCase(false)]
     [TestCase(true)]
     public static void ExtraRegisterAccessReadsNativeWord(bool fourth)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var descriptor = RecordingEmitter.Basic(INS_nop, IF_ARM64_DR_4A);
         Unsafe.As<Emitter.instrDesc.idAddrUnion, ulong>(ref descriptor.idAddr()) =
             ((ulong)REG_ARM64_R19 << 35) | ((ulong)REG_ARM64_R28 << 42);
@@ -1759,6 +1760,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void SanityChecksUseThirdAndFourthRegisters(
         Emitter.insFormat format, regNumber third, regNumber fourth)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var descriptor = RecordingEmitter.Basic(INS_nop, format);
         descriptor.idOpSize(EA_8BYTE);
         descriptor.idReg1(REG_ARM64_R0);
@@ -1779,6 +1781,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void SanityChecksAcceptNativeRegisterClasses(
         Emitter.insFormat format, emitAttr size, regNumber reg1, regNumber reg2)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var descriptor = RecordingEmitter.Basic(INS_nop, format);
         descriptor.idOpSize(size);
         Register1(descriptor) = reg1;
@@ -1789,6 +1792,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     [Test]
     public static void SveFormatsRetainTheirSeparateSanityDependency()
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires Debug.");
         var descriptor = RecordingEmitter.Basic(INS_ldr, IF_ARM64_EN5A);
         var result = Arm64SveInstructionSanityTests.Capture(() => CheckSanity(CreateEmitter(), descriptor));
         Arm64SveInstructionSanityTests.AssertUnexpectedFormat(result);
@@ -1799,7 +1803,6 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_idReg2")]
     private static extern ref regNumber Register2(Emitter.instrDesc descriptor);
-#endif
 
     [TestCase(-1, EA_4BYTE, false)]
     [TestCase(0, EA_4BYTE, true)]
@@ -1958,10 +1961,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idIsLclVar(), Is.True);
         Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
         Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(localOffset));
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing local-reference metadata.");
-        Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(123));
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing local-reference metadata.");
+            Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(123));
+        }
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
@@ -2050,12 +2054,15 @@ internal static unsafe class Arm64EmitterRecordingTests
             }
         }
 
-#if DEBUG
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(Record);
-        Assert.That(assertions, Is.Empty);
-#else
-        Record();
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(Record);
+            Assert.That(assertions, Is.Empty);
+        }
+        else
+        {
+            Record();
+        }
         var id = LastInstruction(emitter) ?? throw new AssertionException("No scalable access was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(store ? INS_sve_str : INS_sve_ldr));
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
@@ -2217,12 +2224,15 @@ internal static unsafe class Arm64EmitterRecordingTests
             }
         }
 
-#if DEBUG
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(Record);
-        Assert.That(assertions, Is.Empty);
-#else
-        Record();
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(Record);
+            Assert.That(assertions, Is.Empty);
+        }
+        else
+        {
+            Record();
+        }
         Assert.That(GroupSize(emitter), Is.EqualTo(8));
         Assert.That(CurrentInstructions(emitter), Has.Count.EqualTo(2));
         var access = LastInstruction(emitter) ?? throw new AssertionException("Missing scalable access.");
@@ -2592,12 +2602,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(false, false, false)]
     [TestCase(true, false, false)]
     [TestCase(false, true, false)]
-#if DEBUG
     [TestCase(false, false, true)]
-#endif
     public static void ConstantNodeAddressRecordingPreservesBindingAndJumpLinks(
         bool cold, bool reloc, bool forceLong)
     {
+        Assume.That(!forceLong || TestConfiguration.IsDebug, "The long-address case requires Debug.");
         using var tls = TestConfiguration.CreateJitTls();
         var emitter = CreateConstantEmitter();
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
@@ -2611,9 +2620,10 @@ internal static unsafe class Arm64EmitterRecordingTests
         {
             compiler.compCurBB = null;
         }
-#if DEBUG
-        compiler.opts.compLongAddress = forceLong;
-#endif
+        if (TestConfiguration.IsDebug)
+        {
+            compiler.opts.compLongAddress = forceLong;
+        }
         emitter.emitIns(INS_nop);
         var handle = Compiler.eeFindJitDataOffs(64);
         RecordConstantAddress(emitter, INS_ldr, EA_8BYTE | (reloc ? EA_DSP_RELOC_FLG : 0),
@@ -2765,9 +2775,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         }];
         compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
         compiler.lvaDoneFrameLayout = Compiler.REGALLOC_FRAME_LAYOUT;
-#if DEBUG
         emitter.emitVarRefOffs = 123;
-#endif
         return emitter;
     }
 
@@ -2812,11 +2820,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         CodeGenEmitter(codeGen) = emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
+        emitter.emitBegFN(false, TestConfiguration.IsDebug);
         return emitter;
     }
 
@@ -2890,4 +2894,3 @@ internal static unsafe class Arm64EmitterRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_instInfo")]
     private static extern ReadOnlySpan<insInfoFlags> Flags(CodeGen? codeGen);
 }
-#endif

@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Process the next pending file group INV-E62598CAA5D5 in tests\\Core\\Arm64EmitterRecordingTests.cs, classify and close all 16 candidates as one coherent test-file batch, then continue in ledger order.",
+    "nextAction": "Process the next pending file group INV-2E5BE58BB68B in tests\\Core\\AssertionTests.cs; classify and close all 3 candidates as one coherent file batch, then continue in ledger order.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {
