@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Resolve CCB-1052 FPO_INTERRUPTIBLE by verifying its pinned target semantics and existing runtime metadata, then convert through an equivalent Configuration target predicate only if that preserves GC stack-record behavior.",
+    "nextAction": "Re-evaluate the grouped MEASURE_NOWAY deferred family (starting at CCB-0199) and decide the runtime representation and Release footprint policy before conversion.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
@@ -23,7 +23,7 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Port and test the target-width table/emitter dependency closure before re-evaluating these candidates."
-      },
+      }
     ],
 
     "validationGaps": [

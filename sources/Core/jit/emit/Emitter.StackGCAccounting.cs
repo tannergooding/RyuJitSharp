@@ -213,14 +213,10 @@ public partial class Emitter
             }
             if (argRecValue == 0)
             {
-#if !FPO_INTERRUPTIBLE
                 if (emitFullyInt || (gcrefRegs == 0 && byrefRegs == 0 && u2.emitGcArgTrackCnt == 0))
                 {
                     return;
                 }
-#else
-                return;
-#endif
             }
         }
 
