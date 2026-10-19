@@ -10,20 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue with the B209 target-width table/emitter dependency closure. Keep CCB-1205 explicitly deferred until a low-footprint universal error API preserves Debug caller metadata without adding Release call-site overhead; revisit INV-A6698B8BBC3D during full-oracle closeout.",
+    "nextAction": "Re-evaluate CCB-1205 in sources/Core/jit/error/Globals.cs across its full declaration and call-site closure; determine whether a universal API can preserve Debug caller metadata while omitting Release call-site overhead. Then revisit INV-A6698B8BBC3D during full-oracle closeout.",
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
-        "deferredCount": 4,
-        "candidateIds": [
-          "ABI-0001",
-          "CCB-0910",
-          "CCB-1058",
-          "CCB-1062"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Port and test the target-width table/emitter dependency closure before re-evaluating these candidates."
-      },
       {
         "batch": "Remaining non-B209 deferred conditional-cleanup candidates",
         "deferredCount": 1,
@@ -31,7 +19,7 @@
           "CCB-1205"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Keep the Debug/Release error API split deferred until a low-footprint universal signature/helper strategy preserves caller metadata; do not change call sites speculatively."
+        "nextAction": "Trace the Debug/Release error API split through every caller and metadata path before choosing a universal signature/helper."
       }
     ],
 
