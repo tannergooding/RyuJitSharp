@@ -130,15 +130,15 @@ public partial class Compiler
     public string? compGSSecurityCheckBlocker;
 #endif
 
-#if DEBUG
-    public static readonly string[] s_compStressModeNames = Enum.GetNames<compStressArea>();
+    // Keep stress-only arrays out of Release JIT initialization.
+    private static class CompStressData
+    {
+        internal static readonly string[] ModeNames = Enum.GetNames<compStressArea>();
+        internal static readonly int[] AreaHashes = new int[(int)STRESS_COUNT];
+        internal static readonly byte[][] ModeNamesUtf8 = Array.ConvertAll(ModeNames, static name => Encoding.ASCII.GetBytes(name));
+    }
 
-    public InlineArrayCompilerStressCount<byte> compActiveStressModes;
-
-    private static readonly int[] s_compStressAreaHashes = new int[(int)STRESS_COUNT];
-
-    private static readonly byte[][] s_compStressModeNamesUtf8 = Array.ConvertAll(s_compStressModeNames, static name => Encoding.ASCII.GetBytes(name));
-#endif
+    public ref InlineArrayCompilerStressCount<byte> compActiveStressModes => ref GetDebugData().CompActiveStressModes;
 
     /// <summary>ABI return type descriptor for the method</summary>
     public ReturnTypeDesc compRetTypeDesc;
@@ -2171,7 +2171,8 @@ public partial class Compiler
             compDebugBreak = true;
         }
 
-        assert(!((ReadOnlySpan<byte>)(compActiveStressModes)).ContainsAnyExcept((byte)(0)));
+        assert((GetExistingDebugData() is not { } debugData) ||
+               !((ReadOnlySpan<byte>)(debugData.CompActiveStressModes)).ContainsAnyExcept((byte)(0)));
 
         // Read function list, if not already read, and there exists such a list.
         if (!s_pJitFunctionFileInitialized)
@@ -2949,7 +2950,6 @@ public partial class Compiler
         return seed;
     }
 
-#if DEBUG
     /// <summary>determine if a stress mode should be enabled</summary>
     /// <param name="stressArea">stress mode to possibly enable</param>
     /// <param name="weightPercentage">percent of time this mode should be turned on (range 0 to 100); weight 0 effectively disables</param>
@@ -2962,6 +2962,11 @@ public partial class Compiler
     /// </remarks>
     public bool compStressCompile(compStressArea stressArea, int weightPercentage)
     {
+        if (!Configuration.DEBUG)
+        {
+            return false;
+        }
+
         // This can be called early, before info is fully set up.
         if (string.IsNullOrEmpty(info.compMethodName) || string.IsNullOrEmpty(info.compFullName))
         {
@@ -2977,14 +2982,20 @@ public partial class Compiler
 
         var doStress = compStressCompileHelper(stressArea, weightPercentage);
 
-        if (doStress && (compActiveStressModes[(int)(stressArea)] == 0))
+        if (doStress)
         {
-            if (verbose)
+            ref var activeStressModes = ref GetDebugData().CompActiveStressModes;
+            var stressAreaIndex = (int)(stressArea);
+
+            if (activeStressModes[stressAreaIndex] == 0)
             {
-                jitprintf($"\n\n*** JitStress: {s_compStressModeNames[(int)stressArea]} ***\n\n");
+                if (verbose)
+                {
+                    jitprintf($"\n\n*** JitStress: {CompStressData.ModeNames[stressAreaIndex]} ***\n\n");
+                }
             }
 
-            compActiveStressModes[(int)(stressArea)] = 1;
+            activeStressModes[stressAreaIndex] = 1;
         }
 
         return doStress;
@@ -2992,12 +3003,17 @@ public partial class Compiler
 
     public static uint compStressAreaHash(compStressArea area)
     {
-        ref var hashCode = ref s_compStressAreaHashes[(int)area];
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JIT stress is only available in Debug builds.");
+        }
+
+        ref var hashCode = ref CompStressData.AreaHashes[(int)area];
         var result = unchecked((uint)Volatile.Read(ref hashCode));
 
         if (result == 0)
         {
-            result = unchecked((uint)HashString(s_compStressModeNames[(int)area]));
+            result = unchecked((uint)HashString(CompStressData.ModeNames[(int)area]));
 
             if (result == 0)
             {
@@ -3017,12 +3033,17 @@ public partial class Compiler
 
     public unsafe bool compStressCompileHelper(compStressArea stressArea, int weightPercentage)
     {
+        if (!Configuration.DEBUG)
+        {
+            return false;
+        }
+
         if (!compAllowStress)
         {
             return false;
         }
 
-        var stressModeName = s_compStressModeNamesUtf8[(int)stressArea].AsSpan();
+        var stressModeName = CompStressData.ModeNamesUtf8[(int)stressArea].AsSpan();
 
         if (StressModeNamesContain(JitConfig.JitStressModeNamesNot, stressModeName))
         {
@@ -3075,9 +3096,6 @@ public partial class Compiler
 
         return hash < (uint)weightPercentage;
     }
-#else
-    public bool compStressCompile(compStressArea stressArea, int weightPercentage) => false;
-#endif
 
     private static ConfigMethodRange s_onlyOptimizeRange;
 

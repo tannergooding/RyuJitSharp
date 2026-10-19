@@ -169,16 +169,34 @@ internal static unsafe class SsaBookkeepingTests
 
                 Assert.That(compiler._outlinedCompositeSsaNums is null, Is.EqualTo(compact));
                 Assert.That(number.GetNum(compiler, index), Is.EqualTo(ssaNum));
-                Assert.That(ActiveStressModes(compiler)[(int)Compiler.STRESS_SSA_INFO], Is.EqualTo(1));
+                Assert.That(compiler.compActiveStressModes[(int)Compiler.STRESS_SSA_INFO], Is.EqualTo(1));
             }
+        });
+    }
+
+    [Test]
+    public static void StressModeEntryPointsReturnFalseWithoutReleaseAllocations()
+    {
+        Assume.That(!TestConfiguration.IsDebug, "Release stress entry points are not available in Debug builds.");
+
+        SsaLivenessTests.WithCompiler(0, compiler =>
+        {
+            compiler.compAllowStress = true;
+
+            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            var stressEnabled = compiler.compStressCompile(Compiler.STRESS_SSA_INFO, 100);
+            var helperEnabled = compiler.compStressCompileHelper(Compiler.STRESS_SSA_INFO, 100);
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+            Assert.That(stressEnabled, Is.False);
+            Assert.That(helperEnabled, Is.False);
+            Assert.That(allocated, Is.Zero);
+            _ = Assert.Throws<InvalidOperationException>(() => Compiler.compStressAreaHash(Compiler.STRESS_SSA_INFO));
         });
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
     private static extern ref byte* StressNames(ref JitConfigValues config);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compActiveStressModes")]
-    private static extern ref InlineArrayCompilerStressCount<byte> ActiveStressModes(Compiler compiler);
 
     private static void WithPromotedLocal(Action<Compiler> action)
     {

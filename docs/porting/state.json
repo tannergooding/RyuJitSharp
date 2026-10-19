@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Resolve the separate Debug-only stress-state candidates CCB-0348 and CCB-0406: map stress tables, mode state, and callers, then remove their guards while preserving Debug behavior and avoiding Release allocations. CCB-0131/CCB-0347 remain Deferred in the GS blocker-state closure. Keep ABI-0001, CCB-0910, CCB-1058, and CCB-1062 deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Start the compiler method/tree diagnostic ID closure at CCB-0349, CCB-0350, and CCB-0376: map method-counter and tree-ID reads, writes, initialization, and copies; preserve Debug numbering, hot-path cost, and Release layout. Keep CCB-0131/CCB-0347 deferred in the GS blocker-state closure and B209 candidates deferred until target-width table/emitter dependencies are ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -92,16 +92,6 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Keep CCB-0131 and CCB-0347 together with CCB-0454/0455: preserve the per-Compiler blocked-request state and GS-phase diagnostic order without adding a Release Compiler field or changing allocation metrics. Map all writers/readers/resets, then review an external-state design before conversion."
-      },
-      {
-        "batch": "Compiler debug stress state and implementation closure",
-        "deferredCount": 2,
-        "candidateIds": [
-          "CCB-0348",
-          "CCB-0406"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map stress tables, mode state, and callers; resolve the Debug-only stress API family while preserving Debug behavior and avoiding Release allocations."
       },
       {
         "batch": "Compiler method/tree diagnostic ID closure",

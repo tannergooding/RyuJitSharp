@@ -85,9 +85,6 @@ internal static partial class TestConfiguration
         return 0;
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compActiveStressModes")]
-    private static extern ref InlineArrayCompilerStressCount<byte> ActiveStressModes(Compiler compiler);
-
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockStats")]
     private static extern ref uint[]?[]? BlockStats(LinearScan allocator);
 
@@ -144,7 +141,7 @@ internal static partial class TestConfiguration
             throw new InvalidOperationException("Active stress modes are only available in Debug builds.");
         }
 
-        return ActiveStressModes(compiler)[(int)area];
+        return compiler.compActiveStressModes[(int)area];
     }
 
     public static void InitializeLsraStatistics(LinearScan allocator, int blockCount)

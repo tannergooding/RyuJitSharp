@@ -21,6 +21,7 @@ public partial class Compiler
         internal int InlineMethodXmlFilePosition;
         internal int ExpensiveDebugCheckLevel;
         internal Dictionary<int, LocalDebugData>? LocalVariables;
+        internal InlineArrayCompilerStressCount<byte> CompActiveStressModes;
         internal GenTree? LastConsumedNode;
         internal bool TreesBeforeAfterMorph;
         internal int BlockTraversalLabel = 1;
