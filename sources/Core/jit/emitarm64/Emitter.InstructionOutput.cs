@@ -23,11 +23,10 @@ public partial class Emitter
             var ins = id.idIns();
             var fmt = id.idInsFmt();
             var size = id.idOpSize();
-#if DEBUG
-            var dspOffs = Configuration.DUMP_GC_TABLES
-                ? compiler.opts.dspGCtbls
-                : !compiler.opts.disDiffable;
-#endif
+            var dspOffs = Configuration.DEBUG &&
+                (Configuration.DUMP_GC_TABLES
+                    ? compiler.opts.dspGCtbls
+                    : !compiler.opts.disDiffable);
             assert((int)REG_ARM64_NA == (int)REG_ARM64_NA);
             nint imm;
             nint index;
@@ -1441,11 +1440,8 @@ public partial class Emitter
                 var adr = compiler.lvaFrameAddress(varNum, out var FPbased, true);
                 if (id.idGCref() != GCT_NONE)
                 {
-                    emitGCvarLiveUpd(adr + (int)ofs, varNum, id.idGCref(), dst
-#if DEBUG
-                        , (uint)varNum
-#endif
-                    );
+                    emitGCvarLiveUpd(adr + (int)ofs, varNum, id.idGCref(), dst,
+                        Configuration.DEBUG ? unchecked((uint)varNum) : 0);
                 }
                 else
                 {
@@ -1455,11 +1451,8 @@ public partial class Emitter
                             ?? throw new InvalidOperationException("The spill temporary must exist.")).tdTempType;
                     if (vt is TYP_REF or TYP_BYREF)
                     {
-                        emitGCvarDeadUpd(adr + (int)ofs, dst
-#if DEBUG
-                            , (uint)varNum
-#endif
-                        );
+                        emitGCvarDeadUpd(adr + (int)ofs, dst,
+                            Configuration.DEBUG ? unchecked((uint)varNum) : 0);
                     }
                 }
                 if (emitInsWritesToLclVarStackLocPairArm64(id))
@@ -1500,11 +1493,8 @@ public partial class Emitter
                                 assert(((uint)adr + ofs + ofs2Dist) == ((uint)adr2 + ofs2));
                             }
                         }
-                        emitGCvarLiveUpd(adr2 + (int)ofs2, varNum2, id.idGCrefReg2(), dst
-#if DEBUG
-                            , (uint)varNum2
-#endif
-                        );
+                        emitGCvarLiveUpd(adr2 + (int)ofs2, varNum2, id.idGCrefReg2(), dst,
+                            Configuration.DEBUG ? unchecked((uint)varNum2) : 0);
                     }
                     else
                     {
@@ -1514,41 +1504,38 @@ public partial class Emitter
                                 ?? throw new InvalidOperationException("The spill temporary must exist.")).tdTempType;
                         if (vt is TYP_REF or TYP_BYREF)
                         {
-                            emitGCvarDeadUpd(adr2 + (int)ofs2, dst
-#if DEBUG
-                                , (uint)varNum2
-#endif
-                            );
+                            emitGCvarDeadUpd(adr2 + (int)ofs2, dst,
+                                Configuration.DEBUG ? unchecked((uint)varNum2) : 0);
                         }
                     }
                 }
             }
 
-#if DEBUG
-            var expected = (nuint)emitSizeOfInsDsc(id);
-            assert(sz == expected);
-            if (compiler.opts.disAsm || compiler.verbose)
+            if (Configuration.DEBUG)
             {
-                emitDispInsArm64(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
+                var expected = (nuint)emitSizeOfInsDsc(id);
+                assert(sz == expected);
+                if (compiler.opts.disAsm || compiler.verbose)
+                {
+                    emitDispInsArm64(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
+                }
+                if (compiler.compDebugBreak
+                    && (uint)JitConfig.JitBreakEmitOutputInstr == (id.idDebugOnlyInfo()
+                        ?? throw new InvalidOperationException("Instruction debug information must exist.")).idNum)
+                {
+                    assert(false, "!\"JitBreakEmitOutputInstr reached\"");
+                }
+                if (compiler.verbose || compiler.opts.disasmWithGC)
+                {
+                    emitDispGCInfoDelta();
+                }
             }
-            if (compiler.compDebugBreak
-                && (uint)JitConfig.JitBreakEmitOutputInstr == (id.idDebugOnlyInfo()
-                    ?? throw new InvalidOperationException("Instruction debug information must exist.")).idNum)
-            {
-                assert(false, "!\"JitBreakEmitOutputInstr reached\"");
-            }
-            if (compiler.verbose || compiler.opts.disasmWithGC)
-            {
-                emitDispGCInfoDelta();
-            }
-#else
-            if (compiler.opts.disAsm)
+            else if (compiler.opts.disAsm)
             {
                 var expected = (nuint)emitSizeOfInsDsc(id);
                 assert(sz == expected);
                 emitDispInsArm64(id, false, false, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
             }
-#endif
             assert(*dp != dst || id.idIsEmptyAlign());
             *dp = dst;
 

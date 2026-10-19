@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue with the complete 7-candidate Emitter.InstructionOutput.cs group beginning at CCB-1102; revalidate each candidate against current source and process the file as one packet.",
+    "nextAction": "Continue with CCB-1139 in sources\\Core\\jit\\emitarm64\\Emitter.SveInstructionSanity.cs; inspect and process its complete file-level Debug-only group as one packet.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {
