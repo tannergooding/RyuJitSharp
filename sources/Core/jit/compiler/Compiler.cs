@@ -33,10 +33,8 @@ public partial class Compiler
 
     private const int PREFIX_READONLY = 0x00000020;
 
-#if DEBUG
     /// <summary>call doesn't "tail" IL prefix but is treated as explicit because of tail call stress</summary>
     private const int PREFIX_TAILCALL_STRESS = 0x00000040;
-#endif
 
     private const int PREFIX_IS_TASK_AWAIT = 0x00000080;
 
@@ -109,9 +107,7 @@ public partial class Compiler
 
     private static int jitTotalMethodCompiled;
 
-#if DEBUG
     private static int jitNestingLevel;
-#endif
 
     private HelperToManagedMap? _helperToManagedMap;
 
@@ -409,11 +405,10 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
-        const bool shouldCaptureMethodNames = true;
-#else
-        var shouldCaptureMethodNames = Configuration.LATE_DISASM;
-#endif
+        var shouldCaptureMethodNames = Configuration.DEBUG ||
+                                       Configuration.DUMP_FLOWGRAPHS ||
+                                       Configuration.DUMP_GC_TABLES ||
+                                       Configuration.LATE_DISASM;
         if (shouldCaptureMethodNames)
         {
             info.compMethodName = eeGetMethodName(methodHandle);
@@ -463,8 +458,7 @@ public partial class Compiler
             fgBigOffsetMorphingTemps[i] = BAD_VAR_NUM;
         }
 
-#if DEBUG
-        if (!compIsForInlining)
+        if (Configuration.DEBUG && !compIsForInlining)
         {
             var noStructPromotionValue = JitConfig.JitNoStructPromotion;
             assert(noStructPromotionValue is >= 0 and <= 2);
@@ -479,7 +473,6 @@ public partial class Compiler
                 fgNoStructParamPromotion = true;
             }
         }
-#endif
 
         structPromotionHelper = new StructPromotionHelper(this);
 
@@ -494,12 +487,10 @@ public partial class Compiler
             InitializeNodeSizeStatistics();
         }
 
-#if DEBUG
-        if (!compIsForInlining)
+        if (Configuration.DEBUG && !compIsForInlining)
         {
             compDoComponentUnitTestsOnce();
         }
-#endif
 
         // check that HelperCallProperties are initialized
         assert(CORINFO_HELP_GET_GCSTATIC_BASE.IsPure);
@@ -894,15 +885,13 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     /// <summary>Should we use only ASCII characters for tree dumps?</summary>
     /// <remarks>This is set to default to 1 in JitConfig</remarks>
-    public bool ShouldDumpAsciiTrees => JitConfig.JitDumpASCII == 1;
+    public bool ShouldDumpAsciiTrees => Configuration.DEBUG && (JitConfig.JitDumpASCII == 1);
 
-    public bool ShouldUseVerboseSsa => JitConfig.JitDumpVerboseSsa == 1;
+    public bool ShouldUseVerboseSsa => Configuration.DEBUG && (JitConfig.JitDumpVerboseSsa == 1);
 
-    public bool ShouldUseVerboseTrees => JitConfig.JitDumpVerboseTrees == 1;
-#endif
+    public bool ShouldUseVerboseTrees => Configuration.DEBUG && (JitConfig.JitDumpVerboseTrees == 1);
 
     private ClassLayoutTable typClassLayoutTable
     {
@@ -1628,15 +1617,13 @@ public partial class Compiler
             return useType;
         }
 
-#if DEBUG
         // Extra query to facilitate wasm replay of native collections.
         // TODO-WASM: delete once we can get a wasm collection.
 
-        if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && IsReadyToRun)
+        if (Configuration.DEBUG && (JitConfig.EnableExtraSuperPmiQueries is not 0) && IsReadyToRun)
         {
             eeRunExtraSuperPmiQueries(() => info.compCompHnd->getWasmLowering(clsHnd));
         }
-#endif
 
         if (Configuration.SWIFT_SUPPORT && (callConv is CorInfoCallConvExtension.Swift))
         {
@@ -2243,13 +2230,14 @@ public partial class Compiler
     [Conditional("DEBUG")]
     public void JITLOG(int level, string message)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            vflogf(jitstdout(), message);
+            if (verbose)
+            {
+                vflogf(jitstdout(), message);
+            }
+            _ = vlogf(level, message);
         }
-        _ = vlogf(level, message);
-#endif
     }
 
     private static ConfigMethodRange fJitRange;

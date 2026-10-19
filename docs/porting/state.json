@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate the original-order deferred entries CCB-0089, CCB-0091, and CCB-0093 in sources\\Core\\jit\\compiler\\Compiler.CompilationFinish.cs against the current Release dependency closure, then continue the remaining original-order conditional inventory. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "Resume original inventory order at CCB-0509 in sources\\Core\\jit\\compiler\\Compiler.fg.cs (pinned branch lines 220-225): evaluate its intentionally dead false && verbose diagnostic, then process the complete 83-Pending Compiler.fg.cs file group as one batch. Convert eligible candidates and defer only with a concrete dependency. Keep the LOOP_HOIST_STATS/TRACK_ENREG_STATS closure G2-deferred because moving per-compiler counters into DebugData changes ManagedBytesAllocated reporting. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
 
     "unresolvedConditionalCleanup": [
       {
@@ -31,6 +31,65 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Map declaration, caller, copy/reset, and Release layout/allocation contracts; obtain bounded design review and user approval before conversion."
+      },
+      {
+        "batch": "LOOP_HOIST_STATS and TRACK_ENREG_STATS optional statistics closure",
+        "deferredCount": 10,
+        "candidateIds": [
+          "CCB-0089",
+          "CCB-0091",
+          "CCB-0093",
+          "CCB-0107",
+          "CCB-0186",
+          "CCB-0188",
+          "CCB-0274",
+          "CCB-0276",
+          "CCB-0440",
+          "CCB-0441"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Resolve the grouped G2 representation and diagnostic-metric policy before conversion. The optional symbols are Debug-only; per-compiler counters can use existing DebugData, but its allocation occurs after Compiler._allocatedBytesAtStart and contributes to ManagedBytesAllocated, so enlarging it changes Debug memory-stat output. Avoid Release Compiler layout growth and preserve optional defaults. Continue independent original-order work at CCB-0509 in Compiler.fg.cs."
+      },
+      {
+        "batch": "Compiler verbose state/layout dependency closure",
+        "deferredCount": 4,
+        "candidateIds": [
+          "CCB-0432",
+          "CCB-0433",
+          "CCB-0434",
+          "CCB-0447"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map all verbose-state readers/writers and select a representation that preserves Debug output and ManagedBytesAllocated without growing Release Compiler instance layout."
+      },
+      {
+        "batch": "Debug JitFunctionFile MethodSet2 static state/AOT rooting",
+        "deferredCount": 1,
+        "candidateIds": [
+          "CCB-0438"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map JitFunctionFile initialization and callers, then verify the Release NativeAOT rooting impact before making the static declarations universal."
+      },
+      {
+        "batch": "GS diagnostic blocker state/layout closure",
+        "deferredCount": 2,
+        "candidateIds": [
+          "CCB-0454",
+          "CCB-0455"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map compGSSecurityCheckBlocker writers and readers, then choose a representation preserving Debug diagnostics and Release Compiler layout."
+      },
+      {
+        "batch": "Debug importer diagnostic/state closure",
+        "deferredCount": 2,
+        "candidateIds": [
+          "CCB-0459",
+          "CCB-0641"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map all importer-state reads, writes, resets, and copies in Compiler.imp.cs; resolve CCB-0641 before removing CCB-0459's guard while preserving ManagedBytesAllocated and Release layout."
       },
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
