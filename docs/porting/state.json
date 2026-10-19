@@ -9,17 +9,17 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "conditional-cleanup",
-    "nextAction": "Resolve INV-A6698B8BBC3D in tests/Core/CSELiveAcrossCallCostTests.cs: reconstruct a nonempty Linux x64 Core/Target selection despite the existing SysV fixture compile failures, then verify the converted branch in Debug and Release.",
+    "stage": "full-runtime-parity-verification",
+    "nextAction": "Recover the checkpoint-referenced runtime-async input captures; artifacts\\dynamic-tls-inputs is absent from the current worktree. Identify the first EE-assigned TLS slot allocation where native and managed indices or offsets diverge before claiming parity or changing compiler constants.",
     "unresolvedConditionalCleanup": [],
     "evidenceLinks": [
-      "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json"
+      "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json",
+      "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json"
     ],
 
     "validationGaps": [
       "An unfiltered Core Debug suite ran despite the active checkpoint's deferral: 17,840 passed, 35 skipped, and 4 failed in PhaseInvariantTests.UniquenessCoversEachIrRepresentation. The failures are MissingFieldException because UnsafeAccessor expects a GenTree._treeId backing field while the existing implementation stores the value in GenTree.DebugData; neither source nor test was changed. This is not acceptance evidence. Log: artifacts\\invfinish-gentree\\closeout-20261016\\Core.Debug.fields.log.",
       "The optional ARM64 emitter recording selection failed 18/642 Debug and 12/606 Release cases on existing unsupported target register-recording and diagnostic paths; no pass is claimed from that selection. ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED remains undefined by default, so its guarded bodies were not executed. TRX: artifacts\\tst\\EmitterTestHarnessGuard\\Debug\\EmitterTestHarnessGuard.win-arm64.Debug.trx and Release equivalent.",
-      "The converted Linux x64 CSELiveAcrossCallCostTests branch remains open-revalidation: Core Linux x64 compiler builds passed Debug/Release, but Core/Target test selection did not execute because existing SysV fixtures fail compilation (CS0182/CS1736 and missing target register symbols). Revisit during full-oracle closeout. Logs: artifacts\\jitconfig-cse-selective-closeout\\linux-core-build\\Debug.log and Release.log; linux-core-call-cost\\Debug.log; target-call-cost-post-closure\\linux-x64-Debug.log.",
       "The Target browser-wasm CodeGenBlockDriverTargetTests.DriverMarksLabelsForAnEmptyWasmFunction selection failed 1/1 in Debug and Release at the existing genAdjustStackLevel unsupported-target exception, before reaching the converted block-driver validations; no wasm block-driver pass is claimed. The separate WasmCodeGenMemoryTests selection passed 6/6 in both configurations. TRX: artifacts\\tst\\CodegenBlockDriver.TargetMatrix\\browser-wasm.Debug\\CodegenBlockDriver.browser-wasm.Debug.trx, Release equivalent, and artifacts\\tst\\CodegenBlockDriver.WasmMemory\\Debug\\CodegenBlockDriver.WasmMemory.Debug.trx, Release equivalent.",
       "Sixty isolated DEBUG compiler-name/safe-graph setup blocks across 55 Core test fixtures now use TestConfiguration helpers; the 55-fixture selection passed 1,266/1,266 in Debug and 1,149/1,149 in Release. The Release run excluded only EmitterJumpRemovalTests.cs and EmitterLoopAlignmentAdjustmentTests.cs, which fail compilation without xarch register symbols.",
       "Runtime-gated 173 Debug-only Core test assertion blocks and reduced DEBUG blocks in sources/Core/jit from 2,413 to 2,179, including conditional JITDUMP-only diagnostics. Calls that depend on Debug-only symbols such as compCurBB, InitTree, rpNum, reason, opcode.Name, and DspThreadLocalOffset remain guarded. The full Core test suites rebuilt and passed in Debug (17,815 passed, 15 skipped) and Release (16,108 passed, 15 skipped; known unsupported xarch emitter test sources excluded). Default full-analysis source builds remain blocked by 158 Debug and 192 Release analyzer diagnostics in unchanged files; no diagnostics were reported in changed files.",
@@ -330,8 +330,8 @@
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",
-      "nextAction": "Use the preserved input captures to identify the allocation boundary before claiming parity or changing compiler constants.",
-      "evidence": "artifacts\\dynamic-tls-inputs"
+      "nextAction": "Recover the preserved input captures, then identify the first EE-assigned TLS slot allocation where native and managed indices or offsets diverge.",
+      "evidence": "artifacts\\dynamic-tls-inputs (absent from the current worktree; recovery required)"
     }
   },
   "sourceMap": [
