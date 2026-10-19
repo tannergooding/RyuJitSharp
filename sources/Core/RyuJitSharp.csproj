@@ -447,14 +447,8 @@
     <!-- DUMP_GC_TABLES -->
     <DefineConstants>$(DefineConstants);DUMP_GC_TABLES</DefineConstants>
 
-    <!-- LOOP_HOIST_STATS: Collect loop hoisting stats. -->
-    <DefineConstants>$(DefineConstants);LOOP_HOIST_STATS</DefineConstants>
-
     <!-- OPT_CONFIG -->
     <DefineConstants>$(DefineConstants);OPT_CONFIG</DefineConstants>
-
-    <!-- TRACK_ENREG_STATS: Collect enregistration stats -->
-    <DefineConstants>$(DefineConstants);TRACK_ENREG_STATS</DefineConstants>
 
     <!-- TRACK_LSRA_STATS: Collect LSRA stats -->
     <DefineConstants>$(DefineConstants);TRACK_LSRA_STATS</DefineConstants>

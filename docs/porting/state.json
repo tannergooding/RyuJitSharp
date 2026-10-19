@@ -10,26 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate the ten LOOP_HOIST_STATS and TRACK_ENREG_STATS candidates as one state/API/lifecycle closure. Establish whether runtime Configuration gating can preserve each mode's defaults and opt-ins, ManagedBytesAllocated, and Release Compiler layout; do not change optional-mode defaults or Release rooting without approval.",
+    "nextAction": "Map all verbose-state readers/writers and select a representation that preserves Debug output and ManagedBytesAllocated without growing Release Compiler instance layout.",
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "LOOP_HOIST_STATS and TRACK_ENREG_STATS optional statistics closure",
-        "deferredCount": 10,
-        "candidateIds": [
-          "CCB-0089",
-          "CCB-0091",
-          "CCB-0093",
-          "CCB-0107",
-          "CCB-0186",
-          "CCB-0188",
-          "CCB-0274",
-          "CCB-0276",
-          "CCB-0440",
-          "CCB-0441"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Keep these ten candidates deferred pending the grouped G2 optional-statistics decision. Preserve each mode's defaults and opt-ins, Debug ManagedBytesAllocated output, and Release Compiler layout/rooting. Identify a universal state/API/lifecycle representation before converting the complete closure; do not change defaults or Release rooting without approval."
-      },
       {
         "batch": "Compiler verbose state/layout dependency closure",
         "deferredCount": 4,

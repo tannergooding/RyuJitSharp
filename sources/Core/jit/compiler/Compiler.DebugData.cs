@@ -89,14 +89,18 @@ public partial class Compiler
         internal static readonly ConditionalWeakTable<Compiler, DebugData> Table = [];
     }
 
-    private sealed class LocalTrackedVarsData
+    private sealed class CompilerDebugSidecar
     {
         internal VARSET_TP TrackedVars = [];
+        internal int LoopsConsidered;
+        internal bool CurrentLoopHasHoistedExpression;
+        internal int LoopsWithHoistedExpressions;
+        internal int TotalHoistedExpressions;
     }
 
-    private static class LocalTrackedVarsDataStorage
+    private static class CompilerDebugSidecarStorage
     {
-        internal static readonly ConditionalWeakTable<Compiler, LocalTrackedVarsData> Table = [];
+        internal static readonly ConditionalWeakTable<Compiler, CompilerDebugSidecar> Table = [];
     }
 
     /// <summary>If true, dump trees using only ASCII characters.</summary>
@@ -539,7 +543,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
         }
 
-        var data = LocalTrackedVarsDataStorage.Table.GetValue(this, static _ => new LocalTrackedVarsData());
+        var data = GetOrCreateCompilerDebugSidecar();
         VarSetOps.AssignNoCopy(this, ref data.TrackedVars, trackedVars);
     }
 
@@ -550,12 +554,59 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
         }
 
-        return LocalTrackedVarsDataStorage.Table.TryGetValue(this, out var data) ? data.TrackedVars : [];
+        return GetExistingCompilerDebugSidecar()?.TrackedVars ?? [];
+    }
+
+    [Conditional("DEBUG")]
+    internal void BeginLoopHoistStats()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+        }
+
+        var data = GetOrCreateCompilerDebugSidecar();
+        data.CurrentLoopHasHoistedExpression = false;
+        data.LoopsConsidered++;
+    }
+
+    [Conditional("DEBUG")]
+    internal void RecordLoopHoistedExpression()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+        }
+
+        var data = GetOrCreateCompilerDebugSidecar();
+        if (!data.CurrentLoopHasHoistedExpression)
+        {
+            data.LoopsWithHoistedExpressions++;
+            data.CurrentLoopHasHoistedExpression = true;
+        }
+
+        data.TotalHoistedExpressions++;
+    }
+
+    internal int GetTotalLoopHoistedExpressions()
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+        }
+
+        return GetExistingCompilerDebugSidecar()?.TotalHoistedExpressions ?? 0;
     }
 
     [Conditional("DEBUG")]
     internal void ResetLocalDebugData(int localNumber)
         => SetLocalDebugData(localNumber, default);
+
+    private CompilerDebugSidecar GetOrCreateCompilerDebugSidecar()
+        => CompilerDebugSidecarStorage.Table.GetValue(this, static _ => new CompilerDebugSidecar());
+
+    private CompilerDebugSidecar? GetExistingCompilerDebugSidecar()
+        => CompilerDebugSidecarStorage.Table.TryGetValue(this, out var data) ? data : null;
 
     private LocalDebugData GetLocalDebugData(int localNumber)
     {

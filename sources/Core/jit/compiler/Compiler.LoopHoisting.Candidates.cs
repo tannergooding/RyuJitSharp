@@ -116,15 +116,19 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
-        var limit = JitConfig.JitHoistLimit;
-        var current = unchecked((uint)_totalHoistedExpressions);
-        if (limit >= 0 && current >= (uint)limit)
+        if (Configuration.DEBUG)
         {
-            JITDUMP($"   ... not hoisting in L{loop.Index:D2}, hoist count {current} >= JitHoistLimit {(uint)limit}\n");
-            return;
+            var limit = JitConfig.JitHoistLimit;
+            if (limit >= 0)
+            {
+                var current = unchecked((uint)GetTotalLoopHoistedExpressions());
+                if (current >= (uint)limit)
+                {
+                    JITDUMP($"   ... not hoisting in L{loop.Index:D2}, hoist count {current} >= JitHoistLimit {(uint)limit}\n");
+                    return;
+                }
+            }
         }
-#endif
         optPerformHoistExpr(tree, block, loop);
         if (varTypeUsesIntReg(tree.Type))
         {

@@ -177,9 +177,13 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             compiler.lvaTable[1].setLvRefCnt(0);
-            SetLoopCounter(compiler, "_loopsConsidered", 4);
-            SetLoopCounter(compiler, "_loopsWithHoistedExpressions", 2);
-            SetLoopCounter(compiler, "_totalHoistedExpressions", 3);
+            compiler.BeginLoopHoistStats();
+            compiler.RecordLoopHoistedExpression();
+            compiler.RecordLoopHoistedExpression();
+            compiler.BeginLoopHoistStats();
+            compiler.RecordLoopHoistedExpression();
+            compiler.BeginLoopHoistStats();
+            compiler.BeginLoopHoistStats();
 
             compiler.compCompileFinish();
 
@@ -197,6 +201,19 @@ internal static unsafe class CompilerFinalizationTests
     }
 
     [Test]
+    public static void LoopHoistCountersReuseExistingDebugSidecarWithoutAllocation()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+        WithCompiler(compiler => {
+            compiler.SetLocalTrackedVars([]);
+            AllocationStart(compiler) = GC.GetAllocatedBytesForCurrentThread();
+            var before = compiler.ManagedBytesAllocated;
+            compiler.BeginLoopHoistStats();
+            Assert.That(compiler.ManagedBytesAllocated, Is.EqualTo(before));
+        });
+    }
+
+    [Test]
     public static void LoopCounterAccumulationPreservesUnsignedWrapAndRatios()
     {
         Assume.That(TestConfiguration.IsDebug);
@@ -204,9 +221,8 @@ internal static unsafe class CompilerFinalizationTests
             SetStaticLoopCounter("s_loopsConsidered", int.MaxValue);
             SetStaticLoopCounter("s_loopsWithHoistedExpressions", int.MaxValue);
             SetStaticLoopCounter("s_totalHoistedExpressions", int.MaxValue);
-            SetLoopCounter(compiler, "_loopsConsidered", 1);
-            SetLoopCounter(compiler, "_loopsWithHoistedExpressions", 1);
-            SetLoopCounter(compiler, "_totalHoistedExpressions", 1);
+            compiler.BeginLoopHoistStats();
+            compiler.RecordLoopHoistedExpression();
 
             AddLoopHoistStats(compiler);
 
@@ -216,6 +232,17 @@ internal static unsafe class CompilerFinalizationTests
             Assert.That(writer.ToString(), Does.Contain("(100.00%)."));
             Assert.That(writer.ToString(), Does.Contain(" 1.00 per loop-with-hoisted-expr."));
         });
+    }
+
+    [Test]
+    public static void ReleaseCompilerDoesNotStoreDebugLoopHoistCounters()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+        var fields = typeof(Compiler).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_loopsConsidered"));
+        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_curLoopHasHoistedExpression"));
+        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_loopsWithHoistedExpressions"));
+        Assert.That(fields.Select(field => field.Name), Does.Not.Contain("_totalHoistedExpressions"));
     }
 
     [TestCase(DoNotEnregisterReason.HiddenBufferStructArg, "m_hiddenStructArg")]
@@ -409,11 +436,6 @@ internal static unsafe class CompilerFinalizationTests
         var method = stats.GetType().GetMethod("Dump", BindingFlags.Instance | BindingFlags.Public)
             ?? throw new InvalidOperationException("The enregistration Dump method is missing.");
         _ = method.Invoke(stats, [writer]);
-    }
-
-    private static void SetLoopCounter(Compiler compiler, string name, int value)
-    {
-        GetCompilerField(name, isStatic: false).SetValue(compiler, value);
     }
 
     private static void SetStaticLoopCounter(string name, int value)

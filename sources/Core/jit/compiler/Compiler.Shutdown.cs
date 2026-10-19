@@ -281,19 +281,15 @@ public partial class Compiler
             jitprintf("Native arena memory used per method is unavailable for managed allocations.\n");
         }
 
-#if LOOP_HOIST_STATS
-        if (!Configuration.DEBUG || (JitConfig.DisplayLoopHoistStats != 0))
+        if (Configuration.DEBUG && (JitConfig.DisplayLoopHoistStats != 0))
         {
             PrintAggregateLoopHoistStats(jitstdout());
         }
-#endif
 
-#if TRACK_ENREG_STATS
-        if (JitConfig.JitEnregStats != 0)
+        if (Configuration.DEBUG && (JitConfig.JitEnregStats != 0))
         {
             s_enregisterStats.Dump(jitstdout());
         }
-#endif
 
         if (Configuration.MEASURE_PTRTAB_SIZE)
         {

@@ -289,28 +289,16 @@ public partial class Compiler
     /// <summary>Display per-phase memory statistics for every function</summary>
     public static bool s_dspMemStats;
 
-#if LOOP_HOIST_STATS
-    public int _loopsConsidered;
-
-    public bool _curLoopHasHoistedExpression;
-
-    public int _loopsWithHoistedExpressions;
-
-    public int _totalHoistedExpressions;
-
-    /// <summary>This lock protects the data structures below.</summary>
-    public static readonly Lock s_loopHoistStatsLock = new();
+    /// <summary>This lock protects the aggregate loop-hoisting statistics.</summary>
+    public static readonly Lock? s_loopHoistStatsLock = Configuration.DEBUG ? new() : null;
 
     public static int s_loopsConsidered;
 
     public static int s_loopsWithHoistedExpressions;
 
     public static int s_totalHoistedExpressions;
-#endif
 
-#if TRACK_ENREG_STATS
     public static EnregisterStats s_enregisterStats;
-#endif
 
     public JitMetrics Metrics;
 
@@ -414,6 +402,12 @@ public partial class Compiler
         if (inlineInfo is null &&
             ((JitConfig.DisplayMemStats != 0) || (JitConfig.JitReportMetrics != 0) || (JitConfig.JitTimeLogCsv is not null)))
         {
+            if (Configuration.DEBUG)
+            {
+                // External Debug state is part of the compiler setup, not per-method allocation.
+                _ = GetOrCreateCompilerDebugSidecar();
+            }
+
             _allocatedBytesAtStart = GC.GetAllocatedBytesForCurrentThread();
         }
 

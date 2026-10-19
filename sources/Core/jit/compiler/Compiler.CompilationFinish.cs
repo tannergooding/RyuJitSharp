@@ -62,9 +62,7 @@ public partial class Compiler
             Metrics.BytesAllocated = ManagedBytesAllocated;
         }
 
-#if LOOP_HOIST_STATS
         AddLoopHoistStats();
-#endif
 
         if (Configuration.DEBUG)
         {
@@ -109,7 +107,6 @@ public partial class Compiler
                 jitstdout().Flush();
             }
 
-#if TRACK_ENREG_STATS
             for (var i = 0; i < lvaCount; i++)
             {
                 ref readonly var descriptor = ref lvaGetDesc(i);
@@ -121,7 +118,6 @@ public partial class Compiler
                         GetLocalAddressExposedReason(i));
                 }
             }
-#endif
         }
         else if (JitConfig.JitReportMetrics != 0)
         {
@@ -218,19 +214,39 @@ public partial class Compiler
         jitstdout().Flush();
     }
 
-#if LOOP_HOIST_STATS
+    [Conditional("DEBUG")]
     internal void AddLoopHoistStats()
     {
-        lock (s_loopHoistStatsLock)
+        if (!Configuration.DEBUG)
         {
-            s_loopsConsidered = unchecked(s_loopsConsidered + _loopsConsidered);
-            s_loopsWithHoistedExpressions = unchecked(s_loopsWithHoistedExpressions + _loopsWithHoistedExpressions);
-            s_totalHoistedExpressions = unchecked(s_totalHoistedExpressions + _totalHoistedExpressions);
+            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+        }
+
+        var data = GetExistingCompilerDebugSidecar();
+        if (data is null)
+        {
+            return;
+        }
+
+        var gate = s_loopHoistStatsLock
+            ?? throw new System.InvalidOperationException("The loop-hoist statistics lock is unavailable.");
+
+        lock (gate)
+        {
+            s_loopsConsidered = unchecked(s_loopsConsidered + data.LoopsConsidered);
+            s_loopsWithHoistedExpressions = unchecked(s_loopsWithHoistedExpressions + data.LoopsWithHoistedExpressions);
+            s_totalHoistedExpressions = unchecked(s_totalHoistedExpressions + data.TotalHoistedExpressions);
         }
     }
 
+    [Conditional("DEBUG")]
     internal static void PrintAggregateLoopHoistStats(TextWriter writer)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+        }
+
         writer.Write("\n---------------------------------------------------\n");
         writer.Write("Loop hoisting stats\n");
         writer.Write("---------------------------------------------------\n");
@@ -244,5 +260,4 @@ public partial class Compiler
         writer.Write($"  A total of {s_totalHoistedExpressions} expressions were hoisted, an average of " +
             $"{formatFloat(average, "F2"),5} per loop-with-hoisted-expr.\n");
     }
-#endif
 }

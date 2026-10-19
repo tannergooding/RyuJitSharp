@@ -144,18 +144,11 @@ public partial class Compiler
                 throw new FatalJitException("Loop hoist violated a node test annotation.");
             }
 
-            _nodeTestData.Remove(origExpr);
+            _ = _nodeTestData.Remove(origExpr);
             annotation._tl = TL_CSE_Def;
             annotation._num = _loopHoistCSEClass++;
             _nodeTestData.Add(hoistExpr, annotation);
         }
-#if LOOP_HOIST_STATS
-        if (!_curLoopHasHoistedExpression)
-        {
-            _loopsWithHoistedExpressions++;
-            _curLoopHasHoistedExpression = true;
-        }
-        _totalHoistedExpressions++;
-#endif
+        RecordLoopHoistedExpression();
     }
 }

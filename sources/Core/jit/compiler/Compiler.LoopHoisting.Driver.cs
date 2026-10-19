@@ -36,10 +36,7 @@ public partial class Compiler
         var context = new LoopHoistContext();
         foreach (var loop in loops.InPostOrder())
         {
-#if LOOP_HOIST_STATS
-            _curLoopHasHoistedExpression = false;
-            _loopsConsidered++;
-#endif
+            BeginLoopHoistStats();
             modified |= optHoistThisLoop(loop, context);
         }
 
