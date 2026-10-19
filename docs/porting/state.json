@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Resolve CCB-0350's tree-ID storage constraint: preserve Debug numbering, ManagedBytesAllocated, tree-construction cost, and Release Compiler layout. A DebugData sidecar adds an allocation on first access and a ConditionalWeakTable lookup per GenTree; choose a compatible representation or authorize that Debug-only cost. Keep CCB-0131/CCB-0347 deferred in the GS blocker-state closure and B209 candidates deferred until target-width table/emitter dependencies are ported and tested.",
+    "nextAction": "Convert CCB-0411's lvaStressLclFld and fgStress64RsltMul implementation family to Release-bindable declarations while preserving Debug stress behavior, then remove the callsite guard. Keep the independent Compiler storage/layout constraints and B209 dependency closure explicitly deferred.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
@@ -73,15 +73,6 @@
         "nextAction": "Map all verbose-state readers/writers and select a representation that preserves Debug output and ManagedBytesAllocated without growing Release Compiler instance layout."
       },
       {
-        "batch": "Debug JitFunctionFile MethodSet2 static state/AOT rooting",
-        "deferredCount": 1,
-        "candidateIds": [
-          "CCB-0438"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map JitFunctionFile initialization and callers, then verify the Release NativeAOT rooting impact before making the static declarations universal."
-      },
-      {
         "batch": "GS diagnostic blocker state/layout closure",
         "deferredCount": 4,
         "candidateIds": [
@@ -101,16 +92,6 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Resolve whether the DebugData representation may add a per-Compiler sidecar allocation and per-GenTree ConditionalWeakTable lookup, or identify an alternative that preserves the tree-construction hot path and ManagedBytesAllocated while keeping Release Compiler layout unchanged."
-      },
-      {
-        "batch": "Compiler option and ARM64 debug-methodset closure",
-        "deferredCount": 2,
-        "candidateIds": [
-          "CCB-0391",
-          "CCB-0403"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map Debug-only option and method-set inputs, including the ARM64 save-FP/LR override; preserve Release defaults and target behavior."
       },
       {
         "batch": "Compiler tree stress routine closure",

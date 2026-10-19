@@ -2018,185 +2018,188 @@ public partial class Compiler
         assert(opts.optRepeatIteration == 0);
         assert(opts.optRepeatActive is false);
 
-#if DEBUG
-        assert(opts.dspInstrs is false);
-        assert(opts.dspLines is false);
-        assert(opts.varNames is false);
-        assert(opts.disAsmSpilled is false);
-        assert(opts.disAddr is false);
-        assert(opts.dspCode is false);
-        assert(opts.dspEHTable is false);
-        assert(opts.dspDebugInfo is false);
-        assert(opts.dspGCtbls is false);
-        assert(opts.dspMetrics is false);
-        assert(opts.disAsm2 is false);
-        assert(opts.dspUnwind is false);
-        assert(opts.compLongAddress is false);
-
-        assert(opts.doLateDisasm is false);
-
-        assert(compDebugBreak is false);
-
-        //  If we have a non-empty AltJit config then we change all of these other config values to refer only to the AltJit.
-        if (!altJitConfig || opts.altJit)
+        if (Configuration.DEBUG)
         {
-            var disEnabled = true;
+            assert(opts.dspInstrs is false);
+            assert(opts.dspLines is false);
+            assert(opts.varNames is false);
+            assert(opts.disAsmSpilled is false);
+            assert(opts.disAddr is false);
+            assert(opts.dspCode is false);
+            assert(opts.dspEHTable is false);
+            assert(opts.dspDebugInfo is false);
+            assert(opts.dspGCtbls is false);
+            assert(opts.dspMetrics is false);
+            assert(opts.disAsm2 is false);
+            assert(opts.dspUnwind is false);
+            assert(opts.compLongAddress is false);
 
-            // Optionally suppress dumping if not in specified list of included assemblies.
-            if (!assemblyInIncludeList)
+            assert(opts.doLateDisasm is false);
+
+            assert(compDebugBreak is false);
+
+            //  If we have a non-empty AltJit config then we change all of these other config values to refer only to the AltJit.
+            if (!altJitConfig || opts.altJit)
             {
-                disEnabled = false;
+                var disEnabled = true;
+
+                // Optionally suppress dumping if not in specified list of included assemblies.
+                if (!assemblyInIncludeList)
+                {
+                    disEnabled = false;
+                }
+
+                if (disEnabled)
+                {
+                    if ((JitConfig.JitOrder & 1) == 1)
+                    {
+                        opts.dspOrder = true;
+                    }
+
+                    if (JitConfig.JitGCDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                    {
+                        opts.dspGCtbls = true;
+                    }
+
+                    if (JitConfig.JitDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                    {
+                        opts.disAsm = true;
+                    }
+
+                    if (JitConfig.JitDisasmSpilled != 0)
+                    {
+                        opts.disAsmSpilled = true;
+                    }
+
+                    if (JitConfig.JitUnwindDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                    {
+                        opts.dspUnwind = true;
+                    }
+
+                    if (JitConfig.JitEHDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                    {
+                        opts.dspEHTable = true;
+                    }
+
+                    if (JitConfig.JitDebugDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                    {
+                        opts.dspDebugInfo = true;
+                    }
+                }
+
+                if (opts.disAsm && (JitConfig.JitDisasmWithGC != 0))
+                {
+                    opts.disasmWithGC = true;
+                }
+
+                if (Configuration.LATE_DISASM &&
+                    JitConfig.JitLateDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+                {
+                    opts.doLateDisasm = true;
+                }
+
+                if (JitConfig.JitDisasmWithAddress != 0)
+                {
+                    opts.disAddr = true;
+                }
+
+                if (JitConfig.JitLongAddress != 0)
+                {
+                    opts.compLongAddress = true;
+                }
+
+                if ((JitConfig.JitEnableOptRepeat != 0) &&
+                    (JitConfig.JitOptRepeat.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
+                {
+                    opts.optRepeat = true;
+                    opts.optRepeatCount = JitConfig.JitOptRepeatCount;
+                }
+
+                opts.dspMetrics = Configuration.DEBUG && (JitConfig.JitMetrics != 0);
             }
 
-            if (disEnabled)
+            if (verboseDump)
             {
-                if ((JitConfig.JitOrder & 1) == 1)
-                {
-                    opts.dspOrder = true;
-                }
+                opts.dspCode = true;
+                opts.dspEHTable = true;
+                opts.dspGCtbls = true;
+                opts.disAsm2 = true;
+                opts.dspUnwind = true;
+                verbose = true;
+                verboseTrees = ShouldUseVerboseTrees;
+                verboseSsa = ShouldUseVerboseSsa;
+                codeGen.Verbose = true;
+            }
 
-                if (JitConfig.JitGCDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-                {
-                    opts.dspGCtbls = true;
-                }
+            treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph == 1);
+            morphNum = 0; // Initialize the morphed-trees counting.
 
-                if (JitConfig.JitDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-                {
-                    opts.disAsm = true;
-                }
+            expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel;
 
-                if (JitConfig.JitDisasmSpilled != 0)
+            if (expensiveDebugCheckLevel == 0)
+            {
+                // If we're in a stress mode that modifies the flowgraph, make 1 the default.
+                if ((fgStressBBProf() != 0) || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
                 {
-                    opts.disAsmSpilled = true;
-                }
-
-                if (JitConfig.JitUnwindDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-                {
-                    opts.dspUnwind = true;
-                }
-
-                if (JitConfig.JitEHDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-                {
-                    opts.dspEHTable = true;
-                }
-
-                if (JitConfig.JitDebugDump.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-                {
-                    opts.dspDebugInfo = true;
+                    expensiveDebugCheckLevel = 1;
                 }
             }
 
-            if (opts.disAsm && (JitConfig.JitDisasmWithGC != 0))
+            if (verbose)
             {
-                opts.disasmWithGC = true;
+                jitprintf($"****** START compiling {info.compFullName} (MethodHash={info.compMethodHash():x8})\n");
+                jitprintf($"Generating code for {Target.TgtPlatformName} {Target.TgtCpuName}\n");
+                jitstdout().Flush();
             }
 
-            if (Configuration.LATE_DISASM &&
-                JitConfig.JitLateDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
-                opts.doLateDisasm = true;
+                NO_WAY("JitBreak reached");
             }
 
-            if (JitConfig.JitDisasmWithAddress != 0)
+            var jitHashBreakVal = JitConfig.JitHashBreak;
+
+            if ((jitHashBreakVal is not -1) && (jitHashBreakVal == info.compMethodHash()))
             {
-                opts.disAddr = true;
+                NO_WAY("JitHashBreak reached");
             }
 
-            if (JitConfig.JitLongAddress != 0)
+            if (verbose ||
+                JitConfig.JitDebugBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) ||
+                JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
-                opts.compLongAddress = true;
+                compDebugBreak = true;
+            }
+
+            assert((GetExistingDebugData() is not { } debugData) ||
+                   !((ReadOnlySpan<byte>)(debugData.CompActiveStressModes)).ContainsAnyExcept((byte)(0)));
+
+            // Read function list, if not already read, and there exists such a list.
+            if (!s_pJitFunctionFileInitialized)
+            {
+                var functionFileName = JitConfig.JitFunctionFile;
+
+                if (functionFileName is not null)
+                {
+                    s_pJitMethodSet = new MethodSet2(functionFileName);
+                }
+                s_pJitFunctionFileInitialized = true;
+            }
+        }
+        else
+        {
+            if (JitConfig.JitDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            {
+                opts.disAsm = true;
             }
 
             if ((JitConfig.JitEnableOptRepeat != 0) &&
                 (JitConfig.JitOptRepeat.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
             {
-                opts.optRepeat = true;
+                opts.optRepeat      = true;
                 opts.optRepeatCount = JitConfig.JitOptRepeatCount;
             }
-
-            opts.dspMetrics = Configuration.DEBUG && (JitConfig.JitMetrics != 0);
         }
-
-        if (verboseDump)
-        {
-            opts.dspCode = true;
-            opts.dspEHTable = true;
-            opts.dspGCtbls = true;
-            opts.disAsm2 = true;
-            opts.dspUnwind = true;
-            verbose = true;
-            verboseTrees = ShouldUseVerboseTrees;
-            verboseSsa = ShouldUseVerboseSsa;
-            codeGen.Verbose = true;
-        }
-
-        treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph == 1);
-        morphNum = 0; // Initialize the morphed-trees counting.
-
-        expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel;
-
-        if (expensiveDebugCheckLevel == 0)
-        {
-            // If we're in a stress mode that modifies the flowgraph, make 1 the default.
-            if ((fgStressBBProf() != 0) || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
-            {
-                expensiveDebugCheckLevel = 1;
-            }
-        }
-
-        if (verbose)
-        {
-            jitprintf($"****** START compiling {info.compFullName} (MethodHash={info.compMethodHash():x8})\n");
-            jitprintf($"Generating code for {Target.TgtPlatformName} {Target.TgtCpuName}\n");
-            jitstdout().Flush();
-        }
-
-        if (JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-        {
-            NO_WAY("JitBreak reached");
-        }
-
-        var jitHashBreakVal = JitConfig.JitHashBreak;
-
-        if ((jitHashBreakVal is not -1) && (jitHashBreakVal == info.compMethodHash()))
-        {
-            NO_WAY("JitHashBreak reached");
-        }
-
-        if (verbose ||
-            JitConfig.JitDebugBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) ||
-            JitConfig.JitBreak.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-        {
-            compDebugBreak = true;
-        }
-
-        assert((GetExistingDebugData() is not { } debugData) ||
-               !((ReadOnlySpan<byte>)(debugData.CompActiveStressModes)).ContainsAnyExcept((byte)(0)));
-
-        // Read function list, if not already read, and there exists such a list.
-        if (!s_pJitFunctionFileInitialized)
-        {
-            var functionFileName = JitConfig.JitFunctionFile;
-
-            if (functionFileName is not null)
-            {
-                s_pJitMethodSet = new MethodSet2(functionFileName);
-            }
-            s_pJitFunctionFileInitialized = true;
-        }
-#else
-        if (JitConfig.JitDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-        {
-            opts.disAsm = true;
-        }
-
-        if ((JitConfig.JitEnableOptRepeat != 0) &&
-            (JitConfig.JitOptRepeat.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
-        {
-            opts.optRepeat      = true;
-            opts.optRepeatCount = JitConfig.JitOptRepeatCount;
-        }
-#endif
 
         if (Configuration.DEBUG || opts.disAsm)
         {
@@ -2574,13 +2577,11 @@ public partial class Compiler
             opts.compNeedToAlignFrame = true;
         }
 
-#if DEBUG
-        if (Configuration.TARGET_ARM64 &&
+        if (Configuration.DEBUG && Configuration.TARGET_ARM64 &&
             ((s_pJitMethodSet is null) || s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash())))
         {
             opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters;
         }
-#endif
 
         if (Configuration.TARGET_AMD64)
         {

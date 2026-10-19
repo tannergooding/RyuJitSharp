@@ -269,11 +269,9 @@ public partial class Compiler
 
     public static AssemblyNamesList2? s_pJitDisasmIncludeAssembliesList;
 
-#if DEBUG
     public static bool s_pJitFunctionFileInitialized;
 
     public static MethodSet2? s_pJitMethodSet;
-#endif
 
     public Info info = new Info();
 
