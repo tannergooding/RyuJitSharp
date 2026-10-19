@@ -10,13 +10,15 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue with the complete 19-candidate Compiler.lva.cs group starting at CCB-0699; revalidate candidate identities against current source and convert eligible guards before acceptance.",
+    "nextAction": "Continue with the complete 7-candidate Emitter.InstructionOutput.cs group beginning at CCB-1102; revalidate each candidate against current source and process the file as one packet.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",
-        "deferredCount": 11,
+        "deferredCount": 13,
         "candidateIds": [
+          "CCB-0722",
+          "CCB-0723",
           "CCB-0770",
           "CCB-0771",
           "CCB-0772",
@@ -30,7 +32,16 @@
           "INV-203AD8A376A9"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map declaration, caller, copy/reset, and Release layout/allocation contracts; obtain bounded design review and user approval before conversion."
+        "nextAction": "Map LclVarDsc debug backing fields, their callers/copies/resets, and Release descriptor layout/allocation; coordinate DoNotEnregisterReason callers CCB-0530/0601 and CCB-0722, then obtain bounded design review before conversion."
+      },
+      {
+        "batch": "Compiler local tracked-variable liveness closure",
+        "deferredCount": 1,
+        "candidateIds": [
+          "CCB-0699"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Map lvaTrackedVars initialization and all Liveness.LocalTracking.cs consumers; close the Debug state/API dependency without adding Release Compiler layout or changing liveness semantics."
       },
       {
         "batch": "LOOP_HOIST_STATS and TRACK_ENREG_STATS optional statistics closure",

@@ -342,45 +342,46 @@ public partial class Compiler
             lvaClassifyParameterAbi(ref classifier);
         }
 
-#if DEBUG
-        for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        if (Configuration.DEBUG)
         {
-            ref readonly var abiInfo = ref lvaGetParameterAbiInfo(lclNum);
-
-            if (lvaIsImplicitByRefLocal(lclNum))
+            for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
             {
-                assert((abiInfo.NumSegments is 1) && (abiInfo.Segments[0].Size == Configuration.TARGET_POINTER_SIZE));
-            }
-            else
-            {
-                var segments = abiInfo.Segments;
+                ref readonly var abiInfo = ref lvaGetParameterAbiInfo(lclNum);
 
-                for (var i = 0; i < segments.Length; i++)
+                if (lvaIsImplicitByRefLocal(lclNum))
                 {
-                    ref readonly var segment = ref segments[i];
-                    assert(segment.Size > 0);
-                    assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+                    assert((abiInfo.NumSegments is 1) && (abiInfo.Segments[0].Size == Configuration.TARGET_POINTER_SIZE));
+                }
+                else
+                {
+                    var segments = abiInfo.Segments;
 
-                    if (i > 0)
+                    for (var i = 0; i < segments.Length; i++)
                     {
-                        assert(segment.Offset > segments[i - 1].Offset);
-                    }
+                        ref readonly var segment = ref segments[i];
+                        assert(segment.Size > 0);
+                        assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
 
-                    for (var j = 0; j < segments.Length; j++)
-                    {
-                        if (i == j)
+                        if (i > 0)
                         {
-                            continue;
+                            assert(segment.Offset > segments[i - 1].Offset);
                         }
 
-                        ref readonly var otherSegment = ref segments[j];
-                        assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
-                               (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                        for (var j = 0; j < segments.Length; j++)
+                        {
+                            if (i == j)
+                            {
+                                continue;
+                            }
+
+                            ref readonly var otherSegment = ref segments[j];
+                            assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                                   (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                        }
                     }
                 }
             }
         }
-#endif
     }
 
     public unsafe void lvaClassifyParameterAbi(ref PlatformClassifier classifier)
@@ -443,19 +444,20 @@ public partial class Compiler
             dsc.lvIsRegArg = numRegisters > 0;
             dsc.lvIsMultiRegArg = numRegisters > 1;
 
-#if DEBUG
-            // Extra query to facilitate wasm replay of native collections.
-            // TODO-WASM: delete once we can get a wasm collection.
-            if ((JitConfig.EnableExtraSuperPmiQueries != 0) && IsReadyToRun && (structLayout is not null))
+            if (Configuration.DEBUG)
             {
-                var clsHnd = structLayout.ClassHandle;
-
-                if (clsHnd != NO_CLASS_HANDLE)
+                // Extra query to facilitate wasm replay of native collections.
+                // TODO-WASM: delete once we can get a wasm collection.
+                if ((JitConfig.EnableExtraSuperPmiQueries != 0) && IsReadyToRun && (structLayout is not null))
                 {
-                    eeRunExtraSuperPmiQueries(() => info.compCompHnd->getWasmLowering(clsHnd));
+                    var clsHnd = structLayout.ClassHandle;
+
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        eeRunExtraSuperPmiQueries(() => info.compCompHnd->getWasmLowering(clsHnd));
+                    }
                 }
             }
-#endif
         }
 
         lvaParameterStackSize = classifier.StackSize;
@@ -1345,20 +1347,21 @@ public partial class Compiler
 
     public lvaPromotionType lvaGetPromotionType(in LclVarDsc varDsc)
     {
-#if DEBUG
-        // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
-        // where the struct itself is no longer used because all access is via its member fields.
-        // When that happens, the struct is marked as unused and its type has been changed to
-        // TYP_INT (to keep the GC tracking code from looking at it).
-        // See Compiler::raAssignVars() for details. For example:
-        //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
-        //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
-        //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
-        //                                                                        f8 (last use) (last use) $345
-        // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
-        // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
-        assert(!varDsc.lvPromoted || varTypeIsPromotable(varDsc.Type) || varDsc.lvUnusedStruct);
-#endif
+        if (Configuration.DEBUG)
+        {
+            // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
+            // where the struct itself is no longer used because all access is via its member fields.
+            // When that happens, the struct is marked as unused and its type has been changed to
+            // TYP_INT (to keep the GC tracking code from looking at it).
+            // See Compiler::raAssignVars() for details. For example:
+            //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
+            //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
+            //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
+            //                                                                        f8 (last use) (last use) $345
+            // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
+            // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
+            assert(!varDsc.lvPromoted || varTypeIsPromotable(varDsc.Type) || varDsc.lvUnusedStruct);
+        }
 
         if (!varDsc.lvPromoted)
         {
@@ -1418,10 +1421,11 @@ public partial class Compiler
                 newLvaTable[i] = new LclVarDsc(); // call the constructor.
             }
 
-#if DEBUG
-            // Fill the old table with junks. So to detect the un-intended use.
-            lvaTable.AsSpan().Clear();
-#endif
+            if (Configuration.DEBUG)
+            {
+                // Fill the old table with junks. So to detect the un-intended use.
+                lvaTable.AsSpan().Clear();
+            }
 
             lvaTable = newLvaTable;
         }
@@ -1452,16 +1456,17 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        lvaDsc.lvReason = reason;
-
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"\nlvaGrabTemp returning {tempNum} (");
-            gtDispLclVar(tempNum, false);
-            jitprintf($"){(shortLifetime ? "" : " (a long lifetime temp)")} called for {reason}.\n");
+            lvaDsc.lvReason = reason;
+
+            if (verbose)
+            {
+                jitprintf($"\nlvaGrabTemp returning {tempNum} (");
+                gtDispLclVar(tempNum, false);
+                jitprintf($"){(shortLifetime ? "" : " (a long lifetime temp)")} called for {reason}.\n");
+            }
         }
-#endif
 
         return tempNum;
     }
@@ -1511,10 +1516,11 @@ public partial class Compiler
             newLvaTable[i] = new LclVarDsc(); // call the constructor.
         }
 
-    #if DEBUG
-        // Fill the old table with junks. So to detect the un-intended use.
-        lvaTable.AsSpan(0, lvaCount).Clear();
-    #endif
+        if (Configuration.DEBUG)
+        {
+            // Fill the old table with junks. So to detect the un-intended use.
+            lvaTable.AsSpan(0, lvaCount).Clear();
+        }
 
         lvaTable = newLvaTable;
     }
@@ -1738,9 +1744,10 @@ public partial class Compiler
         // The final home for this incoming register might be our local stack frame
         varDsc.lvOnFrame = true;
 
-#if DEBUG
-        varDsc.lvReason = "Async continuation arg";
-#endif
+        if (Configuration.DEBUG)
+        {
+            varDsc.lvReason = "Async continuation arg";
+        }
 
         curVarNum++;
     }
@@ -1907,20 +1914,21 @@ public partial class Compiler
             info.compRetNativeType = hasRetBuffArg ? TYP_STRUCT : TYP_VOID;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            var retClass = methodArgs.retTypeClass;
-            jitprintf($"{returnRegCount} return registers for return type {info.compRetType.Name} {(varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "")}\n");
-
-            for (byte i = 0; i < returnRegCount; i++)
+            if (verbose)
             {
-                var offset = compRetTypeDesc.GetReturnFieldOffset(i);
-                var size = compRetTypeDesc.GetReturnRegType(i).Size;
-                jitprintf($"  [{offset:D2}..{(offset + size):D2}) reg {compRetTypeDesc.GetAbiReturnReg(i, info.compCallConv).Name}\n");
+                var retClass = methodArgs.retTypeClass;
+                jitprintf($"{returnRegCount} return registers for return type {info.compRetType.Name} {(varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "")}\n");
+
+                for (byte i = 0; i < returnRegCount; i++)
+                {
+                    var offset = compRetTypeDesc.GetReturnFieldOffset(i);
+                    var size = compRetTypeDesc.GetReturnRegType(i).Size;
+                    jitprintf($"  [{offset:D2}..{(offset + size):D2}) reg {compRetTypeDesc.GetAbiReturnReg(i, info.compCallConv).Name}\n");
+                }
             }
         }
-#endif
 
         // Do we have a RetBuffArg?
         if (hasRetBuffArg)
@@ -1932,28 +1940,29 @@ public partial class Compiler
             info.compRetBuffArg = BAD_VAR_NUM;
         }
 
-#if DEBUG
-        if (Configuration.SWIFT_SUPPORT && verbose &&
-            (info.compCallConv == CorInfoCallConvExtension.Swift) && varTypeIsStruct(info.compRetType))
+        if (Configuration.DEBUG)
         {
-            var retTypeHnd = methodArgs.retTypeClass;
-            ref readonly var lowering = ref GetSwiftLowering(retTypeHnd);
-
-            if (lowering.byReference)
+            if (Configuration.SWIFT_SUPPORT && verbose &&
+                (info.compCallConv == CorInfoCallConvExtension.Swift) && varTypeIsStruct(info.compRetType))
             {
-                jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} by reference\n");
-            }
-            else
-            {
-                jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} as {lowering.numLoweredElements} primitive(s) in registers\n");
+                var retTypeHnd = methodArgs.retTypeClass;
+                ref readonly var lowering = ref GetSwiftLowering(retTypeHnd);
 
-                for (var i = 0; i < lowering.numLoweredElements; i++)
+                if (lowering.byReference)
                 {
-                    jitprintf($"    [{i}] @ +{lowering.offsets[i]:D2}: {lowering.loweredElements[i].PreciseVarType.Name}\n");
+                    jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} by reference\n");
+                }
+                else
+                {
+                    jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} as {lowering.numLoweredElements} primitive(s) in registers\n");
+
+                    for (var i = 0; i < lowering.numLoweredElements; i++)
+                    {
+                        jitprintf($"    [{i}] @ +{lowering.offsets[i]:D2}: {lowering.loweredElements[i].PreciseVarType.Name}\n");
+                    }
                 }
             }
         }
-#endif
 
         // There is a 'hidden' cookie pushed last when the calling convention is varargs
 
@@ -2345,16 +2354,17 @@ public partial class Compiler
             varDsc.Type = type;
         }
 
-#if DEBUG
-        if (varDsc.lvValueSize.IsExact)
+        if (Configuration.DEBUG)
         {
-            varDsc.StackOffset = BAD_STK_OFFS;
+            if (varDsc.lvValueSize.IsExact)
+            {
+                varDsc.StackOffset = BAD_STK_OFFS;
+            }
+            else
+            {
+                varDsc.UnknownSizeFrameIndex = BAD_STK_OFFS;
+            }
         }
-        else
-        {
-            varDsc.UnknownSizeFrameIndex = BAD_STK_OFFS;
-        }
-#endif
     }
 
     internal bool lvaIsArgAccessedViaVarArgsCookie(int lclNum)
@@ -2620,14 +2630,15 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            if (JitConfig.EnableExtraSuperPmiQueries != 0)
+            if (Configuration.DEBUG)
             {
-                var savedFloatingPointUsed = compFloatingPointUsed;
-                makeExtraStructQueries(layout.ClassHandle, 2);
-                compFloatingPointUsed = savedFloatingPointUsed;
+                if (JitConfig.EnableExtraSuperPmiQueries != 0)
+                {
+                    var savedFloatingPointUsed = compFloatingPointUsed;
+                    makeExtraStructQueries(layout.ClassHandle, 2);
+                    compFloatingPointUsed = savedFloatingPointUsed;
+                }
             }
-#endif
         }
     }
 
@@ -2698,9 +2709,10 @@ public partial class Compiler
     {
         ref var varDsc = ref lvaGetDesc(varNum);
 
-#if DEBUG
-        varDsc.IsDefinedViaAddress = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            varDsc.IsDefinedViaAddress = true;
+        }
         if (varDsc.lvPromoted)
         {
             noway_assert(varTypeIsStruct(varDsc.Type));
@@ -2708,9 +2720,10 @@ public partial class Compiler
             for (var i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; i++)
             {
                 noway_assert(lvaTable[i].lvIsStructField);
-#if DEBUG
-                lvaTable[i].IsDefinedViaAddress = true;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    lvaTable[i].IsDefinedViaAddress = true;
+                }
                 lvaSetVarDoNotEnregister(i, DoNotEnregisterReason.HiddenBufferStructArg);
             }
         }
@@ -3059,10 +3072,10 @@ public partial class Compiler
         return varDsc.lvIsOSRLocal;
     }
 
-#if DEBUG
     /// <summary>Query the information for the given struct handle.</summary>
     /// <param name="structHandle">The handle for the struct type we're querying.</param>
     /// <param name="level">How many more levels to recurse.</param>
+    [Conditional("DEBUG")]
     public unsafe void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level)
     {
         if (level <= 0)
@@ -3126,6 +3139,4 @@ public partial class Compiler
             _ = compiler.info.compCompHnd->getTypeLayout(structHandle, nodes, &numNodes);
         }
     }
-#endif
-
 }
