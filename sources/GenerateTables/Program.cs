@@ -6818,11 +6818,10 @@ public static partial class VNFuncExtensions
 {{builder1}}        0, // VNF_Boundary
 {{builder2}}    ];
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     internal static void InitializeValidationAttributes(Span<ValueNumStore.VNFOpAttrib> attributes)
     {
 {{validationBuilder}}    }
-#endif
 }
 """);
     }

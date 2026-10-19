@@ -94,7 +94,11 @@ public sealed partial class ValueNumStore
     [Conditional("DEBUG")]
     public static void ValidateValueNumStoreStatics()
     {
-#if DEBUG
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
         var attributes = new VNFOpAttrib[(int)VNF_COUNT];
         for (var oper = GT_NONE; oper < GT_COUNT; oper++)
         {
@@ -138,7 +142,6 @@ public sealed partial class ValueNumStore
             var func = VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1);
             assert(attributes[(int)func] == VNFuncExtensions.GetAttributes(func));
         }
-#endif
     }
 
     [Conditional("DEBUG")]

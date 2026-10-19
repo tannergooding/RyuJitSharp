@@ -2294,7 +2294,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MaxInt_UN
     ];
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     internal static void InitializeValidationAttributes(Span<ValueNumStore.VNFOpAttrib> attributes)
     {
         ValueNumStore.SetValidationAttributes(attributes, VNF_MemOpaque, 1, false, false);
@@ -2463,5 +2463,4 @@ public static partial class VNFuncExtensions
         ValueNumStore.SetValidationAttributes(attributes, VNF_MinInt_UN, 2, true, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_MaxInt_UN, 2, true, false);
     }
-#endif
 }

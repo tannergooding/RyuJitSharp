@@ -48,6 +48,29 @@ internal static unsafe class ValueNumValidationTests
         });
     }
 
+    [Test]
+    public static void StaticValidationDoesNotAllocateWhenDebugIsDisabled()
+    {
+        Assume.That(!TestConfiguration.IsDebug);
+
+        var validationMethod = typeof(ValueNumStore).GetMethod(
+            nameof(ValueNumStore.ValidateValueNumStoreStatics),
+            BindingFlags.Public | BindingFlags.Static)
+            ?? throw new MissingMethodException(nameof(ValueNumStore), nameof(ValueNumStore.ValidateValueNumStoreStatics));
+        var validate = validationMethod.CreateDelegate<Action>();
+
+        s_assertions = 0;
+        s_lastAssertion = null;
+        validate();
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        validate();
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+        Assert.That(allocated, Is.Zero);
+        Assert.That(s_assertions, Is.Zero);
+    }
+
     [TestCase(TYP_INT, 0)]
     [TestCase(TYP_LONG, 0)]
     [TestCase(TYP_FLOAT, 0)]
