@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if MEASURE_NOWAY
 using System;
 using System.Globalization;
 using System.IO;
@@ -150,7 +149,7 @@ internal static unsafe class NowayStatisticsTests
     {
         var text = Run(compiler => {
             compiler.RecordNowayAssert("a", 7, "condition");
-            if (Configuration.DEBUG)
+            if (TestConfiguration.IsDebug)
             {
                 var previous = Compiler.genMethodCnt;
                 Compiler.genMethodCnt = 0;
@@ -278,4 +277,3 @@ internal static unsafe class NowayStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitMeasureNowayAssertFile")]
     private static extern ref byte* FileOption(ref JitConfigValues config);
 }
-#endif

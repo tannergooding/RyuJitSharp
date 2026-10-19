@@ -529,11 +529,7 @@
     <!-- MEASURE_NODE_SIZE: Collect stats about GenTree node allocations. -->
     <!-- <DefineConstants>$(DefineConstants);MEASURE_NODE_SIZE</DefineConstants> -->
 
-    <!-- MEASURE_NOWAY -->
-    <!--   Enable code to count and rank individual noway_assert calls by occurrence. -->
-    <!--   These asserts would be dynamically executed, but not necessarily fail. -->
-    <!--   The provides some insight into the dynamic prevalence of these (if not a direct measure of their cost), which exist in non-DEBUG as well as DEBUG builds. -->
-    <!-- <DefineConstants>$(DefineConstants);MEASURE_NOWAY</DefineConstants> -->
+    <!-- JitMeasureNowayAssert enables the runtime-gated noway_assert occurrence map. -->
 
     <!-- MEASURE_PTRTAB_SIZE: Collect stats about GC pointer table allocations. -->
     <!-- <DefineConstants>$(DefineConstants);MEASURE_PTRTAB_SIZE</DefineConstants> -->

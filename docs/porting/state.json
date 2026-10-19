@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate the grouped MEASURE_NOWAY deferred family (starting at CCB-0199) and decide the runtime representation and Release footprint policy before conversion.",
+    "nextAction": "Convert the DISPLAY_SIZES, MEASURE_BLOCK_SIZE, and MEASURE_PTRTAB_SIZE shutdown/reporting families through their existing Configuration gates, including GcInfoTableEncodingTests, then validate Debug/Release.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
