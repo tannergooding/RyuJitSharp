@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Resume original inventory order at CCB-0509 in sources\\Core\\jit\\compiler\\Compiler.fg.cs (pinned branch lines 220-225): evaluate its intentionally dead false && verbose diagnostic, then process the complete 83-Pending Compiler.fg.cs file group as one batch. Convert eligible candidates and defer only with a concrete dependency. Keep the LOOP_HOIST_STATS/TRACK_ENREG_STATS closure G2-deferred because moving per-compiler counters into DebugData changes ManagedBytesAllocated reporting. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
+    "nextAction": "Continue the conditional-cleanup inventory at CCB-0607 in sources\\Core\\jit\\compiler\\Compiler.gt.cs. Keep CCB-0511, CCB-0524, CCB-0526, CCB-0528, CCB-0530, CCB-0534, CCB-0548, CCB-0549, CCB-0574, and CCB-0601 deferred until their specific Release state/API and layout closures are resolved. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
 
     "unresolvedConditionalCleanup": [
       {
@@ -102,6 +102,24 @@
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Port and test the target-width table/emitter dependency closure before re-evaluating these candidates."
+      },
+      {
+        "batch": "Compiler.fg.cs debug state/API dependency closure",
+        "deferredCount": 10,
+        "candidateIds": [
+          "CCB-0511",
+          "CCB-0524",
+          "CCB-0526",
+          "CCB-0528",
+          "CCB-0530",
+          "CCB-0534",
+          "CCB-0548",
+          "CCB-0549",
+          "CCB-0574",
+          "CCB-0601"
+        ],
+        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
+        "nextAction": "Resolve impInlinedCodeSize storage, fgBBOrder and basic-block dump state, fgPrintInlinedMethods and fgNormalizeEHDone mutable state, and the DoNotEnregisterReason descriptor setter closure without changing Release layout or Debug behavior. Re-evaluate these candidates after those state/API prerequisites; continue the original inventory at CCB-0607 in Compiler.gt.cs."
       }
     ],
 

@@ -217,12 +217,10 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
         if (false && verbose)
         {
             jitprintf($"\nDone invoking compiler for the inlinee method {eeGetMethodFullName(fncHandle)}\n");
         }
-#endif
 
         // If there is non-NULL return, but we haven't set the substExpr,
         // That means we haven't imported any BB that contains CEE_RET opcode.
@@ -292,18 +290,19 @@ public partial class Compiler
 
         assert(_inlineStrategy is not null);
 
-#if DEBUG
-        // Fail if we're inlining and we've reached the acceptance limit.
-        var limit = JitConfig.JitInlineLimit;
-        var current = _inlineStrategy.InlineCount;
-
-        if ((limit >= 0) && (current >= limit))
+        if (Configuration.DEBUG)
         {
-            result.NoteFatal(InlineObservation.CALLSITE_OVER_INLINE_LIMIT);
-            createdContext = null;
-            return;
+            // Fail if we're inlining and we've reached the acceptance limit.
+            var limit = JitConfig.JitInlineLimit;
+            var current = _inlineStrategy.InlineCount;
+
+            if ((limit >= 0) && (current >= limit))
+            {
+                result.NoteFatal(InlineObservation.CALLSITE_OVER_INLINE_LIMIT);
+                createdContext = null;
+                return;
+            }
         }
-#endif
 
         if (lvaHaveManyLocals(0.9f))
         {
@@ -347,8 +346,7 @@ public partial class Compiler
             var startVars = lvaCount;
             var startBBNumMax = fgBBNumMax;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 assert(fgMorphStmt is not null);
 
@@ -363,7 +361,6 @@ public partial class Compiler
                     jitprintf("Note: candidate is implicit tail call\n");
                 }
             }
-#endif
 
             var inlineStrategy = impInlineRoot._inlineStrategy;
             assert(inlineStrategy is not null);
@@ -429,19 +426,20 @@ public partial class Compiler
                 }
                 else
                 {
-#if DEBUG
-                    // In debug we always put all inline attempts into the inline tree.
+                    if (Configuration.DEBUG)
+                    {
+                        // In debug we always put all inline attempts into the inline tree.
 
-                    var info = call.SingleInlineCandidateInfo;
-                    assert(info is not null);
+                        var info = call.SingleInlineCandidateInfo;
+                        assert(info is not null);
 
-                    assert(_inlineStrategy is not null);
-                    assert(info.inlinersContext is not null);
-                    assert(fgMorphStmt is not null);
+                        assert(_inlineStrategy is not null);
+                        assert(info.inlinersContext is not null);
+                        assert(fgMorphStmt is not null);
 
-                    var ctx = _inlineStrategy.NewContext(info.inlinersContext, fgMorphStmt, call);
-                    ctx.SetFailed(inlineResult);
-#endif
+                        var ctx = _inlineStrategy.NewContext(info.inlinersContext, fgMorphStmt, call);
+                        ctx.SetFailed(inlineResult);
+                    }
                 }
 
                 inliningFailed = true;
@@ -449,10 +447,11 @@ public partial class Compiler
                 // Clear the Inline Candidate flag so we can ensure later we tried inlining all candidates.
                 call.Flags &= ~GTF_CALL_INLINE_CANDIDATE;
 
-#if DEBUG
-                // In debug, remember that this was an inline candidate.
-                call.WasInlineCandidate = true;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    // In debug, remember that this was an inline candidate.
+                    call.WasInlineCandidate = true;
+                }
             }
         }
         else
@@ -522,9 +521,7 @@ public partial class Compiler
         assert(iciStmt.RootNode == iciCall);
         noway_assert(iciCall.Oper is GT_CALL);
 
-#if DEBUG
-        var currentDumpStmt = null as Statement;
-#endif
+        Statement? currentDumpStmt = null;
 
         if (verbose)
         {
@@ -539,16 +536,14 @@ public partial class Compiler
         // Prepend statements
         var stmtAfter = fgInlinePrependStatements(inlineInfo);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             currentDumpStmt = stmtAfter;
             jitprintf("\nInlinee method body:");
         }
-#endif
 
         var topBlock = iciBlock;
-        var bottomBlock = null as BasicBlock;
+        BasicBlock? bottomBlock;
         var insertInlineeBlocks = true;
 
         assert(InlineeCompiler is not null);
@@ -582,27 +577,7 @@ public partial class Compiler
                 // Todo: we may want to exclude some flags here.
                 iciBlock.SetFlags(inlineeBlockFlags);
 
-#if DEBUG
-                if (verbose)
-                {
-                    noway_assert(currentDumpStmt is not null);
-
-                    if (currentDumpStmt != stmtAfter)
-                    {
-                        do
-                        {
-                            currentDumpStmt = currentDumpStmt.NextStmt;
-                            assert(currentDumpStmt is not null);
-
-                            jitprintf("\n");
-                            gtDispStmt(currentDumpStmt);
-                            jitprintf("\n");
-
-                        }
-                        while (currentDumpStmt != stmtAfter);
-                    }
-                }
-#endif
+                fgDumpInlineeStatements(currentDumpStmt, stmtAfter, verbose);
 
                 // Append statements to null out gc ref locals, if necessary.
                 fgInlineAppendStatements(inlineInfo, iciBlock, stmtAfter);
@@ -645,7 +620,7 @@ public partial class Compiler
                 var enclosingRegion = ehGetMostNestedRegionIndex(iciBlock, out var inTryRegion);
 
                 // We will insert the inlinee clauses in bulk before this index.
-                var insertBeforeIndex = (ushort)(0);
+                ushort insertBeforeIndex;
 
                 if (enclosingRegion == 0)
                 {
@@ -918,10 +893,7 @@ public partial class Compiler
 
         optMethodFlags |= InlineeCompiler.optMethodFlags;
 
-        if (Configuration.DEBUG && (optMethodFlags != optMethodFlagsBefore))
-        {
-            JITDUMP($"INLINER: Updating optMethodFlags --  root:{(int)(optMethodFlagsBefore):x} callee:{(int)(InlineeCompiler.optMethodFlags):x} new:{(int)(optMethodFlags):x}\n");
-        }
+        fgDumpInlineOptMethodFlags(optMethodFlagsBefore, InlineeCompiler.optMethodFlags);
 
         // Update profile consistency
         // If inlinee is inconsistent, root method will be inconsistent too.
@@ -1007,6 +979,40 @@ public partial class Compiler
         // so that fgMorphStmts can remove the statement once we return from here.
 
         iciStmt.RootNode = gtNewNothingNode();
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void fgDumpInlineeStatements(Statement? currentDumpStmt, Statement? stmtAfter, bool verbose)
+    {
+        if (!verbose)
+        {
+            return;
+        }
+
+        noway_assert(currentDumpStmt is not null);
+
+        if (currentDumpStmt != stmtAfter)
+        {
+            do
+            {
+                currentDumpStmt = currentDumpStmt.NextStmt;
+                assert(currentDumpStmt is not null);
+
+                jitprintf("\n");
+                gtDispStmt(currentDumpStmt);
+                jitprintf("\n");
+            }
+            while (currentDumpStmt != stmtAfter);
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void fgDumpInlineOptMethodFlags(int optMethodFlagsBefore, int inlineeOptMethodFlags)
+    {
+        if (optMethodFlags != optMethodFlagsBefore)
+        {
+            JITDUMP($"INLINER: Updating optMethodFlags --  root:{optMethodFlagsBefore:x} callee:{inlineeOptMethodFlags:x} new:{optMethodFlags:x}\n");
+        }
     }
 
     /// <summary>Configure an await that restores an inlined frame's caller context without capturing it again.</summary>
@@ -1941,12 +1947,10 @@ public partial class Compiler
             fgSequenceLocals(stmt);
         }
 
-#if DEBUG
         if (block is not null)
         {
             fgDebugCheckNodeLinks(block, stmt);
         }
-#endif
 
         return stmt;
     }
@@ -2670,12 +2674,16 @@ public partial class Compiler
         // In extreme cases, we might need to abandon this and reallocate. See
         // fgTryAddEHTableEntries() for more details.
 
-#if DEBUG
-        // force the resizing code to hit more frequently in DEBUG
-        var compHndBBtabLength = info.compXcptnsCount;
-#else
-        var compHndBBtabLength = info.compXcptnsCount * 2;
-#endif
+        int compHndBBtabLength;
+        if (Configuration.DEBUG)
+        {
+            // force the resizing code to hit more frequently in DEBUG
+            compHndBBtabLength = info.compXcptnsCount;
+        }
+        else
+        {
+            compHndBBtabLength = info.compXcptnsCount * 2;
+        }
 
         compHndBBtab = new EHblkDsc[compHndBBtabLength];
         compHndBBtabCount = info.compXcptnsCount;
@@ -3032,7 +3040,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     /// <summary>Check if a block contains a statement, with a budget limit to avoid excessive cost.</summary>
     /// <param name="block">the block to search</param>
     /// <param name="stmt">the statement to look for</param>
@@ -3040,6 +3047,11 @@ public partial class Compiler
     /// <returns>true if the block contains the statement, or "answerOnBoundExceeded" if the budget is exceeded.</returns>
     public static bool fgBlockContainsStatementBounded(BasicBlock block, Statement stmt, bool answerOnBoundExceeded = true)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Statement-link checks are only available in Debug builds.");
+        }
+
         const long MaxLinks = 100_000_000;
 
         var compiler = JitTls.Compiler;
@@ -3070,7 +3082,6 @@ public partial class Compiler
 
         return curr is not null;
     }
-#endif
 
     /// <summary>Check that the leave from the block is legal.</summary>
     /// <param name="blkSrc">the source block</param>
@@ -4540,12 +4551,10 @@ public partial class Compiler
             info.compCompHnd->getEHinfo(info.compMethodHnd, XTnum, &clause);
             noway_assert(clause.HandlerLength != -1); // @DEPRECATED
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 dispIncomingEHClause(XTnum, clause);
             }
-#endif
 
             var tryBegOff = clause.TryOffset;
             var tryEndOff = tryBegOff + clause.TryLength;
@@ -4831,11 +4840,9 @@ public partial class Compiler
         // always run these checks for a debug build
         verCheckNestingLevel(initRootId);
 
-#if !DEBUG
         // fgNormalizeEH assumes that this test has been passed and Ssa assumes that fgNormalizeEHTable has been run.
         // So do this unless we're in minOpts mode (and always in debug).
-        if (!opts.MinOpts)
-#endif
+        if (Configuration.DEBUG || !opts.MinOpts)
         {
             fgCheckBasicBlockControlFlow();
         }
@@ -4846,11 +4853,9 @@ public partial class Compiler
             fgDispHandlerTab();
         }
 
-#if DEBUG
         // We can't verify the handler table until all the IL legality checks have been done (above), since bad IL
         // (such as illegal nesting of regions) will trigger asserts here.
         fgVerifyHandlerTab();
-#endif
 
         fgNormalizeEH();
 
@@ -5115,9 +5120,7 @@ public partial class Compiler
         assert(compInlineContext is not null);
         assert(codeSize == compInlineContext.ILSize);
 
-#if DEBUG
-        var ilInstsSet = new BitArray(codeSize);
-#endif
+        var ilInstsSet = Configuration.DEBUG ? new BitArray(codeSize) : null;
 
         var prevOpcode = CEE_NOP;
         var fgStack = new FgStack();
@@ -5180,9 +5183,10 @@ public partial class Compiler
         {
             var opcode = (OPCODE)(codeAddr[0]);
 
-#if DEBUG
-            ilInstsSet[(int)(codeAddr - codeBegp)] = true;
-#endif
+            if (ilInstsSet is BitArray instructionStarts)
+            {
+                instructionStarts[(int)(codeAddr - codeBegp)] = true;
+            }
 
             codeAddr += sizeof(byte);
 
@@ -6242,9 +6246,10 @@ public partial class Compiler
             TooFar(codeAddr, codeBegp);
         }
 
-#if DEBUG
-        compInlineContext._ilInstsSet = ilInstsSet;
-#endif
+        if (ilInstsSet is not null)
+        {
+            compInlineContext._ilInstsSet = ilInstsSet;
+        }
 
         if (makeInlineObservations)
         {
@@ -7492,10 +7497,8 @@ public partial class Compiler
     {
         assert(block.FirstStmt is not null);
 
-#if DEBUG
         assert(fgBlockContainsStatementBounded(block, insertionPoint));
         assert(!fgBlockContainsStatementBounded(block, stmt, false));
-#endif
 
         if (insertionPoint.NextStmt is null)
         {
@@ -7586,10 +7589,8 @@ public partial class Compiler
     {
         assert(block.FirstStmt is not null);
 
-#if DEBUG
         assert(fgBlockContainsStatementBounded(block, insertionPoint));
         assert(!fgBlockContainsStatementBounded(block, stmt, false));
-#endif
 
         if (insertionPoint == block.FirstStmt)
         {
@@ -8208,32 +8209,30 @@ public partial class Compiler
                         break;
                     }
 
-#if DEBUG
-                    // These ctrl-flow opcodes don't need any special handling
                     case CEE_NEWOBJ:
                     {
                         // CTRL_CALL
-                        opts.callInstrCount++;
-                        break;
-                    }
-
-                    default:
-                    {
-                        if (opcode.FlowKind is FLOW_BREAK or FLOW_NEXT)
+                        if (Configuration.DEBUG)
                         {
-                            break;
+                            opts.callInstrCount++;
                         }
-
-                        // what's left are forgotten instructions
-                        BADCODE("Unrecognized control Opcode");
                         break;
                     }
-#else
+
                     default:
                     {
+                        if (Configuration.DEBUG)
+                        {
+                            if (opcode.FlowKind is FLOW_BREAK or FLOW_NEXT)
+                            {
+                                break;
+                            }
+
+                            // what's left are forgotten instructions
+                            BADCODE("Unrecognized control Opcode");
+                        }
                         break;
                     }
-#endif
                 }
             }
 
@@ -8359,12 +8358,10 @@ public partial class Compiler
 
             fgLastBB = curBBdesc;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 curBBdesc.dspBlockHeader(showKind: false, showFlags: false, showPreds: false);
             }
-#endif
 
             // Remember where the next BB will start
             curBBoffs = nxtBBoffs;
@@ -8884,9 +8881,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         fgVerifyHandlerTab();
-#endif
 
         return newBlk;
     }
@@ -9043,9 +9038,7 @@ public partial class Compiler
                 fgDispHandlerTab();
             }
 
-#if DEBUG
             fgVerifyHandlerTab();
-#endif
         }
         else
         {
@@ -10273,15 +10266,15 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        var hash = SsaStressHashHelper();
-
-        if (hash != 0)
+        if (Configuration.DEBUG)
         {
-            res = ShuffleHelper(hash, res);
-        }
+            var hash = SsaStressHashHelper();
 
-#endif
+            if (hash != 0)
+            {
+                res = ShuffleHelper(hash, res);
+            }
+        }
         ehPreds[blk] = res;
 
         return res;
@@ -10431,10 +10424,11 @@ public partial class Compiler
 
                     ref var structVarDsc = ref lvaGetDesc(structLclNum);
                     structVarDsc.CleanAddressExposed();
-#if DEBUG
-                    structVarDsc.lvUnusedStruct = true;
-                    structVarDsc.lvUndoneStructPromotion = true;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        structVarDsc.lvUnusedStruct = true;
+                        structVarDsc.lvUndoneStructPromotion = true;
+                    }
 
                     var fieldLclStart = structVarDsc.lvFieldLclStart;
                     var fieldLclStop = fieldLclStart + structVarDsc.lvFieldCnt;
@@ -10906,37 +10900,38 @@ public partial class Compiler
 
     public unsafe bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, ref weight_t weightWB)
     {
-#if DEBUG
-        var hashSeed = fgStressBBProf();
-
-        if (hashSeed != 0)
+        if (Configuration.DEBUG)
         {
-            var hash = unchecked(((uint)info.compMethodHash() * hashSeed) ^ ((uint)offset * 1027));
-            weight_t weight;
+            var hashSeed = fgStressBBProf();
 
-            // About 44% of blocks have zero weight to stress procedure splitting.
-            if ((hash % 3) == 0)
+            if (hashSeed != 0)
             {
-                weight = BB_ZERO_WEIGHT;
-            }
-            else if ((hash % 11) == 0)
-            {
-                weight = (weight_t)(hash % 23) * (hash % 29) * (hash % 31);
-            }
-            else
-            {
-                weight = (weight_t)(hash % 17) * (hash % 19);
-            }
+                var hash = unchecked(((uint)info.compMethodHash() * hashSeed) ^ ((uint)offset * 1027));
+                weight_t weight;
 
-            if ((offset == 0) && (weight == BB_ZERO_WEIGHT))
-            {
-                weight = 1 + (hash % 5);
-            }
+                // About 44% of blocks have zero weight to stress procedure splitting.
+                if ((hash % 3) == 0)
+                {
+                    weight = BB_ZERO_WEIGHT;
+                }
+                else if ((hash % 11) == 0)
+                {
+                    weight = (weight_t)(hash % 23) * (hash % 29) * (hash % 31);
+                }
+                else
+                {
+                    weight = (weight_t)(hash % 17) * (hash % 19);
+                }
 
-            weightWB = weight;
-            return true;
+                if ((offset == 0) && (weight == BB_ZERO_WEIGHT))
+                {
+                    weight = 1 + (hash % 5);
+                }
+
+                weightWB = weight;
+                return true;
+            }
         }
-#endif
 
         if (!fgHaveProfileWeights)
         {
@@ -10984,8 +10979,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (JitConfig.JitSynthesizeCounts > 0)
+        if (Configuration.DEBUG && (JitConfig.JitSynthesizeCounts > 0))
         {
             if ((JitConfig.JitSynthesizeCounts == 1) || ((JitConfig.JitSynthesizeCounts == 2) && !fgHaveProfileData))
             {
@@ -10996,7 +10990,9 @@ public partial class Compiler
             }
         }
 
-        if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) && (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0))
+        if (Configuration.DEBUG &&
+            opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBINSTR) &&
+            (JitConfig.JitPropagateSynthesizedCountsToProfileData > 0))
         {
             JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
             ProfileSynthesis.Run(this, ProfileSynthesisOption.AssignLikelihoods);
@@ -11004,7 +11000,6 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_EVERYTHING;
         }
 
-#endif
         if (!fgHaveProfileData)
         {
             if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
@@ -11133,14 +11128,12 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (JitConfig.JitSynthesizeCounts == 3)
+        if (Configuration.DEBUG && (JitConfig.JitSynthesizeCounts == 3))
         {
             JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
             ProfileSynthesis.Run(this, ProfileSynthesisOption.BlendLikelihoods);
         }
 
-#endif
         fgApplyProfileScale();
 
         return PhaseStatus.MODIFIED_EVERYTHING;
@@ -11471,18 +11464,18 @@ public partial class Compiler
         }
         else
         {
-#if DEBUG
-            if ((JitConfig.JitFullyInt != 0) || compStressCompile(STRESS_GENERIC_VARN, 30))
+            if (Configuration.DEBUG &&
+                ((JitConfig.JitFullyInt != 0) || compStressCompile(STRESS_GENERIC_VARN, 30)))
             {
                 noway_assert(!codeGen.IsGcTypeFixed);
                 codeGen.Interruptible = true;
             }
-#endif
             if (opts.compDbgCode)
             {
-#if DEBUG
-                assert(!codeGen.IsGcTypeFixed);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(!codeGen.IsGcTypeFixed);
+                }
                 codeGen.Interruptible = true;
             }
         }
@@ -11506,9 +11499,10 @@ public partial class Compiler
             codeGen.SetFramePointerRequiredEH(true);
             if (Configuration.TARGET_X86)
             {
-#if DEBUG
-                assert(!codeGen.IsGcTypeFixed);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(!codeGen.IsGcTypeFixed);
+                }
                 codeGen.Interruptible = true;
             }
         }
@@ -11549,13 +11543,14 @@ public partial class Compiler
         var rootNode = stmt.RootNode;
         stmt.TreeListBegin = fgSetTreeSeq(rootNode);
 
-#if DEBUG
-        // Keep track of the highest # of tree nodes.
-        if (BasicBlock.s_nMaxTrees < rootNode._seqNum)
+        if (Configuration.DEBUG)
         {
-            BasicBlock.s_nMaxTrees = rootNode._seqNum;
+            // Keep track of the highest # of tree nodes.
+            if (BasicBlock.s_nMaxTrees < rootNode._seqNum)
+            {
+                BasicBlock.s_nMaxTrees = rootNode._seqNum;
+            }
         }
-#endif
     }
 
     /// <summary>Sequence the tree, setting the "gtPrev" and "gtNext" links.</summary>
@@ -12362,14 +12357,12 @@ public partial class Compiler
                     var newKey = new AddCodeDscKey(add);
                     map[newKey] = add;
 
-#if DEBUG
                     JITDUMP($"ACD{add.acdNum} updated\n");
 
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         add.Dump();
                     }
-#endif
                 }
             }
         }
@@ -12631,12 +12624,10 @@ public partial class Compiler
                 JITDUMP($"EH{ehNum}: Adding EH filter block {FMT_BB(filterBb.bbNum)} in front of generic handler {FMT_BB(handlerBb.bbNum)}:\n");
             }
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 fgDumpBlock(filterBb);
             }
-#endif
             madeChanges = true;
         }
 
@@ -12724,9 +12715,7 @@ public partial class Compiler
             fgDispHandlerTab();
         }
 
-#if DEBUG
         fgVerifyHandlerTab();
-#endif
         // EnC reserves a frame-header slot, above PSP on ARM64. Use a full
         // pointer-sized slot for the acquired byte so alignment is preserved.
         var typeMonAcquired = TYP_I_IMPL;
@@ -13186,7 +13175,7 @@ public partial class Compiler
         return fgRemoveBlocksOutsideDfsTree() ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgPreExpandQmarkChecks(GenTree expr)
     {
         var topQmark = fgGetTopLevelQmark(expr, out _);
@@ -13204,6 +13193,7 @@ public partial class Compiler
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     public void fgPostExpandQmarkChecks()
     {
         foreach (var block in Blocks)
@@ -13214,7 +13204,6 @@ public partial class Compiler
             }
         }
     }
-#endif
 
     public GenTreeQmark? fgGetTopLevelQmark(GenTree expr, out GenTree? dst)
     {
@@ -13458,18 +13447,14 @@ public partial class Compiler
         {
             foreach (var stmt in block.Statements)
             {
-#if DEBUG
                 fgPreExpandQmarkChecks(stmt.RootNode);
-#endif
                 introducedThrows |= fgExpandQmarkStmt(block, stmt, early);
             }
         }
 
         if (!early)
         {
-#if DEBUG
             fgPostExpandQmarkChecks();
-#endif
             compQmarkRationalized = true;
         }
 
@@ -13763,33 +13748,34 @@ public partial class Compiler
 
         madeChanges |= walker.MadeChanges;
 
-#if DEBUG
-        block = fgFirstBB;
-        noway_assert(block is not null);
-
-        do
+        if (Configuration.DEBUG)
         {
-            var checkInlineCandidates = new DebugCheckInlineCandidatesVisitor();
+            block = fgFirstBB;
+            noway_assert(block is not null);
 
-            foreach (var stmt in block.Statements)
+            do
             {
-                _ = checkInlineCandidates.WalkTree(ref stmt.RootNodeRef, null);
+                var checkInlineCandidates = new DebugCheckInlineCandidatesVisitor();
+
+                foreach (var stmt in block.Statements)
+                {
+                    _ = checkInlineCandidates.WalkTree(ref stmt.RootNodeRef, null);
+                }
+
+                block = block.Next;
             }
+            while (block is not null);
 
-            block = block.Next;
+            fgVerifyHandlerTab();
+
+            if (verbose || fgPrintInlinedMethods)
+            {
+                JITDUMP("**************** Inline Tree");
+                jitprintf("\n");
+                assert(_inlineStrategy is not null);
+                _inlineStrategy.Dump(verbose || (JitConfig.JitPrintInlinedMethodsVerbose != 0));
+            }
         }
-        while (block is not null);
-
-        fgVerifyHandlerTab();
-
-        if (verbose || fgPrintInlinedMethods)
-        {
-            JITDUMP("**************** Inline Tree");
-            jitprintf("\n");
-            assert(_inlineStrategy is not null);
-            _inlineStrategy.Dump(verbose || (JitConfig.JitPrintInlinedMethodsVerbose != 0));
-        }
-#endif
 
         if (fgPgoConsistent)
         {
@@ -13833,8 +13819,7 @@ public partial class Compiler
             madeChanges = true;
         }
 
-#if DEBUG
-        if (opts.compGcChecks)
+        if (Configuration.DEBUG && opts.compGcChecks)
         {
             for (var i = 0; i < info.compArgsCount; i++)
             {
@@ -13855,27 +13840,22 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
-#if DEBUG
-        if (Configuration.TARGET_XARCH && compStackCheckOnRet)
+        if (Configuration.DEBUG && Configuration.TARGET_XARCH && compStackCheckOnRet)
         {
             lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false, "ReturnSpCheck");
             lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason.ReturnSpCheck);
             lvaGetDesc(lvaReturnSpCheck).Type = TYP_I_IMPL;
             madeChanges = true;
         }
-#endif
 
-#if DEBUG
-        if (Configuration.TARGET_X86 && compStackCheckOnCall)
+        if (Configuration.DEBUG && Configuration.TARGET_X86 && compStackCheckOnCall)
         {
             lvaCallSpCheck = lvaGrabTempWithImplicitUse(false, "CallSpCheck");
             lvaSetVarDoNotEnregister(lvaCallSpCheck, DoNotEnregisterReason.CallSpCheck);
             lvaGetDesc(lvaCallSpCheck).Type = TYP_I_IMPL;
             madeChanges = true;
         }
-#endif
 
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
@@ -13922,7 +13902,7 @@ public partial class Compiler
 
                     foreach (var succ in cur.Succs)
                     {
-                        fgRemoveAllRefPreds(succ, cur);
+                        _ = fgRemoveAllRefPreds(succ, cur);
                     }
 
                     cur.SetFlags(BBF_REMOVED);
@@ -14186,9 +14166,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         fgVerifyHandlerTab();
-#endif
 
         var madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0) || addedTemps;
         compPostImportationCleanupDone = true;
@@ -14263,12 +14241,7 @@ public partial class Compiler
         assert(!fgFuncletsCreated);
         assert(fgPredsComputed);
 
-        var enabled = true;
-
-#if DEBUG
-        enabled = JitConfig.JitEnableRemoveUnreachableTry == 1;
-
-#endif
+        var enabled = !Configuration.DEBUG || (JitConfig.JitEnableRemoveUnreachableTry == 1);
         if (!enabled)
         {
             JITDUMP("Unreachable try removal disabled by config.\n");
@@ -14338,7 +14311,7 @@ public partial class Compiler
                     JITDUMP($"  retargeting callfinally {FMT_BB(pred.bbNum)} to continuation {FMT_BB(continuation.bbNum)}, removing tail {FMT_BB(tail.bbNum)}\n");
 
                     fgPrepareCallFinallyRetForRemoval(tail);
-                    fgRemoveBlock(tail, unreachable: true);
+                    _ = fgRemoveBlock(tail, unreachable: true);
 
                     fgRemoveRefPred(pred.TargetEdge);
                     var newEdge = fgAddRefPred(continuation, pred);
@@ -14473,7 +14446,7 @@ public partial class Compiler
         // blocks that have become unreachable.
         fgInvalidateDfsTree();
         _dfsTree = fgComputeDfs();
-        fgRemoveBlocksOutsideDfsTree();
+        _ = fgRemoveBlocksOutsideDfsTree();
 
         fgInvalidateDfsTree();
 
@@ -14502,12 +14475,10 @@ public partial class Compiler
         {
             JITDUMP("Considering ");
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 add.Dump();
             }
-#endif
 
             var oldKey = new AddCodeDscKey(add);
             var inHnd = add.acdHndIndex > 0;
@@ -14519,23 +14490,18 @@ public partial class Compiler
             {
                 var removed = map.Remove(oldKey);
                 assert(removed);
-#if DEBUG
                 JITDUMP($"ACD{add.acdNum} was in EH#{xtnum} filter region: removing\n");
 
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     add.Dump();
                 }
-
-#endif
                 continue;
             }
 
             if (!inThisTry && !inThisHnd)
             {
-#if DEBUG
                 JITDUMP($"ACD{add.acdNum} not affected\n");
-#endif
                 continue;
             }
 
@@ -14559,15 +14525,13 @@ public partial class Compiler
 
             if (!rekey)
             {
-#if DEBUG
                 JITDUMP($"ACD{add.acdNum} non-enclosing region updated; key remains the same\n");
 
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     add.Dump();
                 }
 
-#endif
                 continue;
             }
 
@@ -14578,26 +14542,22 @@ public partial class Compiler
 
             if (map.TryGetValue(newKey, out var existing))
             {
-#if DEBUG
                 JITDUMP($"ACD{add.acdNum} merged into ACD{existing.acdNum}\n");
 
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     existing.Dump();
                 }
-#endif
             }
             else
             {
-#if DEBUG
                 JITDUMP($"ACD{add.acdNum} updated with new key\n");
 
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     add.Dump();
                 }
 
-#endif
                 map[newKey] = add;
             }
         }
@@ -14744,26 +14704,22 @@ public partial class Compiler
 
                 if (map.TryGetValue(key, out var existing))
                 {
-#if DEBUG
                     JITDUMP($"ACD{add.acdNum} merged into ACD{existing.acdNum}\n");
 
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         existing.Dump();
                     }
-#endif
                 }
                 else
                 {
-#if DEBUG
                     JITDUMP($"ACD{add.acdNum} updated\n");
 
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         add.Dump();
                     }
 
-#endif
                     map[key] = add;
                 }
             }
@@ -14918,9 +14874,10 @@ public partial class Compiler
     public PhaseStatus fgSetBlockOrder()
     {
         JITDUMP("*************** In fgSetBlockOrder()\n");
-#if DEBUG
-        BasicBlock.s_nMaxTrees = 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            BasicBlock.s_nMaxTrees = 0;
+        }
         if (fgHasCycleWithoutGCSafePoint())
         {
             if (Configuration.TARGET_WASM)
@@ -14939,9 +14896,7 @@ public partial class Compiler
         {
             fgSetBlockOrder(block);
         }
-#if DEBUG
         JITDUMP($"The biggest BB has {BasicBlock.s_nMaxTrees,4} tree nodes\n");
-#endif
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -14973,16 +14928,19 @@ public partial class Compiler
         builder.Build();
         fgSsaPassesCompleted++;
         fgSsaValid = true;
-#if DEBUG
         JitTestCheckSSA();
-#endif
 
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-#if DEBUG
+    [System.Diagnostics.Conditional("DEBUG")]
     public void CheckNoTransformableIndirectCallsRemain()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Indirect-call verification is only available in Debug builds.");
+        }
+
         assert(!MethodHasFatPointer);
         var visitor = new CheckTransformableIndirectCallsVisitor();
         foreach (var block in Blocks)
@@ -14993,7 +14951,6 @@ public partial class Compiler
             }
         }
     }
-#endif
 
     public PhaseStatus fgTransformIndirectCalls()
     {
@@ -15018,9 +14975,7 @@ public partial class Compiler
             JITDUMP("\n -- no candidates to transform\n");
         }
 
-#if DEBUG
         CheckNoTransformableIndirectCallsRemain();
-#endif
 
         return count == 0 ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
     }
@@ -15098,9 +15053,13 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-#if DEBUG
     protected uint fgStressBBProf()
     {
+        if (!Configuration.DEBUG)
+        {
+            return 0;
+        }
+
         var result = unchecked((uint)JitConfig.JitStressBBProf);
 
         if ((result == 0) && compStressCompile(STRESS_BB_PROFILE, 15))
@@ -15110,9 +15069,6 @@ public partial class Compiler
 
         return result;
     }
-#else
-    protected uint fgStressBBProf() => 0;
-#endif
 
     /// <summary>Switch the opt level from tier 0 to optimized</summary>
     /// <param name="reason">reason why opt level was switched</param>
@@ -15388,19 +15344,18 @@ public partial class Compiler
             // Retbuf addresses are definitions, not necessarily exposures.
             // Preserve native's intersection until that distinction is tracked here.
             BitVecOps.IntersectionD(traits, exposedLocals, assertions.GetLocalsToExpose());
-#if DEBUG
             void DumpVars(BitVec values, BitVec other)
             {
                 var separator = "";
 
                 for (var lclNum = 0; lclNum < lvaCount; lclNum++)
                 {
-                    if (BitVecOps.IsMember(traits, values, lclNum))
+                    if (BitVecOps.IsMember(traits!, values, lclNum))
                     {
                         JITDUMP($"{separator}V{lclNum:D2}");
                         separator = " ";
                     }
-                    else if (BitVecOps.IsMember(traits, other, lclNum))
+                    else if (BitVecOps.IsMember(traits!, other, lclNum))
                     {
                         JITDUMP($"{separator}   ");
                         separator = " ";
@@ -15408,12 +15363,14 @@ public partial class Compiler
                 }
             }
 
-            JITDUMP("Old exposed set: ");
-            DumpVars(assertions.GetLocalsToExpose(), exposedLocals);
-            JITDUMP("\nNew exposed set: ");
-            DumpVars(exposedLocals, assertions.GetLocalsToExpose());
-            JITDUMP("\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP("Old exposed set: ");
+                DumpVars(assertions.GetLocalsToExpose(), exposedLocals);
+                JITDUMP("\nNew exposed set: ");
+                DumpVars(exposedLocals, assertions.GetLocalsToExpose());
+                JITDUMP("\n");
+            }
             fgExposeLocalsInBitVec(exposedLocals);
         }
 
@@ -15826,9 +15783,10 @@ public partial class Compiler
                 newVarDsc.lvFieldLclStart = varDsc.lvFieldLclStart;
                 newVarDsc.lvFieldCnt = varDsc.lvFieldCnt;
                 newVarDsc.lvContainsHoles = varDsc.lvContainsHoles;
-#if DEBUG
-                newVarDsc.lvKeepType = true;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    newVarDsc.lvKeepType = true;
+                }
                 newVarDsc.SetAddressExposed(varDsc.IsAddressExposed, varDsc.AddrExposedReason);
                 newVarDsc.lvDoNotEnregister = varDsc.lvDoNotEnregister;
                 newVarDsc.lvSingleDef = varDsc.lvSingleDef;
@@ -15911,10 +15869,11 @@ public partial class Compiler
             // address of the pointer parameter itself.
             varDsc.CleanAddressExposed();
             varDsc.lvDoNotEnregister = false;
-#if DEBUG
-            varDsc.lvKeepType = true;
+            if (Configuration.DEBUG)
+            {
+                varDsc.lvKeepType = true;
+            }
             JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to {varDsc.Type.Name}.\n");
-#endif
         }
 
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
