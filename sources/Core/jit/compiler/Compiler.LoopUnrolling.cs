@@ -91,9 +91,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
         fgDebugCheckBBlist();
-#endif
         return anyIRchange ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
