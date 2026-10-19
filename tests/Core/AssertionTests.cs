@@ -816,17 +816,18 @@ internal static unsafe class AssertionTests
             value.AsSpan<ushort>()[0] = ushort.MaxValue;
             var constant = store.VNForSimd16Con(value);
             Assert.That(store.IsVectorPerElementMask(constant, baseType, 16), Is.EqualTo(expected));
-#if TARGET_XARCH
-            var simdType = store.VNForFuncNoFolding(TYP_UNKNOWN, VNFunc.VNF_SimdType,
-                store.VNForIntCon(16), store.VNForIntCon((int)TYP_SHORT));
-            var unknown = store.VNForExpr(null, TYP_SIMD16);
-            var compare = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_CompareEqual, unknown, unknown, simdType);
-            var bitwise = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_AndNot, compare, constant, simdType);
-            Assert.That(store.IsVectorPerElementMask(compare, baseType, 16), Is.EqualTo(expected));
-            Assert.That(store.IsVectorPerElementMask(bitwise, baseType, 16), Is.EqualTo(expected));
-            var unproven = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_AndNot, compare, unknown, simdType);
-            Assert.That(store.IsVectorPerElementMask(unproven, baseType, 16), Is.False);
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                var simdType = store.VNForFuncNoFolding(TYP_UNKNOWN, VNFunc.VNF_SimdType,
+                    store.VNForIntCon(16), store.VNForIntCon((int)TYP_SHORT));
+                var unknown = store.VNForExpr(null, TYP_SIMD16);
+                var compare = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_CompareEqual, unknown, unknown, simdType);
+                var bitwise = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_AndNot, compare, constant, simdType);
+                Assert.That(store.IsVectorPerElementMask(compare, baseType, 16), Is.EqualTo(expected));
+                Assert.That(store.IsVectorPerElementMask(bitwise, baseType, 16), Is.EqualTo(expected));
+                var unproven = StoreFunctionRecord(store, TYP_SIMD16, VNFunc.VNF_HWI_X86Base_AndNot, compare, unknown, simdType);
+                Assert.That(store.IsVectorPerElementMask(unproven, baseType, 16), Is.False);
+            }
         });
     }
 
@@ -1510,10 +1511,11 @@ internal static unsafe class AssertionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void NullFieldSequenceDumpUsesNativeSymbolicFormat()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
             using var stream = new MemoryStream();
@@ -1530,13 +1532,12 @@ internal static unsafe class AssertionTests
             finally
             {
                 s_jitstdout = previous;
-                compiler.verbose = false;
+                TestConfiguration.SetVerbose(compiler, false);
             }
 
             Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($"     {{ }} is ${vn:x}{Environment.NewLine}"));
         });
     }
-#endif
 
     private struct ArrayMetadata
     {
@@ -2335,10 +2336,11 @@ internal static unsafe class AssertionTests
         });
     }
 
-#if DEBUG
     [Test]
     public static void AssertionDumpsMatchNativeFormattingAndIndexOrder()
     {
+        Assume.That(TestConfiguration.IsDebug);
+
         WithCompiler(compiler => {
             var traits = compiler.apTraits ?? throw new InvalidOperationException();
             using var stream = new MemoryStream();
@@ -2372,7 +2374,6 @@ internal static unsafe class AssertionTests
             Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMaxUncheckedOffsetForNullObject")]
     private static extern ref int MaxUncheckedOffset(Compiler compiler);
