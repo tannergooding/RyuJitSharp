@@ -84,24 +84,14 @@ public sealed partial class LinearScan
             return;
         }
 
-        var refPositionMark = 0;
-        var oldDefinitionCount = 0;
         if (Configuration.DEBUG)
         {
-            refPositionMark = refPositions.Count;
-            oldDefinitionCount = countPendingDefinitions();
+            var refPositionMark = refPositions.Count;
+            var oldDefinitionCount = countPendingDefinitions();
             _currentBuildNode = tree;
-        }
 
-#if DEBUG
-        var consumed = buildNode(tree);
-#else
-        _ = buildNode(tree);
-#endif
+            var consumed = buildNode(tree);
 
-#if DEBUG
-        if (Configuration.DEBUG)
-        {
             var produced = countPendingDefinitions() - oldDefinitionCount;
             _ = produced;
             assert((consumed == 0) || (computeAvailableSrcCount(tree) == consumed));
@@ -198,7 +188,10 @@ public sealed partial class LinearScan
                 }
             }
         }
-#endif
+        else
+        {
+            _ = buildNode(tree);
+        }
         JITDUMP("\n");
     }
 }

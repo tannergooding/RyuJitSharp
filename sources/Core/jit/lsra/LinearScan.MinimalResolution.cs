@@ -198,14 +198,16 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG)
         {
-            jitprintf("Trees after linear scan register allocator (LSRA)\n");
-            _compiler.fgDispBasicBlocks(true);
+            if (VERBOSE)
+            {
+                jitprintf("Trees after linear scan register allocator (LSRA)\n");
+                _compiler.fgDispBasicBlocks(true);
+            }
+
+            verifyFinalAllocationMinimal();
         }
-        verifyFinalAllocationMinimal();
-#endif
         _compiler.raMarkStkVars();
         recordMaxSpill();
     }

@@ -376,9 +376,10 @@ internal static unsafe class LoopDiscoveryTests
     public static void InversionDuplicatesTopTestButRetainsBottomTestedLoops(bool bottomTested, NodeThreading threading)
     {
         WithCompiler(compiler => {
-#if OPT_CONFIG
-            InversionEnabled(ref JitConfig) = 1;
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                InversionEnabled(ref JitConfig) = 1;
+            }
             InversionSizeLimit(ref JitConfig) = 100;
             var blocks = CreateGraph(compiler, bottomTested
                 ? [[1], [2], [1, 3], []]

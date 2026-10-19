@@ -49,12 +49,10 @@ public sealed partial class LinearScan
             _lowGprRegs = _availableIntRegs;
         }
 
-#if DEBUG
-        if (VERBOSE)
+        if (Configuration.DEBUG && VERBOSE)
         {
             tupleStyleDumpPre();
         }
-#endif
 
         JITDUMP("\nbuildIntervals second part ========\n");
         _referenceBuildLocation = 0;
@@ -173,12 +171,10 @@ public sealed partial class LinearScan
                     node.RegNum = node.Reg;
                 }
                 buildRefPositionsForNode(node, _referenceBuildLocation);
-#if DEBUG
-                if (_referenceBuildLocation > _maxNodeLocation)
+                if (Configuration.DEBUG && (_referenceBuildLocation > _maxNodeLocation))
                 {
                     _maxNodeLocation = _referenceBuildLocation;
                 }
-#endif
                 _referenceBuildLocation += 2;
             }
 

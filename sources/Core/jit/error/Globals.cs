@@ -283,7 +283,6 @@ public partial class Globals
             return;
         }
 
-#if FUNC_INFO_LOGGING
         if (Configuration.DEBUG)
         {
             ref var logEnv = ref JitTls.LogEnv;
@@ -312,7 +311,6 @@ public partial class Globals
                 compJitFuncInfoFile.Flush();
             }
         }
-#endif
 
         // Assume we're within a compFunctionTrace boundary, which might not be true.
         if (Configuration.DEBUG)

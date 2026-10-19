@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Begin the next size-ranked re-evaluation of non-B209 deferred candidates, starting with CCB-1350, INV-90F76B0C310F, and INV-A0B6775A3F42; resolve concrete Release dependency closures and continue eligible Debug guard conversions. Preserve optional feature semantics at explicit G1/G2 decision gates and keep the four B209 candidates deferred until the table/emitter closure is ported and tested.",
+    "nextAction": "Continue with the next size-ranked candidate cohort. Keep CCB-1205 blocked pending an approved universal error-API/caller-metadata strategy, and continue around the two TRACK_LSRA_STATS mode gates while classifying the broader Debug stats-disabled fixture failures. Preserve the four B209 candidates until their target-width table/emitter closure is ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",
@@ -26,23 +26,14 @@
       },
       {
         "batch": "Remaining non-B209 deferred conditional-cleanup candidates",
-        "deferredCount": 12,
+        "deferredCount": 3,
         "candidateIds": [
-          "CCB-1350",
-          "INV-90F76B0C310F",
-          "INV-A0B6775A3F42",
-          "INV-B46DE597FD51",
-          "INV-E310D3CAFF48",
-          "INV-B99795A1AA57",
-          "INV-8CCBDE11EE21",
-          "INV-89FD708CCA09",
-          "INV-B1D6BC6FF554",
           "CCB-1205",
-          "CCB-1209",
-          "INV-1A9208FC08F9"
+          "INV-89FD708CCA09",
+          "INV-B1D6BC6FF554"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Continue in size-ranked file cohorts, resolving concrete Release dependency closures; preserve optional feature semantics at the G1/G2 decision gates while converting all other eligible candidates."
+        "nextAction": "Continue other size-ranked cohorts. Before closing CCB-1205, obtain approval for the universal error API and caller-metadata strategy. Before closing the TRACK_LSRA_STATS candidates, resolve the G2 mode/footprint gate and classify the nine Debug stats-disabled failures from the broader LinearScan selection; the focused default-mode selection passed."
       }
     ],
 
