@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -87,93 +88,118 @@ public sealed partial class LinearScan
         private bool _coversFullApplied;
         private bool _constAvailableApplied;
 
-#if DEBUG
-        private readonly RegisterScore[] _regSelectionOrder = new RegisterScore[HeuristicCount];
-        private readonly Dictionary<RegisterScore, System.Action> _mappingTable;
-#endif
+        private sealed class SelectorDebugData
+        {
+            internal readonly RegisterScore[] RegSelectionOrder = new RegisterScore[HeuristicCount];
+            internal readonly Dictionary<RegisterScore, System.Action> MappingTable;
+
+            internal SelectorDebugData(RegisterSelection selector)
+            {
+                MappingTable = new(HeuristicCount)
+                {
+                    [RegisterScore.FREE] = selector.try_FREE,
+                    [RegisterScore.CONST_AVAILABLE] = selector.try_CONST_AVAILABLE,
+                    [RegisterScore.THIS_ASSIGNED] = selector.try_THIS_ASSIGNED,
+                    [RegisterScore.COVERS] = selector.try_COVERS,
+                    [RegisterScore.OWN_PREFERENCE] = selector.try_OWN_PREFERENCE,
+                    [RegisterScore.COVERS_RELATED] = selector.try_COVERS_RELATED,
+                    [RegisterScore.RELATED_PREFERENCE] = selector.try_RELATED_PREFERENCE,
+                    [RegisterScore.CALLER_CALLEE] = selector.try_CALLER_CALLEE,
+                    [RegisterScore.UNASSIGNED] = selector.try_UNASSIGNED,
+                    [RegisterScore.COVERS_FULL] = selector.try_COVERS_FULL,
+                    [RegisterScore.BEST_FIT] = selector.try_BEST_FIT,
+                    [RegisterScore.IS_PREV_REG] = selector.try_IS_PREV_REG,
+                    [RegisterScore.REG_ORDER] = selector.try_REG_ORDER,
+                    [RegisterScore.SPILL_COST] = selector.try_SPILL_COST,
+                    [RegisterScore.FAR_NEXT_REF] = selector.try_FAR_NEXT_REF,
+                    [RegisterScore.PREV_REG_OPT] = selector.try_PREV_REG_OPT,
+                    [RegisterScore.REG_NUM] = selector.try_REG_NUM,
+                };
+            }
+        }
+
+        private static class SelectorDebugDataStorage
+        {
+            internal static readonly ConditionalWeakTable<RegisterSelection, SelectorDebugData> Table = [];
+        }
+
+        private SelectorDebugData getDebugData()
+        {
+            if (!Configuration.DEBUG)
+            {
+                throw new InvalidOperationException("Register-selection debug data is only available in Debug builds.");
+            }
+
+            return SelectorDebugDataStorage.Table.GetValue(this, static selector => new SelectorDebugData(selector));
+        }
 
         public unsafe RegisterSelection(LinearScan linearScan)
         {
             _linearScan = linearScan;
 
-#if DEBUG
-            _mappingTable = new(HeuristicCount)
+            if (Configuration.DEBUG)
             {
-                [RegisterScore.FREE] = try_FREE,
-                [RegisterScore.CONST_AVAILABLE] = try_CONST_AVAILABLE,
-                [RegisterScore.THIS_ASSIGNED] = try_THIS_ASSIGNED,
-                [RegisterScore.COVERS] = try_COVERS,
-                [RegisterScore.OWN_PREFERENCE] = try_OWN_PREFERENCE,
-                [RegisterScore.COVERS_RELATED] = try_COVERS_RELATED,
-                [RegisterScore.RELATED_PREFERENCE] = try_RELATED_PREFERENCE,
-                [RegisterScore.CALLER_CALLEE] = try_CALLER_CALLEE,
-                [RegisterScore.UNASSIGNED] = try_UNASSIGNED,
-                [RegisterScore.COVERS_FULL] = try_COVERS_FULL,
-                [RegisterScore.BEST_FIT] = try_BEST_FIT,
-                [RegisterScore.IS_PREV_REG] = try_IS_PREV_REG,
-                [RegisterScore.REG_ORDER] = try_REG_ORDER,
-                [RegisterScore.SPILL_COST] = try_SPILL_COST,
-                [RegisterScore.FAR_NEXT_REF] = try_FAR_NEXT_REF,
-                [RegisterScore.PREV_REG_OPT] = try_PREV_REG_OPT,
-                [RegisterScore.REG_NUM] = try_REG_NUM,
-            };
-            assert(_mappingTable.Count == HeuristicCount);
-            if (_mappingTable.Count != HeuristicCount)
-            {
-                throw new FatalJitException("LSRA selector heuristic mapping is incomplete.");
-            }
+                var debugData = getDebugData();
+                var mappingTable = debugData.MappingTable;
+                var regSelectionOrder = debugData.RegSelectionOrder;
 
-            foreach (var score in _mappingTable.Keys)
-            {
-                assert(getScoreName(score) != "  -  ");
-            }
-
-            var orderingPointer = JitConfig.JitLsraOrdering;
-            var ordering = orderingPointer is null ? null : Marshal.PtrToStringAnsi((nint)orderingPointer);
-            if (ordering is null)
-            {
-                ordering = "ABCDEFGHIJKLMNOPQ";
-                if (!linearScan._enregisterLocalVars && linearScan._compiler.opts.OptimizationDisabled
-                    && (!Configuration.TARGET_ARM64 ||
-                        !linearScan._compiler.info.compNeedsConsecutiveRegisters)
-                )
+                assert(mappingTable.Count == HeuristicCount);
+                if (mappingTable.Count != HeuristicCount)
                 {
-                    ordering = "MQQQQQQQQQQQQQQQQ";
+                    throw new FatalJitException("LSRA selector heuristic mapping is incomplete.");
+                }
+
+                foreach (var score in mappingTable.Keys)
+                {
+                    assert(getScoreName(score) != "  -  ");
+                }
+
+                var orderingPointer = JitConfig.JitLsraOrdering;
+                var ordering = orderingPointer is null ? null : Marshal.PtrToStringAnsi((nint)orderingPointer);
+                if (ordering is null)
+                {
+                    ordering = "ABCDEFGHIJKLMNOPQ";
+                    if (!linearScan._enregisterLocalVars && linearScan._compiler.opts.OptimizationDisabled
+                        && (!Configuration.TARGET_ARM64 ||
+                            !linearScan._compiler.info.compNeedsConsecutiveRegisters)
+                    )
+                    {
+                        ordering = "MQQQQQQQQQQQQQQQQ";
+                    }
+                }
+
+                if (ordering.Length < HeuristicCount)
+                {
+                    assert(false, "Invalid lsraOrdering value.");
+                    throw new FatalJitException("Invalid lsraOrdering value.");
+                }
+
+                for (var orderId = 0; orderId < HeuristicCount; orderId++)
+                {
+                    assert(regSelectionOrder[orderId] is RegisterScore.NONE);
+                    regSelectionOrder[orderId] = ordering[orderId] switch
+                    {
+                        'A' => RegisterScore.FREE,
+                        'B' => RegisterScore.CONST_AVAILABLE,
+                        'C' => RegisterScore.THIS_ASSIGNED,
+                        'D' => RegisterScore.COVERS,
+                        'E' => RegisterScore.OWN_PREFERENCE,
+                        'F' => RegisterScore.COVERS_RELATED,
+                        'G' => RegisterScore.RELATED_PREFERENCE,
+                        'H' => RegisterScore.CALLER_CALLEE,
+                        'I' => RegisterScore.UNASSIGNED,
+                        'J' => RegisterScore.COVERS_FULL,
+                        'K' => RegisterScore.BEST_FIT,
+                        'L' => RegisterScore.IS_PREV_REG,
+                        'M' => RegisterScore.REG_ORDER,
+                        'N' => RegisterScore.SPILL_COST,
+                        'O' => RegisterScore.FAR_NEXT_REF,
+                        'P' => RegisterScore.PREV_REG_OPT,
+                        'Q' => RegisterScore.REG_NUM,
+                        _ => InvalidOrderingCharacter(),
+                    };
                 }
             }
-
-            if (ordering.Length < HeuristicCount)
-            {
-                assert(false, "Invalid lsraOrdering value.");
-                throw new FatalJitException("Invalid lsraOrdering value.");
-            }
-
-            for (var orderId = 0; orderId < HeuristicCount; orderId++)
-            {
-                assert(_regSelectionOrder[orderId] is RegisterScore.NONE);
-                _regSelectionOrder[orderId] = ordering[orderId] switch
-                {
-                    'A' => RegisterScore.FREE,
-                    'B' => RegisterScore.CONST_AVAILABLE,
-                    'C' => RegisterScore.THIS_ASSIGNED,
-                    'D' => RegisterScore.COVERS,
-                    'E' => RegisterScore.OWN_PREFERENCE,
-                    'F' => RegisterScore.COVERS_RELATED,
-                    'G' => RegisterScore.RELATED_PREFERENCE,
-                    'H' => RegisterScore.CALLER_CALLEE,
-                    'I' => RegisterScore.UNASSIGNED,
-                    'J' => RegisterScore.COVERS_FULL,
-                    'K' => RegisterScore.BEST_FIT,
-                    'L' => RegisterScore.IS_PREV_REG,
-                    'M' => RegisterScore.REG_ORDER,
-                    'N' => RegisterScore.SPILL_COST,
-                    'O' => RegisterScore.FAR_NEXT_REF,
-                    'P' => RegisterScore.PREV_REG_OPT,
-                    'Q' => RegisterScore.REG_NUM,
-                    _ => InvalidOrderingCharacter(),
-                };
-            }
-#endif
         }
 
         private Interval CurrentInterval =>

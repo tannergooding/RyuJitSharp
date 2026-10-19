@@ -301,6 +301,9 @@ public sealed partial class LinearScan
             {
                 _freeCandidates = _linearScan.getFreeCandidates(_candidates, _regType);
             }
+
+            _ = inUseOrBusyRegsMask;
+
             if (_freeCandidates == SRBM_NONE)
             {
                 if (!refPosition.IsActualRef())
@@ -314,94 +317,101 @@ public sealed partial class LinearScan
                 _matchingConstants = _linearScan.getMatchingConstants(_candidates, currentInterval, refPosition);
             }
 
-#if DEBUG
-            for (var index = 0; index < HeuristicCount && !_found; index++)
+            if (Configuration.DEBUG)
             {
-                var score = _regSelectionOrder[index];
-                if (!_mappingTable.TryGetValue(score, out var heuristic))
+                var debugData = getDebugData();
+                var regSelectionOrder = debugData.RegSelectionOrder;
+                var mappingTable = debugData.MappingTable;
+
+                for (var index = 0; index < HeuristicCount && !_found; index++)
                 {
-                    throw new FatalJitException("Unexpected LSRA register-selection heuristic.");
-                }
-                heuristic();
-                if (_found)
-                {
-                    selectionScore = score;
-                    if (Configuration.TRACK_LSRA_STATS)
+                    var score = regSelectionOrder[index];
+                    if (!mappingTable.TryGetValue(score, out var heuristic))
                     {
-                        _linearScan.updateLsraStat(getLsraStatFromScore(score), refPosition.bbNum);
+                        throw new FatalJitException("Unexpected LSRA register-selection heuristic.");
+                    }
+                    heuristic();
+                    if (_found)
+                    {
+                        selectionScore = score;
+                        if (Configuration.TRACK_LSRA_STATS)
+                        {
+                            _linearScan.updateLsraStat(getLsraStatFromScore(score), refPosition.bbNum);
+                        }
                     }
                 }
             }
-#else
-            if (_freeCandidates != SRBM_NONE)
+            else
             {
-                try_FREE();
-                if (!_found)
+                if (_freeCandidates != SRBM_NONE)
                 {
-                    try_CONST_AVAILABLE();
+                    try_FREE();
+                    if (!_found)
+                    {
+                        try_CONST_AVAILABLE();
+                    }
+                    if (!_found)
+                    {
+                        try_THIS_ASSIGNED();
+                    }
+                    if (!_found)
+                    {
+                        try_COVERS();
+                    }
+                    if (!_found)
+                    {
+                        try_OWN_PREFERENCE();
+                    }
+                    if (!_found)
+                    {
+                        try_COVERS_RELATED();
+                    }
+                    if (!_found)
+                    {
+                        try_RELATED_PREFERENCE();
+                    }
+                    if (!_found)
+                    {
+                        try_CALLER_CALLEE();
+                    }
+                    if (!_found)
+                    {
+                        try_UNASSIGNED();
+                    }
+                    if (!_found)
+                    {
+                        try_COVERS_FULL();
+                    }
+                    if (!_found)
+                    {
+                        try_BEST_FIT();
+                    }
+                    if (!_found)
+                    {
+                        try_IS_PREV_REG();
+                    }
+                    if (!_found)
+                    {
+                        try_REG_ORDER();
+                    }
+                }
+                if (_freeCandidates == SRBM_NONE || !_found)
+                {
+                    try_SPILL_COST();
                 }
                 if (!_found)
                 {
-                    try_THIS_ASSIGNED();
+                    try_FAR_NEXT_REF();
                 }
                 if (!_found)
                 {
-                    try_COVERS();
+                    try_PREV_REG_OPT();
                 }
                 if (!_found)
                 {
-                    try_OWN_PREFERENCE();
-                }
-                if (!_found)
-                {
-                    try_COVERS_RELATED();
-                }
-                if (!_found)
-                {
-                    try_RELATED_PREFERENCE();
-                }
-                if (!_found)
-                {
-                    try_CALLER_CALLEE();
-                }
-                if (!_found)
-                {
-                    try_UNASSIGNED();
-                }
-                if (!_found)
-                {
-                    try_COVERS_FULL();
-                }
-                if (!_found)
-                {
-                    try_BEST_FIT();
-                }
-                if (!_found)
-                {
-                    try_IS_PREV_REG();
-                }
-                if (!_found)
-                {
-                    try_REG_ORDER();
+                    try_REG_NUM();
                 }
             }
-            if (_freeCandidates == SRBM_NONE || !_found)
-            {
-                try_SPILL_COST();
-            }
-            if (!_found)
-            {
-                try_FAR_NEXT_REF();
-            }
-            if (!_found)
-            {
-                try_PREV_REG_OPT();
-            }
-            if (!_found)
-            {
-                try_REG_NUM();
-            }
-#endif
             if (_skipAllocation)
             {
                 _foundRegBit = SRBM_NONE;

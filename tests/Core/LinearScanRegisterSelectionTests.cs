@@ -263,7 +263,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
         {
             compiler.info.compNeedsConsecutiveRegisters = needsConsecutive;
             var selector = GetSelector(CreateAllocator(compiler));
-            var order = GetSelectorField<Array>(selector, "_regSelectionOrder");
+            var order = GetSelectorField<Array>(GetSelectorDebugData(selector), "RegSelectionOrder");
             var actual = new int[order.Length];
             for (var index = 0; index < order.Length; index++)
             {
@@ -310,6 +310,16 @@ internal static unsafe class LinearScanRegisterSelectionTests
             ?? throw new AssertionException($"Missing selector field {name}.");
         return field.GetValue(selector) is T value
             ? value : throw new AssertionException($"Unexpected selector field type for {name}.");
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The test intentionally reflects private register-selector methods retained in the test assembly.")]
+    private static object GetSelectorDebugData(object selector)
+    {
+        var method = selector.GetType().GetMethod("getDebugData", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new AssertionException("Missing selector debug-data accessor.");
+        return method.Invoke(selector, null)
+            ?? throw new AssertionException("Missing selector debug-data instance.");
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2075",

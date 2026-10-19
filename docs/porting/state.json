@@ -10,31 +10,8 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Convert the three LSRA register-selection debug-state candidates through a lazily created selector sidecar, preserving Debug JitLsraOrdering behavior, Release fixed ordering, and Release selector layout/allocation; validate focused Debug/Release tests and ARM64 Debug ordering.",
-    "activeBatch": {
-      "scope": "Convert the Debug-only LSRA register-selection order and heuristic map into lazily created selector-owned debug sidecar state, and runtime-gate the configurable Debug ordering branch and dependent test. Preserve JitLsraOrdering behavior in Debug, the existing fixed heuristic order in Release, and Release RegisterSelection layout/allocation behavior.",
-      "doneWhen": "All three selected inventory candidates are converted and closed; Debug-configured and default selector orders remain covered; Debug and Release full-analysis Core builds and the focused LinearScanRegisterSelectionTests pass; the Release selector has no per-instance debug state or sidecar allocation.",
-      "validation": [
-        "Full-analysis Core Debug and Release builds.",
-        "Run LinearScanRegisterSelectionTests in Debug and Release and verify each selection executes nonempty tests.",
-        "Compare the Release RegisterSelection instance layout and confirm Release selector construction does not materialize Debug sidecar state."
-      ],
-      "deferred": [
-        "Keep the B209 genAsyncResumeInfo target-width table/emitter dependency closure deferred."
-      ]
-    },
+    "nextAction": "Map CCB-0699 in Liveness.LocalTracking.cs: trace lvaTrackedVars initialization and every consumer, then close its Debug state/API dependency without changing Release Compiler layout, allocation, or liveness semantics.",
     "unresolvedConditionalCleanup": [
-      {
-        "batch": "LinearScan register-selection state/layout closure",
-        "deferredCount": 3,
-        "candidateIds": [
-          "INV-0BB66996E5ED",
-          "INV-203AD8A376A9",
-          "INV-A93AE8B56C9D"
-        ],
-        "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Externalize RegisterSelection._regSelectionOrder and _mappingTable into lazily created selector debug state, runtime-gate the Debug configurable-order branch in LinearScan.RegisterSelection.General.cs, update its test, then validate Debug/Release state and allocation behavior."
-      },
       {
         "batch": "Compiler local tracked-variable liveness closure",
         "deferredCount": 1,
