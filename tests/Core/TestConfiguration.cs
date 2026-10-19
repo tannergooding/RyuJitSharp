@@ -20,9 +20,6 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgNormalizeEHDone")]
     private static extern ref bool EhNormalizationDone(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_doNotEnregReason")]
-    private static extern ref DoNotEnregisterReason DoNotEnregisterReasonField(ref LclVarDsc descriptor);
-
     private static FieldInfo FatalNoWayAssertBodyArgsCountField =>
         typeof(Globals).GetField(
             "s_fatalNoWayAssertBodyArgsCount",
@@ -141,14 +138,6 @@ internal static partial class TestConfiguration
         if (IsDebug)
         {
             compiler.opts.dspCode = enabled;
-        }
-    }
-
-    public static void SetDoNotEnregisterReason(ref LclVarDsc descriptor, DoNotEnregisterReason reason)
-    {
-        if (IsDebug)
-        {
-            DoNotEnregisterReasonField(ref descriptor) = reason;
         }
     }
 

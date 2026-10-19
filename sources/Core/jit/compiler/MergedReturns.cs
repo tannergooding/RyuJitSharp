@@ -137,7 +137,7 @@ public sealed class MergedReturns
             if (Configuration.DEBUG)
             {
                 // Assignments to this local are introduced after stress type conversion.
-                retVarDsc.lvKeepType = true;
+                _compiler.SetLocalDebugFlag(retLclNum, LocalDebugFlags.KeepType, true);
             }
             var retTemp = _compiler.gtNewLclvNode(retVarDsc.Type, retLclNum);
             retTemp.Flags |= GTF_DONT_CSE;

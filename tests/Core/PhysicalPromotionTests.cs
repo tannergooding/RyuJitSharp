@@ -455,7 +455,7 @@ internal static class PhysicalPromotionTests
             compiler.lvaTable[0].lvHasLdAddrOp = true;
             if (exposed)
             {
-                compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+                compiler.SetLocalAddressExposed(0, true, AddressExposedReason.ESCAPE_ADDRESS);
             }
 
             var check = typeof(Compiler).GetMethod("PhysicalPromotionHasAddressExposedLocals",
@@ -1224,7 +1224,7 @@ internal static class PhysicalPromotionTests
                 .SetValue(compiler, layouts);
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, checked((ushort)offset));
             address.Flags |= GTF_VAR_DEF;
@@ -1820,7 +1820,7 @@ internal static class PhysicalPromotionTests
             .SetValue(compiler, layouts);
     if (TestConfiguration.IsDebug)
     {
-        compiler.lvaTable[0].IsDefinedViaAddress = true;
+        compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
     }
         var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
         address.Flags |= GTF_VAR_DEF;

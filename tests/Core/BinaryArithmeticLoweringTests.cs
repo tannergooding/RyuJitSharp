@@ -446,7 +446,7 @@ internal sealed unsafe class BinaryArithmeticLoweringTests
             }
             if (reason == "address-exposed")
             {
-                compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+                compiler.SetLocalAddressExposed(0, true, AddressExposedReason.ESCAPE_ADDRESS);
             }
             var value = compiler.gtNewLclvNode(TYP_INT, 0);
             var copy = compiler.gtNewLclvNode(TYP_INT, reason == "different-local" ? 1 : 0);
@@ -600,7 +600,7 @@ internal sealed unsafe class BinaryArithmeticLoweringTests
             }
             if (reason == "address-exposed")
             {
-                compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+                compiler.SetLocalAddressExposed(0, true, AddressExposedReason.ESCAPE_ADDRESS);
             }
             var value = compiler.gtNewLclvNode(TYP_INT, 0);
             var other = compiler.gtNewLclvNode(TYP_INT, reason == "different-local" || shape == "andnot" ? 1 : 0);

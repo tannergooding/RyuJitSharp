@@ -49,7 +49,10 @@ public partial class Compiler
         private uint _externallyVisibleImplicitly;
         private uint _smallTypePartialDef;
 
-        public void RecordLocal(in LclVarDsc varDsc)
+        public void RecordLocal(
+            in LclVarDsc varDsc,
+            DoNotEnregisterReason doNotEnregisterReason,
+            AddressExposedReason addressExposedReason)
         {
             unchecked
             {
@@ -69,7 +72,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    switch (varDsc.DoNotEnregisterReason)
+                    switch (doNotEnregisterReason)
                     {
                         case DoNotEnregisterReason.AddrExposed:
                         {
@@ -210,10 +213,10 @@ public partial class Compiler
                         }
                     }
 
-                    if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.AddrExposed)
+                    if (doNotEnregisterReason == DoNotEnregisterReason.AddrExposed)
                     {
                         // Adjusting an exposed 'this' can retain this reason after clearing exposure.
-                        switch (varDsc.AddrExposedReason)
+                        switch (addressExposedReason)
                         {
                             case AddressExposedReason.PARENT_EXPOSED:
                             {

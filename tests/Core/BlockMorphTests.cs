@@ -253,7 +253,7 @@ internal static unsafe class BlockMorphTests
         WithCompiler(compiler => {
             SetPromotedDestination(compiler);
             compiler.lvaTable[0].lvContainsHoles = exposedHoles;
-            compiler.lvaTable[0].SetAddressExposed(exposedHoles, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, exposedHoles, AddressExposedReason.ESCAPE_ADDRESS);
             compiler.lvaTable[1].Type = exposedHoles ? TYP_LONG : TYP_REF;
             var store = compiler.gtNewStoreLclVarNode(0,
                 compiler.gtNewUnaryNode(GT_INIT_VAL, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1)));

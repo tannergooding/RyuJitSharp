@@ -3,12 +3,37 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace RyuJitSharp;
+
+[System.Flags]
+internal enum LocalDebugFlags : ushort
+{
+    None = 0,
+    TrackedWithoutIndex = 1 << 0,
+    ClassInfoUpdated = 1 << 1,
+    IsHoist = 1 << 2,
+    IsMultiDefCse = 1 << 3,
+    KeepType = 1 << 4,
+    NoLclFldStress = 1 << 5,
+    DefinedViaAddress = 1 << 6,
+    UnusedStruct = 1 << 7,
+    UndoneStructPromotion = 1 << 8,
+}
+
+[System.Flags]
+internal enum LocalDebugDataCopyFlags : byte
+{
+    None = 0,
+    DoNotEnregisterReason = 1 << 0,
+    AddressExposedReason = 1 << 1,
+    KeepType = 1 << 2,
+    DefinedViaAddress = 1 << 3,
+    SingleDefDisqualifyReason = 1 << 4,
+}
 
 public partial class Compiler
 {
@@ -20,7 +45,7 @@ public partial class Compiler
         internal long CompCycles;
         internal int InlineMethodXmlFilePosition;
         internal int ExpensiveDebugCheckLevel;
-        internal Dictionary<int, LocalDebugData>? LocalVariables;
+        internal LocalDebugData[]? LocalVariables;
         internal InlineArrayCompilerStressCount<byte> CompActiveStressModes;
         internal GenTree? LastConsumedNode;
         internal bool TreesBeforeAfterMorph;
@@ -47,9 +72,16 @@ public partial class Compiler
 
     private struct LocalDebugData
     {
-        internal bool TrackedWithoutIndex;
+        internal LocalDebugFlags Flags;
+        internal DoNotEnregisterReason DoNotEnregisterReason;
+        internal AddressExposedReason AddressExposedReason;
+        internal byte EncodedSingleDefDisqualifyReason;
 
-        internal readonly bool IsEmpty => !TrackedWithoutIndex;
+        internal readonly bool IsEmpty =>
+            (Flags is LocalDebugFlags.None) &&
+            (DoNotEnregisterReason is DoNotEnregisterReason.None) &&
+            (AddressExposedReason is AddressExposedReason.NONE) &&
+            (EncodedSingleDefDisqualifyReason == 0);
     }
 
     private static class DebugDataStorage
@@ -299,25 +331,253 @@ public partial class Compiler
 
     internal bool GetLocalVarTrackedWithoutIndex(int localNumber)
     {
-        var data = GetDebugData();
-        return (data.LocalVariables is not null) &&
-               data.LocalVariables.TryGetValue(localNumber, out var localData) &&
-               localData.TrackedWithoutIndex;
+        return Configuration.DEBUG && GetLocalDebugFlag(localNumber, LocalDebugFlags.TrackedWithoutIndex);
     }
 
     [Conditional("DEBUG")]
     internal void SetLocalVarTrackedWithoutIndex(int localNumber, bool value)
     {
-        var data = GetDebugData();
-        var localData = default(LocalDebugData);
+        SetLocalDebugFlag(localNumber, LocalDebugFlags.TrackedWithoutIndex, value);
+    }
 
-        if (data.LocalVariables is not null)
+    internal bool GetLocalDebugFlag(int localNumber, LocalDebugFlags flag)
+    {
+        if (!Configuration.DEBUG)
         {
-            _ = data.LocalVariables.TryGetValue(localNumber, out localData);
+            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
         }
 
-        localData.TrackedWithoutIndex = value;
-        SetLocalDebugData(data, localNumber, localData);
+        return (GetLocalDebugData(localNumber).Flags & flag) != 0;
+    }
+
+    internal bool GetLocalDebugFlag(in LclVarDsc local, LocalDebugFlags flag)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+        }
+
+        return GetLocalDebugFlag(lvaGetLclNum(in local), flag);
+    }
+
+    internal bool GetLocalClassInfoUpdated(int localNumber)
+        => Configuration.DEBUG && GetLocalDebugFlag(localNumber, LocalDebugFlags.ClassInfoUpdated);
+
+    internal bool GetLocalClassInfoUpdated(in LclVarDsc local)
+        => Configuration.DEBUG && GetLocalDebugFlag(in local, LocalDebugFlags.ClassInfoUpdated);
+
+    internal void SetLocalDebugFlag(int localNumber, LocalDebugFlags flag, bool value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+        }
+
+        var localData = GetLocalDebugData(localNumber);
+        localData.Flags = (localData.Flags & ~flag) | (value ? flag : LocalDebugFlags.None);
+        SetLocalDebugData(localNumber, localData);
+    }
+
+    internal void SetLocalDebugFlag(in LclVarDsc local, LocalDebugFlags flag, bool value)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+        }
+
+        SetLocalDebugFlag(lvaGetLclNum(in local), flag, value);
+    }
+
+    internal DoNotEnregisterReason GetLocalDoNotEnregisterReason(int localNumber)
+        => Configuration.DEBUG ? GetLocalDebugData(localNumber).DoNotEnregisterReason : DoNotEnregisterReason.None;
+
+    internal DoNotEnregisterReason GetLocalDoNotEnregisterReason(in LclVarDsc local)
+        => Configuration.DEBUG ? GetLocalDoNotEnregisterReason(lvaGetLclNum(in local)) : DoNotEnregisterReason.None;
+
+    internal void SetLocalDoNotEnregisterReason(int localNumber, DoNotEnregisterReason reason)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("The do-not-enregister reason is only available in Debug builds.");
+        }
+
+        var localData = GetLocalDebugData(localNumber);
+        localData.DoNotEnregisterReason = reason;
+        SetLocalDebugData(localNumber, localData);
+    }
+
+    internal AddressExposedReason GetLocalAddressExposedReason(int localNumber)
+        => Configuration.DEBUG ? GetLocalDebugData(localNumber).AddressExposedReason : AddressExposedReason.NONE;
+
+    internal AddressExposedReason GetLocalAddressExposedReason(in LclVarDsc local)
+        => Configuration.DEBUG ? GetLocalAddressExposedReason(lvaGetLclNum(in local)) : AddressExposedReason.NONE;
+
+    internal void SetLocalAddressExposedReason(int localNumber, AddressExposedReason reason)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Address-exposed reason is only available in Debug builds.");
+        }
+
+        var localData = GetLocalDebugData(localNumber);
+        localData.AddressExposedReason = reason;
+        SetLocalDebugData(localNumber, localData);
+    }
+
+    internal void SetLocalAddressExposed(int localNumber, bool value, AddressExposedReason reason)
+    {
+        lvaGetDesc(localNumber).SetAddressExposed(value);
+        if (Configuration.DEBUG)
+        {
+            SetLocalAddressExposedReason(localNumber, reason);
+        }
+    }
+
+    internal void SetLocalAddressExposed(in LclVarDsc local, bool value, AddressExposedReason reason)
+        => SetLocalAddressExposed(lvaGetLclNum(in local), value, reason);
+
+    internal byte GetLocalSingleDefDisqualifyReason(int localNumber)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+        }
+
+        return (byte)(GetLocalDebugData(localNumber).EncodedSingleDefDisqualifyReason ^ 'H');
+    }
+
+    internal byte GetLocalSingleDefDisqualifyReason(in LclVarDsc local)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+        }
+
+        return GetLocalSingleDefDisqualifyReason(lvaGetLclNum(in local));
+    }
+
+    internal void SetLocalSingleDefDisqualifyReason(int localNumber, byte reason)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+        }
+
+        var localData = GetLocalDebugData(localNumber);
+        localData.EncodedSingleDefDisqualifyReason = (byte)(reason ^ 'H');
+        SetLocalDebugData(localNumber, localData);
+    }
+
+    internal void SetLocalSingleDefDisqualifyReason(in LclVarDsc local, byte reason)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+        }
+
+        SetLocalSingleDefDisqualifyReason(lvaGetLclNum(in local), reason);
+    }
+
+    internal void CopyLocalDebugData(int sourceLocalNumber, int destinationLocalNumber, LocalDebugDataCopyFlags fields)
+    {
+        if (!Configuration.DEBUG)
+        {
+            throw new System.InvalidOperationException("Compiler debug data is only available in Debug builds.");
+        }
+
+        var source = GetLocalDebugData(sourceLocalNumber);
+        var destination = GetLocalDebugData(destinationLocalNumber);
+
+        if ((fields & LocalDebugDataCopyFlags.DoNotEnregisterReason) != 0)
+        {
+            destination.DoNotEnregisterReason = source.DoNotEnregisterReason;
+        }
+
+        if ((fields & LocalDebugDataCopyFlags.AddressExposedReason) != 0)
+        {
+            destination.AddressExposedReason = source.AddressExposedReason;
+        }
+
+        if ((fields & LocalDebugDataCopyFlags.KeepType) != 0)
+        {
+            destination.Flags = (destination.Flags & ~LocalDebugFlags.KeepType) |
+                (source.Flags & LocalDebugFlags.KeepType);
+        }
+
+        if ((fields & LocalDebugDataCopyFlags.DefinedViaAddress) != 0)
+        {
+            destination.Flags = (destination.Flags & ~LocalDebugFlags.DefinedViaAddress) |
+                (source.Flags & LocalDebugFlags.DefinedViaAddress);
+        }
+
+        if ((fields & LocalDebugDataCopyFlags.SingleDefDisqualifyReason) != 0)
+        {
+            destination.EncodedSingleDefDisqualifyReason = source.EncodedSingleDefDisqualifyReason;
+        }
+
+        SetLocalDebugData(destinationLocalNumber, destination);
+    }
+
+    internal void CopyLocalDebugData(in LclVarDsc source, in LclVarDsc destination, LocalDebugDataCopyFlags fields)
+        => CopyLocalDebugData(lvaGetLclNum(in source), lvaGetLclNum(in destination), fields);
+
+    [Conditional("DEBUG")]
+    internal void ResetLocalDebugData(int localNumber)
+        => SetLocalDebugData(localNumber, default);
+
+    private LocalDebugData GetLocalDebugData(int localNumber)
+    {
+        var owner = GetLocalDebugDataOwner();
+        var localVariables = owner.GetExistingDebugData()?.LocalVariables;
+        return localVariables is not null && (uint)localNumber < (uint)localVariables.Length
+            ? localVariables[localNumber]
+            : default;
+    }
+
+    private void SetLocalDebugData(int localNumber, LocalDebugData localData)
+    {
+        var owner = GetLocalDebugDataOwner();
+        var data = owner.GetExistingDebugData();
+        var localVariables = data?.LocalVariables;
+
+        if (localVariables is not null && (uint)localNumber < (uint)localVariables.Length)
+        {
+            localVariables[localNumber] = localData;
+            return;
+        }
+
+        if (localData.IsEmpty)
+        {
+            return;
+        }
+
+        System.ArgumentOutOfRangeException.ThrowIfNegative(localNumber);
+
+        data ??= owner.GetDebugData();
+
+        if (localVariables is null)
+        {
+            localVariables = new LocalDebugData[System.Math.Max(4, localNumber + 1)];
+        }
+        else
+        {
+            var newLength = System.Math.Max(localVariables.Length * 2, localNumber + 1);
+            System.Array.Resize(ref localVariables, newLength);
+        }
+
+        data.LocalVariables = localVariables;
+        localVariables[localNumber] = localData;
+    }
+
+    private Compiler GetLocalDebugDataOwner()
+    {
+        var owner = this;
+        while (owner.compIsForInlining)
+        {
+            owner = owner.impInlineInfo.InlinerCompiler;
+        }
+
+        return owner;
     }
 
     internal GenTree? LastConsumedNode => GetExistingDebugData()?.LastConsumedNode;
@@ -400,18 +660,6 @@ public partial class Compiler
                 GetDebugData().SafeFlowEdgeCreation = false;
             }
         }
-    }
-
-    private static void SetLocalDebugData(DebugData data, int localNumber, LocalDebugData localData)
-    {
-        if (localData.IsEmpty)
-        {
-            _ = data.LocalVariables?.Remove(localNumber);
-            return;
-        }
-
-        data.LocalVariables ??= [];
-        data.LocalVariables[localNumber] = localData;
     }
 
     private DebugData GetDebugData()

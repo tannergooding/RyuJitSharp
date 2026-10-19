@@ -81,7 +81,8 @@ public partial class Compiler
                     {
                         defsInBlock[lclNum] = unchecked(defsInBlock.GetValueOrDefault(lclNum) + 1u);
                     }
-                    else if (varTypeIsStruct(lclDsc.Type) && (lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE))
+                    else if (varTypeIsStruct(lclDsc.Type) &&
+                        (lvaGetPromotionType(lvaGetLclNum(in lclDsc)) != PROMOTION_TYPE_NONE))
                     {
                         // Both full and partial parent definitions count as field definitions here.
                         for (var field = lclDsc.lvFieldLclStart;

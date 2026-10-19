@@ -68,7 +68,7 @@ internal static class CodeGenInitializationTests
             ref var local = ref compiler.lvaTable[0];
             local.lvIsParam = parameter;
             local.lvRegister = fullRegister;
-            local.SetAddressExposed(addressExposed, AddressExposedReason.NONE);
+            compiler.SetLocalAddressExposed(in local, addressExposed, AddressExposedReason.NONE);
             if (live)
             {
                 VarSetOps.AddElemD(compiler, compiler.fgFirstBB.bbLiveIn, 0);

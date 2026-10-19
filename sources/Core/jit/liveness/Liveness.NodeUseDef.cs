@@ -182,7 +182,8 @@ public partial class Liveness<TLiveness>
             if (Configuration.DEBUG && TLiveness.IsLIR &&
                 (descriptor.Type is not TYP_STRUCT) && !varTypeIsMultiReg(descriptor.Type))
             {
-                assert(descriptor.lvDoNotEnregister || descriptor.IsDefinedViaAddress ||
+                assert(descriptor.lvDoNotEnregister ||
+                    _compiler.GetLocalDebugFlag(in descriptor, LocalDebugFlags.DefinedViaAddress) ||
                     (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR));
             }
             if (isUse && !VarSetOps.IsMember(_compiler, _curDefSet, descriptor._varIndex))

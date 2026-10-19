@@ -61,7 +61,7 @@ internal static unsafe class CodeGenFramePolicyClosureTests
         compiler.info.compLocalsCount = 1;
         compiler.lvaCount = 1;
         compiler.lvaTable = [new() { lvIsParam = parameter, lvMustInit = initialized }];
-        compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.NONE);
+        compiler.SetLocalAddressExposed(0, exposed, AddressExposedReason.NONE);
         var codeGen = new CodeGen(compiler);
 
         Assert.DoesNotThrow(() => codeGen.genPoisonFrame(RBM_NONE));
@@ -89,7 +89,7 @@ internal static unsafe class CodeGenFramePolicyClosureTests
                 local.Type = TYP_STRUCT;
                 local.Layout = new ClassLayout((uint)sizes[index]);
                 local.StackOffset = offsets[index];
-                local.SetAddressExposed(true, AddressExposedReason.NONE);
+                compiler.SetLocalAddressExposed(in local, true, AddressExposedReason.NONE);
             }
             var firstGroup = codeGen.Emitter.emitCurIG;
 

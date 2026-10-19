@@ -66,7 +66,7 @@ internal static unsafe class RedundantZeroInitTests
         WithGraph(1, compiler => {
             compiler.info.compInitMem = true;
             ref var descriptor = ref compiler.lvaTable[0];
-            descriptor.SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(in descriptor, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = AddBlock(compiler);
             var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, value));
             AddStatement(compiler, block, store);
@@ -115,7 +115,7 @@ internal static unsafe class RedundantZeroInitTests
     {
         WithGraph(1, compiler => {
             compiler.info.compInitMem = true;
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = AddBlock(compiler);
             AddStatement(compiler, block, new GenTreeLclVar(TYP_INT, 0));
             var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0));
@@ -162,7 +162,7 @@ internal static unsafe class RedundantZeroInitTests
     {
         WithGraph(1, compiler => {
             compiler.info.compInitMem = true;
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var entry = AddBlock(compiler);
             var cycle = AddBlock(compiler);
             cycle.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(cycle, cycle, null));

@@ -383,14 +383,14 @@ internal static unsafe class BlockTraversalLoweringTests
         compiler.info.compMatchedVM = true;
         compiler.info.compLvFrameListRoot = 1;
         compiler.lvaInlinedPInvokeFrameVar = 2;
+        compiler.lvaCount = 4;
         compiler.lvaTable = [
             new LclVarDsc { Type = TYP_I_IMPL },
             new LclVarDsc { Type = TYP_I_IMPL },
             new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(64), lvDoNotEnregister = true },
             new LclVarDsc { Type = TYP_INT },
         ];
-        compiler.lvaTable[2].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
-        compiler.lvaCount = 4;
+        compiler.SetLocalAddressExposed(2, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

@@ -179,7 +179,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
     public static void AsyncPolicyKeepsUnusedReferencesAndTracksAddressExposedLocals(bool minopts)
     {
         WithCompiler(1, minopts, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = Blocks(compiler, 1)[0];
             var use = new GenTreeLclVar(TYP_INT, 0) { IsUnusedValue = true };
             Append(compiler, block, use);

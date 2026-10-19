@@ -66,10 +66,10 @@ internal static unsafe class LocalEnregistrationTests
             }
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
-                Assert.That(compiler.lvaTable[2].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
-                Assert.That(compiler.lvaTable[3].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NotRegSizeStruct));
-                Assert.That(compiler.lvaTable[6].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(1), Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(2), Is.EqualTo(DoNotEnregisterReason.LiveInOutOfHandler));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(3), Is.EqualTo(DoNotEnregisterReason.NotRegSizeStruct));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(6), Is.EqualTo(DoNotEnregisterReason.AddrExposed));
             }
         });
     }
@@ -89,8 +89,8 @@ internal static unsafe class LocalEnregistrationTests
             }
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
-                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(0), Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(1), Is.EqualTo(DoNotEnregisterReason.NoRegVars));
             }
         });
     }

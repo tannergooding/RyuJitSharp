@@ -112,7 +112,7 @@ internal static unsafe class LivenessBackwardLIRTests
     public static void DeadAddressExposedDefinitionsAreNotEliminated(bool field)
     {
         WithCompiler(2, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             if (field)
             {
                 compiler.lvaTable[1].lvIsStructField = true;
@@ -192,7 +192,7 @@ internal static unsafe class LivenessBackwardLIRTests
             parent.lvPromoted = true;
             parent.lvFieldLclStart = 1;
             parent.lvFieldCnt = 1;
-            parent.SetAddressExposed(exposed, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(in parent, exposed, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             compiler.lvaTable[1].lvIsStructField = true;
             compiler.lvaTable[1].lvParentLcl = 0;
             compiler.lvaTable[1].lvPinned = untrackedField;
@@ -393,7 +393,7 @@ internal static unsafe class LivenessBackwardLIRTests
         WithCompiler(1, compiler => {
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF | (partial ? GTF_VAR_USEASG : GTF_EMPTY);

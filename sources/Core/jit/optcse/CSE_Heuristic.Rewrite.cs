@@ -49,7 +49,7 @@ public abstract partial class CSE_HeuristicCommon
 
         if (Configuration.DEBUG)
         {
-            local.lvIsMultiDefCSE = descriptor.csdDefCount > 1;
+            m_compiler.SetLocalDebugFlag(cseLclVarNum, LocalDebugFlags.IsMultiDefCse, descriptor.csdDefCount > 1);
         }
 
         var setRefCnt = true;
@@ -117,7 +117,9 @@ public abstract partial class CSE_HeuristicCommon
                 local.incRefCnts(weight, m_compiler);
                 if (Configuration.DEBUG)
                 {
-                    local.lvIsHoist |= (expression.Flags & GTF_MAKE_CSE) != 0;
+                    var isHoist = m_compiler.GetLocalDebugFlag(cseLclVarNum, LocalDebugFlags.IsHoist) ||
+                        (expression.Flags & GTF_MAKE_CSE) != 0;
+                    m_compiler.SetLocalDebugFlag(cseLclVarNum, LocalDebugFlags.IsHoist, isHoist);
                 }
             }
         }

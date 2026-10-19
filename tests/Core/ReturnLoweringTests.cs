@@ -391,7 +391,7 @@ internal static unsafe class ReturnLoweringTests
         compiler.lvaTable[1].Type = TYP_I_IMPL;
         compiler.lvaTable[2].Type = TYP_STRUCT;
         compiler.lvaTable[2].Layout = new ClassLayout(64);
-        compiler.lvaTable[2].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+        compiler.SetLocalAddressExposed(2, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
         compiler.info.compLvFrameListRoot = 1;
         compiler.lvaInlinedPInvokeFrameVar = 2;
         var layouts = new ClassLayoutTable();

@@ -164,9 +164,10 @@ public sealed partial class Lowering
                 ref var tmpDsc = ref compiler.lvaGetDesc(tmpLclNum);
                 tmpDsc.Type = tmpType;
                 tmpDsc.lvDoNotEnregister = callerArgDsc.lvDoNotEnregister;
-#if DEBUG
-                tmpDsc.DoNotEnregisterReason = callerArgDsc.DoNotEnregisterReason;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    compiler.CopyLocalDebugData(lclNum, tmpLclNum, LocalDebugDataCopyFlags.DoNotEnregisterReason);
+                }
 
                 GenTree value;
                 if (Configuration.TARGET_ARM && tmpType is TYP_LONG)

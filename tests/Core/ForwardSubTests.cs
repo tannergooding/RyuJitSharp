@@ -307,7 +307,7 @@ internal static unsafe class ForwardSubTests
             compiler.lvaTable[0].lvPinned = pinned;
             if (exposed)
             {
-                compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+                compiler.SetLocalAddressExposed(0, true, AddressExposedReason.ESCAPE_ADDRESS);
             }
             compiler.fgDidEarlyLiveness = pinned || exposed;
 

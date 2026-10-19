@@ -640,7 +640,7 @@ public partial class Compiler
                 jitprintf("X");
             }
 
-            if (varDsc.IsDefinedViaAddress)
+            if (GetLocalDebugFlag(lclNum, LocalDebugFlags.DefinedViaAddress))
             {
                 jitprintf("DA");
             }
@@ -650,22 +650,23 @@ public partial class Compiler
                 jitprintf("S");
             }
 
-            if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.VMNeedsStackAddr)
+            var doNotEnregisterReason = GetLocalDoNotEnregisterReason(lclNum);
+            if (doNotEnregisterReason == DoNotEnregisterReason.VMNeedsStackAddr)
             {
                 jitprintf("V");
             }
 
             if (lvaEnregEHVars && varDsc.lvTracked && varDsc.IsLiveInOutOfHandler)
             {
-                jitprintf($"{(char)(varDsc.lvSingleDefDisqualifyReason)}");
+                jitprintf($"{(char)GetLocalSingleDefDisqualifyReason(lclNum)}");
             }
 
-            if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.LocalField)
+            if (doNotEnregisterReason == DoNotEnregisterReason.LocalField)
             {
                 jitprintf("F");
             }
 
-            if (varDsc.DoNotEnregisterReason == DoNotEnregisterReason.BlockOp)
+            if (doNotEnregisterReason == DoNotEnregisterReason.BlockOp)
             {
                 jitprintf("B");
             }
@@ -718,7 +719,7 @@ public partial class Compiler
             jitprintf(" addr-exposed");
         }
 
-        if (varDsc.IsDefinedViaAddress)
+        if (GetLocalDebugFlag(lclNum, LocalDebugFlags.DefinedViaAddress))
         {
             jitprintf(" defined-via-address");
         }
@@ -772,12 +773,12 @@ public partial class Compiler
             jitprintf(" unknown-size-frame");
         }
 
-        if (varDsc.lvIsHoist)
+        if (GetLocalDebugFlag(lclNum, LocalDebugFlags.IsHoist))
         {
             jitprintf(" hoist");
         }
 
-        if (varDsc.lvIsMultiDefCSE)
+        if (GetLocalDebugFlag(lclNum, LocalDebugFlags.IsMultiDefCse))
         {
             jitprintf(" multi-def");
         }
@@ -1360,7 +1361,8 @@ public partial class Compiler
             //                                                                        f8 (last use) (last use) $345
             // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
             // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
-            assert(!varDsc.lvPromoted || varTypeIsPromotable(varDsc.Type) || varDsc.lvUnusedStruct);
+            assert(!varDsc.lvPromoted || varTypeIsPromotable(varDsc.Type) ||
+                GetLocalDebugFlag(lvaGetLclNum(in varDsc), LocalDebugFlags.UnusedStruct));
         }
 
         if (!varDsc.lvPromoted)
@@ -1432,6 +1434,7 @@ public partial class Compiler
 
         var tempNum = lvaCount;
         lvaCount++;
+        ResetLocalDebugData(tempNum);
 
         ref var lvaDsc = ref lvaTable[tempNum];
 
@@ -1529,6 +1532,7 @@ public partial class Compiler
 
         while (cnt-- != 0)
         {
+            ResetLocalDebugData(lvaCount);
             ref var lvaDsc = ref lvaTable[lvaCount];
 
             lvaDsc.Type = TYP_UNDEF;
@@ -2686,7 +2690,7 @@ public partial class Compiler
         ref var varDsc = ref lvaGetDesc(varNum);
         assert(!varDsc.lvIsStructField);
 
-        varDsc.SetAddressExposed(true, reason);
+        SetLocalAddressExposed(varNum, true, reason);
 
         if (varDsc.lvPromoted)
         {
@@ -2695,7 +2699,7 @@ public partial class Compiler
             for (var i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
             {
                 noway_assert(lvaTable[i].lvIsStructField);
-                lvaTable[i].SetAddressExposed(true, AddressExposedReason.PARENT_EXPOSED);
+                SetLocalAddressExposed(i, true, AddressExposedReason.PARENT_EXPOSED);
                 lvaSetVarDoNotEnregister(i, DoNotEnregisterReason.AddrExposed);
             }
         }
@@ -2711,7 +2715,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            varDsc.IsDefinedViaAddress = true;
+            SetLocalDebugFlag(varNum, LocalDebugFlags.DefinedViaAddress, true);
         }
         if (varDsc.lvPromoted)
         {
@@ -2722,7 +2726,7 @@ public partial class Compiler
                 noway_assert(lvaTable[i].lvIsStructField);
                 if (Configuration.DEBUG)
                 {
-                    lvaTable[i].IsDefinedViaAddress = true;
+                    SetLocalDebugFlag(i, LocalDebugFlags.DefinedViaAddress, true);
                 }
                 lvaSetVarDoNotEnregister(i, DoNotEnregisterReason.HiddenBufferStructArg);
             }
@@ -2752,171 +2756,172 @@ public partial class Compiler
         var wasAlreadyMarkedDoNotEnreg = varDsc.lvDoNotEnregister;
         varDsc.lvDoNotEnregister = true;
 
-#if DEBUG
-        if (!wasAlreadyMarkedDoNotEnreg)
+        if (Configuration.DEBUG)
         {
-            varDsc.DoNotEnregisterReason = reason;
-        }
-
-        if (verbose)
-        {
-            jitprintf($"\nLocal V{varNum:D2} should not be enregistered because: ");
-        }
-
-        switch (reason)
-        {
-            case DoNotEnregisterReason.AddrExposed:
+            if (!wasAlreadyMarkedDoNotEnreg)
             {
-                JITDUMP("it is address exposed\n");
-                assert(varDsc.IsAddressExposed);
-                break;
+                SetLocalDoNotEnregisterReason(varNum, reason);
             }
 
-            case DoNotEnregisterReason.HiddenBufferStructArg:
+            if (verbose)
             {
-                JITDUMP("it is hidden buffer struct arg\n");
-                break;
+                jitprintf($"\nLocal V{varNum:D2} should not be enregistered because: ");
             }
 
-            case DoNotEnregisterReason.DontEnregStructs:
+            switch (reason)
             {
-                JITDUMP("struct enregistration is disabled\n");
-                assert(varTypeIsStruct(varDsc.Type));
-                break;
-            }
-
-            case DoNotEnregisterReason.NotRegSizeStruct:
-            {
-                JITDUMP("struct size does not match reg size\n");
-                assert(varTypeIsStruct(varDsc.Type));
-                break;
-            }
-
-            case DoNotEnregisterReason.LocalField:
-            {
-                JITDUMP("was accessed as a local field\n");
-                break;
-            }
-
-            case DoNotEnregisterReason.WasmGCVisibility:
-            {
-                JITDUMP("Wasm GC needs to see it\n");
-                break;
-            }
-
-            case DoNotEnregisterReason.VMNeedsStackAddr:
-            {
-                JITDUMP("VM needs stack addr\n");
-                break;
-            }
-
-            case DoNotEnregisterReason.LiveInOutOfHandler:
-            {
-                JITDUMP("live in/out of a handler\n");
-                break;
-            }
-
-            case DoNotEnregisterReason.BlockOp:
-            {
-                JITDUMP("written/read in a block op\n");
-                break;
-            }
-
-            case DoNotEnregisterReason.IsStructArg:
-            {
-                if (varTypeIsStruct(varDsc.Type))
+                case DoNotEnregisterReason.AddrExposed:
                 {
-                    JITDUMP("it is a struct arg\n");
+                    JITDUMP("it is address exposed\n");
+                    assert(varDsc.IsAddressExposed);
+                    break;
                 }
-                else
+
+                case DoNotEnregisterReason.HiddenBufferStructArg:
                 {
-                    JITDUMP("it is reinterpreted as a struct arg\n");
+                    JITDUMP("it is hidden buffer struct arg\n");
+                    break;
                 }
-                break;
-            }
 
-            case DoNotEnregisterReason.DepField:
-            {
-                JITDUMP("field of a dependently promoted struct\n");
-                assert(varDsc.lvIsStructField && (lvaGetParentPromotionType(varNum) != PROMOTION_TYPE_INDEPENDENT));
-                break;
-            }
+                case DoNotEnregisterReason.DontEnregStructs:
+                {
+                    JITDUMP("struct enregistration is disabled\n");
+                    assert(varTypeIsStruct(varDsc.Type));
+                    break;
+                }
 
-            case DoNotEnregisterReason.NoRegVars:
-            {
-                JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
-                assert(!compEnregLocals);
-                break;
-            }
+                case DoNotEnregisterReason.NotRegSizeStruct:
+                {
+                    JITDUMP("struct size does not match reg size\n");
+                    assert(varTypeIsStruct(varDsc.Type));
+                    break;
+                }
 
-            case DoNotEnregisterReason.LongParamField when !Configuration.TARGET_64BIT:
-            {
-                JITDUMP("it is a decomposed field of a long parameter\n");
-                break;
-            }
+                case DoNotEnregisterReason.LocalField:
+                {
+                    JITDUMP("was accessed as a local field\n");
+                    break;
+                }
 
-            case DoNotEnregisterReason.PinningRef:
-            {
-                JITDUMP("pinning ref\n");
-                assert(varDsc.lvPinned);
-                break;
-            }
+                case DoNotEnregisterReason.WasmGCVisibility:
+                {
+                    JITDUMP("Wasm GC needs to see it\n");
+                    break;
+                }
 
-            case DoNotEnregisterReason.LclAddrNode:
-            {
-                JITDUMP("LclAddrVar/Fld takes the address of this node\n");
-                break;
-            }
+                case DoNotEnregisterReason.VMNeedsStackAddr:
+                {
+                    JITDUMP("VM needs stack addr\n");
+                    break;
+                }
 
-            case DoNotEnregisterReason.CastTakesAddr:
-            {
-                JITDUMP("cast takes addr\n");
-                break;
-            }
+                case DoNotEnregisterReason.LiveInOutOfHandler:
+                {
+                    JITDUMP("live in/out of a handler\n");
+                    break;
+                }
 
-            case DoNotEnregisterReason.StoreBlkSrc:
-            {
-                JITDUMP("the local is used as store block src\n");
-                break;
-            }
+                case DoNotEnregisterReason.BlockOp:
+                {
+                    JITDUMP("written/read in a block op\n");
+                    break;
+                }
 
-            case DoNotEnregisterReason.SwizzleArg:
-            {
-                JITDUMP("SwizzleArg\n");
-                break;
-            }
+                case DoNotEnregisterReason.IsStructArg:
+                {
+                    if (varTypeIsStruct(varDsc.Type))
+                    {
+                        JITDUMP("it is a struct arg\n");
+                    }
+                    else
+                    {
+                        JITDUMP("it is reinterpreted as a struct arg\n");
+                    }
+                    break;
+                }
 
-            case DoNotEnregisterReason.BlockOpRet:
-            {
-                JITDUMP("return uses a block op\n");
-                break;
-            }
+                case DoNotEnregisterReason.DepField:
+                {
+                    JITDUMP("field of a dependently promoted struct\n");
+                    assert(varDsc.lvIsStructField && (lvaGetParentPromotionType(varNum) != PROMOTION_TYPE_INDEPENDENT));
+                    break;
+                }
 
-            case DoNotEnregisterReason.ReturnSpCheck:
-            {
-                JITDUMP("Used for SP check on return\n");
-                break;
-            }
+                case DoNotEnregisterReason.NoRegVars:
+                {
+                    JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
+                    assert(!compEnregLocals);
+                    break;
+                }
 
-            case DoNotEnregisterReason.CallSpCheck:
-            {
-                JITDUMP("Used for SP check on call\n");
-                break;
-            }
+                case DoNotEnregisterReason.LongParamField when !Configuration.TARGET_64BIT:
+                {
+                    JITDUMP("it is a decomposed field of a long parameter\n");
+                    break;
+                }
 
-            case DoNotEnregisterReason.simdUserForcesDep:
-            {
-                JITDUMP("Promoted struct used by a simd/HWI node\n");
-                break;
-            }
+                case DoNotEnregisterReason.PinningRef:
+                {
+                    JITDUMP("pinning ref\n");
+                    assert(varDsc.lvPinned);
+                    break;
+                }
 
-            default:
-            {
-                unreached();
-                break;
-            }
+                case DoNotEnregisterReason.LclAddrNode:
+                {
+                    JITDUMP("LclAddrVar/Fld takes the address of this node\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.CastTakesAddr:
+                {
+                    JITDUMP("cast takes addr\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.StoreBlkSrc:
+                {
+                    JITDUMP("the local is used as store block src\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.SwizzleArg:
+                {
+                    JITDUMP("SwizzleArg\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.BlockOpRet:
+                {
+                    JITDUMP("return uses a block op\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.ReturnSpCheck:
+                {
+                    JITDUMP("Used for SP check on return\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.CallSpCheck:
+                {
+                    JITDUMP("Used for SP check on call\n");
+                    break;
+                }
+
+                case DoNotEnregisterReason.simdUserForcesDep:
+                {
+                    JITDUMP("Promoted struct used by a simd/HWI node\n");
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
         }
-#endif
+        }
 
         if (varDsc.lvPromoted && !wasAlreadyMarkedDoNotEnreg)
         {
@@ -2990,10 +2995,10 @@ public partial class Compiler
                 varDsc.lvClassHnd = clsHnd;
                 varDsc.lvClassIsExact = isExact;
 
-#if DEBUG
-                // Note we've modified the type...
-                varDsc.lvClassInfoUpdated = true;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    SetLocalDebugFlag(varNum, LocalDebugFlags.ClassInfoUpdated, true);
+                }
             }
         }
     }

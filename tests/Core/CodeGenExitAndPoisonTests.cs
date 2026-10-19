@@ -68,7 +68,7 @@ internal static unsafe class CodeGenExitAndPoisonTests
             PreparePoison(compiler, 8, -16);
             compiler.lvaTable[0].lvIsParam = parameter;
             compiler.lvaTable[0].lvMustInit = initialized;
-            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.NONE);
+            compiler.SetLocalAddressExposed(0, exposed, AddressExposedReason.NONE);
             codeGen.genPoisonFrame(RBM_NONE);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
@@ -160,6 +160,6 @@ internal static unsafe class CodeGenExitAndPoisonTests
         local.Type = TYP_STRUCT;
         local.Layout = new ClassLayout((uint)size);
         local.StackOffset = offset;
-        local.SetAddressExposed(true, AddressExposedReason.NONE);
+        compiler.SetLocalAddressExposed(in local, true, AddressExposedReason.NONE);
     }
 }

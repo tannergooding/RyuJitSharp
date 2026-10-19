@@ -130,7 +130,7 @@ internal static unsafe class TrackedLocalSelectionTests
                 compiler.SetLocalVarTrackedWithoutIndex(index, true);
             }
             compiler.lvaTable[0].setLvRefCnt(0);
-            compiler.lvaTable[1].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(1, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             compiler.lvaTable[2].Type = TYP_STRUCT;
             compiler.lvaTable[2].lvPromoted = true;
             compiler.lvaTable[3].Type = TYP_REF;

@@ -179,7 +179,8 @@ public partial class Compiler
                 PhysicalPromotionAccessKindFlags flags;
                 if (local.Oper is GT_LCL_ADDR)
                 {
-                    assert(user is GenTreeCall && descriptor.IsDefinedViaAddress);
+                    assert(user is GenTreeCall &&
+                        _compiler.GetLocalDebugFlag(in descriptor, LocalDebugFlags.DefinedViaAddress));
                     accessType = TYP_STRUCT;
                     layout = _compiler.typGetObjLayout(user!.AsCall().RetClsHnd);
                     flags = PhysicalPromotionAccessKindFlags.IsCallRetBuf;

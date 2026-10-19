@@ -226,8 +226,8 @@ internal static unsafe class GSSecurityPhaseTests
             original.lvIsPtr = true;
             original.Type = TYP_BYREF;
             original.lvDoNotEnregister = true;
-            original.DoNotEnregisterReason = DoNotEnregisterReason.BlockOp;
-            original.IsDefinedViaAddress = true;
+            compiler.SetLocalDoNotEnregisterReason(0, DoNotEnregisterReason.BlockOp);
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
             _ = Block(compiler);
             compiler.gsShadowVarInfoCount = 1;
             compiler.gsShadowVarInfo = MakeShadowInfo(1);
@@ -235,8 +235,10 @@ internal static unsafe class GSSecurityPhaseTests
             Assert.That(compiler.gsCreateShadowingLocals(), Is.True);
 
             ref var shadow = ref compiler.lvaGetDesc(compiler.gsShadowVarInfo[0].ShadowCopy);
-            Assert.That(shadow.DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.BlockOp));
-            Assert.That(shadow.IsDefinedViaAddress, Is.True);
+            Assert.That(compiler.GetLocalDoNotEnregisterReason(compiler.gsShadowVarInfo[0].ShadowCopy),
+                Is.EqualTo(DoNotEnregisterReason.BlockOp));
+            Assert.That(compiler.GetLocalDebugFlag(compiler.gsShadowVarInfo[0].ShadowCopy,
+                LocalDebugFlags.DefinedViaAddress), Is.True);
         });
     }
 
@@ -244,10 +246,8 @@ internal static unsafe class GSSecurityPhaseTests
     public static void ReleaseDoNotEnregisterReasonSetterFailsExplicitly()
     {
         Assume.That(!TestConfiguration.IsDebug);
-        var descriptor = new LclVarDsc();
-
-        _ = Assert.Throws<InvalidOperationException>(
-            () => descriptor.DoNotEnregisterReason = DoNotEnregisterReason.BlockOp);
+        WithCompiler(1, compiler => Assert.Throws<InvalidOperationException>(
+            () => compiler.SetLocalDoNotEnregisterReason(0, DoNotEnregisterReason.BlockOp)));
     }
 
     [Test]

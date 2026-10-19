@@ -115,7 +115,10 @@ public partial class Compiler
                 ref readonly var descriptor = ref lvaGetDesc(i);
                 if (descriptor.lvRefCnt() != 0)
                 {
-                    s_enregisterStats.RecordLocal(in descriptor);
+                    s_enregisterStats.RecordLocal(
+                        in descriptor,
+                        GetLocalDoNotEnregisterReason(i),
+                        GetLocalAddressExposedReason(i));
                 }
             }
 #endif

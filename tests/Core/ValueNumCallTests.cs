@@ -273,7 +273,7 @@ internal static unsafe class ValueNumCallTests
             ref var local = ref compiler.lvaTable[0];
         if (TestConfiguration.IsDebug)
         {
-            local.IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(in local, LocalDebugFlags.DefinedViaAddress, true);
         }
             var ssa = local.lvPerSsaData.AllocSsaNum();
             var call = new GenTreeCall(TYP_VOID) { _callType = CT_USER_FUNC };

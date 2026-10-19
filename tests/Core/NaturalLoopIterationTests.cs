@@ -278,7 +278,7 @@ internal static unsafe class NaturalLoopIterationTests
 
         WithLoop((compiler, loop, preheader, unusedHeader, latch) =>
         {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.ESCAPE_ADDRESS);
             compiler.fgInsertStmtAtEnd(preheader,
                 compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0))));
             compiler.fgInsertStmtAtEnd(latch, compiler.gtNewStmt(NewIncrement(compiler, GT_ADD, 1)));

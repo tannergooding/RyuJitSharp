@@ -434,7 +434,7 @@ internal static unsafe partial class IndirectCallTransformationTests
             var block = compiler.fgFirstBB ?? throw new InvalidOperationException();
             var type = referenceArgument ? TYP_REF : TYP_INT;
             var local = AddLocal(compiler, type);
-            compiler.lvaGetDesc(local).SetAddressExposed(true, default);
+            compiler.SetLocalAddressExposed(local, true, default);
             if (referenceArgument)
             {
                 compiler.lvaGetDesc(local).lvClassHnd = (CORINFO_CLASS_STRUCT_*)0x1234;

@@ -11874,7 +11874,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG && (fptr.Oper is GT_LCL_VAR))
         {
-            lvaGetDesc(fptr.AsLclVarCommon().LclNum).lvKeepType = true;
+            SetLocalDebugFlag(fptr.AsLclVarCommon().LclNum, LocalDebugFlags.KeepType, true);
         }
 
         // Create the call node

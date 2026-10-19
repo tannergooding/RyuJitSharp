@@ -206,7 +206,7 @@ internal static unsafe class PInvokeFrameLoweringTests
         compiler.lvaTable[1].Type = TYP_I_IMPL;
         compiler.lvaTable[2].Type = TYP_STRUCT;
         compiler.lvaTable[2].Layout = new ClassLayout(64);
-        compiler.lvaTable[2].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+        compiler.SetLocalAddressExposed(2, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
         compiler.lvaTable[3].Type = TYP_I_IMPL;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);

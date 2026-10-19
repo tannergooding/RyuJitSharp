@@ -495,7 +495,7 @@ public partial class Compiler
             if (Configuration.DEBUG)
             {
                 // Don't stress this in LCL_FLD stress.
-                varDsc.lvKeepType = true;
+                _compiler.SetLocalDebugFlag(lclNum, LocalDebugFlags.KeepType, true);
 
                 if (_compiler.verbose)
                 {
@@ -595,7 +595,7 @@ public partial class Compiler
                 {
                     // This temporary should not be converted to a double in stress mode,
                     // because we introduce assigns to it after the stress conversion
-                    fieldVarDsc.lvKeepType = true;
+                    _compiler.SetLocalDebugFlag(varNum, LocalDebugFlags.KeepType, true);
                 }
             }
 

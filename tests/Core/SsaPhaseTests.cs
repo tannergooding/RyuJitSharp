@@ -132,7 +132,7 @@ internal static class SsaPhaseTests
     public static void BuildRemovesPrologCoveredZeroStoreBeforeRenaming()
     {
         WithCompiler(1, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = CreateGraph(compiler, [[]])[0];
             _ = AddStatement(compiler, block,
                 compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0)));

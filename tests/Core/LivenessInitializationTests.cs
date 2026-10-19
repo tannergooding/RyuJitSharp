@@ -95,7 +95,7 @@ internal static unsafe class LivenessInitializationTests
     {
         WithCompiler(3, minopts, compiler => {
             var block = MakeBlocks(compiler, 1)[0];
-            compiler.lvaTable[1].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(1, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             if (minopts)
             {
                 compiler.lvaComputeRefCounts(false, false);

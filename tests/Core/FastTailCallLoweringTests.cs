@@ -119,7 +119,7 @@ internal static unsafe class FastTailCallLoweringTests
             Assert.That(compiler.lvaTable[1].lvDoNotEnregister, Is.True);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LocalField));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(1), Is.EqualTo(DoNotEnregisterReason.LocalField));
             }
             Assert.That(laterUse.LclNum, Is.EqualTo(1));
             var savedValue = block.FirstNode!.AsLclVar();

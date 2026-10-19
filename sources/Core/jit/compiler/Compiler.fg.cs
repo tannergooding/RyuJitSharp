@@ -375,6 +375,7 @@ public partial class Compiler
 
                 for (var i = startVars; i < lvaCount; i++)
                 {
+                    ResetLocalDebugData(i);
                     lvaGetDesc(i) = new LclVarDsc();
                 }
 
@@ -2651,14 +2652,15 @@ public partial class Compiler
             noway_assert(lvaArg0Var > (uint)info.compThisArg);
             ref var arg0varDsc = ref lvaGetDesc(lvaArg0Var);
             arg0varDsc.Type = thisVarDsc.Type;
-            arg0varDsc.SetAddressExposed(thisVarDsc.IsAddressExposed, thisVarDsc.AddrExposedReason);
+            SetLocalAddressExposed(lvaArg0Var, thisVarDsc.IsAddressExposed, GetLocalAddressExposedReason(info.compThisArg));
             arg0varDsc.lvDoNotEnregister = thisVarDsc.lvDoNotEnregister;
-#if DEBUG
-            arg0varDsc.DoNotEnregisterReason = thisVarDsc.DoNotEnregisterReason;
-#endif
+            if (Configuration.DEBUG)
+            {
+                CopyLocalDebugData(info.compThisArg, lvaArg0Var, LocalDebugDataCopyFlags.DoNotEnregisterReason);
+            }
             arg0varDsc.lvHasILStoreOp = thisVarDsc.lvHasILStoreOp;
 
-            // Note that here we don't clear `_doNotEnregReason` and it stays `doNotEnreg` with `AddrExposed` reason.
+            // Preserve the do-not-enregister reason while clearing address exposure from the original local.
             thisVarDsc.CleanAddressExposed();
             thisVarDsc.lvHasILStoreOp = false;
         }
@@ -4472,7 +4474,7 @@ public partial class Compiler
                             {
                                 if (Configuration.DEBUG)
                                 {
-                                    assert(!lvaDsc.lvClassInfoUpdated);
+                                    assert(!GetLocalClassInfoUpdated(lvaInlineeReturnSpillTemp));
                                 }
                             }
 
@@ -10426,8 +10428,8 @@ public partial class Compiler
                     structVarDsc.CleanAddressExposed();
                     if (Configuration.DEBUG)
                     {
-                        structVarDsc.lvUnusedStruct = true;
-                        structVarDsc.lvUndoneStructPromotion = true;
+                        SetLocalDebugFlag(structLclNum, LocalDebugFlags.UnusedStruct, true);
+                        SetLocalDebugFlag(structLclNum, LocalDebugFlags.UndoneStructPromotion, true);
                     }
 
                     var fieldLclStart = structVarDsc.lvFieldLclStart;
@@ -15785,16 +15787,17 @@ public partial class Compiler
                 newVarDsc.lvContainsHoles = varDsc.lvContainsHoles;
                 if (Configuration.DEBUG)
                 {
-                    newVarDsc.lvKeepType = true;
+                    SetLocalDebugFlag(newLclNum, LocalDebugFlags.KeepType, true);
                 }
-                newVarDsc.SetAddressExposed(varDsc.IsAddressExposed, varDsc.AddrExposedReason);
+                SetLocalAddressExposed(newLclNum, varDsc.IsAddressExposed, GetLocalAddressExposedReason(lclNum));
                 newVarDsc.lvDoNotEnregister = varDsc.lvDoNotEnregister;
                 newVarDsc.lvSingleDef = varDsc.lvSingleDef;
                 newVarDsc.lvSingleDefRegCandidate = varDsc.lvSingleDefRegCandidate;
                 newVarDsc.lvSpillAtSingleDef = varDsc.lvSpillAtSingleDef;
-#if DEBUG
-                newVarDsc.DoNotEnregisterReason = varDsc.DoNotEnregisterReason;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    CopyLocalDebugData(lclNum, newLclNum, LocalDebugDataCopyFlags.DoNotEnregisterReason);
+                }
                 // Dependent promotion would only introduce an entry memcpy.
                 // Otherwise retain promotion only when non-call uses outnumber
                 // the fields that must be initialized from the incoming pointer.
@@ -15871,7 +15874,7 @@ public partial class Compiler
             varDsc.lvDoNotEnregister = false;
             if (Configuration.DEBUG)
             {
-                varDsc.lvKeepType = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.KeepType, true);
             }
             JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to {varDsc.Type.Name}.\n");
         }

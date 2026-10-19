@@ -320,12 +320,12 @@ internal static unsafe class InlineArgumentTests
             temp.lvPromoted = true;
             temp.lvFieldLclStart = 3;
             temp.lvFieldCnt = 2;
-            temp.SetAddressExposed(true, default);
+            compiler.SetLocalAddressExposed(in temp, true, default);
 
             for (var i = 3; i < 5; i++)
             {
                 compiler.lvaTable[i].lvParentLcl = 0;
-                compiler.lvaTable[i].SetAddressExposed(true, default);
+                compiler.SetLocalAddressExposed(i, true, default);
             }
 
             compiler.fgMarkDemotedImplicitByRefArgs();
@@ -340,8 +340,8 @@ internal static unsafe class InlineArgumentTests
 
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(temp.lvUnusedStruct, Is.EqualTo(promotionState == 2));
-                Assert.That(temp.lvUndoneStructPromotion, Is.EqualTo(promotionState == 2));
+                Assert.That(compiler.GetLocalDebugFlag(in temp, LocalDebugFlags.UnusedStruct), Is.EqualTo(promotionState == 2));
+                Assert.That(compiler.GetLocalDebugFlag(in temp, LocalDebugFlags.UndoneStructPromotion), Is.EqualTo(promotionState == 2));
             }
             for (var i = 3; i < 5; i++)
             {

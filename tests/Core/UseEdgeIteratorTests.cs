@@ -503,7 +503,7 @@ internal static unsafe class UseEdgeIteratorTests
             compiler.lvaCount = 1;
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 8);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
@@ -554,8 +554,8 @@ internal static unsafe class UseEdgeIteratorTests
             compiler.lvaCount = compiler.lvaTable.Length;
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
-            compiler.lvaTable[1].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
+            compiler.SetLocalDebugFlag(1, LocalDebugFlags.DefinedViaAddress, true);
         }
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             var ret = compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0);

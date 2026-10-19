@@ -168,8 +168,8 @@ internal static unsafe class TreeLifeUpdaterTests
             compiler.lvaTable[2].lvLRACandidate = false;
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[1].IsDefinedViaAddress = true;
-            compiler.lvaTable[2].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(1, LocalDebugFlags.DefinedViaAddress, true);
+            compiler.SetLocalDebugFlag(2, LocalDebugFlags.DefinedViaAddress, true);
         }
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0);
             var retbuf = compiler.gtNewLclAddrNode(TYP_BYREF, 2, 0);

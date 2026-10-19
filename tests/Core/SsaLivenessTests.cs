@@ -202,7 +202,7 @@ internal static unsafe class SsaLivenessTests
     public static void AddressExposedLocalKeepsMemoryLivenessInsteadOfRemovingItsStore()
     {
         WithCompiler(1, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = AddBlock(compiler);
             var statement = AddStatement(compiler, block, Store(compiler, 0, compiler.gtNewIconNode(TYP_INT, 1)));
             SetDfs(compiler);

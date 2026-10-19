@@ -136,7 +136,8 @@ public partial class Compiler
                     if (Configuration.DEBUG)
                     {
                         ref var descriptor = ref lvaGetDesc(lclNum);
-                        assert(descriptor.IsAddressExposed || descriptor.IsDefinedViaAddress);
+                        assert(descriptor.IsAddressExposed ||
+                            GetLocalDebugFlag(in descriptor, LocalDebugFlags.DefinedViaAddress));
                     }
                     break;
                 }

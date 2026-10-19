@@ -10,29 +10,30 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "activeBatch": null,
-    "nextAction": "Map LclVarDsc debug backing fields, their callers/copies/resets, and Release descriptor layout/allocation; coordinate DoNotEnregisterReason callers CCB-0530/0601 and CCB-0722, then obtain bounded design review before conversion.",
+    "nextAction": "Convert the three LSRA register-selection debug-state candidates through a lazily created selector sidecar, preserving Debug JitLsraOrdering behavior, Release fixed ordering, and Release selector layout/allocation; validate focused Debug/Release tests and ARM64 Debug ordering.",
+    "activeBatch": {
+      "scope": "Convert the Debug-only LSRA register-selection order and heuristic map into lazily created selector-owned debug sidecar state, and runtime-gate the configurable Debug ordering branch and dependent test. Preserve JitLsraOrdering behavior in Debug, the existing fixed heuristic order in Release, and Release RegisterSelection layout/allocation behavior.",
+      "doneWhen": "All three selected inventory candidates are converted and closed; Debug-configured and default selector orders remain covered; Debug and Release full-analysis Core builds and the focused LinearScanRegisterSelectionTests pass; the Release selector has no per-instance debug state or sidecar allocation.",
+      "validation": [
+        "Full-analysis Core Debug and Release builds.",
+        "Run LinearScanRegisterSelectionTests in Debug and Release and verify each selection executes nonempty tests.",
+        "Compare the Release RegisterSelection instance layout and confirm Release selector construction does not materialize Debug sidecar state."
+      ],
+      "deferred": [
+        "Keep the B209 genAsyncResumeInfo target-width table/emitter dependency closure deferred."
+      ]
+    },
     "unresolvedConditionalCleanup": [
       {
-        "batch": "Debug-only state/layout dependency closure",
-        "deferredCount": 13,
+        "batch": "LinearScan register-selection state/layout closure",
+        "deferredCount": 3,
         "candidateIds": [
-          "CCB-0722",
-          "CCB-0723",
-          "CCB-0770",
-          "CCB-0771",
-          "CCB-0772",
-          "CCB-0773",
-          "CCB-0774",
-          "CCB-0775",
-          "CCB-0776",
-          "CCB-0777",
-          "CCB-0778",
           "INV-0BB66996E5ED",
-          "INV-203AD8A376A9"
+          "INV-203AD8A376A9",
+          "INV-A93AE8B56C9D"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Map LclVarDsc debug backing fields, their callers/copies/resets, and Release descriptor layout/allocation; coordinate DoNotEnregisterReason callers CCB-0530/0601 and CCB-0722, then obtain bounded design review before conversion."
+        "nextAction": "Externalize RegisterSelection._regSelectionOrder and _mappingTable into lazily created selector debug state, runtime-gate the Debug configurable-order branch in LinearScan.RegisterSelection.General.cs, update its test, then validate Debug/Release state and allocation behavior."
       },
       {
         "batch": "Compiler local tracked-variable liveness closure",
@@ -108,22 +109,20 @@
       },
       {
         "batch": "Compiler.fg.cs debug state/API dependency closure",
-        "deferredCount": 11,
+        "deferredCount": 9,
         "candidateIds": [
           "CCB-0511",
           "CCB-0524",
           "CCB-0526",
           "CCB-0528",
-          "CCB-0530",
           "CCB-0534",
           "CCB-0548",
           "CCB-0549",
           "CCB-0574",
-          "CCB-0601",
           "CCB-0642"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Resolve impInlinedCodeSize storage, fgBBOrder and basic-block dump state, fgPrintInlinedMethods and fgNormalizeEHDone mutable state, and the DoNotEnregisterReason descriptor setter closure without changing Release layout or Debug behavior. Re-evaluate CCB-0511 and CCB-0642 together after those prerequisites."
+        "nextAction": "Resolve impInlinedCodeSize storage, fgBBOrder and basic-block dump state, fgPrintInlinedMethods, and fgNormalizeEHDone mutable state without changing Release layout or Debug behavior. Re-evaluate CCB-0511 and CCB-0642 together after those prerequisites."
       }
     ],
 

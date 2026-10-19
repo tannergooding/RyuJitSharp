@@ -21,7 +21,7 @@ internal static unsafe class LocalStoreCoalescingTests
     {
         WithCompiler(optimized, enabled, compiler => {
             compiler.lvaTable[0].Type = var_types.TYP_LONG;
-            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, exposed, AddressExposedReason.ESCAPE_ADDRESS);
             var firstValue = compiler.gtNewIconNode(var_types.TYP_BYTE, 0x11);
             var first = new GenTreeLclFld(var_types.TYP_BYTE, 0, (ushort)firstOffset, firstValue, null);
             var secondValue = compiler.gtNewIconNode(var_types.TYP_BYTE, 0x22);

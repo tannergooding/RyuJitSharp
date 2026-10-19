@@ -23,7 +23,7 @@ internal static unsafe class AsyncMutationTests
             compiler.lvaTable[0].lvTracked = tracked;
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
             address.Flags |= GTF_VAR_DEF;

@@ -255,7 +255,8 @@ public partial class Compiler
         if (tree.Oper is GT_LCL_ADDR)
         {
             ref var addressLocal = ref lvaGetDesc(tree.AsLclVarCommon().LclNum);
-            assert(addressLocal.IsAddressExposed || addressLocal.IsDefinedViaAddress);
+            assert(addressLocal.IsAddressExposed ||
+                GetLocalDebugFlag(tree.AsLclVarCommon().LclNum, LocalDebugFlags.DefinedViaAddress));
             addressLocal.incRefCnts(weight, this);
             return;
         }
@@ -279,7 +280,7 @@ public partial class Compiler
         descriptor.incRefCnts(weight, this);
         if (Configuration.DEBUG && descriptor.lvIsStructField)
         {
-            assert(!lvaGetDesc(descriptor.lvParentLcl).lvUndoneStructPromotion);
+            assert(!GetLocalDebugFlag(descriptor.lvParentLcl, LocalDebugFlags.UndoneStructPromotion));
         }
         if (descriptor.IsAddressExposed)
         {
@@ -312,12 +313,12 @@ public partial class Compiler
                     {
                         if (needsExplicitZeroInit)
                         {
-                            descriptor.lvSingleDefDisqualifyReason = (byte)'Z';
+                            SetLocalSingleDefDisqualifyReason(localNumber, (byte)'Z');
                             JITDUMP($"V{localNumber:D2} needs explicit zero init. Disqualified as a single-def register candidate.\n");
                         }
                         else
                         {
-                            descriptor.lvSingleDefDisqualifyReason = (byte)'M';
+                            SetLocalSingleDefDisqualifyReason(localNumber, (byte)'M');
                             JITDUMP($"V{localNumber:D2} has multiple definitions. Disqualified as a single-def register candidate.\n");
                         }
                     }

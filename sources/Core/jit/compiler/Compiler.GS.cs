@@ -323,13 +323,13 @@ public partial class Compiler
             var type = varTypeIsSmall(descriptor.Type) ? TYP_INT : descriptor.Type;
             shadow.Type = type;
             shadow.lvRegStruct = descriptor.lvRegStruct;
-            shadow.SetAddressExposed(descriptor.IsAddressExposed, descriptor.AddrExposedReason);
+            SetLocalAddressExposed(shadowLclNum, descriptor.IsAddressExposed, GetLocalAddressExposedReason(lclNum));
             shadow.lvDoNotEnregister = descriptor.lvDoNotEnregister;
             shadow.lvSingleDefRegCandidate = descriptor.lvSingleDefRegCandidate;
             if (Configuration.DEBUG)
             {
-                shadow.DoNotEnregisterReason = descriptor.DoNotEnregisterReason;
-                shadow.IsDefinedViaAddress = descriptor.IsDefinedViaAddress;
+                CopyLocalDebugData(lclNum, shadowLclNum,
+                    LocalDebugDataCopyFlags.DoNotEnregisterReason | LocalDebugDataCopyFlags.DefinedViaAddress);
             }
             if (varTypeIsStruct(type))
             {

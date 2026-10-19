@@ -55,29 +55,30 @@ internal static unsafe class LocalReferenceAccountingTests
     }
 
     [Test]
-    public static void DisqualificationReasonHasNativeDefaultAndValueCopySemantics()
+    public static void DisqualificationReasonHasNativeDefaultAndSelectiveSidecarCopySemantics()
     {
         Assume.That(TestConfiguration.IsDebug);
 
-        LclVarDsc zeroed = default;
-        var constructed = new LclVarDsc();
-        var locals = new LclVarDsc[2];
-        Assert.That(zeroed.lvSingleDefDisqualifyReason, Is.EqualTo((byte)'H'));
-        Assert.That(constructed.lvSingleDefDisqualifyReason, Is.EqualTo((byte)'H'));
-        Assert.That(locals[0].lvSingleDefDisqualifyReason, Is.EqualTo((byte)'H'));
+        WithCompiler(false, compiler => {
+            Assert.That(compiler.GetLocalSingleDefDisqualifyReason(0), Is.EqualTo((byte)'H'));
+            Assert.That(compiler.GetLocalSingleDefDisqualifyReason(1), Is.EqualTo((byte)'H'));
 
-        locals[0].lvSingleDefDisqualifyReason = (byte)'Z';
-        var copy = locals[0];
-        locals[0].lvSingleDefDisqualifyReason = (byte)'M';
-        Assert.That(copy.lvSingleDefDisqualifyReason, Is.EqualTo((byte)'Z'));
-        Assert.That(locals[1].lvSingleDefDisqualifyReason, Is.EqualTo((byte)'H'));
-        for (var value = 0; value <= byte.MaxValue; value++)
-        {
-            copy.lvSingleDefDisqualifyReason = (byte)value;
-            Assert.That(copy.lvSingleDefDisqualifyReason, Is.EqualTo((byte)value));
-        }
-        Array.Clear(locals);
-        Assert.That(locals[0].lvSingleDefDisqualifyReason, Is.EqualTo((byte)'H'));
+            compiler.SetLocalDebugFlag(1, LocalDebugFlags.DefinedViaAddress, true);
+            compiler.SetLocalSingleDefDisqualifyReason(0, (byte)'Z');
+            compiler.CopyLocalDebugData(0, 1, LocalDebugDataCopyFlags.SingleDefDisqualifyReason);
+            compiler.SetLocalSingleDefDisqualifyReason(0, (byte)'M');
+            Assert.That(compiler.GetLocalSingleDefDisqualifyReason(1), Is.EqualTo((byte)'Z'));
+            Assert.That(compiler.GetLocalDebugFlag(1, LocalDebugFlags.DefinedViaAddress), Is.True);
+
+            for (var value = 0; value <= byte.MaxValue; value++)
+            {
+                compiler.SetLocalSingleDefDisqualifyReason(1, (byte)value);
+                Assert.That(compiler.GetLocalSingleDefDisqualifyReason(1), Is.EqualTo((byte)value));
+            }
+
+            compiler.ResetLocalDebugData(0);
+            Assert.That(compiler.GetLocalSingleDefDisqualifyReason(0), Is.EqualTo((byte)'H'));
+        });
     }
 
     [TestCase(true, false, true)]
@@ -188,7 +189,7 @@ internal static unsafe class LocalReferenceAccountingTests
     public static void LocalAddressesCountAsReferencesEvenInZeroWeightBlocks(double weight)
     {
         WithCompiler(false, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = TreeBlock(compiler, weight * BB_UNITY_WEIGHT, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0));
             compiler.fgFirstBB = compiler.fgLastBB = block;
 
@@ -285,7 +286,7 @@ internal static unsafe class LocalReferenceAccountingTests
             if (TestConfiguration.IsDebug)
             {
                 var reason = explicitInitialization ? 'Z' : definitions > 1 ? 'M' : 'H';
-                Assert.That(compiler.lvaTable[0].lvSingleDefDisqualifyReason, Is.EqualTo((byte)reason));
+                Assert.That(compiler.GetLocalSingleDefDisqualifyReason(0), Is.EqualTo((byte)reason));
             }
         });
     }
@@ -322,7 +323,7 @@ internal static unsafe class LocalReferenceAccountingTests
             compiler.lvaTable[1].Type = TYP_BYREF;
             if (addressExposed)
             {
-                compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+                compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             }
             GenTree value = nullValue ? compiler.gtNewIconNode(TYP_BYREF, 0) : compiler.gtNewLclvNode(TYP_BYREF, 1);
             var block = TreeBlock(compiler, BB_UNITY_WEIGHT, compiler.gtNewStoreLclVarNode(0, value));

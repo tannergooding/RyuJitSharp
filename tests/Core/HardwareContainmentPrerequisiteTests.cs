@@ -25,7 +25,7 @@ internal static unsafe class HardwareContainmentPrerequisiteTests
     public static void LocalAddressesRespectAccessExtent(uint accessSize, bool addressExposed, bool contained)
     {
         WithCompiler(compiler => {
-            compiler.lvaTable[0].SetAddressExposed(addressExposed, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, addressExposed, AddressExposedReason.ESCAPE_ADDRESS);
             var address = new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 0);
             var intrinsic = Load(address);
             var block = NewBlock(address, intrinsic);

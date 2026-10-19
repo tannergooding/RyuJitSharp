@@ -108,11 +108,12 @@ internal static unsafe class FlowGraphHelperTests
             compiler.compStackCheckOnRet = true;
             Assert.That(compiler.fgMorphInit(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(compiler.lvaReturnSpCheck, Is.EqualTo(2));
-            var local = compiler.lvaGetDesc(compiler.lvaReturnSpCheck);
+            var localNumber = compiler.lvaReturnSpCheck;
+            var local = compiler.lvaGetDesc(localNumber);
             Assert.That(local.Type, Is.EqualTo(Globals.TYP_I_IMPL));
             Assert.That(local.lvImplicitlyReferenced, Is.True);
             Assert.That(local.lvDoNotEnregister, Is.True);
-            Assert.That(local.DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.ReturnSpCheck));
+            Assert.That(compiler.GetLocalDoNotEnregisterReason(localNumber), Is.EqualTo(DoNotEnregisterReason.ReturnSpCheck));
         });
     }
 

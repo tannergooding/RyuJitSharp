@@ -201,7 +201,7 @@ internal static unsafe class HeadTailMergeTests
             compiler.lvaTable[1].lvHasLdAddrOp = earlyAddressTaken;
             if (lateAddressExposed)
             {
-                compiler.lvaTable[1].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+                compiler.SetLocalAddressExposed(1, true, AddressExposedReason.ESCAPE_ADDRESS);
             }
 
             branch.LastStmt!.RootNode.Flags |= GTF_EXCEPT;

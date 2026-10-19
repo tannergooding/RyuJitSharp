@@ -103,9 +103,6 @@ internal static partial class TestConfiguration
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgStress64RsltMul")]
     private static extern void WideMultiplyStress(Compiler compiler);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_lvNoLclFldStress")]
-    private static extern bool NoLocalFieldStress(ref LclVarDsc descriptor);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDispJumpList")]
     private static extern void EmitJumpList(Emitter emitter);
 
@@ -242,14 +239,14 @@ internal static partial class TestConfiguration
         WideMultiplyStress(compiler);
     }
 
-    public static bool GetNoLocalFieldStress(LclVarDsc[] locals, int localNumber)
+    public static bool GetNoLocalFieldStress(Compiler compiler, int localNumber)
     {
         if (!IsDebug)
         {
             throw new InvalidOperationException("Local-field stress state is only available in Debug builds.");
         }
 
-        return NoLocalFieldStress(ref locals[localNumber]);
+        return compiler.GetLocalDebugFlag(localNumber, LocalDebugFlags.NoLclFldStress);
     }
 
     public static void DumpUnwindInfo(UnwindInfo unwindInfo, bool isHotCode)

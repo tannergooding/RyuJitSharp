@@ -105,7 +105,7 @@ public partial class Compiler
         var localType = local.Type;
         var varType = varDsc.Type;
 
-        if (varDsc.lvNoLclFldStress)
+        if (GetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress))
         {
             return WALK_CONTINUE;
         }
@@ -115,47 +115,48 @@ public partial class Compiler
             if ((local.Oper is GT_LCL_FLD or GT_STORE_LCL_FLD) ||
                 ((local.Oper is GT_LCL_ADDR) && (local.LclOffs != 0)))
             {
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
 
             if ((tree.Flags & GTF_VAR_CONTEXT) != 0)
             {
                 assert(tree.Oper is GT_LCL_VAR);
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
 
             if (varDsc.lvIsParam || (lclNum >= info.compLocalsCount))
             {
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
 
             // OSR locals retain their Tier0 homes; patchpoints must report unchanged homes.
             if (lvaIsOSRLocal(lclNum) || ((optMethodFlags & OMF_HAS_PATCHPOINT) != 0))
             {
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
 
             // Preserve native exclusion for tailcall-loop explicit local initialization.
-            if (((optMethodFlags & OMF_HAS_RECURSIVE_TAILCALL) != 0) || varDsc.lvKeepType)
+            if (((optMethodFlags & OMF_HAS_RECURSIVE_TAILCALL) != 0) ||
+                GetLocalDebugFlag(lclNum, LocalDebugFlags.KeepType))
             {
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
 
             if (varTypeIsStruct(localType) || (varType != localType) || varDsc.lvPinned)
             {
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
 
             // Retyping storage would lose a small local's implicit normalization semantics.
             if ((varType.Size != varType.ActualType.Size) || (lvaStressLclFldPadding(lclNum) == 0))
             {
-                varDsc.lvNoLclFldStress = true;
+                SetLocalDebugFlag(lclNum, LocalDebugFlags.NoLclFldStress, true);
                 return WALK_CONTINUE;
             }
         }

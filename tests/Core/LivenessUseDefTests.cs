@@ -129,7 +129,7 @@ internal static unsafe class LivenessUseDefTests
     public static void AddressExposedLocalsTrackByrefMemoryOrPolicySelectedVariables(bool tracked, bool definition)
     {
         WithCompiler(1, false, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var block = Block(compiler);
             Append(compiler, block, definition ? Store(compiler, 0) : new GenTreeLclVar(TYP_INT, 0));
             if (tracked)
@@ -291,7 +291,7 @@ internal static unsafe class LivenessUseDefTests
         WithCompiler(1, true, compiler => {
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF;
@@ -440,7 +440,7 @@ internal static unsafe class LivenessUseDefTests
             compiler.compQmarkUsed = qmarkUsed;
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF;
@@ -486,7 +486,7 @@ internal static unsafe class LivenessUseDefTests
             parent.setLvRefCnt(0);
         if (TestConfiguration.IsDebug)
         {
-            parent.IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(in parent, LocalDebugFlags.DefinedViaAddress, true);
         }
             compiler.lvaTable[3].lvPinned = true;
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
@@ -545,7 +545,7 @@ internal static unsafe class LivenessUseDefTests
     public static void RegenerationClearsScratchMemoryAndByrefDivergenceWithoutChangingLiveOut()
     {
         WithCompiler(1, false, compiler => {
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var first = Block(compiler);
             var second = Block(compiler);
             var store = Store(compiler, 0);

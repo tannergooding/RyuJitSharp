@@ -272,7 +272,7 @@ internal static unsafe class LivenessFixedPointTests
     public static void CallfinallyTargetIsBothRegularAndExceptionalButItsTailHasNoEhFlow()
     {
         WithCompiler(2, compiler => {
-            compiler.lvaTable[1].SetAddressExposed(true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
+            compiler.SetLocalAddressExposed(1, true, AddressExposedReason.EXTERNALLY_VISIBLE_IMPLICITLY);
             var blocks = Blocks(compiler, 4);
             var call = blocks[0];
             var tail = blocks[1];

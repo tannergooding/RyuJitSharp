@@ -92,7 +92,8 @@ public partial class Compiler
         var node = arg.Node;
         if (Configuration.DEBUG)
         {
-            assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+            assert((node.Oper is GT_LCL_ADDR) &&
+                GetLocalDebugFlag(node.AsLclVarCommon().LclNum, LocalDebugFlags.DefinedViaAddress));
         }
 
         return node.AsLclVarCommon();
@@ -134,7 +135,8 @@ public partial class Compiler
 
         if (Configuration.DEBUG)
         {
-            assert((node.Oper is GT_LCL_ADDR) && lvaGetDesc(node.AsLclVarCommon().LclNum).IsDefinedViaAddress);
+            assert((node.Oper is GT_LCL_ADDR) &&
+                GetLocalDebugFlag(node.AsLclVarCommon().LclNum, LocalDebugFlags.DefinedViaAddress));
         }
         return node.AsLclVarCommon();
     }
@@ -2207,7 +2209,8 @@ public partial class Compiler
 
         if (varDsc.lvPromoted)
         {
-            if (!varTypeIsPromotable(varDsc.Type) && !varDsc.lvUnusedStruct)
+            if (!varTypeIsPromotable(varDsc.Type) &&
+                !GetLocalDebugFlag(in varDsc, LocalDebugFlags.UnusedStruct))
             {
                 // Promoted implicit byrefs can get in this state while they are being rewritten
                 // in global morph.
@@ -2672,12 +2675,12 @@ public partial class Compiler
                         jitprintf("(AX)"); // Variable has address exposed.
                     }
 
-                    if (varDsc.IsDefinedViaAddress)
+                    if (GetLocalDebugFlag(in varDsc, LocalDebugFlags.DefinedViaAddress))
                     {
                         jitprintf("(DA)"); // Variable is defined via address
                     }
 
-                    if (varDsc.lvUnusedStruct)
+                    if (GetLocalDebugFlag(in varDsc, LocalDebugFlags.UnusedStruct))
                     {
                         assert(varDsc.lvPromoted);
                         jitprintf("(U)"); // Unused struct

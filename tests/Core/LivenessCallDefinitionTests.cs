@@ -172,7 +172,7 @@ internal static unsafe class LivenessCallDefinitionTests
         compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL, lvTracked = true }];
     if (TestConfiguration.IsDebug)
     {
-        compiler.lvaTable[0].IsDefinedViaAddress = true;
+        compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
     }
         JitTls.Compiler = compiler;
         try

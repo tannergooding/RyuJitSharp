@@ -548,7 +548,7 @@ internal static unsafe class Arm64MemoryLoweringTests
     {
         WithLowering(true, (compiler, lowering, block) => {
             compiler.lvaTable[0].Type = TYP_LONG;
-            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, exposed, AddressExposedReason.ESCAPE_ADDRESS);
             var firstValue = compiler.gtNewIconNode(TYP_BYTE, 0x12);
             var first = new GenTreeLclFld(TYP_BYTE, 0, (ushort)offset, firstValue, null);
             var secondValue = compiler.gtNewIconNode(TYP_BYTE, 0x34);
@@ -574,7 +574,7 @@ internal static unsafe class Arm64MemoryLoweringTests
         WithLowering(true, (compiler, lowering, block) => {
             compiler.lvaTable[0].Type = TYP_STRUCT;
             compiler.lvaTable[0].Layout = new ClassLayout(16);
-            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, exposed, AddressExposedReason.ESCAPE_ADDRESS);
             var firstValue = compiler.gtNewIconNode(TYP_LONG, 0x11223344);
             var first = new GenTreeLclFld(TYP_LONG, 0, 0, firstValue, null);
             var secondValue = compiler.gtNewIconNode(TYP_LONG, 0x55667788);

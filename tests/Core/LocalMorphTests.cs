@@ -428,13 +428,14 @@ internal static unsafe class LocalMorphTests
             InitializePromotedPair(compiler);
             compiler.lvaSetHiddenBufferStructArg(0);
 
-            foreach (var local in compiler.lvaTable)
+            for (var lclNum = 0; lclNum < compiler.lvaCount; lclNum++)
             {
+                ref readonly var local = ref compiler.lvaTable[lclNum];
                 Assert.That(local.lvDoNotEnregister, Is.True);
                 Assert.That(local.IsAddressExposed, Is.False);
                 if (TestConfiguration.IsDebug)
                 {
-                    Assert.That(local.IsDefinedViaAddress, Is.True);
+                    Assert.That(compiler.GetLocalDebugFlag(lclNum, LocalDebugFlags.DefinedViaAddress), Is.True);
                 }
             }
         });
@@ -948,7 +949,7 @@ internal static unsafe class LocalMorphTests
             arg.Layout = new ClassLayout(16);
             arg.lvIsParam = true;
             arg.IsImplicitByRef = implicitByRef;
-            arg.SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(in arg, true, AddressExposedReason.ESCAPE_ADDRESS);
             arg.lvDoNotEnregister = true;
             compiler.lvaTable[1].Type = TYP_INT;
 
@@ -1018,7 +1019,7 @@ internal static unsafe class LocalMorphTests
             arg.lvFieldCnt = 2;
             arg.lvContainsHoles = true;
             arg.lvDoNotEnregister = dependent;
-            arg.SetAddressExposed(dependent, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(in arg, dependent, AddressExposedReason.ESCAPE_ADDRESS);
             arg.lvSingleDef = true;
             arg.lvSingleDefRegCandidate = true;
             arg.lvSpillAtSingleDef = true;
@@ -1254,7 +1255,7 @@ internal static unsafe class LocalMorphTests
         WithCompiler(compiler => {
             compiler.fgGlobalMorph = globalMorph;
             compiler.lvaTable[0].Type = TYP_BYTE;
-            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, exposed, AddressExposedReason.ESCAPE_ADDRESS);
             var value = compiler.gtNewIconNode(TYP_INT, 300);
             var store = compiler.gtNewStoreLclVarNode(0, value);
             var expanded = compiler.fgMorphExpandLocal(store);
@@ -1285,7 +1286,7 @@ internal static unsafe class LocalMorphTests
             compiler.lvaCount = 2;
             compiler.lvaTable[0].Type = TYP_INT;
             compiler.lvaTable[1].Type = TYP_INT;
-            compiler.lvaTable[0].SetAddressExposed(true, AddressExposedReason.ESCAPE_ADDRESS);
+            compiler.SetLocalAddressExposed(0, true, AddressExposedReason.ESCAPE_ADDRESS);
             compiler.lvaSetVarDoNotEnregister(0, DoNotEnregisterReason.AddrExposed);
 
             compiler.lvSetMinOptsDoNotEnreg();
@@ -1295,8 +1296,8 @@ internal static unsafe class LocalMorphTests
             Assert.That(compiler.lvaTable[2].lvDoNotEnregister, Is.False);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(compiler.lvaTable[0].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.AddrExposed));
-                Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.NoRegVars));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(0), Is.EqualTo(DoNotEnregisterReason.AddrExposed));
+                Assert.That(compiler.GetLocalDoNotEnregisterReason(1), Is.EqualTo(DoNotEnregisterReason.NoRegVars));
             }
         }, minOpts: true);
     }
@@ -1405,7 +1406,7 @@ internal static unsafe class LocalMorphTests
             compiler.lvaTable[1].Type = TYP_LONG;
         if (TestConfiguration.IsDebug)
         {
-            compiler.lvaTable[0].IsDefinedViaAddress = true;
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
         }
             GenTree address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 4);
             address.Flags |= GTF_VAR_DEF;
@@ -1488,7 +1489,7 @@ internal static unsafe class LocalMorphTests
             {
             if (TestConfiguration.IsDebug)
             {
-                compiler.lvaTable[0].IsDefinedViaAddress = true;
+                compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
             }
                 address.Flags |= GTF_VAR_DEF;
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
@@ -1570,7 +1571,7 @@ internal static unsafe class LocalMorphTests
                 {
                 if (TestConfiguration.IsDebug)
                 {
-                    compiler.lvaTable[0].IsDefinedViaAddress = true;
+                    compiler.SetLocalDebugFlag(0, LocalDebugFlags.DefinedViaAddress, true);
                 }
                     var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
                     address.Flags |= GTF_VAR_DEF;

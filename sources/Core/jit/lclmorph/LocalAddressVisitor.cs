@@ -104,7 +104,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
             {
                 if (Configuration.DEBUG)
                 {
-                    varDsc.IsDefinedViaAddress = true;
+                    _compiler.SetLocalDebugFlag(lclNum, LocalDebugFlags.DefinedViaAddress, true);
                 }
                 escapeAddress = false;
                 defFlags = GTF_VAR_DEF;
@@ -189,7 +189,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
         assert((use.Type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
         assert(_compiler.lvaGetDesc(lclNum).IsAddressExposed ||
             ((_lclAddrAssertions is not null) && _lclAddrAssertions.IsMarkedForExposure(lclNum)) ||
-            _compiler.lvaGetDesc(lclNum).IsDefinedViaAddress);
+            _compiler.GetLocalDebugFlag(lclNum, LocalDebugFlags.DefinedViaAddress));
         GenTree replacement;
 
         if (_compiler.IsValidLclAddr(lclNum, unchecked((int)offset)))

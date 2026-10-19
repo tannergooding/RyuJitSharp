@@ -243,8 +243,7 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var descriptor = new LclVarDsc { Type = TYP_INT, lvDoNotEnregister = true };
-            TestConfiguration.SetDoNotEnregisterReason(ref descriptor, reason);
-            RecordEnregisterLocal(in descriptor);
+            RecordEnregisterLocal(in descriptor, reason, AddressExposedReason.NONE);
             using var writer = new StringWriter();
             DumpEnregisterStats(writer);
             Assert.That(writer.ToString(), Does.Contain(expected + " 1, ratio: 1.00\n"));
@@ -267,9 +266,7 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var descriptor = new LclVarDsc { Type = TYP_STRUCT, lvDoNotEnregister = true };
-            TestConfiguration.SetDoNotEnregisterReason(ref descriptor, DoNotEnregisterReason.AddrExposed);
-            descriptor.SetAddressExposed(false, reason);
-            RecordEnregisterLocal(in descriptor);
+            RecordEnregisterLocal(in descriptor, DoNotEnregisterReason.AddrExposed, reason);
             using var writer = new StringWriter();
             DumpEnregisterStats(writer);
             Assert.That(writer.ToString(), Does.Contain("total number of struct locals: 1, number of enregistered: 0, notEnreg: 1, ratio: 0.00\n"));
@@ -390,13 +387,16 @@ internal static unsafe class CompilerFinalizationTests
 
     [UnconditionalSuppressMessage("Trimming", "IL2075",
         Justification = "The test intentionally reflects over Debug-only statistics methods retained in the test assembly.")]
-    private static void RecordEnregisterLocal(in LclVarDsc descriptor)
+    private static void RecordEnregisterLocal(
+        in LclVarDsc descriptor,
+        DoNotEnregisterReason doNotEnregisterReason,
+        AddressExposedReason addressExposedReason)
     {
         var field = GetEnregisterStatsField();
         var stats = field.GetValue(null) ?? throw new InvalidOperationException("Missing enregistration statistics.");
         var method = stats.GetType().GetMethod("RecordLocal", BindingFlags.Instance | BindingFlags.Public)
             ?? throw new InvalidOperationException("The enregistration RecordLocal method is missing.");
-        _ = method.Invoke(stats, [descriptor]);
+        _ = method.Invoke(stats, [descriptor, doNotEnregisterReason, addressExposedReason]);
         field.SetValue(null, stats);
     }
 

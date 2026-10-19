@@ -194,7 +194,7 @@ internal static unsafe class MorphStressTests
 
                 case "keep-type":
                 {
-                    compiler.lvaTable[number].lvKeepType = true;
+                    compiler.SetLocalDebugFlag(number, LocalDebugFlags.KeepType, true);
                     break;
                 }
 
@@ -236,7 +236,7 @@ internal static unsafe class MorphStressTests
             TestConfiguration.ApplyLocalFieldStress(compiler);
 
             Assert.That(statement.RootNode, Is.SameAs(local));
-            Assert.That(TestConfiguration.GetNoLocalFieldStress(compiler.lvaTable, number), Is.True);
+            Assert.That(TestConfiguration.GetNoLocalFieldStress(compiler, number), Is.True);
             Assert.That(compiler.lvaTable[number].Type, Is.Not.EqualTo(TYP_STRUCT));
         });
     }
@@ -273,16 +273,19 @@ internal static class LocalFieldStressStateTests
     [Test]
     public static void LocalFieldStressFlagUsesDebugState()
     {
-        var descriptor = new LclVarDsc();
-
-        if (!TestConfiguration.IsDebug)
+        SsaLivenessTests.WithCompiler(1, compiler =>
         {
-            _ = Assert.Throws<System.InvalidOperationException>(() => _ = descriptor.lvNoLclFldStress);
-            _ = Assert.Throws<System.InvalidOperationException>(() => descriptor.lvNoLclFldStress = true);
-            return;
-        }
+            if (!TestConfiguration.IsDebug)
+            {
+                _ = Assert.Throws<System.InvalidOperationException>(
+                    () => _ = compiler.GetLocalDebugFlag(0, LocalDebugFlags.NoLclFldStress));
+                _ = Assert.Throws<System.InvalidOperationException>(
+                    () => compiler.SetLocalDebugFlag(0, LocalDebugFlags.NoLclFldStress, true));
+                return;
+            }
 
-        descriptor.lvNoLclFldStress = true;
-        Assert.That(descriptor.lvNoLclFldStress, Is.True);
+            compiler.SetLocalDebugFlag(0, LocalDebugFlags.NoLclFldStress, true);
+            Assert.That(compiler.GetLocalDebugFlag(0, LocalDebugFlags.NoLclFldStress), Is.True);
+        });
     }
 }
