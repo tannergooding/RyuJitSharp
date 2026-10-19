@@ -10,8 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Re-evaluate the next original-order file family sources/Core/jit/codegenlinear/CodeGen.EmitterTests.cs (CGCOMMON-0136 through CGCOMMON-0151): close its Debug test harness and classify the SVE-unsupported cases. Obtain the bounded G2 unsupported-capability decision before changing their test applicability; keep B209 and the separate Debug state/layout gate open.",
-    "activeBatch": null,
+    "nextAction": "Re-evaluate deferred CGCOMMON-0134 in sources\\Core\\jit\\codegenlinear\\CodeGen.UnspillRegisters.cs against the current Release dependency closure, then continue the remaining original-order conditional inventory. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter closure is ported and tested.",
 
     "unresolvedConditionalCleanup": [
       {

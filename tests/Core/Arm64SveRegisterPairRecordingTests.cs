@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -438,6 +439,38 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         });
     }
 
+    [TestCaseSource(nameof(NativeUnsupportedVectorPairCases))]
+    public static void NativeUnsupportedVectorPairFormsTerminateBeforeAppending(Action<Emitter> record)
+    {
+        WithEmitter(emitter =>
+        {
+            ExpectFailure(() => record(emitter));
+            Assert.That(GroupSize(emitter), Is.Zero);
+            Assert.That(LastInstruction(emitter), Is.Null);
+        });
+    }
+
+    private static IEnumerable<TestCaseData> NativeUnsupportedVectorPairCases()
+    {
+        static TestCaseData Case(string name, Action<Emitter> record)
+        {
+            return new TestCaseData(record).SetName($"NativeUnsupported_{name}");
+        }
+
+        yield return Case("EXT_VectorPair_0", static emitter =>
+            emitter.emitIns_R_R_IArm64(INS_sve_ext, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, 0,
+                INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+        yield return Case("EXT_VectorPair_5", static emitter =>
+            emitter.emitIns_R_R_IArm64(INS_sve_ext, EA_SCALABLE, REG_ARM64_V2, REG_ARM64_V3, 5,
+                INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+        yield return Case("EXT_VectorPair_128", static emitter =>
+            emitter.emitIns_R_R_IArm64(INS_sve_ext, EA_SCALABLE, REG_ARM64_V4, REG_ARM64_V5, 128,
+                INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+        yield return Case("EXT_VectorPair_255", static emitter =>
+            emitter.emitIns_R_R_IArm64(INS_sve_ext, EA_SCALABLE, REG_ARM64_V6, REG_FP_LAST, 255,
+                INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+    }
+
     [TestCase(0, 90)]
     [TestCase(1, 270)]
     [TestCase(2, 0)]
@@ -584,14 +617,20 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         if (TestConfiguration.IsDebug)
         {
-            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-                () => Assert.Throws<FatalJitException>(() => record()));
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => AssertFailure(record));
             Assert.That(assertions, Is.Empty);
         }
         else
         {
-            _ = Assert.Throws<FatalJitException>(() => record());
+            AssertFailure(record);
         }
+    }
+
+    private static void AssertFailure(Action record)
+    {
+        var error = Assert.Throws<FatalJitException>(() => record());
+        Assert.That(error, Has.Property(nameof(FatalJitException.Result))
+            .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
     }
 
     private static void AssertConstant(Emitter.instrDesc id, nint immediate, bool shifted)

@@ -23,14 +23,13 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64EmitterRecordingTests
 {
-#if DEBUG
     [TestCase("general", false, 21u, INS_ldr, INS_isb)]
     [TestCase("general", true, 21u, INS_ldr, INS_isb)]
     [TestCase("advsimd", false, 10u, INS_ldr, INS_sm3ss1)]
     [TestCase("sve", false, 1u, INS_sve_and, INS_sve_extq)]
     [TestCase("pac", false, 1u, INS_retaa, INS_pacib)]
     [TestCase("fp16", false, 1u, INS_fadd, INS_ucvtf)]
-    public static void DebugEmitterUnitTestEntryPointsRecordTheirCompleteSections(
+    public static void EmitterUnitTestEntryPointsRecordTheirCompleteSections(
         string section, bool cssc, uint labelCount, instruction first, instruction last)
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
@@ -43,7 +42,7 @@ internal static unsafe class Arm64EmitterRecordingTests
                 compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_Cssc);
             }
 
-            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
+            void RecordSection()
             {
                 switch (section)
                 {
@@ -82,10 +81,21 @@ internal static unsafe class Arm64EmitterRecordingTests
                         throw new AssertionException($"Unknown emitter unit-test section: {section}.");
                     }
                 }
-            });
+            }
 
-            Assert.That(assertions, Is.EqualTo<string[]>(section == "sve"
-                ? ["Please use emitIns_Mov() to correctly handle move elision"]
+            string[] assertions;
+            if (TestConfiguration.IsDebug)
+            {
+                assertions = Arm64SveInstructionSanityTests.Capture(RecordSection).Assertions;
+            }
+            else
+            {
+                RecordSection();
+                assertions = [];
+            }
+
+            Assert.That(assertions, Is.EqualTo<string[]>(TestConfiguration.IsDebug && section == "sve"
+                ? ["Please use emitInsMovArm64() to correctly handle move elision"]
                 : []));
             Assert.That(compiler.fgBBNumMax, Is.EqualTo(labelCount));
             var instructions = new List<Emitter.instrDesc>();
@@ -141,8 +151,6 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? UnitTestGroups(Emitter emitter);
-#endif
-
     [Test]
     public static void GeneratedMetadataMatchesPinnedNativeTables()
     {

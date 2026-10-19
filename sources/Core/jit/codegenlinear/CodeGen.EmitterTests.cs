@@ -1006,7 +1006,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_rev, EA_8BYTE, REG_ARM64_R4, REG_ARM64_R15);
         theEmitter.emitIns_R_R(INS_rev16, EA_8BYTE, REG_ARM64_R5, REG_ARM64_R0);
         theEmitter.emitIns_R_R(INS_rev32, EA_8BYTE, REG_ARM64_R6, REG_ARM64_R1);
-        if (_compiler.compIsaSupportedDebugOnly(InstructionSet_Cssc))
+        if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_Cssc))
         {
             theEmitter.emitIns_R_R(INS_cnt, EA_8BYTE, REG_ARM64_R7, REG_ARM64_R2); // FEAT_CSSC
             theEmitter.emitIns_R_R(INS_ctz, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R3); // FEAT_CSSC
@@ -1017,7 +1017,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_rbit, EA_4BYTE, REG_ARM64_R11, REG_ARM64_R6);
         theEmitter.emitIns_R_R(INS_rev, EA_4BYTE, REG_ARM64_R12, REG_ARM64_R7);
         theEmitter.emitIns_R_R(INS_rev16, EA_4BYTE, REG_ARM64_R13, REG_ARM64_R8);
-        if (_compiler.compIsaSupportedDebugOnly(InstructionSet_Cssc))
+        if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_Cssc))
         {
             theEmitter.emitIns_R_R(INS_cnt, EA_4BYTE, REG_ARM64_R14, REG_ARM64_R9);  // FEAT_CSSC
             theEmitter.emitIns_R_R(INS_ctz, EA_4BYTE, REG_ARM64_R15, REG_ARM64_R10); // FEAT_CSSC
@@ -1412,29 +1412,29 @@ public sealed partial class CodeGen
 
         genDefineTempLabel(genCreateTempLabel());
 
-        theEmitter.emitIns_R_R_I_I(INS_sbfm, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R3, 4, 39);
-        theEmitter.emitIns_R_R_I_I(INS_bfm, EA_8BYTE, REG_ARM64_R1, REG_ARM64_R5, 20, 23);
-        theEmitter.emitIns_R_R_I_I(INS_ubfm, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R9, 36, 7);
+        theEmitter.emitIns_R_R_I_I(INS_sbfm, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R3, 4, 39, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_bfm, EA_8BYTE, REG_ARM64_R1, REG_ARM64_R5, 20, 23, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ubfm, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R9, 36, 7, INS_OPTS_NONE);
 
-        theEmitter.emitIns_R_R_I_I(INS_sbfiz, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R3, 7, 37);
-        theEmitter.emitIns_R_R_I_I(INS_bfi, EA_8BYTE, REG_ARM64_R1, REG_ARM64_R5, 23, 21);
-        theEmitter.emitIns_R_R_I_I(INS_ubfiz, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R9, 39, 5);
+        theEmitter.emitIns_R_R_I_I(INS_sbfiz, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R3, 7, 37, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_bfi, EA_8BYTE, REG_ARM64_R1, REG_ARM64_R5, 23, 21, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ubfiz, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R9, 39, 5, INS_OPTS_NONE);
 
-        theEmitter.emitIns_R_R_I_I(INS_sbfx, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R3, 10, 24);
-        theEmitter.emitIns_R_R_I_I(INS_bfxil, EA_8BYTE, REG_ARM64_R1, REG_ARM64_R5, 26, 16);
-        theEmitter.emitIns_R_R_I_I(INS_ubfx, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R9, 42, 8);
+        theEmitter.emitIns_R_R_I_I(INS_sbfx, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R3, 10, 24, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_bfxil, EA_8BYTE, REG_ARM64_R1, REG_ARM64_R5, 26, 16, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ubfx, EA_8BYTE, REG_ARM64_R8, REG_ARM64_R9, 42, 8, INS_OPTS_NONE);
 
-        theEmitter.emitIns_R_R_I_I(INS_sbfm, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R3, 4, 19);
-        theEmitter.emitIns_R_R_I_I(INS_bfm, EA_4BYTE, REG_ARM64_R1, REG_ARM64_R5, 10, 13);
-        theEmitter.emitIns_R_R_I_I(INS_ubfm, EA_4BYTE, REG_ARM64_R8, REG_ARM64_R9, 16, 7);
+        theEmitter.emitIns_R_R_I_I(INS_sbfm, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R3, 4, 19, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_bfm, EA_4BYTE, REG_ARM64_R1, REG_ARM64_R5, 10, 13, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ubfm, EA_4BYTE, REG_ARM64_R8, REG_ARM64_R9, 16, 7, INS_OPTS_NONE);
 
-        theEmitter.emitIns_R_R_I_I(INS_sbfiz, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R3, 5, 17);
-        theEmitter.emitIns_R_R_I_I(INS_bfi, EA_4BYTE, REG_ARM64_R1, REG_ARM64_R5, 13, 11);
-        theEmitter.emitIns_R_R_I_I(INS_ubfiz, EA_4BYTE, REG_ARM64_R8, REG_ARM64_R9, 19, 5);
+        theEmitter.emitIns_R_R_I_I(INS_sbfiz, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R3, 5, 17, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_bfi, EA_4BYTE, REG_ARM64_R1, REG_ARM64_R5, 13, 11, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ubfiz, EA_4BYTE, REG_ARM64_R8, REG_ARM64_R9, 19, 5, INS_OPTS_NONE);
 
-        theEmitter.emitIns_R_R_I_I(INS_sbfx, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R3, 3, 14);
-        theEmitter.emitIns_R_R_I_I(INS_bfxil, EA_4BYTE, REG_ARM64_R1, REG_ARM64_R5, 11, 9);
-        theEmitter.emitIns_R_R_I_I(INS_ubfx, EA_4BYTE, REG_ARM64_R8, REG_ARM64_R9, 22, 8);
+        theEmitter.emitIns_R_R_I_I(INS_sbfx, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R3, 3, 14, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_bfxil, EA_4BYTE, REG_ARM64_R1, REG_ARM64_R5, 11, 9, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ubfx, EA_4BYTE, REG_ARM64_R8, REG_ARM64_R9, 22, 8, INS_OPTS_NONE);
 
         //
         // R_R_R_I
@@ -1892,9 +1892,9 @@ public sealed partial class CodeGen
 
         genDefineTempLabel(genCreateTempLabel());
 
-        theEmitter.emitIns_R(INS_br, EA_PTRSIZE, REG_ARM64_R8);
-        theEmitter.emitIns_R(INS_ret, EA_PTRSIZE, REG_ARM64_R8);
-        theEmitter.emitIns_R(INS_ret, EA_PTRSIZE, REG_ARM64_LR);
+        theEmitter.emitIns_R(INS_br, EA_PTRSIZE, REG_ARM64_R8, INS_OPTS_NONE);
+        theEmitter.emitIns_R(INS_ret, EA_PTRSIZE, REG_ARM64_R8, INS_OPTS_NONE);
+        theEmitter.emitIns_R(INS_ret, EA_PTRSIZE, REG_ARM64_LR, INS_OPTS_NONE);
 
         //
         // Misc
@@ -2147,10 +2147,10 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_I(INS_mov, EA_1BYTE, REG_ARM64_V23, REG_ARM64_R15, 8);
 
         // mov vector[index] to vector[index2]
-        theEmitter.emitIns_R_R_I_I(INS_mov, EA_8BYTE, REG_ARM64_V8, REG_ARM64_V9, 1, 0);
-        theEmitter.emitIns_R_R_I_I(INS_mov, EA_4BYTE, REG_ARM64_V10, REG_ARM64_V11, 2, 1);
-        theEmitter.emitIns_R_R_I_I(INS_mov, EA_2BYTE, REG_ARM64_V12, REG_ARM64_V13, 5, 2);
-        theEmitter.emitIns_R_R_I_I(INS_mov, EA_1BYTE, REG_ARM64_V14, REG_ARM64_V15, 12, 3);
+        theEmitter.emitIns_R_R_I_I(INS_mov, EA_8BYTE, REG_ARM64_V8, REG_ARM64_V9, 1, 0, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_mov, EA_4BYTE, REG_ARM64_V10, REG_ARM64_V11, 2, 1, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_mov, EA_2BYTE, REG_ARM64_V12, REG_ARM64_V13, 5, 2, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_mov, EA_1BYTE, REG_ARM64_V14, REG_ARM64_V15, 12, 3, INS_OPTS_NONE);
 
         //////////////////////////////////////////////////////////////////////////////////
 
@@ -2161,10 +2161,10 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_I(INS_dup, EA_1BYTE, REG_ARM64_V30, REG_ARM64_V31, 15);
 
         // mov/ins vector element
-        theEmitter.emitIns_R_R_I_I(INS_ins, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1, 0, 1);
-        theEmitter.emitIns_R_R_I_I(INS_ins, EA_4BYTE, REG_ARM64_V2, REG_ARM64_V3, 2, 2);
-        theEmitter.emitIns_R_R_I_I(INS_ins, EA_2BYTE, REG_ARM64_V4, REG_ARM64_V5, 4, 3);
-        theEmitter.emitIns_R_R_I_I(INS_ins, EA_1BYTE, REG_ARM64_V6, REG_ARM64_V7, 8, 4);
+        theEmitter.emitIns_R_R_I_I(INS_ins, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1, 0, 1, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ins, EA_4BYTE, REG_ARM64_V2, REG_ARM64_V3, 2, 2, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ins, EA_2BYTE, REG_ARM64_V4, REG_ARM64_V5, 4, 3, INS_OPTS_NONE);
+        theEmitter.emitIns_R_R_I_I(INS_ins, EA_1BYTE, REG_ARM64_V6, REG_ARM64_V7, 8, 4, INS_OPTS_NONE);
 
         // umov to general from vector element
         theEmitter.emitIns_R_R_I(INS_umov, EA_8BYTE, REG_ARM64_R0, REG_ARM64_V8, 1);
@@ -4810,12 +4810,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_sve_urshl, EA_SCALABLE_ARM64, REG_ARM64_V14, REG_ARM64_P1, REG_ARM64_V21, INS_OPTS_SCALABLE_S); // URSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_urshlr, EA_SCALABLE_ARM64, REG_ARM64_V15, REG_ARM64_P2, REG_ARM64_V20, INS_OPTS_SCALABLE_D); // URSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_AB_3B
-        theEmitter.emitIns_R_R_R(INS_sve_addpt, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_P1, REG_ARM64_V2, INS_OPTS_SCALABLE_D); // ADDPT <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
-        theEmitter.emitIns_R_R_R(INS_sve_subpt, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_P1, REG_ARM64_V2, INS_OPTS_SCALABLE_D); // SUBPT <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_AC_3A
         theEmitter.emitIns_R_R_R(INS_sve_sdiv, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_P2, REG_ARM64_V9, INS_OPTS_SCALABLE_S); // SDIV     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_sdivr, EA_SCALABLE_ARM64, REG_ARM64_V31, REG_ARM64_P3, REG_ARM64_V29, INS_OPTS_SCALABLE_D); // SDIVR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
@@ -5077,10 +5071,10 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_sve_rdffrs, EA_SCALABLE_ARM64, REG_ARM64_P7, REG_ARM64_P14, INS_OPTS_SCALABLE_B); // RDFFRS  <Pd>.B, <Pg>/Z
 
         // IF_SVE_DH_1A
-        theEmitter.emitIns_R(INS_sve_rdffr, EA_SCALABLE_ARM64, REG_ARM64_P8); // RDFFR   <Pd>.B
+        theEmitter.emitIns_R(INS_sve_rdffr, EA_SCALABLE_ARM64, REG_ARM64_P8, INS_OPTS_NONE); // RDFFR   <Pd>.B
 
         // IF_SVE_DJ_1A
-        theEmitter.emitIns_R(INS_sve_pfalse, EA_SCALABLE_ARM64, REG_ARM64_P13); // PFALSE  <Pd>.B
+        theEmitter.emitIns_R(INS_sve_pfalse, EA_SCALABLE_ARM64, REG_ARM64_P13, INS_OPTS_NONE); // PFALSE  <Pd>.B
 
         // IF_SVE_DI_2A
         theEmitter.emitIns_R_R(INS_sve_ptest, EA_SCALABLE_ARM64, REG_ARM64_P2, REG_ARM64_P14, INS_OPTS_SCALABLE_B); // PTEST   <Pg>, <Pn>.B
@@ -5115,10 +5109,6 @@ public sealed partial class CodeGen
         // IF_SVE_HL_3A
         theEmitter.emitIns_R_R_R(INS_sve_fabd, EA_SCALABLE_ARM64, REG_ARM64_V24, REG_ARM64_P3, REG_ARM64_V11, INS_OPTS_SCALABLE_H); // FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE_ARM64, REG_ARM64_V25, REG_ARM64_P2, REG_ARM64_V10, INS_OPTS_SCALABLE_S); // FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        theEmitter.emitIns_R_R_R(INS_sve_famax, EA_SCALABLE_ARM64, REG_ARM64_V26, REG_ARM64_P1, REG_ARM64_V9, INS_OPTS_SCALABLE_D); // FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        theEmitter.emitIns_R_R_R(INS_sve_famin, EA_SCALABLE_ARM64, REG_ARM64_V27, REG_ARM64_P0, REG_ARM64_V8, INS_OPTS_SCALABLE_H); // FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
         theEmitter.emitIns_R_R_R(INS_sve_fdiv, EA_SCALABLE_ARM64, REG_ARM64_V28, REG_ARM64_P0, REG_ARM64_V7, INS_OPTS_SCALABLE_S); // FDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_fdivr, EA_SCALABLE_ARM64, REG_ARM64_V29, REG_ARM64_P1, REG_ARM64_V6, INS_OPTS_SCALABLE_D); // FDIVR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_fmax, EA_SCALABLE_ARM64, REG_ARM64_V30, REG_ARM64_P2, REG_ARM64_V5, INS_OPTS_SCALABLE_H); // FMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
@@ -5213,17 +5203,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_sve_orv, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_P2, REG_ARM64_V2, INS_OPTS_SCALABLE_S); // ORV     <V><d>, <Pg>, <Zn>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_orv, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_P3, REG_ARM64_V3, INS_OPTS_SCALABLE_D); // ORV     <V><d>, <Pg>, <Zn>.<T>
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_AG_3A
-        theEmitter.emitIns_R_R_R(INS_sve_andqv, EA_8BYTE, REG_ARM64_V4, REG_ARM64_P4, REG_ARM64_V4, INS_OPTS_SCALABLE_B); // ANDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_eorqv, EA_8BYTE, REG_ARM64_V5, REG_ARM64_P5, REG_ARM64_V5, INS_OPTS_SCALABLE_H); // EORQV   <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_ARM64_V6, REG_ARM64_P6, REG_ARM64_V6, INS_OPTS_SCALABLE_S); // ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_ARM64_V7, REG_ARM64_P7, REG_ARM64_V7, INS_OPTS_SCALABLE_D); // ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb>
-
-        // IF_SVE_AJ_3A
-        theEmitter.emitIns_R_R_R(INS_sve_addqv, EA_8BYTE, REG_ARM64_V21, REG_ARM64_P7, REG_ARM64_V22, INS_OPTS_SCALABLE_B); // ADDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb>
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_AI_3A
         theEmitter.emitIns_R_R_R(INS_sve_saddv, EA_SCALABLE_ARM64, REG_ARM64_V1, REG_ARM64_P4, REG_ARM64_V2, INS_OPTS_SCALABLE_B); // SADDV   <Dd>, <Pg>, <Zn>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_saddv, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_P5, REG_ARM64_V3, INS_OPTS_SCALABLE_H); // SADDV   <Dd>, <Pg>, <Zn>.<T>
@@ -5234,14 +5213,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_sve_sminv, EA_SCALABLE_ARM64, REG_ARM64_V16, REG_ARM64_P6, REG_ARM64_V14, INS_OPTS_SCALABLE_S); // SMINV   <V><d>, <Pg>, <Zn>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_umaxv, EA_SCALABLE_ARM64, REG_ARM64_V17, REG_ARM64_P5, REG_ARM64_V24, INS_OPTS_SCALABLE_H); // UMAXV   <V><d>, <Pg>, <Zn>.<T>
         theEmitter.emitIns_R_R_R(INS_sve_uminv, EA_SCALABLE_ARM64, REG_ARM64_V18, REG_ARM64_P4, REG_ARM64_V31, INS_OPTS_SCALABLE_B); // UMINV   <V><d>, <Pg>, <Zn>.<T>
-
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_AL_3A
-        theEmitter.emitIns_R_R_R(INS_sve_smaxqv, EA_8BYTE, REG_ARM64_V0, REG_ARM64_P5, REG_ARM64_V25, INS_OPTS_SCALABLE_B); // SMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_sminqv, EA_8BYTE, REG_ARM64_V1, REG_ARM64_P4, REG_ARM64_V24, INS_OPTS_SCALABLE_H); // SMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_umaxqv, EA_8BYTE, REG_ARM64_V2, REG_ARM64_P3, REG_ARM64_V23, INS_OPTS_SCALABLE_S); // UMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_uminqv, EA_8BYTE, REG_ARM64_V3, REG_ARM64_P2, REG_ARM64_V22, INS_OPTS_SCALABLE_D); // UMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
         // IF_SVE_AP_3A
         theEmitter.emitIns_R_R_R(INS_sve_cls, EA_SCALABLE_ARM64, REG_ARM64_V31, REG_ARM64_P0, REG_ARM64_V0, INS_OPTS_SCALABLE_B); // CLS     <Zd>.<T>, <Pg>/M, <Zn>.<T>
@@ -5589,12 +5560,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_sve_bfmul, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_H); // BFMUL <Zd>.H, <Zn>.H, <Zm>.H
         theEmitter.emitIns_R_R_R(INS_sve_bfsub, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V7, REG_ARM64_V8, INS_OPTS_SCALABLE_H); // BFSUB <Zd>.H, <Zn>.H, <Zm>.H
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_AT_3B
-        theEmitter.emitIns_R_R_R(INS_sve_addpt, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_D); // ADDPT <Zd>.D, <Zn>.D, <Zm>.D
-        theEmitter.emitIns_R_R_R(INS_sve_subpt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_D); // SUBPT <Zd>.D, <Zn>.D, <Zm>.D
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_AU_3A
         theEmitter.emitIns_R_R_R(INS_sve_and, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_D); // AND <Zd>.D,
                                                                                                           // <Zn>.D, <Zm>.D
@@ -5724,18 +5689,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_PATTERN_I(INS_sve_uqinch, EA_SCALABLE_ARM64, REG_ARM64_V10, SVE_PATTERN_POW2, 11, INS_OPTS_SCALABLE_H); // UQINCH <Zdn>.H{, <pattern>{, MUL #<imm>}}
         theEmitter.emitIns_R_PATTERN_I(INS_sve_uqincw, EA_SCALABLE_ARM64, REG_ARM64_V11, SVE_PATTERN_ALL, 16, INS_OPTS_SCALABLE_S); // UQINCW <Zdn>.S{, <pattern>{, MUL #<imm>}}
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_BQ_2A
-        theEmitter.emitIns_R_R_I(INS_sve_ext, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, 0, INS_OPTS_SCALABLE_B,
-            INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
-        theEmitter.emitIns_R_R_I(INS_sve_ext, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_V3, 5, INS_OPTS_SCALABLE_B,
-            INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
-        theEmitter.emitIns_R_R_I(INS_sve_ext, EA_SCALABLE_ARM64, REG_ARM64_V4, REG_ARM64_V5, 128, INS_OPTS_SCALABLE_B,
-            INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
-        theEmitter.emitIns_R_R_I(INS_sve_ext, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_FP_LAST, 255, INS_OPTS_SCALABLE_B,
-            INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
-#endif                                                             // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_BQ_2B
         theEmitter.emitIns_R_R_I(INS_sve_ext, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, 0, INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
         theEmitter.emitIns_R_R_I(INS_sve_ext, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_V3, 31, INS_OPTS_SCALABLE_B); // EXT <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
@@ -5857,14 +5810,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_sve_sqcvtn, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V2);   // SQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
         theEmitter.emitIns_R_R(INS_sve_sqcvtun, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V8);  // SQCVTUN <Zd>.H, {<Zn1>.S-<Zn2>.S }
         theEmitter.emitIns_R_R(INS_sve_uqcvtn, EA_SCALABLE_ARM64, REG_ARM64_V14, REG_ARM64_V16); // UQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
-
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_HG_2A
-        theEmitter.emitIns_R_R(INS_sve_bfcvtn, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V2);   // BFCVTN <Zd>.B, {<Zn1>.H-<Zn2>.H }
-        theEmitter.emitIns_R_R(INS_sve_fcvtn, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_V4);    // FCVTN <Zd>.B, {<Zn1>.H-<Zn2>.H }
-        theEmitter.emitIns_R_R(INS_sve_fcvtnb, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V8);   // FCVTNB <Zd>.B, {<Zn1>.S-<Zn2>.S }
-        theEmitter.emitIns_R_R(INS_sve_fcvtnt, EA_SCALABLE_ARM64, REG_ARM64_V14, REG_ARM64_V16); // FCVTNT <Zd>.B, {<Zn1>.S-<Zn2>.S }
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
         // IF_SVE_GA_2A
         theEmitter.emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V0, 5, INS_OPTS_SCALABLE_H); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
@@ -5989,7 +5934,7 @@ public sealed partial class CodeGen
         theEmitter.emitIns_I(INS_sve_setffr, EA_PTRSIZE, 0); // SETFFR
 
         // IF_SVE_DR_1A
-        theEmitter.emitIns_R(INS_sve_wrffr, EA_SCALABLE_ARM64, REG_ARM64_P0); // WRFFR <Pn>.B
+        theEmitter.emitIns_R(INS_sve_wrffr, EA_SCALABLE_ARM64, REG_ARM64_P0, INS_OPTS_NONE); // WRFFR <Pn>.B
 
         // IF_SVE_DS_2A
         theEmitter.emitIns_R_R(INS_sve_ctermeq, EA_8BYTE, REG_ARM64_R0, REG_ARM64_R1, INS_OPTS_NONE); // CTERMEQ <R><n>, <R><m>
@@ -6043,27 +5988,8 @@ public sealed partial class CodeGen
                                                                                                  // <Zdn>.S, <Zm>.S
 
         // IF_SVE_GL_1A
-        theEmitter.emitIns_R(INS_sve_aesimc, EA_SCALABLE_ARM64, REG_ARM64_V0); // AESIMC  <Zdn>.B, <Zdn>.B
-        theEmitter.emitIns_R(INS_sve_aesmc, EA_SCALABLE_ARM64, REG_ARM64_V5);  // AESMC   <Zdn>.B, <Zdn>.B
-
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_GN_3A
-        theEmitter.emitIns_R_R_R(INS_sve_fmlalb, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_B); // FMLALB <Zda>.H, <Zn>.B, <Zm>.B
-        theEmitter.emitIns_R_R_R(INS_sve_fmlalt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_B); // FMLALT <Zda>.H, <Zn>.B, <Zm>.B
-
-        // IF_SVE_GO_3A
-        theEmitter.emitIns_R_R_R(INS_sve_fmlallbb, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_B); // FMLALLBB <Zda>.S, <Zn>.B, <Zm>.B
-        theEmitter.emitIns_R_R_R(INS_sve_fmlallbt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_B); // FMLALLBT <Zda>.S, <Zn>.B, <Zm>.B
-        theEmitter.emitIns_R_R_R(INS_sve_fmlalltb, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V7, REG_ARM64_V8, INS_OPTS_SCALABLE_B); // FMLALLTB <Zda>.S, <Zn>.B, <Zm>.B
-        theEmitter.emitIns_R_R_R(INS_sve_fmlalltt, EA_SCALABLE_ARM64, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V11, INS_OPTS_SCALABLE_B); // FMLALLTT <Zda>.S, <Zn>.B, <Zm>.B
-
-        // IF_SVE_GS_3A
-        theEmitter.emitIns_R_R_R(INS_sve_faddqv, EA_8BYTE, REG_ARM64_V16, REG_ARM64_P0, REG_ARM64_V12, INS_OPTS_SCALABLE_H); // FADDQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_fmaxnmqv, EA_8BYTE, REG_ARM64_V17, REG_ARM64_P1, REG_ARM64_V11, INS_OPTS_SCALABLE_S); // FMAXNMQV <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_fmaxqv, EA_8BYTE, REG_ARM64_V18, REG_ARM64_P3, REG_ARM64_V10, INS_OPTS_SCALABLE_D); // FMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_fminnmqv, EA_8BYTE, REG_ARM64_V19, REG_ARM64_P4, REG_ARM64_V9, INS_OPTS_SCALABLE_H); // FMINNMQV <Vd>.<T>, <Pg>, <Zn>.<Tb>
-        theEmitter.emitIns_R_R_R(INS_sve_fminqv, EA_8BYTE, REG_ARM64_V20, REG_ARM64_P5, REG_ARM64_V8, INS_OPTS_SCALABLE_D); // FMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+        theEmitter.emitIns_R(INS_sve_aesimc, EA_SCALABLE_ARM64, REG_ARM64_V0, INS_OPTS_NONE); // AESIMC  <Zdn>.B, <Zdn>.B
+        theEmitter.emitIns_R(INS_sve_aesmc, EA_SCALABLE_ARM64, REG_ARM64_V5, INS_OPTS_NONE);  // AESMC   <Zdn>.B, <Zdn>.B
 
         // IF_SVE_GU_3A
         theEmitter.emitIns_R_R_R_I(INS_sve_fmla, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V2, REG_ARM64_V1, 0, INS_OPTS_SCALABLE_S); // FMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
@@ -6113,20 +6039,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R_I(INS_sve_bfdot, EA_SCALABLE_ARM64, REG_ARM64_V8, REG_ARM64_V10, REG_ARM64_V5, 2, INS_OPTS_SCALABLE_H); // BFDOT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
         theEmitter.emitIns_R_R_R_I(INS_sve_bfdot, EA_SCALABLE_ARM64, REG_ARM64_V12, REG_ARM64_V14, REG_ARM64_V7, 3, INS_OPTS_SCALABLE_H); // BFDOT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_GY_3A
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V2, REG_ARM64_V1, 1); // FDOT <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V4, REG_ARM64_V6, REG_ARM64_V3, 3); // FDOT <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V8, REG_ARM64_V10, REG_ARM64_V5, 5); // FDOT <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V12, REG_ARM64_V14, REG_ARM64_V7, 7); // FDOT <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
-
-        // IF_SVE_GY_3B_D
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V2, REG_ARM64_V1, 0, INS_OPTS_SCALABLE_B); // FDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V4, REG_ARM64_V6, REG_ARM64_V3, 1, INS_OPTS_SCALABLE_B); // FDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V8, REG_ARM64_V10, REG_ARM64_V5, 2, INS_OPTS_SCALABLE_B); // FDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-        theEmitter.emitIns_R_R_R_I(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V12, REG_ARM64_V14, REG_ARM64_V7, 3, INS_OPTS_SCALABLE_B); // FDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
-#endif                                                // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_GZ_3A
         theEmitter.emitIns_R_R_R_I(INS_sve_bfmlalb, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V0, 0, INS_OPTS_SCALABLE_H); // BFMLALB <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
         theEmitter.emitIns_R_R_R_I(INS_sve_bfmlalt, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_V3, REG_ARM64_V1, 1, INS_OPTS_SCALABLE_H); // BFMLALT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
@@ -6141,14 +6053,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_sve_bfdot, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_H); // BFDOT <Zda>.S, <Zn>.H, <Zm>.H
         theEmitter.emitIns_R_R_R(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_H); // FDOT <Zda>.S, <Zn>.H, <Zm>.H
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_HA_3A_E
-        theEmitter.emitIns_R_R_R(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V7, REG_ARM64_V8, INS_OPTS_SCALABLE_B); // FDOT <Zda>.H, <Zn>.B, <Zm>.B
-
-        // IF_SVE_HA_3A_F
-        theEmitter.emitIns_R_R_R(INS_sve_fdot, EA_SCALABLE_ARM64, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V11); // FDOT <Zda>.S, <Zn>.B, <Zm>.B
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_HB_3A
         theEmitter.emitIns_R_R_R(INS_sve_bfmlalb, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_H); // BFMLALB <Zda>.S, <Zn>.H, <Zm>.H
         theEmitter.emitIns_R_R_R(INS_sve_bfmlalt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_H); // BFMLALT <Zda>.S, <Zn>.H, <Zm>.H
@@ -6161,11 +6065,6 @@ public sealed partial class CodeGen
 
         // IF_SVE_HD_3A
         theEmitter.emitIns_R_R_R(INS_sve_bfmmla, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_H); // BFMMLA <Zda>.S, <Zn>.H, <Zm>.H
-
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_HD_3A_A
-        theEmitter.emitIns_R_R_R(INS_sve_fmmla, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5, INS_OPTS_SCALABLE_D); // FMMLA <Zda>.D, <Zn>.D, <Zm>.D
-#endif                                              // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
         // IF_SVE_HE_3A
         theEmitter.emitIns_R_R_R(INS_sve_faddv, EA_SCALABLE_ARM64, REG_ARM64_V21, REG_ARM64_P7, REG_ARM64_V7, INS_OPTS_SCALABLE_H); // FADDV   <V><d>, <Pg>, <Zn>.<T>
@@ -6214,14 +6113,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_ARM64_P5, REG_ARM64_R10, REG_ARM64_R11, INS_OPTS_SCALABLE_H); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
         theEmitter.emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_ARM64_P6, REG_ARM64_R12, REG_ARM64_R13, INS_OPTS_SCALABLE_S); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
         theEmitter.emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_ARM64_P7, REG_ARM64_R14, REG_ARM64_R15, INS_OPTS_SCALABLE_D); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
-
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_DV_4A
-        theEmitter.emitIns_R_R_R_R_I(INS_sve_psel, EA_SCALABLE_ARM64, REG_ARM64_P0, REG_ARM64_P1, REG_ARM64_P2, REG_ARM64_R12, 15, INS_OPTS_SCALABLE_B); // PSEL <Pd>, <Pn>, <Pm>.<T>[<Wv>, <imm>]
-        theEmitter.emitIns_R_R_R_R_I(INS_sve_psel, EA_SCALABLE_ARM64, REG_ARM64_P3, REG_ARM64_P4, REG_ARM64_P5, REG_ARM64_R13, 7, INS_OPTS_SCALABLE_H); // PSEL <Pd>, <Pn>, <Pm>.<T>[<Wv>, <imm>]
-        theEmitter.emitIns_R_R_R_R_I(INS_sve_psel, EA_SCALABLE_ARM64, REG_ARM64_P6, REG_ARM64_P7, REG_ARM64_P8, REG_ARM64_R14, 3, INS_OPTS_SCALABLE_S); // PSEL <Pd>, <Pn>, <Pm>.<T>[<Wv>, <imm>]
-        theEmitter.emitIns_R_R_R_R_I(INS_sve_psel, EA_SCALABLE_ARM64, REG_ARM64_P9, REG_ARM64_P10, REG_ARM64_P11, REG_ARM64_R15, 1, INS_OPTS_SCALABLE_D); // PSEL <Pd>, <Pn>, <Pm>.<T>[<Wv>, <imm>]
-#endif                                                  // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
         // IF_SVE_DW_2A
         theEmitter.emitIns_R_R_I(INS_sve_pext, EA_SCALABLE_ARM64, REG_ARM64_P0, REG_ARM64_P8, 0, INS_OPTS_SCALABLE_B); // PEXT <Pd>.<T>, <PNn>[<imm>]
@@ -6352,14 +6243,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_R_I(INS_sve_sqrdcmlah, EA_SCALABLE_ARM64, REG_ARM64_V15, REG_ARM64_V16, REG_ARM64_V17, 1, INS_OPTS_SCALABLE_H); // SQRDCMLAH <Zda>.<T>, <Zn>.<T>, <Zm>.<T>, <const>
         theEmitter.emitIns_R_R_R_I(INS_sve_sqrdcmlah, EA_SCALABLE_ARM64, REG_ARM64_V18, REG_ARM64_V19, REG_ARM64_V20, 2, INS_OPTS_SCALABLE_S); // SQRDCMLAH <Zda>.<T>, <Zn>.<T>, <Zm>.<T>, <const>
         theEmitter.emitIns_R_R_R_I(INS_sve_sqrdcmlah, EA_SCALABLE_ARM64, REG_ARM64_V21, REG_ARM64_V22, REG_ARM64_V23, 3, INS_OPTS_SCALABLE_D); // SQRDCMLAH <Zda>.<T>, <Zn>.<T>, <Zm>.<T>, <const>
-
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_EW_3A
-        theEmitter.emitIns_R_R_R(INS_sve_mlapt, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2); // MLAPT <Zda>.D, <Zn>.D, <Zm>.D
-
-        // IF_SVE_EW_3B
-        theEmitter.emitIns_R_R_R(INS_sve_madpt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5); // MADPT <Zdn>.D, <Zm>.D, <Za>.D
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
         // IF_SVE_EY_3A
         theEmitter.emitIns_R_R_R_I(INS_sve_sdot, EA_SCALABLE_ARM64, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V4, 0, INS_OPTS_SCALABLE_S); // SDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
@@ -7439,78 +7322,6 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R_I(INS_sve_str, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_R3, -256, INS_OPTS_NONE);
         theEmitter.emitIns_R_R_I(INS_sve_str, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_R3, 255, INS_OPTS_NONE);
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_GG_3A
-        // LUTI2 <Zd>.B, {<Zn>.B }, <Zm>[<index>]
-        // luti2   z0.b, {z0.b}, z0[0]  // 01000101-00100000-10110000-00000000
-        // CHECK-INST: luti2   z0.b, { z0.b }, z0[0]
-        // CHECK-ENCODING: [0x00,0xb0,0x20,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0, INS_OPTS_SCALABLE_B);
-        // luti2   z21.b, {z10.b}, z21[1]  // 01000101-01110101-10110001-01010101
-        // CHECK-INST: luti2   z21.b, { z10.b }, z21[1]
-        // CHECK-ENCODING: [0x55,0xb1,0x75,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE_ARM64, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 1, INS_OPTS_SCALABLE_B);
-
-        // IF_SVE_GH_3B
-        // LUTI4 <Zd>.H, {<Zn1>.H, <Zn2>.H }, <Zm>[<index>]
-        // luti4   z0.h, {z0.h, z1.h}, z0[0]  // 01000101-00100000-10110100-00000000
-        // CHECK-INST: luti4   z0.h, { z0.h, z1.h }, z0[0]
-        // CHECK-ENCODING: [0x00,0xb4,0x20,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0, INS_OPTS_SCALABLE_H, EA_UNKNOWN,
-            INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
-        // luti4   z21.h, {z10.h, z11.h}, z21[1]  // 01000101-01110101-10110101-01010101
-        // CHECK-INST: luti4   z21.h, { z10.h, z11.h }, z21[1]
-        // CHECK-ENCODING: [0x55,0xb5,0x75,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 1, INS_OPTS_SCALABLE_H,
-            EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
-        // luti4   z31.h, {z31.h, z0.h}, z31[3]  // 01000101-11111111-10110111-11111111
-        // CHECK-INST: luti4   z31.h, { z31.h, z0.h }, z31[3]
-        // CHECK-ENCODING: [0xff,0xb7,0xff,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 3, INS_OPTS_SCALABLE_H,
-            EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
-
-        // IF_SVE_GH_3B_B
-        // LUTI4 <Zd>.H, {<Zn>.H }, <Zm>[<index>]
-        // luti4   z0.h, {z0.h}, z0[0]  // 01000101-00100000-10111100-00000000
-        // CHECK-INST: luti4   z0.h, { z0.h }, z0[0]
-        // CHECK-ENCODING: [0x00,0xbc,0x20,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0, INS_OPTS_SCALABLE_H);
-        // luti4   z21.h, {z10.h}, z21[1]  // 01000101-01110101-10111101-01010101
-        // CHECK-INST: luti4   z21.h, { z10.h }, z21[1]
-        // CHECK-ENCODING: [0x55,0xbd,0x75,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 1, INS_OPTS_SCALABLE_H);
-        // luti4   z31.h, {z31.h}, z31[3]  // 01000101-11111111-10111111-11111111
-        // CHECK-INST: luti4   z31.h, { z31.h }, z31[3]
-        // CHECK-ENCODING: [0xff,0xbf,0xff,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 3, INS_OPTS_SCALABLE_H);
-
-        // IF_SVE_GG_3B
-        // LUTI2 <Zd>.H, {<Zn>.H }, <Zm>[<index>]
-        // luti2   z0.h, {z0.h}, z0[0]  // 01000101-00100000-10101000-00000000
-        // CHECK-INST: luti2   z0.h, { z0.h }, z0[0]
-        // CHECK-ENCODING: [0x00,0xa8,0x20,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0, INS_OPTS_SCALABLE_H);
-        // luti2   z21.h, {z10.h}, z21[3]  // 01000101-01110101-10111001-01010101
-        // CHECK-INST: luti2   z21.h, { z10.h }, z21[3]
-        // CHECK-ENCODING: [0x55,0xb9,0x75,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE_ARM64, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 3, INS_OPTS_SCALABLE_H);
-        // luti2 z31.h, {z31.h}, z31[7]                      // 01000101-11111111-10111011-11111111
-        // CHECK-INST: luti2   z31.h, { z31.h }, z31[7]
-        // CHECK-ENCODING: [0xff,0xbb,0xff,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE_ARM64, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 7, INS_OPTS_SCALABLE_H);
-
-        // IF_SVE_GH_3A
-        // LUTI4 <Zd>.B, {<Zn>.B }, <Zm>[<index>]
-        // luti4   z0.b, {z0.b}, z0[0]  // 01000101-01100000-10100100-00000000
-        // CHECK-INST: luti4   z0.b, { z0.b }, z0[0]
-        // CHECK-ENCODING: [0x00,0xa4,0x60,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0, INS_OPTS_SCALABLE_B);
-        // luti4   z31.b, {z31.b}, z31[1]  // 01000101-11111111-10100111-11111111
-        // CHECK-INST: luti4   z31.b, { z31.b }, z31[1]
-        // CHECK-ENCODING: [0xff,0xa7,0xff,0x45]
-        theEmitter.emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE_ARM64, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 1, INS_OPTS_SCALABLE_B);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_HY_3A
         theEmitter.emitIns_PRFOP_R_R_R(INS_sve_prfb, EA_SCALABLE_ARM64, SVE_PRFOP_PLDL1KEEP, REG_ARM64_P1, REG_ARM64_R2, REG_ARM64_V3,
             INS_OPTS_SCALABLE_S_UXTW); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
@@ -7733,26 +7544,6 @@ public sealed partial class CodeGen
         // FEXPA   <Zd>.<T>, <Zn>.<T>
         theEmitter.emitIns_R_R(INS_sve_fexpa, EA_SCALABLE_ARM64, REG_ARM64_V1, REG_ARM64_V0, INS_OPTS_SCALABLE_D);
 
-#if ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-        // IF_SVE_HH_2A
-        // BF1CVT  <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_bf1cvt, EA_SCALABLE_ARM64, REG_ARM64_V2, REG_ARM64_V3, INS_OPTS_SCALABLE_H);
-        // BF1CVTLT <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_bf1cvtlt, EA_SCALABLE_ARM64, REG_ARM64_V1, REG_ARM64_V5, INS_OPTS_SCALABLE_H);
-        // BF2CVT  <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_bf2cvt, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V2, INS_OPTS_SCALABLE_H);
-        // BF2CVTLT <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_bf2cvtlt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V1, INS_OPTS_SCALABLE_H);
-        // F1CVT   <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_f1cvt, EA_SCALABLE_ARM64, REG_ARM64_V6, REG_ARM64_V7, INS_OPTS_SCALABLE_H);
-        // F1CVTLT <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_f1cvtlt, EA_SCALABLE_ARM64, REG_ARM64_V1, REG_ARM64_V8, INS_OPTS_SCALABLE_H);
-        // F2CVT   <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_f2cvt, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V4, INS_OPTS_SCALABLE_H);
-        // F2CVTLT <Zd>.H, <Zn>.B
-        theEmitter.emitIns_R_R(INS_sve_f2cvtlt, EA_SCALABLE_ARM64, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_H);
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
-
         // IF_SVE_BI_2A
         // MOVPRFX <Zd>, <Zn>
         theEmitter.emitIns_R_R(INS_sve_movprfx, EA_SCALABLE_ARM64, REG_ARM64_V3, REG_ARM64_V5);
@@ -7963,12 +7754,12 @@ public sealed partial class CodeGen
         theEmitter.emitIns(INS_xpaclri);   // XPACLRI
 
         // IF_PC_1A
-        theEmitter.emitIns_R(INS_autiza, EA_8BYTE, REG_ARM64_R1); // AUTIZA <Xd>
-        theEmitter.emitIns_R(INS_autizb, EA_8BYTE, REG_ARM64_R2); // AUTIZB <Xd>
-        theEmitter.emitIns_R(INS_paciza, EA_8BYTE, REG_ARM64_R8); // PACIZA <Xd>
-        theEmitter.emitIns_R(INS_pacizb, EA_8BYTE, REG_ARM64_R9); // PACIZB <Xd>
-        theEmitter.emitIns_R(INS_xpacd, EA_8BYTE, REG_ARM64_R10); // XPACD <Xd>
-        theEmitter.emitIns_R(INS_xpaci, EA_8BYTE, REG_ARM64_R12); // XPACI <Xd>
+        theEmitter.emitIns_R(INS_autiza, EA_8BYTE, REG_ARM64_R1, INS_OPTS_NONE); // AUTIZA <Xd>
+        theEmitter.emitIns_R(INS_autizb, EA_8BYTE, REG_ARM64_R2, INS_OPTS_NONE); // AUTIZB <Xd>
+        theEmitter.emitIns_R(INS_paciza, EA_8BYTE, REG_ARM64_R8, INS_OPTS_NONE); // PACIZA <Xd>
+        theEmitter.emitIns_R(INS_pacizb, EA_8BYTE, REG_ARM64_R9, INS_OPTS_NONE); // PACIZB <Xd>
+        theEmitter.emitIns_R(INS_xpacd, EA_8BYTE, REG_ARM64_R10, INS_OPTS_NONE); // XPACD <Xd>
+        theEmitter.emitIns_R(INS_xpaci, EA_8BYTE, REG_ARM64_R12, INS_OPTS_NONE); // XPACI <Xd>
 
         // IF_PC_2A
         theEmitter.emitIns_R_R(INS_autia, EA_8BYTE, REG_ARM64_R20, REG_ARM64_SP); // AUTIA <Xd>, <Xn|SP>

@@ -468,18 +468,182 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
                     emitter.emitInsSve_R_R_R(ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, INS_OPTS_SCALABLE_D);
                 }
             }
-            if (TestConfiguration.IsDebug)
-            {
-                _ = Arm64SveInstructionSanityTests.Capture(
-                    () => Assert.Throws<FatalJitException>(() => RecordOperands()));
-            }
-            else
-            {
-                _ = Assert.Throws<FatalJitException>(() => RecordOperands());
-            }
+            ExpectUnsupported(RecordOperands);
             Assert.That(GroupSize(emitter), Is.Zero);
             Assert.That(LastInstruction(emitter), Is.Null);
         });
+    }
+
+    [TestCaseSource(nameof(NativeUnsupportedOperandCases))]
+    public static void NativeUnsupportedOperandFormsTerminateBeforeAppending(
+        Action<Emitter> record, string[] expectedAssertions)
+    {
+        WithEmitter(emitter =>
+        {
+            ExpectUnsupported(() => record(emitter), expectedAssertions);
+            Assert.That(GroupSize(emitter), Is.Zero);
+            Assert.That(LastInstruction(emitter), Is.Null);
+        });
+    }
+
+    private static IEnumerable<TestCaseData> NativeUnsupportedOperandCases()
+    {
+        static TestCaseData Case(string name, Action<Emitter> record, params string[] expectedAssertions)
+        {
+            return new TestCaseData(record, expectedAssertions).SetName($"NativeUnsupported_{name}");
+        }
+
+        yield return Case("ADDPT_Predicated", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_addpt, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_P1, REG_ARM64_V2,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("SUBPT_Predicated", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_subpt, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_P1, REG_ARM64_V2,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("FAMAX", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_famax, EA_SCALABLE, REG_ARM64_V26, REG_ARM64_P1, REG_ARM64_V9,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("FAMIN", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_famin, EA_SCALABLE, REG_ARM64_V27, REG_ARM64_P0, REG_ARM64_V8,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("ANDQV_B", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_andqv, EA_8BYTE, REG_ARM64_V4, REG_ARM64_P4, REG_ARM64_V4,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("EORQV_H", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_eorqv, EA_8BYTE, REG_ARM64_V5, REG_ARM64_P5, REG_ARM64_V5,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("ORQV_S", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_orqv, EA_8BYTE, REG_ARM64_V6, REG_ARM64_P6, REG_ARM64_V6,
+                INS_OPTS_SCALABLE_S));
+        yield return Case("ORQV_D", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_orqv, EA_8BYTE, REG_ARM64_V7, REG_ARM64_P7, REG_ARM64_V7,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("ADDQV_B", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_addqv, EA_8BYTE, REG_ARM64_V21, REG_ARM64_P7, REG_ARM64_V22,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("SMAXQV_B", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_smaxqv, EA_8BYTE, REG_ARM64_V0, REG_ARM64_P5, REG_ARM64_V25,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("SMINQV_H", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_sminqv, EA_8BYTE, REG_ARM64_V1, REG_ARM64_P4, REG_ARM64_V24,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("UMAXQV_S", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_umaxqv, EA_8BYTE, REG_ARM64_V2, REG_ARM64_P3, REG_ARM64_V23,
+                INS_OPTS_SCALABLE_S));
+        yield return Case("UMINQV_D", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_uminqv, EA_8BYTE, REG_ARM64_V3, REG_ARM64_P2, REG_ARM64_V22,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("ADDPT_Unpredicated", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_addpt, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("SUBPT_Unpredicated", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_subpt, EA_SCALABLE, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("FMLALB", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmlalb, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FMLALT", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmlalt, EA_SCALABLE, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FMLALLBB", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmlallbb, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FMLALLBT", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmlallbt, EA_SCALABLE, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FMLALLTB", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmlalltb, EA_SCALABLE, REG_ARM64_V6, REG_ARM64_V7, REG_ARM64_V8,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FMLALLTT", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmlalltt, EA_SCALABLE, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V11,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FADDQV_H", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_faddqv, EA_8BYTE, REG_ARM64_V16, REG_ARM64_P0, REG_ARM64_V12,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("FMAXNMQV_S", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmaxnmqv, EA_8BYTE, REG_ARM64_V17, REG_ARM64_P1, REG_ARM64_V11,
+                INS_OPTS_SCALABLE_S));
+        yield return Case("FMAXQV_D", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmaxqv, EA_8BYTE, REG_ARM64_V18, REG_ARM64_P3, REG_ARM64_V10,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("FMINNMQV_H", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fminnmqv, EA_8BYTE, REG_ARM64_V19, REG_ARM64_P4, REG_ARM64_V9,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("FMINQV_D", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fminqv, EA_8BYTE, REG_ARM64_V20, REG_ARM64_P5, REG_ARM64_V8,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("FDOT_Byte_Indexed_1", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V2, REG_ARM64_V1, 1));
+        yield return Case("FDOT_Byte_Indexed_3", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V4, REG_ARM64_V6, REG_ARM64_V3, 3));
+        yield return Case("FDOT_Byte_Indexed_5", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V8, REG_ARM64_V10, REG_ARM64_V5, 5),
+            "isValidUimm(imm, 2)");
+        yield return Case("FDOT_Byte_Indexed_7", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V12, REG_ARM64_V14, REG_ARM64_V7, 7),
+            "isValidUimm(imm, 2)");
+        yield return Case("FDOT_Byte_Indexed_OptB_0", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V2, REG_ARM64_V1, 0,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FDOT_Byte_Indexed_OptB_1", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V4, REG_ARM64_V6, REG_ARM64_V3, 1,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FDOT_Byte_Indexed_OptB_2", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V8, REG_ARM64_V10, REG_ARM64_V5, 2,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FDOT_Byte_Indexed_OptB_3", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V12, REG_ARM64_V14, REG_ARM64_V7, 3,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FDOT_Byte_NoImmediate_OptB", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V6, REG_ARM64_V7, REG_ARM64_V8,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("FDOT_Byte_NoImmediate", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fdot, EA_SCALABLE, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V11));
+        yield return Case("FMMLA_D", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_fmmla, EA_SCALABLE, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5,
+                INS_OPTS_SCALABLE_D));
+        yield return Case("MLAPT", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_mlapt, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2));
+        yield return Case("MADPT", static emitter =>
+            emitter.emitInsSve_R_R_R(INS_sve_madpt, EA_SCALABLE, REG_ARM64_V3, REG_ARM64_V4, REG_ARM64_V5));
+        yield return Case("LUTI2_B_0", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("LUTI2_B_1", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 1,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("LUTI4_H_VectorPair_0", static emitter =>
+            emitter.emitIns_R_R_R_IArm64(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0,
+                INS_OPTS_SCALABLE_H, EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+        yield return Case("LUTI4_H_VectorPair_1", static emitter =>
+            emitter.emitIns_R_R_R_IArm64(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 1,
+                INS_OPTS_SCALABLE_H, EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+        yield return Case("LUTI4_H_VectorPair_3", static emitter =>
+            emitter.emitIns_R_R_R_IArm64(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 3,
+                INS_OPTS_SCALABLE_H, EA_UNKNOWN, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+        yield return Case("LUTI4_H_0", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("LUTI4_H_1", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 1,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("LUTI4_H_3", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 3,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("LUTI2_H_0", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("LUTI2_H_3", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_ARM64_V21, REG_ARM64_V10, REG_ARM64_V21, 3,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("LUTI2_H_7", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 7,
+                INS_OPTS_SCALABLE_H));
+        yield return Case("LUTI4_B_0", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, 0,
+                INS_OPTS_SCALABLE_B));
+        yield return Case("LUTI4_B_1", static emitter =>
+            emitter.emitInsSve_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_V31, REG_ARM64_V31, 1,
+                INS_OPTS_SCALABLE_B));
     }
 
     [TestCase(-128, 4, 16, true)]
@@ -598,6 +762,26 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
         Assert.That(id.idReg1(), Is.EqualTo(first));
         Assert.That(id.idReg2(), Is.EqualTo(second));
         Assert.That(id.idReg3(), Is.EqualTo(third));
+    }
+
+    private static void ExpectUnsupported(Action record, params string[] expectedAssertions)
+    {
+        void AssertFailure()
+        {
+            var error = Assert.Throws<FatalJitException>(() => record());
+            Assert.That(error, Has.Property(nameof(FatalJitException.Result))
+                .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+        }
+
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(AssertFailure);
+            Assert.That(assertions, Is.EqualTo(expectedAssertions));
+        }
+        else
+        {
+            AssertFailure();
+        }
     }
 
     private static void WithEmitter(Action<Emitter> action)

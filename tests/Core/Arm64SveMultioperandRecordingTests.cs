@@ -517,18 +517,42 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                     }
                 }
             }
-            if (TestConfiguration.IsDebug)
-            {
-                _ = Arm64SveInstructionSanityTests.Capture(
-                    () => Assert.Throws<FatalJitException>(() => RecordOperands()));
-            }
-            else
-            {
-                _ = Assert.Throws<FatalJitException>(() => RecordOperands());
-            }
+            ExpectFailure(RecordOperands);
             Assert.That(GroupSize(emitter), Is.Zero);
             Assert.That(LastInstruction(emitter), Is.Null);
         });
+    }
+
+    [TestCaseSource(nameof(NativeUnsupportedPredicateSelectCases))]
+    public static void NativeUnsupportedPredicateSelectFormsTerminateBeforeAppending(Action<Emitter> record)
+    {
+        WithEmitter(emitter =>
+        {
+            ExpectFailure(() => record(emitter));
+            Assert.That(GroupSize(emitter), Is.Zero);
+            Assert.That(LastInstruction(emitter), Is.Null);
+        });
+    }
+
+    private static IEnumerable<TestCaseData> NativeUnsupportedPredicateSelectCases()
+    {
+        static TestCaseData Case(string name, Action<Emitter> record)
+        {
+            return new TestCaseData(record).SetName($"NativeUnsupported_{name}");
+        }
+
+        yield return Case("PSEL_B", static emitter =>
+            emitter.emitInsSve_R_R_R_R_I(INS_sve_psel, EA_SCALABLE, REG_ARM64_P0, REG_ARM64_P1, REG_ARM64_P2,
+                REG_ARM64_R12, 15, INS_OPTS_SCALABLE_B));
+        yield return Case("PSEL_H", static emitter =>
+            emitter.emitInsSve_R_R_R_R_I(INS_sve_psel, EA_SCALABLE, REG_ARM64_P3, REG_ARM64_P4, REG_ARM64_P5,
+                REG_ARM64_R13, 7, INS_OPTS_SCALABLE_H));
+        yield return Case("PSEL_S", static emitter =>
+            emitter.emitInsSve_R_R_R_R_I(INS_sve_psel, EA_SCALABLE, REG_ARM64_P6, REG_ARM64_P7, REG_ARM64_P8,
+                REG_ARM64_R14, 3, INS_OPTS_SCALABLE_S));
+        yield return Case("PSEL_D", static emitter =>
+            emitter.emitInsSve_R_R_R_R_I(INS_sve_psel, EA_SCALABLE, REG_ARM64_P9, REG_ARM64_P10, REG_ARM64_P11,
+                REG_ARM64_R15, 1, INS_OPTS_SCALABLE_D));
     }
 
     [TestCase(0)]
@@ -664,6 +688,26 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
             Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(INS_sve_fcvt));
         });
     }
+    private static void ExpectFailure(Action record, params string[] expectedAssertions)
+    {
+        void AssertFailure()
+        {
+            var error = Assert.Throws<FatalJitException>(() => record());
+            Assert.That(error, Has.Property(nameof(FatalJitException.Result))
+                .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+        }
+
+        if (TestConfiguration.IsDebug)
+        {
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(AssertFailure);
+            Assert.That(assertions, Is.EqualTo(expectedAssertions));
+        }
+        else
+        {
+            AssertFailure();
+        }
+    }
+
     private static Emitter.instrDesc Record(Emitter emitter, Action record, int expectedSize = 4)
     {
         if (TestConfiguration.IsDebug)
