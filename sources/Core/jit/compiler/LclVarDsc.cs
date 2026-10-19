@@ -1074,6 +1074,19 @@ public partial struct LclVarDsc
         }
     }
 
+    public bool lvNoLclFldStress
+    {
+        readonly get
+        {
+            throw new System.InvalidOperationException("Local-field stress state is only available in Debug builds.");
+        }
+
+        set
+        {
+            throw new System.InvalidOperationException("Local-field stress state is only available in Debug builds.");
+        }
+    }
+
     public byte lvSingleDefDisqualifyReason
     {
         readonly get

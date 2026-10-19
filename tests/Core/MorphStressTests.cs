@@ -267,3 +267,22 @@ internal static unsafe class MorphStressTests
         });
     }
 }
+
+internal static class LocalFieldStressStateTests
+{
+    [Test]
+    public static void LocalFieldStressFlagUsesDebugState()
+    {
+        var descriptor = new LclVarDsc();
+
+        if (!TestConfiguration.IsDebug)
+        {
+            _ = Assert.Throws<System.InvalidOperationException>(() => _ = descriptor.lvNoLclFldStress);
+            _ = Assert.Throws<System.InvalidOperationException>(() => descriptor.lvNoLclFldStress = true);
+            return;
+        }
+
+        descriptor.lvNoLclFldStress = true;
+        Assert.That(descriptor.lvNoLclFldStress, Is.True);
+    }
+}

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     public void fgStress64RsltMul()
     {
         if (!compStressCompile(STRESS_64RSLT_MUL, 20))
@@ -237,5 +236,4 @@ public partial class Compiler
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
             => IGenTreeVisitor<StressLclFldVisitor>.WalkTree(ref this, ref use, user, _ancestors);
     }
-#endif
 }
