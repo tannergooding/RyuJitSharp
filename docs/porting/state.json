@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue with CCB-1139 in sources\\Core\\jit\\emitarm64\\Emitter.SveInstructionSanity.cs; inspect and process its complete file-level Debug-only group as one packet.",
+    "nextAction": "Process the next pending ledger candidate INV-9C9E1BA12DC5 in sources\\Core\\jit\\valuenum\\VNFuncExtensions.generated.cs:2297; verify its generator source and complete its file-level conditional family, then continue in ledger order.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {

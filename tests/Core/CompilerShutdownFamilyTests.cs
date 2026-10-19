@@ -10,6 +10,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.var_types;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
@@ -40,6 +41,86 @@ internal static class CompilerShutdownFamilyTests
         }
 
         Assert.That(nodeCounts[(int)GT_COUNT], Is.Zero);
+    }
+
+    [Test]
+    public static void NodeConstructionIncrementsOperatorCountWhenEnabled()
+    {
+        if (!Configuration.COUNT_AST_OPERS)
+        {
+            Assert.Ignore("Operator-count storage is disabled for this build.");
+        }
+
+        var nodeCounts = GetNodeCounts();
+        SsaLivenessTests.WithCompiler(2, _ => {
+            var previousCount = nodeCounts[(int)GT_CNS_INT];
+
+            try
+            {
+                var node = new GenTreeIntCon(TYP_INT, 1);
+                Assert.That(node.Oper, Is.EqualTo(GT_CNS_INT));
+                Assert.That(nodeCounts[(int)GT_CNS_INT], Is.EqualTo(unchecked(previousCount + 1)));
+            }
+            finally
+            {
+                nodeCounts[(int)GT_CNS_INT] = previousCount;
+            }
+        });
+    }
+
+    [Test]
+    public static void NodeBashStorageMatchesFeatureConfiguration()
+    {
+        var nodeBash = GetRequiredStaticField(typeof(GenTree), "BashHash") as GenTree.BashHashDsc[] ??
+            throw new InvalidOperationException("GenTree node-bashing storage is not available.");
+
+        Assert.That(nodeBash.Length > 0, Is.EqualTo(Configuration.NODEBASH_STATS));
+    }
+
+    [Test]
+    public static void NodeBashReportRequiresEnabledStatistics()
+    {
+        if (Configuration.NODEBASH_STATS)
+        {
+            Assert.Ignore("Node-bashing statistics are enabled for this build.");
+        }
+
+        using var output = new MemoryStream();
+        using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+        var exception = Assert.Throws<InvalidOperationException>(() => GenTree.ReportOperBashing(writer));
+
+        Assert.That(exception?.Message, Is.EqualTo("Node-bashing statistics are not enabled."));
+        Assert.That(output.Length, Is.Zero);
+    }
+
+    [Test]
+    public static void SetOperRecordsNodeBashingWhenStatisticsAreEnabled()
+    {
+        if (!Configuration.NODEBASH_STATS)
+        {
+            Assert.Ignore("Node-bashing statistics are disabled for this build.");
+        }
+
+        var nodeBash = GetRequiredStaticField(typeof(GenTree), "BashHash") as GenTree.BashHashDsc[] ??
+            throw new InvalidOperationException("GenTree node-bashing storage is not available.");
+        var snapshot = (GenTree.BashHashDsc[])nodeBash.Clone();
+        var previousCount = GetNodeBashCount(nodeBash);
+
+        try
+        {
+            SsaLivenessTests.WithCompiler(2, _ => {
+                var node = new GenTreeIntCon(TYP_INT, 1);
+                node.SetOper(GT_CNS_INT);
+            });
+
+            var updatedCount = GetNodeBashCount(nodeBash);
+
+            Assert.That(updatedCount, Is.EqualTo(unchecked(previousCount + 1)));
+        }
+        finally
+        {
+            Array.Copy(snapshot, nodeBash, nodeBash.Length);
+        }
     }
 
     [Test]
@@ -743,6 +824,19 @@ internal static class CompilerShutdownFamilyTests
     {
         return GetRequiredStaticField(typeof(GenTree), "s_gtNodeCounts") as uint[] ??
             throw new InvalidOperationException("GenTree node-count storage is not available.");
+    }
+
+    private static int GetNodeBashCount(GenTree.BashHashDsc[] nodeBash)
+    {
+        foreach (var entry in nodeBash)
+        {
+            if ((entry.bhOperOld == GT_CNS_INT) && (entry.bhOperNew == GT_CNS_INT))
+            {
+                return entry.bhCount;
+            }
+        }
+
+        return 0;
     }
 
     private static object? GetOptionalStaticField(

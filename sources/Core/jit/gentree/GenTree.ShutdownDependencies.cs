@@ -63,9 +63,13 @@ public partial class GenTree
         }
     }
 
-#if NODEBASH_STATS
     internal static void ReportOperBashing(System.IO.StreamWriter output)
     {
+        if (!Configuration.NODEBASH_STATS)
+        {
+            throw new System.InvalidOperationException("Node-bashing statistics are not enabled.");
+        }
+
         uint total = 0;
 
         output.Flush();
@@ -101,7 +105,6 @@ public partial class GenTree
         output.Write("\n");
         output.Flush();
     }
-#endif
 
     private static readonly uint[] s_gtNodeCounts = Configuration.COUNT_AST_OPERS
         ? new uint[(int)GT_COUNT + 1]

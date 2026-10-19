@@ -79,9 +79,10 @@ public partial class GenTree
         _regNum = REG_NA;
         _vnPair = new ValueNumPair();
 
-#if COUNT_AST_OPERS
-        System.Threading.Interlocked.Increment(ref GetNodeCount((uint)oper));
-#endif
+        if (Configuration.COUNT_AST_OPERS)
+        {
+            _ = System.Threading.Interlocked.Increment(ref GetNodeCount((uint)oper));
+        }
 
         if (Configuration.DEBUG)
         {
@@ -199,9 +200,7 @@ public partial class GenTree
     {
         get
         {
-#if DEBUG
             assert(Debugger.IsAttached || _costsInitialized);
-#endif
             return _costEx;
         }
     }
@@ -210,9 +209,7 @@ public partial class GenTree
     {
         get
         {
-#if DEBUG
             assert(Debugger.IsAttached || _costsInitialized);
-#endif
             return _costSz;
         }
     }
@@ -2690,10 +2687,11 @@ public partial class GenTree
         return false;
     }
 
-#if NODEBASH_STATS
     private const int BASH_HASH_SIZE = 211;
 
-    private static BashHashDsc[] BashHash = new BashHashDsc[BASH_HASH_SIZE];
+    private static BashHashDsc[] BashHash = Configuration.NODEBASH_STATS
+        ? new BashHashDsc[BASH_HASH_SIZE]
+        : [];
 
     private static int hashme(genTreeOps op1, genTreeOps op2)
     {
@@ -2715,7 +2713,6 @@ public partial class GenTree
         desc.bhOperOld = operOld;
         desc.bhOperNew = operNew;
     }
-#endif
 
     /// <summary>Replace a given operand to this node with a new operand.</summary>
     /// <param name="useEdge">the use edge that points to the operand to be replaced.</param>
@@ -2936,10 +2933,11 @@ public partial class GenTree
     {
         // Please do not do anything here other than assign to _oper (debug-only code is OK, but should be kept to a minimum).
 
-#if NODEBASH_STATS
         // nop unless NODEBASH_STATS is enabled
-        RecordOperBashing(_oper, oper);
-#endif
+        if (Configuration.NODEBASH_STATS)
+        {
+            RecordOperBashing(_oper, oper);
+        }
 
         // Bashing to MultiOp nodes is currently not supported.
         assert(!oper.IsMultiOp);

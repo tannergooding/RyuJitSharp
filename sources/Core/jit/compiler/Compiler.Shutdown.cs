@@ -48,9 +48,10 @@ public partial class Compiler
             return;
         }
 
-#if NODEBASH_STATS
-        GenTree.ReportOperBashing(jitstdout());
-#endif
+        if (Configuration.NODEBASH_STATS)
+        {
+            GenTree.ReportOperBashing(jitstdout());
+        }
 
         if (Configuration.FEATURE_JIT_METHOD_PERF)
         {
@@ -68,80 +69,81 @@ public partial class Compiler
             JitTimer.Shutdown();
         }
 
-#if COUNT_AST_OPERS
-        unchecked
+        if (Configuration.COUNT_AST_OPERS)
         {
-            uint totalCount = 0;
-            for (uint op = 0; op < (uint)GT_COUNT; op++)
+            unchecked
             {
-                totalCount += GenTree.GetNodeCount(op);
-            }
-
-            if (totalCount > 0)
-            {
-                Span<OperInfo> opers = stackalloc OperInfo[(int)GT_COUNT];
+                uint totalCount = 0;
                 for (uint op = 0; op < (uint)GT_COUNT; op++)
                 {
-                    opers[(int)op] = new OperInfo(GenTree.GetNodeCount(op), GenTree.GetTrueSize(op), (genTreeOps)op);
+                    totalCount += GenTree.GetNodeCount(op);
                 }
 
-                SortNative(opers, new OperInfoLess());
-
-                var remainingCount = totalCount;
-                uint remainingCountLarge = 0;
-                uint remainingCountSmall = 0;
-                uint countLarge = 0;
-                uint countSmall = 0;
-
-                jitprintf("\nGenTree operator counts (approximate):\n\n");
-
-                foreach (var oper in opers)
+                if (totalCount > 0)
                 {
-                    var size = oper.Size;
-                    var count = oper.Count;
-                    var percentage = 100.0 * count / totalCount;
-
-                    if (size > TREE_NODE_SZ_SMALL)
+                    Span<OperInfo> opers = stackalloc OperInfo[(int)GT_COUNT];
+                    for (uint op = 0; op < (uint)GT_COUNT; op++)
                     {
-                        countLarge += count;
-                    }
-                    else
-                    {
-                        countSmall += count;
+                        opers[(int)op] = new OperInfo(GenTree.GetNodeCount(op), GenTree.GetTrueSize(op), (genTreeOps)op);
                     }
 
-                    if (percentage >= 0.5)
+                    SortNative(opers, new OperInfoLess());
+
+                    var remainingCount = totalCount;
+                    uint remainingCountLarge = 0;
+                    uint remainingCountSmall = 0;
+                    uint countLarge = 0;
+                    uint countSmall = 0;
+
+                    jitprintf("\nGenTree operator counts (approximate):\n\n");
+
+                    foreach (var oper in opers)
                     {
-                        jitprintf($"    GT_{oper.Oper.Name,-17}   {count,7} ({formatFloat(percentage, "F1"),4}%) {size,3} bytes each\n");
-                        remainingCount -= count;
-                    }
-                    else
-                    {
+                        var size = oper.Size;
+                        var count = oper.Count;
+                        var percentage = 100.0 * count / totalCount;
+
                         if (size > TREE_NODE_SZ_SMALL)
                         {
-                            remainingCountLarge += count;
+                            countLarge += count;
                         }
                         else
                         {
-                            remainingCountSmall += count;
+                            countSmall += count;
+                        }
+
+                        if (percentage >= 0.5)
+                        {
+                            jitprintf($"    GT_{oper.Oper.Name,-17}   {count,7} ({formatFloat(percentage, "F1"),4}%) {size,3} bytes each\n");
+                            remainingCount -= count;
+                        }
+                        else
+                        {
+                            if (size > TREE_NODE_SZ_SMALL)
+                            {
+                                remainingCountLarge += count;
+                            }
+                            else
+                            {
+                                remainingCountSmall += count;
+                            }
                         }
                     }
-                }
 
-                if (remainingCount > 0)
-                {
-                    jitprintf($"    All other GT_xxx ...   {remainingCount,7} ({formatFloat(100.0 * remainingCount / totalCount, "F1"),4}%) ... " +
-                        $"{formatFloat(100.0 * remainingCountSmall / totalCount, "F1"),4}% small + " +
-                        $"{formatFloat(100.0 * remainingCountLarge / totalCount, "F1"),4}% large\n");
-                }
+                    if (remainingCount > 0)
+                    {
+                        jitprintf($"    All other GT_xxx ...   {remainingCount,7} ({formatFloat(100.0 * remainingCount / totalCount, "F1"),4}%) ... " +
+                            $"{formatFloat(100.0 * remainingCountSmall / totalCount, "F1"),4}% small + " +
+                            $"{formatFloat(100.0 * remainingCountLarge / totalCount, "F1"),4}% large\n");
+                    }
 
-                jitprintf("    -----------------------------------------------------\n");
-                jitprintf($"    Total    .......   {totalCount,11} --ALL-- ... {formatFloat(100.0 * countSmall / totalCount, "F1"),4}% small + " +
-                    $"{formatFloat(100.0 * countLarge / totalCount, "F1"),4}% large\n");
-                jitprintf("\n");
+                    jitprintf("    -----------------------------------------------------\n");
+                    jitprintf($"    Total    .......   {totalCount,11} --ALL-- ... {formatFloat(100.0 * countSmall / totalCount, "F1"),4}% small + " +
+                        $"{formatFloat(100.0 * countLarge / totalCount, "F1"),4}% large\n");
+                    jitprintf("\n");
+                }
             }
         }
-#endif
 
         if (Configuration.DISPLAY_SIZES)
         {
