@@ -172,6 +172,7 @@
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64')">
     <Compile Include="LoongArch64CalleeSavedFrameTests.cs" />
     <Compile Include="..\Core\LoongArch64CodeGenRegisterTransferTests.cs" Link="LoongArch64CodeGenRegisterTransferTests.cs" />
+    <Compile Include="..\Core\RiscVCodeGenPortTests.cs" Link="RiscVCodeGenPortTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64'))) or '$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64') or '$(RyuJitTargetRuntimeIdentifier)' == 'linux-riscv64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-riscv64')">

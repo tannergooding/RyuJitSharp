@@ -147,9 +147,13 @@ internal static unsafe class LocalMorphTests
         });
     }
 
-#if TARGET_XARCH
     private static IEnumerable<TestCaseData> XarchIndirectionCostCases()
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            yield break;
+        }
+
         yield return new TestCaseData(TYP_INT, IND_COST_EX, 2);
         yield return new TestCaseData(TYP_BYTE, IND_COST_EX + 1, 3);
         yield return new TestCaseData(TYP_FLOAT, FLT_IND_COST_EX, 4);
@@ -176,7 +180,6 @@ internal static unsafe class LocalMorphTests
             Assert.That((costEx, costSz), Is.EqualTo((execution + 2, size + 4)));
         });
     }
-#endif
 
     [Test]
     public static void IndirectionNodeCostsExcludeUnmodeledAddress()
@@ -331,9 +334,10 @@ internal static unsafe class LocalMorphTests
             Assert.That(variableOffset.Op1.AsLclVar().LclNum, Is.Zero);
             var lookup = variableOffset.Op2.AsIndir().Addr.AsIntCon();
             Assert.That(lookup.IconValue, Is.EqualTo((nint)0x123400));
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 Assert.That(lookup.TargetHandle, Is.EqualTo((nint)field.FldHnd));
-#endif
+            }
         });
     }
 
@@ -949,14 +953,17 @@ internal static unsafe class LocalMorphTests
             compiler.lvaTable[1].Type = TYP_INT;
 
             var status = PhaseStatus.MODIFIED_NOTHING;
-#if DEBUG
-            TestConfiguration.EnableVerbose(compiler);
-            var output = InstructionRecordingTestSupport.Capture(() => status = compiler.fgRetypeImplicitByRefArgs());
-            var diagnostic = $"Changing the lvType for struct parameter V00 to {TYP_LONG.Name}.";
-            Assert.That(output, implicitByRef ? Does.Contain(diagnostic) : Does.Not.Contain("Changing the lvType"));
-#else
-            status = compiler.fgRetypeImplicitByRefArgs();
-#endif
+            if (TestConfiguration.IsDebug)
+            {
+                TestConfiguration.EnableVerbose(compiler);
+                var output = InstructionRecordingTestSupport.Capture(() => status = compiler.fgRetypeImplicitByRefArgs());
+                var diagnostic = $"Changing the lvType for struct parameter V00 to {TYP_LONG.Name}.";
+                Assert.That(output, implicitByRef ? Does.Contain(diagnostic) : Does.Not.Contain("Changing the lvType"));
+            }
+            else
+            {
+                status = compiler.fgRetypeImplicitByRefArgs();
+            }
 
             Assert.That(status, Is.EqualTo(implicitByRef ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
             Assert.That(arg.Type, Is.EqualTo(implicitByRef ? TYP_LONG : TYP_STRUCT));

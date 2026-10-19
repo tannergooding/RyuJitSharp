@@ -10,8 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Process the next pending file group INV-BDBECE203795 in tests\\Core\\HardwareIntrinsicInitializationTests.cs; classify and close the complete file group, then continue in ledger order.",
-    "activeBatch": null,
+    "nextAction": "Process the remaining pending candidates in ledger order: classify and close 10 candidates in tests\\Core\\PhysicalPromotionTests.cs starting at INV-69F43D90824B, then 4 candidates in tests\\Core\\RiscVCodeGenPortTests.cs starting at INV-33B3899CE73B. Finish the pending queue before revisiting concrete deferrals.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "Debug-only state/layout dependency closure",

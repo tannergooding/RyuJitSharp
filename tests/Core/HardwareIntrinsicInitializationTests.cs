@@ -359,13 +359,14 @@ internal static unsafe class HardwareIntrinsicInitializationTests
         });
     }
 
-#if DEBUG
     [TestCase(1)]
     [TestCase(2)]
     [TestCase(3)]
     [TestCase(4)]
     public static void HardwareFoldingDestructionClearsUsesBeforePoisoningFlags(int count)
     {
+        Assume.That(TestConfiguration.IsDebug, "This test requires a Debug build.");
+
         WithCompiler(compiler => {
             var operands = new GenTree[count];
             for (var index = 0; index < count; index++)
@@ -386,7 +387,6 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             }
         });
     }
-#endif
 
     [TestCase(1)]
     [TestCase(4)]
