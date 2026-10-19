@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue the conditional-cleanup inventory at CCB-0640 in sources\\Core\\jit\\compiler\\Compiler.imp.cs; process the complete 48-row Pending file group and validate/retire eligible guards together. Re-evaluate CCB-0641 only after mapping importer-state reads, writes, resets, copies, ManagedBytesAllocated effects, and Release layout. Keep CCB-0511, CCB-0524, CCB-0526, CCB-0528, CCB-0530, CCB-0534, CCB-0548, CCB-0549, CCB-0574, and CCB-0601 deferred until their specific Release state/API and layout closures are resolved. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Continue at pending CCB-0139 in sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs; process its complete 7-candidate file group and the adjacent 54-candidate Compiler.comp.cs group together, then validate and accept the combined file batch. Keep B209 genAsyncResumeInfo deferred until its target-width table/emitter dependency closure is ported and tested.",
     "activeBatch": null,
     "unresolvedConditionalCleanup": [
       {
@@ -83,10 +83,21 @@
       },
       {
         "batch": "Debug importer diagnostic/state closure",
-        "deferredCount": 2,
+        "deferredCount": 13,
         "candidateIds": [
           "CCB-0459",
-          "CCB-0641"
+          "CCB-0641",
+          "CCB-0646",
+          "CCB-0655",
+          "CCB-0656",
+          "CCB-0657",
+          "CCB-0665",
+          "CCB-0668",
+          "CCB-0673",
+          "CCB-0674",
+          "CCB-0682",
+          "CCB-0689",
+          "CCB-0691"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
         "nextAction": "Map all importer-state reads, writes, resets, and copies in Compiler.imp.cs; resolve CCB-0641 before removing CCB-0459's guard while preserving ManagedBytesAllocated and Release layout."
@@ -105,7 +116,7 @@
       },
       {
         "batch": "Compiler.fg.cs debug state/API dependency closure",
-        "deferredCount": 10,
+        "deferredCount": 11,
         "candidateIds": [
           "CCB-0511",
           "CCB-0524",
@@ -116,10 +127,11 @@
           "CCB-0548",
           "CCB-0549",
           "CCB-0574",
-          "CCB-0601"
+          "CCB-0601",
+          "CCB-0642"
         ],
         "candidateLedger": "artifacts\\jit-analysis\\inventory\\conditional-inventory-master-20261015.csv",
-        "nextAction": "Resolve impInlinedCodeSize storage, fgBBOrder and basic-block dump state, fgPrintInlinedMethods and fgNormalizeEHDone mutable state, and the DoNotEnregisterReason descriptor setter closure without changing Release layout or Debug behavior. Re-evaluate these candidates after those state/API prerequisites; continue the original inventory at CCB-0607 in Compiler.gt.cs."
+        "nextAction": "Resolve impInlinedCodeSize storage, fgBBOrder and basic-block dump state, fgPrintInlinedMethods and fgNormalizeEHDone mutable state, and the DoNotEnregisterReason descriptor setter closure without changing Release layout or Debug behavior. Re-evaluate CCB-0511 and CCB-0642 together after those prerequisites."
       }
     ],
 

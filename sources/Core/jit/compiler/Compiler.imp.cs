@@ -457,7 +457,7 @@ public partial class Compiler
             argInfo.argHasSideEff = false;
         }
 
-        argInfo.argIsExact = (gtGetClassHandle(curArgVal, out var isExact, out var isNonNull) != NO_CLASS_HANDLE) && isExact;
+        argInfo.argIsExact = (gtGetClassHandle(curArgVal, out var isExact, out _) != NO_CLASS_HANDLE) && isExact;
 
         // If the arg is a local that is address-taken, we can't safely
         // directly substitute it into the inlinee.
@@ -473,8 +473,7 @@ public partial class Compiler
             argInfo.argHasCallerLocalRef = true;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             if (arg.WellKnownArg is not WellKnownArg.None)
             {
@@ -530,7 +529,6 @@ public partial class Compiler
             gtDispTree(curArgVal);
             jitprintf("\n");
         }
-#endif
     }
 
     /// <summary>Only present for inlinees</summary>
@@ -1459,10 +1457,8 @@ public partial class Compiler
                 if (Configuration.DEBUG)
                 {
                     assert(impLastStmt is not null);
+                    JITDUMP($"Moving {FMT_STMT(movingStmt.Id)} through {FMT_STMT(impLastStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
                 }
-#if DEBUG
-                JITDUMP($"Moving {FMT_STMT(movingStmt.Id)} through {FMT_STMT(impLastStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
-#endif
 
                 // We move these backwards, so must keep moving the insert point to keep them in order.
                 while (impLastStmt != lastStmt)
@@ -3155,14 +3151,11 @@ public partial class Compiler
         assert(call.IsDevirtualizationCandidate(this));
         assert(opts.OptimizationEnabled);
 
-#if DEBUG
         // Bail if devirt is disabled.
-        if (JitConfig.JitEnableDevirtualization is 0)
+        if (Configuration.DEBUG && (JitConfig.JitEnableDevirtualization is 0))
         {
             return;
         }
-
-#endif
 
         // Fetch information about the virtual method we're calling.
         var baseMethod = method;
@@ -3247,22 +3240,23 @@ public partial class Compiler
         var objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
         var objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) is not 0;
 
-#if DEBUG
-        var objClassNote = "[?]";
-        var objClassName = "?objClass";
-        var baseMethodFullName = "?baseMethod";
-
-        if (verbose)
+        if (Configuration.DEBUG)
         {
-            objClassNote = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
-            objClassName = eeGetClassName(objClass);
-            baseMethodFullName = eeGetMethodFullName(baseMethod);
+            var objClassNote = "[?]";
+            var objClassName = "?objClass";
+            var baseMethodFullName = "?baseMethod";
 
-            jitprintf($"\nimpDevirtualizeCall: Trying to devirtualize {(isInterface ? "interface" : "virtual")} call:\n");
-            jitprintf($"    class for 'this' is {objClassName}{objClassNote} (attrib {unchecked((uint)objClassAttribs):x8})\n");
-            jitprintf($"    base method is {baseMethodFullName}\n");
+            if (verbose)
+            {
+                objClassNote = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
+                objClassName = eeGetClassName(objClass);
+                baseMethodFullName = eeGetMethodFullName(baseMethod);
+
+                jitprintf($"\nimpDevirtualizeCall: Trying to devirtualize {(isInterface ? "interface" : "virtual")} call:\n");
+                jitprintf($"    class for 'this' is {objClassName}{objClassNote} (attrib {unchecked((uint)objClassAttribs):x8})\n");
+                jitprintf($"    base method is {baseMethodFullName}\n");
+            }
         }
-#endif
 
         // See if the jit's best type for `obj` is an interface.
         // See for instance System.ValueTuple`8.GetHashCode, where lcl 0 is System.IValueTupleInternal
@@ -3306,7 +3300,7 @@ public partial class Compiler
             dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
             // Native uses %p here, so retain the raw CorInfo handles even in diffable dumps.
             JITDUMP($"ResolveVirtualMethod (method {FMT_PTR((void*)dvInfo.virtualMethod)} class {FMT_PTR((void*)dvInfo.objClass)} context {FMT_PTR((void*)dvInfo.context)})\n");
-            info.compCompHnd->resolveVirtualMethod(&dvInfo);
+            _ = info.compCompHnd->resolveVirtualMethod(&dvInfo);
         }
 
         var derivedMethod = dvInfo.devirtualizedMethod;
@@ -3317,9 +3311,7 @@ public partial class Compiler
         var derivedMethodIsFinal = false;
         var canDevirtualize = false;
 
-#if DEBUG
-        var note = "inexact or not final";
-#endif
+        var note = Configuration.DEBUG ? "inexact or not final" : null;
 
         Unsafe.SkipInit(out CORINFO_SIG_INFO derivedSig);
 
@@ -3356,26 +3348,27 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            if (isExact)
+            if (Configuration.DEBUG)
             {
-                note = "exact";
-            }
-            else if (objClassIsFinal)
-            {
-                note = "final class";
-            }
-            else if (derivedMethodIsFinal)
-            {
-                note = "final method";
-            }
+                if (isExact)
+                {
+                    note = "exact";
+                }
+                else if (objClassIsFinal)
+                {
+                    note = "final class";
+                }
+                else if (derivedMethodIsFinal)
+                {
+                    note = "final method";
+                }
 
-            if (verbose)
-            {
-                jitprintf($"    devirt to {eeGetMethodFullName(derivedMethod)} -- {note}\n");
-                gtDispTree(call);
+                if (verbose)
+                {
+                    jitprintf($"    devirt to {eeGetMethodFullName(derivedMethod)} -- {note}\n");
+                    gtDispTree(call);
+                }
             }
-#endif
 
             canDevirtualize = isExact || objClassIsFinal || (!isInterface && derivedMethodIsFinal);
         }
@@ -3387,14 +3380,12 @@ public partial class Compiler
         {
             JITDUMP($"    Class not final or exact{(isInterface ? "" : ", and method not final")}\n");
 
-#if DEBUG
-            if (!isLateDevirtualization && (isExact || objClassIsFinal) && (JitConfig.JitNoteFailedExactDevirtualization is not 0))
+            if (Configuration.DEBUG && !isLateDevirtualization && (isExact || objClassIsFinal) && (JitConfig.JitNoteFailedExactDevirtualization is not 0))
             {
                 // If we know the object type exactly, we generally expect we can devirtualize.
                 // (don't when doing late devirt as we won't have an owner type (yet))
                 jitprintf($"@@@ Exact/Final devirt failure in {info.compFullName} at [{call.TreeId:D6}] $ {DevirtualizationDetailToString(dvInfo.detail)}\n");
             }
-#endif
 
             if (isLateDevirtualization)
             {
@@ -3412,9 +3403,7 @@ public partial class Compiler
         assert(canDevirtualize);
         assert(compCurBB is not null);
 
-#if DEBUG
         JITDUMP($"    {note}; can devirtualize\n");
-#endif
 
         var dcInfo = new DevirtualizedCallInfo {
             tokenLookupContext = exactContext,
@@ -3474,20 +3463,21 @@ public partial class Compiler
         // For now, we only do a single guess, but it's pretty straightforward to extend it to support multiple guesses.
         var likelyValue = likelyValues[0];
 
-#if DEBUG
         // Re-use JitRandomGuardedDevirtualization for stress-testing.
-        var jitRandomGuardedDevirtualization = JitConfig.JitRandomGuardedDevirtualization;
-
-        if (jitRandomGuardedDevirtualization is not 0)
+        if (Configuration.DEBUG)
         {
-            assert(impInlineRoot._inlineStrategy is not null);
-            var random = impInlineRoot._inlineStrategy.GetRandom(jitRandomGuardedDevirtualization);
+            var jitRandomGuardedDevirtualization = JitConfig.JitRandomGuardedDevirtualization;
 
-            valuesCount = 1;
-            likelyValue.value = random.Next(256);
-            likelyValue.likelihood = 100;
+            if (jitRandomGuardedDevirtualization is not 0)
+            {
+                assert(impInlineRoot._inlineStrategy is not null);
+                var random = impInlineRoot._inlineStrategy.GetRandom(jitRandomGuardedDevirtualization);
+
+                valuesCount = 1;
+                likelyValue.value = random.Next(256);
+                likelyValue.likelihood = 100;
+            }
         }
-#endif
 
         // TODO: Tune the likelihood threshold, for now it's 50%
         if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
@@ -6318,54 +6308,55 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            // As a stress test, we can place patchpoints at the start of any block
-            // that is a stack empty point and is not within a handler.
-            //
-            // Todo: enable for mid-block stack empty points too.
-            //
-            var offsetOSR = JitConfig.JitOffsetOnStackReplacement;
-            var randomOSR = JitConfig.JitRandomOnStackReplacement;
-            var tryOffsetOSR = offsetOSR >= 0;
-            var tryRandomOSR = randomOSR > 0;
-
-            if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (stackState.esStackDepth is 0) && !block.hasHndIndex && !block.HasFlag(BBF_OSR_PATCHPOINT))
+            if (Configuration.DEBUG)
             {
-                // Block start can have a patchpoint. See if we should add one.
-                var addPatchpoint = false;
+                // As a stress test, we can place patchpoints at the start of any block
+                // that is a stack empty point and is not within a handler.
+                //
+                // Todo: enable for mid-block stack empty points too.
+                //
+                var offsetOSR = JitConfig.JitOffsetOnStackReplacement;
+                var randomOSR = JitConfig.JitRandomOnStackReplacement;
+                var tryOffsetOSR = offsetOSR >= 0;
+                var tryRandomOSR = randomOSR > 0;
 
-                if (tryOffsetOSR)
+                if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (stackState.esStackDepth is 0) && !block.hasHndIndex && !block.HasFlag(BBF_OSR_PATCHPOINT))
                 {
-                    // Specific offset
+                    // Block start can have a patchpoint. See if we should add one.
+                    var addPatchpoint = false;
 
-                    if (impCurOpcOffs == (uint)offsetOSR)
+                    if (tryOffsetOSR)
                     {
-                        addPatchpoint = true;
+                        // Specific offset
+
+                        if (block.bbCodeOffs == (uint)offsetOSR)
+                        {
+                            addPatchpoint = true;
+                        }
                     }
+                    else
+                    {
+                        // Random
+                        //
+                        // Reuse the random inliner's random state.
+                        // Note _inlineStrategy is always created, even if we're not inlining.
+
+                        var inlineStrategy = impInlineRoot._inlineStrategy;
+                        assert(inlineStrategy is not null);
+
+                        var randomValue = inlineStrategy.GetRandom(randomOSR).Next(100);
+                        addPatchpoint = (randomValue < randomOSR);
+                    }
+
+                    if (addPatchpoint)
+                    {
+                        block.SetFlags(BBF_OSR_PATCHPOINT);
+                        MethodHasPatchpoint = true;
+                    }
+
+                    JITDUMP($"\n** {(tryOffsetOSR ? "offset" : "random")} patchpoint{(addPatchpoint ? "" : " not")} added to {FMT_BB(block.bbNum)} (il offset {block.bbCodeOffs})\n");
                 }
-                else
-                {
-                    // Random
-                    //
-                    // Reuse the random inliner's random state.
-                    // Note _inlineStrategy is always created, even if we're not inlining.
-
-                    var inlineStrategy = impInlineRoot._inlineStrategy;
-                    assert(inlineStrategy is not null);
-
-                    var randomValue = inlineStrategy.GetRandom(randomOSR).Next(100);
-                    addPatchpoint = (randomValue < randomOSR);
-                }
-
-                if (addPatchpoint)
-                {
-                    block.SetFlags(BBF_OSR_PATCHPOINT);
-                    MethodHasPatchpoint = true;
-                }
-
-                JITDUMP($"\n** {(tryOffsetOSR ? "offset" : "random")} patchpoint{(addPatchpoint ? "" : " not")} added to {FMT_BB(block.bbNum)} (il offset {impCurOpcOffs})\n");
             }
-#endif
         }
 
         // Mark stack-empty rare blocks to be considered for partial compilation.
@@ -6388,30 +6379,29 @@ public partial class Compiler
             // Is this block a good place for partial compilation?
             var addPartialCompilationPatchpoint = (block != fgFirstBB) && block.isRunRarely;
 
-#if DEBUG
-            // Stress mode
-            var reason = "rarely run";
-            var randomPartialCompilation = JitConfig.JitRandomPartialCompilation;
-
-            if (randomPartialCompilation > 0)
+            var reason = Configuration.DEBUG ? "rarely run" : null;
+            if (Configuration.DEBUG)
             {
-                // Reuse the random inliner's random state.
-                // Note _inlineStrategy is always created, even if we're not inlining.
+                // Stress mode
+                var randomPartialCompilation = JitConfig.JitRandomPartialCompilation;
 
-                var inlineStrategy = impInlineRoot._inlineStrategy;
-                assert(inlineStrategy is not null);
+                if (randomPartialCompilation > 0)
+                {
+                    // Reuse the random inliner's random state.
+                    // Note _inlineStrategy is always created, even if we're not inlining.
 
-                var randomValue = inlineStrategy.GetRandom(randomPartialCompilation).Next(100);
-                addPartialCompilationPatchpoint = (randomValue < randomPartialCompilation);
-                reason = "randomly chosen";
+                    var inlineStrategy = impInlineRoot._inlineStrategy;
+                    assert(inlineStrategy is not null);
+
+                    var randomValue = inlineStrategy.GetRandom(randomPartialCompilation).Next(100);
+                    addPartialCompilationPatchpoint = (randomValue < randomPartialCompilation);
+                    reason = "randomly chosen";
+                }
             }
-#endif
 
             if (addPartialCompilationPatchpoint)
             {
-#if DEBUG
                 JITDUMP($"\nBlock {FMT_BB(block.bbNum)} ({reason}) will be a partial compilation patchpoint -- not importing\n");
-#endif
 
                 block.SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
                 MethodHasPatchpoint = true;
@@ -6487,9 +6477,7 @@ public partial class Compiler
             // Compute the current instr offset
             opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
 
-#if !DEBUG
-            if (opts.compDbgInfo)
-#endif
+            if (Configuration.DEBUG || opts.compDbgInfo)
             {
                 nxtStmtOffs = ((nxtStmtIndex >= 0) && (nxtStmtIndex < info.compStmtOffsetsCount)) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
 
@@ -6625,9 +6613,7 @@ public partial class Compiler
                     case CEE_VOLATILE:
                     {
                         assert(opcode.Size is 0);
-#if DEBUG
                         JITDUMP(opcode.Name);
-#endif
                         prefixFlags |= PREFIX_VOLATILE;
 
                         impValidateMemoryAccessOpcode(codeAddr, codeEndp, volatilePrefix: true);
@@ -6660,9 +6646,7 @@ public partial class Compiler
                     case CEE_CONSTRAINED:
                     {
                         assertImp(opcode.Size == sizeof(int));
-#if DEBUG
                         JITDUMP(opcode.Name);
-#endif
                         prefixFlags |= PREFIX_CONSTRAINED;
 
                         impResolveToken(codeAddr, out constrainedResolvedToken, CORINFO_TOKENKIND_Constrained);
@@ -7350,9 +7334,10 @@ public partial class Compiler
                     index = impImplicitIorI4Cast(index, TYP_I_IMPL);
 
                     var call = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_ARRADDR_ST, array, index, value);
-#if DEBUG
-                    call._rawILOffset = opcodeOffs;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        call._rawILOffset = opcodeOffs;
+                    }
                     impConvertToUserCallAndMarkForInlining(call);
                     var op1 = call;
 
@@ -8723,11 +8708,7 @@ public partial class Compiler
                     }
                     else
                     {
-#if DEBUG
-                        if (compIsAsync && (JitConfig.JitOptimizeAwait is not 0))
-#else
-                        if (compIsAsync)
-#endif
+                        if (compIsAsync && (!Configuration.DEBUG || (JitConfig.JitOptimizeAwait is not 0)))
                         {
                             codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, out var configVal, out awaitOffset);
 
@@ -9621,11 +9602,10 @@ public partial class Compiler
                         // Push the result of the call on the stack
                         impPushOnStack(gtNewLclvNode(TYP_REF, lclNum), tiRetVal);
 
-#if DEBUG
                         // Under SPMI, look up info we might ask for if we stack allocate this array,
                         // but only if we know the precise type
                         //
-                        if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && !eeIsSharedInst(resolvedToken.hClass))
+                        if (Configuration.DEBUG && (JitConfig.EnableExtraSuperPmiQueries is not 0) && !eeIsSharedInst(resolvedToken.hClass))
                         {
                             // Keep the traps independent: an out-of-bubble embedding failure must not suppress later queries.
                             var extraQueryClass = resolvedToken.hClass;
@@ -9660,7 +9640,6 @@ public partial class Compiler
                                 }
                             });
                         }
-#endif
                     }
                     else
                     {
@@ -9718,10 +9697,10 @@ public partial class Compiler
                             // Get the size threshold for local conversion
                             var maxSize = DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
 
-#if DEBUG
-                            // Optionally allow this to be modified
-                            maxSize = JitConfig.JitStackAllocToLocalSize;
-#endif
+                            if (Configuration.DEBUG)
+                            {
+                                maxSize = JitConfig.JitStackAllocToLocalSize;
+                            }
 
                             if (allocSize <= maxSize)
                             {
@@ -11847,7 +11826,7 @@ public partial class Compiler
         // Ignore no args or trivial cases.
         if ((sig.callConv is not CORINFO_CALLCONV_DEFAULT || sig.totalILArgs() > 0) && (impStackTop().val.Oper is not GT_LCL_VAR and not GT_FTN_ADDR and not GT_CNS_INT))
         {
-            impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM, assertOnRecursion: false, "impImportIndirectCall");
+            _ = impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM, assertOnRecursion: false, "impImportIndirectCall");
         }
 
         // Get the function pointer
@@ -11858,16 +11837,14 @@ public partial class Compiler
         // See ILCodeStream.LowerOpcode
         assert((fptr.Type.ActualType is var __targetAliasValue6 && (__targetAliasValue6 == TYP_I_IMPL || __targetAliasValue6 is TYP_INT)));
 
-#if DEBUG
         // This temporary must never be converted to a double in stress mode,
         // because that can introduce a call to the cast helper after the
         // arguments have already been evaluated.
 
-        if (fptr.Oper is GT_LCL_VAR)
+        if (Configuration.DEBUG && (fptr.Oper is GT_LCL_VAR))
         {
             lvaGetDesc(fptr.AsLclVarCommon().LclNum).lvKeepType = true;
         }
-#endif
 
         // Create the call node
         var call = gtNewIndCallNode(callRetTyp, fptr, di);
@@ -11881,9 +11858,13 @@ public partial class Compiler
         return call;
     }
 
-#if DEBUG
     public var_types impImportJitTestLabelMark(int numArgs)
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("JitTestLabel.Mark importer is only available in Debug builds.");
+        }
+
         TestLabelAndNum tlAndN;
 
         if (numArgs is 2)
@@ -11942,7 +11923,6 @@ public partial class Compiler
         impPushOnStack(node, expSe.seTypeInfo);
         return node.Type;
     }
-#endif
 
     public unsafe GenTree? impImportLdvirtftn(GenTree thisPtr, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_CALL_INFO callInfo)
     {
@@ -12124,7 +12104,7 @@ public partial class Compiler
             {
                 // We are jumping out of a finally-protected try.
 
-                var callBlock = null as BasicBlock;
+                BasicBlock callBlock;
 
                 if (step is null)
                 {
@@ -12383,9 +12363,7 @@ public partial class Compiler
             impImportBlockPending(leaveTarget);
         }
 
-#if DEBUG
         fgVerifyHandlerTab();
-#endif
 
         if (Configuration.DEBUG && verbose)
         {
@@ -12758,9 +12736,10 @@ public partial class Compiler
                 isHoistable = true;
                 var intCon = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
 
-#if DEBUG
-                intCon.TargetHandle = unchecked((nint)(resolvedToken.hField));
-#endif
+                if (Configuration.DEBUG)
+                {
+                    intCon.TargetHandle = unchecked((nint)(resolvedToken.hField));
+                }
 
                 op1 = intCon;
 
@@ -13543,9 +13522,10 @@ public partial class Compiler
         var dstAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(TYP_I_IMPL, dataOffset));
         var store = gtNewStoreBlkNode(dstAddr, src, blkLayout);
 
-#if DEBUG
-        src.Op1.AsIntCon().TargetHandle = (byte)(THT_InitializeArrayIntrinsics);
-#endif
+        if (Configuration.DEBUG)
+        {
+            src.Op1.AsIntCon().TargetHandle = (byte)(THT_InitializeArrayIntrinsics);
+        }
 
         return store;
 
@@ -14542,18 +14522,19 @@ public partial class Compiler
 
             var addr = gtNewIconEmbHndNode(handle, pIndirection, flags, compileTimeHandle);
 
-#if DEBUG
-            var handleToTrack = (flags is not GTF_ICON_TOKEN_HDL) ? unchecked((nint)(compileTimeHandle)) : 0;
+            if (Configuration.DEBUG)
+            {
+                var handleToTrack = (flags is not GTF_ICON_TOKEN_HDL) ? unchecked((nint)(compileTimeHandle)) : 0;
 
-            if (handle is not null)
-            {
-                addr.AsIntCon().TargetHandle = handleToTrack;
+                if (handle is not null)
+                {
+                    addr.AsIntCon().TargetHandle = handleToTrack;
+                }
+                else
+                {
+                    addr.AsIndir().Op1.AsIntCon().TargetHandle = handleToTrack;
+                }
             }
-            else
-            {
-                addr.AsIndir().Op1.AsIntCon().TargetHandle = handleToTrack;
-            }
-#endif
 
             return addr;
         }
@@ -15684,11 +15665,16 @@ public partial class Compiler
         return impTokenToHandle(resolvedToken, out runtimeLookup, mustRestoreHandle, importParent: true);
     }
 
-#if DEBUG
     /// <summary>Spill the stack and insert IR that poisons all implicit byrefs.</summary>
     /// <remarks>The memory pointed to by implicit byrefs is owned by the callee but usually exists on the caller's frame (or in GC-protected native memory for some runtime invoke scenarios). This function helps catch situations where the caller reads from the memory after the invocation, for example due to a bug in the JIT's own last-use copy elision for implicit byrefs.</remarks>
+    [Conditional("DEBUG")]
     public void impPoisonImplicitByrefsBeforeReturn()
     {
+        if (!Configuration.DEBUG)
+        {
+            throw new InvalidOperationException("Implicit-byref poisoning is only available in Debug builds.");
+        }
+
         var spilled = false;
 
         for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
@@ -15756,7 +15742,6 @@ public partial class Compiler
             _ = compiler.impAppendTree(store, CHECK_SPILL_NONE, new DebugInfo());
         }
     }
-#endif
 
     //------------------------------------------------------------------------
     // impPopArgsForUnmanagedCall: 
@@ -17190,12 +17175,10 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (!compIsForInlining && ((prefixFlags & (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS)) is 0) && compStressCompile(STRESS_POISON_IMPLICIT_BYREFS, 25))
+        if (Configuration.DEBUG && !compIsForInlining && ((prefixFlags & (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS)) is 0) && compStressCompile(STRESS_POISON_IMPLICIT_BYREFS, 25))
         {
             impPoisonImplicitByrefsBeforeReturn();
         }
-#endif
 
         var op2 = null as GenTree;
         var op1 = null as GenTree;
@@ -17228,8 +17211,7 @@ public partial class Compiler
                     (varTypeIsStruct(op2.Type) && varTypeIsStruct(info.compRetType))
                 );
 
-#if DEBUG
-                if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
+                if (Configuration.DEBUG && !isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
                 {
                     // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
                     // VSW 440513: Incorrect gcinfo on the return value under DOTNET_JitGCChecks=1 for methods with
@@ -17246,7 +17228,6 @@ public partial class Compiler
                         gtDispTree(op2);
                     }
                 }
-#endif
             }
             else
             {
@@ -18095,8 +18076,7 @@ public partial class Compiler
 
         call.SetIsAsync(asyncInfo);
 
-#if DEBUG
-        if ((JitConfig.EnableExtraSuperPmiQueries is not 0) && (call._callType is CT_USER_FUNC))
+        if (Configuration.DEBUG && (JitConfig.EnableExtraSuperPmiQueries is not 0) && (call._callType is CT_USER_FUNC))
         {
             eeRunExtraSuperPmiQueries(() => {
                 // Query the async variants (twice, to get both directions)
@@ -18110,7 +18090,6 @@ public partial class Compiler
                 }
             });
         }
-#endif
     }
 
     /// <summary>Creates a new Vector128.CreateScalar node for a System.Half value</summary>
@@ -19655,10 +19634,9 @@ public partial class Compiler
         assert(thisArg.EarlyNode is not null);
         var thisObj = thisArg.EarlyNode.EffectiveVal;
 
-#if DEBUG
         // Optionally, print info on devirtualization
         var rootCompiler = impInlineRoot;
-        var doPrint = JitConfig.JitPrintDevirtualizedMethods.contains(rootCompiler.info.compMethodHnd, rootCompiler.info.compClassHnd, &rootCompiler.info.compMethodInfo->args);
+        var doPrint = Configuration.DEBUG && JitConfig.JitPrintDevirtualizedMethods.contains(rootCompiler.info.compMethodHnd, rootCompiler.info.compClassHnd, &rootCompiler.info.compMethodInfo->args);
 
         if (doPrint)
         {
@@ -19670,7 +19648,6 @@ public partial class Compiler
 
             jitprintf($"Devirtualized {callKind} call to {eeGetMethodFullName(baseMethod)}; now direct call to {eeGetMethodFullName(derivedMethod)} [{note}]\n");
         }
-#endif
 
         Metrics.DevirtualizedCall++;
 
@@ -19681,9 +19658,10 @@ public partial class Compiler
         call._callType = CT_USER_FUNC;
         call._controlExpr = null;
 
-#if DEBUG
-        call._callDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED;
-#endif
+        if (Configuration.DEBUG)
+        {
+            call._callDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED;
+        }
 
         if (dcInfo.isDelegateCall)
         {
@@ -19702,7 +19680,6 @@ public partial class Compiler
         // stubs)
         call.ClearInlineInfo();
 
-#if DEBUG
         // If we successfully devirtualized based on an exact or final class,
         // and we have dynamic PGO data describing the likely class, make sure they agree.
         //
@@ -19711,9 +19688,9 @@ public partial class Compiler
         //
         // If method is an inlinee we may be specializing to a class that wasn't seen at runtime.
         //
-        var canSensiblyCheck = (dcInfo.objClassIsExact || dcInfo.objClassIsFinal) && (fgPgoSource is ICorJitInfo.PgoSource.Dynamic) && !compIsForInlining;
+        var canSensiblyCheck = Configuration.DEBUG && (dcInfo.objClassIsExact || dcInfo.objClassIsFinal) && (fgPgoSource is ICorJitInfo.PgoSource.Dynamic) && !compIsForInlining;
 
-        if ((JitConfig.JitCrossCheckDevirtualizationAndPGO is not 0) && canSensiblyCheck)
+        if (Configuration.DEBUG && (JitConfig.JitCrossCheckDevirtualizationAndPGO is not 0) && canSensiblyCheck)
         {
             // We only can handle a single likely class for now
 
@@ -19767,7 +19744,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         var instParam = null as GenTree;
 
@@ -19888,9 +19864,10 @@ public partial class Compiler
 
                         call._callMethHnd = unboxedEntryMethod;
 
-#if DEBUG
-                        call._callDebugFlags |= GTF_CALL_MD_UNBOXED;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            call._callDebugFlags |= GTF_CALL_MD_UNBOXED;
+                        }
 
                         if (unboxedEntrySig.hasTypeArg())
                         {
@@ -19940,7 +19917,7 @@ public partial class Compiler
         if (instParam is not null)
         {
             assert(call.Args.FindWellKnownArg(WellKnownArg.InstParam) is null);
-            call.Args.InsertInstParam(this, instParam);
+            _ = call.Args.InsertInstParam(this, instParam);
         }
 
         // Need to update call info too.
@@ -23661,8 +23638,7 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
-        if ((verbose || (JitConfig.EnableExtraSuperPmiQueries is not 0)) && (numberOfClasses > 0) && verboseLogging)
+        if (Configuration.DEBUG && (verbose || (JitConfig.EnableExtraSuperPmiQueries is not 0)) && (numberOfClasses > 0) && verboseLogging)
         {
             JITDUMP($"Likely classes for call [{call.TreeId:D6}]");
 
@@ -23691,7 +23667,7 @@ public partial class Compiler
             }
         }
 
-        if ((verbose || (JitConfig.EnableExtraSuperPmiQueries is not 0)) && (numberOfMethods > 0))
+        if (Configuration.DEBUG && (verbose || (JitConfig.EnableExtraSuperPmiQueries is not 0)) && (numberOfMethods > 0))
         {
             assert(call._callType is CT_USER_FUNC);
 
@@ -23739,7 +23715,7 @@ public partial class Compiler
         }
 
         // Optional stress mode to pick a random known class, rather than the most likely known class.
-        if (JitConfig.JitRandomGuardedDevirtualization is not 0)
+        if (Configuration.DEBUG && (JitConfig.JitRandomGuardedDevirtualization is not 0))
         {
             assert(impInlineRoot._inlineStrategy is not null);
 
@@ -23784,7 +23760,6 @@ public partial class Compiler
                 return;
             }
         }
-#endif
 
         // Prefer class guess as it is cheaper
         if (numberOfClasses > 0)
