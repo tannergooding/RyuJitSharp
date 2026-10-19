@@ -245,21 +245,22 @@ public partial class Compiler
             }
         }
 
-#if MEASURE_BLOCK_SIZE
-        unchecked
+        if (Configuration.MEASURE_BLOCK_SIZE)
         {
-            jitprintf("\n");
-            jitprintf("---------------------------------------------------\n");
-            jitprintf("BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
-            jitprintf("---------------------------------------------------\n");
+            unchecked
+            {
+                jitprintf("\n");
+                jitprintf("---------------------------------------------------\n");
+                jitprintf("BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
+                jitprintf("---------------------------------------------------\n");
 
-            // Existing signed storage represents native size_t bits, not signed division.
-            jitprintf($"Allocated {(uint)BasicBlock.s_Count,6} basic blocks ({(uint)BasicBlock.s_Size,7} bytes total, " +
-                $"avg {(uint)((nuint)BasicBlock.s_Size / genMethodCnt),4} bytes per method)\n");
-            jitprintf($"Allocated {(uint)genFlowNodeCnt,6} flow nodes ({(uint)genFlowNodeSize,7} bytes total, " +
-                $"avg {(uint)(genFlowNodeSize / genMethodCnt),4} bytes per method)\n");
+                // Existing signed storage represents native size_t bits, not signed division.
+                jitprintf($"Allocated {(uint)BasicBlock.s_Count,6} basic blocks ({(uint)BasicBlock.s_Size,7} bytes total, " +
+                    $"avg {(uint)((nuint)BasicBlock.s_Size / genMethodCnt),4} bytes per method)\n");
+                jitprintf($"Allocated {(uint)genFlowNodeCnt,6} flow nodes ({(uint)genFlowNodeSize,7} bytes total, " +
+                    $"avg {(uint)(genFlowNodeSize / genMethodCnt),4} bytes per method)\n");
+            }
         }
-#endif
 
         if (s_dspMemStats)
         {
