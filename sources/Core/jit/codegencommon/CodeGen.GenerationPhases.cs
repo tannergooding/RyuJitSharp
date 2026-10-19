@@ -26,10 +26,12 @@ public sealed partial class CodeGen
         {
             RequireSupportedLateDisassembly();
         }
-#if DEBUG
-        _genInterruptibleUsed = true;
+        if (Configuration.DEBUG)
+        {
+            _genInterruptibleUsed = true;
+        }
         _compiler.fgDebugCheckBBlist();
-#endif
+
         genPrepForCompiler();
         Emitter.Init();
 
@@ -191,17 +193,16 @@ public sealed partial class CodeGen
         Emitter.emitComputeCodeSizes();
 
         uint instrCount = 0;
-#if DEBUG
-        if (!_compiler.jitFallbackCompile && (JitConfig.JitNoForceFallback == 0))
+        if (Configuration.DEBUG && !_compiler.jitFallbackCompile && (JitConfig.JitNoForceFallback == 0))
         {
             if ((JitConfig.JitForceFallback != 0) ||
                 _compiler.compStressCompile(Compiler.compStressArea.STRESS_GENERIC_VARN, 5))
             {
                 JITDUMP("\n\n*** forcing no-way fallback -- current jit request will be abandoned ***\n\n");
-                NO_WAY_NOASSERT("Stress failure");
+                noWay();
             }
         }
-#endif
+
         _compiler.unwindReserve();
         if (Configuration.TARGET_WASM)
         {
@@ -228,10 +229,12 @@ public sealed partial class CodeGen
                 _compiler.compHndBBtabCount, prologSize, epilogSize, _codePtr, codePtrRW, coldCodePtr, coldCodePtrRW,
                 Configuration.DEBUG ? &instrCount : null);
         }
-#if DEBUG
-        assert(!_compiler.compCodeGenDone);
-        _compiler.compCodeGenDone = true;
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!_compiler.compCodeGenDone);
+            _compiler.compCodeGenDone = true;
+        }
+
         if (_compiler.opts.disAsm && _compiler.opts.disTesting)
         {
             jitprintf($"; END METHOD {_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd)}\n");
@@ -281,18 +284,16 @@ public sealed partial class CodeGen
                 jitstdout().Flush();
             }
         }
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** After end code gen, before unwindEmit()\n");
             Emitter.emitDispIGlist(displayInstructions: true);
         }
-#else
-        else if (_compiler.opts.disAsm)
+        else if (!Configuration.DEBUG && _compiler.opts.disAsm)
         {
             jitprintf($"\n; Total bytes of code {_codeSize} for method {_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd)} ({_compiler.compGetTieringName(true)})\n\n");
         }
-#endif
+
         *_nativeSizeOfCode = unchecked((int)_codeSize);
         _compiler.info.compNativeCodeSize = unchecked((int)_codeSize);
     }

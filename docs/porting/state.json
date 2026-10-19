@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Close the next original-order CodeGen.GenerationPhases dependency closure: reconcile CGCOMMON-0044/0049/0051/0056 with their current Debug/Release contracts (fgDebugCheckBBlist, jitFallbackCompile/NO_WAY_NOASSERT, compCodeGenDone, emitDispIGlist) before converting the affected callers and declarations; preserve the separate 11-row Debug state/layout gate and B209.",
+    "nextAction": "Re-evaluate the next original-order file family sources/Core/jit/codegenlinear/CodeGen.EmitterTests.cs (CGCOMMON-0136 through CGCOMMON-0151): close its Debug test harness and classify the SVE-unsupported cases. Obtain the bounded G2 unsupported-capability decision before changing their test applicability; keep B209 and the separate Debug state/layout gate open.",
     "activeBatch": null,
 
     "unresolvedConditionalCleanup": [
