@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "conditional-cleanup",
-    "nextAction": "Continue through the deferred emitter diagnostic family beginning with CCB-0830 (INTERESTING_JUMP_NUM) and related DEBUG_EMIT candidates; inspect the complete declaration/use closure and preserve DEBUG_EMIT behavior distinct from Configuration.DEBUG. Keep ABI-0001 and the B209 table/emitter dependency candidates deferred until ported and tested.",
+    "nextAction": "Start the 22-candidate optional-emitter-method-statistics family in tests/Core/EmitterMethodStatisticsTests.cs. Re-evaluate its complete guards and Configuration.BuildFeatures dependency closure together; keep the four B209 target-width candidates deferred until their table/emitter prerequisite is ported and tested.",
     "unresolvedConditionalCleanup": [
       {
         "batch": "B209 genAsyncResumeInfo target-width table/emitter dependency closure",

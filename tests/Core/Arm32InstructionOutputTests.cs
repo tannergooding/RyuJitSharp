@@ -39,6 +39,7 @@ internal static unsafe class Arm32InstructionOutputTests
         emitter.emitTotalHotCodeSize = 16;
 
         var jump = new Emitter.instrDescJmp();
+        AttachDebugEmitInfo(jump);
         jump.idIns(INS_b);
         jump.idInsFmt(IF_ARM32_T1_M);
         jump.idOpSize(EA_4BYTE);
@@ -68,6 +69,7 @@ internal static unsafe class Arm32InstructionOutputTests
         emitter.emitTotalHotCodeSize = 16;
 
         var jump = new Emitter.instrDescJmp();
+        AttachDebugEmitInfo(jump);
         jump.idIns(INS_b);
         jump.idInsFmt(IF_ARM32_T2_J2);
         jump.idOpSize(EA_4BYTE);
@@ -98,6 +100,7 @@ internal static unsafe class Arm32InstructionOutputTests
         emitter.emitTotalHotCodeSize = 4096;
 
         var jump = new Emitter.instrDescJmp();
+        AttachDebugEmitInfo(jump);
         jump.idIns(INS_b);
         jump.idInsFmt(IF_ARM32_T2_J2);
         jump.idOpSize(EA_4BYTE);
@@ -129,6 +132,7 @@ internal static unsafe class Arm32InstructionOutputTests
         emitter.emitTotalHotCodeSize = 16;
 
         var jump = new Emitter.instrDescJmp();
+        AttachDebugEmitInfo(jump);
         jump.idIns(INS_b);
         jump.idInsFmt(IF_ARM32_T1_M);
         jump.idOpSize(EA_4BYTE);
@@ -266,7 +270,7 @@ internal static unsafe class Arm32InstructionOutputTests
             jump.idInsOpt(INS_OPTS_NONE);
             jump.idSetIsBound();
             jump.idjTargetIG = target;
-            if (TestConfiguration.IsDebug)
+            if (TestConfiguration.IsDebug || Configuration.DEBUG_EMIT)
             {
                 jump.idDebugOnlyInfo(new Emitter.instrDescDebugInfo());
             }
@@ -294,6 +298,14 @@ internal static unsafe class Arm32InstructionOutputTests
         Assert.That(output, Does.Contain("D100"));
         Assert.That(output, Does.Contain("F000 B800"));
         Assert.That(output.Split('\n'), Has.Length.EqualTo(3));
+    }
+
+    private static void AttachDebugEmitInfo(Emitter.instrDescJmp jump)
+    {
+        if (Configuration.DEBUG_EMIT)
+        {
+            jump.idDebugOnlyInfo(new Emitter.instrDescDebugInfo());
+        }
     }
 
     private static string CaptureDisplay(Action<Compiler, DisplayEmitter> display)

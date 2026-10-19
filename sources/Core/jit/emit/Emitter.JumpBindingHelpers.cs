@@ -225,14 +225,16 @@ public partial class Emitter
                 return;
             }
 
-#if DEBUG_EMIT
-            var debugInfo = jump.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+            if (Configuration.DEBUG_EMIT)
             {
-                jitprintf($"[9] Converting jump {debugInfo.idNum} to medium\n");
+                var debugInfo = jump.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                    (INTERESTING_JUMP_NUM == 0))
+                {
+                    jitprintf($"[9] Converting jump {debugInfo.idNum} to medium\n");
+                }
             }
-#endif
 
             assert(emitIsCondJump(jump));
             jump.idInsFmt(insFormat.IF_ARM32_T2_J1);
@@ -351,14 +353,16 @@ public partial class Emitter
             }
 
             jump.idjShort = true;
-#if DEBUG_EMIT
-            var debugInfo = jump.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+            if (Configuration.DEBUG_EMIT)
             {
-                jitprintf($"[8] Converting jump {debugInfo.idNum} to short\n");
+                var debugInfo = jump.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                    (INTERESTING_JUMP_NUM == 0))
+                {
+                    jitprintf($"[8] Converting jump {debugInfo.idNum} to short\n");
+                }
             }
-#endif
             jump.idInsSize(emitInsSize(jump.idInsFmt()));
             return;
         }

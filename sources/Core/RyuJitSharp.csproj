@@ -503,8 +503,11 @@
     <!-- <DefineConstants>$(DefineConstants);VERIFY_GC_TABLES</DefineConstants> -->
   </PropertyGroup>
 
-  <!-- Set these to 1 to collect and output various statistics about the JIT -->
+  <!-- Set these to 1 to enable optional statistics and diagnostic output. -->
   <PropertyGroup>
+    <!-- DEBUG_EMIT: Enable detailed jump-emission diagnostics; requires debug instruction metadata. -->
+    <!-- <DefineConstants>$(DefineConstants);DEBUG_EMIT</DefineConstants> -->
+
     <!-- CALL_ARG_STATS: Collect stats about calls and call arguments. -->
     <!-- <DefineConstants>$(DefineConstants);CALL_ARG_STATS</DefineConstants> -->
 

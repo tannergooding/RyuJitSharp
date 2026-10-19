@@ -85,23 +85,25 @@ public partial class Emitter
 
         if (dstOffs <= srcOffs)
         {
-#if DEBUG_EMIT
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+            if (Configuration.DEBUG_EMIT)
             {
-                var jumpGroup = id.idjIG;
-                assert(jumpGroup is not null);
-                var blockOffset = jumpGroup.igOffs;
-                if (INTERESTING_JUMP_NUM == 0)
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                    (INTERESTING_JUMP_NUM == 0))
                 {
-                    jitprintf($"[3] Jump {debugInfo.idNum}:\n");
+                    var jumpGroup = id.idjIG;
+                    assert(jumpGroup is not null);
+                    var blockOffset = jumpGroup.igOffs;
+                    if (INTERESTING_JUMP_NUM == 0)
+                    {
+                        jitprintf($"[3] Jump {debugInfo.idNum}:\n");
+                    }
+                    jitprintf($"[3] Jump  block is at {blockOffset:X8} - {emitOffsAdj:X2} = {unchecked(blockOffset - (uint)emitOffsAdj):X8}\n");
+                    jitprintf($"[3] Jump        is at {srcOffs:X8} - {emitOffsAdj:X2} = {unchecked(srcOffs - (uint)emitOffsAdj):X8}\n");
+                    jitprintf($"[3] Label block is at {dstOffs:X8} - {emitOffsAdj:X2} = {unchecked(dstOffs - (uint)emitOffsAdj):X8}\n");
                 }
-                jitprintf($"[3] Jump  block is at {blockOffset:X8} - {emitOffsAdj:X2} = {unchecked(blockOffset - (uint)emitOffsAdj):X8}\n");
-                jitprintf($"[3] Jump        is at {srcOffs:X8} - {emitOffsAdj:X2} = {unchecked(srcOffs - (uint)emitOffsAdj):X8}\n");
-                jitprintf($"[3] Label block is at {dstOffs:X8} - {emitOffsAdj:X2} = {unchecked(dstOffs - (uint)emitOffsAdj):X8}\n");
             }
-#endif
             noway_assert(id.idInsFmt() != IF_ARM32_T1_I);
             if (isJump && unchecked((uint)(distVal - 4)) >= shortDistance)
             {
@@ -122,22 +124,24 @@ public partial class Emitter
             {
                 IMPL_LIMITATION("Method is too large");
             }
-#if DEBUG_EMIT
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+            if (Configuration.DEBUG_EMIT)
             {
-                var jumpGroup = id.idjIG;
-                assert(jumpGroup is not null);
-                if (INTERESTING_JUMP_NUM == 0)
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                    (INTERESTING_JUMP_NUM == 0))
                 {
-                    jitprintf($"[4] Jump {debugInfo.idNum}:\n");
+                    var jumpGroup = id.idjIG;
+                    assert(jumpGroup is not null);
+                    if (INTERESTING_JUMP_NUM == 0)
+                    {
+                        jitprintf($"[4] Jump {debugInfo.idNum}:\n");
+                    }
+                    jitprintf($"[4] Jump  block is at {jumpGroup.igOffs:X8}\n");
+                    jitprintf($"[4] Jump        is at {srcOffs:X8}\n");
+                    jitprintf($"[4] Label block is at {unchecked(dstOffs + (uint)emitOffsAdj):X8} - {emitOffsAdj:X2} = {dstOffs:X8}\n");
                 }
-                jitprintf($"[4] Jump  block is at {jumpGroup.igOffs:X8}\n");
-                jitprintf($"[4] Jump        is at {srcOffs:X8}\n");
-                jitprintf($"[4] Label block is at {unchecked(dstOffs + (uint)emitOffsAdj):X8} - {emitOffsAdj:X2} = {dstOffs:X8}\n");
             }
-#endif
         }
 
         if (relAddr)

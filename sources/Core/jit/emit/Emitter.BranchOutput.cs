@@ -159,16 +159,17 @@ public partial class Emitter
 #pragma warning restore CA1508
             assert(jmp);
 
-#if DEBUG
-            var debugInfo = id.idDebugOnlyInfo();
-            if (id.idCodeSize() != JMP_SIZE_SMALL &&
-                (compiler.verbose || debugInfo?.idNum == unchecked((uint)INTERESTING_JUMP_NUM) ||
-                 INTERESTING_JUMP_NUM == 0))
+            if (Configuration.DEBUG)
             {
-                jitprintf($"; NOTE: size of jump [{id.StorageOffset:X}] mis-predicted by " +
-                    $"{id.idCodeSize() - JMP_SIZE_SMALL} bytes\n");
+                var debugInfo = id.idDebugOnlyInfo();
+                if (id.idCodeSize() != JMP_SIZE_SMALL &&
+                    (compiler.verbose || debugInfo?.idNum == unchecked((uint)INTERESTING_JUMP_NUM) ||
+                     INTERESTING_JUMP_NUM == 0))
+                {
+                    jitprintf($"; NOTE: size of jump [{id.StorageOffset:X}] mis-predicted by " +
+                        $"{id.idCodeSize() - JMP_SIZE_SMALL} bytes\n");
+                }
             }
-#endif
             dst += emitOutputByte(dst, unchecked((long)insCode(ins)));
             id.idjAddr = distVal > 0 ? dst : null;
             dst += emitOutputByte(dst, distVal);

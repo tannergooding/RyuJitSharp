@@ -306,47 +306,51 @@ public partial class Emitter
                 var jmpDist = unchecked((int)(srcOffs - tgt.igOffs));
                 assert(jmpDist > 0);
                 var extra = unchecked(jmpDist + JMP_DIST_SMALL_MAX_NEG);
-#if DEBUG_EMIT
-                var debugInfo = id.idDebugOnlyInfo();
-                assert(debugInfo is not null);
-                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+                if (Configuration.DEBUG_EMIT)
                 {
-                    if (INTERESTING_JUMP_NUM == 0)
+                    var debugInfo = id.idDebugOnlyInfo();
+                    assert(debugInfo is not null);
+                    if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                        (INTERESTING_JUMP_NUM == 0))
                     {
-                        jitprintf($"[0] Jump {debugInfo.idNum}:\n");
-                    }
-                    jitprintf($"[0] Jump source is at {srcOffs:X8}\n");
-                    jitprintf($"[0] Label block is at {tgt.igOffs:X8}\n");
-                    jitprintf($"[0] Jump  distance  - {jmpDist:X4}\n");
-                    if (extra > 0)
-                    {
-                        jitprintf($"[0] Distance excess = {extra}  \n");
+                        if (INTERESTING_JUMP_NUM == 0)
+                        {
+                            jitprintf($"[0] Jump {debugInfo.idNum}:\n");
+                        }
+                        jitprintf($"[0] Jump source is at {srcOffs:X8}\n");
+                        jitprintf($"[0] Label block is at {tgt.igOffs:X8}\n");
+                        jitprintf($"[0] Jump  distance  - {jmpDist:X4}\n");
+                        if (extra > 0)
+                        {
+                            jitprintf($"[0] Distance excess = {extra}  \n");
+                        }
                     }
                 }
-#endif
                 if ((extra <= 0) && !id.idjKeepLong)
                 {
                     emitSetShortJump(id);
                     sz = unchecked((uint)JMP_SIZE_SMALL);
                 }
             }
-#if DEBUG_EMIT
             else
             {
-                var debugInfo = id.idDebugOnlyInfo();
-                assert(debugInfo is not null);
-                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+                if (Configuration.DEBUG_EMIT)
                 {
-                    if (INTERESTING_JUMP_NUM == 0)
+                    var debugInfo = id.idDebugOnlyInfo();
+                    assert(debugInfo is not null);
+                    if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
+                        (INTERESTING_JUMP_NUM == 0))
                     {
-                        jitprintf($"[0] Jump {debugInfo.idNum}:\n");
+                        if (INTERESTING_JUMP_NUM == 0)
+                        {
+                            jitprintf($"[0] Jump {debugInfo.idNum}:\n");
+                        }
+                        var srcOffs = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize + (uint)JMP_SIZE_SMALL);
+                        jitprintf($"[0] Jump source is at {emitCurIGsize:X4}/{srcOffs:X8}\n");
+                        jitprintf("[0] Label block is unknown\n");
                     }
-                    var srcOffs = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize + (uint)JMP_SIZE_SMALL);
-                    jitprintf($"[0] Jump source is at {emitCurIGsize:X4}/{srcOffs:X8}\n");
-                    jitprintf("[0] Label block is unknown\n");
                 }
             }
-#endif
         }
 
         id.idCodeSize(sz);

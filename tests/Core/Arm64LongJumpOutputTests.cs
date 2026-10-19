@@ -432,7 +432,7 @@ internal static unsafe class Arm64LongJumpOutputTests
                 id.idReg2(scratch);
             }
             id.idSmallCns(immediate);
-            if (TestConfiguration.IsDebug)
+            if (TestConfiguration.IsDebug || Configuration.DEBUG_EMIT)
             {
                 id.idDebugOnlyInfo(new instrDescDebugInfo());
             }

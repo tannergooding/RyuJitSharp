@@ -34,6 +34,11 @@ internal static unsafe class CodeGenTestSupport
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minopts);
+        if (Configuration.DEBUG_EMIT)
+        {
+            // DEBUG_EMIT diagnostics consume descriptor metadata that Release otherwise omits.
+            compiler.opts.disAsm = true;
+        }
         compiler.info.compMethodInfo = &methodInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.info.compTypeCtxtArg = BAD_VAR_NUM;

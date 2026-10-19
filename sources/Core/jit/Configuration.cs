@@ -12,6 +12,8 @@ internal static class Configuration
     internal const bool DEBUG = false;
 #endif
 
+    internal static bool DEBUG_EMIT => BuildFeatures.DebugEmit;
+
     internal static bool MEASURE_NODE_SIZE => BuildFeatures.MeasureNodeSize;
 
     internal static bool MEASURE_BLOCK_SIZE => BuildFeatures.MeasureBlockSize;
@@ -54,6 +56,7 @@ internal static class Configuration
         private static bool s_measureBlockSize;
         private static bool s_measurePointerTableSize;
         private static bool s_displaySizes;
+        private static bool s_debugEmit;
         private static bool s_measureFatal;
         private static bool s_callArgumentStatistics;
         private static bool s_nodeBashStatistics;
@@ -75,6 +78,7 @@ internal static class Configuration
             EnableMeasureBlockSize();
             EnableMeasurePointerTableSize();
             EnableDisplaySizes();
+            EnableDebugEmit();
             EnableMeasureFatal();
             EnableCallArgumentStatistics();
             EnableNodeBashStatistics();
@@ -98,6 +102,8 @@ internal static class Configuration
         internal static bool MeasurePointerTableSize => s_measurePointerTableSize;
 
         internal static bool DisplaySizes => s_displaySizes;
+
+        internal static bool DebugEmit => s_debugEmit;
 
         internal static bool MeasureFatal => s_measureFatal;
 
@@ -138,6 +144,9 @@ internal static class Configuration
 
         [Conditional("DISPLAY_SIZES")]
         private static void EnableDisplaySizes() => s_displaySizes = true;
+
+        [Conditional("DEBUG_EMIT")]
+        private static void EnableDebugEmit() => s_debugEmit = true;
 
         [Conditional("MEASURE_FATAL")]
         private static void EnableMeasureFatal() => s_measureFatal = true;
