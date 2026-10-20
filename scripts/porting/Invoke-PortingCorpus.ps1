@@ -4,6 +4,10 @@ param(
     [Parameter(Mandatory)][string] $Corpus,
     [Parameter(Mandatory)][string] $OutputDirectory,
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{40}$')][string] $NativeCommit,
+    [string[]] $CorpusArguments = @(),
+    [string] $JitDumpSelector = "",
+    [string] $AltJitSelector = "",
+    [System.Collections.IDictionary] $AdditionalEnvironment = @{},
     [string] $ManagedJit = "",
     [string] $ManagedSource = "",
     [switch] $MinOpts,
@@ -49,6 +53,9 @@ Set-StrictMode -Version Latest
 if ($ExecuteManagedCode -and -not $ManagedJit) {
     throw "-ExecuteManagedCode requires -ManagedJit."
 }
+if ($AltJitSelector -and -not $ManagedJit) {
+    throw "-AltJitSelector requires -ManagedJit."
+}
 if ($RegisterStressRange -and $RegisterStress -eq 0) {
     throw "-RegisterStressRange requires nonzero -RegisterStress."
 }
@@ -79,8 +86,15 @@ if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("
 }
 
 $coreRun = Join-Path $CoreRoot "corerun.exe"
+$resolvedCorpus = (Resolve-Path -LiteralPath $Corpus).Path
 $nativeInputs = @($coreRun, (Join-Path $CoreRoot "coreclr.dll"), (Join-Path $CoreRoot "clrjit.dll"),
-    (Join-Path $CoreRoot "System.Private.CoreLib.dll"), $Corpus)
+    (Join-Path $CoreRoot "System.Private.CoreLib.dll"), $resolvedCorpus)
+foreach ($argument in $CorpusArguments) {
+    $argumentPath = if ([IO.Path]::IsPathRooted($argument)) { $argument } else { Join-Path $CoreRoot $argument }
+    if (Test-Path -LiteralPath $argumentPath -PathType Leaf) {
+        $nativeInputs += (Resolve-Path -LiteralPath $argumentPath).Path
+    }
+}
 if ($InlineReplayFile) {
     $InlineReplayFile = (Resolve-Path -LiteralPath $InlineReplayFile).Path
     $nativeInputs += $InlineReplayFile
@@ -107,7 +121,9 @@ if (Test-Path -LiteralPath $OutputDirectory) {
 [void](New-Item -ItemType Directory -Path $OutputDirectory)
 $OutputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 $dumpPath = Join-Path $OutputDirectory "jitdump.txt"
-$selector = "${TypeName}:*"
+$typeSelector = "${TypeName}:*"
+$selector = if ($JitDumpSelector) { $JitDumpSelector } else { $typeSelector }
+$altJitSelector = if ($AltJitSelector) { $AltJitSelector } else { $selector }
 
 $start = [Diagnostics.ProcessStartInfo]::new((Resolve-Path -LiteralPath $coreRun).Path)
 $start.UseShellExecute = $false
@@ -115,7 +131,10 @@ $start.CreateNoWindow = $true
 $start.WorkingDirectory = (Resolve-Path -LiteralPath $CoreRoot).Path
 $start.RedirectStandardOutput = $true
 $start.RedirectStandardError = $true
-$start.ArgumentList.Add((Resolve-Path -LiteralPath $Corpus).Path)
+$start.ArgumentList.Add($resolvedCorpus)
+foreach ($argument in $CorpusArguments) {
+    $start.ArgumentList.Add($argument)
+}
 foreach ($name in @($start.Environment.Keys)) {
     if ($name.StartsWith("DOTNET_", [StringComparison]::OrdinalIgnoreCase) -or
         $name.StartsWith("COMPlus_", [StringComparison]::OrdinalIgnoreCase)) {
@@ -220,11 +239,24 @@ if ($DisableProcedureSplittingEH) {
     $settings.DOTNET_JitNoProcedureSplittingEH = $selector
 }
 if ($ManagedJit) {
-    $settings.DOTNET_AltJit = $selector
+    $settings.DOTNET_AltJit = $altJitSelector
     $settings.DOTNET_AltJitName = [IO.Path]::GetFileName($ManagedJit)
     $settings.DOTNET_AltJitPath = (Resolve-Path -LiteralPath $ManagedJit).Path
     $settings.DOTNET_RunAltJitCode = if ($ExecuteManagedCode) { "1" } else { "0" }
     $settings.DOTNET_AltJitAssertOnNYI = "0"
+}
+foreach ($entry in $AdditionalEnvironment.GetEnumerator()) {
+    $key = [string]$entry.Key
+    if ($key -notmatch '^(DOTNET_|COMPlus_)[A-Za-z0-9_]+$') {
+        throw "Additional environment keys must be DOTNET_ or COMPlus_ settings: $key"
+    }
+    if ($settings.Keys -contains $key) {
+        throw "Additional environment setting is already configured: $key"
+    }
+    if ($null -eq $entry.Value) {
+        throw "Additional environment values cannot be null: $key"
+    }
+    $settings[$key] = [string]$entry.Value
 }
 foreach ($setting in $settings.GetEnumerator()) {
     $start.Environment[$setting.Key] = $setting.Value
@@ -263,7 +295,7 @@ if (Test-Path -LiteralPath $dumpPath -PathType Leaf) {
     $allMethodHeaders = @(Select-String -LiteralPath $dumpPath -Pattern '^\*{6} START compiling ' -CaseSensitive |
         ForEach-Object { $_.Line })
 }
-$typePattern = '^\*{6} START compiling ' + [regex]::Escape($TypeName) + ':'
+$typePattern = '^\*{6} START compiling ' + [regex]::Escape($TypeName) + '(?:\[[^\r\n]*\])?:'
 $methodHeaders = @($allMethodHeaders | Where-Object { $_ -cmatch $typePattern })
 $unexpectedMethodHeaders = @($allMethodHeaders | Where-Object { $_ -cnotmatch $typePattern })
 [ordered]@{
@@ -272,6 +304,8 @@ $unexpectedMethodHeaders = @($allMethodHeaders | Where-Object { $_ -cnotmatch $t
     managedSource = $ManagedSource
     coreRoot = $start.WorkingDirectory
     corpus = $start.ArgumentList[0]
+    corpusArguments = @($start.ArgumentList | Select-Object -Skip 1)
+    typeName = $TypeName
     managedJit = $ManagedJit
     expectedMethods = $ExpectedMethods
     environment = $settings

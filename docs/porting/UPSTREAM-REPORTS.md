@@ -35,6 +35,7 @@ deviation is explicitly approved.
 | B365 | `Compiler::gtCallGetDefinedRetBufLclAddr` | Forced register spilling with GC stress triggers a Checked assertion when an outer reload hides a `PUTARG_REG` wrapper around the retbuf local address. Ordinary configuration succeeds; no ordinary miscompilation or memory-safety impact is established. | Inspect reload/copy wrappers before checking the putarg and retbuf shape. | Preserve pinned managed behavior; report contains the native repro and supporting dump. |
 | B394 | `ValueNumStore::RunTests` | Enabling native component tests asserts because a self-test expects the pre-canonicalized operand order for a commutative VN expression. Production canonicalization puts the non-handle constant in argument one. | Update the self-test to assert the canonical operand order. | Preserve pinned canonicalization and assertion; report contains the native repro. |
 | B524 | `jitstd::list::merge` | When source nodes remain after merging, native links the source tail into the destination but does not clear the source's head, tail, or size. Both lists then share nodes, making later traversal/destruction unsafe. The pinned JIT has no `list.merge` call sites. | Clear the source list after transferring the remaining chain, while preserving merge ordering. | Preserve pinned managed behavior until the upstream correction is incorporated; the defect was reported in [dotnet/runtime#135435](https://github.com/dotnet/runtime/issues/135435). |
+| B526 | `CodeGenInterface::dumpSiVarLoc` (`src/coreclr/jit/scopeinfo.cpp`) | Checked Windows-x64 native and managed CoreLib FullDump captures reach `System.Double:Hypot` with a live XMM16 local. XMM16 is deliberately represented as `VLT_INVALID` because it cannot be encoded in debugger scope info, but the Debug variable-live-range printer has no `VLT_INVALID` case and asserts in its default branch after emitting the block. | Print an explicit unavailable marker for `VLT_INVALID`, or omit such ranges from diagnostic history consistently with the scope-info publication filter. | Preserve the pinned diagnostic behavior until an upstream correction is incorporated; all three captures are incomplete. |
 
 ## Detailed reports
 
@@ -265,3 +266,29 @@ source metadata, shared tail identity, and forward iterator termination. The
 test does not claim safe destruction of both lists after aliasing. Keep the
 managed behavior aligned until the upstream correction is accepted, then apply
 that correction to both implementations.
+
+### B526: FullDump asserts while printing an unencodable XMM live range
+
+**Confirmed in native RyuJIT** at pinned revision
+`7462dfde2f76321b730888f1102a8c3a4bcdecb0`, Windows x64 Checked. The native,
+native-repeat, and managed primary-JIT CoreLib FullDump captures all assert in
+`System.Double:Hypot(double,double):double` during `Generate code`; each stops
+after 7,083 of the expected 75,676 method headers. The managed assertion is at
+`CodeGen.VariableLiveKeeper.Diagnostics.cs:143`, the corresponding default
+branch. Native and managed method-header sequences match through the failure;
+the native-repeat order diverges at zero-based header index 3,090. This is a
+debug-diagnostic failure, not evidence of a generated-code defect.
+
+`siVarLoc::storeVariableInRegisters` intentionally sets `VLT_INVALID` for
+locations such as XMM16 that cannot be encoded in debugger scope information.
+`genSetScopeInfoUsingVariableRanges` filters those locations before publishing
+them to the EE, but `CodeGenInterface::dumpSiVarLoc` does not handle
+`VLT_INVALID`. During `System.Double:Hypot`, the dump shows `xmm16` becoming
+live as V17 and ends with `V17 loc15:` immediately before the assertion.
+`genEmitBlock` invokes the Debug variable-live-range history dump after emitting
+the block, which passes the invalid location to the printer.
+
+The manifests, assertion text, dumps, and native repeat comparison are under
+`artifacts\corelib-full-parity-7462`. None of the captures establishes
+full-CoreLib parity. Keep the managed diagnostic behavior aligned with the
+pinned source until an upstream correction is accepted.

@@ -12,9 +12,12 @@ The [continuation plan](PLAN.md) records current priorities and parity gates; th
 limitations. Confirmed native defects are listed in
 [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md). The source-port backlog has been
 retired after its tracked items were resolved or explicitly accepted as
-limitations. The remaining dynamic TLS input-ownership evidence boundary is
-kept in [state.json](state.json); do not claim parity or change compiler
-constants until its EE-assigned slot inputs are understood.
+limitations. The dynamic TLS evidence boundary is kept in
+[state.json](state.json). A matched 144-method `FromAsyncImpl` cohort
+reproduced no allocation, index, or numeric-offset divergence, but observed
+one additional managed `Task.t_currentTask` and block-info request per method;
+its immediate cause remains unresolved. This scoped result is not full parity
+evidence and does not justify changing compiler constants.
 Keep completion evidence with tests, artifacts, and commits, and record accepted
 observable differences only in the deviation register. The managed implementation
 and tests live in this repository; its upstream source reference is pinned in
@@ -322,6 +325,12 @@ Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,
 For the managed run, additionally supply `-ManagedJit` and `-ManagedSource`
 identifying the C# revision and any preserved uncommitted source snapshot.
 The host must be Checked/debug and ABI-compatible with that managed binary.
+Tool-driven captures can pass arguments with `-CorpusArguments`, set independent
+`-JitDumpSelector` and `-AltJitSelector` filters, and add non-default
+`DOTNET_`/`COMPlus_` settings through `-AdditionalEnvironment`. The manifest
+records the arguments and environment while the type and expected-method checks
+continue to validate captured dump headers. `-TypeName` can name a generic type
+definition to validate its closed instantiations as one cohort.
 The runner isolates the child environment, rejects reused output directories,
 requires exactly the expected case-sensitive compilation headers, and records
 binary hashes, settings, timeout/exit status, and the raw dump. It sets

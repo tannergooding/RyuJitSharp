@@ -10,8 +10,18 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Recover the checkpoint-referenced runtime-async input captures; artifacts\\dynamic-tls-inputs is absent from the current worktree. Identify the first EE-assigned TLS slot allocation where native and managed indices or offsets diverge before claiming parity or changing compiler constants.",
+    "nextAction": "System.Private.Xml SetupEncoding is fixed: CEE_POP of a loaded struct now uses gtChangeOperToNullCheck, matching pinned native; focused ImporterEffectsTests passed 102 Debug and 95 Release tests. Managed, native, and native-repeat System.Private.Xml disassembly is byte-identical across 18,254 method headers and 3,901,136 code bytes. Next: continue the full CoreLib parity checkpoint at B526 (System.Double:Hypot FullDump assertion); keep the System.Collections value-numbering assertion, raw CoreLib comment/RWD blocks, and 144-method dynamic-TLS callback difference explicit.",
     "unresolvedConditionalCleanup": [],
+    "activeBatch": {
+      "scope": "Fix and validate the managed System.Xml.XmlTextReaderImpl:SetupEncoding(System.Text.Encoding) importer regression against pinned native behavior.",
+      "completionCondition": "CEE_POP of a loaded struct uses gtChangeOperToNullCheck for the native-equivalent GT_NULLCHECK tree; the focused regression test passes in Debug and Release, and the complete System.Private.Xml disassembly matches native and native-repeat byte-for-byte.",
+      "validation": "ImporterEffectsTests passed 102/102 in Debug and 95/95 in Release. Matched Windows x64 PMI captures covered 18,188 methods (1,435 types; one skipped type and six skipped methods); all 18,254 disassembly headers and 3,901,136 code bytes match across native, native-repeat, and managed. Raw Importation differences remain the same 25 process-specific handle lines in managed and native-repeat; do not canonicalize them.",
+      "deferrals": [
+        "The full-CoreLib FullDump gate remains blocked by B526 at System.Double:Hypot.",
+        "The System.Collections value-numbering assertion and CoreLib comment/RWD-only blocks remain unresolved; preserve raw differences and do not apply a comparison allowance.",
+        "The 144-method dynamic-TLS extra callback count remains unexplained; do not change TLS constants."
+      ]
+    },
     "evidenceLinks": [
       "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json",
       "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json"
@@ -287,7 +297,7 @@
         ],
         "tableTests": "15/15 passed in Debug and Release for each target.",
         "arm32CodeGenTests": "1/1 passed in Debug and Release for win-arm.",
-        "validation": "Full analyzers enabled with an isolated target-test source selection. The ARM32 caller fixture used a temporary copy of ArmCalleeSavedRegisterTests.WithCodeGen because the full source has unrelated CS0182 attribute-expression errors. Native execution/generated-code parity is not established; the dynamic TLS input-ownership boundary remains unresolved."
+        "validation": "Full analyzers enabled with an isolated target-test source selection. The ARM32 caller fixture used a temporary copy of ArmCalleeSavedRegisterTests.WithCodeGen because the full source has unrelated CS0182 attribute-expression errors. Native execution/generated-code parity is not established; the matched TLS cohort found no allocation/index/offset divergence, but the extra managed callback count remains unexplained."
       },
       "corelibCodegen": {
         "architecture": "Windows x64",
@@ -296,6 +306,95 @@
         "methods": 75676,
         "skippedTypes": 60,
         "skippedMethods": 1267
+      },
+      "corelibDisassembly": {
+        "architecture": "Windows x64",
+        "methodHeaders": 75832,
+        "uniqueMethodHeaders": 75652,
+        "codeSizeMismatches": 0,
+        "totalCodeBytes": 8431355,
+        "instructionLineDifferences": 0,
+        "rawBlockDifferences": {
+          "nonAsciiCommentEncodingOnly": 13,
+          "rwdAbsolutePointersOnly": 3,
+          "rwdPointerCount": 34,
+          "addressDelta": "0x9140000"
+        },
+        "nativeRepeat": "Byte-identical",
+        "evidence": "artifacts\\corelib-full-parity-7462\\cse-register-count-fix1\\full-disasm-comparison.json"
+      },
+      "systemCollectionsDisassembly": {
+        "architecture": "Windows x64",
+        "pmiTypes": 446,
+        "pmiMethods": 5755,
+        "pmiSkippedMethods": 1,
+        "methodHeaders": 5756,
+        "uniqueMethodHeaders": 5756,
+        "codeSizeMismatches": 0,
+        "totalCodeBytes": 633588,
+        "rawBlockDifferences": 0,
+        "nativeRepeat": "Byte-identical",
+        "evidence": "artifacts\\corelib-full-parity-7462\\system-collections-cse-fix1-retry1\\system-collections-disasm-comparison.json"
+      },
+      "systemCollectionsFullDump": {
+        "architecture": "Windows x64",
+        "method": "System.Collections.Generic.OrderedDictionary`2[System.__Canon,System.Nullable`1[int]]:RemoveEntryFromBucket(int):this",
+        "stage": "Do value numbering",
+        "fullLibraryNativeExitCode": "0xC0000602",
+        "fullLibraryNativeBytes": 3150972607,
+        "nativeRepeatAndManaged": "Both filtered captures assert at the same method and stage with exit 0xC0000602.",
+        "nativeManagedFirstDifference": "D015 profile diagnostic at line 590; raw output preserved.",
+        "nativeRepeatFirstDifference": "Process-local class-handle address at line 72; raw output preserved without canonicalization.",
+        "evidence": [
+          "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-cse-fix1\\native\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\native\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\native-repeat\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\managed\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\native-repeat-comparison.json",
+          "artifacts\\corelib-full-parity-7462\\system-collections-full-dump-target-repro1\\managed-comparison.json"
+        ]
+      },
+      "systemLinqExpressionsDisassembly": {
+        "architecture": "Windows x64",
+        "pmiTypes": 839,
+        "pmiMethods": 5939,
+        "pmiSkippedTypes": 8,
+        "pmiSkippedMethods": 85,
+        "methodHeaders": 5909,
+        "uniqueMethodHeaders": 5909,
+        "codeSizeMismatches": 0,
+        "totalCodeBytes": 830513,
+        "rawBlockDifferences": 0,
+        "nativeRepeat": "Byte-identical",
+        "evidence": "artifacts\\corelib-full-parity-7462\\system-linq-expressions-cse-fix1\\system-linq-expressions-disasm-comparison.json"
+      },
+      "systemPrivateXmlDisassembly": {
+        "architecture": "Windows x64",
+        "pmiTypes": 1435,
+        "pmiMethods": 18188,
+        "pmiSkippedTypes": 1,
+        "pmiSkippedMethods": 6,
+        "methodHeaders": 18254,
+        "codeSizeRecords": 18254,
+        "totalCodeBytes": 3901136,
+        "nativeRepeat": "Byte-identical",
+        "managed": "Byte-identical to native and native-repeat",
+        "sha256": "1D9441ED27D1C412D86EA2F9C2F3B3248830440ED407634519799485CF216E17",
+        "setupEncodingFix": "CEE_POP now converts a loaded struct with gtChangeOperToNullCheck. Filtered JitDump prefixes differ on the same 25 process-specific handle lines in managed and native-repeat; tree behavior matches.",
+        "focusedTests": {
+          "debugPassed": 102,
+          "releasePassed": 95
+        },
+        "evidence": [
+          "artifacts\\corelib-full-parity-7462\\system-private-xml-cse-fix1\\native\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-private-xml-cse-fix1\\native-repeat\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-private-xml-setupencoding-translation-fix1\\managed-disasm\\manifest.json",
+          "artifacts\\corelib-full-parity-7462\\system-private-xml-setupencoding-translation-fix1\\system-private-xml-disasm-comparison.json",
+          "artifacts\\corelib-full-parity-7462\\system-private-xml-setupencoding-translation-fix1\\managed-importation.json",
+          "artifacts\\corelib-full-parity-7462\\system-private-xml-setupencoding-translation-fix1\\native-repeat-importation.json",
+          "artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-19_16_41_55_net11.0.trx",
+          "artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-19_16_41_55_net11.0.trx"
+        ]
       },
       "eventsourceInitialThreeFullDump": {
         "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
@@ -328,10 +427,10 @@
       }
     },
     "dynamicTlsInputBoundary": {
-      "status": "unresolved-input-ownership",
-      "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",
-      "nextAction": "Recover the preserved input captures, then identify the first EE-assigned TLS slot allocation where native and managed indices or offsets diverge.",
-      "evidence": "artifacts\\dynamic-tls-inputs (absent from the current worktree; recovery required)"
+      "status": "no-allocation-or-offset-divergence-reproduced",
+      "finding": "At pinned revision 7462, matched native, native-repeat, and managed captures covered 144 TaskFactory<T>.FromAsyncImpl methods. Native and managed each made 53 TLS allocations with identical sequences. Native made one Task.t_currentTask field/block-info request per selected method; managed made two, with the extra request attributed to the same top-level caller identities. The returned field and block metadata matched, including TLS index 6 and offsets 88, 304, and 312. Native-repeat caller traces matched after process-address normalization. Importation prefixes were raw-identical for 112/144 methods; the other 32 had only SignatureToLookupInfoMap address-registration lines differing, with the same difference set in the native-repeat control and no canonicalization. The immediate reason for the additional managed callback is not established.",
+      "nextAction": "Do not change TLS constants based on this capture. Retain the unexplained callback-count difference as an open evidence limit, not as a reproduced index/offset mismatch. Instrument the immediate EE callback call stack only if a later matched output comparison implicates this boundary.",
+      "evidence": "artifacts\\dynamic-tls-inputs\\evidence-boundary-7462-caller-trace.json; artifacts\\dynamic-tls-inputs\\capture-7462-corelib-pmi-caller-trace-900s\\tls-caller-trace-comparison.json; artifacts\\dynamic-tls-inputs\\capture-7462-corelib-pmi-caller-trace-900s\\importation-extracts\\raw-diff-analysis.json; pinned source context: 7462dfde2f76321b730888f1102a8c3a4bcdecb0 src/coreclr/vm/jitinterface.cpp:1290-1308,1320-1324; src/coreclr/vm/threadstatics.cpp:698-762,1159-1204; sources/Core/jit/compiler/Compiler.imp.cs:12609-12619."
     }
   },
   "sourceMap": [
