@@ -167,6 +167,9 @@ public partial class Compiler
 #if TARGET_RISCV64
         groupArrayWithIndex = !varTypeIsStruct(elementType);
 #endif
+#if TARGET_WASM
+        groupArrayWithIndex = varTypeIsGC(array.Type) && !varTypeIsStruct(elementType);
+#endif
         var pointerType = array.Type is TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF;
         var firstElement = gtNewIconNode(TYP_I_IMPL, elementOffset);
         if (groupArrayWithOffset)

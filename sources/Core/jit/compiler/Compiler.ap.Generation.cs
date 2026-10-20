@@ -121,6 +121,13 @@ public partial class Compiler
                     assert(thisArg is not null);
                     assertionInfo = new(optCreateAssertion(thisArg.Node, null, equals: false));
                 }
+                else if (optLocalAssertionProp && call.IsHelperCall() &&
+                         (call.HelperNum is CORINFO_HELP_ARRADDR_ST or CORINFO_HELP_LDELEMA_REF))
+                {
+                    var array = call.Args.GetUserArgByIndex(0);
+                    assert(array is not null);
+                    assertionInfo = new(optCreateAssertion(array.Node, null, equals: false));
+                }
                 else if (!optLocalAssertionProp)
                 {
                     assert(vnStore is not null);

@@ -452,6 +452,102 @@ internal static unsafe class ImporterCallTests
         }
     }
 
+#if FEATURE_READYTORUN
+    [Test]
+    public static void NullableBoxingUsesReadyToRunAllocationForTheUnderlyingType()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.embedGenericHandle =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&EmbedNullableBoxClass;
+        vtable.Base.Base.getBoxHelper = &GetNullableBoxHelper;
+        vtable.Base.Base.getClassAttribs = &GetNullableBoxClassAttributes;
+        vtable.Base.Base.getFieldInClass = &GetNullableBoxValueField;
+        vtable.Base.Base.getFieldOffset = &GetNullableBoxValueOffset;
+        vtable.Base.Base.getFieldType = &GetNullableBoxValueType;
+        vtable.Base.Base.getNewHelper = &GetNullableBoxNewHelper;
+        vtable.Base.Base.getReadyToRunHelper = &GetNullableBoxReadyToRunHelper;
+        vtable.Base.Base.getTypeForBox = &GetNullableBoxType;
+        vtable.Base.Base.classMustBeLoadedBeforeCodeIsRun = &RestoreNullableBoxClass;
+        vtable.Base.Base.getArrayRank = &GetBoxRank;
+        vtable.Base.Base.getTypeInstantiationArgument = &GetBoxTypeArgument;
+        vtable.Base.Base.printClassName = &PrintBoxClassName;
+        vtable.Base.Base.runWithSPMIErrorTrap =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, delegate* unmanaged[Cdecl]<void*, void>, void*, byte>)&RunWithErrorTrap;
+        var ee = new NullableBoxEE {
+            Interface = new ICorJitInfo { lpVtbl = &vtable },
+            NullableClass = 0x1000,
+            BoxedClass = 0x2000,
+        };
+#if DEBUG
+        using var jitTls = new JitTls(&ee.Interface);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+        compiler.opts.SetMinOpts(false);
+        compiler.info = new Compiler.Info {
+            compCompHnd = &ee.Interface,
+            compMethodHnd = (CORINFO_METHOD_STRUCT_*)0x3000,
+            compMaxStack = 1,
+            compRetBuffArg = Globals.BAD_VAR_NUM,
+        };
+        compiler.eeInfoInitialized = true;
+        compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.compCurBB.setBBProfileWeight(100);
+        compiler.lvaTable = new LclVarDsc[8];
+        compiler.lvaCount = 1;
+        JitTls.Compiler = compiler;
+        compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
+        compiler.lvaTable[0].Layout = new ClassLayout(
+            (CORINFO_CLASS_STRUCT_*)ee.NullableClass, true, 8, var_types.TYP_STRUCT, "Nullable", "Nullable");
+        compiler.stackState.esStack = [new StackEntry { val = compiler.gtNewLclvNode(var_types.TYP_STRUCT, 0) }];
+        compiler.stackState.esStackDepth = 1;
+
+        try
+        {
+            compiler.impBeginTreeList();
+            var token = new CORINFO_RESOLVED_TOKEN {
+                tokenScope = (CORINFO_MODULE_STRUCT_*)0x4000,
+                token = 0x02000001,
+                hClass = (CORINFO_CLASS_STRUCT_*)ee.NullableClass,
+            };
+
+            Assert.That(compiler.impImportAndPushBoxForNullable(token), Is.True);
+
+            var readyToRunRequests = ee.ReadyToRunRequests;
+            var readyToRunHelper = ee.ReadyToRunHelper;
+            var readyToRunToken = ee.ReadyToRunToken;
+            var embeddedClass = (nint)ee.EmbeddedClass;
+            var newHelperClass = (nint)ee.NewHelperClass;
+            var boxedClass = ee.BoxedClass;
+            var nullableClass = ee.NullableClass;
+            var originalTokenScope = (nint)token.tokenScope;
+            var originalToken = token.token;
+            var originalClass = (nint)token.hClass;
+            var stackDepth = compiler.stackState.esStackDepth;
+            Assert.Multiple(() => {
+                Assert.That(readyToRunRequests, Is.EqualTo(1));
+                Assert.That(readyToRunHelper, Is.EqualTo(CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW));
+                Assert.That((nint)readyToRunToken.hClass, Is.EqualTo(boxedClass));
+                Assert.That((nint)readyToRunToken.tokenScope, Is.EqualTo(originalTokenScope));
+                Assert.That(readyToRunToken.token, Is.EqualTo(originalToken));
+                Assert.That(embeddedClass, Is.EqualTo(boxedClass));
+                Assert.That(newHelperClass, Is.EqualTo(boxedClass));
+                Assert.That(originalClass, Is.EqualTo(nullableClass));
+                Assert.That(stackDepth, Is.EqualTo(1));
+            });
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+#endif
+
     [TestCase(1, 3)]
     [TestCase(3, 1)]
     [TestCase(3, 3)]
@@ -862,6 +958,88 @@ internal static unsafe class ImporterCallTests
         public TypeCompareState EnumState;
         public int RestoreCount;
         public int EnumQueries;
+    }
+
+    private struct NullableBoxEE
+    {
+        public ICorJitInfo Interface;
+        public nint NullableClass;
+        public nint BoxedClass;
+        public CORINFO_RESOLVED_TOKEN ReadyToRunToken;
+        public CORINFO_CLASS_STRUCT_* EmbeddedClass;
+        public CORINFO_CLASS_STRUCT_* NewHelperClass;
+        public CorInfoHelpFunc ReadyToRunHelper;
+        public int ReadyToRunRequests;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void EmbedNullableBoxClass(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* token,
+        byte importParent, CORINFO_METHOD_STRUCT_* caller, CORINFO_GENERICHANDLE_RESULT* result)
+    {
+        var ee = (NullableBoxEE*)self;
+        ee->EmbeddedClass = token->hClass;
+        *result = default;
+        result->handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
+        result->compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)token->hClass;
+        result->lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+        result->lookup.constLookup.handle = result->compileTimeHandle;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoHelpFunc GetNullableBoxHelper(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetNullableBoxClassAttributes(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_FIELD_STRUCT_* GetNullableBoxValueField(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int index)
+        => (CORINFO_FIELD_STRUCT_*)0x5000;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetNullableBoxValueOffset(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field) => 4;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoType GetNullableBoxValueType(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field,
+        CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
+    {
+        if (structType is not null)
+        {
+            *structType = null;
+        }
+
+        return CorInfoType.CORINFO_TYPE_INT;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoHelpFunc GetNullableBoxNewHelper(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, bool* sideEffects)
+    {
+        ((NullableBoxEE*)self)->NewHelperClass = type;
+        *sideEffects = false;
+        return CorInfoHelpFunc.CORINFO_HELP_NEWSFAST;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte GetNullableBoxReadyToRunHelper(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* token,
+        CorInfoHelpFunc helper, CORINFO_METHOD_STRUCT_* method, CORINFO_CONST_LOOKUP* lookup)
+    {
+        var ee = (NullableBoxEE*)self;
+        ee->ReadyToRunToken = *token;
+        ee->ReadyToRunHelper = helper;
+        ee->ReadyToRunRequests++;
+        *lookup = default;
+        lookup->accessType = InfoAccessType.IAT_VALUE;
+        lookup->addr = (void*)0x6000;
+        return 1;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetNullableBoxType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => (CORINFO_CLASS_STRUCT_*)((NullableBoxEE*)self)->BoxedClass;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void RestoreNullableBoxClass(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+    {
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

@@ -5750,11 +5750,9 @@ public partial class Compiler
             return false;
         }
 
-        if (eeIsSharedInst(nullableCls) || IsReadyToRun)
+        if (eeIsSharedInst(nullableCls))
         {
-            // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
-            // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
-            // that we don't have).
+            // TODO-CQ: Enable the optimization for shared generics.
             return false;
         }
 
@@ -5781,12 +5779,22 @@ public partial class Compiler
 
         // Create the allocation node for the box
         var typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
-
-        bool hasSideEffects;
-        var helperTemp = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
-
-        var typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
-        var allocObj = gtNewAllocObjNode(TYP_REF, typeToBoxHnd, helperTemp, hasSideEffects, typeToBox);
+        GenTreeAllocObj? allocObj;
+        if (IsReadyToRun)
+        {
+            // R2R cannot embed arbitrary class handles, so allocate through a token for the boxed type.
+            var boxedToken = resolvedToken;
+            boxedToken.hClass = typeToBox;
+            allocObj = gtNewAllocObjNode(boxedToken, info.compMethodHnd, useParent: false);
+            assert(allocObj is not null);
+        }
+        else
+        {
+            bool hasSideEffects;
+            var helperTemp = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+            var typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
+            allocObj = gtNewAllocObjNode(TYP_REF, typeToBoxHnd, helperTemp, hasSideEffects, typeToBox);
+        }
 
         // Now we need to copy value into the allocated box
         var objLclNum = lvaGrabTemp(shortLifetime: true, "obj nullable box");

@@ -75,7 +75,7 @@ public static class CorInfoHelpFuncExtensions
         None,                                       // CORINFO_HELP_GETREFANY
 #endif
         MutatesHeap,                                // CORINFO_HELP_ARRADDR_ST
-        IsPure,                                     // CORINFO_HELP_LDELEMA_REF
+        IsPure | NonNullReturn,                     // CORINFO_HELP_LDELEMA_REF
         AlwaysThrow,                                // CORINFO_HELP_THROW
         AlwaysThrow,                                // CORINFO_HELP_RETHROW
         MutatesHeap,                                // CORINFO_HELP_THROWEXACT
@@ -142,7 +142,7 @@ public static class CorInfoHelpFuncExtensions
         IsNoEscape,                                 // CORINFO_HELP_NATIVE_MEMSET
         IsPure | NonNullReturn,                     // CORINFO_HELP_RUNTIMEHANDLE_METHOD
         IsPure | NonNullReturn,                     // CORINFO_HELP_RUNTIMEHANDLE_CLASS
-        IsPure,                                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
+        IsPure | NonNullReturn,                     // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
         MutatesHeap,                                // CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
         MutatesHeap,                                // CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
         MutatesHeap,                                // CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
