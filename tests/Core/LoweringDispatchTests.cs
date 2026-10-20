@@ -346,6 +346,31 @@ internal static unsafe class LoweringDispatchTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NonWasmIndexAddressDispatchLeavesNodeForCodegen(bool boundsChecked)
+    {
+        Assume.That(!Configuration.TARGET_WASM);
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_REF;
+            compiler.lvaTable[1].Type = TYP_INT;
+            var array = compiler.gtNewLclvNode(TYP_REF, 0);
+            var index = compiler.gtNewLclvNode(TYP_INT, 1);
+            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, 4, 8, 16, boundsChecked);
+            var block = NewBlock(array, index, address);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+
+            lowering.LowerRange(block, new LIR.ReadOnlyRange(array, address));
+
+            Assert.That(block.FirstNode, Is.SameAs(array));
+            Assert.That(block.LastNode, Is.SameAs(address));
+            Assert.That(address.Arr, Is.SameAs(array));
+            Assert.That(address.Index, Is.SameAs(index));
+            Assert.That(array.Next, Is.SameAs(index));
+            Assert.That(index.Next, Is.SameAs(address));
+        });
+    }
+
     [Test]
     public static void ConditionalBranchDispatchUsesComparisonFlags()
     {

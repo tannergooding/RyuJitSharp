@@ -619,12 +619,11 @@ public sealed partial class Lowering
 
             case GT_INDEX_ADDR:
             {
-                if (!Configuration.TARGET_WASM)
+                if (Configuration.TARGET_WASM)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Index-address lowering is only supported on Wasm.");
+                    LowerIndexAddr(node.AsIndexAddr());
                 }
 
-                LowerIndexAddr(node.AsIndexAddr());
                 break;
             }
 
