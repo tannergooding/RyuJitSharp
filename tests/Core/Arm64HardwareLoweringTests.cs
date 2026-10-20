@@ -289,6 +289,22 @@ internal static unsafe class Arm64HardwareLoweringTests
         });
     }
 
+    [TestCase(GT_BSWAP)]
+    [TestCase(GT_BSWAP16)]
+    public static void ByteSwapNodesRemainUnchangedOnArm64(genTreeOps operation)
+    {
+        WithLowering((compiler, lowering, block) =>
+        {
+            var operand = compiler.gtNewLclvNode(TYP_INT, 0);
+            var node = compiler.gtNewUnaryNode(operation, TYP_INT, operand);
+            Append(block, operand, node);
+
+            Assert.That(LowerNode(lowering, node), Is.Null);
+            Assert.That(node.Oper, Is.EqualTo(operation));
+            Assert.That(node.AsUnOp().Op1, Is.SameAs(operand));
+        });
+    }
+
     private static void Append(BasicBlock block, params GenTree[] nodes)
     {
         foreach (var node in nodes)

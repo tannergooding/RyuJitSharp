@@ -517,13 +517,11 @@ public sealed partial class Lowering
             case GT_BSWAP:
             case GT_BSWAP16:
             {
-                if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+                if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
-                        "Byte-swap intrinsic lowering requires xarch hardware intrinsics.");
+                    LowerBswapOp(node.AsUnOp());
                 }
 
-                LowerBswapOp(node.AsUnOp());
                 break;
             }
 
