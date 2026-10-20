@@ -3433,7 +3433,7 @@ public sealed partial class CodeGen
 
                 _ = operandBuilder.AppendLine(CultureInfo.InvariantCulture,
                     $"        (byte)ID_OP_{operandKind}, // IF_{name}");
-                _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"        \"IF_{name}\",");
+                _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"            \"IF_{name}\",");
             }
 
             _ = unionFormatBuilder.AppendLine(CultureInfo.InvariantCulture,
@@ -3609,32 +3609,32 @@ public partial class Emitter
         {
             if (Configuration.TARGET_XARCH)
             {
-                return s_emitFmtNamesXarch;
+                return EmitFmtNamesXarch.Values;
             }
 
             if (Configuration.TARGET_ARM)
             {
-                return s_emitFmtNamesArm32;
+                return EmitFmtNamesArm32.Values;
             }
 
             if (Configuration.TARGET_ARM64)
             {
-                return s_emitFmtNamesArm64;
+                return EmitFmtNamesArm64.Values;
             }
 
             if (Configuration.TARGET_WASM)
             {
-                return s_emitFmtNamesWasm;
+                return EmitFmtNamesWasm.Values;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                return s_emitFmtNamesLoongArch64;
+                return EmitFmtNamesLoongArch64.Values;
             }
 
             if (Configuration.TARGET_RISCV64)
             {
-                return s_emitFmtNamesRiscV64;
+                return EmitFmtNamesRiscV64.Values;
             }
 
             throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
@@ -3659,23 +3659,41 @@ public partial class Emitter
     private static ReadOnlySpan<byte> s_emitFmtToOpsRiscV64 => [
 {{emitFmtToOpsBuilders["RISCV64"]}}    ];
 
-    private static readonly string[] s_emitFmtNamesXarch = [
-{{emitFmtNamesBuilders["XARCH"]}}    ];
+    private static class EmitFmtNamesXarch
+    {
+        internal static readonly string[] Values = [
+{{emitFmtNamesBuilders["XARCH"]}}        ];
+    }
 
-    private static readonly string[] s_emitFmtNamesArm32 = [
-{{emitFmtNamesBuilders["ARM32"]}}    ];
+    private static class EmitFmtNamesArm32
+    {
+        internal static readonly string[] Values = [
+{{emitFmtNamesBuilders["ARM32"]}}        ];
+    }
 
-    private static readonly string[] s_emitFmtNamesArm64 = [
-{{emitFmtNamesBuilders["ARM64"]}}    ];
+    private static class EmitFmtNamesArm64
+    {
+        internal static readonly string[] Values = [
+{{emitFmtNamesBuilders["ARM64"]}}        ];
+    }
 
-    private static readonly string[] s_emitFmtNamesWasm = [
-{{emitFmtNamesBuilders["WASM"]}}    ];
+    private static class EmitFmtNamesWasm
+    {
+        internal static readonly string[] Values = [
+{{emitFmtNamesBuilders["WASM"]}}        ];
+    }
 
-    private static readonly string[] s_emitFmtNamesLoongArch64 = [
-{{emitFmtNamesBuilders["LOONGARCH64"]}}    ];
+    private static class EmitFmtNamesLoongArch64
+    {
+        internal static readonly string[] Values = [
+{{emitFmtNamesBuilders["LOONGARCH64"]}}        ];
+    }
 
-    private static readonly string[] s_emitFmtNamesRiscV64 = [
-{{emitFmtNamesBuilders["RISCV64"]}}    ];
+    private static class EmitFmtNamesRiscV64
+    {
+        internal static readonly string[] Values = [
+{{emitFmtNamesBuilders["RISCV64"]}}        ];
+    }
 
     private static ReadOnlySpan<IS_INFO> emitFmtToSchedInfo => [
 {{schedulingBuilder}}    ];

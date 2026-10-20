@@ -34,7 +34,7 @@ public ref struct PlatformClassifier
     {
         this = default;
 
-        if (Configuration.TARGET_X86)
+        if (Configuration.TARGET_XARCH && !Configuration.TARGET_64BIT)
         {
             _x86 = new X86Classifier(info);
             _kind = ClassifierKind.X86;
@@ -86,14 +86,15 @@ public ref struct PlatformClassifier
         Justification = "An invalid ABI classifier kind indicates corrupt compiler state and must terminate compilation.")]
     public readonly int StackSize => _kind switch
     {
-        ClassifierKind.X86 => _x86.StackSize,
-        ClassifierKind.WindowsAmd64 => _windowsAmd64.StackSize,
-        ClassifierKind.UnixAmd64 => _unixAmd64.StackSize,
-        ClassifierKind.Arm64 => _arm64.StackSize,
-        ClassifierKind.Arm32 => _arm32.StackSize,
-        ClassifierKind.RiscV64 => _riscV64.StackSize,
-        ClassifierKind.LoongArch64 => _loongArch64.StackSize,
-        ClassifierKind.Wasm => _wasm.StackSize,
+        ClassifierKind.X86 when Configuration.TARGET_XARCH && !Configuration.TARGET_64BIT => _x86.StackSize,
+        ClassifierKind.WindowsAmd64 when Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI =>
+            _windowsAmd64.StackSize,
+        ClassifierKind.UnixAmd64 when Configuration.UNIX_AMD64_ABI => _unixAmd64.StackSize,
+        ClassifierKind.Arm64 when Configuration.TARGET_ARM64 => _arm64.StackSize,
+        ClassifierKind.Arm32 when Configuration.TARGET_ARM => _arm32.StackSize,
+        ClassifierKind.RiscV64 when Configuration.TARGET_RISCV64 => _riscV64.StackSize,
+        ClassifierKind.LoongArch64 when Configuration.TARGET_LOONGARCH64 => _loongArch64.StackSize,
+        ClassifierKind.Wasm when Configuration.TARGET_WASM => _wasm.StackSize,
         _ => throw new FatalJitException("Invalid ABI classifier kind."),
     };
 
@@ -102,42 +103,42 @@ public ref struct PlatformClassifier
     {
         switch (_kind)
         {
-            case ClassifierKind.X86:
+            case ClassifierKind.X86 when Configuration.TARGET_XARCH && !Configuration.TARGET_64BIT:
             {
                 return _x86.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.WindowsAmd64:
+            case ClassifierKind.WindowsAmd64 when Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI:
             {
                 return _windowsAmd64.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.UnixAmd64:
+            case ClassifierKind.UnixAmd64 when Configuration.UNIX_AMD64_ABI:
             {
                 return _unixAmd64.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.Arm64:
+            case ClassifierKind.Arm64 when Configuration.TARGET_ARM64:
             {
                 return _arm64.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.Arm32:
+            case ClassifierKind.Arm32 when Configuration.TARGET_ARM:
             {
                 return _arm32.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.RiscV64:
+            case ClassifierKind.RiscV64 when Configuration.TARGET_RISCV64:
             {
                 return _riscV64.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.LoongArch64:
+            case ClassifierKind.LoongArch64 when Configuration.TARGET_LOONGARCH64:
             {
                 return _loongArch64.Classify(comp, type, structLayout, wellKnownParam);
             }
 
-            case ClassifierKind.Wasm:
+            case ClassifierKind.Wasm when Configuration.TARGET_WASM:
             {
                 return _wasm.Classify(comp, type, structLayout, wellKnownParam);
             }
