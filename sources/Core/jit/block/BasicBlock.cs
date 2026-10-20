@@ -1376,7 +1376,10 @@ public sealed partial class BasicBlock : LIR.Range
             bbID = compiler.compBasicBlockID++
         };
 
-        MeasureBasicBlockSize();
+        if (Configuration.MEASURE_BLOCK_SIZE)
+        {
+            MeasureBasicBlockSize();
+        }
 
         // fgLookupBB() is invalid until fgInitBBLookup() is called again.
         compiler.fgInvalidateBBLookup();
@@ -1423,9 +1426,9 @@ public sealed partial class BasicBlock : LIR.Range
         return block;
     }
 
-    [Conditional("MEASURE_BLOCK_SIZE")]
     private static void MeasureBasicBlockSize()
     {
+        Debug.Assert(Configuration.MEASURE_BLOCK_SIZE);
         s_Count += 1;
         throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
     }

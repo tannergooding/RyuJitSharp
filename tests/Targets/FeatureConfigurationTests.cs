@@ -126,11 +126,95 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
-    public static void NonTargetCompileFeaturesMatchCurrentBuildPolicy()
+    public static void NonTargetFeaturesMatchCurrentBuildPolicy()
     {
         Assert.That(Configuration.FEATURE_JIT_METHOD_PERF, Is.True);
         Assert.That(Configuration.FEATURE_ITINSTRUCTION, Is.False);
         Assert.That(Configuration.FEATURE_PLI_INSTRUCTION, Is.False);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void OptionalConfigurationFeaturesUseRuntimeSwitches(bool enabled)
+    {
+        var switchNames = new[]
+        {
+            "RyuJitSharp.DEBUG_EMIT",
+            "RyuJitSharp.VARSET_COUNTOPS",
+            "RyuJitSharp.ALLVARSET_COUNTOPS",
+            "RyuJitSharp.EMIT_BACKWARDS_NAVIGATION",
+            "RyuJitSharp.DUMP_FLOWGRAPHS",
+            "RyuJitSharp.DUMP_GC_TABLES",
+            "RyuJitSharp.TRACK_LSRA_STATS",
+            "RyuJitSharp.FUNC_INFO_LOGGING",
+            "RyuJitSharp.VERIFY_GC_TABLES",
+            "RyuJitSharp.CALL_ARG_STATS",
+            "RyuJitSharp.COUNT_AST_OPERS",
+            "RyuJitSharp.COUNT_BASIC_BLOCKS",
+            "RyuJitSharp.DISPLAY_SIZES",
+            "RyuJitSharp.EMITTER_STATS",
+            "RyuJitSharp.MEASURE_BLOCK_SIZE",
+            "RyuJitSharp.MEASURE_FATAL",
+            "RyuJitSharp.MEASURE_NODE_SIZE",
+            "RyuJitSharp.MEASURE_PTRTAB_SIZE",
+            "RyuJitSharp.NODEBASH_STATS",
+        };
+        var hadOriginalValue = new bool[switchNames.Length];
+        var originalValues = new bool[switchNames.Length];
+
+        for (var i = 0; i < switchNames.Length; i++)
+        {
+            hadOriginalValue[i] = AppContext.TryGetSwitch(switchNames[i], out originalValues[i]);
+            AppContext.SetSwitch(switchNames[i], enabled);
+        }
+
+        try
+        {
+            Assert.That(Configuration.DEBUG_EMIT, Is.EqualTo(enabled));
+            Assert.That(Configuration.VARSET_COUNTOPS, Is.EqualTo(enabled));
+            Assert.That(Configuration.ALLVARSET_COUNTOPS, Is.EqualTo(enabled));
+            Assert.That(Configuration.EMIT_BACKWARDS_NAVIGATION, Is.EqualTo(enabled));
+            Assert.That(Configuration.DUMP_FLOWGRAPHS, Is.EqualTo(enabled));
+            Assert.That(Configuration.DUMP_GC_TABLES, Is.EqualTo(enabled));
+            Assert.That(Configuration.TRACK_LSRA_STATS, Is.EqualTo(enabled));
+            Assert.That(Configuration.FUNC_INFO_LOGGING, Is.EqualTo(enabled));
+            Assert.That(Configuration.VERIFY_GC_TABLES, Is.EqualTo(enabled));
+            Assert.That(Configuration.CALL_ARG_STATS, Is.EqualTo(enabled));
+            Assert.That(Configuration.COUNT_AST_OPERS, Is.EqualTo(enabled));
+            Assert.That(Configuration.COUNT_BASIC_BLOCKS, Is.EqualTo(enabled));
+            Assert.That(Configuration.DISPLAY_SIZES, Is.EqualTo(enabled));
+            Assert.That(Configuration.EMITTER_STATS, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_BLOCK_SIZE, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_FATAL, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_NODE_SIZE, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_PTRTAB_SIZE, Is.EqualTo(enabled));
+            Assert.That(Configuration.NODEBASH_STATS, Is.EqualTo(enabled));
+            Assert.That(Configuration.OPTIONAL_STATISTICS, Is.EqualTo(enabled));
+        }
+        finally
+        {
+            for (var i = 0; i < switchNames.Length; i++)
+            {
+                AppContext.SetSwitch(switchNames[i], hadOriginalValue[i] && originalValues[i]);
+            }
+        }
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void JitMethodPerformanceUsesRuntimeFeatureSwitch(bool enabled)
+    {
+        const string switchName = "RyuJitSharp.FEATURE_JIT_METHOD_PERF";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, enabled);
+        try
+        {
+            Assert.That(Configuration.FEATURE_JIT_METHOD_PERF, Is.EqualTo(enabled));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, !hadOriginalValue || originalValue);
+        }
     }
 
     [Test]

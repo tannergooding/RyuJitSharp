@@ -39,6 +39,7 @@
     <Compile Include="..\Core\BlockStoreLoweringTargetTests.cs" Link="BlockStoreLoweringTargetTests.cs" />
     <Compile Include="..\Core\CSELiveAcrossCallCostTests.cs" Link="CSELiveAcrossCallCostTests.cs" />
     <Compile Include="..\Core\ConfigIntegerReinterpretationTests.cs" Link="ConfigIntegerReinterpretationTests.cs" />
+    <Compile Include="..\Core\TargetConfigurationTests.cs" Link="TargetConfigurationTests.cs" />
     <Compile Include="..\Core\CodeGenLinearCastClosureTests.cs" Link="CodeGenLinearCastClosureTests.cs" />
     <Compile Include="..\Core\CorInfoTypeMappingTests.cs" Link="CorInfoTypeMappingTests.cs" />
     <Compile Include="..\Core\EnumUtilityTests.cs" Link="EnumUtilityTests.cs" />

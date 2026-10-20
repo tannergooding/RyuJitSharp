@@ -21,9 +21,9 @@ public partial class Compiler
         genMethodCnt = unchecked(genMethodCnt + 1);
     }
 
-    [Conditional("MEASURE_NODE_SIZE")]
     private static void InitializeNodeSizeStatistics()
     {
+        Debug.Assert(Configuration.MEASURE_NODE_SIZE);
         genNodeSizeStatsPerFunc.Init();
     }
 

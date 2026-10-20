@@ -207,10 +207,14 @@ public partial struct GCInfo
         noGCRegionCount = noGCRegions;
     }
 
-    [System.Diagnostics.Conditional("VERIFY_GC_TABLES")]
     private static unsafe void WriteVerificationMarker(ref byte* destination, ref nuint size,
         bool writeMarker, ushort marker)
     {
+        if (!Configuration.VERIFY_GC_TABLES)
+        {
+            return;
+        }
+
         if (writeMarker)
         {
             *(ushort*)destination = marker;

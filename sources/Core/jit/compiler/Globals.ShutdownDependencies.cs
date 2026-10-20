@@ -40,7 +40,6 @@ public partial class Globals
 
     internal static Histogram memAllocHist => MemAllocHistogram.Instance;
 
-    [System.Diagnostics.Conditional("EMITTER_STATS")]
     internal static void emitterStats(StreamWriter output)
     {
         Emitter.emitterStats(output);

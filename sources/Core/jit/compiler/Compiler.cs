@@ -525,7 +525,10 @@ public partial class Compiler
             //
             // Initialize all the per-method statistics gathering data structures.
             //
-            InitializeNodeSizeStatistics();
+            if (Configuration.MEASURE_NODE_SIZE)
+            {
+                InitializeNodeSizeStatistics();
+            }
         }
 
         if (Configuration.DEBUG && !compIsForInlining)

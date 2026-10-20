@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -68,16 +69,20 @@ public sealed partial class CodeGen
             assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize + ptrMapSize));
         }
 
-        genDumpGCInfoJIT32(infoPtr);
+        if (Configuration.DUMP_GC_TABLES)
+        {
+            genDumpGCInfoJIT32(infoPtr);
+        }
 
         noway_assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + (nuint)_compiler.compInfoBlkSize));
 
         return infoPtr;
     }
 
-    [System.Diagnostics.Conditional("DUMP_GC_TABLES")]
     private unsafe void genDumpGCInfoJIT32(byte* infoPtr)
     {
+        Debug.Assert(Configuration.DUMP_GC_TABLES);
+
         if (_compiler.opts.dspGCtbls)
         {
             var basePtr = infoPtr;

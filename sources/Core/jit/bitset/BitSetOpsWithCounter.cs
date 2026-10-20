@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics;
 
 namespace RyuJitSharp;
 
@@ -215,10 +214,13 @@ public static class BitSetOpsWithCounter<TEnv, TBitSetTraits>
         }
     }
 
-    [Conditional("VARSET_COUNTOPS")]
-    [Conditional("ALLVARSET_COUNTOPS")]
     private static void RecordOp(TEnv env, BitSetSupport.Operation operation)
     {
+        if (!Configuration.VARSET_COUNTOPS && !Configuration.ALLVARSET_COUNTOPS)
+        {
+            return;
+        }
+
         TBitSetTraits.GetOpCounter(env)?.RecordOp(operation);
     }
 }

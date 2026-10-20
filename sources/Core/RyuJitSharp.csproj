@@ -178,6 +178,148 @@
     <RyuJitTargetIsXarch Condition="'$(RyuJitTargetArchitecture)' == 'x64'">true</RyuJitTargetIsXarch>
   </PropertyGroup>
 
+  <!-- Target-dependent integer configuration substitutions -->
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'x86'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>4</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>4</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>8</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes>0</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes>8</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount>1</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount>2</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount>2</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg>0</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>6</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>16</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign Condition="'$(RyuJitTargetIsUnix)' == 'true'">16</RyuJitConfigStackAlign>
+    <RyuJitConfigStackAlign Condition="'$(RyuJitTargetIsUnix)' != 'true'">4</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>18</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'x64'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>8</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>8</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>8</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes Condition="'$(RyuJitTargetIsUnix)' == 'true'">32</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes Condition="'$(RyuJitTargetIsUnix)' != 'true'">0</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes Condition="'$(RyuJitTargetIsUnix)' == 'true'">32</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes Condition="'$(RyuJitTargetIsUnix)' != 'true'">0</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount Condition="'$(RyuJitTargetIsUnix)' == 'true'">2</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxArgRegCount Condition="'$(RyuJitTargetIsUnix)' != 'true'">1</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount Condition="'$(RyuJitTargetIsUnix)' == 'true'">4</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxRetRegCount Condition="'$(RyuJitTargetIsUnix)' != 'true'">1</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount Condition="'$(RyuJitTargetIsUnix)' == 'true'">4</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxMultiRegCount Condition="'$(RyuJitTargetIsUnix)' != 'true'">2</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg Condition="'$(RyuJitTargetIsUnix)' == 'true'">6</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMaxRegArg Condition="'$(RyuJitTargetIsUnix)' != 'true'">4</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall Condition="'$(RyuJitTargetIsUnix)' == 'true'">0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigMinArgAreaForCall Condition="'$(RyuJitTargetIsUnix)' != 'true'">32</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>7</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>16</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign>16</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>18</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>8</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>8</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>16</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes>64</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes>64</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount>4</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount>4</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount>4</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg>8</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>7</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>16</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign>16</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>16</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'arm' or '$(RyuJitTargetArchitecture)' == 'armv6'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>4</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>4</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>8</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes>32</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes>32</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount>4</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount>4</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount>4</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg>4</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>6</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>8</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign>8</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>16</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>8</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>8</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>8</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes>16</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes>16</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount>2</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount>2</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount>2</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg>8</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>6</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>8</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign>16</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>4</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>8</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>8</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>8</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes>16</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes>16</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount>2</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount>2</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount>2</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg>8</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>6</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>8</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign>16</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>4</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">
+    <RyuJitConfigTargetValuesSupported>true</RyuJitConfigTargetValuesSupported>
+    <RyuJitConfigTargetPointerSize>4</RyuJitConfigTargetPointerSize>
+    <RyuJitConfigRegSizeBytes>4</RyuJitConfigRegSizeBytes>
+    <RyuJitConfigMaxPassSingleRegBytes>16</RyuJitConfigMaxPassSingleRegBytes>
+    <RyuJitConfigMaxPassMultiRegBytes>0</RyuJitConfigMaxPassMultiRegBytes>
+    <RyuJitConfigMaxRetMultiRegBytes>0</RyuJitConfigMaxRetMultiRegBytes>
+    <RyuJitConfigMaxArgRegCount>1</RyuJitConfigMaxArgRegCount>
+    <RyuJitConfigMaxRetRegCount>1</RyuJitConfigMaxRetRegCount>
+    <RyuJitConfigMaxMultiRegCount>2</RyuJitConfigMaxMultiRegCount>
+    <RyuJitConfigMaxRegArg>0</RyuJitConfigMaxRegArg>
+    <RyuJitConfigMinArgAreaForCall>0</RyuJitConfigMinArgAreaForCall>
+    <RyuJitConfigRegNumBits>1</RyuJitConfigRegNumBits>
+    <RyuJitConfigFpRegSizeBytes>16</RyuJitConfigFpRegSizeBytes>
+    <RyuJitConfigStackAlign>16</RyuJitConfigStackAlign>
+    <RyuJitConfigEmitJumpKindCount>3</RyuJitConfigEmitJumpKindCount>
+  </PropertyGroup>
+
+  <Target Name="ValidateRyuJitConfigurationSubstitutionValues"
+          BeforeTargets="GenerateRyuJitSubstitutions"
+          Condition="'$(RyuJitConfigTargetValuesSupported)' != 'true'">
+    <Error Text="No integer configuration substitutions are defined for target architecture '$(RyuJitTargetArchitecture)'." />
+  </Target>
+
   <!-- TARGET_64BIT selects the width of the native-facing CORINFO_AsyncResumeInfo fields. -->
   <PropertyGroup Condition="'$(RyuJitTargetIs64Bit)' == 'true'">
     <DefineConstants>$(DefineConstants);TARGET_64BIT</DefineConstants>
@@ -295,6 +437,8 @@
     <RyuJitSubstitutionEnabled Include="UNIX_AMD64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
     <RyuJitSubstitutionEnabled Include="WINDOWS_AMD64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'" />
     <RyuJitSubstitutionEnabled Include="UNIX_X86_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="CONFIGURABLE_ARM_ABI"
+                               Condition="'$(RyuJitTargetIsArm)' == 'true' and ('$(RyuJitTargetOS)' == 'anyos' or '$(RyuJitTargetOS)' == 'unix')" />
 
     <!-- ALIGN_SIMD_TYPES: Whether SIMD type locals are to be aligned -->
     <RyuJitSubstitutionEnabled Include="ALIGN_SIMD_TYPES" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
@@ -564,6 +708,13 @@
     <RyuJitSubstitutionEnabled Include="USE_COREDISTOOLS" Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and '$(RyuJitTargetArchitecture)' == 'arm64'" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RyuJitSubstitutionEnabled Include="DEBUG_EMIT" Condition="'$(RyuJitEnableDebugEmit)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="VARSET_COUNTOPS" Condition="'$(RyuJitEnableVarSetCountOps)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="ALLVARSET_COUNTOPS" Condition="'$(RyuJitEnableAllVarSetCountOps)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="EMIT_BACKWARDS_NAVIGATION" Condition="'$(RyuJitEnableEmitBackwardsNavigation)' == 'true'" />
+  </ItemGroup>
+
   <!-- Enable these substitutions to collect and output various statistics about the JIT -->
   <ItemGroup>
     <!-- CALL_ARG_STATS: Collect stats about calls and call arguments. -->
@@ -772,6 +923,37 @@
     <RyuJitSubstitution Include="NODEBASH_STATS" />
     <RyuJitSubstitution Include="ARM_SOFTFP" FixedValue="false" />
     <RyuJitSubstitution Include="DISASM_DEBUG" FixedValue="false" />
+
+    <!-- JIT-only feature switches -->
+    <RyuJitSubstitution Include="DEBUG_EMIT" />
+    <RyuJitSubstitution Include="VARSET_COUNTOPS" />
+    <RyuJitSubstitution Include="ALLVARSET_COUNTOPS" />
+    <RyuJitSubstitution Include="EMIT_BACKWARDS_NAVIGATION" />
+    <RyuJitSubstitution Include="OPTIONAL_STATISTICS" />
+
+    <!-- Target-derived features -->
+    <RyuJitSubstitution Include="FEATURE_ITINSTRUCTION" FixedValue="false" />
+    <RyuJitSubstitution Include="FEATURE_PLI_INSTRUCTION" FixedValue="false" />
+    <RyuJitSubstitution Include="CONFIGURABLE_ARM_ABI" />
+
+    <!-- Target-dependent sizes and limits -->
+    <RyuJitSubstitution Include="TARGET_POINTER_SIZE" ReturnType="System.Int32" FixedValue="$(RyuJitConfigTargetPointerSize)" />
+    <RyuJitSubstitution Include="REGSIZE_BYTES" ReturnType="System.Int32" FixedValue="$(RyuJitConfigRegSizeBytes)" />
+    <RyuJitSubstitution Include="MAX_PASS_SINGLEREG_BYTES" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxPassSingleRegBytes)" />
+    <RyuJitSubstitution Include="MAX_PASS_MULTIREG_BYTES" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxPassMultiRegBytes)" />
+    <RyuJitSubstitution Include="MAX_RET_MULTIREG_BYTES" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxRetMultiRegBytes)" />
+    <RyuJitSubstitution Include="MAX_ARG_REG_COUNT" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxArgRegCount)" />
+    <RyuJitSubstitution Include="MAX_RET_REG_COUNT" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxRetRegCount)" />
+    <RyuJitSubstitution Include="MAX_MULTIREG_COUNT" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxMultiRegCount)" />
+    <RyuJitSubstitution Include="MAX_REG_ARG" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMaxRegArg)" />
+    <RyuJitSubstitution Include="MIN_ARG_AREA_FOR_CALL" ReturnType="System.Int32" FixedValue="$(RyuJitConfigMinArgAreaForCall)" />
+    <RyuJitSubstitution Include="REGNUM_BITS" ReturnType="System.Int32" FixedValue="$(RyuJitConfigRegNumBits)" />
+    <RyuJitSubstitution Include="XMM_REGSIZE_BYTES" ReturnType="System.Int32" FixedValue="16" />
+    <RyuJitSubstitution Include="YMM_REGSIZE_BYTES" ReturnType="System.Int32" FixedValue="32" />
+    <RyuJitSubstitution Include="ZMM_REGSIZE_BYTES" ReturnType="System.Int32" FixedValue="64" />
+    <RyuJitSubstitution Include="FP_REGSIZE_BYTES" ReturnType="System.Int32" FixedValue="$(RyuJitConfigFpRegSizeBytes)" />
+    <RyuJitSubstitution Include="STACK_ALIGN" ReturnType="System.Int32" FixedValue="$(RyuJitConfigStackAlign)" />
+    <RyuJitSubstitution Include="EMIT_JUMPKIND_COUNT" ReturnType="System.Int32" FixedValue="$(RyuJitConfigEmitJumpKindCount)" />
   </ItemGroup>
 
 </Project>

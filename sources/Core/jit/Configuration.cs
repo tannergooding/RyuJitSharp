@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -12,259 +11,118 @@ internal static class Configuration
     internal const bool DEBUG = false;
 #endif
 
-    internal static bool DEBUG_EMIT => BuildFeatures.DebugEmit;
+    // Host configuration substitutions
+    internal static bool HOST_AMD64 => RuntimeInformation.ProcessArchitecture == Architecture.X64;
 
-    internal static bool MEASURE_NODE_SIZE => BuildFeatures.MeasureNodeSize;
+    internal static bool HOST_X86 => RuntimeInformation.ProcessArchitecture == Architecture.X86;
 
-    internal static bool MEASURE_BLOCK_SIZE => BuildFeatures.MeasureBlockSize;
+    internal static bool HOST_64BIT => IntPtr.Size == 8;
 
-    internal static bool MEASURE_PTRTAB_SIZE => BuildFeatures.MeasurePointerTableSize;
+    internal static bool HOST_WINDOWS => OperatingSystem.IsWindows();
 
-    internal static bool DISPLAY_SIZES => BuildFeatures.DisplaySizes;
+    // Target architecture and OS substitutions
+    internal static bool TARGET_ARM => GetFeatureSwitch(nameof(TARGET_ARM));
 
-    internal static bool MEASURE_FATAL => BuildFeatures.MeasureFatal;
+    internal static bool TARGET_ARMARCH => GetFeatureSwitch(nameof(TARGET_ARMARCH));
 
-    internal static bool CALL_ARG_STATS => BuildFeatures.CallArgumentStatistics;
+    internal static bool TARGET_XARCH => GetFeatureSwitch(nameof(TARGET_XARCH));
 
-    internal static bool NODEBASH_STATS => BuildFeatures.NodeBashStatistics;
+    internal static bool TARGET_ARMV6 => GetFeatureSwitch(nameof(TARGET_ARMV6));
 
-    internal static bool COUNT_BASIC_BLOCKS => BuildFeatures.CountBasicBlocks;
+    internal static bool TARGET_ARM64 => GetFeatureSwitch(nameof(TARGET_ARM64));
 
-    internal static bool COUNT_AST_OPERS => BuildFeatures.CountAstOperators;
+    internal static bool TARGET_LOONGARCH64 => GetFeatureSwitch(nameof(TARGET_LOONGARCH64));
 
-    internal static bool VARSET_COUNTOPS => BuildFeatures.VarSetCountOps;
+    internal static bool TARGET_RISCV64 => GetFeatureSwitch(nameof(TARGET_RISCV64));
 
-    internal static bool ALLVARSET_COUNTOPS => BuildFeatures.AllVarSetCountOps;
+    internal static bool TARGET_WASM => GetFeatureSwitch(nameof(TARGET_WASM));
 
-    internal static bool EMITTER_STATS => BuildFeatures.EmitterStatistics;
+    internal static bool TARGET_WASM32 => TARGET_WASM;
 
-    internal static bool FUNC_INFO_LOGGING => BuildFeatures.FuncInfoLogging;
+    internal static bool TARGET_AMD64 => TARGET_XARCH && TARGET_64BIT;
 
-    internal static bool EMIT_BACKWARDS_NAVIGATION => BuildFeatures.EmitBackwardsNavigation;
+    internal static bool TARGET_X86 => TARGET_XARCH && !TARGET_64BIT;
 
-    internal static bool TRACK_LSRA_STATS => BuildFeatures.TrackLsraStatistics;
+    internal static bool TARGET_32BIT => !TARGET_64BIT;
 
-    internal static bool DUMP_FLOWGRAPHS => BuildFeatures.DumpFlowgraphs;
+    internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));
 
-    internal static bool DUMP_GC_TABLES => BuildFeatures.DumpGcTables;
+    internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));
 
-    internal static bool VERIFY_GC_TABLES => BuildFeatures.VerifyGcTables;
+    internal static bool TARGET_UNIX => GetFeatureSwitch(nameof(TARGET_UNIX));
 
-    internal static bool OPTIONAL_STATISTICS => BuildFeatures.OptionalStatistics;
+    internal static bool TARGET_UNIX_POSSIBLY_SUPPORTED => TARGET_UNIX || TARGET_OS_RUNTIMEDETERMINED;
 
-    private static class BuildFeatures
-    {
-        private static bool s_measureNodeSize;
-        private static bool s_measureBlockSize;
-        private static bool s_measurePointerTableSize;
-        private static bool s_displaySizes;
-        private static bool s_debugEmit;
-        private static bool s_measureFatal;
-        private static bool s_callArgumentStatistics;
-        private static bool s_nodeBashStatistics;
-        private static bool s_countBasicBlocks;
-        private static bool s_countAstOperators;
-        private static bool s_varSetCountOps;
-        private static bool s_allVarSetCountOps;
-        private static bool s_emitterStatistics;
-        private static bool s_funcInfoLogging;
-        private static bool s_emitBackwardsNavigation;
-        private static bool s_trackLsraStatistics;
-        private static bool s_dumpFlowgraphs;
-        private static bool s_dumpGcTables;
-        private static bool s_verifyGcTables;
-        private static bool s_optionalStatistics;
+    internal static bool FEATURE_CFI_SUPPORT => TARGET_UNIX || TARGET_OS_RUNTIMEDETERMINED;
 
-        static BuildFeatures()
-        {
-            EnableMeasureNodeSize();
-            EnableMeasureBlockSize();
-            EnableMeasurePointerTableSize();
-            EnableDisplaySizes();
-            EnableDebugEmit();
-            EnableMeasureFatal();
-            EnableCallArgumentStatistics();
-            EnableNodeBashStatistics();
-            EnableCountBasicBlocks();
-            EnableCountAstOperators();
-            EnableVarSetCountOps();
-            EnableAllVarSetCountOps();
-            EnableEmitterStatistics();
-            EnableFuncInfoLogging();
-            EnableEmitBackwardsNavigation();
-            EnableTrackLsraStatistics();
-            EnableDumpFlowgraphs();
-            EnableDumpGcTables();
-            EnableVerifyGcTables();
-            EnableOptionalStatistics();
-        }
+    internal static bool TARGET_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_OS_RUNTIMEDETERMINED));
 
-        internal static bool MeasureNodeSize => s_measureNodeSize;
+    internal static bool TARGET_WINDOWS_POSSIBLY_SUPPORTED =>
+        TARGET_WINDOWS || (TARGET_OS_RUNTIMEDETERMINED && !TARGET_UNIX_OS_RUNTIMEDETERMINED);
 
-        internal static bool MeasureBlockSize => s_measureBlockSize;
+    internal static bool TARGET_UNIX_ANYOS => TARGET_UNIX_OS_RUNTIMEDETERMINED;
 
-        internal static bool MeasurePointerTableSize => s_measurePointerTableSize;
+    internal static bool TARGET_UNIX_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_UNIX_OS_RUNTIMEDETERMINED));
 
-        internal static bool DisplaySizes => s_displaySizes;
+    internal static bool TARGET_WINDOWS => GetFeatureSwitch(nameof(TARGET_WINDOWS));
 
-        internal static bool DebugEmit => s_debugEmit;
+    // Fixed target and ABI substitutions
+    internal static bool UNIX_ARM_ABI => TARGET_ARM && !TARGET_ARMV6 && TARGET_UNIX;
 
-        internal static bool MeasureFatal => s_measureFatal;
+    internal static bool OSX_ARM64_ABI => TARGET_ARM64 && TARGET_APPLE;
 
-        internal static bool CallArgumentStatistics => s_callArgumentStatistics;
+    internal static bool UNIX_AMD64_ABI => TARGET_AMD64 && TARGET_UNIX;
 
-        internal static bool NodeBashStatistics => s_nodeBashStatistics;
+    internal static bool WINDOWS_AMD64_ABI => GetFeatureSwitch(nameof(WINDOWS_AMD64_ABI));
 
-        internal static bool CountBasicBlocks => s_countBasicBlocks;
+    internal static bool UNIX_X86_ABI => GetFeatureSwitch(nameof(UNIX_X86_ABI));
 
-        internal static bool CountAstOperators => s_countAstOperators;
-
-        internal static bool VarSetCountOps => s_varSetCountOps;
-
-        internal static bool AllVarSetCountOps => s_allVarSetCountOps;
-
-        internal static bool EmitterStatistics => s_emitterStatistics;
-
-        internal static bool FuncInfoLogging => s_funcInfoLogging;
-
-        internal static bool EmitBackwardsNavigation => s_emitBackwardsNavigation;
-
-        internal static bool TrackLsraStatistics => s_trackLsraStatistics;
-
-        internal static bool DumpFlowgraphs => s_dumpFlowgraphs;
-
-        internal static bool DumpGcTables => s_dumpGcTables;
-
-        internal static bool VerifyGcTables => s_verifyGcTables;
-
-        internal static bool OptionalStatistics => s_optionalStatistics;
-
-        [Conditional("MEASURE_NODE_SIZE")]
-        private static void EnableMeasureNodeSize() => s_measureNodeSize = true;
-
-        [Conditional("MEASURE_BLOCK_SIZE")]
-        private static void EnableMeasureBlockSize() => s_measureBlockSize = true;
-
-        [Conditional("MEASURE_PTRTAB_SIZE")]
-        private static void EnableMeasurePointerTableSize() => s_measurePointerTableSize = true;
-
-        [Conditional("DISPLAY_SIZES")]
-        private static void EnableDisplaySizes() => s_displaySizes = true;
-
-        [Conditional("DEBUG_EMIT")]
-        private static void EnableDebugEmit() => s_debugEmit = true;
-
-        [Conditional("MEASURE_FATAL")]
-        private static void EnableMeasureFatal() => s_measureFatal = true;
-
-        [Conditional("CALL_ARG_STATS")]
-        private static void EnableCallArgumentStatistics() => s_callArgumentStatistics = true;
-
-        [Conditional("NODEBASH_STATS")]
-        private static void EnableNodeBashStatistics() => s_nodeBashStatistics = true;
-
-        [Conditional("COUNT_BASIC_BLOCKS")]
-        private static void EnableCountBasicBlocks() => s_countBasicBlocks = true;
-
-        [Conditional("COUNT_AST_OPERS")]
-        private static void EnableCountAstOperators() => s_countAstOperators = true;
-
-        [Conditional("VARSET_COUNTOPS")]
-        private static void EnableVarSetCountOps() => s_varSetCountOps = true;
-
-        [Conditional("ALLVARSET_COUNTOPS")]
-        private static void EnableAllVarSetCountOps() => s_allVarSetCountOps = true;
-
-        [Conditional("EMITTER_STATS")]
-        private static void EnableEmitterStatistics() => s_emitterStatistics = true;
-
-        [Conditional("FUNC_INFO_LOGGING")]
-        private static void EnableFuncInfoLogging() => s_funcInfoLogging = true;
-
-        [Conditional("EMIT_BACKWARDS_NAVIGATION")]
-        private static void EnableEmitBackwardsNavigation() => s_emitBackwardsNavigation = true;
-
-        [Conditional("TRACK_LSRA_STATS")]
-        private static void EnableTrackLsraStatistics() => s_trackLsraStatistics = true;
-
-        [Conditional("DUMP_FLOWGRAPHS")]
-        private static void EnableDumpFlowgraphs() => s_dumpFlowgraphs = true;
-
-        [Conditional("DUMP_GC_TABLES")]
-        private static void EnableDumpGcTables() => s_dumpGcTables = true;
-
-        [Conditional("VERIFY_GC_TABLES")]
-        private static void EnableVerifyGcTables() => s_verifyGcTables = true;
-
-        [Conditional("NODEBASH_STATS")]
-        [Conditional("COUNT_BASIC_BLOCKS")]
-        [Conditional("COUNT_AST_OPERS")]
-        [Conditional("CALL_ARG_STATS")]
-        [Conditional("MEASURE_NODE_SIZE")]
-        [Conditional("MEASURE_BLOCK_SIZE")]
-        [Conditional("MEASURE_PTRTAB_SIZE")]
-        [Conditional("MEASURE_FATAL")]
-        [Conditional("EMITTER_STATS")]
-        private static void EnableOptionalStatistics() => s_optionalStatistics = true;
-    }
-
-    private static readonly Architecture s_hostArchitecture = RuntimeInformation.ProcessArchitecture;
-
-    private static readonly bool s_hostWindows = OperatingSystem.IsWindows();
-
-    internal static bool FEATURE_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_HW_INTRINSICS));
-
-    // RyuJitSharp currently includes timing support in every build.
-    internal static bool FEATURE_JIT_METHOD_PERF => true;
-
-    internal static bool FEATURE_MASKED_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_MASKED_HW_INTRINSICS));
-
-    // RyuJitSharp does not currently enable these optional ARM instruction subsets.
-    internal static bool FEATURE_ITINSTRUCTION => false;
-
-    internal static bool FEATURE_PLI_INSTRUCTION => false;
-
-    internal static bool FEATURE_READYTORUN => GetFeatureSwitch(nameof(FEATURE_READYTORUN));
-
-    internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
-
-    internal static bool FEATURE_VN_DUMP_FUNC_ARGS => GetFeatureSwitch(nameof(FEATURE_VN_DUMP_FUNC_ARGS));
-
-    internal static bool DISASM_DEBUG => GetFeatureSwitch(nameof(DISASM_DEBUG));
-
-    internal static bool FEATURE_HFA =>
-        TARGET_ARM64 || (TARGET_ARM && (!ARM_SOFTFP || CONFIGURABLE_ARM_ABI));
-
-    // Native CMake enables this only for the runtime-OS-determined universal ARM JIT.
-    internal static bool CONFIGURABLE_ARM_ABI => TARGET_ARM && TARGET_OS_RUNTIMEDETERMINED;
+    internal static bool ALIGN_SIMD_TYPES => TARGET_XARCH || TARGET_ARM64;
 
     internal static bool CPU_HAS_BYTE_REGS => TARGET_X86;
 
     internal static bool CPU_LOAD_STORE_ARCH =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM;
 
+    // Native double-aligned frames are an x86-only policy.
+    internal static bool DOUBLE_ALIGN => TARGET_X86;
+
     internal static bool EMIT_TRACK_STACK_DEPTH => !TARGET_WASM;
 
     internal static bool ETW_EBP_FRAMED =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || (TARGET_AMD64 && TARGET_UNIX) || TARGET_X86;
 
-    internal static bool FEATURE_REMAP_FUNCTION =>
-        TARGET_ARM64 || TARGET_AMD64 || (TARGET_X86 && TARGET_WINDOWS);
-
     // Arm64 Windows uses a split ABI distinct from the usual Arm64 ABI.
     // ARM32, LoongArch64, and RISC-V64 also use split arguments.
     internal static bool FEATURE_ARG_SPLIT => TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64;
 
-    internal static bool FEATURE_CFI_SUPPORT => TARGET_UNIX || TARGET_OS_RUNTIMEDETERMINED;
-
-    internal static bool FEATURE_MULTIREG_ARGS =>
-        FEATURE_ARG_SPLIT || (TARGET_AMD64 && TARGET_UNIX);
+    internal static bool FEATURE_FASTTAILCALL =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || TARGET_AMD64;
 
     internal static bool FEATURE_FIXED_OUT_ARGS =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 
+    internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
+
+    internal static bool FEATURE_HFA =>
+        TARGET_ARM64 || (TARGET_ARM && (!ARM_SOFTFP || CONFIGURABLE_ARM_ABI));
+
+    internal static bool FEATURE_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_HW_INTRINSICS));
+
     internal static bool FEATURE_IMPLICIT_BYREFS =>
         TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || TARGET_AMD64;
+
+    internal static bool FEATURE_LOOP_ALIGN => GetFeatureSwitch(nameof(FEATURE_LOOP_ALIGN));
+
+    internal static bool FEATURE_MASKED_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_MASKED_HW_INTRINSICS));
+
+    internal static bool FEATURE_MULTIREG_ARGS =>
+        FEATURE_ARG_SPLIT || (TARGET_AMD64 && TARGET_UNIX);
+
+    internal static bool FEATURE_MULTIREG_RET => GetFeatureSwitch(nameof(FEATURE_MULTIREG_RET));
+
+    internal static bool FEATURE_MULTIREG_STRUCT_PROMOTE =>
+        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || (TARGET_AMD64 && TARGET_UNIX);
 
     internal static bool FEATURE_MULTITHREADING => !TARGET_WASM;
 
@@ -273,34 +131,10 @@ internal static class Configuration
     internal static bool FEATURE_PARTIAL_SIMD_CALLEE_SAVE =>
         TARGET_ARM64 || (TARGET_AMD64 && !TARGET_UNIX);
 
-    internal static bool ALIGN_SIMD_TYPES => TARGET_XARCH || TARGET_ARM64;
-
-    internal static bool JIT32_GCENCODER => TARGET_X86;
-
-    internal static bool LOWER_DECOMPOSE_LONGS => (TARGET_ARM && !TARGET_ARMV6) || TARGET_X86;
-
-    internal static bool USE_HELPERS_FOR_INT_DIV => TARGET_ARM && !TARGET_ARMV6;
-
-    internal static bool FEATURE_MULTIREG_STRUCT_PROMOTE =>
-        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || (TARGET_AMD64 && TARGET_UNIX);
-
-    internal static bool MULTIREG_HAS_SECOND_GC_RET =>
-        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || (TARGET_AMD64 && TARGET_UNIX);
-
-    internal static bool FEATURE_FASTTAILCALL =>
-        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || TARGET_AMD64;
-
-    internal static bool FEATURE_MULTIREG_RET => GetFeatureSwitch(nameof(FEATURE_MULTIREG_RET));
+    internal static bool FEATURE_REMAP_FUNCTION =>
+        TARGET_ARM64 || TARGET_AMD64 || (TARGET_X86 && TARGET_WINDOWS);
 
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
-
-    internal static bool FEATURE_LOOP_ALIGN => GetFeatureSwitch(nameof(FEATURE_LOOP_ALIGN));
-
-    internal static bool FEATURE_ON_STACK_REPLACEMENT => GetFeatureSwitch(nameof(FEATURE_ON_STACK_REPLACEMENT));
-
-    internal static bool LATE_DISASM => GetFeatureSwitch(nameof(LATE_DISASM));
-
-    internal static bool PROFILING_SUPPORTED => GetFeatureSwitch(nameof(PROFILING_SUPPORTED));
 
     internal static bool FEATURE_TAILCALL_OPT =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
@@ -312,6 +146,22 @@ internal static class Configuration
 
     internal static bool HAS_MORE_THAN_64_REGISTERS => TARGET_AMD64 || TARGET_ARM64;
 
+    internal static bool JIT32_GCENCODER => TARGET_X86;
+
+    internal static bool LOWER_DECOMPOSE_LONGS => (TARGET_ARM && !TARGET_ARMV6) || TARGET_X86;
+
+    internal static bool USE_HELPERS_FOR_INT_DIV => TARGET_ARM && !TARGET_ARMV6;
+
+    internal static bool MULTIREG_HAS_SECOND_GC_RET =>
+        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || (TARGET_AMD64 && TARGET_UNIX);
+
+    internal static bool NOGC_WRITE_BARRIERS =>
+        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_X86;
+
+    internal static bool PROFILING_SUPPORTED => GetFeatureSwitch(nameof(PROFILING_SUPPORTED));
+
+    internal static bool SWIFT_SUPPORT => TARGET_ARM64 || (TARGET_AMD64 && TARGET_UNIX);
+
     internal static bool REGMASK_BITS_32 => TARGET_X86 || TARGET_WASM;
 
     internal static bool REGMASK_BITS_64 => !REGMASK_BITS_32;
@@ -320,6 +170,88 @@ internal static class Configuration
 
     internal static bool USE_PER_FRAME_PINVOKE_INIT => TARGET_64BIT;
 
+    // Debug substitutions
+    internal static bool DUMP_FLOWGRAPHS => GetOptionalFeatureSwitch(nameof(DUMP_FLOWGRAPHS));
+
+    internal static bool DUMP_GC_TABLES => GetOptionalFeatureSwitch(nameof(DUMP_GC_TABLES));
+
+    internal static bool LATE_DISASM => GetFeatureSwitch(nameof(LATE_DISASM));
+
+    internal static bool TRACK_LSRA_STATS => GetOptionalFeatureSwitch(nameof(TRACK_LSRA_STATS));
+
+    // Always-enabled substitutions
+
+    // JIT method timing is enabled by default and can be changed by a runtime switch.
+    internal static bool FEATURE_JIT_METHOD_PERF =>
+        GetOptionalFeatureSwitch(nameof(FEATURE_JIT_METHOD_PERF), defaultValue: true);
+
+    internal static bool FEATURE_ON_STACK_REPLACEMENT => GetFeatureSwitch(nameof(FEATURE_ON_STACK_REPLACEMENT));
+
+    internal static bool FEATURE_READYTORUN => GetFeatureSwitch(nameof(FEATURE_READYTORUN));
+
+    internal static bool FUNC_INFO_LOGGING => GetOptionalFeatureSwitch(nameof(FUNC_INFO_LOGGING));
+
+    // Optional substitutions
+    internal static bool FEATURE_VN_DUMP_FUNC_ARGS => GetFeatureSwitch(nameof(FEATURE_VN_DUMP_FUNC_ARGS));
+
+    internal static bool VERIFY_GC_TABLES => GetOptionalFeatureSwitch(nameof(VERIFY_GC_TABLES));
+
+    internal static bool CALL_ARG_STATS => GetOptionalFeatureSwitch(nameof(CALL_ARG_STATS));
+
+    internal static bool COUNT_AST_OPERS => GetOptionalFeatureSwitch(nameof(COUNT_AST_OPERS));
+
+    internal static bool COUNT_BASIC_BLOCKS => GetOptionalFeatureSwitch(nameof(COUNT_BASIC_BLOCKS));
+
+    internal static bool DISPLAY_SIZES => GetOptionalFeatureSwitch(nameof(DISPLAY_SIZES));
+
+    internal static bool EMITTER_STATS => GetOptionalFeatureSwitch(nameof(EMITTER_STATS));
+
+    internal static bool MEASURE_BLOCK_SIZE => GetOptionalFeatureSwitch(nameof(MEASURE_BLOCK_SIZE));
+
+    internal static bool MEASURE_FATAL => GetOptionalFeatureSwitch(nameof(MEASURE_FATAL));
+
+    internal static bool MEASURE_NODE_SIZE => GetOptionalFeatureSwitch(nameof(MEASURE_NODE_SIZE));
+
+    internal static bool MEASURE_PTRTAB_SIZE => GetOptionalFeatureSwitch(nameof(MEASURE_PTRTAB_SIZE));
+
+    internal static bool NODEBASH_STATS => GetOptionalFeatureSwitch(nameof(NODEBASH_STATS));
+
+    // Fixed-value substitutions
+    internal static bool ARM_SOFTFP => GetFeatureSwitch(nameof(ARM_SOFTFP));
+
+    internal static bool DISASM_DEBUG => GetFeatureSwitch(nameof(DISASM_DEBUG));
+
+    // JIT-only optional switches
+    internal static bool DEBUG_EMIT => GetOptionalFeatureSwitch(nameof(DEBUG_EMIT));
+
+    internal static bool VARSET_COUNTOPS => GetOptionalFeatureSwitch(nameof(VARSET_COUNTOPS));
+
+    internal static bool ALLVARSET_COUNTOPS => GetOptionalFeatureSwitch(nameof(ALLVARSET_COUNTOPS));
+
+    internal static bool EMIT_BACKWARDS_NAVIGATION => GetOptionalFeatureSwitch(nameof(EMIT_BACKWARDS_NAVIGATION));
+
+    internal static bool OPTIONAL_STATISTICS =>
+        NODEBASH_STATS ||
+        COUNT_BASIC_BLOCKS ||
+        COUNT_AST_OPERS ||
+        CALL_ARG_STATS ||
+        MEASURE_NODE_SIZE ||
+        MEASURE_BLOCK_SIZE ||
+        MEASURE_PTRTAB_SIZE ||
+        MEASURE_FATAL ||
+        EMITTER_STATS;
+
+    // Target-derived features
+
+    // RyuJitSharp does not currently enable these optional ARM instruction subsets.
+    internal static bool FEATURE_ITINSTRUCTION => false;
+
+    internal static bool FEATURE_PLI_INSTRUCTION => false;
+
+    // Native CMake enables this only for the runtime-OS-determined universal ARM JIT.
+    internal static bool CONFIGURABLE_ARM_ABI => TARGET_ARM && TARGET_OS_RUNTIMEDETERMINED;
+
+    // Target-dependent sizes and limits
     internal static int TARGET_POINTER_SIZE => TARGET_64BIT ? 8 : 4;
 
     internal static int REGSIZE_BYTES => TARGET_POINTER_SIZE;
@@ -444,48 +376,6 @@ internal static class Configuration
     internal static int STACK_ALIGN =>
         TARGET_ARM ? 8 : TARGET_X86 ? (UNIX_X86_ABI ? 16 : 4) : 16;
 
-    internal static bool NOGC_WRITE_BARRIERS =>
-        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_X86;
-
-    internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));
-
-    internal static bool HOST_64BIT => Environment.Is64BitProcess;
-
-    internal static bool HOST_AMD64 => s_hostArchitecture == Architecture.X64;
-
-    internal static bool HOST_X86 => s_hostArchitecture == Architecture.X86;
-
-    internal static bool HOST_WINDOWS => s_hostWindows;
-
-    internal static bool TARGET_ARM => GetFeatureSwitch(nameof(TARGET_ARM));
-
-    internal static bool TARGET_ARMV6 => GetFeatureSwitch(nameof(TARGET_ARMV6));
-
-    internal static bool TARGET_ARM64 => GetFeatureSwitch(nameof(TARGET_ARM64));
-
-    internal static bool TARGET_ARMARCH => GetFeatureSwitch(nameof(TARGET_ARMARCH));
-
-    internal static bool ARM_SOFTFP => GetFeatureSwitch(nameof(ARM_SOFTFP));
-
-    internal static bool TARGET_AMD64 => TARGET_XARCH && TARGET_64BIT;
-
-    internal static bool TARGET_32BIT => !TARGET_64BIT;
-
-    internal static bool TARGET_LOONGARCH64 => GetFeatureSwitch(nameof(TARGET_LOONGARCH64));
-
-    internal static bool TARGET_RISCV64 => GetFeatureSwitch(nameof(TARGET_RISCV64));
-
-    internal static bool TARGET_X86 => TARGET_XARCH && !TARGET_64BIT;
-
-    // Native double-aligned frames are an x86-only policy.
-    internal static bool DOUBLE_ALIGN => TARGET_X86;
-
-    internal static bool TARGET_XARCH => GetFeatureSwitch(nameof(TARGET_XARCH));
-
-    internal static bool TARGET_WASM => GetFeatureSwitch(nameof(TARGET_WASM));
-
-    internal static bool TARGET_WASM32 => TARGET_WASM;
-
     internal static int EMIT_JUMPKIND_COUNT =>
         TARGET_XARCH ? (int)emitJumpKind.EJ_XARCH_COUNT :
         TARGET_ARMARCH ? (int)emitJumpKind.EJ_ARMARCH_COUNT :
@@ -493,6 +383,8 @@ internal static class Configuration
         TARGET_RISCV64 ? (int)emitJumpKind.EJ_RISCV64_COUNT :
         TARGET_WASM ? (int)emitJumpKind.EJ_WASM_COUNT :
         throw new FatalJitException(CORJIT_SKIPPED, "Jump kinds are not supported for this target.");
+
+    // Runtime support checks and feature-switch helpers
 
     internal static void EnsureWasmTarget()
     {
@@ -504,44 +396,21 @@ internal static class Configuration
 
     internal static void EnsureSupportedHostArchitecture()
     {
-        if (s_hostArchitecture is
+        if (RuntimeInformation.ProcessArchitecture is
             Architecture.X86 or Architecture.X64 or Architecture.Arm or Architecture.Arm64 or Architecture.LoongArch64 or
             Architecture.RiscV64)
         {
             return;
         }
 
-        throw new FatalJitException($"Unsupported host architecture: {s_hostArchitecture}.");
+        throw new FatalJitException($"Unsupported host architecture: {RuntimeInformation.ProcessArchitecture}.");
     }
 
-    internal static bool TARGET_WINDOWS => GetFeatureSwitch(nameof(TARGET_WINDOWS));
-
-    internal static bool WINDOWS_AMD64_ABI => GetFeatureSwitch(nameof(WINDOWS_AMD64_ABI));
-
-    internal static bool TARGET_UNIX => GetFeatureSwitch(nameof(TARGET_UNIX));
-
-    internal static bool UNIX_AMD64_ABI => TARGET_AMD64 && TARGET_UNIX;
-
-    internal static bool UNIX_ARM_ABI => TARGET_ARM && !TARGET_ARMV6 && TARGET_UNIX;
-
-    internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));
-
-    internal static bool OSX_ARM64_ABI => TARGET_ARM64 && TARGET_APPLE;
-
-    internal static bool TARGET_UNIX_ANYOS => TARGET_UNIX_OS_RUNTIMEDETERMINED;
-
-    internal static bool TARGET_UNIX_POSSIBLY_SUPPORTED => TARGET_UNIX || TARGET_OS_RUNTIMEDETERMINED;
-
-    internal static bool TARGET_WINDOWS_POSSIBLY_SUPPORTED =>
-        TARGET_WINDOWS || (TARGET_OS_RUNTIMEDETERMINED && !TARGET_UNIX_OS_RUNTIMEDETERMINED);
-
-    internal static bool SWIFT_SUPPORT => TARGET_ARM64 || (TARGET_AMD64 && TARGET_UNIX);
-
-    internal static bool TARGET_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_OS_RUNTIMEDETERMINED));
-
-    internal static bool TARGET_UNIX_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_UNIX_OS_RUNTIMEDETERMINED));
-
-    internal static bool UNIX_X86_ABI => GetFeatureSwitch(nameof(UNIX_X86_ABI));
+    private static bool GetOptionalFeatureSwitch(string featureName, bool defaultValue = false)
+    {
+        var switchName = $"RyuJitSharp.{featureName}";
+        return AppContext.TryGetSwitch(switchName, out var isEnabled) ? isEnabled : defaultValue;
+    }
 
     private static bool GetFeatureSwitch(string featureName)
     {

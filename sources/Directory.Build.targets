@@ -14,6 +14,7 @@
 
   <PropertyGroup>
     <GeneratedRyuJitSubstitutionsFile Condition="'$(GeneratedRyuJitSubstitutionsFile)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName).ILLink.Substitutions.$(RyuJitTargetRuntimeIdentifier).xml</GeneratedRyuJitSubstitutionsFile>
+    <GeneratedRyuJitSubstitutionsInputsFile Condition="'$(GeneratedRyuJitSubstitutionsInputsFile)' == ''">$(GeneratedRyuJitSubstitutionsFile).inputs</GeneratedRyuJitSubstitutionsInputsFile>
     <GeneratedSkipLocalsInitFile Condition="'$(GeneratedSkipLocalsInitFile)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName).SkipLocalsInit$(DefaultLanguageSourceExtension)</GeneratedSkipLocalsInitFile>
     <GeneratedSkipLocalsInitFileLines>
       <![CDATA[//------------------------------------------------------------------------------
@@ -31,12 +32,25 @@
     </GeneratedSkipLocalsInitFileLines>
   </PropertyGroup>
 
-    <Target Name="GenerateRyuJitSubstitutions"
-            BeforeTargets="PrepareResources;BeforeCompile;CoreCompile"
-            DependsOnTargets="PrepareForBuild"
-            Condition="'$(Language)' == 'C#' and '@(RyuJitSubstitution)' != ''"
-            Inputs="$(MSBuildAllProjects)"
-            Outputs="$(GeneratedRyuJitSubstitutionsFile)">
+  <ItemGroup Condition="'$(Language)' == 'C#' and '@(RyuJitSubstitution)' != ''">
+    <EmbeddedResource Include="$(GeneratedRyuJitSubstitutionsFile)" LogicalName="ILLink.Substitutions.xml" />
+  </ItemGroup>
+
+  <Target Name="PrepareRyuJitSubstitutionInputs"
+          DependsOnTargets="PrepareForBuild"
+          Condition="'$(Language)' == 'C#' and '@(RyuJitSubstitution)' != ''">
+    <WriteLinesToFile Lines="@(RyuJitSubstitutionEnabled->'%(Identity)');@(RyuJitSubstitution->'%(Identity)|%(FixedValue)|%(ReturnType)')"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true"
+                      File="$(GeneratedRyuJitSubstitutionsInputsFile)" />
+  </Target>
+
+  <Target Name="GenerateRyuJitSubstitutions"
+          BeforeTargets="PrepareResources;BeforeCompile;CoreCompile"
+          DependsOnTargets="PrepareForBuild;PrepareRyuJitSubstitutionInputs"
+          Condition="'$(Language)' == 'C#' and '@(RyuJitSubstitution)' != ''"
+          Inputs="$(MSBuildAllProjects);$(GeneratedRyuJitSubstitutionsInputsFile)"
+          Outputs="$(GeneratedRyuJitSubstitutionsFile)">
     <PropertyGroup>
       <RyuJitSubstitutionEnabledNames>@(RyuJitSubstitutionEnabled)</RyuJitSubstitutionEnabledNames>
     </PropertyGroup>
@@ -49,8 +63,14 @@
       <RyuJitSubstitution Update="@(RyuJitSubstitution)"
                           Value="%(RyuJitSubstitution.FixedValue)"
                           Condition="'%(RyuJitSubstitution.FixedValue)' != ''" />
+      <RyuJitSubstitution Update="OPTIONAL_STATISTICS"
+                          Value="true"
+                          Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(RyuJitSubstitutionEnabledNames)', '(^|;)(NODEBASH_STATS|COUNT_BASIC_BLOCKS|COUNT_AST_OPERS|CALL_ARG_STATS|MEASURE_NODE_SIZE|MEASURE_BLOCK_SIZE|MEASURE_PTRTAB_SIZE|MEASURE_FATAL|EMITTER_STATS)(;|$)'))" />
       <RyuJitSubstitution Update="@(RyuJitSubstitution)"
-                          Line="&lt;method signature=&quot;System.Boolean get_%(RyuJitSubstitution.Identity)()&quot; body=&quot;stub&quot; value=&quot;%(RyuJitSubstitution.Value)&quot; /&gt;"
+                          ReturnType="System.Boolean"
+                          Condition="'%(RyuJitSubstitution.ReturnType)' == ''" />
+      <RyuJitSubstitution Update="@(RyuJitSubstitution)"
+                          Line="&lt;method signature=&quot;%(RyuJitSubstitution.ReturnType) get_%(RyuJitSubstitution.Identity)()&quot; body=&quot;stub&quot; value=&quot;%(RyuJitSubstitution.Value)&quot; /&gt;"
                           Condition="'%(RyuJitSubstitution.HasConfigurationGetter)' != 'false'" />
     </ItemGroup>
 
@@ -60,7 +80,7 @@
       <RyuJitSubstitutionLine Include="    &lt;type fullname=&quot;RyuJitSharp.Configuration&quot;&gt;" />
       <RyuJitSubstitutionLine Include="@(RyuJitSubstitution->'%(Line)')"
                               Condition="'%(RyuJitSubstitution.HasConfigurationGetter)' != 'false'" />
-      <RyuJitSubstitutionLine Include="&lt;!-- &lt;method signature=&quot;System.Boolean get_%(RyuJitSubstitution.Identity)()&quot; body=&quot;stub&quot; value=&quot;%(RyuJitSubstitution.Value)&quot; /&gt; --&gt;"
+      <RyuJitSubstitutionLine Include="&lt;!-- &lt;method signature=&quot;%(RyuJitSubstitution.ReturnType) get_%(RyuJitSubstitution.Identity)()&quot; body=&quot;stub&quot; value=&quot;%(RyuJitSubstitution.Value)&quot; /&gt; --&gt;"
                               Condition="'%(RyuJitSubstitution.HasConfigurationGetter)' == 'false'" />
       <RyuJitSubstitutionLine Include="    &lt;/type&gt;" />
       <RyuJitSubstitutionLine Include="  &lt;/assembly&gt;" />
@@ -68,10 +88,6 @@
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(RyuJitSubstitutionLine)" Overwrite="true" WriteOnlyWhenDifferent="true" File="$(GeneratedRyuJitSubstitutionsFile)" />
-
-    <ItemGroup>
-      <EmbeddedResource Include="$(GeneratedRyuJitSubstitutionsFile)" LogicalName="ILLink.Substitutions.xml" />
-    </ItemGroup>
   </Target>
 
   <Target Name="GenerateSkipLocalsInit"

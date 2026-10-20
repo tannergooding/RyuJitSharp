@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
@@ -11,14 +12,16 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    [System.Diagnostics.Conditional("EMITTER_STATS")]
     private static void IncrementTotalIGjmps()
     {
+        Debug.Assert(Configuration.EMITTER_STATS);
         emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
     }
 
     internal static void emitterStats(StreamWriter output)
     {
+        Debug.Assert(Configuration.EMITTER_STATS);
+
         if (!Configuration.EMITTER_STATS)
         {
             return;

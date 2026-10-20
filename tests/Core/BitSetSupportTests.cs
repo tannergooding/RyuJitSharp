@@ -10,6 +10,7 @@ using RyuJitSharp;
 
 namespace RyuJitSharp.UnitTests;
 
+[NonParallelizable]
 internal static class BitSetSupportTests
 {
     private static readonly uint[] s_expectedBitIndexes = [0, 10, 63, 64, 129];
@@ -100,6 +101,38 @@ internal static class BitSetSupportTests
         Assert.That(
             BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.IsMember(environment, bitSet, 3),
             Is.True);
+    }
+
+    [TestCase("RyuJitSharp.VARSET_COUNTOPS", false)]
+    [TestCase("RyuJitSharp.VARSET_COUNTOPS", true)]
+    [TestCase("RyuJitSharp.ALLVARSET_COUNTOPS", false)]
+    [TestCase("RyuJitSharp.ALLVARSET_COUNTOPS", true)]
+    public static void CounterWrapperUsesRuntimeFeatureSwitch(string featureSwitchName, bool enabled)
+    {
+        const string varsetCountOpsSwitchName = "RyuJitSharp.VARSET_COUNTOPS";
+        const string allVarsetCountOpsSwitchName = "RyuJitSharp.ALLVARSET_COUNTOPS";
+        var hadVarsetCountOpsValue = AppContext.TryGetSwitch(varsetCountOpsSwitchName, out var varsetCountOpsValue);
+        var hadAllVarsetCountOpsValue = AppContext.TryGetSwitch(allVarsetCountOpsSwitchName, out var allVarsetCountOpsValue);
+        var varsetCountOpsEnabled = featureSwitchName == varsetCountOpsSwitchName && enabled;
+        var allVarsetCountOpsEnabled = featureSwitchName == allVarsetCountOpsSwitchName && enabled;
+        AppContext.SetSwitch(varsetCountOpsSwitchName, varsetCountOpsEnabled);
+        AppContext.SetSwitch(allVarsetCountOpsSwitchName, allVarsetCountOpsEnabled);
+
+        try
+        {
+            var counter = new BitSetSupport.BitSetOpCounter("unused");
+            var environment = new TestEnvironment(size: 8, counter: counter);
+            _ = BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.MakeEmpty(environment);
+
+            Assert.That(
+                counter.GetCount(BitSetSupport.Operation.BSOP_MakeEmpty),
+                Is.EqualTo(enabled ? 1 : 0));
+        }
+        finally
+        {
+            AppContext.SetSwitch(varsetCountOpsSwitchName, hadVarsetCountOpsValue && varsetCountOpsValue);
+            AppContext.SetSwitch(allVarsetCountOpsSwitchName, hadAllVarsetCountOpsValue && allVarsetCountOpsValue);
+        }
     }
 
     [Test]

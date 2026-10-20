@@ -1,5 +1,11 @@
+extern alias RyuJitSharpCore;
+
 using System;
+using System.Globalization;
+using System.Reflection;
+using System.Xml;
 using NUnit.Framework;
+using TargetDefinition = RyuJitSharpCore::RyuJitSharp.Target;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -26,10 +32,10 @@ internal static class TargetConfigurationTests
             : Configuration.TARGET_RISCV64 ? "riscv64"
             : Configuration.TARGET_WASM && !Configuration.TARGET_64BIT ? "wasm32"
             : throw new InvalidOperationException("Unsupported target architecture.");
-        Assert.That(Target.TgtCpuName, Is.EqualTo(expectedCpuName));
-        Assert.That(Target.TgtArgOrder, Is.EqualTo(
-            Configuration.TARGET_X86 ? Target.ARG_ORDER_L2R : Target.ARG_ORDER_R2L));
-        Assert.That(Target.TgtUnmanagedArgOrder, Is.EqualTo(Target.ARG_ORDER_R2L));
+        Assert.That(TargetDefinition.TgtCpuName, Is.EqualTo(expectedCpuName));
+        Assert.That(TargetDefinition.TgtArgOrder, Is.EqualTo(
+            Configuration.TARGET_X86 ? TargetDefinition.ARG_ORDER_L2R : TargetDefinition.ARG_ORDER_R2L));
+        Assert.That(TargetDefinition.TgtUnmanagedArgOrder, Is.EqualTo(TargetDefinition.ARG_ORDER_R2L));
 
         var configuredArchitectures =
             (TargetArchitecture.IsX86 ? 1 : 0)
@@ -44,5 +50,40 @@ internal static class TargetConfigurationTests
         Assert.That(TargetOS.IsWindows, Is.EqualTo(Configuration.TARGET_WINDOWS));
         Assert.That(TargetOS.IsUnix, Is.EqualTo(Configuration.TARGET_UNIX));
         Assert.That(TargetOS.IsApplePlatform, Is.EqualTo(Configuration.TARGET_APPLE));
+    }
+
+    [Test]
+    public static void EmbeddedConfigurationSubstitutionsCoverAllGetters()
+    {
+        var substitutionsStream =
+            typeof(Configuration).Assembly.GetManifestResourceStream("ILLink.Substitutions.xml");
+        Assert.That(substitutionsStream, Is.Not.Null);
+
+        using (substitutionsStream!)
+        {
+            var substitutions = new XmlDocument();
+            substitutions.Load(substitutionsStream!);
+
+            foreach (var property in typeof(Configuration).GetProperties(BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                var returnType = property.PropertyType == typeof(bool)
+                    ? "System.Boolean"
+                    : property.PropertyType == typeof(int)
+                        ? "System.Int32"
+                        : throw new InvalidOperationException($"Unsupported Configuration property type: {property.PropertyType}.");
+
+                var signature = $"{returnType} get_{property.Name}()";
+                var substitution = substitutions.SelectSingleNode($"//method[@signature='{signature}']");
+                Assert.That(substitution, Is.Not.Null, signature);
+
+                if (property.PropertyType == typeof(int))
+                {
+                    var substitutedValue = int.Parse(
+                        substitution!.Attributes!["value"]!.Value,
+                        CultureInfo.InvariantCulture);
+                    Assert.That(substitutedValue, Is.EqualTo(property.GetValue(null)), signature);
+                }
+            }
+        }
     }
 }

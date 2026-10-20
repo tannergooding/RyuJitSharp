@@ -475,7 +475,10 @@ public partial class Compiler
             GenTree.DumpNodeSizes();
         }
 
-        emitterStaticStats();
+        if (Configuration.EMITTER_STATS)
+        {
+            emitterStaticStats();
+        }
     }
 
     [System.Diagnostics.Conditional("DEBUG")]
