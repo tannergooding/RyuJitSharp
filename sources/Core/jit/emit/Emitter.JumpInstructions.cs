@@ -71,9 +71,12 @@ public partial class Emitter
         return default;
     }
 
+    private static class DebugJumpSelector
+    {
 #pragma warning disable CA1802 // Keep the native debug selector non-constant so disabled tracing has no unreachable branches.
-    private static readonly int INTERESTING_JUMP_NUM = -1;
+        internal static readonly int INTERESTING_JUMP_NUM = -1;
 #pragma warning restore CA1802
+    }
 
     private static uint emitTotalIGjmps;
 
@@ -310,10 +313,10 @@ public partial class Emitter
                 {
                     var debugInfo = id.idDebugOnlyInfo();
                     assert(debugInfo is not null);
-                    if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
-                        (INTERESTING_JUMP_NUM == 0))
+                    if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                        (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                     {
-                        if (INTERESTING_JUMP_NUM == 0)
+                        if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                         {
                             jitprintf($"[0] Jump {debugInfo.idNum}:\n");
                         }
@@ -338,10 +341,10 @@ public partial class Emitter
                 {
                     var debugInfo = id.idDebugOnlyInfo();
                     assert(debugInfo is not null);
-                    if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
-                        (INTERESTING_JUMP_NUM == 0))
+                    if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                        (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                     {
-                        if (INTERESTING_JUMP_NUM == 0)
+                        if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                         {
                             jitprintf($"[0] Jump {debugInfo.idNum}:\n");
                         }

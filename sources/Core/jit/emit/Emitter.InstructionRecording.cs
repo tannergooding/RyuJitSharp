@@ -44,7 +44,8 @@ public partial class Emitter
         }
         if (Configuration.EMITTER_STATS)
         {
-            emitIFcounts[(int)id.idInsFmt()] = unchecked(emitIFcounts[(int)id.idInsFmt()] + 1);
+            EmitterStatistics.InstructionFormatCounts[(int)id.idInsFmt()] =
+                unchecked(EmitterStatistics.InstructionFormatCounts[(int)id.idInsFmt()] + 1);
         }
     }
 
@@ -92,9 +93,6 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED,
             "Load/store classification is only supported on ARM32 and ARM64.");
     }
-
-    private static readonly uint[] emitIFcounts =
-        Configuration.EMITTER_STATS ? new uint[emitFmtToOps.Length] : null!;
 
     private void emitInsSanityCheck(instrDesc id)
     {

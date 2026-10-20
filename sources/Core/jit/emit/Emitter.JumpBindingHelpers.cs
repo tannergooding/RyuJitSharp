@@ -229,8 +229,8 @@ public partial class Emitter
             {
                 var debugInfo = jump.idDebugOnlyInfo();
                 assert(debugInfo is not null);
-                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
-                    (INTERESTING_JUMP_NUM == 0))
+                if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                    (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                 {
                     jitprintf($"[9] Converting jump {debugInfo.idNum} to medium\n");
                 }
@@ -357,8 +357,8 @@ public partial class Emitter
             {
                 var debugInfo = jump.idDebugOnlyInfo();
                 assert(debugInfo is not null);
-                if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
-                    (INTERESTING_JUMP_NUM == 0))
+                if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                    (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                 {
                     jitprintf($"[8] Converting jump {debugInfo.idNum} to short\n");
                 }

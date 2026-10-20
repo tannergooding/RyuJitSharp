@@ -25,6 +25,14 @@ internal static unsafe class CSEHeuristicInitializationTests
     private static extern ref int TrashRegisters(Compiler compiler);
 
     [Test]
+    public static void Amd64CalleeSavedCountMatchesTargetMetadata()
+    {
+        Assume.That(Configuration.TARGET_AMD64);
+
+        Assert.That(CNT_CALLEE_SAVED, Is.EqualTo(CNT_CALLEE_SAVED_AMD64));
+    }
+
+    [Test]
     public static void InitializationUsesNativeMinimumCutoffsWithoutLocals()
     {
         WithCompiler(compiler =>

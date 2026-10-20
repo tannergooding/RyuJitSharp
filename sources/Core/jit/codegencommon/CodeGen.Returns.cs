@@ -238,7 +238,7 @@ public sealed partial class CodeGen
         }
 
         var emit = GetEmitter();
-        emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)0));
+        emit.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)0));
 
         var asyncContinuation = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().asyncContinuation);
         emit.emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG), asyncContinuation);

@@ -10,33 +10,6 @@ public sealed partial class CodeGen
     // Native Wasm codegen currently builds without WASM_THREAD_SUPPORT.
     private const bool WasmThreadSupport = false;
 
-    private static readonly instruction INS_I_load =
-        Configuration.TARGET_64BIT ? INS_i64_load : INS_i32_load;
-
-    private static readonly instruction INS_I_store =
-        Configuration.TARGET_64BIT ? INS_i64_store : INS_i32_store;
-
-    private static readonly instruction INS_I_and =
-        Configuration.TARGET_64BIT ? INS_i64_and : INS_i32_and;
-
-    private static readonly instruction INS_I_eqz =
-        Configuration.TARGET_64BIT ? INS_i64_eqz : INS_i32_eqz;
-
-    private static readonly instruction INS_I_mul =
-        Configuration.TARGET_64BIT ? INS_i64_mul : INS_i32_mul;
-
-    private static readonly instruction INS_I_sub =
-        Configuration.TARGET_64BIT ? INS_i64_sub : INS_i32_sub;
-
-    private static readonly instruction INS_I_le_u =
-        Configuration.TARGET_64BIT ? INS_i64_le_u : INS_i32_le_u;
-
-    private static readonly instruction INS_I_ge_u =
-        Configuration.TARGET_64BIT ? INS_i64_ge_u : INS_i32_ge_u;
-
-    private static readonly instruction INS_I_gt_u =
-        Configuration.TARGET_64BIT ? INS_i64_gt_u : INS_i32_gt_u;
-
     private unsafe void genCodeForTreeNodeWasm(GenTree treeNode)
     {
         genPrepareNodeConsumption(treeNode);
@@ -909,8 +882,8 @@ public sealed partial class CodeGen
         if (((tree._lirFlags & LIR.Flags.FoldedAddr) == LIR.Flags.None) &&
             ((lclOffset != 0) || (_compiler.lvaFrameAddress(lclNum, out _) != 0)))
         {
-            GetEmitter().emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
-            GetEmitter().emitIns(INS_I_add);
+            GetEmitter().emitIns_S(WasmInstructions.INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
+            GetEmitter().emitIns(WasmInstructions.INS_I_add);
         }
 
         WasmProduceReg(tree);
@@ -1032,7 +1005,7 @@ public sealed partial class CodeGen
     private void genCodeForFrameSize(GenTree tree)
     {
         assert(tree.Oper is GT_FRAME_SIZE);
-        GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compLclFrameSize));
+        GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compLclFrameSize));
         WasmProduceReg(tree);
     }
 
@@ -1501,14 +1474,14 @@ public sealed partial class CodeGen
             if (helperFunction.accessType is IAT_VALUE)
             {
                 // Direct same-image managed helpers do not need a portable entrypoint.
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
             }
             else
             {
                 // Push the PEP address from the helper's indirection cell.
                 assert(helperFunction.accessType is IAT_PVALUE);
                 GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
-                GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
             }
         }
 
@@ -1517,8 +1490,8 @@ public sealed partial class CodeGen
             // Push the call target by dereferencing the cell and then the PEP address.
             assert(helperFunction.accessType is IAT_PVALUE);
             GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
-            GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
-            GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, 0);
         }
 
         genEmitWasmCallWithCurrentGC(wasmSignature, ref parameters);
@@ -1570,14 +1543,14 @@ public sealed partial class CodeGen
 
         if (refType is TYP_REF)
         {
-            emitter.emitIns(INS_I_eqz);
+            emitter.emitIns(WasmInstructions.INS_I_eqz);
         }
         else
         {
             assert(refType is TYP_BYREF || varTypeIsIntOrI(refType));
             emitter.emitIns_I(
-                INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compMaxUncheckedOffsetForNullObject));
-            emitter.emitIns(INS_I_le_u);
+                WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compMaxUncheckedOffsetForNullObject));
+            emitter.emitIns(WasmInstructions.INS_I_le_u);
         }
 
         genJumpToThrowHlpBlk(SCK_NULL_CHECK);
@@ -1598,7 +1571,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            GetEmitter().emitIns(INS_I_ge_u);
+            GetEmitter().emitIns(WasmInstructions.INS_I_ge_u);
         }
 
         genJumpToThrowHlpBlk(boundsCheck.ThrowKind);
@@ -1619,7 +1592,7 @@ public sealed partial class CodeGen
             var amount = unchecked((nuint)size.AsIntCon().IconValue);
             if (amount == 0)
             {
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
             }
             else
             {
@@ -1627,15 +1600,15 @@ public sealed partial class CodeGen
                 amount = unchecked((amount + reservedSpace + alignmentMask) & ~alignmentMask);
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
-                GetEmitter().emitIns(INS_I_sub);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
+                GetEmitter().emitIns(WasmInstructions.INS_I_sub);
                 GetEmitter().emitIns_I(INS_local_set, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
 
                 if (needsZeroing)
                 {
                     GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-                    GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
-                    GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
+                    GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
+                    GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
                     GetEmitter().emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
                 }
 
@@ -1644,12 +1617,12 @@ public sealed partial class CodeGen
                 GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, Configuration.TARGET_POINTER_SIZE);
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
                 GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)reservedSpace));
-                GetEmitter().emitIns(INS_I_add);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)reservedSpace));
+                GetEmitter().emitIns(WasmInstructions.INS_I_add);
             }
         }
         else
@@ -1671,9 +1644,9 @@ public sealed partial class CodeGen
                 INS_local_tee,
                 EA_PTRSIZE,
                 unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
-            GetEmitter().emitIns(INS_I_eqz);
+            GetEmitter().emitIns(WasmInstructions.INS_I_eqz);
             genEmitIf(WasmValueType.I);
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
             GetEmitter().emitIns(INS_else);
 
             GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
@@ -1682,12 +1655,12 @@ public sealed partial class CodeGen
                 EA_PTRSIZE,
                 unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
             GetEmitter().emitIns_I(
-                INS_I_const,
+                WasmInstructions.INS_I_const,
                 EA_PTRSIZE,
                 unchecked((nint)(reservedSpace + (nuint)Configuration.STACK_ALIGN - (nuint)1)));
-            GetEmitter().emitIns(INS_I_add);
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)~(nint)(Configuration.STACK_ALIGN - 1)));
-            GetEmitter().emitIns(INS_I_and);
+            GetEmitter().emitIns(WasmInstructions.INS_I_add);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)~(nint)(Configuration.STACK_ALIGN - 1)));
+            GetEmitter().emitIns(WasmInstructions.INS_I_and);
 
             if (needsZeroing)
             {
@@ -1697,13 +1670,13 @@ public sealed partial class CodeGen
                     unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
             }
 
-            GetEmitter().emitIns(INS_I_sub);
+            GetEmitter().emitIns(WasmInstructions.INS_I_sub);
             GetEmitter().emitIns_I(INS_local_set, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
 
             if (needsZeroing)
             {
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
                 GetEmitter().emitIns_I(
                     INS_local_get,
                     EA_PTRSIZE,
@@ -1716,12 +1689,12 @@ public sealed partial class CodeGen
             GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, Configuration.TARGET_POINTER_SIZE);
 
             GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 0);
             GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
 
             GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)reservedSpace));
-            GetEmitter().emitIns(INS_I_add);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)reservedSpace));
+            GetEmitter().emitIns(WasmInstructions.INS_I_add);
             genEmitEndIf();
         }
 
@@ -1769,13 +1742,13 @@ public sealed partial class CodeGen
         var scale = tree.ElemSize;
         if (scale > 1)
         {
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, scale);
-            GetEmitter().emitIns(INS_I_mul);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, scale);
+            GetEmitter().emitIns(WasmInstructions.INS_I_mul);
         }
 
-        GetEmitter().emitIns(INS_I_add);
-        GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, tree.ElemOffset);
-        GetEmitter().emitIns(INS_I_add);
+        GetEmitter().emitIns(WasmInstructions.INS_I_add);
+        GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, tree.ElemOffset);
+        GetEmitter().emitIns(WasmInstructions.INS_I_add);
         WasmProduceReg(tree);
     }
 
@@ -1790,21 +1763,21 @@ public sealed partial class CodeGen
 
             if (scale > 1)
             {
-                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, scale);
-                GetEmitter().emitIns(INS_I_mul);
+                GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, scale);
+                GetEmitter().emitIns(WasmInstructions.INS_I_mul);
             }
 
             if (lea.HasBaseAddress)
             {
-                GetEmitter().emitIns(INS_I_add);
+                GetEmitter().emitIns(WasmInstructions.INS_I_add);
             }
         }
 
         var offset = lea.Offset;
         if (offset != 0)
         {
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, offset);
-            GetEmitter().emitIns(INS_I_add);
+            GetEmitter().emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, offset);
+            GetEmitter().emitIns(WasmInstructions.INS_I_add);
         }
 
         WasmProduceReg(lea);
@@ -1937,8 +1910,8 @@ public sealed partial class CodeGen
                 genEmitLocalGet(srcReg, WasmValueType.I);
                 if (srcOffset != 0)
                 {
-                    emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)srcOffset));
-                    emit.emitIns(INS_I_add);
+                    emit.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)srcOffset));
+                    emit.emitIns(WasmInstructions.INS_I_add);
                 }
             }
 
@@ -1973,17 +1946,17 @@ public sealed partial class CodeGen
                 // Copy non-GC slots with pointer-sized loads and stores.
                 genEmitLocalGet(destReg, WasmValueType.I);
                 genEmitLocalGet(srcReg, WasmValueType.I);
-                emit.emitIns_I(INS_I_load, EA_PTRSIZE, unchecked((nint)srcOffset));
-                emit.emitIns_I(INS_I_store, EA_PTRSIZE, unchecked((nint)destOffset));
+                emit.emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, unchecked((nint)srcOffset));
+                emit.emitIns_I(WasmInstructions.INS_I_store, EA_PTRSIZE, unchecked((nint)destOffset));
             }
             else
             {
                 // Compute the slot address and use a write barrier for each GC pointer.
                 genEmitLocalGet(destReg, WasmValueType.I);
-                emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)destOffset));
-                emit.emitIns(INS_I_add);
+                emit.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)destOffset));
+                emit.emitIns(WasmInstructions.INS_I_add);
                 genEmitLocalGet(srcReg, WasmValueType.I);
-                emit.emitIns_I(INS_I_load, EA_PTRSIZE, unchecked((nint)srcOffset));
+                emit.emitIns_I(WasmInstructions.INS_I_load, EA_PTRSIZE, unchecked((nint)srcOffset));
                 // The helper omits SP/PEP, so only the destination and reference go on the stack.
                 genEmitHelperCallWasm(CORINFO_HELP_CHECKED_ASSIGN_REF, 0, EA_PTRSIZE);
                 gcPtrCount = unchecked(gcPtrCount - 1u);

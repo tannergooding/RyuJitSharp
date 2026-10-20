@@ -145,12 +145,12 @@ public partial class Emitter
             {
                 var debugInfo = id.idDebugOnlyInfo();
                 assert(debugInfo is not null);
-                if (debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM) ||
-                    INTERESTING_JUMP_NUM == 0)
+                if (debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM) ||
+                    DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                 {
                     assert(id.idjIG is not null);
                     var blockOffset = id.idjIG.igOffs;
-                    if (INTERESTING_JUMP_NUM == 0)
+                    if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                     {
                         jitprintf($"[3] Jump {debugInfo.idNum}:\n");
                     }
@@ -178,12 +178,12 @@ public partial class Emitter
             {
                 var debugInfo = id.idDebugOnlyInfo();
                 assert(debugInfo is not null);
-                if (debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM) ||
-                    INTERESTING_JUMP_NUM == 0)
+                if (debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM) ||
+                    DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                 {
                     assert(id.idjIG is not null);
                     var blockOffset = id.idjIG.igOffs;
-                    if (INTERESTING_JUMP_NUM == 0)
+                    if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                     {
                         jitprintf($"[4] Jump {debugInfo.idNum}:\n");
                     }

@@ -47,7 +47,7 @@ public partial class Emitter
 
         var gcRefRegsInScratch = (gcrefRegs & RBM_CALLEE_TRASH) != RBM_NONE;
         var large = !VarSetOps.IsEmpty(_compiler, GCvars) || gcRefRegsInScratch || (byrefRegs != RBM_NONE) ||
-            (Configuration.TARGET_XARCH && ((disp < AM_DISP_MIN) || (disp > AM_DISP_MAX))) ||
+            (Configuration.TARGET_XARCH && ((disp < AddressModeConstants.AM_DISP_MIN) || (disp > AddressModeConstants.AM_DISP_MAX))) ||
             (argCnt > ID_MAX_SMALL_CNS) || (argCnt < 0) ||
             (Configuration.MULTIREG_HAS_SECOND_GC_RET &&
                 (EA_IS_GCREF(secondRetSize) || EA_IS_BYREF(secondRetSize))) ||

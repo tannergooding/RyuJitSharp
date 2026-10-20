@@ -37,15 +37,15 @@ public partial class Emitter
         //
         if (memAccessKind == PerfScoreMemoryAccessKind.Read)
         {
-            result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_RD_STACK : PERFSCORE_LATENCY_RD_GENERAL;
+            result.insLatency = isLocalAccess ? ExecutionCostData.ReadStackLatency : ExecutionCostData.ReadGeneralLatency;
         }
         else if (memAccessKind == PerfScoreMemoryAccessKind.Write)
         {
-            result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_WR_STACK : PERFSCORE_LATENCY_WR_GENERAL;
+            result.insLatency = isLocalAccess ? ExecutionCostData.WriteStackLatency : ExecutionCostData.WriteGeneralLatency;
         }
         else if (memAccessKind == PerfScoreMemoryAccessKind.ReadWrite)
         {
-            result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_RD_WR_STACK : PERFSCORE_LATENCY_RD_WR_GENERAL;
+            result.insLatency = isLocalAccess ? ExecutionCostData.ReadWriteStackLatency : ExecutionCostData.ReadWriteGeneralLatency;
         }
 
         switch (insFmt)

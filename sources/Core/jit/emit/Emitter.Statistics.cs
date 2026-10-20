@@ -55,7 +55,7 @@ public partial class Emitter
         uint instructionCount = 0;
         uint displayedInstructionCount = 0;
 
-        var instructionFormatCounts = emitIFcounts!;
+        var instructionFormatCounts = EmitterStatistics.InstructionFormatCounts;
         for (var format = 0; format < instructionFormatCounts.Length; format++)
         {
             instructionCount = unchecked(instructionCount + instructionFormatCounts[format]);
@@ -176,15 +176,15 @@ public partial class Emitter
         }
 
         output.Write("Descriptor size distribution:\n");
-        emitSizeTable!.dump(output);
+        EmitterStatistics.SizeTable!.dump(output);
         output.Write("\n");
 
         output.Write("GC ref frame variable counts:\n");
-        GCrefsTable!.dump(output);
+        EmitterStatistics.GCReferencesTable!.dump(output);
         output.Write("\n");
 
         output.Write("Max. stack depth distribution:\n");
-        stkDepthTable!.dump(output);
+        EmitterStatistics.StackDepthTable!.dump(output);
         output.Write("\n");
 
         var totalConstantCount = unchecked(emitLargeCnsCnt + emitSmallCnsCnt);
@@ -209,7 +209,7 @@ public partial class Emitter
 
             for (var index = 0; index < SMALL_CNS_TSZ; index++)
             {
-                var count = emitSmallCns![index];
+                var count = EmitterStatistics.SmallConstants![index];
 
                 if (count >= minimumCount)
                 {

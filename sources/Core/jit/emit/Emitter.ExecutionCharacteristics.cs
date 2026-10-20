@@ -69,7 +69,7 @@ public partial class Emitter
             case IF_XARCH_SRD:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RD;
-                memLatency = PERFSCORE_LATENCY_RD_STACK;
+                memLatency = ExecutionCostData.ReadStackLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.Read;
                 break;
             }
@@ -77,7 +77,7 @@ public partial class Emitter
             case IF_XARCH_SWR:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_WR;
-                memLatency = PERFSCORE_LATENCY_WR_STACK;
+                memLatency = ExecutionCostData.WriteStackLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.Write;
                 break;
             }
@@ -85,7 +85,7 @@ public partial class Emitter
             case IF_XARCH_SRW:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RW;
-                memLatency = PERFSCORE_LATENCY_RD_WR_STACK;
+                memLatency = ExecutionCostData.ReadWriteStackLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.ReadWrite;
                 break;
             }
@@ -93,7 +93,7 @@ public partial class Emitter
             case IF_XARCH_MRD:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RD;
-                memLatency = PERFSCORE_LATENCY_RD_CONST_ADDR;
+                memLatency = ExecutionCostData.ReadConstAddressLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.Read;
                 break;
             }
@@ -101,7 +101,7 @@ public partial class Emitter
             case IF_XARCH_MWR:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_WR;
-                memLatency = PERFSCORE_LATENCY_WR_CONST_ADDR;
+                memLatency = ExecutionCostData.WriteConstAddressLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.Write;
                 break;
             }
@@ -109,7 +109,7 @@ public partial class Emitter
             case IF_XARCH_MRW:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RW;
-                memLatency = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
+                memLatency = ExecutionCostData.ReadWriteConstAddressLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.ReadWrite;
                 break;
             }
@@ -117,7 +117,7 @@ public partial class Emitter
             case IF_XARCH_ARD:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RD;
-                memLatency = PERFSCORE_LATENCY_RD_GENERAL;
+                memLatency = ExecutionCostData.ReadGeneralLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.Read;
                 break;
             }
@@ -125,7 +125,7 @@ public partial class Emitter
             case IF_XARCH_AWR:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_WR;
-                memLatency = PERFSCORE_LATENCY_WR_GENERAL;
+                memLatency = ExecutionCostData.WriteGeneralLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.Write;
                 break;
             }
@@ -133,7 +133,7 @@ public partial class Emitter
             case IF_XARCH_ARW:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RW;
-                memLatency = PERFSCORE_LATENCY_RD_WR_GENERAL;
+                memLatency = ExecutionCostData.ReadWriteGeneralLatency;
                 memAccessKind = PerfScoreMemoryAccessKind.ReadWrite;
                 break;
             }

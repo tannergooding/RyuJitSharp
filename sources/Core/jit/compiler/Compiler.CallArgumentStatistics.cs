@@ -31,23 +31,26 @@ public partial class Compiler
 
     internal static uint argMaxTempsPerMethod;
 
-    private static readonly uint[]? argCntBuckets =
-        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
-    private static readonly uint[]? argDWordCntBuckets =
-        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
-    private static readonly uint[]? argDWordLngCntBuckets =
-        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
-    private static readonly uint[]? argTempsCntBuckets =
-        Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+    private static class CallArgumentStatisticsData
+    {
+        private static readonly uint[]? argCntBuckets =
+            Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+        private static readonly uint[]? argDWordCntBuckets =
+            Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+        private static readonly uint[]? argDWordLngCntBuckets =
+            Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
+        private static readonly uint[]? argTempsCntBuckets =
+            Configuration.CALL_ARG_STATS ? [0, 1, 2, 3, 4, 5, 6, 10, 0] : null;
 
-    internal static readonly Histogram argCntTable =
-        Configuration.CALL_ARG_STATS ? new(argCntBuckets!) : null!;
-    internal static readonly Histogram argDWordCntTable =
-        Configuration.CALL_ARG_STATS ? new(argDWordCntBuckets!) : null!;
-    internal static readonly Histogram argDWordLngCntTable =
-        Configuration.CALL_ARG_STATS ? new(argDWordLngCntBuckets!) : null!;
-    internal static readonly Histogram argTempsCntTable =
-        Configuration.CALL_ARG_STATS ? new(argTempsCntBuckets!) : null!;
+        internal static readonly Histogram argCntTable =
+            Configuration.CALL_ARG_STATS ? new(argCntBuckets!) : null!;
+        internal static readonly Histogram argDWordCntTable =
+            Configuration.CALL_ARG_STATS ? new(argDWordCntBuckets!) : null!;
+        internal static readonly Histogram argDWordLngCntTable =
+            Configuration.CALL_ARG_STATS ? new(argDWordLngCntBuckets!) : null!;
+        internal static readonly Histogram argTempsCntTable =
+            Configuration.CALL_ARG_STATS ? new(argTempsCntBuckets!) : null!;
+    }
 
     public void compCallArgStats()
     {
@@ -100,7 +103,7 @@ public partial class Compiler
             }
         }
 
-        argTempsCntTable.record(argTempsThisMethod);
+        CallArgumentStatisticsData.argTempsCntTable.record(argTempsThisMethod);
 
         if (argMaxTempsPerMethod < argTempsThisMethod)
         {
@@ -176,19 +179,19 @@ public partial class Compiler
         output.Write("--------------------------------------------------\n");
         output.Write("Argument count frequency table (includes ObjPtr):\n");
         output.Write("--------------------------------------------------\n");
-        argCntTable.dump(output);
+        CallArgumentStatisticsData.argCntTable.dump(output);
         output.Write("--------------------------------------------------\n");
 
         output.Write("--------------------------------------------------\n");
         output.Write("DWORD argument count frequency table (w/o LONG):\n");
         output.Write("--------------------------------------------------\n");
-        argDWordCntTable.dump(output);
+        CallArgumentStatisticsData.argDWordCntTable.dump(output);
         output.Write("--------------------------------------------------\n");
 
         output.Write("--------------------------------------------------\n");
         output.Write("Temps count frequency table (per method):\n");
         output.Write("--------------------------------------------------\n");
-        argTempsCntTable.dump(output);
+        CallArgumentStatisticsData.argTempsCntTable.dump(output);
         output.Write("--------------------------------------------------\n");
     }
 

@@ -17,8 +17,6 @@ public partial class Emitter
     private static uint emitTotalIDescAmdCnt;
     private static uint emitTotalIDescCnsAmdCnt;
 
-    private static readonly uint[]? emitSmallCns =
-        Configuration.EMITTER_STATS ? new uint[SMALL_CNS_TSZ] : null;
     private static uint emitSmallCnsCnt;
     private static uint emitLargeCnsCnt;
     private static uint emitInt8CnsCnt;
@@ -83,7 +81,7 @@ public partial class Emitter
             index = (int)(value + (SMALL_CNS_TSZ / 2));
         }
 
-        var smallConstantCounts = emitSmallCns!;
+        var smallConstantCounts = EmitterStatistics.SmallConstants!;
         emitSmallCnsCnt = unchecked(emitSmallCnsCnt + 1);
         smallConstantCounts[index] = unchecked(smallConstantCounts[index] + 1);
 

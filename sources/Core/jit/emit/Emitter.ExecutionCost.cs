@@ -87,24 +87,28 @@ public partial class Emitter
     private const float PERFSCORE_THROUGHPUT_RD = PERFSCORE_THROUGHPUT_2X;
     private const float PERFSCORE_THROUGHPUT_WR = PERFSCORE_THROUGHPUT_1C;
     private const float PERFSCORE_THROUGHPUT_RW = PERFSCORE_THROUGHPUT_1C;
-    private static readonly float PERFSCORE_LATENCY_RD_STACK =
-        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_3C);
-    private static readonly float PERFSCORE_LATENCY_WR_STACK =
-        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_1C);
-    private static readonly float PERFSCORE_LATENCY_RD_WR_STACK =
-        GetTargetedLatency(PERFSCORE_LATENCY_5C, PERFSCORE_LATENCY_3C);
-    private static readonly float PERFSCORE_LATENCY_RD_CONST_ADDR =
-        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_3C);
-    private static readonly float PERFSCORE_LATENCY_WR_CONST_ADDR =
-        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_1C);
-    private static readonly float PERFSCORE_LATENCY_RD_WR_CONST_ADDR =
-        GetTargetedLatency(PERFSCORE_LATENCY_5C, PERFSCORE_LATENCY_3C);
-    private static readonly float PERFSCORE_LATENCY_RD_GENERAL =
-        GetTargetedLatency(PERFSCORE_LATENCY_3C, PERFSCORE_LATENCY_4C);
-    private static readonly float PERFSCORE_LATENCY_WR_GENERAL =
-        GetTargetedLatency(PERFSCORE_LATENCY_3C, PERFSCORE_LATENCY_1C);
-    private static readonly float PERFSCORE_LATENCY_RD_WR_GENERAL =
-        GetTargetedLatency(PERFSCORE_LATENCY_6C, PERFSCORE_LATENCY_4C);
+
+    private static class ExecutionCostData
+    {
+        internal static readonly float ReadStackLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_3C);
+        internal static readonly float WriteStackLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_1C);
+        internal static readonly float ReadWriteStackLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_5C, PERFSCORE_LATENCY_3C);
+        internal static readonly float ReadConstAddressLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_3C);
+        internal static readonly float WriteConstAddressLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_1C);
+        internal static readonly float ReadWriteConstAddressLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_5C, PERFSCORE_LATENCY_3C);
+        internal static readonly float ReadGeneralLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_3C, PERFSCORE_LATENCY_4C);
+        internal static readonly float WriteGeneralLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_3C, PERFSCORE_LATENCY_1C);
+        internal static readonly float ReadWriteGeneralLatency =
+            Emitter.GetTargetedLatency(PERFSCORE_LATENCY_6C, PERFSCORE_LATENCY_4C);
+    }
 
     private static float GetTargetedLatency(float xarchLatency, float otherLatency)
     {
@@ -147,7 +151,7 @@ public partial class Emitter
         if (memAccessKind is PerfScoreMemoryAccessKind.Write or PerfScoreMemoryAccessKind.ReadWrite)
         {
             // A store is assumed not to be read back for the next WR_GENERAL cycles.
-            var adjustedLatency = latency - PERFSCORE_LATENCY_WR_GENERAL;
+            var adjustedLatency = latency - ExecutionCostData.WriteGeneralLatency;
             latency = 0.0f < adjustedLatency ? adjustedLatency : 0.0f;
         }
         else if (latency >= 1.0f)

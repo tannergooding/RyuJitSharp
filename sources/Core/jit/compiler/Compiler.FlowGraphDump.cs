@@ -14,12 +14,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static readonly Lazy<StreamWriter> s_flowGraphStderr = new(
-        () => new JitTextWriter(Console.OpenStandardError(), leaveOpen: true) { AutoFlush = true });
+    private static class FlowGraphDumpData
+    {
+        internal static readonly Lazy<StreamWriter> Stderr = new(
+            () => new JitTextWriter(Console.OpenStandardError(), leaveOpen: true) { AutoFlush = true });
 
-    // Keep the pinned native labels, including the stale entries (B350).
-    private static readonly string[] s_flowGraphKinds = ["EHFINALLYRET", "EHFILTERRET", "EHCATCHRET", "THROW", "RETURN", "NONE",
-        "ALWAYS", "LEAVE", "CALLFINALLY", "COND", "SWITCH"];
+        // Keep the pinned native labels, including the stale entries (B350).
+        internal static readonly string[] Kinds = ["EHFINALLYRET", "EHFILTERRET", "EHCATCHRET", "THROW", "RETURN", "NONE",
+            "ALWAYS", "LEAVE", "CALLFINALLY", "COND", "SWITCH"];
+    }
 
     internal static string fgProcessEscapes(string value, bool fileName)
     {
@@ -245,7 +248,7 @@ public partial class Compiler
             case "stderr":
             {
                 dontClose = true;
-                return s_flowGraphStderr.Value;
+                return FlowGraphDumpData.Stderr.Value;
             }
         }
 
@@ -490,7 +493,7 @@ public partial class Compiler
             }
             else
             {
-                if ((uint)block.Kind >= (uint)s_flowGraphKinds.Length)
+                if ((uint)block.Kind >= (uint)FlowGraphDumpData.Kinds.Length)
                 {
                     throw new FatalJitException(CORJIT_INTERNALERROR,
                         "Native XML flow-graph jump-kind table has no defined entry for this block kind (B350).");
@@ -498,7 +501,7 @@ public partial class Compiler
 
                 writer.Write($"\n        <block\n            id=\"{block.bbNum}\"");
                 writer.Write($"\n            ordinal=\"{ordinals[block.bbNum]}\"");
-                writer.Write($"\n            jumpKind=\"{s_flowGraphKinds[(int)block.Kind]}\"");
+                writer.Write($"\n            jumpKind=\"{FlowGraphDumpData.Kinds[(int)block.Kind]}\"");
                 if (block.hasTryIndex)
                 {
                     writer.Write("\n            inTry=\"true\"");

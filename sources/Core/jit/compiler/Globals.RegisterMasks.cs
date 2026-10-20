@@ -138,7 +138,7 @@ public static partial class Globals
         CNT_CALLEE_TRASH_MASK_WASM);
 
     public static int CNT_CALLEE_SAVED => Configuration.TARGET_AMD64
-        ? (Configuration.UNIX_AMD64_ABI ? 5 : 7) + (Configuration.ETW_EBP_FRAMED ? 1 : 0)
+        ? CNT_CALLEE_SAVED_AMD64
         : GetTargetRegisterValue(
             CNT_CALLEE_SAVED_X86,
             0,

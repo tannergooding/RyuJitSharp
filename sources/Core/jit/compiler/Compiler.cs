@@ -292,8 +292,13 @@ public partial class Compiler
     /// <summary>Display per-phase memory statistics for every function</summary>
     public static bool s_dspMemStats;
 
+    private static class LoopHoistStatsData
+    {
+        internal static readonly Lock? Lock = Configuration.DEBUG ? new() : null;
+    }
+
     /// <summary>This lock protects the aggregate loop-hoisting statistics.</summary>
-    public static readonly Lock? s_loopHoistStatsLock = Configuration.DEBUG ? new() : null;
+    public static Lock? s_loopHoistStatsLock => LoopHoistStatsData.Lock;
 
     public static int s_loopsConsidered;
 
@@ -334,11 +339,21 @@ public partial class Compiler
     // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
     public unsafe CORINFO_CLASS_HANDLE _refAnyClass;
 
-    public static BitSetSupport.BitSetOpCounter? _varsetOpCounter =
-        Configuration.VARSET_COUNTOPS ? new("VarSetOpCounts.log") : null;
+    private static class VarSetOpStatsData
+    {
+        internal static readonly BitSetSupport.BitSetOpCounter? Counter =
+            Configuration.VARSET_COUNTOPS ? new("VarSetOpCounts.log") : null;
+    }
 
-    public static BitSetSupport.BitSetOpCounter? _allvarsetOpCounter =
-        Configuration.ALLVARSET_COUNTOPS ? new("AllVarSetOpCounts.log") : null;
+    private static class AllVarSetOpStatsData
+    {
+        internal static readonly BitSetSupport.BitSetOpCounter? Counter =
+            Configuration.ALLVARSET_COUNTOPS ? new("AllVarSetOpCounts.log") : null;
+    }
+
+    public static BitSetSupport.BitSetOpCounter? _varsetOpCounter => VarSetOpStatsData.Counter;
+
+    public static BitSetSupport.BitSetOpCounter? _allvarsetOpCounter => AllVarSetOpStatsData.Counter;
 
     public FpStructLoweringMap? _fpStructLoweringCache;
 

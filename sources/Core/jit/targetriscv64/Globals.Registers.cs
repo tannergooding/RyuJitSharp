@@ -103,8 +103,8 @@ public partial class Globals
     public const regMask SRBM_PROFILER_LEAVE_TRASH_RISCV64 = SRBM_PROFILER_ENTER_TRASH_RISCV64;
     public const regMask SRBM_PROFILER_TAILCALL_TRASH_RISCV64 = SRBM_PROFILER_LEAVE_TRASH_RISCV64;
 
-    public static readonly regMaskTP SRBM_STOP_FOR_GC_TRASH_RISCV64 = new(SRBM_CALLEE_TRASH_RISCV64);
-    public static readonly regMaskTP SRBM_INIT_PINVOKE_FRAME_TRASH_RISCV64 = new(SRBM_CALLEE_TRASH_RISCV64);
+    public static regMaskTP SRBM_STOP_FOR_GC_TRASH_RISCV64 => RiscV64RegisterMaskData.StopForGcTrash;
+    public static regMaskTP SRBM_INIT_PINVOKE_FRAME_TRASH_RISCV64 => RiscV64RegisterMaskData.InitPInvokeFrameTrash;
     public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH_RISCV64 =
         SRBM_INT_CALLEE_TRASH_RISCV64 & ~(SRBM_ARG_REGS_RISCV64 | SRBM_RISCV64_T3);
     public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR_RISCV64 = REG_RISCV64_T0;
@@ -199,4 +199,10 @@ public partial class Globals
     public const int CNT_CALLEE_SAVED_FLOAT_RISCV64 = 12;
     public const int CALLEE_SAVED_REG_MAXSZ_RISCV64 = CNT_CALLEE_SAVED_RISCV64 * REGSIZE_BYTES_RISCV64;
     public const int CALLEE_SAVED_FLOAT_MAXSZ_RISCV64 = CNT_CALLEE_SAVED_FLOAT_RISCV64 * FPSAVE_REGSIZE_BYTES_RISCV64;
+
+    private static class RiscV64RegisterMaskData
+    {
+        internal static readonly regMaskTP StopForGcTrash = new(Globals.SRBM_CALLEE_TRASH_RISCV64);
+        internal static readonly regMaskTP InitPInvokeFrameTrash = new(Globals.SRBM_CALLEE_TRASH_RISCV64);
+    }
 }

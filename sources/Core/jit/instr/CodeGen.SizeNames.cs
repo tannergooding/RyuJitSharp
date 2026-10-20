@@ -9,16 +9,19 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private static readonly string[] s_sizeNames =
-    [
-        "byte  ptr ",
-        "word  ptr ",
-        "dword ptr ",
-        "qword ptr ",
-        "xmmword ptr ",
-        "ymmword ptr ",
-        "zmmword ptr ",
-    ];
+    private static class SizeNamesData
+    {
+        internal static readonly string[] Values =
+        [
+            "byte  ptr ",
+            "word  ptr ",
+            "dword ptr ",
+            "qword ptr ",
+            "xmmword ptr ",
+            "ymmword ptr ",
+            "zmmword ptr ",
+        ];
+    }
 
     public static string genSizeStr(emitAttr attr)
     {
@@ -27,7 +30,7 @@ public sealed partial class CodeGen
 
         if ((emitAttr)size == attr)
         {
-            return size > 0 ? s_sizeNames[BitOperations.TrailingZeroCount(size)] : "";
+            return size > 0 ? SizeNamesData.Values[BitOperations.TrailingZeroCount(size)] : "";
         }
         else if (attr == EA_GCREF)
         {

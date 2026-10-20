@@ -7,22 +7,26 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    private static readonly string[] s_wasmValueTypeNames = [
-        "Invalid",
-        "i32",
-        "i64",
-        "f32",
-        "f64",
-        "v128",
-        "exnref",
-    ];
+    private static class WasmValueTypeNameData
+    {
+        internal static readonly string[] Names = [
+            "Invalid",
+            "i32",
+            "i64",
+            "f32",
+            "f64",
+            "v128",
+            "exnref",
+        ];
+    }
 
     public static string WasmValueTypeName(WasmValueType type)
     {
         Configuration.EnsureWasmTarget();
-        assert((uint)s_wasmValueTypeNames.Length == (uint)WasmValueType.Count);
+        var names = WasmValueTypeNameData.Names;
+        assert((uint)names.Length == (uint)WasmValueType.Count);
         assert((type >= WasmValueType.Invalid) && (type < WasmValueType.Count));
-        return s_wasmValueTypeNames[(uint)type];
+        return names[(uint)type];
     }
 
     internal static ref WasmValueType IncrementWasmValueType(ref WasmValueType type)

@@ -104,10 +104,14 @@ public sealed unsafe partial class GcInfoEncoder
         }
     }
 
-    internal static readonly GcInfoSize g_FiGcInfoSize = new();
-    internal static readonly GcInfoSize g_PiGcInfoSize = new();
-    internal static nuint g_NumSlimHeaders;
-    internal static nuint g_NumFatHeaders;
+    private static class MeasurementTotals
+    {
+        internal static readonly GcInfoSize FullInfo = new();
+        internal static readonly GcInfoSize PartialInfo = new();
+        internal static nuint SlimHeaders;
+        internal static nuint FatHeaders;
+    }
+
     internal readonly GcInfoSize? m_CurrentMethodSize;
 
     private void Write(BitStreamWriter writer, nuint value, uint count, GcInfoField field)
@@ -155,11 +159,11 @@ public sealed unsafe partial class GcInfoEncoder
 
         if (slimHeader)
         {
-            g_NumSlimHeaders++;
+            MeasurementTotals.SlimHeaders++;
         }
         else
         {
-            g_NumFatHeaders++;
+            MeasurementTotals.FatHeaders++;
         }
 
         currentMethodSize.NumMethods = 1;
@@ -172,11 +176,11 @@ public sealed unsafe partial class GcInfoEncoder
 
         if (ranges != 0)
         {
-            g_FiGcInfoSize.Add(currentMethodSize);
+            MeasurementTotals.FullInfo.Add(currentMethodSize);
         }
         else
         {
-            g_PiGcInfoSize.Add(currentMethodSize);
+            MeasurementTotals.PartialInfo.Add(currentMethodSize);
         }
     }
 }

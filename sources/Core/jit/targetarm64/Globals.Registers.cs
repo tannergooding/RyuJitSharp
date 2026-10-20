@@ -73,8 +73,7 @@ public static partial class Globals
     public const regMask SRBM_CALLEE_SAVED_ARM64 = SRBM_INT_CALLEE_SAVED_ARM64 | SRBM_FLT_CALLEE_SAVED_ARM64;
 
     // Predicate single-type mask bits overlap integer bits; combined kill sets need the high bank.
-    public static readonly regMaskTP SRBM_CALLEE_TRASH_ARM64 =
-        new(SRBM_INT_CALLEE_TRASH_ARM64 | SRBM_FLT_CALLEE_TRASH_ARM64, SRBM_MSK_CALLEE_TRASH_ARM64);
+    public static regMaskTP SRBM_CALLEE_TRASH_ARM64 => Arm64RegisterMaskData.CalleeTrash;
 
     public const regMask SRBM_ALLINT_ARM64 = SRBM_INT_CALLEE_SAVED_ARM64 | SRBM_INT_CALLEE_TRASH_ARM64;
     public const regMask SRBM_ALLFLOAT_ARM64 = SRBM_FLT_CALLEE_SAVED_ARM64 | SRBM_FLT_CALLEE_TRASH_ARM64;
@@ -152,11 +151,9 @@ public static partial class Globals
     public const regNumber REG_PROFILER_LEAVE_ARG_CALLER_SP_ARM64 = REG_PROFILER_ENTER_ARG_CALLER_SP_ARM64;
     public const regMask SRBM_PROFILER_LEAVE_ARG_CALLER_SP_ARM64 = SRBM_PROFILER_ENTER_ARG_CALLER_SP_ARM64;
 
-    public static readonly regMaskTP SRBM_PROFILER_ENTER_TRASH_ARM64 =
-        SRBM_CALLEE_TRASH_ARM64 &
-        ~new regMaskTP(SRBM_ARG_REGS_ARM64 | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_ARM64_FP);
-    public static readonly regMaskTP SRBM_PROFILER_LEAVE_TRASH_ARM64 = SRBM_PROFILER_ENTER_TRASH_ARM64;
-    public static readonly regMaskTP SRBM_PROFILER_TAILCALL_TRASH_ARM64 = SRBM_PROFILER_LEAVE_TRASH_ARM64;
+    public static regMaskTP SRBM_PROFILER_ENTER_TRASH_ARM64 => Arm64RegisterMaskData.ProfilerEnterTrash;
+    public static regMaskTP SRBM_PROFILER_LEAVE_TRASH_ARM64 => Arm64RegisterMaskData.ProfilerLeaveTrash;
+    public static regMaskTP SRBM_PROFILER_TAILCALL_TRASH_ARM64 => Arm64RegisterMaskData.ProfilerTailcallTrash;
 
     public const regMask SRBM_ASYNC_CONTINUATION_RET_ARM64 = SRBM_ARM64_R2;
 
@@ -168,11 +165,9 @@ public static partial class Globals
     public const regMask SRBM_FLOATRET_ARM64 = SRBM_ARM64_V0;
     public const regMask SRBM_DOUBLERET_ARM64 = SRBM_ARM64_V0;
 
-    public static readonly regMaskTP SRBM_STOP_FOR_GC_TRASH_ARM64 = SRBM_CALLEE_TRASH_ARM64;
-    public static readonly regMaskTP SRBM_INIT_PINVOKE_FRAME_TRASH_ARM64 = SRBM_CALLEE_TRASH_ARM64;
-    public static readonly regMaskTP SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH =
-        new((SRBM_INT_CALLEE_TRASH_ARM64 | SRBM_FLT_CALLEE_TRASH_ARM64) & ~(SRBM_ARG_REGS_ARM64 | SRBM_FLTARG_REGS),
-            SRBM_MSK_CALLEE_TRASH_ARM64);
+    public static regMaskTP SRBM_STOP_FOR_GC_TRASH_ARM64 => Arm64RegisterMaskData.StopForGcTrash;
+    public static regMaskTP SRBM_INIT_PINVOKE_FRAME_TRASH_ARM64 => Arm64RegisterMaskData.InitPInvokeFrameTrash;
+    public static regMaskTP SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH => Arm64RegisterMaskData.InterfaceLookupTrash;
     public const regMask SRBM_INTERFACELOOKUP_FOR_SLOT_RETURN = SRBM_ARM64_R15;
     public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64 =
         SRBM_INT_CALLEE_TRASH_ARM64 & ~(SRBM_ARG_REGS_ARM64 | SRBM_ARM64_R8 | SRBM_ARM64_R15);
@@ -253,4 +248,23 @@ public static partial class Globals
     public static ReadOnlySpan<regNumber> REG_SWIFT_FLOATRET_ORDER_ARM64 => [REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, REG_ARM64_V3];
     public const regNumber REG_UNKBASE = REG_ARM64_R19;
     public const regMask SRBM_UNKBASE = SRBM_ARM64_R19;
+
+    private static class Arm64RegisterMaskData
+    {
+        internal static readonly regMaskTP CalleeTrash =
+            new(Globals.SRBM_INT_CALLEE_TRASH_ARM64 | Globals.SRBM_FLT_CALLEE_TRASH_ARM64, Globals.SRBM_MSK_CALLEE_TRASH_ARM64);
+
+        internal static readonly regMaskTP ProfilerEnterTrash =
+            CalleeTrash &
+            ~new regMaskTP(Globals.SRBM_ARG_REGS_ARM64 | Globals.SRBM_ARG_RET_BUFF | Globals.SRBM_FLTARG_REGS | regMask.SRBM_ARM64_FP);
+        internal static readonly regMaskTP ProfilerLeaveTrash = ProfilerEnterTrash;
+        internal static readonly regMaskTP ProfilerTailcallTrash = ProfilerLeaveTrash;
+        internal static readonly regMaskTP StopForGcTrash = CalleeTrash;
+        internal static readonly regMaskTP InitPInvokeFrameTrash = CalleeTrash;
+
+        internal static readonly regMaskTP InterfaceLookupTrash =
+            new((Globals.SRBM_INT_CALLEE_TRASH_ARM64 | Globals.SRBM_FLT_CALLEE_TRASH_ARM64) &
+                ~(Globals.SRBM_ARG_REGS_ARM64 | Globals.SRBM_FLTARG_REGS),
+                Globals.SRBM_MSK_CALLEE_TRASH_ARM64);
+    }
 }

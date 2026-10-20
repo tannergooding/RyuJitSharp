@@ -122,9 +122,9 @@ public partial class Emitter
             emitFullArgInfo = Configuration.TARGET_X86 ? fullPtrMap : !emitHasFramePtr;
             if (Configuration.EMITTER_STATS)
             {
-                GCrefsTable!.record(unchecked((uint)emitGCrFrameOffsCnt));
-                emitSizeTable!.record(unchecked((uint)emitSizeMethod));
-                stkDepthTable!.record(unchecked((uint)emitMaxStackDepth));
+                EmitterStatistics.GCReferencesTable!.record(unchecked((uint)emitGCrFrameOffsCnt));
+                EmitterStatistics.SizeTable!.record(unchecked((uint)emitSizeMethod));
+                EmitterStatistics.StackDepthTable!.record(unchecked((uint)emitMaxStackDepth));
             }
 
             emitSimpleStkUsed = true;
@@ -678,15 +678,15 @@ public partial class Emitter
                         {
                             var debugInfo = jmp.idDebugOnlyInfo();
                             assert(debugInfo is not null);
-                            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
-                                (INTERESTING_JUMP_NUM == 0))
+                            if ((debugInfo.idNum == unchecked((uint)DebugJumpSelector.INTERESTING_JUMP_NUM)) ||
+                                (DebugJumpSelector.INTERESTING_JUMP_NUM == 0))
                             {
                                 if (Configuration.TARGET_ARM)
                                 {
                                     jitprintf("[5] This output is broken for ARM, since it doesn't properly decode the jump offsets of " +
                                         "the instruction at adr\n");
                                 }
-                                if (INTERESTING_JUMP_NUM == 0)
+                                if (DebugJumpSelector.INTERESTING_JUMP_NUM == 0)
                                 {
                                     jitprintf($"[5] Jump {debugInfo.idNum}:\n");
                                 }

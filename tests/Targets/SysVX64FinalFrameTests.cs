@@ -27,6 +27,12 @@ internal static unsafe class SysVX64FinalFrameTests
     }
 
     [Test]
+    public static void CalleeSavedCountMatchesTargetMetadata()
+    {
+        Assert.That(CNT_CALLEE_SAVED, Is.EqualTo(CNT_CALLEE_SAVED_AMD64));
+    }
+
+    [Test]
     public static void OnlyStackParametersHaveCallerAllocatedHomes()
     {
         WithFrame((compiler, codeGen) =>

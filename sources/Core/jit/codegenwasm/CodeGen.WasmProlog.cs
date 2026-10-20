@@ -9,11 +9,41 @@ public sealed partial class CodeGen
 {
     private const int LINEAR_MEMORY_INDEX = 0;
 
-    private static readonly instruction INS_I_const =
-        Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+    private static class WasmInstructions
+    {
+        internal static readonly instruction INS_I_const =
+            Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
 
-    private static readonly instruction INS_I_add =
-        Configuration.TARGET_64BIT ? INS_i64_add : INS_i32_add;
+        internal static readonly instruction INS_I_add =
+            Configuration.TARGET_64BIT ? INS_i64_add : INS_i32_add;
+
+        internal static readonly instruction INS_I_load =
+            Configuration.TARGET_64BIT ? INS_i64_load : INS_i32_load;
+
+        internal static readonly instruction INS_I_store =
+            Configuration.TARGET_64BIT ? INS_i64_store : INS_i32_store;
+
+        internal static readonly instruction INS_I_and =
+            Configuration.TARGET_64BIT ? INS_i64_and : INS_i32_and;
+
+        internal static readonly instruction INS_I_eqz =
+            Configuration.TARGET_64BIT ? INS_i64_eqz : INS_i32_eqz;
+
+        internal static readonly instruction INS_I_mul =
+            Configuration.TARGET_64BIT ? INS_i64_mul : INS_i32_mul;
+
+        internal static readonly instruction INS_I_sub =
+            Configuration.TARGET_64BIT ? INS_i64_sub : INS_i32_sub;
+
+        internal static readonly instruction INS_I_le_u =
+            Configuration.TARGET_64BIT ? INS_i64_le_u : INS_i32_le_u;
+
+        internal static readonly instruction INS_I_ge_u =
+            Configuration.TARGET_64BIT ? INS_i64_ge_u : INS_i32_ge_u;
+
+        internal static readonly instruction INS_I_gt_u =
+            Configuration.TARGET_64BIT ? INS_i64_gt_u : INS_i32_gt_u;
+    }
 
     public void ensureCurrentFuncIsUnwindable()
     {
@@ -96,8 +126,8 @@ public sealed partial class CodeGen
         if (frameSize != 0)
         {
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)initialSpLocalIndex));
-            Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)frameSize));
-            Emitter.emitIns(INS_I_sub);
+            Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)frameSize));
+            Emitter.emitIns(WasmInstructions.INS_I_sub);
             Emitter.emitIns_I(INS_local_set, EA_PTRSIZE, unchecked((nint)spLocalIndex));
         }
 
@@ -122,7 +152,7 @@ public sealed partial class CodeGen
             if ((_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX) && (_compiler.lvaWasmResumeIP != BAD_VAR_NUM))
             {
                 Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-                Emitter.emitIns_I(INS_I_const, EA_4BYTE, 0);
+                Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_4BYTE, 0);
                 Emitter.emitIns_S(ins_Store(TYP_INT), EA_4BYTE, _compiler.lvaWasmResumeIP, 0);
             }
         }
@@ -333,8 +363,8 @@ public sealed partial class CodeGen
                 unchecked((nint)regNumberExtensions.WasmRegToIndex(frameBase)));
             if (genTotalFrameSize != 0)
             {
-                Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)genTotalFrameSize));
-                Emitter.emitIns(INS_I_add);
+                Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, unchecked((nint)genTotalFrameSize));
+                Emitter.emitIns(WasmInstructions.INS_I_add);
             }
 
             var stackPointerGlobal = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().stackPointer);
@@ -387,8 +417,8 @@ public sealed partial class CodeGen
 
         var stackPointerIndex = unchecked((nint)GetStackPointerRegIndex());
         Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, stackPointerIndex);
-        Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, frameSize);
-        Emitter.emitIns(INS_I_sub);
+        Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, frameSize);
+        Emitter.emitIns(WasmInstructions.INS_I_sub);
         Emitter.emitIns_I(INS_local_set, EA_PTRSIZE, stackPointerIndex);
 
         Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, stackPointerIndex);

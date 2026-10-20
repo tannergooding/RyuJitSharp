@@ -7,22 +7,25 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    // The native register-number width determines how many address bits remain for the displacement.
-    private static readonly int AM_REGNUM_BITS = Configuration.REGNUM_BITS;
-    private static readonly int AM_DISP_BITS = 32 - (2 * (AM_REGNUM_BITS + 1)) - 2;
-    private static readonly int AM_DISP_BIG_VAL = -(1 << (AM_DISP_BITS - 1));
-    private static readonly int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
-    private static readonly int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;
+    private static class AddressModeConstants
+    {
+        // The native register-number width determines how many address bits remain for the displacement.
+        private static readonly int AM_REGNUM_BITS = Configuration.REGNUM_BITS;
+        internal static readonly int AM_DISP_BITS = 32 - (2 * (AM_REGNUM_BITS + 1)) - 2;
+        internal static readonly int AM_DISP_BIG_VAL = -(1 << (AM_DISP_BITS - 1));
+        internal static readonly int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
+        internal static readonly int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;
+    }
 
     private instrDesc emitNewInstrAmd(emitAttr size, nint dsp)
     {
-        if ((dsp < AM_DISP_MIN) || (dsp > AM_DISP_MAX))
+        if ((dsp < AddressModeConstants.AM_DISP_MIN) || (dsp > AddressModeConstants.AM_DISP_MAX))
         {
             var id = emitAllocInstrAmd(size);
             id.idSetIsLargeDsp();
             if (Configuration.DEBUG)
             {
-                id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+                id.idAddr().iiaAddrMode.amDisp = AddressModeConstants.AM_DISP_BIG_VAL;
             }
             id.idaAmdVal = dsp;
 
@@ -40,12 +43,12 @@ public partial class Emitter
 
     private void emitSetAmdDisp(instrDescAmd id, nint dsp)
     {
-        if ((dsp < AM_DISP_MIN) || (dsp > AM_DISP_MAX))
+        if ((dsp < AddressModeConstants.AM_DISP_MIN) || (dsp > AddressModeConstants.AM_DISP_MAX))
         {
             id.idSetIsLargeDsp();
             if (Configuration.DEBUG)
             {
-                id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+                id.idAddr().iiaAddrMode.amDisp = AddressModeConstants.AM_DISP_BIG_VAL;
             }
             id.idaAmdVal = dsp;
         }
@@ -59,7 +62,7 @@ public partial class Emitter
 
     private instrDesc emitNewInstrAmdCns(emitAttr size, nint dsp, int cns)
     {
-        if ((dsp >= AM_DISP_MIN) && (dsp <= AM_DISP_MAX))
+        if ((dsp >= AddressModeConstants.AM_DISP_MIN) && (dsp <= AddressModeConstants.AM_DISP_MAX))
         {
             var id = emitNewInstrCns(size, cns);
             id.idAddr().iiaAddrMode.amDisp = (int)dsp;
@@ -75,7 +78,7 @@ public partial class Emitter
                 id.idSetIsLargeDsp();
                 if (Configuration.DEBUG)
                 {
-                    id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+                    id.idAddr().iiaAddrMode.amDisp = AddressModeConstants.AM_DISP_BIG_VAL;
                 }
                 id.idaAmdVal = dsp;
                 id.idSmallCns(cns);
@@ -90,7 +93,7 @@ public partial class Emitter
                 id.idSetIsLargeDsp();
                 if (Configuration.DEBUG)
                 {
-                    id.idAddr().iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+                    id.idAddr().iiaAddrMode.amDisp = AddressModeConstants.AM_DISP_BIG_VAL;
                 }
                 id.idacAmdVal = dsp;
 

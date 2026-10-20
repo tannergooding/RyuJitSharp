@@ -10,13 +10,20 @@ public partial class Emitter
     private static uint totAllocdSize;
     private static uint totActualSize;
 
-    private static readonly Histogram? emitSizeTable = Configuration.EMITTER_STATS
-        ? new Histogram([100, 1024 * 1, 1024 * 2, 1024 * 3, 1024 * 4, 1024 * 5, 1024 * 10, 0])
-        : null;
-    private static readonly Histogram? GCrefsTable = Configuration.EMITTER_STATS
-        ? new Histogram([0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0])
-        : null;
-    private static readonly Histogram? stkDepthTable = Configuration.EMITTER_STATS
-        ? new Histogram([0, 1, 2, 5, 10, 16, 32, 128, 1024, 0])
-        : null;
+    private static class EmitterStatistics
+    {
+        internal static readonly Histogram? SizeTable = Configuration.EMITTER_STATS
+            ? new Histogram([100, 1024 * 1, 1024 * 2, 1024 * 3, 1024 * 4, 1024 * 5, 1024 * 10, 0])
+            : null;
+        internal static readonly Histogram? GCReferencesTable = Configuration.EMITTER_STATS
+            ? new Histogram([0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0])
+            : null;
+        internal static readonly Histogram? StackDepthTable = Configuration.EMITTER_STATS
+            ? new Histogram([0, 1, 2, 5, 10, 16, 32, 128, 1024, 0])
+            : null;
+        internal static readonly uint[]? SmallConstants =
+            Configuration.EMITTER_STATS ? new uint[SMALL_CNS_TSZ] : null;
+        internal static readonly uint[] InstructionFormatCounts =
+            Configuration.EMITTER_STATS ? new uint[emitFmtToOps.Length] : null!;
+    }
 }

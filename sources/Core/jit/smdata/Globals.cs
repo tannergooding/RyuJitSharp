@@ -7,9 +7,9 @@ using System;
 
 namespace RyuJitSharp;
 
-public static partial class Globals
+internal static class StateMachineTables
 {
-    public static readonly SMState[] s_smStates = [
+    internal static readonly SMState[] States = [
         new SMState { term = false, length = 0, longestTermState = 0,   prevState = 0,   opc = SM_NOSHOW,          jumpTableByteOffset = 0   },          //  state 0   [invalid]
         new SMState { term = false, length = 0, longestTermState = 0,   prevState = 0,   opc = SM_NOSHOW,          jumpTableByteOffset = 0   },          //  state 1   [start]
         new SMState { term = true,  length = 1, longestTermState = 0,   prevState = 1,   opc = SM_NOSHOW,          jumpTableByteOffset = 0   },          //  state 2   [noshow]
@@ -262,7 +262,7 @@ public static partial class Globals
         new SMState { term = true,  length = 5, longestTermState = 195, prevState = 247, opc = SM_SUB,             jumpTableByteOffset = 0   },          //  state 249 [ldarga.s -> ldfld -> ldarga.s -> ldfld -> sub]
     ];
 
-    public static readonly JumpTableCell[] s_smJumpTableCells = [
+    internal static readonly JumpTableCell[] JumpTableCells = [
         new JumpTableCell { srcState = 1,   destState = 2   },   // cell# 0   : state 1 [start] --(0 noshow)--> state 2 [noshow]
         new JumpTableCell { srcState = 1,   destState = 3   },   // cell# 1   : state 1 [start] --(1 ldarg.0)--> state 3 [ldarg.0]
         new JumpTableCell { srcState = 1,   destState = 4   },   // cell# 2   : state 1 [start] --(2 ldarg.1)--> state 4 [ldarg.1]
@@ -682,4 +682,11 @@ public static partial class Globals
         new JumpTableCell { srcState = 0,   destState = 0   },   // cell# 416
         new JumpTableCell { srcState = 0,   destState = 0   },   // cell# 417
     ];
+}
+
+public static partial class Globals
+{
+    public static SMState[] s_smStates => StateMachineTables.States;
+
+    public static JumpTableCell[] s_smJumpTableCells => StateMachineTables.JumpTableCells;
 }

@@ -69,6 +69,25 @@ internal static class RegMaskRuntimeTests
     }
 
     [Test]
+    public static void LoongArchAndRiscVStopForGcAndPInvokeMasksMatchCalleeTrash()
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            var calleeTrash = new regMaskTP(SRBM_CALLEE_TRASH_LOONGARCH64);
+            Assert.That(SRBM_STOP_FOR_GC_TRASH_LOONGARCH64, Is.EqualTo(calleeTrash));
+            Assert.That(SRBM_INIT_PINVOKE_FRAME_TRASH_LOONGARCH64, Is.EqualTo(calleeTrash));
+        }
+        else
+        {
+            var calleeTrash = new regMaskTP(SRBM_CALLEE_TRASH_RISCV64);
+            Assert.That(SRBM_STOP_FOR_GC_TRASH_RISCV64, Is.EqualTo(calleeTrash));
+            Assert.That(SRBM_INIT_PINVOKE_FRAME_TRASH_RISCV64, Is.EqualTo(calleeTrash));
+        }
+    }
+
+    [Test]
     public static void Arm32DoubleRegisterMasksKeepTheirDistinctConstructionRules()
     {
         if (!Configuration.TARGET_ARM)

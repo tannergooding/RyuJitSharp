@@ -76,21 +76,24 @@ internal sealed class ManagedAllocationStats
 
 internal static class JitMemStatsInfo
 {
-    private static readonly ManagedAllocationStats s_stats = new();
+    private static class AggregateStats
+    {
+        internal static readonly ManagedAllocationStats Instance = new();
+    }
 
     internal static void finishMemStats(long managedBytesAllocated)
     {
-        s_stats.Add(managedBytesAllocated);
+        AggregateStats.Instance.Add(managedBytesAllocated);
     }
 
     internal static void dumpAggregateMemStats(StreamWriter output)
     {
-        s_stats.dumpAggregateMemStats(output);
+        AggregateStats.Instance.dumpAggregateMemStats(output);
     }
 
     internal static void dumpMaxMemStats(StreamWriter output)
     {
-        s_stats.dumpMaxMemStats(output);
+        AggregateStats.Instance.dumpMaxMemStats(output);
     }
 
     internal static void dumpMethodMemStats(StreamWriter output, long managedBytesAllocated)

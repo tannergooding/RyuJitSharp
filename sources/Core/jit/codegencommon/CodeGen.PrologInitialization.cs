@@ -280,12 +280,12 @@ public sealed partial class CodeGen
         Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, checked((nint)GetFramePointerRegIndex()));
         if (untrLclLo is not 0)
         {
-            Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, untrLclLo);
-            Emitter.emitIns(INS_I_add);
+            Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, untrLclLo);
+            Emitter.emitIns(WasmInstructions.INS_I_add);
         }
 
         Emitter.emitIns_I(INS_i32_const, EA_4BYTE, 0);
-        Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
+        Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
         Emitter.emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
     }
 
