@@ -1700,7 +1700,7 @@ public partial class Compiler
         if (intrinsicName is NI_Array_Set)
         {
             // The array checks in the store's address must happen after the value is evaluated.
-            if ((impStackTop().val.Flags & GTF_SIDE_EFFECT) is not 0)
+            if ((impStackTop().val.Flags & GTF_OBS_EFFECT) is not 0)
             {
                 impSpillSideEffects(false, CHECK_SPILL_ALL, "Strict ordering of exceptions for MD Array store");
             }
@@ -4431,8 +4431,6 @@ public partial class Compiler
             op = gtNewLclvNode(info.compRetType, tmpNum);
             JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
             DISPTREE(op);
-
-            return op;
         }
 
         if (compMethodReturnsMultiRegRetType || op.IsMultiRegNode)
@@ -5711,11 +5709,9 @@ public partial class Compiler
             return false;
         }
 
-        if (eeIsSharedInst(nullableCls) || IsReadyToRun)
+        if (eeIsSharedInst(nullableCls))
         {
-            // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
-            // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
-            // that we don't have).
+            // TODO-CQ: Enable the optimization for shared generics.
             return false;
         }
 
@@ -5737,17 +5733,27 @@ public partial class Compiler
 
         var valueOffset = gtNewIconNode(TYP_I_IMPL, cnsValueOffset);
         var valueAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
-        var value = gtNewLoadValueNode(valueType, valueAddr, layout);
-        var hasValue = gtNewLoadValueNode(TYP_UBYTE, nullableObj, layout: null);
+        var value = gtNewLoadValueNode(valueType, valueAddr, layout, indirFlags);
+        var hasValue = gtNewLoadValueNode(TYP_UBYTE, nullableObj, layout: null, indirFlags);
 
         // Create the allocation node for the box
         var typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
-
-        bool hasSideEffects;
-        var helperTemp = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
-
-        var typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
-        var allocObj = gtNewAllocObjNode(TYP_REF, typeToBoxHnd, helperTemp, hasSideEffects, typeToBox);
+        GenTreeAllocObj? allocObj;
+        if (IsReadyToRun)
+        {
+            // R2R cannot embed arbitrary class handles, so allocate through a token for the boxed type.
+            var boxedToken = resolvedToken;
+            boxedToken.hClass = typeToBox;
+            allocObj = gtNewAllocObjNode(boxedToken, info.compMethodHnd, useParent: false);
+            assert(allocObj is not null);
+        }
+        else
+        {
+            bool hasSideEffects;
+            var helperTemp = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+            var typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
+            allocObj = gtNewAllocObjNode(TYP_REF, typeToBoxHnd, helperTemp, hasSideEffects, typeToBox);
+        }
 
         // Now we need to copy value into the allocated box
         var objLclNum = lvaGrabTemp(shortLifetime: true, "obj nullable box");
@@ -10751,7 +10757,7 @@ public partial class Compiler
             // The strict order of evaluation is 'array', 'index', 'value', range-check
             // and then store. However, the tree we create does the range-check before
             // evaluating 'value'. So to maintain strict ordering, we spill the stack.
-            if ((compiler.impStackTop().val.Flags & GTF_SIDE_EFFECT) is not 0)
+            if ((compiler.impStackTop().val.Flags & GTF_OBS_EFFECT) is not 0)
             {
                 compiler.impSpillSideEffects(spillGlobEffects: false, CHECK_SPILL_ALL, "Strict ordering of exceptions for Array store");
             }
@@ -16571,7 +16577,7 @@ public partial class Compiler
                         qmark.ThenNodeLikelihood = 0;
 
                         var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for Log2 Qmark");
-                        impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                        impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
                         result = gtNewLclvNode(retType, tmp);
                     }
                 }

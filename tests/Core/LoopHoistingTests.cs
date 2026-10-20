@@ -253,6 +253,57 @@ internal static unsafe class LoopHoistingTests
         });
     }
 
+    [TestCase(false, false, false, true)]
+    [TestCase(true, false, false, false)]
+    [TestCase(true, true, false, true)]
+    [TestCase(true, true, true, false)]
+    public static void HandlerVisibleLocalStoresPreventHoistingLaterThrowingExpression(
+        bool hasEhSuccessors, bool tracked, bool liveInOutOfHandler, bool expectedHoist)
+    {
+        WithLoop((compiler, preheader, header, unusedLatch) => {
+            if (hasEhSuccessors)
+            {
+                preheader.bbTryIndex = 1;
+                header.bbTryIndex = 1;
+            }
+
+            compiler.lvaTable = [new LclVarDsc
+            {
+                Type = TYP_INT,
+                lvTracked = tracked,
+                _varIndex = 0,
+                _lvLiveInOutOfHandler = liveInOutOfHandler,
+            }];
+            compiler.lvaCount = 1;
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+
+            var value = compiler.gtNewIconNode(TYP_INT, 1);
+            value._vnPair.SetBoth(store.VNForIntCon(1));
+            var localStore = compiler.gtNewStoreLclVarNode(0, value);
+            localStore._vnPair.SetBoth(store.VNForIntCon(1));
+            compiler.fgInsertStmtAtEnd(header, compiler.fgNewStmtFromTree(localStore));
+
+            var address = compiler.gtNewIconNode(TYP_BYREF, 0);
+            address._vnPair.SetBoth(ValueNumStore.VNForNull());
+            var nullCheck = compiler.gtNewNullCheck(address);
+            nullCheck._vnPair = ValueNumStore.VNPForVoid();
+            nullCheck.SetCosts(20, 20);
+            compiler.fgInsertStmtAtEnd(header, compiler.fgNewStmtFromTree(nullCheck));
+            header.bbWeight = BB_UNITY_WEIGHT;
+            compiler._loopSideEffects = [new LoopSideEffects
+            {
+                VarInOut = VarSetOps.MakeEmpty(compiler),
+                VarUseDef = VarSetOps.MakeEmpty(compiler),
+            }];
+
+            Assert.That(Hoist(compiler), Is.EqualTo(expectedHoist
+                ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.Metrics.HoistedExpressions, Is.EqualTo(expectedHoist ? 1 : 0));
+            Assert.That(preheader.FirstStmt is not null, Is.EqualTo(expectedHoist));
+        });
+    }
+
     [TestCase(1)]
     [TestCase(-1)]
     [TestCase(int.MinValue)]

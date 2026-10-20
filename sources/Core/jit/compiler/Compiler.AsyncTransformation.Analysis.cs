@@ -453,8 +453,9 @@ public partial class Compiler
             {
                 var layout = descriptor.Layout ??
                     throw new InvalidOperationException("Struct local has no layout");
-                if (layout.HasGCByRef())
+                if (layout.HasGCByRef() || layout.IsStackOnly(_compiler))
                 {
+                    // Byref-like structs cannot be captured even when they contain no byrefs.
                     return false;
                 }
             }

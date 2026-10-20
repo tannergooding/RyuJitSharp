@@ -46,6 +46,13 @@ public partial class Compiler
                 return false;
             }
 
+            // The guards are built as TYP_INT, so native-int (e.g. nint index) bounds checks aren't supported.
+            if ((genActualType(Check.Index.Type) != TYP_INT) ||
+                (genActualType(Check.ArrayLength.Type) != TYP_INT))
+            {
+                return false;
+            }
+
             if (Check.Index.IsIntCnsFitsInI32)
             {
                 Offset = (int)Check.Index.AsIntCon().IconValue;

@@ -92,7 +92,7 @@ public sealed partial class RangeCheck
                 }
 
                 return right.Oper is GT_CNS_INT && (right.AsIntCon().IconValue >= 0) &&
-                    IsMonotonicallyIncreasing(left, false);
+                    IsMonotonicallyIncreasing(left, rejectNegativeConstant);
             }
 
             if (tree.Oper is GT_PHI)
@@ -126,12 +126,36 @@ public sealed partial class RangeCheck
             JITDUMP($"[{tree.TreeId:D6}]\n");
         }
 
-        if ((range.LowerLimit.IsDependent || range.LowerLimit.IsUnknown) &&
+        var lowerLimit = range.LowerLimit;
+        if ((lowerLimit.IsDependent || lowerLimit.IsUnknown ||
+             (lowerLimit.IsConstant && (lowerLimit.GetConstant() < 0))) &&
             IsMonotonicallyIncreasing(tree, false))
         {
             JITDUMP($"[{tree.TreeId:D6}] is monotonically increasing.\n");
+
+            if (lowerLimit.IsConstant &&
+                ComputeDoesOverflow(block, tree, new Range(new Limit(LimitType.Dependent), range.UpperLimit)))
+            {
+                JITDUMP($"[{tree.TreeId:D6}] may overflow, not widening.\n");
+                return;
+            }
+
             _rangeMap.Clear();
-            range = GetRangeWorker(block, tree, true);
+            var widened = GetRangeWorker(block, tree, true);
+            if (!lowerLimit.IsConstant)
+            {
+                range = widened;
+            }
+            else if (widened.LowerLimit.IsConstant &&
+                (widened.LowerLimit.GetConstant() > lowerLimit.GetConstant()))
+            {
+                var tightened = range;
+                tightened.LowerLimit = widened.LowerLimit;
+                if (tightened.IsValid())
+                {
+                    range = tightened;
+                }
+            }
         }
     }
 

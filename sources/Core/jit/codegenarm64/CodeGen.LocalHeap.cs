@@ -184,7 +184,7 @@ public sealed partial class CodeGen
                 var done = genCreateTempLabel();
 
                 Emitter.emitIns_R_R_R(INS_subs, EA_PTRSIZE, regCnt, REG_SPBASE_ARM64, regCnt);
-                inst_JMP(EJ_vc, loop);
+                inst_JMP(EJ_hs, loop);
                 instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
                 genDefineTempLabel(loop);
 

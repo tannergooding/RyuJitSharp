@@ -129,6 +129,28 @@ internal static unsafe class WasmCompilerSpillRefsTests
     }
 
     [Test]
+    public static void ReferenceConsumedByCallArgumentDoesNotNeedASpill()
+    {
+        WithCompiler(TYP_REF, compiler =>
+        {
+            var block = new BasicBlock(null, null) { Kind = BBJ_THROW };
+            block.MakeLir(null, null);
+            var definition = new GenTreeCall(TYP_REF);
+            var call = new GenTreeCall(TYP_VOID);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(definition));
+            block.InsertAtEnd(definition);
+            block.InsertAtEnd(call);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+
+            Assert.That(compiler.fgWasmSpillRefs(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.lvaCount, Is.EqualTo(1));
+            Assert.That(block.FirstNode, Is.SameAs(definition));
+            Assert.That(definition.Next, Is.SameAs(call));
+        });
+    }
+
+    [Test]
     public static void SimultaneouslyLiveReferencesUseDistinctTypeCompatibleSpillSlots()
     {
         WithCompiler([TYP_REF, TYP_REF, TYP_BYREF], compiler =>

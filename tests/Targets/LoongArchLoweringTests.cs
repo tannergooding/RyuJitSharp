@@ -12,6 +12,12 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LoongArchLoweringTests
 {
+    [SetUp]
+    public static void RequireLoongArchOrRiscVTarget()
+    {
+        Assume.That(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void IntegerJTrueLoweringReturnsNextLirNode(bool hasComparison)
@@ -45,8 +51,30 @@ internal static unsafe class LoongArchLoweringTests
         });
     }
 
+    [TestCase(TYP_BYTE, TYP_INT, false)]
+    [TestCase(TYP_INT, TYP_LONG, true)]
+    public static void SmallLocalStoresDoNotContainBitcastSources(
+        var_types storeType, var_types sourceType, bool expectedContained)
+    {
+        WithLowering((compiler, _, lowering) =>
+        {
+            compiler.lvaTable[0].Type = storeType;
+            compiler.lvaTable[0].lvIsParam = true;
+            var source = compiler.gtNewIconNode(sourceType, 7);
+            var bitcast = new GenTreeUnOp(GT_BITCAST, storeType, source);
+            var store = compiler.gtNewStoreLclVarNode(0, bitcast);
+
+            ContainCheckStoreLoc(lowering, store);
+
+            Assert.That(bitcast.IsContained, Is.EqualTo(expectedContained));
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNode")]
     private static extern GenTree? LowerNode(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckStoreLoc")]
+    private static extern void ContainCheckStoreLoc(Lowering lowering, GenTreeLclVarCommon storeLoc);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

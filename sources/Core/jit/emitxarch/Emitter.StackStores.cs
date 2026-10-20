@@ -16,7 +16,9 @@ public partial class Emitter
         {
             RequireSupportedInstructionRecording();
         }
-        var fmt = (ins == INS_xchg) ? IF_XARCH_SRW_RRW : emitInsModeFormat(ins, IF_XARCH_SRD_RRD);
+        var fmt = (ins == INS_xchg) || (ins == INS_xadd)
+            ? IF_XARCH_SRW_RRW
+            : emitInsModeFormat(ins, IF_XARCH_SRD_RRD);
 
         if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
         {

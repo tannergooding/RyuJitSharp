@@ -111,6 +111,48 @@ internal static unsafe class RedundantZeroInitTests
     }
 
     [Test]
+    public static void MultiplePredecessorsStopTheUniqueSuccessorScanBeforeARejoin()
+    {
+        WithGraph(1, compiler => {
+            ref var descriptor = ref compiler.lvaTable[0];
+            descriptor.lvTracked = true;
+            descriptor._varIndex = 0;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+
+            var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var path = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var alternate = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var rejoin = BasicBlock.New(compiler, BBJ_RETURN);
+            entry.Next = path;
+            path.Prev = entry;
+            path.Next = alternate;
+            alternate.Prev = path;
+            alternate.Next = rejoin;
+            rejoin.Prev = alternate;
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = rejoin;
+            entry.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(path, entry));
+            path.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(rejoin, path));
+            alternate.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(rejoin, alternate));
+
+            var initial = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0));
+            var later = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0));
+            AddStatement(compiler, entry, initial);
+            AddStatement(compiler, rejoin, later);
+            rejoin.bbVarDef = SetOps.MakeEmpty(compiler);
+            SetOps.AddElemD(compiler, rejoin.bbVarDef, 0);
+            SetDfs(compiler);
+
+            compiler.optRemoveRedundantZeroInits();
+
+            Assert.That(entry.FirstStmt?.RootNode, Is.SameAs(initial));
+            Assert.That(rejoin.FirstStmt?.RootNode, Is.SameAs(later));
+            Assert.That(rejoin.bbPreds?.NextPredEdge, Is.Not.Null);
+        });
+    }
+
+    [Test]
     public static void PriorReadPreventsEliminatingOrMarkingTheStore()
     {
         WithGraph(1, compiler => {
@@ -269,6 +311,11 @@ internal static unsafe class RedundantZeroInitTests
     private static void WithGraph(int count, Action<Compiler> action)
     {
         SsaLivenessTests.WithCompiler(count, compiler => {
+            compiler.fgPredsComputed = true;
+            if (TestConfiguration.IsDebug)
+            {
+                compiler.fgSafeFlowEdgeCreation = true;
+            }
             compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
             compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
             compiler.lvaSecretStubArg = BAD_VAR_NUM;
@@ -289,7 +336,7 @@ internal static unsafe class RedundantZeroInitTests
         {
             previous.Next = block;
             block.Prev = previous;
-            previous.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(previous, block, null));
+            previous.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(block, previous));
         }
         else
         {

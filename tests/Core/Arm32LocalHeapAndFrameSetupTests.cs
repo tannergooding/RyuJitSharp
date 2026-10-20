@@ -148,6 +148,38 @@ internal static class Arm32LocalHeapAndFrameSetupTests
         });
     }
 
+    [Test]
+    public static void DynamicLocalHeapUsesTheNoBorrowProbeCondition()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compLocallocUsed = true;
+            compiler.info.compInitMem = false;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
+            compiler.lvaCount = 1;
+            var currentBlock = new BasicBlock(null, null);
+            compiler.compCurBB = currentBlock;
+            compiler.fgFirstBB = currentBlock;
+            compiler.fgLastBB = currentBlock;
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+            var size = compiler.gtNewLclvNode(TYP_INT, 0);
+            size.RegNum = REG_R1;
+            var tree = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_R0 };
+            codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_R2, REG_R2.SingleTypeMask));
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcTrkStkPtrLcls = [0];
+            var firstGroup = codeGen.Emitter.emitCurIG;
+
+            codeGen.genLclHeap(tree);
+
+            var instructions = AllDescriptors(firstGroup, codeGen)
+                .Select(static descriptor => descriptor.idIns()).ToArray();
+            Assert.That(instructions, Does.Contain(INS_bhs));
+            Assert.That(instructions, Does.Not.Contain(INS_bvc));
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? Last(Emitter emitter);
 
@@ -159,6 +191,25 @@ internal static class Arm32LocalHeapAndFrameSetupTests
     private static List<Emitter.instrDesc> Descriptors(Emitter emitter)
     {
         return CurrentDescriptors(emitter) ?? throw new AssertionException("Missing descriptor buffer.");
+    }
+
+    private static List<Emitter.instrDesc> AllDescriptors(insGroup? first, CodeGen codeGen)
+    {
+        var result = new List<Emitter.instrDesc>();
+        for (var group = first; group != codeGen.Emitter.emitCurIG; group = group?.igNext)
+        {
+            if (group is null)
+            {
+                throw new AssertionException("Missing current instruction group.");
+            }
+            if (group.igData is not null)
+            {
+                result.AddRange(group.igData);
+            }
+        }
+        result.AddRange(Descriptors(codeGen.Emitter));
+
+        return result;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]

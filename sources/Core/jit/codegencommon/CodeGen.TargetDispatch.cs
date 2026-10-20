@@ -209,6 +209,11 @@ public sealed partial class CodeGen
             genCodeForIndirRiscV64(tree);
             return;
         }
+        if (Configuration.TARGET_WASM)
+        {
+            genCodeForIndirWasm(tree);
+            return;
+        }
 
         throwUnsupportedTargetCodeGenMethod(nameof(genCodeForIndir));
     }

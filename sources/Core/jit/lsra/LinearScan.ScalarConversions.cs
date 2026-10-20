@@ -344,12 +344,24 @@ public sealed partial class LinearScan
 
         if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
         {
-            assert(select.Oper is GT_SELECT or GT_SELECTCC);
-            var sourceCount = select.Oper is GT_SELECT
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(select.Oper is GT_SELECT or GT_SELECTCC or GT_SELECT_NEG or GT_SELECT_INV or GT_SELECT_INC);
+            }
+            else
+            {
+                assert(select.Oper is GT_SELECT or GT_SELECTCC);
+            }
+
+            var sourceCount = select.Oper is not GT_SELECTCC
                 ? buildOperandUses(select.AsConditional().Cond)
                 : 0;
             sourceCount += buildOperandUses(select.Op1);
-            sourceCount += buildOperandUses(select.Op2);
+            if (select.Op2 is not null)
+            {
+                sourceCount += buildOperandUses(select.Op2);
+            }
+
             _ = buildDef(select, SRBM_NONE);
             return sourceCount;
         }

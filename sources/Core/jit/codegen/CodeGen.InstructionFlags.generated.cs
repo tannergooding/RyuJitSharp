@@ -5598,6 +5598,7 @@ public sealed partial class CodeGen
         (insInfoFlags)(0), // INS_i32_const_address
         (insInfoFlags)(0), // INS_i32_const_funcptr
         (insInfoFlags)(0), // INS_i32_const_funcletptr
+        (insInfoFlags)(0), // INS_i32_const_frameidentity
         (insInfoFlags)(0), // INS_i32_const_dataoffs
         (insInfoFlags)(0), // INS_i64_const
         (insInfoFlags)(0), // INS_f32_const

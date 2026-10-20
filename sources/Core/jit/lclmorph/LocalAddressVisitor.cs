@@ -473,6 +473,11 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
 
             if (Configuration.FEATURE_HW_INTRINSICS && varTypeIsSimd(varDsc.Type))
             {
+                if (isDef && ((indir.Data.Flags & GTF_OBS_EFFECT) != 0))
+                {
+                    return IndirTransform.LclFld;
+                }
+
                 if (indir.Type is TYP_FLOAT)
                 {
                     if ((offset % TYP_FLOAT.Size) is 0)

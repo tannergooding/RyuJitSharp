@@ -27,6 +27,36 @@ internal static unsafe class AsyncTransformationTests
             null, [compiler], null) ?? throw new AssertionException("Could not create async transformation");
     }
 
+    [Test]
+    public static void StackOnlyStructsAreNotCapturedAcrossAsyncSuspension()
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getClassAttribs = &GetByRefLikeClassAttributes;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.info.compRetBuffArg = BAD_VAR_NUM;
+            compiler.lvaCount = 2;
+            compiler.lvaTable = new LclVarDsc[2];
+            compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
+            compiler.lvaTable[1].Type = TYP_STRUCT;
+            compiler.lvaTable[1].Layout = new ClassLayout((CORINFO_CLASS_STRUCT_*)0x1234, true, 8,
+                TYP_STRUCT, "ByRefLike", "ByRefLike");
+            compiler.lvaTable[1].setLvRefCnt(1);
+
+            var layout = compiler.lvaTable[1].Layout
+                ?? throw new InvalidOperationException("Missing stack-only local layout.");
+            Assert.That(layout.HasGCByRef(), Is.False);
+            Assert.That(layout.IsStackOnly(compiler), Is.True);
+
+            var analysis = new Compiler.AsyncAnalysis(compiler,
+                new Compiler.AsyncDefaultValueAnalysis(compiler),
+                new Compiler.AsyncPreservedValueAnalysis(compiler));
+
+            Assert.That(analysis.IsLive(1), Is.False);
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
         using var jitTls = TestConfiguration.CreateJitTls();
@@ -51,6 +81,10 @@ internal static unsafe class AsyncTransformationTests
             JitTls.Compiler = previous;
         }
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetByRefLikeClassAttributes(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls)
+        => CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
 
     [Test]
     public static void RemoveFinalizedAsyncArgumentUnlinksBothListsWithoutResettingAbi()

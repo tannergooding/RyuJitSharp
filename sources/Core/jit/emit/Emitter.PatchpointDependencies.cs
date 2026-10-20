@@ -32,6 +32,12 @@ public partial class Emitter
         nint imm,
         insOpts instOptions = INS_OPTS_NONE)
     {
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_R_IArm64(ins, attr, reg1, reg2, imm, instOptions);
+            return;
+        }
+
         if (Configuration.TARGET_RISCV64)
         {
             emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, imm, instOptions);

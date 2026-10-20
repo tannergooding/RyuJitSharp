@@ -6,12 +6,84 @@
 using System;
 using System.Collections.Generic;
 using static RyuJitSharp.Compiler.optAssertionKind;
+using static RyuJitSharp.Compiler.optOp1Kind;
 using static RyuJitSharp.Compiler.optOp2Kind;
 
 namespace RyuJitSharp;
 
 public sealed partial class RangeCheck
 {
+    private static bool IsBoundLessOrEqual(
+        Compiler comp, ASSERT_TP assertions, ValueNum lo, ValueNum hi, bool equalOnly, int budget)
+    {
+        if (lo == hi)
+        {
+            return true;
+        }
+
+        if ((budget <= 0) || !comp.optAssertionHasAssertionsForVN(lo))
+        {
+            return false;
+        }
+
+        assert(comp.apTraits is not null);
+        var result = false;
+        _ = BitVecOps.VisitBits(comp.apTraits, assertions, bitIndex =>
+        {
+            var assertion = comp.optGetAssertion(GetAssertionIndex((ushort)bitIndex));
+            if (!assertion.Op1.KindIs(O1K_VN) ||
+                !assertion.Op2.KindIs(O2K_VN_ADD_CNS) || (assertion.Op2.Cns != 0))
+            {
+                return true;
+            }
+
+            var op1VN = assertion.Op1.VN;
+            var op2VN = assertion.Op2.VN;
+            var next = ValueNumStore.NoVN;
+            if (assertion.KindIs(OAK_EQUAL))
+            {
+                next = op1VN == lo ? op2VN : op2VN == lo ? op1VN : ValueNumStore.NoVN;
+            }
+            else if (!equalOnly && assertion.KindIs(OAK_LE, OAK_LT) && (op1VN == lo))
+            {
+                next = op2VN;
+            }
+            else if (!equalOnly && assertion.KindIs(OAK_GE, OAK_GT) && (op2VN == lo))
+            {
+                next = op1VN;
+            }
+
+            if ((next != ValueNumStore.NoVN) &&
+                IsBoundLessOrEqual(comp, assertions, next, hi, equalOnly, budget - 1))
+            {
+                result = true;
+                return false;
+            }
+
+            return true;
+        });
+
+        return result;
+    }
+
+    private static bool CanUsePreferredBound(
+        Compiler comp, ASSERT_TP assertions, Compiler.AssertionDsc assertion, ValueNum preferredBoundVN)
+    {
+        const int maxChain = 3;
+        var boundVN = assertion.Op2.VN;
+        var boundCns = assertion.Op2.Cns;
+
+        if (assertion.KindIs(OAK_LT, OAK_LE) && (boundCns <= 0) &&
+            IsBoundLessOrEqual(comp, assertions, boundVN, preferredBoundVN, equalOnly: false, maxChain) &&
+            ((boundCns == 0) || assertion.Op2.IsVNNeverNegative ||
+             comp.optIsNeverNegativeCheckedBound(boundVN, assertions)))
+        {
+            return true;
+        }
+
+        return IsBoundLessOrEqual(comp, assertions, boundVN, preferredBoundVN, equalOnly: true, maxChain);
+    }
+
     private static void MergeEdgeAssertionsWorker(Compiler comp, ValueNum vn, ValueNum preferredBound,
         ASSERT_TP? assertions, ref Range range, bool canUseCheckedBounds, int budget, HashSet<ValueNum> visited)
     {
@@ -20,6 +92,7 @@ public sealed partial class RangeCheck
             return;
         }
 
+        ArgumentNullException.ThrowIfNull(assertions);
         assert(comp.apTraits is not null);
         if (BitVecOps.IsEmpty(comp.apTraits, assertions) || !comp.optAssertionHasAssertionsForVN(vn))
         {
@@ -104,8 +177,15 @@ public sealed partial class RangeCheck
                 var matchesOp2 = ((vn == boundVN) && (offset == 0)) ||
                     ((offset != 0) && store.IsVNBinFuncWithConst(vn, VNF_ADD, ref addVN, ref addCns) &&
                         (addVN == boundVN) && (addCns == offset));
-                // A checked bound from another path needs a nonnegative proof unless it is the preferred bound.
                 if (canUseCheckedBounds && (vn == assertion.Op1.VN) &&
+                    (preferredBound != ValueNumStore.NoVN) && (boundVN != preferredBound) &&
+                    CanUsePreferredBound(comp, assertions, assertion, preferredBound))
+                {
+                    comparison = Compiler.AssertionDsc.ToCompareOper(assertion.Kind, out unsigned);
+                    limit = new(LimitType.BinOpArray, preferredBound, offset);
+                }
+                // A checked bound from another path needs a nonnegative proof unless it is the preferred bound.
+                else if (canUseCheckedBounds && (vn == assertion.Op1.VN) &&
                     (assertion.Op2.IsVNNeverNegative || (boundVN == preferredBound)))
                 {
                     comparison = Compiler.AssertionDsc.ToCompareOper(assertion.Kind, out unsigned);

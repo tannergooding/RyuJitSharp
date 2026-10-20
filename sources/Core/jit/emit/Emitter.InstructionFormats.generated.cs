@@ -837,19 +837,20 @@ public partial class Emitter
         IF_WASM_FUNCPTR = 10,
         IF_WASM_FUNCLETPTR = 11,
         IF_WASM_FUNCLETIDX = 12,
-        IF_WASM_DATAOFFS = 13,
-        IF_WASM_F32 = 14,
-        IF_WASM_F64 = 15,
-        IF_WASM_MEMARG = 16,
-        IF_WASM_LOCAL_DECL = 17,
-        IF_WASM_CALL_INDIRECT = 18,
-        IF_WASM_MEMIDX_MEMIDX = 19,
-        IF_WASM_TRY_TABLE = 20,
-        IF_WASM_CATCH_DECL = 21,
-        IF_WASM_V128 = 22,
-        IF_WASM_LANE = 23,
-        IF_WASM_MEMARG_LANE = 24,
-        IF_WASM_COUNT = 25,
+        IF_WASM_FRAMEIDENTITY = 13,
+        IF_WASM_DATAOFFS = 14,
+        IF_WASM_F32 = 15,
+        IF_WASM_F64 = 16,
+        IF_WASM_MEMARG = 17,
+        IF_WASM_LOCAL_DECL = 18,
+        IF_WASM_CALL_INDIRECT = 19,
+        IF_WASM_MEMIDX_MEMIDX = 20,
+        IF_WASM_TRY_TABLE = 21,
+        IF_WASM_CATCH_DECL = 22,
+        IF_WASM_V128 = 23,
+        IF_WASM_LANE = 24,
+        IF_WASM_MEMARG_LANE = 25,
+        IF_WASM_COUNT = 26,
         IF_LOONGARCH64_COUNT = 1,
         IF_RISCV64_COUNT = 1,
     }
@@ -1765,6 +1766,7 @@ public partial class Emitter
         (byte)ID_OP_NONE, // IF_FUNCPTR
         (byte)ID_OP_NONE, // IF_FUNCLETPTR
         (byte)ID_OP_NONE, // IF_FUNCLETIDX
+        (byte)ID_OP_NONE, // IF_FRAMEIDENTITY
         (byte)ID_OP_NONE, // IF_DATAOFFS
         (byte)ID_OP_NONE, // IF_F32
         (byte)ID_OP_NONE, // IF_F64
@@ -2633,6 +2635,7 @@ public partial class Emitter
             "IF_FUNCPTR",
             "IF_FUNCLETPTR",
             "IF_FUNCLETIDX",
+            "IF_FRAMEIDENTITY",
             "IF_DATAOFFS",
             "IF_F32",
             "IF_F64",

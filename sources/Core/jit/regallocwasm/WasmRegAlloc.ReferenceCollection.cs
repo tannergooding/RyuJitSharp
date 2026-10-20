@@ -324,8 +324,6 @@ public sealed partial class WasmRegAlloc
             if (stackPointerArg is not null)
             {
                 var physicalRegister = stackPointerArg.Node;
-                assert(physicalRegister.Oper is GT_PHYSREG);
-                assert(physicalRegister.AsPhysReg().SrcReg == GetFuncletData(_currentFunclet).StackPointerReg);
                 assert(_currentFunclet == ROOT_FUNC_IDX);
 
                 var frameSize = new GenTree(GT_FRAME_SIZE, TYP_I_IMPL);

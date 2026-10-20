@@ -37,12 +37,16 @@ internal static class CodeGenLocalHeapTests
             codeGen.genLclHeap(tree);
 
             var ids = Descriptors(codeGen);
-            Assert.That(ids.Select(id => id.idIns()), Is.EqualTo([INS_test, INS_sub, INS_lea]));
+            Assert.That(ids.Select(id => id.idIns()), Is.EqualTo(
+                [INS_test, INS_sub, outgoing == 0 ? INS_mov : INS_lea]));
             Assert.That(ids[0].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(ids[0].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_SPBASE));
             Assert.That(ids[1].idReg1(), Is.EqualTo(REG_SPBASE));
             Assert.That(InstructionConstant(codeGen.Emitter, ids[1]), Is.EqualTo((nint)aligned));
-            Assert.That(Displacement(codeGen.Emitter, ids[2]), Is.EqualTo((nint)outgoing));
+            if (outgoing != 0)
+            {
+                Assert.That(Displacement(codeGen.Emitter, ids[2]), Is.EqualTo((nint)outgoing));
+            }
             Assert.That(codeGen.getCurrentStackLevel(), Is.Zero);
         });
     }
@@ -158,8 +162,11 @@ internal static class CodeGenLocalHeapTests
             Assert.That(instructions.Contains(INS_and), Is.EqualTo(!initialize));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
             Assert.That(codeGen.getCurrentStackLevel(), Is.Zero);
-            Assert.That(ids.Last().idIns(), Is.EqualTo(INS_lea));
-            Assert.That(ids.Last().idAddr().iiaAddrMode.amDisp, Is.EqualTo(outgoing));
+            Assert.That(ids.Last().idIns(), Is.EqualTo(outgoing == 0 ? INS_mov : INS_lea));
+            if (outgoing != 0)
+            {
+                Assert.That(ids.Last().idAddr().iiaAddrMode.amDisp, Is.EqualTo(outgoing));
+            }
 
             var restore = ids.Where(id => id.idIns() == INS_sub).ToArray();
             Assert.That(restore.Sum(id => (long)InstructionConstant(codeGen.Emitter, id)), Is.EqualTo(outgoing));

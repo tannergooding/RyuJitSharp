@@ -409,7 +409,7 @@ public sealed partial class Lowering
 
         assert(storeLoc.Oper.IsLocalStore);
         var source = storeLoc.Op1;
-        if (source.Oper is GT_BITCAST)
+        if ((source.Oper is GT_BITCAST) && !varTypeIsSmall(storeLoc.Type))
         {
             var bitcastSource = source.AsUnOp().Op1;
             if (!bitcastSource.IsContained && !bitcastSource.IsRegOptional)
@@ -440,6 +440,16 @@ public sealed partial class Lowering
             }
         }
 
+        if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+             Configuration.TARGET_RISCV64) &&
+            (storeLoc.Oper is GT_STORE_LCL_VAR) && source.IsIconHandle() &&
+            source.AsIntCon().FitsInAddrBase(CompilerInstance) &&
+            source.AsIntCon().AddrNeedsReloc(CompilerInstance))
+        {
+            MakeSrcContained(storeLoc, source);
+            return;
+        }
+
         if (Configuration.TARGET_ARM64)
         {
             if (IsContainableImmed(storeLoc, source))
@@ -460,13 +470,6 @@ public sealed partial class Lowering
             var type = descriptor.GetRegisterType(storeLoc);
             if (IsContainableImmed(storeLoc, source) &&
                 (!source.IsIntegralConst(0) || varTypeIsSmall(type)))
-            {
-                MakeSrcContained(storeLoc, source);
-            }
-
-            if ((storeLoc.Oper is GT_STORE_LCL_VAR) && source.IsIconHandle() &&
-                source.AsIntCon().FitsInAddrBase(CompilerInstance) &&
-                source.AsIntCon().AddrNeedsReloc(CompilerInstance))
             {
                 MakeSrcContained(storeLoc, source);
             }

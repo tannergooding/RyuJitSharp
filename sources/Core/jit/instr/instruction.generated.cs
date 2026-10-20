@@ -4376,6 +4376,7 @@ public enum instruction
     INS_i32_const_address,
     INS_i32_const_funcptr,
     INS_i32_const_funcletptr,
+    INS_i32_const_frameidentity,
     INS_i32_const_dataoffs,
     INS_i64_const,
     INS_f32_const,

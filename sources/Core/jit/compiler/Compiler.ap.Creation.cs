@@ -192,6 +192,12 @@ public partial class Compiler
             assert(vnStore is not null);
             var vn1 = optConservativeNormalVN(op1);
             var vn2 = optConservativeNormalVN(op2);
+            if ((vn1 != ValueNumStore.NoVN) && (op1.Type is TYP_REF) &&
+                (vn2 == ValueNumStore.VNForNull()))
+            {
+                return optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(this, vn1));
+            }
+
             // Native limits this backup to non-handle int32 constants for throughput.
             if ((vn1 != ValueNumStore.NoVN) && (vn2 != ValueNumStore.NoVN) &&
                 vnStore.IsVNInt32Constant(vn2) && !vnStore.IsVNHandle(vn2))
@@ -323,6 +329,12 @@ public partial class Compiler
         if ((op1.Oper is not GT_LCL_VAR) && (op2.Oper is GT_LCL_VAR))
         {
             (op1, op2) = (op2, op1);
+        }
+
+        if (!optLocalAssertionProp && (op1.Type is TYP_REF) && (op1.Oper is not GT_CALL) &&
+            op2.IsIntegralConst(0) && (op2.Type is TYP_REF))
+        {
+            return new(optCreateJtrueAssertions(op1, op2, equals));
         }
 
         if ((op1.Oper is GT_LCL_VAR) && (op2.Oper.IsConst || (op2.Oper is GT_LCL_VAR)))

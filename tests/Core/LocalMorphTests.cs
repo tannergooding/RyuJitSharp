@@ -684,6 +684,25 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [Test]
+    public static void VectorLocalFieldStorePreservesObservableValueEvaluation()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
+            var value = compiler.gtNewCallNode(TYP_FLOAT, gtCallTypes.CT_USER_FUNC, null);
+            Assert.That(value.Flags & GTF_OBS_EFFECT, Is.Not.EqualTo(GTF_EMPTY));
+            GenTree tree = compiler.gtNewStoreIndNode(TYP_FLOAT, address, value);
+            var visitor = new LocalAddressVisitor(compiler);
+
+            visitor.MorphLocalIndir(ref tree, 0, 4, user: null);
+
+            Assert.That(tree.Oper, Is.EqualTo(GT_STORE_LCL_FLD));
+            Assert.That(tree.AsLclFld().LclOffs, Is.EqualTo(4));
+            Assert.That(tree.AsLclFld().Data, Is.SameAs(value));
+        });
+    }
+
     [TestCase(false, -1)]
     [TestCase(false, 4)]
     [TestCase(true, 4)]

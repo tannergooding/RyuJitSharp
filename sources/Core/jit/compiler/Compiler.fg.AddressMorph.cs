@@ -161,7 +161,8 @@ public partial class Compiler
 
         var groupArrayWithIndex = false;
         groupArrayWithIndex =
-            Configuration.TARGET_RISCV64 && !varTypeIsStruct(elementType);
+            (Configuration.TARGET_RISCV64 || (Configuration.TARGET_WASM && varTypeIsGC(array.Type))) &&
+            !varTypeIsStruct(elementType);
         var pointerType = (array.Type == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
         var firstElement = gtNewIconNode(TYP_I_IMPL, elementOffset);
         if (groupArrayWithOffset)

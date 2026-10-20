@@ -35,11 +35,15 @@ internal static unsafe class RangeAnalysisTests
     private static extern bool DoesVarDefOverflow(RangeCheck analysis, BasicBlock block,
         GenTreeLclVarCommon local, Range range);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
-    private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Widen")]
     private static extern void Widen(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsMonotonicallyIncreasing")]
+    private static extern bool IsMonotonicallyIncreasing(
+        RangeCheck analysis, GenTree tree, bool rejectNegativeConstant);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
+    private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MergeAssertion")]
     private static extern void MergeAssertion(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
@@ -263,6 +267,167 @@ internal static unsafe class RangeAnalysisTests
         Assert.That(RangeOps.Add(new(new Limit(LimitType.Constant, -1),
             new Limit(LimitType.Constant, 1)), new(new Limit(LimitType.Constant, 2)), true).IsConstantRange(),
             Is.False);
+    }
+
+    [Test]
+    public static void RelationalRangesCompareSymbolicBoundsWithMatchingValueNumbers()
+    {
+        var boundVN = 17;
+        var left = new Range(new Limit(LimitType.BinOpArray, boundVN, -4),
+            new Limit(LimitType.BinOpArray, boundVN, -2));
+        var right = new Range(new Limit(LimitType.BinOpArray, boundVN, -1),
+            new Limit(LimitType.BinOpArray, boundVN, 0));
+        var symbolic = new Range(new Limit(LimitType.BinOpArray, boundVN, 0));
+
+        var ordered = RangeOps.EvalRelop(genTreeOps.GT_LT, isUnsigned: false, left, right);
+        var unsignedEqual = RangeOps.EvalRelop(genTreeOps.GT_GE, isUnsigned: true, symbolic, symbolic);
+        var unsignedGreater = RangeOps.EvalRelop(genTreeOps.GT_GT, isUnsigned: true, symbolic, symbolic);
+        var unsignedNegative = RangeOps.EvalRelop(genTreeOps.GT_GE, isUnsigned: true, left, right);
+
+        Assert.That(ordered.IsSingleValueConstant(out var orderedValue), Is.True);
+        Assert.That(orderedValue, Is.EqualTo(1));
+        Assert.That(unsignedEqual.IsSingleValueConstant(out var equalValue), Is.True);
+        Assert.That(equalValue, Is.EqualTo(1));
+        Assert.That(unsignedGreater.IsSingleValueConstant(out var greaterValue), Is.True);
+        Assert.That(greaterValue, Is.Zero);
+        Assert.That(unsignedNegative.IsSingleValueConstant(out _), Is.False);
+    }
+
+    [Test]
+    public static void PreferredCheckedBoundSubstitutionFollowsShortAssertionChains()
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var indexVN = store.VNForExpr(null, TYP_INT);
+            var checkedBoundVN = store.VNForExpr(null, TYP_INT);
+            var preferredBoundVN = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(checkedBoundVN);
+            store.SetVNIsCheckedBound(preferredBoundVN);
+
+            var nonnegativeBound = compiler.optAddAssertion(Compiler.AssertionDsc.CreateConstantBound(
+                compiler, VNF_GE, checkedBoundVN, store.VNForIntCon(0)));
+            var nonnegativePreferred = compiler.optAddAssertion(Compiler.AssertionDsc.CreateConstantBound(
+                compiler, VNF_GE, preferredBoundVN, store.VNForIntCon(0)));
+            var boundRelationship = compiler.optAddAssertion(Compiler.AssertionDsc.CreateCompareCheckedBound(
+                compiler, VNF_LE, checkedBoundVN, preferredBoundVN, 0));
+            var indexLimit = compiler.optAddAssertion(Compiler.AssertionDsc.CreateCompareCheckedBound(
+                compiler, VNF_LE, indexVN, checkedBoundVN, -3));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            foreach (var index in new[] { nonnegativeBound, nonnegativePreferred, boundRelationship, indexLimit })
+            {
+                BitOps.AddElemD(traits, active, index - 1);
+            }
+
+            var range = MergeEdgeAssertionsWorker(compiler, indexVN, preferredBoundVN, active);
+
+            Assert.That(range.UpperLimit.IsBinOpArray, Is.True);
+            Assert.That(range.UpperLimit.VN, Is.EqualTo(preferredBoundVN));
+            Assert.That(range.UpperLimit.Constant, Is.EqualTo(-3));
+        });
+    }
+
+    [Test]
+    public static void BoundMinusIndexUsesPreferredCheckedBoundRange()
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+            var indexVN = store.VNForExpr(null, TYP_INT);
+            var boundVN = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(boundVN);
+
+            var lower = compiler.optAddAssertion(
+                Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_GE, indexVN, store.VNForIntCon(0)));
+            var boundNonnegative = compiler.optAddAssertion(
+                Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_GE, boundVN, store.VNForIntCon(0)));
+            var upper = compiler.optAddAssertion(Compiler.AssertionDsc.CreateCompareCheckedBound(
+                compiler, VNF_LE, indexVN, boundVN, -2));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, lower - 1);
+            BitOps.AddElemD(traits, active, boundNonnegative - 1);
+            BitOps.AddElemD(traits, active, upper - 1);
+            block.bbAssertionIn = active;
+
+            ref var descriptor = ref compiler.lvaTable[0];
+            descriptor.lvIsParam = true;
+            var ssaNumber = descriptor.lvPerSsaData.AllocSsaNum();
+            descriptor.GetPerSsaData(ssaNumber).Block = block;
+            descriptor.GetPerSsaData(ssaNumber)._vnPair.SetBoth(indexVN);
+
+            var index = compiler.gtNewLclvNode(TYP_INT, 0);
+            index.SsaNum = ssaNumber;
+            index._vnPair.SetBoth(indexVN);
+            var bound = compiler.gtNewLclvNode(TYP_INT, 0);
+            bound._vnPair.SetBoth(boundVN);
+            var subtraction = compiler.gtNewBinaryNode(genTreeOps.GT_SUB, TYP_INT, bound, index);
+
+            var range = GetBoundMinusXRange(compiler, subtraction, block, boundVN);
+
+            Assert.That(range.LowerLimit.IsConstant, Is.True);
+            Assert.That(range.LowerLimit.Constant, Is.EqualTo(2));
+            Assert.That(range.UpperLimit.IsBinOpArray, Is.True);
+            Assert.That(range.UpperLimit.VN, Is.EqualTo(boundVN));
+        });
+    }
+
+    [Test]
+    public static void WidenImprovesNegativeConstantLowerBoundAndKeepsUpperBound()
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+
+            var value = compiler.gtNewIconNode(TYP_INT, 5);
+            value._vnPair.SetBoth(store.VNForIntCon(5));
+            var definition = compiler.gtNewStoreLclVarNode(0, value);
+            ref var descriptor = ref compiler.lvaTable[0];
+            var ssaNumber = descriptor.lvPerSsaData.AllocSsaNum();
+            definition.SsaNum = ssaNumber;
+            descriptor.GetPerSsaData(ssaNumber) = new LclSsaVarDsc(block, definition);
+
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            local.SsaNum = ssaNumber;
+            local._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var range = new Range(new Limit(LimitType.Constant, -10), new Limit(LimitType.Constant, 10));
+
+            Widen(compiler.GetRangeCheck(), block, local, ref range);
+
+            Assert.That(range.LowerLimit.Constant, Is.EqualTo(5));
+            Assert.That(range.UpperLimit.Constant, Is.EqualTo(10));
+        });
+    }
+
+    [Test]
+    public static void MonotonicityPropagatesNegativeConstantRejectionThroughSsaAdds()
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+
+            var negative = compiler.gtNewIconNode(TYP_INT, -1);
+            negative._vnPair.SetBoth(store.VNForIntCon(-1));
+            var definition = compiler.gtNewStoreLclVarNode(0, negative);
+            ref var descriptor = ref compiler.lvaTable[0];
+            var ssaNumber = descriptor.lvPerSsaData.AllocSsaNum();
+            definition.SsaNum = ssaNumber;
+            descriptor.GetPerSsaData(ssaNumber) = new LclSsaVarDsc(block, definition);
+
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            local.SsaNum = ssaNumber;
+            local._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var positive = compiler.gtNewIconNode(TYP_INT, 1);
+            positive._vnPair.SetBoth(store.VNForIntCon(1));
+            var addition = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, TYP_INT, local, positive);
+
+            var analysis = compiler.GetRangeCheck();
+            Assert.That(IsMonotonicallyIncreasing(analysis, addition, rejectNegativeConstant: true), Is.False);
+            Assert.That(IsMonotonicallyIncreasing(analysis, addition, rejectNegativeConstant: false), Is.True);
+        });
     }
 
     [Test]
@@ -767,5 +932,15 @@ internal static unsafe class RangeAnalysisTests
         return arguments[4] is Range range
             ? range
             : throw new AssertionException("Range worker did not update its range.");
+    }
+
+    private static Range GetBoundMinusXRange(Compiler compiler, GenTree tree, BasicBlock block, ValueNum boundVN)
+    {
+        var method = typeof(Compiler).GetMethod("GetBoundMinusXRange",
+            BindingFlags.NonPublic | BindingFlags.Static) ??
+            throw new AssertionException("Missing bound-minus-index range helper.");
+        return method.Invoke(null, [compiler, tree, block, boundVN]) is Range range
+            ? range
+            : throw new AssertionException("Bound-minus-index helper did not return a range.");
     }
 }

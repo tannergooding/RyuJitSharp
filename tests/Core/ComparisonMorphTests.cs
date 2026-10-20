@@ -236,17 +236,23 @@ internal static unsafe class ComparisonMorphTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void FullRangeFoldingPreservesObservableEvaluation(bool sideEffects)
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    public static void FullRangeFoldingPreservesObservableEvaluation(bool sideEffects, bool orderedEffects)
     {
         WithCompiler(compiler => {
             GenTree operand = sideEffects
                 ? compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, null)
                 : compiler.gtNewLclvNode(TYP_INT, 1);
+            if (orderedEffects)
+            {
+                operand.Flags |= GTF_ORDER_SIDEEFF;
+            }
+
             var comparison = compiler.gtNewBinaryNode(GT_LE, TYP_INT, operand, compiler.gtNewIconNode(TYP_INT, int.MaxValue));
             var result = compiler.fgOptimizeRelationalComparisonWithFullRangeConst(comparison);
-            if (sideEffects)
+            if (sideEffects || orderedEffects)
             {
                 Assert.That(result, Is.SameAs(comparison));
             }

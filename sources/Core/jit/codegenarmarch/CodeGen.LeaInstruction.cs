@@ -20,6 +20,9 @@ public sealed partial class CodeGen
         genConsumeOperands(lea);
         var size = lea.Type.EmitSize;
         var offset = lea.Offset;
+        var offsetFitsAddImmediate = Configuration.TARGET_ARM64
+            ? Emitter.emitIns_valid_imm_for_add((long)offset)
+            : Emitter.emitIns_valid_imm_for_add(offset);
 
         // ARM address modes can require multiple instructions to form a GT_LEA result.
         // TODO-ARM64-CQ: Lowering should make GT_LEA correspond to one ARM64 address-forming instruction.
@@ -38,7 +41,7 @@ public sealed partial class CodeGen
                 var useLargeOffsetSequence = Interruptible && (size == EA_BYREF);
 
                 // A fully interruptible GC byref cannot temporarily point outside its object.
-                if (!useLargeOffsetSequence && Emitter.emitIns_valid_imm_for_add(offset))
+                if (!useLargeOffsetSequence && offsetFitsAddImmediate)
                 {
                     genScaledAddArmArch(size, tempReg, baseAddress.RegNum, index.RegNum, scale);
                     if (Configuration.TARGET_ARM)
@@ -91,7 +94,7 @@ public sealed partial class CodeGen
         {
             var baseAddress = lea.BaseAddress;
 
-            if (Emitter.emitIns_valid_imm_for_add(offset))
+            if (offsetFitsAddImmediate)
             {
                 if (offset != 0)
                 {

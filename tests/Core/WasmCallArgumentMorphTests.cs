@@ -110,6 +110,57 @@ internal static unsafe class WasmCallArgumentMorphTests
         });
     }
 
+    [TestCase(true, GTF_ICON_FTN_ADDR, false)]
+    [TestCase(false, GTF_ICON_FTN_ADDR, true)]
+    [TestCase(true, GTF_ICON_CLASS_HDL, true)]
+    public static void NativeAotKeepsFunctionAddressIndirectionsOutOfMemargs(
+        bool nativeAot, GenTreeFlags handleKind, bool expectedContained)
+    {
+        WithCompiler(compiler => {
+            compiler.eeInfoInitialized = true;
+            compiler.eeInfo.targetAbi = nativeAot
+                ? CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI
+                : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            compiler.opts.compReloc = true;
+            compiler.opts.SetMinOpts(true);
+
+            var address = compiler.gtNewIconHandleNode(0x1234, handleKind);
+            var indir = new GenTreeIndir(GT_IND, TYP_INT, address);
+            indir.Flags |= GTF_IND_NONFAULTING;
+            compiler.codeGen = new CodeGen(compiler);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+
+            ContainCheckIndir(lowering, indir);
+
+            Assert.That(address.IsContained, Is.EqualTo(expectedContained));
+        });
+    }
+
+    [Test]
+    public static void GcArrayAddressKeepsTheElementOffsetOutermost()
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(false);
+            compiler.lvaTable[0].Type = TYP_REF;
+            compiler.lvaTable[1].Type = TYP_INT;
+            var array = compiler.gtNewLclvNode(TYP_REF, 0);
+            var index = compiler.gtNewLclvNode(TYP_INT, 1);
+            var address = MorphIndexAddress(compiler,
+                new GenTreeIndexAddr(array, index, TYP_INT, null, 4, 8, 12, boundsCheck: false));
+            var arrayAddress = address as GenTreeArrAddr
+                ?? throw new AssertionException("Missing array-address wrapper.");
+            var offset = arrayAddress.Addr.AsOp();
+
+            Assert.Multiple(() => {
+                Assert.That(offset.Oper, Is.EqualTo(GT_ADD));
+                Assert.That(offset.Op2.IsIntegralConst(12), Is.True);
+                Assert.That(offset.Op1.Oper, Is.EqualTo(GT_ADD));
+                Assert.That(offset.Op1.AsOp().Op1, Is.SameAs(array));
+            });
+        });
+    }
+
     [Test]
     public static void FatPointerTransformUsesWasmHighBit()
     {
@@ -295,6 +346,12 @@ internal static unsafe class WasmCallArgumentMorphTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptorsField(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckIndir")]
+    private static extern void ContainCheckIndir(Lowering lowering, GenTreeIndir node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgMorphIndexAddr")]
+    private static extern GenTree MorphIndexAddress(Compiler compiler, GenTreeIndexAddr address);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);

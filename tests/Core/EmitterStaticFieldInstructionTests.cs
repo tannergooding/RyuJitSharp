@@ -41,6 +41,7 @@ internal static unsafe class EmitterStaticFieldInstructionTests
     [TestCase(INS_mov, EA_1BYTE, REG_X64_RSP, IF_XARCH_MWR_RRD, 7u)]
     [TestCase(INS_mov, EA_8BYTE, REG_X64_R16, IF_XARCH_MWR_RRD, 8u)]
     [TestCase(INS_xchg, EA_8BYTE, REG_X64_RAX, IF_XARCH_MRW_RRW, 7u)]
+    [TestCase(INS_xadd, EA_8BYTE, REG_X64_RAX, IF_XARCH_MRW_RRW, 8u)]
     public static void RegisterStoresPreserveFieldRelocationAndWriteFormats(
         instruction ins, emitAttr attr, regNumber reg, Emitter.insFormat format, uint size)
     {

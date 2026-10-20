@@ -95,20 +95,22 @@ internal static class EmitterAddressInstructionTests
         });
     }
 
-    [Test]
-    public static void BaseAddressToRegisterPreservesWriteFormatAndScale()
+    [TestCase(INS_xchg)]
+    [TestCase(INS_xadd)]
+    public static void BaseAddressToRegisterPreservesWriteFormatAndScale(instruction ins)
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_AR_R(INS_xchg, EA_4BYTE, REG_X64_RCX, REG_X64_RAX, 0);
+            emitter.emitIns_AR_R(ins, EA_4BYTE, REG_X64_RCX, REG_X64_RAX, 0);
             var id = Last(emitter);
 
+            Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_ARW_RRW));
             Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RCX));
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.Zero);
-            Assert.That(id.idCodeSize(), Is.EqualTo(2u));
+            Assert.That(id.idCodeSize(), Is.EqualTo(ins is INS_xadd ? 3u : 2u));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
         });
     }

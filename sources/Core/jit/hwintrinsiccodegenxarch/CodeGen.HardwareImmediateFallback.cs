@@ -56,15 +56,22 @@ public sealed partial class CodeGen
         var tableBegin = genCreateTempLabel();
         var tableEnd = genCreateTempLabel();
         genDefineTempLabel(tableBegin);
+        var pendingJmpToEnd = false;
         for (uint index = 0; index <= maxByte; index++)
         {
+            if (pendingJmpToEnd)
+            {
+                Emitter.emitIns_J(INS_jmp, tableEnd);
+                pendingJmpToEnd = false;
+            }
+
             genDefineTempLabel(labels[index]);
             if ((index & mask) != index)
             {
                 continue;
             }
             emitSwCase(unchecked((sbyte)index));
-            Emitter.emitIns_J(INS_jmp, tableEnd);
+            pendingJmpToEnd = true;
         }
         genDefineTempLabel(tableEnd);
     }

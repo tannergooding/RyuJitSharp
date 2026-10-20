@@ -23,6 +23,7 @@ internal static unsafe class EmitterStackStoreTests
     [TestCase(INS_mov, EA_2BYTE, REG_X64_RAX, 4u, IF_XARCH_SWR_RRD)]
     [TestCase(INS_mov, EA_1BYTE, REG_X64_RSI, 4u, IF_XARCH_SWR_RRD)]
     [TestCase(INS_xchg, EA_8BYTE, REG_X64_RAX, 4u, IF_XARCH_SRW_RRW)]
+    [TestCase(INS_xadd, EA_8BYTE, REG_X64_RAX, 5u, IF_XARCH_SRW_RRW)]
     [TestCase(INS_movups, EA_16BYTE, REG_X64_XMM0, 5u, IF_XARCH_SWR_RRD)]
     public static void StackStoresRecordOperandsNativeCodeSizeAndDescriptorAccounting(
         instruction ins, emitAttr size, regNumber reg, uint expectedSize, Emitter.insFormat format)

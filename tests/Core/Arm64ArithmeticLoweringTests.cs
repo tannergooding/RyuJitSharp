@@ -935,7 +935,7 @@ internal static unsafe class Arm64ArithmeticLoweringTests
 
     [TestCase(5, 4, GT_SELECT_INC)]
     [TestCase(4, 5, GT_SELECT)]
-    public static void NonFlagsConstantIncrementPreservesPinnedNativeShape(int first, int second, genTreeOps expected)
+    public static void NonFlagsConstantIncrementPreservesNativeSelectShape(int first, int second, genTreeOps expected)
     {
         WithLowering((compiler, lowering, block) => {
             var condition = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -948,9 +948,38 @@ internal static unsafe class Arm64ArithmeticLoweringTests
 
             Assert.That(owner.Op1, Is.SameAs(select));
             Assert.That(select.Oper, Is.EqualTo(expected));
-            Assert.That(select.Op1, Is.SameAs(trueValue));
+            Assert.That(select.Op1, Is.SameAs(expected is GT_SELECT_INC ? falseValue : trueValue));
             Assert.That(select.Op2, expected is GT_SELECT_INC ? Is.Null : Is.SameAs(falseValue));
             Assert.That(select.Cond, Is.SameAs(condition));
+        });
+    }
+
+    [TestCase(GT_SELECT_NEG)]
+    [TestCase(GT_SELECT_INV)]
+    [TestCase(GT_SELECT_INC)]
+    public static void ConditionalOperandVisitorHandlesSelectVariantsWithoutFalseValues(genTreeOps oper)
+    {
+        CSELiveAcrossCallCostTests.WithCompiler(compiler =>
+        {
+            var condition = compiler.gtNewLclvNode(TYP_INT, 0);
+            var trueValue = compiler.gtNewIconNode(TYP_INT, 1);
+            var tree = new GenTreeConditional(GT_SELECT, TYP_INT, condition, trueValue,
+                compiler.gtNewIconNode(TYP_INT, 2));
+            tree.SetOper(oper);
+            tree.Op2Ref = null;
+
+            var visited = new GenTree?[2];
+            var count = 0;
+            var result = tree.VisitOperands(operand =>
+            {
+                visited[count++] = operand;
+                return GenTree.VisitResult.Continue;
+            });
+
+            Assert.That(result, Is.EqualTo(GenTree.VisitResult.Continue));
+            Assert.That(count, Is.EqualTo(2));
+            Assert.That(visited[0], Is.SameAs(condition));
+            Assert.That(visited[1], Is.SameAs(trueValue));
         });
     }
 

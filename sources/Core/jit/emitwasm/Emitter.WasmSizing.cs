@@ -112,9 +112,19 @@ public partial class Emitter
     {
         RequireWasmTarget();
 
-        emitImageBase();
+        assert(_compiler is not null);
+
+        if (!_compiler.IsNativeAot)
+        {
+            emitImageBase();
+        }
+
         emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), address);
-        emitIns(INS_i32_add);
+
+        if (!_compiler.IsNativeAot)
+        {
+            emitIns(INS_i32_add);
+        }
     }
 
     public void emitIns_BlockTy(instruction ins)
@@ -222,12 +232,11 @@ public partial class Emitter
         RequireWasmTarget();
 
         assert(_compiler is not null);
-        nint imageBase;
-        unsafe
+
+        if (!_compiler.IsNativeAot)
         {
-            imageBase = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().imageBase);
+            emitImageBase();
         }
-        emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, imageBase);
 
         var id = emitNewInstrSC(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), unchecked((nint)dataOffset));
         id.idIns(INS_i32_const_dataoffs);
@@ -235,12 +244,16 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
 
-        emitIns(INS_i32_add);
+        if (!_compiler.IsNativeAot)
+        {
+            emitIns(INS_i32_add);
+        }
     }
 
-    private void emitImageBase()
+    public void emitImageBase()
     {
         assert(_compiler is not null);
+        assert(!_compiler.IsNativeAot);
         nint imageBase;
         unsafe
         {
@@ -330,6 +343,7 @@ public partial class Emitter
 
             case insFormat.IF_WASM_FUNCLETPTR:
             case insFormat.IF_WASM_FUNCLETIDX:
+            case insFormat.IF_WASM_FRAMEIDENTITY:
             case insFormat.IF_WASM_DATAOFFS:
             {
                 size += PADDED_RELOC_SIZE;

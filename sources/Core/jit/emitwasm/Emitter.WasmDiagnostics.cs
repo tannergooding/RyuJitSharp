@@ -146,6 +146,7 @@ public partial class Emitter
 
             case IF_WASM_FUNCLETPTR:
             case IF_WASM_FUNCLETIDX:
+            case IF_WASM_FRAMEIDENTITY:
             {
                 jitprintf($"funclet {emitGetInsSC(id)}");
                 dispLocalInfoIfAny(id);

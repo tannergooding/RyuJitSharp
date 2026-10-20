@@ -194,6 +194,33 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         });
     }
 
+    [Test]
+    public static void DynamicLocalHeapUsesTheNoBorrowProbeCondition()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compLocallocUsed = true;
+            compiler.info.compInitMem = false;
+            compiler.eeInfo.osPageSize = 4096;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL }];
+            compiler.lvaCount = 1;
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+            codeGen.GCInfo.gcTrkStkPtrLcls = VarSetOps.MakeEmpty(compiler);
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+            var size = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            size.RegNum = REG_R1;
+            var tree = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_R0 };
+            codeGen.InternalRegisters.Add(tree, RBM_R2 | RBM_R3);
+
+            codeGen.genLclHeap(tree);
+
+            var instructions = Descriptors(codeGen).Select(static descriptor => descriptor.idIns()).ToArray();
+            Assert.That(instructions, Does.Contain(INS_bhs));
+            Assert.That(instructions, Does.Not.Contain(INS_bvc));
+        });
+    }
+
     [TestCase(INS_add, -16, INS_sub, 16)]
     [TestCase(INS_sub, -16, INS_add, 16)]
     [TestCase(INS_add, 4095, INS_add, 4095)]
@@ -363,7 +390,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genStackPointerConstantAdjustmentLoopWithProbe")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genStackPointerConstantAdjustmentLoopWithProbeArm64")]
     private static extern nint ProbeLoop(CodeGen codeGen, nint delta, regNumber tmpReg);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genInstrWithConstant")]

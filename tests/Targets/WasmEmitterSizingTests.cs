@@ -54,6 +54,7 @@ internal static class WasmEmitterSizingTests
     [TestCase(INS_local_get, 0x20u, 0, Emitter.insFormat.IF_WASM_ULEB128)]
     [TestCase(INS_i32_add, 0x6Au, 0, Emitter.insFormat.IF_WASM_OPCODE)]
     [TestCase(INS_i8x16_shuffle, 13u, 0xFD, Emitter.insFormat.IF_WASM_V128)]
+    [TestCase(INS_i32_const_frameidentity, 0x41u, 0, Emitter.insFormat.IF_WASM_FRAMEIDENTITY)]
     public static void WasmInstructionTablesMatchNativeEncodings(
         instruction ins, uint expectedOpcode, byte expectedPrefix, Emitter.insFormat expectedFormat)
     {

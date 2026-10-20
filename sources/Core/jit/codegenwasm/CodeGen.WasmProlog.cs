@@ -17,6 +17,12 @@ public sealed partial class CodeGen
         internal static readonly instruction INS_I_add =
             Configuration.TARGET_64BIT ? INS_i64_add : INS_i32_add;
 
+        internal static readonly instruction INS_I_or =
+            Configuration.TARGET_64BIT ? INS_i64_or : INS_i32_or;
+
+        internal static readonly instruction INS_I_shl =
+            Configuration.TARGET_64BIT ? INS_i64_shl : INS_i32_shl;
+
         internal static readonly instruction INS_I_load =
             Configuration.TARGET_64BIT ? INS_i64_load : INS_i32_load;
 
@@ -146,7 +152,26 @@ public sealed partial class CodeGen
             assert(_compiler.lvaWasmFunctionIndex != BAD_VAR_NUM);
 
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-            Emitter.emitFuncletAddressConstant((nint)0);
+            if (_compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_WASM_MANAGED_HELPER))
+            {
+                Emitter.emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+            }
+            else if (_compiler.lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
+            {
+                ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(
+                    _compiler.lvaWasmPortableEntryPointArg);
+                var pepIndex = regNumberExtensions.WasmRegToIndex(abiInfo.Segments[0].Register);
+                Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)pepIndex));
+            }
+            else
+            {
+                Emitter.emitFuncletAddressConstant((nint)0);
+                Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 1);
+                Emitter.emitIns(WasmInstructions.INS_I_shl);
+                Emitter.emitIns_I(WasmInstructions.INS_I_const, EA_PTRSIZE, 1);
+                Emitter.emitIns(WasmInstructions.INS_I_or);
+            }
+
             Emitter.emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, _compiler.lvaWasmFunctionIndex, 0);
 
             if ((_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX) && (_compiler.lvaWasmResumeIP != BAD_VAR_NUM))

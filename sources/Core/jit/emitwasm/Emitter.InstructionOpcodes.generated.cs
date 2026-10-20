@@ -64,6 +64,7 @@ public partial class Emitter
         unchecked((uint)(0x41)), // INS_i32_const_address
         unchecked((uint)(0x41)), // INS_i32_const_funcptr
         unchecked((uint)(0x41)), // INS_i32_const_funcletptr
+        unchecked((uint)(0x41)), // INS_i32_const_frameidentity
         unchecked((uint)(0x41)), // INS_i32_const_dataoffs
         unchecked((uint)(0x42)), // INS_i64_const
         unchecked((uint)(0x43)), // INS_f32_const
@@ -499,6 +500,7 @@ public partial class Emitter
         unchecked((byte)(0)), // INS_i32_const_address
         unchecked((byte)(0)), // INS_i32_const_funcptr
         unchecked((byte)(0)), // INS_i32_const_funcletptr
+        unchecked((byte)(0)), // INS_i32_const_frameidentity
         unchecked((byte)(0)), // INS_i32_const_dataoffs
         unchecked((byte)(0)), // INS_i64_const
         unchecked((byte)(0)), // INS_f32_const
@@ -934,6 +936,7 @@ public partial class Emitter
         insFormat.IF_WASM_MEMADDR, // INS_i32_const_address
         insFormat.IF_WASM_FUNCPTR, // INS_i32_const_funcptr
         insFormat.IF_WASM_FUNCLETPTR, // INS_i32_const_funcletptr
+        insFormat.IF_WASM_FRAMEIDENTITY, // INS_i32_const_frameidentity
         insFormat.IF_WASM_DATAOFFS, // INS_i32_const_dataoffs
         insFormat.IF_WASM_SLEB128, // INS_i64_const
         insFormat.IF_WASM_F32, // INS_f32_const

@@ -2735,8 +2735,12 @@ public partial class Compiler
                     case NI_System_Half_op_Division:
                     {
                         if (Configuration.FEATURE_HW_INTRINSICS &&
-                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
-                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))))
+                            ((Configuration.TARGET_XARCH &&
+                              compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1,
+                                  ni != NI_System_Half_Sqrt)) ||
+                             (Configuration.TARGET_ARM64 &&
+                              compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16,
+                                  ni != NI_System_Half_Sqrt))))
                         {
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);

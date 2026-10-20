@@ -136,6 +136,25 @@ internal static unsafe class RangeCheckCloningTests
         });
     }
 
+    [TestCaseSource(nameof(NativeIntBoundsCheckCases))]
+    public static void NativeIntBoundsChecksAreNotCloned(var_types indexType, var_types lengthType)
+    {
+        WithCompiler((compiler, entry, block, _) => {
+            var checks = AddChecks(compiler, block, [0, 1, 2, 3], indexType: indexType, lengthType: lengthType);
+
+            Assert.That(Clone(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(entry.Target, Is.SameAs(block));
+            Assert.That(block.LastStmt!.TreeList.Count(node => node.Oper is GT_BOUNDS_CHECK),
+                Is.EqualTo(checks.Length));
+        });
+    }
+
+    private static TestCaseData[] NativeIntBoundsCheckCases =>
+    [
+        new(TYP_I_IMPL, TYP_INT),
+        new(TYP_INT, TYP_I_IMPL),
+    ];
+
     [Test]
     public static void SizePreferenceAndMethodFlagPreserveOriginalBlock()
     {
@@ -166,12 +185,16 @@ internal static unsafe class RangeCheckCloningTests
     }
 
     private static GenTreeBoundsChk[] AddChecks(Compiler compiler, BasicBlock block, int[] indices,
-        bool variableIndex = false, bool returnRoot = true, bool alternateLengths = false)
+        bool variableIndex = false, bool returnRoot = true, bool alternateLengths = false,
+        var_types indexType = TYP_INT, var_types lengthType = TYP_INT)
     {
         var store = compiler.vnStore ?? throw new InvalidOperationException("A VN store is required.");
-        var lengthVN = store.VNForExpr(null, TYP_INT);
-        var otherLengthVN = alternateLengths ? store.VNForExpr(null, TYP_INT) : lengthVN;
-        var indexVN = variableIndex ? store.VNForExpr(null, TYP_INT) : ValueNumStore.NoVN;
+        compiler.lvaTable[0].Type = lengthType;
+        compiler.lvaTable[1].Type = indexType;
+        compiler.lvaTable[2].Type = lengthType;
+        var lengthVN = store.VNForExpr(null, lengthType);
+        var otherLengthVN = alternateLengths ? store.VNForExpr(null, lengthType) : lengthVN;
+        var indexVN = variableIndex ? store.VNForExpr(null, indexType) : ValueNumStore.NoVN;
         var checks = new GenTreeBoundsChk[indices.Length];
         GenTree result = compiler.gtNewIconNode(TYP_INT, 7);
         for (var i = indices.Length - 1; i >= 0; i--)
@@ -179,20 +202,20 @@ internal static unsafe class RangeCheckCloningTests
             GenTree index;
             if (variableIndex)
             {
-                var baseIndex = compiler.gtNewLclvNode(TYP_INT, 1);
+                var baseIndex = compiler.gtNewLclvNode(indexType, 1);
                 baseIndex._vnPair.SetBoth(indexVN);
-                index = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, baseIndex,
-                    compiler.gtNewIconNode(TYP_INT, indices[i]));
-                index._vnPair.SetBoth(store.VNForFunc(TYP_INT, VNFunc.VNF_ADD,
+                index = compiler.gtNewBinaryNode(GT_ADD, indexType, baseIndex,
+                    compiler.gtNewIconNode(indexType, indices[i]));
+                index._vnPair.SetBoth(store.VNForFunc(indexType, VNFunc.VNF_ADD,
                     indexVN, store.VNForIntCon(indices[i])));
             }
             else
             {
-                index = compiler.gtNewIconNode(TYP_INT, indices[i]);
+                index = compiler.gtNewIconNode(indexType, indices[i]);
                 index._vnPair.SetBoth(store.VNForIntCon(indices[i]));
             }
             var useOtherLength = alternateLengths && (i >= indices.Length / 2);
-            var length = compiler.gtNewLclvNode(TYP_INT, useOtherLength ? 2 : 0);
+            var length = compiler.gtNewLclvNode(lengthType, useOtherLength ? 2 : 0);
             length._vnPair.SetBoth(useOtherLength ? otherLengthVN : lengthVN);
             checks[i] = new GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
             result = compiler.gtNewBinaryNode(GT_COMMA, TYP_INT, checks[i], result);

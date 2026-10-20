@@ -104,54 +104,69 @@ internal static class EmitterShiftInstructionTests
         Assert.That(Emitter.IsShiftInstruction(INS_add), Is.False);
     }
 
-    [TestCase(REG_X64_RCX, REG_X64_NA, 1u, 0, 3u)]
-    [TestCase(REG_X64_RBP, REG_X64_NA, 1u, 0, 4u)]
-    [TestCase(REG_X64_RCX, REG_X64_RDX, 2u, 24, 5u)]
-    [TestCase(REG_X64_RCX, REG_X64_R8, 4u, 65536, 8u)]
-    [TestCase(REG_X64_NA, REG_X64_RDX, 8u, 0, 8u)]
+    [TestCase(REG_X64_RCX, REG_X64_NA, 1u, 0, INS_mov, IF_XARCH_RWR_RRD, 3u)]
+    [TestCase(REG_X64_RBP, REG_X64_NA, 1u, 0, INS_mov, IF_XARCH_RWR_RRD, 3u)]
+    [TestCase(REG_X64_RCX, REG_X64_RDX, 2u, 24, INS_lea, IF_XARCH_RWR_ARD, 5u)]
+    [TestCase(REG_X64_RCX, REG_X64_R8, 4u, 65536, INS_lea, IF_XARCH_RWR_ARD, 8u)]
+    [TestCase(REG_X64_NA, REG_X64_RDX, 8u, 0, INS_lea, IF_XARCH_RWR_ARD, 8u)]
     public static void IndexedLeaRetainsAllAddressFieldsAndDisplacementWidths(
-        regNumber baseReg, regNumber indexReg, uint scale, int displacement, uint size)
+        regNumber baseReg, regNumber indexReg, uint scale, int displacement,
+        instruction expectedInstruction, Emitter.insFormat expectedFormat, uint size)
     {
         WithEmitter((_, emitter) =>
         {
             emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_X64_RAX, baseReg, indexReg, scale, displacement);
             var id = Last(emitter);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD));
+            Assert.That(id.idIns(), Is.EqualTo(expectedInstruction));
+            Assert.That(id.idInsFmt(), Is.EqualTo(expectedFormat));
             Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(indexReg));
-            Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(scale switch
-            {
-                1 => 0u,
-                2 => 1u,
-                4 => 2u,
-                _ => 3u,
-            }));
-            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)displacement));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
+            if (expectedInstruction is INS_lea)
+            {
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
+                Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(indexReg));
+                Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(scale switch
+                {
+                    1 => 0u,
+                    2 => 1u,
+                    4 => 2u,
+                    _ => 3u,
+                }));
+                Assert.That(Displacement(emitter, id), Is.EqualTo((nint)displacement));
+            }
+            else
+            {
+                Assert.That(id.idReg2(), Is.EqualTo(baseReg));
+            }
             Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
         });
     }
 
-    [TestCase(INS_lea, REG_X64_RAX, REG_X64_NA, 0, 0)]
-    [TestCase(INS_lea, REG_X64_RCX, REG_X64_NA, 0, 1)]
-    [TestCase(INS_lea, REG_X64_RAX, REG_X64_RDX, 0, 1)]
-    [TestCase(INS_lea, REG_X64_RAX, REG_X64_NA, 1, 1)]
-    [TestCase(INS_mov, REG_X64_RAX, REG_X64_NA, 0, 1)]
+    [TestCase(INS_lea, REG_X64_RAX, REG_X64_NA, 0, 0, INS_lea, REG_X64_RAX)]
+    [TestCase(INS_lea, REG_X64_RCX, REG_X64_NA, 0, 1, INS_mov, REG_X64_RAX)]
+    [TestCase(INS_lea, REG_X64_RAX, REG_X64_RDX, 0, 1, INS_lea, REG_X64_RAX)]
+    [TestCase(INS_lea, REG_X64_RAX, REG_X64_NA, 1, 1, INS_lea, REG_X64_RAX)]
+    [TestCase(INS_mov, REG_X64_RAX, REG_X64_NA, 0, 1, INS_mov, REG_X64_RAX)]
+    [TestCase(INS_lea, REG_X64_RBP, REG_X64_NA, 0, 1, INS_lea, REG_X64_RSP)]
     public static void OnlyIdentityLeaElidesTheDescriptor(
-        instruction ins, regNumber baseReg, regNumber indexReg, int displacement, int count)
+        instruction ins, regNumber baseReg, regNumber indexReg, int displacement, int count,
+        instruction expectedInstruction, regNumber destination)
     {
         WithEmitter((_, emitter) =>
         {
             var used = Used(emitter);
-            emitter.emitIns_R_ARX(ins, EA_8BYTE, REG_X64_RAX, baseReg, indexReg, 1, displacement);
+            emitter.emitIns_R_ARX(ins, EA_8BYTE, destination, baseReg, indexReg, 1, displacement);
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
             if (count == 0)
             {
                 Assert.That(Used(emitter), Is.EqualTo(used));
                 Assert.That(CurrentSize(emitter), Is.Zero);
                 Assert.That(LastInstruction(emitter), Is.Null);
+            }
+            else
+            {
+                Assert.That(Last(emitter).idIns(), Is.EqualTo(expectedInstruction));
             }
         });
     }
@@ -305,7 +320,13 @@ internal static class EmitterShiftInstructionTests
             Assert.That(Used(emitter) > used, Is.EqualTo(entrypoint != 2));
             Assert.That(CurrentCount(emitter) > 0, Is.EqualTo(entrypoint != 2));
             Assert.That(CurrentSize(emitter) > 0, Is.EqualTo(entrypoint != 2));
-            Assert.That(diagnostic.Contains(entrypoint is 2 or 3 ? "lea" : "shl", StringComparison.Ordinal),
+            var mnemonic = entrypoint switch
+            {
+                2 => "lea",
+                3 => "mov",
+                _ => "shl",
+            };
+            Assert.That(diagnostic.Contains(mnemonic, StringComparison.Ordinal),
                 Is.EqualTo(entrypoint != 2));
         });
     }

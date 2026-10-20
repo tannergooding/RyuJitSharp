@@ -290,7 +290,7 @@ public partial class Compiler
             // op1 has side efects that can't be reordered.
             // Check for some special cases where we still may be able to swap.
 
-            if ((secondNode.Flags & strictEffects) is not 0)
+            if ((secondNode.Flags & (strictEffects | GTF_ORDER_SIDEEFF)) is not 0)
             {
                 // op2 has also has non reorderable side effects - can't swap.
                 canSwap = false;
@@ -6148,6 +6148,13 @@ public partial class Compiler
 
                     var valueNode = valueArg.Node;
                     castHnd = gtGetClassHandle(valueNode, out isExact, out isNonNull);
+
+                    // A failed isinst returns null even for a non-null value; only cast helpers preserve non-nullness.
+                    if (helper is CORINFO_HELP_ISINSTANCEOFINTERFACE or CORINFO_HELP_ISINSTANCEOFARRAY or
+                        CORINFO_HELP_ISINSTANCEOFCLASS or CORINFO_HELP_ISINSTANCEOFANY)
+                    {
+                        isNonNull = false;
+                    }
                 }
 
                 // We don't know at jit time if the cast will succeed or fail, but if it

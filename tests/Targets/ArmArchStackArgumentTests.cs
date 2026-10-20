@@ -320,9 +320,8 @@ internal static unsafe class ArmArchStackArgumentTests
             {
                 Assert.That(descriptors, Has.Count.EqualTo(2));
                 Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
-                // The pinned indirect LDP passes type0 for both attributes; retain that contract.
                 Assert.That(descriptors[0].idGCrefReg2(),
-                    Is.EqualTo(indirect ? GCInfo.GCtype.GCT_GCREF : GCInfo.GCtype.GCT_BYREF));
+                    Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
                 Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
                 Assert.That(descriptors[1].idGCrefReg2(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
             }

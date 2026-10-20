@@ -76,8 +76,11 @@ public sealed partial class Lowering
                             else if ((address is GenTreeAddrMode mode) && !mode.HasIndex)
                             {
                                 var loadType = varTypeIsSmall(castToType) ? castToType : castOp.Type;
-                                srcIsContainable = Emitter.emitIns_valid_imm_for_ldst_offset(
-                                    mode.Offset, (emitAttr)loadType.Size);
+                                srcIsContainable = Configuration.TARGET_ARM64
+                                    ? Emitter.emitIns_valid_imm_for_ldst_offset(
+                                        (long)mode.Offset, (emitAttr)loadType.Size)
+                                    : Emitter.emitIns_valid_imm_for_ldst_offset(
+                                        mode.Offset, (emitAttr)loadType.Size);
                             }
                         }
                     }

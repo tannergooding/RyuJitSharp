@@ -241,7 +241,7 @@ public sealed partial class CodeGen
                             assert(loReg != addrReg);
                             noway_assert((remainingSize == (2 * Configuration.TARGET_POINTER_SIZE)) || (hiReg != addrReg));
                             emit.emitIns_R_R_R_IArm64(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
-                                unchecked((nint)structOffset), INS_OPTS_NONE, type0.EmitSize);
+                                unchecked((nint)structOffset), INS_OPTS_NONE, type1.EmitSize);
                         }
 
                         emit.emitIns_S_S_R_R(INS_stp, type0.EmitSize, type1.EmitSize, loReg, hiReg, varNumOut,

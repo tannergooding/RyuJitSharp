@@ -258,13 +258,17 @@ public sealed partial class CodeGen
         public void LoadReg(int offset, int regSizeBytes)
         {
             _canEncodeAllLoads =
-                _canEncodeAllLoads && Emitter.emitIns_valid_imm_for_ldst_offset(offset, (emitAttr)regSizeBytes);
+                _canEncodeAllLoads && (Configuration.TARGET_ARM64
+                    ? Emitter.emitIns_valid_imm_for_ldst_offset((long)offset, (emitAttr)regSizeBytes)
+                    : Emitter.emitIns_valid_imm_for_ldst_offset(offset, (emitAttr)regSizeBytes));
         }
 
         public void StoreReg(int offset, int regSizeBytes)
         {
             _canEncodeAllStores =
-                _canEncodeAllStores && Emitter.emitIns_valid_imm_for_ldst_offset(offset, (emitAttr)regSizeBytes);
+                _canEncodeAllStores && (Configuration.TARGET_ARM64
+                    ? Emitter.emitIns_valid_imm_for_ldst_offset((long)offset, (emitAttr)regSizeBytes)
+                    : Emitter.emitIns_valid_imm_for_ldst_offset(offset, (emitAttr)regSizeBytes));
         }
     }
 

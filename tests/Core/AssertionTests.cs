@@ -400,6 +400,38 @@ internal static unsafe class AssertionTests
         }, local: false);
     }
 
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF)]
+    public static void ArrayAddressHelpersEstablishLocalArrayNonNullness(CorInfoHelpFunc helper)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
+            var array = compiler.gtNewLclvNode(TYP_REF, 0);
+            var index = compiler.gtNewLclvNode(TYP_INT, 1);
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER, Compiler.eeFindHelper(helper));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(array));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(index));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewNull()));
+
+            compiler.optAssertionGen(call);
+
+            Assert.That(call.GeneratesAssertion, Is.True);
+            var assertion = compiler.optGetAssertion(call.AssertionInfo.AssertionIndex);
+            Assert.Multiple(() => {
+                Assert.That(assertion.Op1.Kind, Is.EqualTo(Compiler.optOp1Kind.O1K_LCLVAR));
+                Assert.That(assertion.Op1.LclNum, Is.Zero);
+                Assert.That(assertion.Op2.IsNullConstant, Is.True);
+            });
+        });
+    }
+
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)]
+    public static void HelperMetadataMarksNonNullReturningHelpers(CorInfoHelpFunc helper)
+    {
+        Assert.That(helper.NonNullReturn, Is.True);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void UnprovenCastOnlyReceivesNonNullHintWhenExpansionIsEnabled(bool expandable)
@@ -909,6 +941,22 @@ internal static unsafe class AssertionTests
         });
     }
 
+    [Test]
+    public static void RuntimeTypeAndArrayElementAddressValueNumbersAreKnownNonNull()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            var typeHandle = store.VNForExpr(null, TYP_I_IMPL);
+            var array = store.VNForExpr(null, TYP_REF);
+            var index = store.VNForExpr(null, TYP_INT);
+            var runtimeType = store.VNForFunc(TYP_REF, VNFunc.VNF_TypeHandleToRuntimeType, typeHandle);
+            var elementAddress = store.VNForFunc(TYP_BYREF, VNFunc.VNF_LdElemA, array, index, typeHandle);
+
+            Assert.That(store.IsKnownNonNull(runtimeType), Is.True);
+            Assert.That(store.IsKnownNonNull(elementAddress), Is.True);
+        });
+    }
+
     [TestCase(-1, false)]
     [TestCase(0, true)]
     [TestCase(4095, true)]
@@ -1202,6 +1250,35 @@ internal static unsafe class AssertionTests
                 Assert.That(assertion.Kind, Is.EqualTo(OAK_NOT_EQUAL));
                 Assert.That(assertion.Op1.LclNum, Is.Zero);
             }
+        });
+    }
+
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY, true)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFINTERFACE, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS, false)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY, false)]
+    public static void CastTypeFallbackPreservesNonNullnessOnlyForThrowingCasts(
+        CorInfoHelpFunc helper, bool expectedNonNull)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getObjectType = &GetAssertionObjectType;
+            var ee = new ICorJitInfo { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &ee;
+
+            var type = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var value = compiler.gtNewIconNode(TYP_REF, 0x4000);
+            value.Flags |= GTF_ICON_OBJ_HDL;
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER, Compiler.eeFindHelper(helper));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(type));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+
+            var classHandle = compiler.gtGetHelperCallClassHandle(call, out var isExact, out var isNonNull);
+
+            Assert.That((nint)classHandle, Is.EqualTo((nint)0x2000));
+            Assert.That(isExact, Is.True);
+            Assert.That(isNonNull, Is.EqualTo(expectedNonNull));
         });
     }
 
@@ -1744,6 +1821,50 @@ internal static unsafe class AssertionTests
                 Assert.That(compiler.optGetAssertion(info.AssertionIndex).Kind, Is.EqualTo(OAK_EQUAL));
             }
         });
+    }
+
+    [Test]
+    public static void GlobalReferenceNullAssertionUsesTheExpressionValueNumber()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var value = new GenTreeIndir(GT_IND, TYP_REF, compiler.gtNewIconNode(TYP_BYREF, 0x1000));
+            var valueVN = store.VNForExpr(null, TYP_REF);
+            value._vnPair.SetBoth(valueVN);
+            var nullValue = compiler.gtNewNull();
+            nullValue._vnPair.SetBoth(ValueNumStore.VNForNull());
+
+            var index = compiler.optCreateAssertion(value, nullValue, equals: false);
+            Assert.That(index, Is.Not.Zero);
+            var assertion = compiler.optGetAssertion(index);
+
+            Assert.Multiple(() => {
+                Assert.That(assertion.Op1.Kind, Is.EqualTo(Compiler.optOp1Kind.O1K_VN));
+                Assert.That(assertion.Op1.VN, Is.EqualTo(valueVN));
+                Assert.That(assertion.Op2.IsNullConstant, Is.True);
+            });
+        }, local: false);
+    }
+
+    [Test]
+    public static void GlobalReferenceNullBranchCreatesAssertionForNonCallExpressions()
+    {
+        WithCompiler(compiler => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var value = new GenTreeIndir(GT_IND, TYP_REF, compiler.gtNewIconNode(TYP_BYREF, 0x1000));
+            var valueVN = store.VNForExpr(null, TYP_REF);
+            value._vnPair.SetBoth(valueVN);
+            var nullValue = compiler.gtNewNull();
+            nullValue._vnPair.SetBoth(ValueNumStore.VNForNull());
+            var comparison = compiler.gtNewBinaryNode(GT_NE, TYP_INT, value, nullValue);
+
+            var info = compiler.optAssertionGenJtrue(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, comparison));
+
+            Assert.That(info.HasAssertion, Is.True);
+            Assert.That(compiler.optGetAssertion(info.AssertionIndex).Op1.VN, Is.EqualTo(valueVN));
+        }, local: false);
     }
 
     [TestCase(GT_EQ, false)]

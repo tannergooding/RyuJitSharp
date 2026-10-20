@@ -4,11 +4,35 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private bool TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs)
+    {
+        var compiler = _compiler ?? throw new FatalJitException("Local address emission requires an active compiler.");
+        if (compiler.lvaDoneFrameLayout != Compiler.FINAL_FRAME_LAYOUT)
+        {
+            return false;
+        }
+
+        var address = compiler.lvaFrameAddress(varx, out var framePointerBased);
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS && !framePointerBased)
+        {
+            return false;
+        }
+
+        if (unchecked(address + offs) != 0)
+        {
+            return false;
+        }
+
+        _ = emitIns_Mov(INS_mov, attr, ireg, framePointerBased ? REG_FPBASE : REG_SPBASE, canSkip: false);
+        return true;
+    }
+
     public void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs,
         insOpts instOptions = INS_OPTS_NONE)
     {
@@ -20,6 +44,11 @@ public partial class Emitter
         var fmt = emitInsModeFormat(ins, IF_XARCH_RRD_SRD);
 
         if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+        {
+            return;
+        }
+
+        if ((ins is INS_lea) && TryEmitLclAddrAsMov(attr, ireg, varx, offs))
         {
             return;
         }

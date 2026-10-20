@@ -57,6 +57,25 @@ internal static unsafe class LocalStoreLoweringTests
         });
     }
 
+    [TestCase(var_types.TYP_BYTE, false)]
+    [TestCase(var_types.TYP_INT, true)]
+    public static void SmallLocalStoresDoNotContainBitcastSources(var_types storeType, bool expectedContained)
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.lvaTable[0].Type = storeType;
+            compiler.lvaTable[0].lvIsParam = true;
+            var source = new GenTreeDblCon(var_types.TYP_FLOAT, 1.0);
+            var bitcast = new GenTreeUnOp(genTreeOps.GT_BITCAST, var_types.TYP_INT, source);
+            var store = compiler.gtNewStoreLclVarNode(0, bitcast);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+
+            ContainCheckStoreLoc(lowering, store);
+
+            Assert.That(bitcast.IsContained, Is.EqualTo(expectedContained));
+        });
+    }
+
     [TestCase(var_types.TYP_DOUBLE, long.MinValue, false, false)]
     [TestCase(var_types.TYP_DOUBLE, 0x7FF8000000001234L, false, false)]
     [TestCase(var_types.TYP_FLOAT, long.MinValue, false, false)]
@@ -214,6 +233,9 @@ internal static unsafe class LocalStoreLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNode")]
     private static extern GenTree? LowerNode(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckStoreLoc")]
+    private static extern void ContainCheckStoreLoc(Lowering lowering, GenTreeLclVarCommon storeLoc);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "StoreFieldListToNewLocal")]
     private static extern int StoreFieldListToNewLocal(Lowering lowering, ClassLayout layout, GenTreeFieldList fields);

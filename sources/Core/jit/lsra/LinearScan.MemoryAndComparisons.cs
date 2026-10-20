@@ -112,7 +112,7 @@ public sealed partial class LinearScan
                     ? indirection.AsStoreInd().Data.Type
                     : indirection.Type;
                 if ((mode.HasIndex && (mode.Offset != 0)) ||
-                    !Emitter.emitIns_valid_imm_for_ldst_offset(mode.Offset, (emitAttr)accessType.Size))
+                    !Emitter.emitIns_valid_imm_for_ldst_offset((long)mode.Offset, (emitAttr)accessType.Size))
                 {
                     _ = buildInternalIntRegisterDefForNode(indirection, _availableIntRegs);
                 }

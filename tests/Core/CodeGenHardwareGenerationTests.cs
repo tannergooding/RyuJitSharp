@@ -113,7 +113,7 @@ internal static class CodeGenHardwareGenerationTests
                 .Where(index => (index & mask) == index).Select(index => unchecked((sbyte)index))));
             var descriptors = CodeGenLocalHeapTests.AllDescriptors(firstGroup, codeGen);
             Assert.That(descriptors.Count(descriptor => descriptor.idIns() == INS_i_jmp), Is.EqualTo(1));
-            Assert.That(descriptors.Count(descriptor => descriptor.idIns() == INS_jmp), Is.EqualTo(cases.Count));
+            Assert.That(descriptors.Count(descriptor => descriptor.idIns() == INS_jmp), Is.EqualTo(cases.Count - 1));
             Assert.That(descriptors.Any(descriptor => descriptor.idIns() == INS_cmp), Is.EqualTo(max == 16));
             Assert.That(descriptors.Any(descriptor => descriptor.idIns() == INS_and), Is.EqualTo(mask != 255));
         });
@@ -141,6 +141,43 @@ internal static class CodeGenHardwareGenerationTests
             Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo(copyUpper ? (nint)4 : -1));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_XMM0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_XMM1));
+        });
+    }
+
+    [TestCase(true, 0, INS_mov)]
+    [TestCase(true, 8, INS_lea)]
+    [TestCase(false, 0, INS_lea)]
+    public static void LocalAddressUsesMoveOnlyForFinalZeroFrameOffset(
+        bool finalFrameLayout, int frameOffset, instruction expected)
+    {
+        Assume.That(Configuration.TARGET_XARCH);
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaCount = 1;
+            compiler.lvaTable =
+            [
+                new LclVarDsc
+                {
+                    Type = TYP_I_IMPL,
+                    lvOnFrame = true,
+                    lvFramePointerBased = true,
+                    StackOffset = frameOffset,
+                },
+            ];
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+            compiler.lvaDoneFrameLayout = finalFrameLayout
+                ? Compiler.FINAL_FRAME_LAYOUT
+                : Compiler.REGALLOC_FRAME_LAYOUT;
+            var firstGroup = codeGen.Emitter.emitCurIG;
+
+            codeGen.Emitter.emitIns_R_S(INS_lea, EA_PTRSIZE, REG_X64_RAX, 0, 0);
+
+            var descriptor = CodeGenLocalHeapTests.AllDescriptors(firstGroup, codeGen).Single();
+            Assert.That(descriptor.idIns(), Is.EqualTo(expected));
+            if (expected is INS_mov)
+            {
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
+            }
         });
     }
 

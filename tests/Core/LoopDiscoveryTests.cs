@@ -384,6 +384,10 @@ internal static unsafe class LoopDiscoveryTests
             var blocks = CreateGraph(compiler, bottomTested
                 ? [[1], [2], [1, 3], []]
                 : [[1], [2, 3], [1], []]);
+            if (!bottomTested)
+            {
+                blocks[0].SetFlags(BBF_DONT_REMOVE);
+            }
             compiler.lvaCount = 1;
             compiler.lvaTable = new LclVarDsc[1];
             compiler.lvaTable[0].Type = var_types.TYP_INT;
@@ -413,6 +417,7 @@ internal static unsafe class LoopDiscoveryTests
                 Assert.That(clonedStatement.TreeListBegin, Is.Null);
                 Assert.That(blocks[0].TrueEdge.Likelihood, Is.EqualTo(0.5));
                 Assert.That(blocks[0].FalseEdge.Likelihood, Is.EqualTo(0.5));
+                Assert.That(blocks[0].TrueTarget.HasFlag(BBF_DONT_REMOVE), Is.False);
             }
         });
     }

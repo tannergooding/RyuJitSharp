@@ -396,6 +396,7 @@ public partial class Compiler
         }
 
         var newPreheader = fgSplitBlockAtEnd(preheader);
+        newPreheader.RemoveFlags(BBF_DONT_REMOVE);
         var nonEnterBlock = fgSplitBlockAtBeginning(exit);
         JITDUMP($"New preheader is {FMT_BB(newPreheader.bbNum)}\n");
         JITDUMP($"Duplicated condition block is {FMT_BB(preheader.bbNum)}\n");

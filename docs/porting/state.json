@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
-    "targetObservedAt": "2026-10-13",
-    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
+    "targetCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6",
+    "targetObservedAt": "2026-10-20",
+    "reconciledCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "System.Private.Xml SetupEncoding is fixed: CEE_POP of a loaded struct now uses gtChangeOperToNullCheck, matching pinned native; focused ImporterEffectsTests passed 102 Debug and 95 Release tests. Managed, native, and native-repeat System.Private.Xml disassembly is byte-identical across 18,254 method headers and 3,901,136 code bytes. Next: continue the full CoreLib parity checkpoint at B526 (System.Double:Hypot FullDump assertion); keep the System.Collections value-numbering assertion, raw CoreLib comment/RWD blocks, and 144-method dynamic-TLS callback difference explicit.",
+    "nextAction": "System.Private.Xml SetupEncoding is fixed: CEE_POP of a loaded struct now uses gtChangeOperToNullCheck, matching pinned native; focused ImporterEffectsTests passed 102 Debug and 95 Release tests. Managed, native, and native-repeat System.Private.Xml disassembly is byte-identical across 18,254 method headers and 3,901,136 code bytes. Next: continue the full CoreLib parity checkpoint at B526 (System.Double:Hypot FullDump assertion); keep the System.Collections value-numbering assertion, raw CoreLib comment/RWD blocks, and 144-method dynamic-TLS callback difference explicit. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested; source reconciliation is not full runtime parity.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Fix and validate the managed System.Xml.XmlTextReaderImpl:SetupEncoding(System.Text.Encoding) importer regression against pinned native behavior.",
@@ -270,7 +270,12 @@
       "The broader LoongArch Target codegen selection is not a parity pass: the mixed selection failed 73/151 in Debug, and a narrower exploratory selection failed 4/12 Debug and 3/12 Release on unsupported/incomplete recording paths (tree-node and relocated-immediate expectations, helper calls stopping at unported RBM_ALLINT, and Debug GSCookie setup dereferencing an unset EE callback). Logs/TRX: artifacts\\logs\\LoongArchCodegenGuards.Debug.tests.log, artifacts\\tst\\LoongArchCodegenGuards\\Debug\\LoongArchCodegenGuards.Debug.trx, and artifacts\\logs\\LoongArchCodegenGuards.Focused.Debug.tests.log / Release equivalent with matching TRX files.",
       "The packet's focused ARM64 selections pass in Debug and Release. Broader compile-blocker fixture probes are not acceptance evidence: xarch return tests fail under win-arm64 at unsupported REG_RAX, the Release HWIntrinsicDispatch test host crashes at ICorJitInfo.getArgClass on an unported immediate path, and broader LinearScanDefinitionConstructionTests expose upper-vector-save assertion failures. Targeted supported selections and Linux x64 Swift tests pass; retain those broader failures for full-oracle triage after the inventory is complete. See artifacts\\jit-analysis\\inventory\\scalable-config-closure-evidence-20261016.json.",
       "The 300-candidate packet's linux-loongarch64 Target selection failed the three EveryBarrierKindRecordsAnInstruction cases in Debug and Release at the explicit unsupported memory-barrier path in CodeGen.Atomics.cs. The same three cases and exception reproduce on immutable baseline cf68332a; CodeGen.Atomics.cs is unchanged, and tests/Targets/LoongArchBlockMemoryCodeGenTests.cs changed only namespace. Do not claim a clean LoongArch pass; no target behavior changed. Logs: artifacts\\conditional-cleanup\\batch-300-cf68332a\\Target.linux-loongarch64.Debug.acceptance.log and Release equivalent; baseline comparison: artifacts\\conditional-cleanup\\batch-300-cf68332a\\results\\baseline-loongarch\\.",
-      "The conditional-cleanup-300-fe9347da packet completed with 193 new conversions, 6 candidates reconciled as already satisfied at baseline, and 101 concrete deferrals. Full-analysis Core Debug/Release builds passed; combined Core selections passed 361/361 with 9 skipped in Debug and 247/247 with 10 skipped in Release. Twelve of sixteen Target selections had zero failures. The four win-arm/win-arm64 Debug/Release failure sets matched focused runs on baseline fe9347da exactly; these are recorded failures, not an all-passing Target matrix. Pinned-native parity was not run. Acceptance and failure names: artifacts\\conditional-cleanup\\batch-300-fe9347da\\validation\\batch-acceptance.json; matrix logs: artifacts\\conditional-cleanup\\batch-300-fe9347da\\validation\\target-matrix-final2-summary.txt; baseline TRX: artifacts\\conditional-cleanup\\batch-300-fe9347da\\validation\\baseline-fe9347da-explicit\\."
+      "The conditional-cleanup-300-fe9347da packet completed with 193 new conversions, 6 candidates reconciled as already satisfied at baseline, and 101 concrete deferrals. Full-analysis Core Debug/Release builds passed; combined Core selections passed 361/361 with 9 skipped in Debug and 247/247 with 10 skipped in Release. Twelve of sixteen Target selections had zero failures. The four win-arm/win-arm64 Debug/Release failure sets matched focused runs on baseline fe9347da exactly; these are recorded failures, not an all-passing Target matrix. Pinned-native parity was not run. Acceptance and failure names: artifacts\\conditional-cleanup\\batch-300-fe9347da\\validation\\batch-acceptance.json; matrix logs: artifacts\\conditional-cleanup\\batch-300-fe9347da\\validation\\target-matrix-final2-summary.txt; baseline TRX: artifacts\\conditional-cleanup\\batch-300-fe9347da\\validation\\baseline-fe9347da-explicit\\.",
+      "Full-analysis Core build succeeded; the suite completed with 17,751 passed and the same 3 clean-baseline failures: EmitterDataSectionOutputTests.FloatingDataDumpRetainsBitPatternsAndDecimalComments, HWIntrinsicDispatchTests.GatherImmediateRejectsInvalidScaleWithoutPopping, and LinearScanEdgeResolutionTests.ResolveTypeDiagnosticNamesMatchEnumOrder. Current log: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-17_01_17_12_net11.0.trx; clean-baseline log: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-15_01_32_36_net11.0.trx.",
+      "Focused browser-wasm tests selected by FullyQualifiedName~Wasm passed in Debug (198/198) and Release (193/193); logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-16_01_30_21_net11.0.trx and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-16_01_30_25_net11.0.trx. The broader Debug Target suite had 10 shared ArithmeticMorphTests failures and aborted on an ImporterCallTests host crash; the same failures and crash reproduced at clean HEAD f96b8aff82106ab3ee5ec0f94d352d736d83e8c9, so it is not reported as a pass.",
+      "The broad win-arm64 Debug baseline remains 10 failures (4 scalable TYP_SIMD clone, 3 embedded-FMA, 2 constant-count intrinsic, 1 jump-table) and 2 not executed; it is not reported as passing or attributed to this refresh.",
+      "Focused oracle-refresh checks passed after the final changes: Debug Core comparison/loop-hoisting/range/method-name tests (119/119), plus selected win-arm64 target tests in Debug (94/94) and Release (86/86). Logs: artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-17_01_16_09_net11.0.trx, artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-17_01_16_38_net11.0.trx, and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-17_01_16_36_net11.0.trx. The Core Release test-project build stopped before execution on errors in unrelated tests/Core/RedundantZeroInitTests.cs:315 (missing DEBUG-only field) and tests/Core/DiscretionaryPolicyTests.cs:467 (CA1812); the selected target Release tests completed.",
+      "2026-10-20 oracle refresh validation: full-analysis Debug solution build succeeded; all directly affected Core Debug tests passed (312/312; artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-20_01_23_13_net11.0.trx); focused Wasm GC-array address target tests passed in Debug and Release (1/1 each; artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-10-20_01_28_21_net11.0.trx and artifacts\\tst\\Release\\tagoo_GOODING-ZEN4_2026-10-20_01_28_28_net11.0.trx); Release Core compiler builds succeeded for the host and browser-wasm targets. The full-analysis Release solution build remains blocked before test execution by the existing unrelated CS1061 at tests/Core/RedundantZeroInitTests.cs:315 and CA1812 at tests/Core/DiscretionaryPolicyTests.cs:467."
     ],
     "parityEvidence": {
       "asyncResumeCodegen": {
@@ -1306,6 +1311,155 @@
         "sources\\Core\\jit\\lower\\Lowering.HardwareIntrinsics.cs"
       ],
       "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
+    },
+    {
+      "area": "symbolic-checked-bound-ranges",
+      "native": [
+        "src\\coreclr\\jit\\assertionprop.cpp",
+        "src\\coreclr\\jit\\rangecheck.cpp",
+        "src\\coreclr\\jit\\rangecheck.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.AssertionBounds.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.Assertions.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeCheck.Ssa.cs",
+        "sources\\Core\\jit\\rangecheck\\RangeOps.cs"
+      ],
+      "sourceCommit": "d80abfc4b04f85722596e8d83af7f9a61dcf49da"
+    },
+    {
+      "area": "open-generic-method-signature-diagnostics",
+      "native": [
+        "src\\coreclr\\jit\\eeinterface.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.ee.cs",
+        "tests\\Core\\MethodNameFormattingTests.cs"
+      ],
+      "sourceCommit": "d80abfc4b04f85722596e8d83af7f9a61dcf49da"
+    },
+    {
+      "area": "wasm-frame-identity",
+      "native": [
+        "src\\coreclr\\jit\\codegenwasm.cpp",
+        "src\\coreclr\\jit\\compiler.h",
+        "src\\coreclr\\jit\\emitwasm.cpp",
+        "src\\coreclr\\jit\\lclvars.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmProlog.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.WasmVirtualIP.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.lva.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmDiagnostics.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmInstructionOutput.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmSizing.cs"
+      ],
+      "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
+    },
+    {
+      "area": "wasm-reference-spill-order",
+      "native": [
+        "src\\coreclr\\jit\\fgwasm.cpp",
+        "src\\coreclr\\jit\\regallocwasm.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.WasmSpillRefs.cs",
+        "sources\\Core\\jit\\regallocwasm\\WasmRegAlloc.ReferenceCollection.cs"
+      ],
+      "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
+    },
+    {
+      "area": "wasm-nativeaot-address-relocations",
+      "native": [
+        "src\\coreclr\\jit\\codegenwasm.cpp",
+        "src\\coreclr\\jit\\emitwasm.cpp",
+        "src\\coreclr\\jit\\lowerwasm.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmConstants.cs",
+        "sources\\Core\\jit\\codegenwasm\\CodeGen.WasmNodeDispatch.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmInstructionOutput.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmSizing.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Indirections.cs",
+        "tests\\Core\\WasmCallArgumentMorphTests.cs",
+        "tests\\Targets\\WasmEmitterOutputTests.cs"
+      ],
+      "sourceCommit": "91b63bf88257142d4ffcb61d1728659ee0a51064"
+    },
+    {
+      "area": "importercalls-managed-importer-partial",
+      "native": [
+        "src\\coreclr\\jit\\importercalls.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.imp.cs"
+      ],
+      "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
+    },
+    {
+      "area": "assertion-propagation",
+      "native": [
+        "src\\coreclr\\jit\\assertionprop.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.ap.Creation.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.ap.Generation.cs"
+      ],
+      "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "async-stack-only-liveness",
+      "native": [
+        "src\\coreclr\\jit\\asyncanalysis.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.AsyncTransformation.Analysis.cs"
+      ],
+      "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "nullable-r2r-boxing",
+      "native": [
+        "src\\coreclr\\jit\\importer.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.imp.cs"
+      ],
+      "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "wasm-array-address-morph",
+      "native": [
+        "src\\coreclr\\jit\\morph.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.fg.AddressMorph.cs",
+        "tests\\Core\\WasmCallArgumentMorphTests.cs"
+      ],
+      "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "loop-inversion-preheader-removability",
+      "native": [
+        "src\\coreclr\\jit\\optimizer.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.LoopInversion.cs",
+        "tests\\Core\\LoopDiscoveryTests.cs"
+      ],
+      "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    },
+    {
+      "area": "helper-nonnull-return-metadata",
+      "native": [
+        "src\\coreclr\\jit\\utils.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\other\\Extensions\\CorInfoHelpFuncExtensions.cs",
+        "tests\\Core\\AssertionTests.cs"
+      ],
+      "sourceCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
     }
   ],
   "generatorInputMapping": {
@@ -1316,8 +1470,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
+    "targetInputCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6",
+    "reconciledCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",
