@@ -191,11 +191,12 @@ internal static unsafe class RegisterMaskNumericOperationsTests
 
     private static regMaskTP CreateMask(ulong lower, ulong upper)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
-#else
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            return new regMaskTP(unchecked((regMask)lower), unchecked((regMask)upper));
+        }
+
         return new regMaskTP(unchecked((regMask)lower));
-#endif
     }
 
     private static int s_assertions;

@@ -95,7 +95,6 @@ internal static class Arm64SveInstructionCodeTests
         Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sve_st1q) - invalidOrdinal, Is.EqualTo(605));
     }
 
-#if DEBUG && TARGET_ARM64
     [TestCase(INS_sve_mov)]
     [TestCase(INS_sve_abs)]
     public static void WrongFormatRetainsNativeAssertionAndBadCodeContinuation(instruction ins)
@@ -124,7 +123,6 @@ internal static class Arm64SveInstructionCodeTests
         ]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }
-#endif
 
     private static void RequireArm64()
     {

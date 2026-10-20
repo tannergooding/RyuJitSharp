@@ -5,14 +5,6 @@
     <TargetFramework>net11.0</TargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'x64'">
-    <DefineConstants>$(DefineConstants);IMUL_TEST_AMD64</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'x86'">
-    <DefineConstants>$(DefineConstants);IMUL_TEST_X86</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj">
       <Aliases>global,RyuJitSharpCore</Aliases>
@@ -197,14 +189,6 @@
     <Compile Include="..\Core\RiscVLoweringPortTests.cs" Link="RiscVLoweringPortTests.cs" />
     <Compile Include="..\Core\RiscVEmitterFlagsOverloadTests.cs" Link="RiscVEmitterFlagsOverloadTests.cs" />
   </ItemGroup>
-
-  <PropertyGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
-    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RyuJitEnableWasmProfilingTests)' == 'true' and '$(TargetRuntimeIdentifier)' == 'browser-wasm'">
-    <DefineConstants>$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
     <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
