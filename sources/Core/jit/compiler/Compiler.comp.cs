@@ -604,19 +604,22 @@ public partial class Compiler
 
         InitializeClrApiTimingProxy();
 
-        var pTmpJitFuncInfoFilenameUtf8 = JitConfig.JitFuncInfoFile;
-
-        if (pTmpJitFuncInfoFilenameUtf8 is not null)
+        if (Configuration.FUNC_INFO_LOGGING)
         {
-            var pOldFuncInfoFileNameUtf8 = (byte*)(Interlocked.CompareExchange(ref compJitFuncInfoFilename, (nint)(pTmpJitFuncInfoFilenameUtf8), 0));
+            var pTmpJitFuncInfoFilenameUtf8 = JitConfig.JitFuncInfoFile;
 
-            if (pOldFuncInfoFileNameUtf8 is null)
+            if (pTmpJitFuncInfoFilenameUtf8 is not null)
             {
-                var tmpJitFuncInfoFilenameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTmpJitFuncInfoFilenameUtf8);
-                var tmpJitFuncInfoFilename = Encoding.UTF8.GetString(tmpJitFuncInfoFilenameUtf8);
+                var pOldFuncInfoFileNameUtf8 = (byte*)(Interlocked.CompareExchange(ref compJitFuncInfoFilename, (nint)(pTmpJitFuncInfoFilenameUtf8), 0));
 
-                assert(compJitFuncInfoFile is null);
-                compJitFuncInfoFile = new JitTextWriter(tmpJitFuncInfoFilename, append: true);
+                if (pOldFuncInfoFileNameUtf8 is null)
+                {
+                    var tmpJitFuncInfoFilenameUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTmpJitFuncInfoFilenameUtf8);
+                    var tmpJitFuncInfoFilename = Encoding.UTF8.GetString(tmpJitFuncInfoFilenameUtf8);
+
+                    assert(compJitFuncInfoFile is null);
+                    compJitFuncInfoFile = new JitTextWriter(tmpJitFuncInfoFilename, append: true);
+                }
             }
         }
 
@@ -3967,7 +3970,7 @@ public partial class Compiler
         compFunctionTraceEnd(methodCodePtr, methodCodeSize, isNyi: false);
         JITDUMP($"Method code size: {methodCodeSize}\n");
 
-        if (compJitFuncInfoFile is not null)
+        if (Configuration.FUNC_INFO_LOGGING && (compJitFuncInfoFile is not null))
         {
             assert(!compIsForInlining);
             if (Configuration.DEBUG)

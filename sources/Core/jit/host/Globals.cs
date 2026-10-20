@@ -161,7 +161,7 @@ public partial class Globals
 
             jitstdout().Flush();
 
-            if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
+            if (Configuration.FUNC_INFO_LOGGING && (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile))
             {
                 compJitFuncInfoFile.WriteLine($"{((compiler is null) ? "UNKNOWN" : compiler.info.compFullName)} - Assertion failed ({filePath}:{lineNumber} - {reason}) during {phaseName}");
             }

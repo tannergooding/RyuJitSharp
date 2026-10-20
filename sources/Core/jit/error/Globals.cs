@@ -300,29 +300,29 @@ public partial class Globals
             return;
         }
 
-        if (Configuration.DEBUG)
+        if (Configuration.FUNC_INFO_LOGGING)
         {
-            ref var logEnv = ref JitTls.LogEnv;
-
-            if (logEnv.Compiler is not null)
+            if (Configuration.DEBUG)
             {
-                compiler = logEnv.Compiler;
+                ref var logEnv = ref JitTls.LogEnv;
 
-                if (compiler.verbose)
+                if (logEnv.Compiler is not null)
                 {
-                    jitprintf($"\n\n{compiler.info.compFullName} - NYI ({filePath}:{lineNumber} - {message})\n");
+                    compiler = logEnv.Compiler;
+
+                    if (compiler.verbose)
+                    {
+                        jitprintf($"\n\n{compiler.info.compFullName} - NYI ({filePath}:{lineNumber} - {message})\n");
+                    }
+                }
+
+                if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
+                {
+                    compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - NYI ({filePath}:{lineNumber} - {message})");
+                    compJitFuncInfoFile.Flush();
                 }
             }
-
-            if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
-            {
-                compJitFuncInfoFile.WriteLine($"{((logEnv.Compiler is null) ? "UNKNOWN" : logEnv.Compiler.info.compFullName)} - NYI ({filePath}:{lineNumber} - {message})");
-                compJitFuncInfoFile.Flush();
-            }
-        }
-        else
-        {
-            if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
+            else if (Compiler.compJitFuncInfoFile is StreamWriter compJitFuncInfoFile)
             {
                 compJitFuncInfoFile.WriteLine($"NYI ({filePath}:{lineNumber} - {message})");
                 compJitFuncInfoFile.Flush();

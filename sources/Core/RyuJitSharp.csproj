@@ -281,6 +281,9 @@
     <!-- EMITTER_STATS: Collect stats on the emitter. -->
     <!-- <DefineConstants>$(DefineConstants);EMITTER_STATS</DefineConstants> -->
 
+    <!-- FUNC_INFO_LOGGING: Enable per-function and NYI logging. -->
+    <!-- <DefineConstants>$(DefineConstants);FUNC_INFO_LOGGING</DefineConstants> -->
+
     <!-- MEASURE_BLOCK_SIZE: Collect stats about basic block and FlowEdge node sizes and memory allocations. -->
     <!-- <DefineConstants>$(DefineConstants);MEASURE_BLOCK_SIZE</DefineConstants> -->
 
