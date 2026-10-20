@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_WASM && FEATURE_READYTORUN
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,6 +14,11 @@ internal static unsafe class WasmClassInitializationTests
     [TestCase(true)]
     public static void SharedClassConstructorUsesCoreClrOnlyWasmFallback(bool nativeAot)
     {
+        if (!Configuration.TARGET_WASM || !Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("The test requires a WebAssembly target with ReadyToRun support.");
+        }
+
 #if DEBUG
         using var jitTls = new JitTls(null);
 #endif
@@ -98,4 +102,3 @@ internal static unsafe class WasmClassInitializationTests
         return 1;
     }
 }
-#endif

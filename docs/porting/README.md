@@ -476,10 +476,14 @@ smallest relevant test selection and verify the expected executed count.
 Focused output tests do not establish compiler coverage. NativeAOT publish and
 native loading are separate gates from these managed builds.
 
-Both test projects obtain compilation symbols from the referenced core project
-before compiling. Target- and feature-guarded tests therefore use the
-implementation's actual configuration, rather than a separate symbol list.
-The target project remains an explicit project selection, outside the solution.
+The test projects do not forward JIT configuration symbols into compilation.
+`tests\Directory.Build.targets` supplies runtime host configuration options for
+target and feature switches used by untrimmed tests; NativeAOT substitutions
+specialize the compiler assembly during publication. The generated
+target-specific substitution XML is embedded as `ILLink.Substitutions.xml`.
+`TARGET_64BIT` remains solely to preserve the target-width
+`CORINFO_AsyncResumeInfo` ABI layout. The target project remains an explicit
+project selection, outside the solution.
 
 `AnalysisModeStyle=Default` preserves the prior style-rule selection: .NET 11
 otherwise also applies `AnalysisLevel=latest-all` to style diagnostics. Explicit

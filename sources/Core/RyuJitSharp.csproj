@@ -2,8 +2,6 @@
 <!-- Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information. -->
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Target Name="GetRyuJitCompileConstants" Returns="$(DefineConstants)" />
-
   <ItemGroup>
     <InternalsVisibleTo Include="RyuJitSharp.UnitTests" />
     <InternalsVisibleTo Include="RyuJitSharp.Target.UnitTests" />
@@ -14,6 +12,7 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <RuntimeIdentifiers>linux-arm64;linux-x64;osx-arm64;win-arm64;win-x64;win-x86</RuntimeIdentifiers>
     <TargetFramework>net11.0</TargetFramework>
+    <RyuJitVerifyGcTables Condition="'$(RyuJitVerifyGcTables)' == ''">false</RyuJitVerifyGcTables>
   </PropertyGroup>
 
   <!-- Release keeps debugger support and exception messages, but omits stack-trace data for size. -->
@@ -58,43 +57,11 @@
     <RyuJitHostRuntimeIdentifier>$(RuntimeIdentifier)</RyuJitHostRuntimeIdentifier>
     <RyuJitTargetRuntimeIdentifier Condition="'$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' != ''">$(TargetRuntimeIdentifier)</RyuJitTargetRuntimeIdentifier>
     <RyuJitTargetRuntimeIdentifier Condition="'$(RyuJitTargetRuntimeIdentifier)' == ''">$(RyuJitHostRuntimeIdentifier)</RyuJitTargetRuntimeIdentifier>
-    <RyuJitSubstitutionsFile>$(MSBuildProjectDirectory)\ILLink.Substitutions\ILLink.Substitutions.$(RyuJitTargetRuntimeIdentifier).xml</RyuJitSubstitutionsFile>
-    <RyuJitLateDisasmSubstitutionsFile>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\ILLink.Substitutions.LATE_DISASM.$(RyuJitTargetRuntimeIdentifier).xml</RyuJitLateDisasmSubstitutionsFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="ILLink.Substitutions\*.xml" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(PublishAot)' == 'true'">
-    <IlcArg Include="--substitution:&quot;$(RyuJitSubstitutionsFile)&quot;" />
-    <IlcArg Include="--substitution:&quot;$(RyuJitLateDisasmSubstitutionsFile)&quot;" />
-  </ItemGroup>
-
-  <Target Name="ValidateRyuJitSubstitutions" BeforeTargets="PrepareForPublish" DependsOnTargets="WriteRyuJitLateDisasmSubstitution" Condition="'$(PublishAot)' == 'true'">
-    <Error Condition="!Exists('$(RyuJitSubstitutionsFile)')" Text="No ILLink substitutions are defined for RyuJit target RID '$(RyuJitTargetRuntimeIdentifier)'." />
-    <Error Condition="!Exists('$(RyuJitLateDisasmSubstitutionsFile)')" Text="No LATE_DISASM substitution was generated for RyuJit target RID '$(RyuJitTargetRuntimeIdentifier)'." />
-  </Target>
-
   <Target Name="ValidateRyuJitGcTableVerificationConfiguration" BeforeTargets="CoreCompile">
-    <Error Condition="'$(Configuration)' != 'Debug' and $(DefineConstants.Contains('VERIFY_GC_TABLES'))"
+    <Error Condition="'$(Configuration)' != 'Debug' and '$(RyuJitVerifyGcTables)' == 'true'"
            Text="VERIFY_GC_TABLES requires the Debug configuration." />
-  </Target>
-
-  <Target Name="WriteRyuJitLateDisasmSubstitution" BeforeTargets="PrepareForPublish" Condition="'$(PublishAot)' == 'true'">
-    <MakeDir Directories="$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)" />
-    <WriteLinesToFile File="$(RyuJitLateDisasmSubstitutionsFile)" Lines="@(RyuJitLateDisasmSubstitutionLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
-  </Target>
-
-  <!-- ILC tracks the response-file timestamp, not the external substitutions file itself. -->
-  <Target Name="TrackRyuJitSubstitutionChanges"
-          BeforeTargets="IlcCompile"
-          DependsOnTargets="WriteRyuJitLateDisasmSubstitution"
-          Inputs="$(RyuJitSubstitutionsFile);$(RyuJitLateDisasmSubstitutionsFile)"
-          Outputs="$(IntermediateOutputPath)ILLink.Substitutions.$(RyuJitTargetRuntimeIdentifier).stamp"
-          Condition="'$(PublishAot)' == 'true'">
-    <Touch Files="@(ManagedBinary->'%(IlcRspFile)')" AlwaysCreate="true" />
-    <Touch Files="$(IntermediateOutputPath)ILLink.Substitutions.$(RyuJitTargetRuntimeIdentifier).stamp" AlwaysCreate="true" />
   </Target>
 
   <!-- Extract the OS and architecture from the host runtime identifier -->
@@ -211,95 +178,600 @@
     <RyuJitTargetIsXarch Condition="'$(RyuJitTargetArchitecture)' == 'x64'">true</RyuJitTargetIsXarch>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <DefineConstants Condition="'$(RyuJitTargetIs64Bit)' == 'true'">$(DefineConstants);TARGET_64BIT</DefineConstants>
+  <!-- TARGET_64BIT selects the width of the native-facing CORINFO_AsyncResumeInfo fields. -->
+  <PropertyGroup Condition="'$(RyuJitTargetIs64Bit)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_64BIT</DefineConstants>
   </PropertyGroup>
 
-  <!-- Defines that are on by default -->
-
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <!-- DUMP_FLOWGRAPHS: Support for creating Xml Flowgraph reports in *.fgx files -->
-    <DefineConstants>$(DefineConstants);DUMP_FLOWGRAPHS</DefineConstants>
-
-    <!-- DUMP_GC_TABLES -->
-    <DefineConstants>$(DefineConstants);DUMP_GC_TABLES</DefineConstants>
-
-    <!-- TRACK_LSRA_STATS: Collect LSRA stats -->
-    <DefineConstants>$(DefineConstants);TRACK_LSRA_STATS</DefineConstants>
-    
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RyuJitFeatureLateDisasm Condition="'$(Configuration)' == 'Debug' and ('$(RyuJitTargetIsArmarch)' == 'true' or '$(RyuJitTargetIsXarch)' == 'true')">true</RyuJitFeatureLateDisasm>
-    <RyuJitFeatureLateDisasm Condition="'$(RyuJitTargetArchitecture)' == 'arm64' and '$(RyuJitEnableArm64LateDisasm)' == 'true'">true</RyuJitFeatureLateDisasm>
-    <RyuJitFeatureLateDisasm Condition="'$(RyuJitFeatureLateDisasm)' == ''">false</RyuJitFeatureLateDisasm>
-  </PropertyGroup>
+  <!-- Add substitution conditions for the host OS and architecture -->
 
   <ItemGroup>
-    <RyuJitLateDisasmSubstitutionLine Include="&lt;linker&gt;" />
-    <RyuJitLateDisasmSubstitutionLine Include="  &lt;assembly fullname=&quot;RyuJitSharp&quot;&gt;" />
-    <RyuJitLateDisasmSubstitutionLine Include="    &lt;type fullname=&quot;RyuJitSharp.Configuration&quot;&gt;" />
-    <RyuJitLateDisasmSubstitutionLine Include="      &lt;method signature=&quot;System.Boolean get_LATE_DISASM()&quot; body=&quot;stub&quot; value=&quot;$(RyuJitFeatureLateDisasm)&quot; /&gt;" />
-    <RyuJitLateDisasmSubstitutionLine Include="    &lt;/type&gt;" />
-    <RyuJitLateDisasmSubstitutionLine Include="  &lt;/assembly&gt;" />
-    <RyuJitLateDisasmSubstitutionLine Include="&lt;/linker&gt;" />
+    <RyuJitSubstitutionEnabled Include="HOST_ARM" Condition="'$(RyuJitHostIsArm)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="HOST_ARMARCH" Condition="'$(RyuJitHostIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="HOST_XARCH" Condition="'$(RyuJitHostIsXarch)' == 'true'" />
+
+    <RyuJitSubstitutionEnabled Include="HOST_ARMV6" Condition="'$(RyuJitHostArchitecture)' == 'armv6'" />
+    <RyuJitSubstitutionEnabled Include="HOST_ARM64" Condition="'$(RyuJitHostArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="HOST_LOONGARCH64" Condition="'$(RyuJitHostArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="HOST_MIPS64" Condition="'$(RyuJitHostArchitecture)' == 'mips64'" />
+    <RyuJitSubstitutionEnabled Include="HOST_POWERPC64" Condition="'$(RyuJitHostArchitecture)' == 'ppc64le'" />
+    <RyuJitSubstitutionEnabled Include="HOST_RISCV64" Condition="'$(RyuJitHostArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="HOST_S390X" Condition="'$(RyuJitHostArchitecture)' == 's390x'" />
+    <RyuJitSubstitutionEnabled Include="HOST_WASM" Condition="'$(RyuJitHostArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="HOST_WASM32" Condition="'$(RyuJitHostArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="HOST_AMD64" Condition="'$(RyuJitHostArchitecture)' == 'x64'" />
+    <RyuJitSubstitutionEnabled Include="HOST_X86" Condition="'$(RyuJitHostArchitecture)' == 'x86'" />
+
+    <RyuJitSubstitutionEnabled Include="HOST_32BIT" Condition="'$(RyuJitHostIs32Bit)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="HOST_64BIT" Condition="'$(RyuJitHostIs64Bit)' == 'true'" />
+
+    <RyuJitSubstitutionEnabled Include="HOST_APPLE" Condition="'$(RyuJitHostIsApple)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="HOST_UNIX" Condition="'$(RyuJitHostIsUnix)' == 'true'" />
+
+    <RyuJitSubstitutionEnabled Include="HOST_ANDROID" Condition="'$(RyuJitHostOS)' == 'android'" />
+    <RyuJitSubstitutionEnabled Include="HOST_BROWSER" Condition="'$(RyuJitHostOS)' == 'browser'" />
+    <RyuJitSubstitutionEnabled Include="HOST_IOS" Condition="'$(RyuJitHostOS)' == 'ios'" />
+    <RyuJitSubstitutionEnabled Include="HOST_FREEBSD" Condition="'$(RyuJitHostOS)' == 'freebsd'" />
+    <RyuJitSubstitutionEnabled Include="HOST_HAIKU" Condition="'$(RyuJitHostOS)' == 'haiku'" />
+    <RyuJitSubstitutionEnabled Include="HOST_ILLUMOS" Condition="'$(RyuJitHostOS)' == 'illumos'" />
+    <RyuJitSubstitutionEnabled Include="HOST_LINUX" Condition="'$(RyuJitHostOS)' == 'linux'" />
+    <RyuJitSubstitutionEnabled Include="HOST_LINUX_MUSL" Condition="'$(RyuJitHostOS)' == 'linux-musl'" />
+    <RyuJitSubstitutionEnabled Include="HOST_MACCATALYST" Condition="'$(RyuJitHostOS)' == 'maccatalyst'" />
+    <RyuJitSubstitutionEnabled Include="HOST_NETBSD" Condition="'$(RyuJitHostOS)' == 'netbsd'" />
+    <RyuJitSubstitutionEnabled Include="HOST_OPENBSD" Condition="'$(RyuJitHostOS)' == 'openbsd'" />
+    <RyuJitSubstitutionEnabled Include="HOST_OSX" Condition="'$(RyuJitHostOS)' == 'osx'" />
+    <RyuJitSubstitutionEnabled Include="HOST_SUNOS" Condition="'$(RyuJitHostOS)' == 'sunos'" />
+    <RyuJitSubstitutionEnabled Include="HOST_TVOS" Condition="'$(RyuJitHostOS)' == 'tvos'" />
+    <RyuJitSubstitutionEnabled Include="HOST_UNIX" Condition="'$(RyuJitHostOS)' == 'unix'" />
+    <RyuJitSubstitutionEnabled Include="HOST_WASI" Condition="'$(RyuJitHostOS)' == 'wasi'" />
+    <RyuJitSubstitutionEnabled Include="HOST_WINDOWS" Condition="'$(RyuJitHostOS)' == 'win'" />
   </ItemGroup>
 
-  
-  <!-- Defines that are off by default -->
+  <!-- Add substitution conditions for the target OS and architecture -->
 
-  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+  <ItemGroup>
+    <RyuJitSubstitutionEnabled Include="TARGET_ARM" Condition="'$(RyuJitTargetIsArm)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_ARMARCH" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_XARCH" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+
+    <RyuJitSubstitutionEnabled Include="TARGET_ARMV6" Condition="'$(RyuJitTargetArchitecture)' == 'armv6'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_ARM64" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_LOONGARCH64" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_MIPS64" Condition="'$(RyuJitTargetArchitecture)' == 'mips64'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_POWERPC64" Condition="'$(RyuJitTargetArchitecture)' == 'ppc64le'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_RISCV64" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_S390X" Condition="'$(RyuJitTargetArchitecture)' == 's390x'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_WASM" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_WASM32" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_AMD64" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_X86" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <RyuJitSubstitutionEnabled Include="TARGET_32BIT" Condition="'$(RyuJitTargetIs32Bit)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_64BIT" Condition="'$(RyuJitTargetIs64Bit)' == 'true'" />
+
+    <RyuJitSubstitutionEnabled Include="TARGET_APPLE" Condition="'$(RyuJitTargetIsApple)' == 'true'" />
+    <!-- Native target.h enables FEATURE_CFI_SUPPORT when TARGET_UNIX_POSSIBLY_SUPPORTED is set. -->
+    <RyuJitSubstitutionEnabled Include="TARGET_UNIX" Condition="'$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_UNIX_POSSIBLY_SUPPORTED" Condition="'$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_CFI_SUPPORT" Condition="'$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_OS_RUNTIMEDETERMINED" Condition="'$(RyuJitTargetOS)' == 'anyos'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_UNIX_POSSIBLY_SUPPORTED" Condition="'$(RyuJitTargetOS)' == 'anyos'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_WINDOWS_POSSIBLY_SUPPORTED" Condition="'$(RyuJitTargetOS)' == 'anyos'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_CFI_SUPPORT" Condition="'$(RyuJitTargetOS)' == 'anyos'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_ANDROID" Condition="'$(RyuJitTargetOS)' == 'android'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_BROWSER" Condition="'$(RyuJitTargetOS)' == 'browser'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_IOS" Condition="'$(RyuJitTargetOS)' == 'ios'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_FREEBSD" Condition="'$(RyuJitTargetOS)' == 'freebsd'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_HAIKU" Condition="'$(RyuJitTargetOS)' == 'haiku'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_ILLUMOS" Condition="'$(RyuJitTargetOS)' == 'illumos'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_LINUX" Condition="'$(RyuJitTargetOS)' == 'linux'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_LINUX_MUSL" Condition="'$(RyuJitTargetOS)' == 'linux-musl'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_MACCATALYST" Condition="'$(RyuJitTargetOS)' == 'maccatalyst'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_NETBSD" Condition="'$(RyuJitTargetOS)' == 'netbsd'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_OPENBSD" Condition="'$(RyuJitTargetOS)' == 'openbsd'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_OSX" Condition="'$(RyuJitTargetOS)' == 'osx'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_SUNOS" Condition="'$(RyuJitTargetOS)' == 'sunos'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_TVOS" Condition="'$(RyuJitTargetOS)' == 'tvos'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_OS_RUNTIMEDETERMINED" Condition="'$(RyuJitTargetOS)' == 'unix'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_UNIX_ANYOS" Condition="'$(RyuJitTargetOS)' == 'unix'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_UNIX_OS_RUNTIMEDETERMINED" Condition="'$(RyuJitTargetOS)' == 'unix'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_WASI" Condition="'$(RyuJitTargetOS)' == 'wasi'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_WINDOWS" Condition="'$(RyuJitTargetOS)' == 'win'" />
+    <RyuJitSubstitutionEnabled Include="TARGET_WINDOWS_POSSIBLY_SUPPORTED" Condition="'$(RyuJitTargetOS)' == 'win'" />
+  </ItemGroup>
+
+  <!-- Add fixed host-based substitution conditions -->
+
+  <ItemGroup>
+    <RyuJitSubstitutionEnabled Include="BIGENDIAN" Condition="'$(RyuJitHostArchitecture)' == 's390x'" />
+  </ItemGroup>
+
+  <!-- Add fixed target-based substitution conditions -->
+
+  <ItemGroup>
+    <!-- ABIs -->
+    <RyuJitSubstitutionEnabled Include="UNIX_ARM_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'arm' and '$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="OSX_ARM64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'arm64' and '$(RyuJitTargetIsApple)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="UNIX_AMD64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="WINDOWS_AMD64_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'" />
+    <RyuJitSubstitutionEnabled Include="UNIX_X86_ABI" Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetIsUnix)' == 'true'" />
+
+    <!-- ALIGN_SIMD_TYPES: Whether SIMD type locals are to be aligned -->
+    <RyuJitSubstitutionEnabled Include="ALIGN_SIMD_TYPES" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="ALIGN_SIMD_TYPES" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+    <RyuJitSubstitutionEnabled Include="ALIGN_SIMD_TYPES" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- CPU_HAS_BYTE_REGS -->
+    <RyuJitSubstitutionEnabled Include="CPU_HAS_BYTE_REGS" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- CPU_LOAD_STORE_ARCH -->
+    <RyuJitSubstitutionEnabled Include="CPU_LOAD_STORE_ARCH" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="CPU_LOAD_STORE_ARCH" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="CPU_LOAD_STORE_ARCH" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="CPU_LOAD_STORE_ARCH" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+
+    <!-- DOUBLE_ALIGN -->
+    <!--   This aligns ESP to 0 mod 8 in function prolog, then uses ESP to reference locals, EBP to reference parameters. -->
+    <!--   It only makes sense if frameless method support is on (frameless method support is now always on) -->
+    <RyuJitSubstitutionEnabled Include="DOUBLE_ALIGN" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- EMIT_TRACK_STACK_DEPTH -->
+    <RyuJitSubstitutionEnabled Include="EMIT_TRACK_STACK_DEPTH" Condition="'$(RyuJitTargetArchitecture)' != 'wasm'" />
+
+    <!-- ETW_EBP_FRAMED: We cannot use REG as a scratch register and must create REG based frames for most methods-->
+    <RyuJitSubstitutionEnabled Include="ETW_EBP_FRAMED" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="ETW_EBP_FRAMED" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="ETW_EBP_FRAMED" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="ETW_EBP_FRAMED" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="ETW_EBP_FRAMED" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- FEATURE_ARG_SPLIT -->
+    <!--   Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from the official Arm64 ABI. -->
+    <!--   Case: splitting 16 byte struct between x7 and stack -->
+    <!--   LoongArch64's ABI supports FEATURE_ARG_SPLIT which splitting 16 byte struct between a7 and stack. -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_ARG_SPLIT" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_ARG_SPLIT" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64' or '$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_ARG_SPLIT" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+
+    <!-- FEATURE_FASTTAILCALL: Tail calls made as epilog+jmp -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_FASTTAILCALL" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FASTTAILCALL" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FASTTAILCALL" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FASTTAILCALL" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FASTTAILCALL" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- FEATURE_FIXED_OUT_ARGS: Preallocate the outgoing arg area in the prolog -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_FIXED_OUT_ARGS" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FIXED_OUT_ARGS" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FIXED_OUT_ARGS" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_FIXED_OUT_ARGS" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- FEATURE_HAS_ZERO_REG: Target has a hardware "zero register" usable as a containable source for zero stores -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_HAS_ZERO_REG" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_HAS_ZERO_REG" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_HAS_ZERO_REG" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+
+    <!-- FEATURE_HFA -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_HFA" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+
+    <!-- FEATURE_HW_INTRINSICS -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_HW_INTRINSICS" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_HW_INTRINSICS" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_HW_INTRINSICS" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+
+    <!-- FEATURE_IJW -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_IJW" Condition="'$(RyuJitTargetOS)' == 'win'" />
+
+    <!-- FEATURE_IMPLICIT_BYREFS: Support for struct parameters passed via pointers to shadow copies -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_IMPLICIT_BYREFS" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_IMPLICIT_BYREFS" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_IMPLICIT_BYREFS" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_IMPLICIT_BYREFS" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_IMPLICIT_BYREFS" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- FEATURE_LOOP_ALIGN -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_LOOP_ALIGN" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_LOOP_ALIGN" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+
+    <!-- FEATURE_MASKED_HW_INTRINSICS -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_MASKED_HW_INTRINSICS" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MASKED_HW_INTRINSICS" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+
+    <!-- FEATURE_MULTIREG_ARGS: Support for passing a single argument in more than one register -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+
+    <!-- FEATURE_MULTIREG_ARGS_OR_RET: Support for passing and/or returning single values in more than one register -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS_OR_RET" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS_OR_RET" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS_OR_RET" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS_OR_RET" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_ARGS_OR_RET" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- FEATURE_MULTIREG_RET: Support for returning a single value in more than one register -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_RET" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_RET" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_RET" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_RET" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_RET" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- FEATURE_MULTIREG_STRUCT_PROMOTE: True when we want to promote fields of a multireg struct into registers -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_STRUCT_PROMOTE" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_STRUCT_PROMOTE" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_STRUCT_PROMOTE" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_STRUCT_PROMOTE" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTIREG_STRUCT_PROMOTE" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+
+    <!-- FEATURE_MULTITHREADING -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_MULTITHREADING" Condition="'$(RyuJitTargetArchitecture)' != 'wasm'" />
+
+    <!-- FEATURE_PAL_ANSI -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_PAL_ANSI" Condition="'$(RyuJitTargetIsUnix)' == 'true'" />
+
+    <!-- FEATURE_PARTIAL_SIMD_CALLEE_SAVE: Whether SIMD registers are partially saved at calls -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_PARTIAL_SIMD_CALLEE_SAVE" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_PARTIAL_SIMD_CALLEE_SAVE" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' != 'true'" />
+
+    <!-- FEATURE_REMAP_FUNCTION -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_REMAP_FUNCTION" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_REMAP_FUNCTION" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_REMAP_FUNCTION" Condition="'$(RyuJitTargetArchitecture)' == 'x86' and '$(RyuJitTargetOS)' == 'win'" />
+
+    <!-- FEATURE_SIMD -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_SIMD" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_SIMD" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_SIMD" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+
+    <!-- FEATURE_TAILCALL_OPT: opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- FEATURE_TAILCALL_OPT_SHARED_RETURN -->
+    <!--   Enable tail call opt for the following IL pattern -->
+    <!--       call someFunc -->
+    <!--       jmp/jcc RetBlock -->
+    <!--       ... -->
+    <!--    RetBlock: -->
+    <!--       ret -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT_SHARED_RETURN" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT_SHARED_RETURN" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT_SHARED_RETURN" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="FEATURE_TAILCALL_OPT_SHARED_RETURN" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- HAS_FIXED_REGISTER_SET -->
+    <RyuJitSubstitutionEnabled Include="HAS_FIXED_REGISTER_SET" Condition="'$(RyuJitTargetArchitecture)' != 'wasm'" />
+
+    <!-- HAS_MORE_THAN_64_REGISTERS -->
+    <RyuJitSubstitutionEnabled Include="HAS_MORE_THAN_64_REGISTERS" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="HAS_MORE_THAN_64_REGISTERS" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- JIT32_GCENCODER -->
+    <RyuJitSubstitutionEnabled Include="JIT32_GCENCODER" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- LOWER_DECOMPOSE_LONGS: Decompose TYP_LONG operations into (typically two) TYP_INT ones -->
+    <RyuJitSubstitutionEnabled Include="LOWER_DECOMPOSE_LONGS" Condition="'$(RyuJitTargetArchitecture)' == 'arm'" />
+    <RyuJitSubstitutionEnabled Include="LOWER_DECOMPOSE_LONGS" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- USE_HELPERS_FOR_INT_DIV: ARMv7A does not guarantee SDIV/UDIV support. -->
+    <RyuJitSubstitutionEnabled Include="USE_HELPERS_FOR_INT_DIV" Condition="'$(RyuJitTargetArchitecture)' == 'arm'" />
+
+    <!-- MULTIREG_HAS_SECOND_GC_RET -->
+    <RyuJitSubstitutionEnabled Include="MULTIREG_HAS_SECOND_GC_RET" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="MULTIREG_HAS_SECOND_GC_RET" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="MULTIREG_HAS_SECOND_GC_RET" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="MULTIREG_HAS_SECOND_GC_RET" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+
+    <!-- NOGC_WRITE_BARRIERS: We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers -->
+    <RyuJitSubstitutionEnabled Include="NOGC_WRITE_BARRIERS" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="NOGC_WRITE_BARRIERS" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="NOGC_WRITE_BARRIERS" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="NOGC_WRITE_BARRIERS" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- PROFILING_SUPPORTED -->
+    <RyuJitSubstitutionEnabled Include="PROFILING_SUPPORTED" Condition="'$(RyuJitTargetArchitecture)' != 'wasm' or '$(RyuJitEnableWasmProfilingTests)' == 'true'" />
+
+    <!-- SWIFT_SUPPORT -->
+    <RyuJitSubstitutionEnabled Include="SWIFT_SUPPORT" Condition="'$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="SWIFT_SUPPORT" Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'" />
+
+    <!-- REGMASK_BITS_32 -->
+    <RyuJitSubstitutionEnabled Include="REGMASK_BITS_32" Condition="'$(RyuJitTargetArchitecture)' == 'wasm'" />
+    <RyuJitSubstitutionEnabled Include="REGMASK_BITS_32" Condition="'$(RyuJitTargetArchitecture)' == 'x86'" />
+
+    <!-- REGMASK_BITS_64 -->
+    <RyuJitSubstitutionEnabled Include="REGMASK_BITS_64" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="REGMASK_BITS_64" Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'" />
+    <RyuJitSubstitutionEnabled Include="REGMASK_BITS_64" Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'" />
+    <RyuJitSubstitutionEnabled Include="REGMASK_BITS_64" Condition="'$(RyuJitTargetArchitecture)' == 'x64'" />
+
+    <!-- USER_ARGS_COME_LAST -->
+    <RyuJitSubstitutionEnabled Include="USER_ARGS_COME_LAST" Condition="'$(RyuJitTargetArchitecture)' != 'x86'" />
+
+    <!-- USE_PER_FRAME_PINVOKE_INIT -->
+    <RyuJitSubstitutionEnabled Include="USE_PER_FRAME_PINVOKE_INIT" Condition="'$(RyuJitTargetIs64Bit)' == 'true'" />
+  </ItemGroup>
+
+  <!-- Substitution values that are on by default -->
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <!-- DUMP_FLOWGRAPHS: Support for creating Xml Flowgraph reports in *.fgx files -->
+    <RyuJitSubstitutionEnabled Include="DUMP_FLOWGRAPHS" />
+
+    <!-- DUMP_GC_TABLES -->
+    <RyuJitSubstitutionEnabled Include="DUMP_GC_TABLES" />
+
+    <!-- LATE_DISAM -->
+    <RyuJitSubstitutionEnabled Include="LATE_DISASM" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="LATE_DISASM" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+
+    <!-- LOOP_HOIST_STATS: Collect loop hoisting stats. -->
+    <RyuJitSubstitutionEnabled Include="LOOP_HOIST_STATS" />
+
+    <!-- OPT_CONFIG -->
+    <RyuJitSubstitutionEnabled Include="OPT_CONFIG" />
+
+    <!-- TRACK_ENREG_STATS: Collect enregistration stats -->
+    <RyuJitSubstitutionEnabled Include="TRACK_ENREG_STATS" />
+
+    <!-- TRACK_LSRA_STATS: Collect LSRA stats -->
+    <RyuJitSubstitutionEnabled Include="TRACK_LSRA_STATS" />
+
+    <!-- USE_COREDISTOOLS -->
+    <RyuJitSubstitutionEnabled Include="USE_COREDISTOOLS" Condition="'$(RyuJitTargetIsArmarch)' == 'true'" />
+    <RyuJitSubstitutionEnabled Include="USE_COREDISTOOLS" Condition="'$(RyuJitTargetIsXarch)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EMIT_GENERATE_GCINFO: Required GC liveness and metadata support in all configurations. -->
+    <RyuJitSubstitutionEnabled Include="EMIT_GENERATE_GCINFO" />
+
+    <!-- CSE_CONSTS: Enable if we want to CSE constants -->
+    <RyuJitSubstitutionEnabled Include="CSE_CONSTS" />
+
     <!-- FEATURE_JIT_METHOD_PERF -->
-    <!-- <DefineConstants>$(DefineConstants);FEATURE_JIT_METHOD_PERF</DefineConstants> -->
-  </PropertyGroup>
-  
-  <PropertyGroup>
-    <!-- CSE_INTO_HANDLERS -->
-    <!-- <DefineConstants>$(DefineConstants);CSE_INTO_HANDLERS</DefineConstants> -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_JIT_METHOD_PERF" />
 
-    <!-- VERIFY_GC_TABLES -->
-    <!-- <DefineConstants>$(DefineConstants);VERIFY_GC_TABLES</DefineConstants> -->
-  </PropertyGroup>
+    <!-- FEATURE_ON_STACK_REPLACEMENT -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_ON_STACK_REPLACEMENT" />
 
-  <!-- Set these to 1 to enable optional statistics and diagnostic output. -->
-  <PropertyGroup>
-    <!-- DEBUG_EMIT: Enable detailed jump-emission diagnostics; requires debug instruction metadata. -->
-    <!-- <DefineConstants>$(DefineConstants);DEBUG_EMIT</DefineConstants> -->
+    <!-- FEATURE_READYTORUN -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_READYTORUN" />
 
+    <!-- FEATURE_STRUCTPROMOTE: JIT Optimization to promote fields of structs into registers -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_STRUCTPROMOTE" />
+
+    <!-- FEATURE_USE_ASM_GC_WRITE_BARRIERS -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_USE_ASM_GC_WRITE_BARRIERS" />
+
+    <!-- FEATURE_VN_TRACE_APPLY_SELECTORS: This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions. -->
+    <RyuJitSubstitutionEnabled Include="FEATURE_VN_TRACE_APPLY_SELECTORS" />
+
+    <!-- FUNC_INFO_LOGGING: Support dumping function info to a file. In retail, only NYIs, with no function name, are dumped -->
+    <RyuJitSubstitutionEnabled Include="FUNC_INFO_LOGGING" />
+
+    <!-- REARRANGE_ADDS -->
+    <RyuJitSubstitutionEnabled Include="REARRANGE_ADDS" />
+  </ItemGroup>
+
+  <!-- Substitution values that are off by default -->
+
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <RyuJitSubstitutionEnabled Include="LATE_DISASM" Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and '$(RyuJitTargetArchitecture)' == 'arm64'" />
+    <RyuJitSubstitutionEnabled Include="USE_COREDISTOOLS" Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and '$(RyuJitTargetArchitecture)' == 'arm64'" />
+  </ItemGroup>
+
+  <!-- Enable these substitutions to collect and output various statistics about the JIT -->
+  <ItemGroup>
     <!-- CALL_ARG_STATS: Collect stats about calls and call arguments. -->
-    <!-- <DefineConstants>$(DefineConstants);CALL_ARG_STATS</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="CALL_ARG_STATS" /> -->
 
     <!-- COUNT_AST_OPERS: Display use counts for GenTree operators. -->
-    <!-- <DefineConstants>$(DefineConstants);COUNT_AST_OPERS</DefineConstants> -->
-    
+    <!-- <RyuJitSubstitutionEnabled Include="COUNT_AST_OPERS" /> -->
+
     <!-- COUNT_BASIC_BLOCKS: Create a histogram of basic block sizes, and a histogram of IL sizes in the simple case of single block methods. -->
-    <!-- <DefineConstants>$(DefineConstants);COUNT_BASIC_BLOCKS</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="COUNT_BASIC_BLOCKS" /> -->
+
+    <!-- CSE_INTO_HANDLERS -->
+    <!-- <RyuJitSubstitutionEnabled Include="CSE_INTO_HANDLERS" /> -->
 
     <!-- DISPLAY_SIZES: Display generated code, data, and GC information sizes. -->
-    <!-- <DefineConstants>$(DefineConstants);DISPLAY_SIZES</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="DISPLAY_SIZES" /> -->
 
     <!-- EMITTER_STATS: Collect stats on the emitter. -->
-    <!-- <DefineConstants>$(DefineConstants);EMITTER_STATS</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="EMITTER_STATS" /> -->
 
-    <!-- FUNC_INFO_LOGGING: Enable per-function and NYI logging. -->
-    <!-- <DefineConstants>$(DefineConstants);FUNC_INFO_LOGGING</DefineConstants> -->
+    <!-- FEATURE_VN_DUMP_FUNC_ARGS: This controls whether we recursively call vnDump on function arguments. -->
+    <!-- <RyuJitSubstitutionEnabled Include="FEATURE_VN_DUMP_FUNC_ARGS" /> -->
 
     <!-- MEASURE_BLOCK_SIZE: Collect stats about basic block and FlowEdge node sizes and memory allocations. -->
-    <!-- <DefineConstants>$(DefineConstants);MEASURE_BLOCK_SIZE</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_BLOCK_SIZE" /> -->
 
-    <!-- MEASURE_FATAL: Enable runtime-gated counts of fatal calls, including NYIs and noway_asserts. -->
-    <!-- <DefineConstants>$(DefineConstants);MEASURE_FATAL</DefineConstants> -->
+    <!-- MEASURE_CLRAPI_CALLS -->
+    <RyuJitSubstitutionEnabled Include="MEASURE_CLRAPI_CALLS" Condition="'$(RyuJitMeasureClrApiCalls)' == 'true'" />
+
+    <!-- MEASURE_FATAL: Count the number of calls to fatal(), including NYIs and noway_asserts. -->
+    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_FATAL" /> -->
 
     <!-- MEASURE_NODE_SIZE: Collect stats about GenTree node allocations. -->
-    <!-- <DefineConstants>$(DefineConstants);MEASURE_NODE_SIZE</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_NODE_SIZE" /> -->
 
-    <!-- JitMeasureNowayAssert enables the runtime-gated noway_assert occurrence map. -->
+    <!-- MEASURE_NOWAY -->
+    <!--   Enable code to count and rank individual noway_assert calls by occurrence. -->
+    <!--   These asserts would be dynamically executed, but not necessarily fail. -->
+    <!--   The provides some insight into the dynamic prevalence of these (if not a direct measure of their cost), which exist in non-DEBUG as well as DEBUG builds. -->
+    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_NOWAY" /> -->
 
     <!-- MEASURE_PTRTAB_SIZE: Collect stats about GC pointer table allocations. -->
-    <!-- <DefineConstants>$(DefineConstants);MEASURE_PTRTAB_SIZE</DefineConstants> -->
+    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_PTRTAB_SIZE" /> -->
 
     <!-- NODEBASH_STATS: Collect stats on changed gtOper values in GenTree's. -->
-    <!-- <DefineConstants>$(DefineConstants);NODEBASH_STATS</DefineConstants> -->
-  </PropertyGroup>
+    <!-- <RyuJitSubstitutionEnabled Include="NODEBASH_STATS" /> -->
+
+    <!-- VERIFY_GC_TABLES -->
+    <RyuJitSubstitutionEnabled Include="VERIFY_GC_TABLES" Condition="'$(RyuJitVerifyGcTables)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- One entry per unique configuration symbol; missing Configuration getters are emitted as XML comments. -->
+    <RyuJitSubstitution Include="HOST_ARM" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_ARMARCH" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_XARCH" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_ARMV6" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_ARM64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_LOONGARCH64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_MIPS64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_POWERPC64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_RISCV64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_S390X" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_WASM" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_WASM32" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_AMD64" />
+    <RyuJitSubstitution Include="HOST_X86" />
+    <RyuJitSubstitution Include="HOST_32BIT" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_64BIT" />
+    <RyuJitSubstitution Include="HOST_APPLE" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_UNIX" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_ANDROID" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_BROWSER" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_IOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_FREEBSD" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_HAIKU" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_ILLUMOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_LINUX" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_LINUX_MUSL" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_MACCATALYST" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_NETBSD" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_OPENBSD" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_OSX" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_SUNOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_TVOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_WASI" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="HOST_WINDOWS" />
+    <RyuJitSubstitution Include="TARGET_ARM" />
+    <RyuJitSubstitution Include="TARGET_ARMARCH" />
+    <RyuJitSubstitution Include="TARGET_XARCH" />
+    <RyuJitSubstitution Include="TARGET_ARMV6" />
+    <RyuJitSubstitution Include="TARGET_ARM64" />
+    <RyuJitSubstitution Include="TARGET_LOONGARCH64" />
+    <RyuJitSubstitution Include="TARGET_MIPS64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_POWERPC64" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_RISCV64" />
+    <RyuJitSubstitution Include="TARGET_S390X" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_WASM" />
+    <RyuJitSubstitution Include="TARGET_WASM32" />
+    <RyuJitSubstitution Include="TARGET_AMD64" />
+    <RyuJitSubstitution Include="TARGET_X86" />
+    <RyuJitSubstitution Include="TARGET_32BIT" />
+    <RyuJitSubstitution Include="TARGET_64BIT" />
+    <RyuJitSubstitution Include="TARGET_APPLE" />
+    <RyuJitSubstitution Include="TARGET_UNIX" />
+    <RyuJitSubstitution Include="TARGET_UNIX_POSSIBLY_SUPPORTED" />
+    <RyuJitSubstitution Include="FEATURE_CFI_SUPPORT" />
+    <RyuJitSubstitution Include="TARGET_OS_RUNTIMEDETERMINED" />
+    <RyuJitSubstitution Include="TARGET_WINDOWS_POSSIBLY_SUPPORTED" />
+    <RyuJitSubstitution Include="TARGET_ANDROID" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_BROWSER" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_IOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_FREEBSD" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_HAIKU" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_ILLUMOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_LINUX" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_LINUX_MUSL" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_MACCATALYST" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_NETBSD" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_OPENBSD" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_OSX" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_SUNOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_TVOS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_UNIX_ANYOS" />
+    <RyuJitSubstitution Include="TARGET_UNIX_OS_RUNTIMEDETERMINED" />
+    <RyuJitSubstitution Include="TARGET_WASI" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TARGET_WINDOWS" />
+    <RyuJitSubstitution Include="BIGENDIAN" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="UNIX_ARM_ABI" />
+    <RyuJitSubstitution Include="OSX_ARM64_ABI" />
+    <RyuJitSubstitution Include="UNIX_AMD64_ABI" />
+    <RyuJitSubstitution Include="WINDOWS_AMD64_ABI" />
+    <RyuJitSubstitution Include="UNIX_X86_ABI" />
+    <RyuJitSubstitution Include="ALIGN_SIMD_TYPES" />
+    <RyuJitSubstitution Include="CPU_HAS_BYTE_REGS" />
+    <RyuJitSubstitution Include="CPU_LOAD_STORE_ARCH" />
+    <RyuJitSubstitution Include="DOUBLE_ALIGN" />
+    <RyuJitSubstitution Include="EMIT_TRACK_STACK_DEPTH" />
+    <RyuJitSubstitution Include="ETW_EBP_FRAMED" />
+    <RyuJitSubstitution Include="FEATURE_ARG_SPLIT" />
+    <RyuJitSubstitution Include="FEATURE_FASTTAILCALL" />
+    <RyuJitSubstitution Include="FEATURE_FIXED_OUT_ARGS" />
+    <RyuJitSubstitution Include="FEATURE_HAS_ZERO_REG" />
+    <RyuJitSubstitution Include="FEATURE_HFA" />
+    <RyuJitSubstitution Include="FEATURE_HW_INTRINSICS" />
+    <RyuJitSubstitution Include="FEATURE_IJW" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FEATURE_IMPLICIT_BYREFS" />
+    <RyuJitSubstitution Include="FEATURE_LOOP_ALIGN" />
+    <RyuJitSubstitution Include="FEATURE_MASKED_HW_INTRINSICS" />
+    <RyuJitSubstitution Include="FEATURE_MULTIREG_ARGS" />
+    <RyuJitSubstitution Include="FEATURE_MULTIREG_ARGS_OR_RET" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FEATURE_MULTIREG_RET" />
+    <RyuJitSubstitution Include="FEATURE_MULTIREG_STRUCT_PROMOTE" />
+    <RyuJitSubstitution Include="FEATURE_MULTITHREADING" />
+    <RyuJitSubstitution Include="FEATURE_PAL_ANSI" />
+    <RyuJitSubstitution Include="FEATURE_PARTIAL_SIMD_CALLEE_SAVE" />
+    <RyuJitSubstitution Include="FEATURE_REMAP_FUNCTION" />
+    <RyuJitSubstitution Include="FEATURE_SIMD" />
+    <RyuJitSubstitution Include="FEATURE_TAILCALL_OPT" />
+    <RyuJitSubstitution Include="FEATURE_TAILCALL_OPT_SHARED_RETURN" />
+    <RyuJitSubstitution Include="HAS_FIXED_REGISTER_SET" />
+    <RyuJitSubstitution Include="HAS_MORE_THAN_64_REGISTERS" />
+    <RyuJitSubstitution Include="JIT32_GCENCODER" />
+    <RyuJitSubstitution Include="LOWER_DECOMPOSE_LONGS" />
+    <RyuJitSubstitution Include="USE_HELPERS_FOR_INT_DIV" />
+    <RyuJitSubstitution Include="MULTIREG_HAS_SECOND_GC_RET" />
+    <RyuJitSubstitution Include="NOGC_WRITE_BARRIERS" />
+    <RyuJitSubstitution Include="PROFILING_SUPPORTED" />
+    <RyuJitSubstitution Include="SWIFT_SUPPORT" />
+    <RyuJitSubstitution Include="REGMASK_BITS_32" />
+    <RyuJitSubstitution Include="REGMASK_BITS_64" />
+    <RyuJitSubstitution Include="USER_ARGS_COME_LAST" />
+    <RyuJitSubstitution Include="USE_PER_FRAME_PINVOKE_INIT" />
+    <RyuJitSubstitution Include="DUMP_FLOWGRAPHS" />
+    <RyuJitSubstitution Include="DUMP_GC_TABLES" />
+    <RyuJitSubstitution Include="LATE_DISASM" />
+    <RyuJitSubstitution Include="USE_COREDISTOOLS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="LOOP_HOIST_STATS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="OPT_CONFIG" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TRACK_ENREG_STATS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="TRACK_LSRA_STATS" />
+    <RyuJitSubstitution Include="EMIT_GENERATE_GCINFO" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="CSE_CONSTS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FEATURE_JIT_METHOD_PERF" />
+    <RyuJitSubstitution Include="FEATURE_ON_STACK_REPLACEMENT" />
+    <RyuJitSubstitution Include="FEATURE_READYTORUN" />
+    <RyuJitSubstitution Include="FEATURE_STRUCTPROMOTE" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FEATURE_USE_ASM_GC_WRITE_BARRIERS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FEATURE_VN_TRACE_APPLY_SELECTORS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FUNC_INFO_LOGGING" />
+    <RyuJitSubstitution Include="REARRANGE_ADDS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="MEASURE_CLRAPI_CALLS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="CSE_INTO_HANDLERS" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="FEATURE_VN_DUMP_FUNC_ARGS" />
+    <RyuJitSubstitution Include="VERIFY_GC_TABLES" />
+    <RyuJitSubstitution Include="CALL_ARG_STATS" />
+    <RyuJitSubstitution Include="COUNT_AST_OPERS" />
+    <RyuJitSubstitution Include="COUNT_BASIC_BLOCKS" />
+    <RyuJitSubstitution Include="DISPLAY_SIZES" />
+    <RyuJitSubstitution Include="EMITTER_STATS" />
+    <RyuJitSubstitution Include="MEASURE_BLOCK_SIZE" />
+    <RyuJitSubstitution Include="MEASURE_FATAL" />
+    <RyuJitSubstitution Include="MEASURE_NODE_SIZE" />
+    <RyuJitSubstitution Include="MEASURE_NOWAY" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="MEASURE_PTRTAB_SIZE" />
+    <RyuJitSubstitution Include="NODEBASH_STATS" />
+    <RyuJitSubstitution Include="ARM_SOFTFP" FixedValue="false" />
+    <RyuJitSubstitution Include="DISASM_DEBUG" FixedValue="false" />
+  </ItemGroup>
 
 </Project>

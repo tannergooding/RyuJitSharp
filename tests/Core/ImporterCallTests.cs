@@ -446,10 +446,14 @@ internal static unsafe class ImporterCallTests
         }
     }
 
-#if FEATURE_READYTORUN
     [Test]
     public static void NullableBoxingUsesReadyToRunAllocationForTheUnderlyingType()
     {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("ReadyToRun support is disabled.");
+        }
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.embedGenericHandle =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)
@@ -536,7 +540,6 @@ internal static unsafe class ImporterCallTests
             JitTls.Compiler = previous;
         }
     }
-#endif
 
     [TestCase(1, 3)]
     [TestCase(3, 1)]
