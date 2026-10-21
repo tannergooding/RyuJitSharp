@@ -101,7 +101,7 @@ public sealed partial class Lowering
                 }
             }
 
-            if (!allowMultipleFlagsChecks && (GenConditionDesc.Get(code).Oper is not GT_NONE))
+            if (!allowMultipleFlagsChecks && (GenConditionDesc.GetOper(code) is not GT_NONE))
             {
                 return false;
             }
@@ -158,7 +158,7 @@ public sealed partial class Lowering
             }
 
             code = condition.AsCC().Condition;
-            if (!allowMultipleFlagsChecks && (GenConditionDesc.Get(code).Oper is not GT_NONE))
+            if (!allowMultipleFlagsChecks && (GenConditionDesc.GetOper(code) is not GT_NONE))
             {
                 return false;
             }

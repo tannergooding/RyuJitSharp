@@ -71,8 +71,8 @@ public sealed partial class CodeGen
             assert(!varTypeIsFloating(op2.Type.ActualType));
             assert(!op1.IsContainedIntOrIImmed);
 
-            var condition = GenConditionDesc.Get(tree.Condition);
-            var ins = JumpKindToCcmp(condition.JumpKind1);
+            var jumpKind1 = GenConditionDesc.GetJumpKind1(tree.Condition);
+            var ins = JumpKindToCcmp(jumpKind1);
             var opts = OptsFromCFlags(tree.FlagsVal);
             if (op2.IsContainedIntOrIImmed)
             {
@@ -110,8 +110,8 @@ public sealed partial class CodeGen
             assert(!varTypeIsFloating(op2Type));
             assert(!op1.IsContainedIntOrIImmed);
 
-            var condition = GenConditionDesc.Get(tree.Condition);
-            var insCond = JumpKindToInsCond(condition.JumpKind1);
+            var jumpKind1 = GenConditionDesc.GetJumpKind1(tree.Condition);
+            var insCond = JumpKindToInsCond(jumpKind1);
             if (op2.IsContainedIntOrIImmed)
             {
                 var value = unchecked((int)op2.AsIntConCommon().IconValue);

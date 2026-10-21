@@ -78,71 +78,136 @@ public partial struct GCInfo
         }
     }
 
-    internal struct InfoHdrSmall
+    internal readonly struct InfoHdrSmall
     {
-        internal byte prologSize;
-        internal byte epilogSize;
-        internal byte epilogCount;
-        internal byte epilogAtEnd;
-        internal byte ediSaved;
-        internal byte esiSaved;
-        internal byte ebxSaved;
-        internal byte ebpSaved;
-        internal byte ebpFrame;
-        internal byte interruptible;
-        internal byte doubleAlign;
-        internal byte security;
-        internal byte handlers;
-        internal byte localloc;
-        internal byte editNcontinue;
-        internal byte varargs;
-        internal byte profCallbacks;
-        internal byte genericsContext;
-        internal byte genericsContextIsMethodDesc;
-        internal byte returnKind;
-        internal byte isAsync;
-        internal ushort argCount;
-        internal uint frameSize;
-        internal uint untrackedCnt;
-        internal uint varPtrTableSize;
+        private readonly int _index;
 
-        internal InfoHdrSmall(byte prologSize, byte epilogSize, byte epilogCount, byte epilogAtEnd,
-            byte ediSaved, byte esiSaved, byte ebxSaved, byte ebpSaved, byte ebpFrame, byte interruptible,
-            byte doubleAlign, byte security, byte handlers, byte localloc, byte editNcontinue, byte varargs,
-            byte profCallbacks, byte genericsContext, byte genericsContextIsMethodDesc, byte returnKind, byte isAsync,
-            ushort argCount, uint frameSize, uint untrackedCnt, uint varPtrTableSize)
+        internal InfoHdrSmall(int index)
         {
-            this.prologSize = prologSize;
-            this.epilogSize = epilogSize;
-            this.epilogCount = epilogCount;
-            this.epilogAtEnd = epilogAtEnd;
-            this.ediSaved = ediSaved;
-            this.esiSaved = esiSaved;
-            this.ebxSaved = ebxSaved;
-            this.ebpSaved = ebpSaved;
-            this.ebpFrame = ebpFrame;
-            this.interruptible = interruptible;
-            this.doubleAlign = doubleAlign;
-            this.security = security;
-            this.handlers = handlers;
-            this.localloc = localloc;
-            this.editNcontinue = editNcontinue;
-            this.varargs = varargs;
-            this.profCallbacks = profCallbacks;
-            this.genericsContext = genericsContext;
-            this.genericsContextIsMethodDesc = genericsContextIsMethodDesc;
-            this.returnKind = returnKind;
-            this.isAsync = isAsync;
-            this.argCount = argCount;
-            this.frameSize = frameSize;
-            this.untrackedCnt = untrackedCnt;
-            this.varPtrTableSize = varPtrTableSize;
+            _index = index;
         }
+
+        internal byte prologSize => GCInfoJit32HeaderTable.PrologSizes[_index];
+
+        internal byte epilogSize => GCInfoJit32HeaderTable.EpilogSizes[_index];
+
+        internal byte epilogCount => GCInfoJit32HeaderTable.EpilogCounts[_index];
+
+        internal byte epilogAtEnd => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.EpilogAtEnd);
+
+        internal byte ediSaved => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.EdiSaved);
+
+        internal byte esiSaved => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.EsiSaved);
+
+        internal byte ebxSaved => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.EbxSaved);
+
+        internal byte ebpSaved => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.EbpSaved);
+
+        internal byte ebpFrame => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.EbpFrame);
+
+        internal byte interruptible => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.Interruptible);
+
+        internal byte doubleAlign => 0;
+
+        internal byte security => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.Security);
+
+        internal byte handlers => GCInfoJit32HeaderTable.GetFlag(
+            GCInfoJit32HeaderTable.ShortcutFlags[_index], GCInfoJit32HeaderTable.InfoHdrFlags.Handlers);
+
+        internal byte localloc => 0;
+
+        internal byte editNcontinue => 0;
+
+        internal byte varargs => 0;
+
+        internal byte profCallbacks => 0;
+
+        internal byte genericsContext => 0;
+
+        internal byte genericsContextIsMethodDesc => 0;
+
+        internal byte returnKind => 0;
+
+        internal byte isAsync => 0;
+
+        internal ushort argCount => GCInfoJit32HeaderTable.ArgCounts[_index];
+
+        internal uint frameSize => GCInfoJit32HeaderTable.FrameSizes[_index];
+
+        internal uint untrackedCnt => GCInfoJit32HeaderTable.UntrackedCounts[_index];
+
+        internal uint varPtrTableSize => unchecked((uint)GCInfoJit32HeaderTable.VarPtrTableSizes[_index]);
 
         internal readonly bool IsHeaderMatch(in InfoHdr target)
         {
-            var header = ToInfoHdr();
-            return header.IsHeaderMatch(in target);
+            assert(target.untrackedCnt != HAS_UNTRACKED);
+            assert(target.varPtrTableSize != HAS_VARPTR);
+            assert(target.gsCookieOffset != HAS_GS_COOKIE_OFFSET);
+            assert(target.syncStartOffset != HAS_SYNC_OFFSET);
+            assert(target.revPInvokeOffset != HAS_REV_PINVOKE_FRAME_OFFSET);
+            assert(target.noGCRegionCnt != HAS_NOGCREGIONS);
+
+            if ((prologSize != target.prologSize) ||
+                (epilogSize != target.epilogSize) ||
+                (epilogCount != target.epilogCount) ||
+                (epilogAtEnd != target.epilogAtEnd) ||
+                (ediSaved != target.ediSaved) ||
+                (esiSaved != target.esiSaved) ||
+                (ebxSaved != target.ebxSaved) ||
+                (ebpSaved != target.ebpSaved) ||
+                (ebpFrame != target.ebpFrame) ||
+                (interruptible != target.interruptible) ||
+                (doubleAlign != target.doubleAlign) ||
+                (security != target.security) ||
+                (handlers != target.handlers) ||
+                (localloc != target.localloc) ||
+                (editNcontinue != target.editNcontinue) ||
+                (varargs != target.varargs) ||
+                (profCallbacks != target.profCallbacks) ||
+                (genericsContext != target.genericsContext) ||
+                (genericsContextIsMethodDesc != target.genericsContextIsMethodDesc) ||
+                (returnKind != target.returnKind) ||
+                (isAsync != target.isAsync) ||
+                (argCount != target.argCount) ||
+                (frameSize != target.frameSize))
+            {
+                return false;
+            }
+
+            if ((untrackedCnt != target.untrackedCnt) &&
+                ((target.untrackedCnt <= SET_UNTRACKED_MAX) || (untrackedCnt != HAS_UNTRACKED)))
+            {
+                return false;
+            }
+
+            if ((varPtrTableSize != target.varPtrTableSize) &&
+                ((varPtrTableSize == 0) != (target.varPtrTableSize == 0)))
+            {
+                return false;
+            }
+
+            if ((target.gsCookieOffset != INVALID_GS_COOKIE_OFFSET) ||
+                (target.syncStartOffset != INVALID_SYNC_OFFSET) ||
+                (target.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET))
+            {
+                return false;
+            }
+
+            if ((target.noGCRegionCnt != 0) &&
+                ((target.noGCRegionCnt <= SET_NOGCREGIONS_MAX) || (0 != HAS_NOGCREGIONS)))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         internal readonly InfoHdr ToInfoHdr()
@@ -1185,7 +1250,7 @@ public partial struct GCInfo
 
         for (; n < GCInfoJit32HeaderTable.InfoHdrShortcutCount; n++)
         {
-            var prologSize = GCInfoJit32HeaderTable.GetInfoHdrShortcut(n).prologSize;
+            var prologSize = GCInfoJit32HeaderTable.PrologSizes[n];
             if (prologSize == lo)
             {
                 continue;
@@ -1217,7 +1282,7 @@ public partial struct GCInfo
         assert(lookup[IH_MAX_PROLOG_SIZE] < GCInfoJit32HeaderTable.InfoHdrShortcutCount);
 
         while ((n < GCInfoJit32HeaderTable.InfoHdrShortcutCount) &&
-            (GCInfoJit32HeaderTable.GetInfoHdrShortcut(n).prologSize == lo))
+            (GCInfoJit32HeaderTable.PrologSizes[n] == lo))
         {
             n++;
         }

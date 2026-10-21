@@ -15,7 +15,10 @@ internal static class ConditionDescriptorTests
         Assert.That((int)EJ_XARCH_COUNT, Is.EqualTo(18));
         for (var value = 2; value < 32; value++)
         {
-            var desc = GenConditionDesc.Get(new GenCondition((GenCondition.CodeKind)value));
+            var condition = new GenCondition((GenCondition.CodeKind)value);
+            var desc = GenConditionDesc.Get(condition);
+            Assert.That(GenConditionDesc.GetJumpKind1(condition), Is.EqualTo(desc.JumpKind1));
+            Assert.That(GenConditionDesc.GetOper(condition), Is.EqualTo(desc.Oper));
             Assert.That(desc.JumpKind1, Is.Not.EqualTo(EJ_NONE));
             Assert.That(desc.Oper is GT_NONE or GT_AND or GT_OR, Is.True);
             Assert.That(desc.Oper is GT_NONE, Is.EqualTo(desc.JumpKind2 is EJ_NONE));

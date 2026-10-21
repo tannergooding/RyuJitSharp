@@ -54,6 +54,52 @@ public readonly struct GenConditionDesc
         return desc;
     }
 
+    public static emitJumpKind GetJumpKind1(GenCondition condition)
+    {
+        ReadOnlySpan<emitJumpKind> jumpKind1;
+        if (Configuration.TARGET_XARCH)
+        {
+            jumpKind1 = XarchJumpKind1;
+        }
+        else if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
+        {
+            jumpKind1 = ArmArchJumpKind1;
+        }
+        else
+        {
+            throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
+        }
+
+        assert((uint)condition.Code < (uint)jumpKind1.Length);
+        var result = jumpKind1[(int)condition.Code];
+        assert(result is not EJ_NONE);
+
+        return result;
+    }
+
+    public static genTreeOps GetOper(GenCondition condition)
+    {
+        ReadOnlySpan<genTreeOps> oper;
+        if (Configuration.TARGET_XARCH)
+        {
+            oper = XarchOper;
+        }
+        else if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
+        {
+            oper = ArmArchOper;
+        }
+        else
+        {
+            throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
+        }
+
+        assert((uint)condition.Code < (uint)oper.Length);
+        var result = oper[(int)condition.Code];
+        assert(result is GT_NONE or GT_AND or GT_OR);
+
+        return result;
+    }
+
     // UCOMIS sets ZF/PF/CF to 111 for unordered, 000 for greater, 001 for
     // less, and 100 for equal. Conditions sharing the unordered ZF/CF bits
     // therefore need a parity check combined with their ordinary comparison.

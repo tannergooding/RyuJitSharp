@@ -176,7 +176,10 @@ internal static unsafe class Arm64ArithmeticLoweringTests
     public static void FloatingConditionDescriptorsPreserveNativeBranchCombinations(
         GenCondition.CodeKind condition, genTreeOps oper, emitJumpKind first, emitJumpKind second)
     {
-        var descriptor = GenConditionDesc.Get(new GenCondition(condition));
+        var genCondition = new GenCondition(condition);
+        var descriptor = GenConditionDesc.Get(genCondition);
+        Assert.That(GenConditionDesc.GetJumpKind1(genCondition), Is.EqualTo(first));
+        Assert.That(GenConditionDesc.GetOper(genCondition), Is.EqualTo(oper));
         Assert.That(descriptor.Oper, Is.EqualTo(oper));
         Assert.That(descriptor.JumpKind1, Is.EqualTo(first));
         Assert.That(descriptor.JumpKind2, Is.EqualTo(second));

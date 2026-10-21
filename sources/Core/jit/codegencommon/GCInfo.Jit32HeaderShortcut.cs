@@ -14,7 +14,7 @@ public partial struct GCInfo
 internal static class GCInfoJit32HeaderTable
 {
     [Flags]
-    private enum InfoHdrFlags : ushort
+    internal enum InfoHdrFlags : ushort
     {
         None = 0,
         EpilogAtEnd = 1 << 0,
@@ -28,7 +28,7 @@ internal static class GCInfoJit32HeaderTable
         Handlers = 1 << 8,
     }
 
-    private static ReadOnlySpan<byte> PrologSizes => [
+    internal static ReadOnlySpan<byte> PrologSizes => [
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1,
@@ -47,7 +47,7 @@ internal static class GCInfoJit32HeaderTable
         16, 16, 19, 24, 45, 51, 51, 51,
     ];
 
-    private static ReadOnlySpan<byte> EpilogSizes => [
+    internal static ReadOnlySpan<byte> EpilogSizes => [
         1, 1, 1, 1, 3, 3, 3, 3,
         3, 3, 3, 3, 0, 0, 2, 2,
         2, 2, 2, 2, 2, 4, 4, 4,
@@ -66,7 +66,7 @@ internal static class GCInfoJit32HeaderTable
         9, 9, 7, 7, 9, 7, 7, 7,
     ];
 
-    private static ReadOnlySpan<byte> EpilogCounts => [
+    internal static ReadOnlySpan<byte> EpilogCounts => [
         1, 1, 2, 3, 1, 1, 1, 1,
         1, 1, 1, 1, 0, 0, 1, 1,
         1, 1, 1, 2, 3, 1, 1, 1,
@@ -85,7 +85,7 @@ internal static class GCInfoJit32HeaderTable
         1, 1, 1, 1, 1, 1, 1, 1,
     ];
 
-    private static ReadOnlySpan<ushort> ShortcutFlags => [
+    internal static ReadOnlySpan<ushort> ShortcutFlags => [
         0, 1, 0, 0, 1, 1, 1, 1,
         1, 1, 1, 1, 0, 0, 0, 4,
         1, 9, 5, 4, 4, 5, 5, 5,
@@ -104,7 +104,7 @@ internal static class GCInfoJit32HeaderTable
         319, 319, 383, 319, 63, 62, 63, 63,
     ];
 
-    private static ReadOnlySpan<byte> ArgCounts => [
+    internal static ReadOnlySpan<byte> ArgCounts => [
         0, 0, 0, 0, 1, 1, 2, 2,
         2, 3, 4, 4, 0, 1, 0, 0,
         0, 0, 0, 0, 0, 1, 1, 2,
@@ -123,7 +123,7 @@ internal static class GCInfoJit32HeaderTable
         1, 2, 0, 0, 1, 0, 0, 0,
     ];
 
-    private static ReadOnlySpan<byte> FrameSizes => [
+    internal static ReadOnlySpan<byte> FrameSizes => [
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 1, 1, 1, 0,
         1, 0, 0, 0, 0, 0, 0, 0,
@@ -142,7 +142,7 @@ internal static class GCInfoJit32HeaderTable
         4, 4, 5, 5, 0, 13, 1, 11,
     ];
 
-    private static ReadOnlySpan<byte> UntrackedCounts => [
+    internal static ReadOnlySpan<byte> UntrackedCounts => [
         0, 0, 0, 0, 0, 1, 0, 1,
         2, 0, 0, 1, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 1, 0,
@@ -161,7 +161,7 @@ internal static class GCInfoJit32HeaderTable
         1, 1, 0, 0, 0, 0, 0, 0,
     ];
 
-    private static ReadOnlySpan<sbyte> VarPtrTableSizes => [
+    internal static ReadOnlySpan<sbyte> VarPtrTableSizes => [
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, -1, -1, -1, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -182,21 +182,11 @@ internal static class GCInfoJit32HeaderTable
 
     internal static int InfoHdrShortcutCount => PrologSizes.Length;
 
-    private static byte GetFlag(ushort flags, InfoHdrFlags flag)
+    internal static byte GetFlag(ushort flags, InfoHdrFlags flag)
         => (flags & (ushort)flag) != 0 ? (byte)1 : (byte)0;
 
     internal static GCInfo.InfoHdrSmall GetInfoHdrShortcut(int index)
     {
-        var flags = ShortcutFlags[index];
-        return new(
-            PrologSizes[index], EpilogSizes[index], EpilogCounts[index],
-            GetFlag(flags, InfoHdrFlags.EpilogAtEnd),
-            GetFlag(flags, InfoHdrFlags.EdiSaved), GetFlag(flags, InfoHdrFlags.EsiSaved),
-            GetFlag(flags, InfoHdrFlags.EbxSaved), GetFlag(flags, InfoHdrFlags.EbpSaved),
-            GetFlag(flags, InfoHdrFlags.EbpFrame), GetFlag(flags, InfoHdrFlags.Interruptible),
-            0, GetFlag(flags, InfoHdrFlags.Security), GetFlag(flags, InfoHdrFlags.Handlers),
-            0, 0, 0, 0, 0, 0, 0, 0,
-            ArgCounts[index], FrameSizes[index], UntrackedCounts[index],
-            unchecked((uint)VarPtrTableSizes[index]));
+        return new(index);
     }
 }
