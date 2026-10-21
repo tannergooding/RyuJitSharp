@@ -17,7 +17,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unknown-size frame generation requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown-size frame generation requires SIMD-enabled ARM64.");
+            return;
         }
 
         assert(_compiler.compLocallocUsed && _compiler.compUsesUnknownSizeFrame);
@@ -50,7 +51,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unknown-size frame initialization requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown-size frame initialization requires SIMD-enabled ARM64.");
+            return;
         }
 
         assert(_compiler.compUsesUnknownSizeFrame);

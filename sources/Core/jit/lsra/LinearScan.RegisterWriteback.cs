@@ -18,7 +18,11 @@ public partial class LinearScan
         assert(foundUse);
         if (!foundUse)
         {
-            throw new FatalJitException("Copy or reload requires an owning LIR use.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage405
+            );
+            return;
         }
 
         var parent = treeUse.User();
@@ -32,13 +36,21 @@ public partial class LinearScan
         {
             if (!tree.IsMultiRegNode)
             {
-                throw new FatalJitException("A grouped LSRA copy or reload requires a multi-register source.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage406
+                );
+                return;
             }
 
             var copyOrReload = parent.AsCopyOrReload();
             if (copyOrReload.GetRegNumByIdx(checked((byte)multiRegIdx)) != REG_NA)
             {
-                throw new FatalJitException("The LSRA copy or reload register is already assigned.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage407
+                );
+                return;
             }
 
             copyOrReload.SetRegNumByIdx(refPosition.assignedReg(), checked((byte)multiRegIdx));

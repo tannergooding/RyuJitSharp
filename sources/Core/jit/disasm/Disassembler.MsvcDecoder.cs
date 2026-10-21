@@ -223,10 +223,26 @@ public partial struct Disassembler
 
     private unsafe void DisasmBufferMsvc(StreamWriter pfile, bool printit)
     {
-        var architecture = Configuration.TARGET_X86 ? MsArchitecture.X86 :
-            Configuration.TARGET_AMD64 ? MsArchitecture.X8664 :
-            Configuration.TARGET_ARM64 ? MsArchitecture.Arm64 :
-            throw new FatalJitException(CORJIT_SKIPPED, "MSVCDIS does not support this JIT target.");
+        MsArchitecture architecture;
+        if (Configuration.TARGET_X86)
+        {
+            architecture = MsArchitecture.X86;
+        }
+        else if (Configuration.TARGET_AMD64)
+        {
+            architecture = MsArchitecture.X8664;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            architecture = MsArchitecture.Arm64;
+        }
+        else
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED, "MSVCDIS does not support this JIT target.");
+            return;
+        }
+
         var pdis = NewMsDisassembler(architecture);
         if (pdis is null)
         {

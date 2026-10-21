@@ -50,8 +50,12 @@ public partial class Emitter
                 assert(emitCurIG is not null);
             }
 
-            var currentGroup = emitCurIG
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "The current instruction group is required.");
+            var currentGroup = emitCurIG;
+            if (currentGroup is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "The current instruction group is required.");
+                return;
+            }
 
             emitCurIGfreeNext = lastInstructionStart;
             emitCurIGinsCnt = unchecked(emitCurIGinsCnt - 1);

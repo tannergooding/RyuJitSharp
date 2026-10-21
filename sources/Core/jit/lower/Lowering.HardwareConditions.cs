@@ -13,7 +13,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware condition-code lowering is not available for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware condition-code lowering is not available for this target.");
+            return;
         }
 
         var cc = LowerNodeCC(node, condition);
@@ -59,7 +60,11 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new FatalJitException("Condition-code lowering requires a flag-producing hardware intrinsic.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage253
+                );
+                return;
             }
         }
 

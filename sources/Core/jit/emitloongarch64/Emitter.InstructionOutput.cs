@@ -16,8 +16,12 @@ public partial class Emitter
 {
     private unsafe nuint emitOutputInstrLoongArch64(insGroup ig, instrDesc id, byte** dp)
     {
-        var compiler = _compiler
-            ?? throw new FatalJitException("LoongArch64 instruction output requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 instruction output requires an active compiler.");
+            return default!;
+        }
         var dst = *dp;
         var dstRW = unchecked(dst + writeableOffset);
         var dstRW2 = unchecked(dstRW + sizeof(uint));
@@ -124,10 +128,20 @@ public partial class Emitter
             }
             else
             {
-                var type = varNum >= 0
-                    ? compiler.lvaGetDesc(varNum).Type
-                    : (codeGen.RegSet.tmpFindNum(varNum)
-                        ?? throw new FatalJitException("The LoongArch64 spill temporary must exist.")).tdTempType;
+                var type = varNum >= 0 ? compiler.lvaGetDesc(varNum).Type : TYP_UNDEF;
+                if (varNum < 0)
+                {
+                    var temporary = codeGen.RegSet.tmpFindNum(varNum);
+                    if (temporary is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            "The LoongArch64 spill temporary must exist.");
+                        return default!;
+                    }
+
+                    type = temporary.tdTempType;
+                }
+
                 if (type is TYP_REF or TYP_BYREF)
                 {
                     emitGCvarDeadUpd(unchecked(address + (int)offset), dstRW2 - writeableOffset,
@@ -151,8 +165,12 @@ public partial class Emitter
 
         if (Configuration.DEBUG && compiler.compDebugBreak)
         {
-            var debugInfo = id.idDebugOnlyInfo()
-                ?? throw new FatalJitException("LoongArch64 instruction output requires debug descriptor information.");
+            var debugInfo = id.idDebugOnlyInfo();
+            if (debugInfo is null)
+            {
+                FatalJitException.ThrowFatalJitException("LoongArch64 instruction output requires debug descriptor information.");
+                return default!;
+            }
             if (JitConfig.JitBreakEmitOutputInstr == debugInfo.idNum)
             {
                 assert(false, "JitBreakEmitOutputInstr reached");
@@ -348,17 +366,35 @@ public partial class Emitter
             var targetGroup = id.LoongArchIGlabel;
             if (targetGroup is null)
             {
-                var targetBlock = id.LoongArchBBlabel
-                    ?? throw new FatalJitException("An unbound LoongArch64 label requires a basic-block target.");
-                targetGroup = emitCodeGetCookie(targetBlock)
-                    ?? throw new FatalJitException("A LoongArch64 label has no instruction-group cookie.");
+                var targetBlock = id.LoongArchBBlabel;
+                if (targetBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException("An unbound LoongArch64 label requires a basic-block target.");
+                    ins = default!;
+                    return default!;
+                }
+                var targetGroupCookie = emitCodeGetCookie(targetBlock);
+                if (targetGroupCookie is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        "A LoongArch64 label has no instruction-group cookie.");
+                    ins = default!;
+                    return default!;
+                }
+
+                targetGroup = targetGroupCookie;
                 id.LoongArchIGlabel = targetGroup;
             }
             id.idSetIsBound();
         }
 
-        var group = id.LoongArchIGlabel
-            ?? throw new FatalJitException("A bound LoongArch64 label requires an instruction group.");
+        var group = id.LoongArchIGlabel;
+        if (group is null)
+        {
+            FatalJitException.ThrowFatalJitException("A bound LoongArch64 label requires an instruction group.");
+            ins = default!;
+            return default!;
+        }
         var reg = id.idReg1();
         assert(isGeneralRegister(reg));
         ins = id.idIns();

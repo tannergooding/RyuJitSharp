@@ -11,8 +11,9 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LSRA shift/rotate reference building is not implemented outside xarch.");
+            return default!;
         }
 
         var shiftBy = tree.AsOp().Op2;
@@ -120,8 +121,9 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LSRA division reference building is not implemented outside xarch.");
+            return default!;
         }
 
         var op1 = tree.AsOp().Op1;
@@ -175,8 +177,9 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LSRA multiplication reference building is not implemented outside xarch.");
+            return default!;
         }
 
         assert(tree.Oper.IsMul);

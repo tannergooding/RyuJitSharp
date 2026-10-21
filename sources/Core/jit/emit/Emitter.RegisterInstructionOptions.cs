@@ -34,7 +34,8 @@ public partial class Emitter
                 return;
             }
 
-            throw new FatalJitException("EVEX broadcast options are not available for this target.");
+            FatalJitException.ThrowFatalJitException("EVEX broadcast options are not available for this target.");
+            return;
         }
 
         assert(id.idHasMem());
@@ -55,7 +56,8 @@ public partial class Emitter
                 return;
             }
 
-            throw new FatalJitException("EVEX embedded rounding is not available for this target.");
+            FatalJitException.ThrowFatalJitException("EVEX embedded rounding is not available for this target.");
+            return;
         }
 
         assert(!id.idHasMem());
@@ -76,7 +78,8 @@ public partial class Emitter
                 return;
             }
 
-            throw new FatalJitException("EVEX NDD options are not available for this target.");
+            FatalJitException.ThrowFatalJitException("EVEX NDD options are not available for this target.");
+            return;
         }
 
         if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
@@ -100,7 +103,8 @@ public partial class Emitter
                 return;
             }
 
-            throw new FatalJitException("EVEX NF options are not available for this target.");
+            FatalJitException.ThrowFatalJitException("EVEX NF options are not available for this target.");
+            return;
         }
 
         if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
@@ -124,7 +128,8 @@ public partial class Emitter
                 return;
             }
 
-            throw new FatalJitException("APX PPX options are not available for this target.");
+            FatalJitException.ThrowFatalJitException("APX PPX options are not available for this target.");
+            return;
         }
 
         if ((instOptions & INS_OPTS_APX_ppx_MASK) != 0)
@@ -140,7 +145,8 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_AMD64)
             {
-                throw new FatalJitException("EVEX DFV options require AMD64.");
+                FatalJitException.ThrowFatalJitException("EVEX DFV options require AMD64.");
+                return;
             }
 
             assert(UsePromotedEvexEncodings);

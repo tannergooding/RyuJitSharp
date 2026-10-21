@@ -23,16 +23,18 @@ public partial class CodeGen
             return REG_OPT_RSVD_RISCV64;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, Configuration.TARGET_ARM
-            ? "ARM32 reserved-register selection is not ported."
-            : "Reserved-register selection is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, Configuration.TARGET_ARM
+           ? "ARM32 reserved-register selection is not ported."
+           : "Reserved-register selection is not ported for this target.");
+        return default!;
     }
 
     public regNumber rsGetRsvdRegArm64()
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "The reserved ARM64 code-generation register requires ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The reserved ARM64 code-generation register requires ARM64.");
+            return default!;
         }
 
         var reserved = REG_ARM64_IP1;

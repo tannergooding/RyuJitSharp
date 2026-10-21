@@ -24,29 +24,60 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("Instruction input sizes are not available for this target.");
+            FatalJitException.ThrowFatalJitException("Instruction input sizes are not available for this target.");
+            return default!;
         }
 
         var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(id.idIns());
         assert((uint)nativeOrdinal < (uint)CodeGen.instInfo.Length);
         var inputSize = CodeGen.instInfo[nativeOrdinal] & Input_Mask;
 
-        return inputSize switch
+        switch (inputSize)
         {
-            0 => (nint)EA_SIZE_IN_BYTES(id.idOpSize()),
-            Input_8Bit => 1,
-            Input_16Bit => 2,
-            Input_32Bit => 4,
-            Input_64Bit => 8,
-            _ => throw new FatalJitException("Invalid instruction input size."),
-        };
+            case 0:
+            {
+                return (nint)EA_SIZE_IN_BYTES(id.idOpSize());
+            }
+
+            case Input_8Bit:
+            {
+                return 1;
+            }
+
+            case Input_16Bit:
+            {
+                return 2;
+            }
+
+            case Input_32Bit:
+            {
+                return 4;
+            }
+
+            case Input_64Bit:
+            {
+                return 8;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage211
+                );
+                return default!;
+            }
+        }
     }
 
     public bool TryEvexCompressDisp8Byte(instrDesc id, nint dsp, out nint compressedDsp, out bool fitsInByte)
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("EVEX displacement compression is not available for this target.");
+            FatalJitException.ThrowFatalJitException("EVEX displacement compression is not available for this target.");
+            compressedDsp = default!;
+            fitsInByte = default!;
+            return default!;
         }
 
         var ins = id.idIns();
@@ -125,7 +156,10 @@ public partial class Emitter
 
                 default:
                 {
-                    throw new FatalJitException("Invalid instruction format for a mixed memory tuple.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidMixedMemoryTupleFormat);
+                    compressedDsp = default!;
+                    fitsInByte = default!;
+                    return default!;
                 }
             }
         }
@@ -236,7 +270,10 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException("Invalid instruction tuple type.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidInstructionTupleType);
+                compressedDsp = default!;
+                fitsInByte = default!;
+                return default!;
             }
         }
 

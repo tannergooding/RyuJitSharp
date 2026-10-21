@@ -30,8 +30,9 @@ public partial class Emitter
                 return _idInsFmt;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Instruction formats are not supported for this target.");
+            return default!;
         }
 
         public void idInsFmt(insFormat insFmt)
@@ -80,8 +81,9 @@ public partial class Emitter
                 return;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Instruction formats are not supported for this target.");
+            return;
         }
 
         public bool idHasReg1()

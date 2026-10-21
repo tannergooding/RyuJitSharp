@@ -9,17 +9,59 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-    internal static nuint TREE_NODE_SZ_SMALL => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeLclFld) is not ported.");
+    internal static nuint TREE_NODE_SZ_SMALL
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeLclFld) is not ported.");
+            return default!;
+        }
+    }
 
-    internal static nuint TREE_NODE_SZ_LARGE => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeCall) is not ported.");
+    internal static nuint TREE_NODE_SZ_LARGE
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeCall) is not ported.");
+            return default!;
+        }
+    }
 
-    internal static ref NodeSizeStats genNodeSizeStats => throw new FatalJitException(CORJIT_SKIPPED, "genNodeSizeStats collection is not ported.");
+    internal static ref NodeSizeStats genNodeSizeStats
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genNodeSizeStats collection is not ported.");
+            return ref System.Runtime.CompilerServices.Unsafe.NullRef<NodeSizeStats>();
+        }
+    }
 
-    internal static ref NodeSizeStats genNodeSizeStatsPerFunc => throw new FatalJitException(CORJIT_SKIPPED, "genNodeSizeStatsPerFunc collection is not ported.");
+    internal static ref NodeSizeStats genNodeSizeStatsPerFunc
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genNodeSizeStatsPerFunc collection is not ported.");
+            return ref System.Runtime.CompilerServices.Unsafe.NullRef<NodeSizeStats>();
+        }
+    }
 
-    internal static Histogram genTreeNcntHist => throw new FatalJitException(CORJIT_SKIPPED, "genTreeNcntHist collection is not ported.");
+    internal static Histogram genTreeNcntHist
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genTreeNcntHist collection is not ported.");
+            return default!;
+        }
+    }
 
-    internal static Histogram genTreeNsizHist => throw new FatalJitException(CORJIT_SKIPPED, "genTreeNsizHist collection is not ported.");
+    internal static Histogram genTreeNsizHist
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genTreeNsizHist collection is not ported.");
+            return default!;
+        }
+    }
 
     private static nuint s_genFlowNodeCnt;
 
@@ -29,9 +71,23 @@ public partial class Globals
 
     internal static ref nuint genFlowNodeSize => ref s_genFlowNodeSize;
 
-    internal static nuint NativeBasicBlockSize => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
+    internal static nuint NativeBasicBlockSize
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
+            return default!;
+        }
+    }
 
-    internal static nuint NativeFlowEdgeSize => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(FlowEdge) is not ported.");
+    internal static nuint NativeFlowEdgeSize
+    {
+        get
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(FlowEdge) is not ported.");
+            return default!;
+        }
+    }
 
     private static class MemAllocHistogram
     {

@@ -13,7 +13,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Vector WithElement lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector WithElement lowering is not ported for this target.");
+            return default!;
         }
 
         var intrinsicId = node.HWIntrinsicId;

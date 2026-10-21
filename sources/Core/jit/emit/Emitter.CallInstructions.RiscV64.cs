@@ -16,16 +16,22 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V call recording is only supported on RISC-V64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V call recording is only supported on RISC-V64.");
+            return;
         }
 
-        var compiler = _compiler
-            ?? throw new FatalJitException("RISC-V call recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("RISC-V call recording requires an active compiler.");
+            return;
+        }
 
         if (parameters.callType is not EC_FUNC_TOKEN and not EC_INDIR_R)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 $"RISC-V call recording does not support call kind {parameters.callType}.");
+            return;
         }
 
         assert(isGeneralRegister(parameters.ireg));

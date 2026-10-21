@@ -17,7 +17,8 @@ public sealed partial class Lowering
             !Configuration.TARGET_RISCV64 &&
             !Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
+            return;
         }
 
         assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
@@ -190,7 +191,8 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
+        return;
     }
 
     private GenTree? LowerStoreBlock(GenTreeBlk block)

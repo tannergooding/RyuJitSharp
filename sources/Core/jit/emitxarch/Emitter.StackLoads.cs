@@ -12,7 +12,12 @@ public partial class Emitter
 {
     private bool TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Local address emission requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LocalAddressEmissionMissingCompiler);
+            return default!;
+        }
         if (compiler.lvaDoneFrameLayout != Compiler.FINAL_FRAME_LAYOUT)
         {
             return false;

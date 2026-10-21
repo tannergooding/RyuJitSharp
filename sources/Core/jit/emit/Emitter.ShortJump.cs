@@ -13,8 +13,9 @@ public partial class Emitter
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Fixed-size prolog jumps are not available for WebAssembly.");
+            return;
         }
 
         const InsGroupFlags IGF_OUT_OF_ORDER_MASK = InsGroupFlags.Prolog | InsGroupFlags.Epilog

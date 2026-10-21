@@ -111,7 +111,12 @@ public class Scev
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected scalar evolution operation {Oper}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-003",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected scalar evolution operation {Oper}."
+                        : null);
+                return ScevVisit.Abort;
             }
         }
     }
@@ -156,14 +161,43 @@ public class Scev
             return false;
         }
 
-        return (left, right) switch {
-            (ScevConstant l, ScevConstant r) => l.Value == r.Value,
-            (ScevLocal l, ScevLocal r) => (l.LclNum == r.LclNum) && (l.SsaNum == r.SsaNum),
-            (ScevBinop l, ScevBinop r) => Equals(l.Op1, r.Op1) && Equals(l.Op2, r.Op2),
-            (ScevUnop l, ScevUnop r) => Equals(l.Op1, r.Op1),
-            (ScevAddRec l, ScevAddRec r) => Equals(l.Start, r.Start) && Equals(l.Step, r.Step),
-            _ => throw new InvalidOperationException($"Unexpected scalar evolution operation {left.Oper}."),
-        };
+        switch (left, right)
+        {
+            case (ScevConstant l, ScevConstant r):
+            {
+                return l.Value == r.Value;
+            }
+
+            case (ScevLocal l, ScevLocal r):
+            {
+                return (l.LclNum == r.LclNum) && (l.SsaNum == r.SsaNum);
+            }
+
+            case (ScevBinop l, ScevBinop r):
+            {
+                return Equals(l.Op1, r.Op1) && Equals(l.Op2, r.Op2);
+            }
+
+            case (ScevUnop l, ScevUnop r):
+            {
+                return Equals(l.Op1, r.Op1);
+            }
+
+            case (ScevAddRec l, ScevAddRec r):
+            {
+                return Equals(l.Start, r.Start) && Equals(l.Step, r.Step);
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-003",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected scalar evolution operation {left.Oper}."
+                        : null);
+                return false;
+            }
+        }
     }
 
     [System.Diagnostics.Conditional("DEBUG")]
@@ -191,12 +225,39 @@ public class Scev
             {
                 jitprintf("(");
                 binop.Op1.Dump(comp);
-                jitprintf(binop.Oper switch {
-                    ScevOper.Add => " + ",
-                    ScevOper.Mul => " * ",
-                    ScevOper.Lsh => " << ",
-                    _ => throw new InvalidOperationException($"Unexpected binary operation {binop.Oper}."),
-                });
+                string operation;
+                switch (binop.Oper)
+                {
+                    case ScevOper.Add:
+                    {
+                        operation = " + ";
+                        break;
+                    }
+
+                    case ScevOper.Mul:
+                    {
+                        operation = " * ";
+                        break;
+                    }
+
+                    case ScevOper.Lsh:
+                    {
+                        operation = " << ";
+                        break;
+                    }
+
+                    default:
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            "RJS-SCE-007",
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? $"Unexpected binary operation {binop.Oper}."
+                                : null);
+                        operation = default!;
+                        break;
+                    }
+                }
+                jitprintf(operation);
                 binop.Op2.Dump(comp);
                 jitprintf(")");
                 break;
@@ -222,7 +283,12 @@ public class Scev
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected scalar evolution operation {Oper}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-003",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected scalar evolution operation {Oper}."
+                        : null);
+                return;
             }
         }
     }
@@ -305,8 +371,17 @@ public sealed class ScevAddRec : Scev
     {
         get
         {
-            return GetDebugData().Loop
-                ?? throw new System.InvalidOperationException("Scalar-evolution loop data is unavailable.");
+            var loop = GetDebugData().Loop;
+            if (loop is null)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-011",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Scalar-evolution loop data is unavailable."
+                        : null);
+            }
+
+            return loop;
         }
     }
 
@@ -325,7 +400,11 @@ public sealed class ScevAddRec : Scev
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Scalar-evolution debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-012",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "Scalar-evolution debug data is only available in Debug builds."
+                    : null);
         }
 
         return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());

@@ -111,7 +111,8 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("Argument load sizes are only supported on xarch targets.");
+            FatalJitException.ThrowFatalJitException("Argument load sizes are only supported on xarch targets.");
+            return;
         }
     }
 
@@ -119,7 +120,8 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     {
         if (!Configuration.UNIX_X86_ABI)
         {
-            throw new FatalJitException("Argument padding is only supported on the Unix x86 ABI.");
+            FatalJitException.ThrowFatalJitException("Argument padding is only supported on the Unix x86 ABI.");
+            return;
         }
     }
 }

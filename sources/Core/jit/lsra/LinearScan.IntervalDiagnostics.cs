@@ -164,11 +164,16 @@ public sealed partial class LinearScan
         var printed = false;
         for (var index = 0; index < _compiler.lvaTrackedCount; index++)
         {
-            var trackedToLocal = _compiler.lvaTrackedToVarNum
-                ?? throw new FatalJitException("Tracked locals require an index-to-local mapping.");
+            var trackedToLocal = _compiler.lvaTrackedToVarNum;
+            if (trackedToLocal is null)
+            {
+                FatalJitException.ThrowFatalJitException("Tracked locals require an index-to-local mapping.");
+                return;
+            }
             if (map is null)
             {
-                throw new FatalJitException("Tracked locals require a variable-to-register map.");
+                FatalJitException.ThrowFatalJitException("Tracked locals require a variable-to-register map.");
+                return;
             }
 
             var register = (regNumber)map[index];
@@ -218,7 +223,8 @@ public sealed partial class LinearScan
                 }
             }
 
-            throw new FatalJitException($"No incoming register mapping exists for V{localNumber:D2}.");
+            FatalJitException.ThrowFatalJitException($"No incoming register mapping exists for V{localNumber:D2}.");
+            return default!;
         }
 
         if (local.lvIsRegArg && !local.lvIsStructField)
@@ -353,7 +359,8 @@ public sealed partial class LinearScan
                             assert(lastFixedRegister is not null);
                             if (lastFixedRegister is null)
                             {
-                                throw new FatalJitException("A fixed use requires its preceding register reference.");
+                                FatalJitException.ThrowFatalJitException("A fixed use requires its preceding register reference.");
+                                return;
                             }
 
                             jitprintf($" Fixed:{reference.assignedReg().Name}(#{unchecked((int)lastFixedRegister.rpNum)})");
@@ -481,19 +488,28 @@ public sealed partial class LinearScan
             if (_enregisterLocalVars && (mode is LsraTupleDumpMode.LSRA_DUMP_POST) &&
                 (block != _compiler.fgFirstBB) && ((uint)block.bbNum <= _bbNumMaxBeforeResolution))
             {
-                var blockInfo = _blockInfo
-                    ?? throw new FatalJitException("Variable-location predecessors require LSRA block information.");
+                var blockInfo = _blockInfo;
+                if (blockInfo is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Variable-location predecessors require LSRA block information.");
+                    return;
+                }
                 jitprintf($"Predecessor for variable locations: {FMT_BB(checked((int)blockInfo[block.bbNum].predBBNum))}\n");
                 dumpInVarToRegMap(block);
             }
 
             if ((uint)block.bbNum > _bbNumMaxBeforeResolution)
             {
-                var splitBlocks = _splitBBNumToTargetBBNumMap
-                    ?? throw new FatalJitException("Resolution blocks require a split-edge mapping.");
+                var splitBlocks = _splitBBNumToTargetBBNumMap;
+                if (splitBlocks is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Resolution blocks require a split-edge mapping.");
+                    return;
+                }
                 if (!splitBlocks.TryGetValue((uint)block.bbNum, out var split))
                 {
-                    throw new FatalJitException($"No split-edge mapping exists for BB{block.bbNum:D2}.");
+                    FatalJitException.ThrowFatalJitException($"No split-edge mapping exists for BB{block.bbNum:D2}.");
+                    return;
                 }
 
                 assert(split.toBBNum <= _bbNumMaxBeforeResolution);

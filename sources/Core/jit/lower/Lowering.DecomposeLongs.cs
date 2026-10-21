@@ -248,9 +248,10 @@ public sealed partial class Lowering
                 {
                     if (!Configuration.FEATURE_HW_INTRINSICS)
                     {
-                        throw new FatalJitException(
+                        FatalJitException.ThrowFatalJitException(
                             CORJIT_SKIPPED,
-                            "Hardware-intrinsic long decomposition is not available.");
+                        "Hardware-intrinsic long decomposition is not available.");
+                        return default!;
                     }
 
                     nextNode = DecomposeHWIntrinsic(ref use);
@@ -271,7 +272,8 @@ public sealed partial class Lowering
                 case GT_CMPXCHG:
                 {
                     NYI("Interlocked operations on TYP_LONG");
-                    throw new FatalJitException(CORJIT_SKIPPED, "Interlocked operations on TYP_LONG are not ported.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Interlocked operations on TYP_LONG are not ported.");
+                    return default!;
                 }
 
                 default:

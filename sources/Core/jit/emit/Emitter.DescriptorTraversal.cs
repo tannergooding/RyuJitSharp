@@ -14,8 +14,12 @@ public partial class Emitter
     {
         assert(descriptor is not null);
         assert(size == (nuint)emitSizeOfInsDsc(descriptor));
-        var group = descriptor.StorageGroup
-            ?? throw new FatalJitException("Instruction traversal requires descriptor ownership.");
+        var group = descriptor.StorageGroup;
+        if (group is null)
+        {
+            FatalJitException.ThrowFatalJitException("Instruction traversal requires descriptor ownership.");
+            return;
+        }
         IReadOnlyList<instrDesc> storage;
         if ((group == emitCurIG) && emitCurIGnonEmpty())
         {
@@ -24,8 +28,15 @@ public partial class Emitter
         }
         else
         {
-            storage = group.igData
-                ?? throw new FatalJitException("Instruction traversal requires saved descriptor storage.");
+            var groupStorage = group.igData;
+            if (groupStorage is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    "Instruction traversal requires saved descriptor storage.");
+                return;
+            }
+
+            storage = groupStorage;
         }
 
         var nextOffset = descriptor.StorageOffset + size + (nuint)_debugInfoSize;
@@ -51,8 +62,14 @@ public partial class Emitter
         }
         else
         {
-            var storage = group.igData
-                ?? throw new FatalJitException("A saved instruction group requires descriptor storage.");
+            var storage = group.igData;
+            if (storage is null)
+            {
+                FatalJitException.ThrowFatalJitException("A saved instruction group requires descriptor storage.");
+                descriptor = default!;
+                count = default!;
+                return;
+            }
             descriptor = emitFirstInstrDesc(storage);
             count = group.igInsCnt;
         }
@@ -173,7 +190,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unwind emitter instruction-size queries require ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind emitter instruction-size queries require ARM32.");
+            return default!;
         }
 
         var anyInstructions = emitGetLocationInfo(location, out _, out var descriptor, out _);

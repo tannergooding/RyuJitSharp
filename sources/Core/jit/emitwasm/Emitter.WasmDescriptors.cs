@@ -91,14 +91,34 @@ public partial class Emitter
     {
         assert(isValidSimdElemSize(elementSize));
 
-        return elementSize switch
+        switch (elementSize)
         {
-            1 => index < 16,
-            2 => index < 8,
-            4 => index < 4,
-            8 => index < 2,
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Unexpected Wasm SIMD element size."),
-        };
+            case 1:
+            {
+                return index < 16;
+            }
+
+            case 2:
+            {
+                return index < 8;
+            }
+
+            case 4:
+            {
+                return index < 4;
+            }
+
+            case 8:
+            {
+                return index < 2;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unexpected Wasm SIMD element size.");
+                return default!;
+            }
+        }
     }
 
     public static WasmValueType emitGetLclVarDeclType(instrDesc id)
@@ -157,7 +177,8 @@ public partial class Emitter
             return unchecked((byte)lane);
         }
 
-        throw new FatalJitException(CORJIT_INTERNALERROR, "Unexpected Wasm lane immediate descriptor.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unexpected Wasm lane immediate descriptor.");
+        return default!;
     }
 
     private uint GetWasmArgsCount()

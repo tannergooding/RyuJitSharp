@@ -11,15 +11,17 @@ public sealed partial class Lowering
 {
     private bool IsValidConstForMovImmLoongArch64(GenTreeHWIntrinsic node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "LoongArch64 hardware-intrinsic immediate materialization is not ported.");
+        return default!;
     }
 
     private GenTree? LowerHWIntrinsic(GenTreeHWIntrinsic node)
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not available.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not available.");
+            return default!;
         }
 
         if (Configuration.TARGET_XARCH)
@@ -39,16 +41,19 @@ public sealed partial class Lowering
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
+            return default!;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
             NYI_RISCV64("LowerHWIntrinsic");
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic lowering is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic lowering is not ported.");
+            return default!;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not ported for this target.");
+        return default!;
     }
 
     private GenTree? LowerHWIntrinsicXarch(GenTreeHWIntrinsic node)
@@ -619,13 +624,43 @@ public sealed partial class Lowering
                     break;
                 }
 
-                var newId = intrinsicId switch {
-                    NI_X86Base_CompareGreaterThan => NI_X86Base_CompareLessThan,
-                    NI_X86Base_CompareGreaterThanOrEqual => NI_X86Base_CompareLessThanOrEqual,
-                    NI_X86Base_CompareNotGreaterThan => NI_X86Base_CompareNotLessThan,
-                    NI_X86Base_CompareNotGreaterThanOrEqual => NI_X86Base_CompareNotLessThanOrEqual,
-                    _ => throw new FatalJitException("Unexpected floating comparison intrinsic."),
-                };
+                NamedIntrinsic newId;
+                switch (intrinsicId)
+                {
+                    case NI_X86Base_CompareGreaterThan:
+                    {
+                        newId = NI_X86Base_CompareLessThan;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareGreaterThanOrEqual:
+                    {
+                        newId = NI_X86Base_CompareLessThanOrEqual;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareNotGreaterThan:
+                    {
+                        newId = NI_X86Base_CompareNotLessThan;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareNotGreaterThanOrEqual:
+                    {
+                        newId = NI_X86Base_CompareNotLessThanOrEqual;
+                        break;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage256
+                        );
+                        return null;
+                    }
+                }
+
                 node.ChangeHWIntrinsicId(newId);
                 (node.GetOpRef(1), node.GetOpRef(2)) = (node.GetOp(2), node.GetOp(1));
                 break;
@@ -638,11 +673,31 @@ public sealed partial class Lowering
                     break;
                 }
                 assert(varTypeIsIntegral(node.SimdBaseType));
-                var newId = intrinsicId switch {
-                    NI_X86Base_CompareLessThan => NI_X86Base_CompareGreaterThan,
-                    NI_AVX2_CompareLessThan => NI_AVX2_CompareGreaterThan,
-                    _ => throw new FatalJitException("Unexpected integer comparison intrinsic."),
-                };
+                NamedIntrinsic newId;
+                switch (intrinsicId)
+                {
+                    case NI_X86Base_CompareLessThan:
+                    {
+                        newId = NI_X86Base_CompareGreaterThan;
+                        break;
+                    }
+
+                    case NI_AVX2_CompareLessThan:
+                    {
+                        newId = NI_AVX2_CompareGreaterThan;
+                        break;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage257
+                        );
+                        return null;
+                    }
+                }
+
                 node.ChangeHWIntrinsicId(newId);
                 (node.GetOpRef(1), node.GetOpRef(2)) = (node.GetOp(2), node.GetOp(1));
                 break;
@@ -672,33 +727,188 @@ public sealed partial class Lowering
             case NI_AVX10v1_CompareScalarUnorderedGreaterThan:
             case NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual:
             {
-                var (compare, condition) = intrinsicId switch {
-                    NI_X86Base_CompareScalarOrderedEqual => (NI_X86Base_COMIS, GenCondition.FEQ),
-                    NI_X86Base_CompareScalarOrderedNotEqual => (NI_X86Base_COMIS, GenCondition.FNEU),
-                    NI_X86Base_CompareScalarOrderedLessThan => (NI_X86Base_COMIS, GenCondition.FLT),
-                    NI_X86Base_CompareScalarOrderedLessThanOrEqual => (NI_X86Base_COMIS, GenCondition.FLE),
-                    NI_X86Base_CompareScalarOrderedGreaterThan => (NI_X86Base_COMIS, GenCondition.FGT),
-                    NI_X86Base_CompareScalarOrderedGreaterThanOrEqual => (NI_X86Base_COMIS, GenCondition.FGE),
-                    NI_X86Base_CompareScalarUnorderedEqual => (NI_X86Base_UCOMIS, GenCondition.FEQ),
-                    NI_X86Base_CompareScalarUnorderedNotEqual => (NI_X86Base_UCOMIS, GenCondition.FNEU),
-                    NI_X86Base_CompareScalarUnorderedLessThan => (NI_X86Base_UCOMIS, GenCondition.FLT),
-                    NI_X86Base_CompareScalarUnorderedLessThanOrEqual => (NI_X86Base_UCOMIS, GenCondition.FLE),
-                    NI_X86Base_CompareScalarUnorderedGreaterThan => (NI_X86Base_UCOMIS, GenCondition.FGT),
-                    NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual => (NI_X86Base_UCOMIS, GenCondition.FGE),
-                    NI_AVX10v1_CompareScalarOrderedEqual => (NI_AVX10v1_VCOMISH, GenCondition.FEQ),
-                    NI_AVX10v1_CompareScalarOrderedNotEqual => (NI_AVX10v1_VCOMISH, GenCondition.FNEU),
-                    NI_AVX10v1_CompareScalarOrderedLessThan => (NI_AVX10v1_VCOMISH, GenCondition.FLT),
-                    NI_AVX10v1_CompareScalarOrderedLessThanOrEqual => (NI_AVX10v1_VCOMISH, GenCondition.FLE),
-                    NI_AVX10v1_CompareScalarOrderedGreaterThan => (NI_AVX10v1_VCOMISH, GenCondition.FGT),
-                    NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual => (NI_AVX10v1_VCOMISH, GenCondition.FGE),
-                    NI_AVX10v1_CompareScalarUnorderedEqual => (NI_AVX10v1_VUCOMISH, GenCondition.FEQ),
-                    NI_AVX10v1_CompareScalarUnorderedNotEqual => (NI_AVX10v1_VUCOMISH, GenCondition.FNEU),
-                    NI_AVX10v1_CompareScalarUnorderedLessThan => (NI_AVX10v1_VUCOMISH, GenCondition.FLT),
-                    NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual => (NI_AVX10v1_VUCOMISH, GenCondition.FLE),
-                    NI_AVX10v1_CompareScalarUnorderedGreaterThan => (NI_AVX10v1_VUCOMISH, GenCondition.FGT),
-                    NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual => (NI_AVX10v1_VUCOMISH, GenCondition.FGE),
-                    _ => throw new FatalJitException("Unexpected scalar comparison intrinsic."),
-                };
+                NamedIntrinsic compare;
+                GenCondition.CodeKind condition;
+                switch (intrinsicId)
+                {
+                    case NI_X86Base_CompareScalarOrderedEqual:
+                    {
+                        compare = NI_X86Base_COMIS;
+                        condition = GenCondition.FEQ;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarOrderedNotEqual:
+                    {
+                        compare = NI_X86Base_COMIS;
+                        condition = GenCondition.FNEU;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarOrderedLessThan:
+                    {
+                        compare = NI_X86Base_COMIS;
+                        condition = GenCondition.FLT;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
+                    {
+                        compare = NI_X86Base_COMIS;
+                        condition = GenCondition.FLE;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarOrderedGreaterThan:
+                    {
+                        compare = NI_X86Base_COMIS;
+                        condition = GenCondition.FGT;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+                    {
+                        compare = NI_X86Base_COMIS;
+                        condition = GenCondition.FGE;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarUnorderedEqual:
+                    {
+                        compare = NI_X86Base_UCOMIS;
+                        condition = GenCondition.FEQ;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarUnorderedNotEqual:
+                    {
+                        compare = NI_X86Base_UCOMIS;
+                        condition = GenCondition.FNEU;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarUnorderedLessThan:
+                    {
+                        compare = NI_X86Base_UCOMIS;
+                        condition = GenCondition.FLT;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+                    {
+                        compare = NI_X86Base_UCOMIS;
+                        condition = GenCondition.FLE;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarUnorderedGreaterThan:
+                    {
+                        compare = NI_X86Base_UCOMIS;
+                        condition = GenCondition.FGT;
+                        break;
+                    }
+
+                    case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+                    {
+                        compare = NI_X86Base_UCOMIS;
+                        condition = GenCondition.FGE;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarOrderedEqual:
+                    {
+                        compare = NI_AVX10v1_VCOMISH;
+                        condition = GenCondition.FEQ;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarOrderedNotEqual:
+                    {
+                        compare = NI_AVX10v1_VCOMISH;
+                        condition = GenCondition.FNEU;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarOrderedLessThan:
+                    {
+                        compare = NI_AVX10v1_VCOMISH;
+                        condition = GenCondition.FLT;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarOrderedLessThanOrEqual:
+                    {
+                        compare = NI_AVX10v1_VCOMISH;
+                        condition = GenCondition.FLE;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarOrderedGreaterThan:
+                    {
+                        compare = NI_AVX10v1_VCOMISH;
+                        condition = GenCondition.FGT;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual:
+                    {
+                        compare = NI_AVX10v1_VCOMISH;
+                        condition = GenCondition.FGE;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarUnorderedEqual:
+                    {
+                        compare = NI_AVX10v1_VUCOMISH;
+                        condition = GenCondition.FEQ;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarUnorderedNotEqual:
+                    {
+                        compare = NI_AVX10v1_VUCOMISH;
+                        condition = GenCondition.FNEU;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarUnorderedLessThan:
+                    {
+                        compare = NI_AVX10v1_VUCOMISH;
+                        condition = GenCondition.FLT;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual:
+                    {
+                        compare = NI_AVX10v1_VUCOMISH;
+                        condition = GenCondition.FLE;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarUnorderedGreaterThan:
+                    {
+                        compare = NI_AVX10v1_VUCOMISH;
+                        condition = GenCondition.FGT;
+                        break;
+                    }
+
+                    case NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual:
+                    {
+                        compare = NI_AVX10v1_VUCOMISH;
+                        condition = GenCondition.FGE;
+                        break;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage258
+                        );
+                        return null;
+                    }
+                }
+
                 LowerHWIntrinsicCC(node, compare, new GenCondition(condition));
                 break;
             }

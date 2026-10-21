@@ -180,7 +180,8 @@ public static partial class Globals
             return unchecked((uint)BAD_VAR_NUM);
         }
 
-        throw new FatalJitException("Floating-point argument register mapping is not supported for this target.");
+        FatalJitException.ThrowFatalJitException("Floating-point argument register mapping is not supported for this target.");
+        return default!;
     }
 
     public static uint genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInfoCallConvExtension callConv)

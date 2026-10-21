@@ -11,58 +11,68 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering was dispatched for another target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering was dispatched for another target.");
+            return;
         }
 
         NYI_RISCV64("LowerSIMD");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering is not ported.");
+        return;
     }
 
     private void ContainCheckSIMD(GenTree simdNode)
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment was dispatched for another target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment was dispatched for another target.");
+            return;
         }
 
         NYI_RISCV64("ContainCheckSIMD");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment is not ported.");
+        return;
     }
 
     private bool IsValidConstForMovImmRiscV64(GenTreeHWIntrinsic node)
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "RISC-V64 hardware-intrinsic immediate materialization was dispatched incorrectly.");
+            return default!;
         }
 
         NYI_RISCV64("IsValidConstForMovImm");
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "RISC-V64 hardware-intrinsic immediate materialization is not ported.");
+        return default!;
     }
 
     private GenTree? LowerHWIntrinsicCmpOpRiscV64(GenTreeHWIntrinsic node, genTreeOps cmpOp)
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "RISC-V64 hardware-intrinsic comparison was dispatched incorrectly.");
+            return default!;
         }
 
         NYI_RISCV64("LowerHWIntrinsicCmpOp");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic comparisons are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic comparisons are not ported.");
+        return default!;
     }
 
     private void ContainCheckHWIntrinsicRiscV64(GenTreeHWIntrinsic node)
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "RISC-V64 hardware-intrinsic containment was dispatched incorrectly.");
+            return;
         }
 
         NYI_RISCV64("ContainCheckHWIntrinsic");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic containment is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic containment is not ported.");
+        return;
     }
 }

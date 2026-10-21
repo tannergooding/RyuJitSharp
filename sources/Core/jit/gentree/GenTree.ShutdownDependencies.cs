@@ -122,7 +122,8 @@ public partial class GenTree
 
     internal static byte GetTrueSize(uint op)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtTrueSizes native logical sizes are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GenTree::s_gtTrueSizes native logical sizes are not ported.");
+        return default!;
     }
 
     private static string GetOperName(genTreeOps oper)
@@ -133,6 +134,7 @@ public partial class GenTree
 
     private static byte GetNodeSize(uint op)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
+        return default!;
     }
 }

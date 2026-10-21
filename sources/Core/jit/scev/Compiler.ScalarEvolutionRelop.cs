@@ -13,7 +13,14 @@ public partial class Compiler
 {
     internal RelopEvaluationResult EvaluateScalarEvolutionRelop(FlowGraphNaturalLoop loop, ValueNum vn)
     {
-        var store = vnStore ?? throw new System.InvalidOperationException("Scalar evolution requires value numbering.");
+        var store = vnStore;
+        if (store is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-001",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+        }
+
         for (var idom = loop.Header.bbIDom; idom is not null; idom = idom.bbIDom)
         {
             if (idom.Kind is not BBJ_COND)

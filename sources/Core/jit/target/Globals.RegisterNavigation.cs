@@ -28,7 +28,8 @@ public static partial class Globals
             return REG_NEXT_WASM(reg);
         }
 
-        throw new FatalJitException("Register successor is not supported for this target.");
+        FatalJitException.ThrowFatalJitException("Register successor is not supported for this target.");
+        return default!;
     }
 
     public static regNumber REG_PREV(regNumber reg)
@@ -47,6 +48,7 @@ public static partial class Globals
             return reg - 1;
         }
 
-        throw new FatalJitException("Register predecessor is not supported for this target.");
+        FatalJitException.ThrowFatalJitException("Register predecessor is not supported for this target.");
+        return default!;
     }
 }

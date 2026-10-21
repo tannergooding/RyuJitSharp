@@ -33,8 +33,16 @@ public partial class Compiler
 
             case BBJ_EHFINALLYRET:
             {
-                var targets = block.EhfTargets
-                    ?? throw new InvalidOperationException("Finally return targets must be initialized.");
+                var targets = block.EhfTargets;
+                if (targets is null)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        "RJS-CFG-002",
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? "Finally return targets must be initialized."
+                            : null);
+                }
+
                 foreach (var edge in targets.Succs)
                 {
                     _ = fgRemoveAllRefPreds(edge.DestinationBlock, block);
@@ -60,7 +68,12 @@ public partial class Compiler
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected block kind {block.Kind}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-CFG-001",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected block kind {block.Kind}."
+                        : null);
+                return;
             }
         }
     }

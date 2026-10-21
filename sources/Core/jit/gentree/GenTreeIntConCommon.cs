@@ -150,7 +150,8 @@ public abstract class GenTreeIntConCommon : GenTree
     {
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_X86)
         {
-            throw new FatalJitException("Address-base fit checks are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("Address-base fit checks are unsupported on this target.");
+            return default!;
         }
 
         if (Configuration.DEBUG && !comp.opts.compEnablePCRelAddr)

@@ -593,12 +593,14 @@ public sealed partial class CodeGen
     {
         if (_compiler.IsTargetAbi(CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unix NativeAOT prologs require CFI unwind support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unix NativeAOT prologs require CFI unwind support.");
+            return;
         }
 
         if (_compiler.info.compIsVarArgs)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unix AMD64 varargs are unsupported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unix AMD64 varargs are unsupported.");
+            return;
         }
     }
 }

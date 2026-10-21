@@ -9,139 +9,536 @@ namespace RyuJitSharp;
 
 public static partial class PhasesExtensions
 {
-    private static string GetName(Phases phase) => phase switch
+    private static string GetName(Phases phase)
     {
-        Phases.PHASE_PRE_IMPORT => "Pre-import",
-        Phases.PHASE_IMPORTATION => "Importation",
-        Phases.PHASE_INDXCALL => "Indirect call transform",
-        Phases.PHASE_PATCHPOINTS => "Expand patchpoints",
-        Phases.PHASE_POST_IMPORT => "Post-import",
-        Phases.PHASE_ASYNC_SAVE_CONTEXTS => "Save contexts around async calls",
-        Phases.PHASE_IBCPREP => "Profile instrumentation prep",
-        Phases.PHASE_IBCINSTR => "Profile instrumentation",
-        Phases.PHASE_INCPROFILE => "Profile incorporation",
-        Phases.PHASE_POST_INLINE_NORETURN => "Post-inline no-return cleanup",
-        Phases.PHASE_RESOLVE_GDVS => "Resolve GDV Checks",
-        Phases.PHASE_MORPH_INIT => "Morph - Init",
-        Phases.PHASE_MORPH_INLINE => "Morph - Inlining",
-        Phases.PHASE_MORPH_ADD_INTERNAL => "Morph - Add internal blocks",
-        Phases.PHASE_SWIFT_ERROR_RET => "Add Swift error returns",
-        Phases.PHASE_ALLOCATE_OBJECTS => "Allocate Objects",
-        Phases.PHASE_EMPTY_TRY => "Remove empty try",
-        Phases.PHASE_EMPTY_TRY_CATCH_FAULT => "Remove empty try/catch/fault",
-        Phases.PHASE_EMPTY_FINALLY => "Remove empty finally",
-        Phases.PHASE_MERGE_FINALLY_CHAINS => "Merge callfinally chains",
-        Phases.PHASE_CLONE_FINALLY => "Clone finally",
-        Phases.PHASE_UPDATE_FINALLY_FLAGS => "Update finally target flags",
-        Phases.PHASE_EARLY_UPDATE_FLOW_GRAPH => "Update flow graph early pass",
-        Phases.PHASE_DFS_BLOCKS1 => "DFS blocks and remove dead code 1",
-        Phases.PHASE_DFS_BLOCKS2 => "DFS blocks and remove dead code 2",
-        Phases.PHASE_DFS_BLOCKS3 => "DFS blocks and remove dead code 3",
-        Phases.PHASE_LOCAL_MORPH => "Local morph",
-        Phases.PHASE_OPTIMIZE_MASK_CONVERSIONS => "Optimize mask conversions",
-        Phases.PHASE_EARLY_LIVENESS => "Early liveness",
-        Phases.PHASE_PHYSICAL_PROMOTION => "Physical promotion",
-        Phases.PHASE_UNPIN_LOCALS => "Unpin non-movable locals",
-        Phases.PHASE_FWD_SUB => "Forward Substitution",
-        Phases.PHASE_IMPBYREF_COPY_OMISSION => "Identify candidates for implicit byref copy omission",
-        Phases.PHASE_MORPH_IMPBYREF => "Morph - ByRefs",
-        Phases.PHASE_PROMOTE_STRUCTS => "Morph - Promote Structs",
-        Phases.PHASE_MORPH_GLOBAL => "Morph - Global",
-        Phases.PHASE_POST_MORPH => "Post-Morph",
-        Phases.PHASE_MORPH_END => "Morph - Finish",
-        Phases.PHASE_GS_COOKIE => "GS Cookie",
-        Phases.PHASE_COMPUTE_BLOCK_WEIGHTS => "Compute block weights",
-        Phases.PHASE_CREATE_FUNCLETS => "Create EH funclets",
-        Phases.PHASE_HEAD_TAIL_MERGE => "Head and tail merge",
-        Phases.PHASE_EARLY_QMARK_EXPANSION => "Early QMARK expansion",
-        Phases.PHASE_INVERT_LOOPS => "Invert loops",
-        Phases.PHASE_HEAD_TAIL_MERGE2 => "Post-morph head and tail merge",
-        Phases.PHASE_OPTIMIZE_FLOW => "Optimize control flow",
-        Phases.PHASE_OPTIMIZE_PRE_LAYOUT => "Optimize pre-layout",
-        Phases.PHASE_OPTIMIZE_LAYOUT => "Optimize layout",
-        Phases.PHASE_OPTIMIZE_POST_LAYOUT => "Optimize post-layout",
-        Phases.PHASE_COMPUTE_DOMINATORS => "Compute dominators",
-        Phases.PHASE_CANONICALIZE_ENTRY => "Canonicalize entry",
-        Phases.PHASE_SET_BLOCK_WEIGHTS => "Set block weights",
-        Phases.PHASE_ZERO_INITS => "Redundant zero Inits",
-        Phases.PHASE_ADJUST_THROW_LIKELIHOODS => "Adjust throw edge likelihoods",
-        Phases.PHASE_FIND_LOOPS => "Find loops",
-        Phases.PHASE_CLONE_LOOPS => "Clone loops",
-        Phases.PHASE_UNROLL_LOOPS => "Unroll loops",
-        Phases.PHASE_MORPH_MDARR => "Morph array ops",
-        Phases.PHASE_EMPTY_FINALLY_2 => "Remove empty finally 2",
-        Phases.PHASE_EMPTY_TRY_2 => "Remove empty try 2",
-        Phases.PHASE_EMPTY_TRY_CATCH_FAULT_2 => "Remove empty try-catch-fault 2",
-        Phases.PHASE_HOIST_LOOP_CODE => "Hoist loop code",
-        Phases.PHASE_MARK_LOCAL_VARS => "Mark local vars",
-        Phases.PHASE_OPTIMIZE_BOOLS => "Optimize bools",
-        Phases.PHASE_SWITCH_RECOGNITION => "Recognize Switch",
-        Phases.PHASE_FIND_OPER_ORDER => "Find oper order",
-        Phases.PHASE_SET_BLOCK_ORDER => "Set block order",
-        Phases.PHASE_BUILD_SSA => "Build SSA representation",
-        Phases.PHASE_BUILD_SSA_LIVENESS => "SSA: liveness",
-        Phases.PHASE_BUILD_SSA_DF => "SSA: DF",
-        Phases.PHASE_BUILD_SSA_INSERT_PHIS => "SSA: insert phis",
-        Phases.PHASE_BUILD_SSA_RENAME => "SSA: rename",
-        Phases.PHASE_EARLY_PROP => "Early Value Propagation",
-        Phases.PHASE_OPTIMIZE_INDUCTION_VARIABLES => "Optimize Induction Variables",
-        Phases.PHASE_VALUE_NUMBER => "Do value numbering",
-        Phases.PHASE_OPTIMIZE_INDEX_CHECKS => "Optimize index checks",
-        Phases.PHASE_OPTIMIZE_VALNUM_CSES => "Optimize Valnum CSEs",
-        Phases.PHASE_VN_COPY_PROP => "VN based copy prop",
-        Phases.PHASE_VN_BASED_INTRINSIC_EXPAND => "VN based intrinsic expansion",
-        Phases.PHASE_OPTIMIZE_BRANCHES => "Redundant branch opts",
-        Phases.PHASE_BOUNDS_CHECK_COALESCE => "Coalesce bounds checks",
-        Phases.PHASE_ASSERTION_PROP_MAIN => "Assertion prop",
-        Phases.PHASE_RANGE_CHECK_CLONING => "Clone blocks with range checks",
-        Phases.PHASE_IF_CONVERSION => "If conversion",
-        Phases.PHASE_VN_BASED_DEAD_STORE_REMOVAL => "VN-based dead store removal",
-        Phases.PHASE_EMPTY_FINALLY_3 => "Remove empty finally 3",
-        Phases.PHASE_EMPTY_TRY_3 => "Remove empty try 3",
-        Phases.PHASE_EMPTY_TRY_CATCH_FAULT_3 => "Remove empty try-catch-fault 3",
-        Phases.PHASE_REMOVE_UNREACHABLE_TRY => "Remove unreachable try",
-        Phases.PHASE_OPT_UPDATE_FLOW_GRAPH => "Update flow graph opt pass",
-        Phases.PHASE_OPT_DFS_BLOCKS => "Remove unreachable blocks",
-        Phases.PHASE_STRESS_SPLIT_TREE => "Stress gtSplitTree",
-        Phases.PHASE_EXPAND_RTLOOKUPS => "Expand runtime lookups",
-        Phases.PHASE_EXPAND_STATIC_INIT => "Expand static init",
-        Phases.PHASE_EXPAND_CASTS => "Expand casts",
-        Phases.PHASE_EXPAND_TLS => "Expand TLS access",
-        Phases.PHASE_EXPAND_STACK_ARR => "Expand stack array allocation",
-        Phases.PHASE_INSERT_GC_POLLS => "Insert GC Polls",
-        Phases.PHASE_CREATE_THROW_HELPERS => "Create throw helper blocks",
-        Phases.PHASE_DETERMINE_FIRST_COLD_BLOCK => "Determine first cold block",
-        Phases.PHASE_RATIONALIZE => "Rationalize IR",
-        Phases.PHASE_REPAIR_PROFILE_POST_MORPH => "Repair profile post-morph",
-        Phases.PHASE_REPAIR_PROFILE_PRE_LAYOUT => "Repair profile pre-layout",
-        Phases.PHASE_DFS_BLOCKS_WASM => "Wasm remove unreachable blocks",
-        Phases.PHASE_WASM_EH_FLOW => "Wasm eh control flow",
-        Phases.PHASE_WASM_REPAIR_TRY_ENTRIES => "Wasm repair try entries",
-        Phases.PHASE_WASM_TRANSFORM_SCCS => "Wasm transform sccs",
-        Phases.PHASE_WASM_CONTROL_FLOW => "Wasm control flow",
-        Phases.PHASE_WASM_IDENTIFY_GCSAFE_LOCALS => "Wasm identify GC safe locals",
-        Phases.PHASE_WASM_SPILL_REFS => "Wasm spill refs",
-        Phases.PHASE_WASM_VIRTUAL_IP => "Wasm virtual IP",
-        Phases.PHASE_ASYNC => "Transform async",
-        Phases.PHASE_LCLVARLIVENESS => "Local var liveness",
-        Phases.PHASE_LCLVARLIVENESS_INIT => "Local var liveness init",
-        Phases.PHASE_LCLVARLIVENESS_PERBLOCK => "Per block local var liveness",
-        Phases.PHASE_LCLVARLIVENESS_INTERBLOCK => "Global local var liveness",
-        Phases.PHASE_LOWERING_DECOMP => "Lowering decomposition",
-        Phases.PHASE_LOWERING => "Lowering nodeinfo",
-        Phases.PHASE_STACK_LEVEL_SETTER => "Calculate stack level slots",
-        Phases.PHASE_LINEAR_SCAN => "Linear scan register alloc",
-        Phases.PHASE_LINEAR_SCAN_BUILD => "LSRA build intervals",
-        Phases.PHASE_LINEAR_SCAN_ALLOC => "LSRA allocate",
-        Phases.PHASE_LINEAR_SCAN_RESOLVE => "LSRA resolve",
-        Phases.PHASE_ALIGN_LOOPS => "Place 'align' instructions",
-        Phases.PHASE_GENERATE_CODE => "Generate code",
-        Phases.PHASE_EMIT_CODE => "Emit code",
-        Phases.PHASE_EMIT_GCEH => "Emit GC+EH tables",
-        Phases.PHASE_POST_EMIT => "Post-Emit",
-        Phases.PHASE_CLR_API => "CLR API calls",
-        _ => throw new FatalJitException("Invalid compiler phase."),
-    };
+        switch (phase)
+        {
+            case Phases.PHASE_PRE_IMPORT:
+            {
+                return "Pre-import";
+            }
+            case Phases.PHASE_IMPORTATION:
+            {
+                return "Importation";
+            }
+            case Phases.PHASE_INDXCALL:
+            {
+                return "Indirect call transform";
+            }
+            case Phases.PHASE_PATCHPOINTS:
+            {
+                return "Expand patchpoints";
+            }
+            case Phases.PHASE_POST_IMPORT:
+            {
+                return "Post-import";
+            }
+            case Phases.PHASE_ASYNC_SAVE_CONTEXTS:
+            {
+                return "Save contexts around async calls";
+            }
+            case Phases.PHASE_IBCPREP:
+            {
+                return "Profile instrumentation prep";
+            }
+            case Phases.PHASE_IBCINSTR:
+            {
+                return "Profile instrumentation";
+            }
+            case Phases.PHASE_INCPROFILE:
+            {
+                return "Profile incorporation";
+            }
+            case Phases.PHASE_POST_INLINE_NORETURN:
+            {
+                return "Post-inline no-return cleanup";
+            }
+            case Phases.PHASE_RESOLVE_GDVS:
+            {
+                return "Resolve GDV Checks";
+            }
+            case Phases.PHASE_MORPH_INIT:
+            {
+                return "Morph - Init";
+            }
+            case Phases.PHASE_MORPH_INLINE:
+            {
+                return "Morph - Inlining";
+            }
+            case Phases.PHASE_MORPH_ADD_INTERNAL:
+            {
+                return "Morph - Add internal blocks";
+            }
+            case Phases.PHASE_SWIFT_ERROR_RET:
+            {
+                return "Add Swift error returns";
+            }
+            case Phases.PHASE_ALLOCATE_OBJECTS:
+            {
+                return "Allocate Objects";
+            }
+            case Phases.PHASE_EMPTY_TRY:
+            {
+                return "Remove empty try";
+            }
+            case Phases.PHASE_EMPTY_TRY_CATCH_FAULT:
+            {
+                return "Remove empty try/catch/fault";
+            }
+            case Phases.PHASE_EMPTY_FINALLY:
+            {
+                return "Remove empty finally";
+            }
+            case Phases.PHASE_MERGE_FINALLY_CHAINS:
+            {
+                return "Merge callfinally chains";
+            }
+            case Phases.PHASE_CLONE_FINALLY:
+            {
+                return "Clone finally";
+            }
+            case Phases.PHASE_UPDATE_FINALLY_FLAGS:
+            {
+                return "Update finally target flags";
+            }
+            case Phases.PHASE_EARLY_UPDATE_FLOW_GRAPH:
+            {
+                return "Update flow graph early pass";
+            }
+            case Phases.PHASE_DFS_BLOCKS1:
+            {
+                return "DFS blocks and remove dead code 1";
+            }
+            case Phases.PHASE_DFS_BLOCKS2:
+            {
+                return "DFS blocks and remove dead code 2";
+            }
+            case Phases.PHASE_DFS_BLOCKS3:
+            {
+                return "DFS blocks and remove dead code 3";
+            }
+            case Phases.PHASE_LOCAL_MORPH:
+            {
+                return "Local morph";
+            }
+            case Phases.PHASE_OPTIMIZE_MASK_CONVERSIONS:
+            {
+                return "Optimize mask conversions";
+            }
+            case Phases.PHASE_EARLY_LIVENESS:
+            {
+                return "Early liveness";
+            }
+            case Phases.PHASE_PHYSICAL_PROMOTION:
+            {
+                return "Physical promotion";
+            }
+            case Phases.PHASE_UNPIN_LOCALS:
+            {
+                return "Unpin non-movable locals";
+            }
+            case Phases.PHASE_FWD_SUB:
+            {
+                return "Forward Substitution";
+            }
+            case Phases.PHASE_IMPBYREF_COPY_OMISSION:
+            {
+                return "Identify candidates for implicit byref copy omission";
+            }
+            case Phases.PHASE_MORPH_IMPBYREF:
+            {
+                return "Morph - ByRefs";
+            }
+            case Phases.PHASE_PROMOTE_STRUCTS:
+            {
+                return "Morph - Promote Structs";
+            }
+            case Phases.PHASE_MORPH_GLOBAL:
+            {
+                return "Morph - Global";
+            }
+            case Phases.PHASE_POST_MORPH:
+            {
+                return "Post-Morph";
+            }
+            case Phases.PHASE_MORPH_END:
+            {
+                return "Morph - Finish";
+            }
+            case Phases.PHASE_GS_COOKIE:
+            {
+                return "GS Cookie";
+            }
+            case Phases.PHASE_COMPUTE_BLOCK_WEIGHTS:
+            {
+                return "Compute block weights";
+            }
+            case Phases.PHASE_CREATE_FUNCLETS:
+            {
+                return "Create EH funclets";
+            }
+            case Phases.PHASE_HEAD_TAIL_MERGE:
+            {
+                return "Head and tail merge";
+            }
+            case Phases.PHASE_EARLY_QMARK_EXPANSION:
+            {
+                return "Early QMARK expansion";
+            }
+            case Phases.PHASE_INVERT_LOOPS:
+            {
+                return "Invert loops";
+            }
+            case Phases.PHASE_HEAD_TAIL_MERGE2:
+            {
+                return "Post-morph head and tail merge";
+            }
+            case Phases.PHASE_OPTIMIZE_FLOW:
+            {
+                return "Optimize control flow";
+            }
+            case Phases.PHASE_OPTIMIZE_PRE_LAYOUT:
+            {
+                return "Optimize pre-layout";
+            }
+            case Phases.PHASE_OPTIMIZE_LAYOUT:
+            {
+                return "Optimize layout";
+            }
+            case Phases.PHASE_OPTIMIZE_POST_LAYOUT:
+            {
+                return "Optimize post-layout";
+            }
+            case Phases.PHASE_COMPUTE_DOMINATORS:
+            {
+                return "Compute dominators";
+            }
+            case Phases.PHASE_CANONICALIZE_ENTRY:
+            {
+                return "Canonicalize entry";
+            }
+            case Phases.PHASE_SET_BLOCK_WEIGHTS:
+            {
+                return "Set block weights";
+            }
+            case Phases.PHASE_ZERO_INITS:
+            {
+                return "Redundant zero Inits";
+            }
+            case Phases.PHASE_ADJUST_THROW_LIKELIHOODS:
+            {
+                return "Adjust throw edge likelihoods";
+            }
+            case Phases.PHASE_FIND_LOOPS:
+            {
+                return "Find loops";
+            }
+            case Phases.PHASE_CLONE_LOOPS:
+            {
+                return "Clone loops";
+            }
+            case Phases.PHASE_UNROLL_LOOPS:
+            {
+                return "Unroll loops";
+            }
+            case Phases.PHASE_MORPH_MDARR:
+            {
+                return "Morph array ops";
+            }
+            case Phases.PHASE_EMPTY_FINALLY_2:
+            {
+                return "Remove empty finally 2";
+            }
+            case Phases.PHASE_EMPTY_TRY_2:
+            {
+                return "Remove empty try 2";
+            }
+            case Phases.PHASE_EMPTY_TRY_CATCH_FAULT_2:
+            {
+                return "Remove empty try-catch-fault 2";
+            }
+            case Phases.PHASE_HOIST_LOOP_CODE:
+            {
+                return "Hoist loop code";
+            }
+            case Phases.PHASE_MARK_LOCAL_VARS:
+            {
+                return "Mark local vars";
+            }
+            case Phases.PHASE_OPTIMIZE_BOOLS:
+            {
+                return "Optimize bools";
+            }
+            case Phases.PHASE_SWITCH_RECOGNITION:
+            {
+                return "Recognize Switch";
+            }
+            case Phases.PHASE_FIND_OPER_ORDER:
+            {
+                return "Find oper order";
+            }
+            case Phases.PHASE_SET_BLOCK_ORDER:
+            {
+                return "Set block order";
+            }
+            case Phases.PHASE_BUILD_SSA:
+            {
+                return "Build SSA representation";
+            }
+            case Phases.PHASE_BUILD_SSA_LIVENESS:
+            {
+                return "SSA: liveness";
+            }
+            case Phases.PHASE_BUILD_SSA_DF:
+            {
+                return "SSA: DF";
+            }
+            case Phases.PHASE_BUILD_SSA_INSERT_PHIS:
+            {
+                return "SSA: insert phis";
+            }
+            case Phases.PHASE_BUILD_SSA_RENAME:
+            {
+                return "SSA: rename";
+            }
+            case Phases.PHASE_EARLY_PROP:
+            {
+                return "Early Value Propagation";
+            }
+            case Phases.PHASE_OPTIMIZE_INDUCTION_VARIABLES:
+            {
+                return "Optimize Induction Variables";
+            }
+            case Phases.PHASE_VALUE_NUMBER:
+            {
+                return "Do value numbering";
+            }
+            case Phases.PHASE_OPTIMIZE_INDEX_CHECKS:
+            {
+                return "Optimize index checks";
+            }
+            case Phases.PHASE_OPTIMIZE_VALNUM_CSES:
+            {
+                return "Optimize Valnum CSEs";
+            }
+            case Phases.PHASE_VN_COPY_PROP:
+            {
+                return "VN based copy prop";
+            }
+            case Phases.PHASE_VN_BASED_INTRINSIC_EXPAND:
+            {
+                return "VN based intrinsic expansion";
+            }
+            case Phases.PHASE_OPTIMIZE_BRANCHES:
+            {
+                return "Redundant branch opts";
+            }
+            case Phases.PHASE_BOUNDS_CHECK_COALESCE:
+            {
+                return "Coalesce bounds checks";
+            }
+            case Phases.PHASE_ASSERTION_PROP_MAIN:
+            {
+                return "Assertion prop";
+            }
+            case Phases.PHASE_RANGE_CHECK_CLONING:
+            {
+                return "Clone blocks with range checks";
+            }
+            case Phases.PHASE_IF_CONVERSION:
+            {
+                return "If conversion";
+            }
+            case Phases.PHASE_VN_BASED_DEAD_STORE_REMOVAL:
+            {
+                return "VN-based dead store removal";
+            }
+            case Phases.PHASE_EMPTY_FINALLY_3:
+            {
+                return "Remove empty finally 3";
+            }
+            case Phases.PHASE_EMPTY_TRY_3:
+            {
+                return "Remove empty try 3";
+            }
+            case Phases.PHASE_EMPTY_TRY_CATCH_FAULT_3:
+            {
+                return "Remove empty try-catch-fault 3";
+            }
+            case Phases.PHASE_REMOVE_UNREACHABLE_TRY:
+            {
+                return "Remove unreachable try";
+            }
+            case Phases.PHASE_OPT_UPDATE_FLOW_GRAPH:
+            {
+                return "Update flow graph opt pass";
+            }
+            case Phases.PHASE_OPT_DFS_BLOCKS:
+            {
+                return "Remove unreachable blocks";
+            }
+            case Phases.PHASE_STRESS_SPLIT_TREE:
+            {
+                return "Stress gtSplitTree";
+            }
+            case Phases.PHASE_EXPAND_RTLOOKUPS:
+            {
+                return "Expand runtime lookups";
+            }
+            case Phases.PHASE_EXPAND_STATIC_INIT:
+            {
+                return "Expand static init";
+            }
+            case Phases.PHASE_EXPAND_CASTS:
+            {
+                return "Expand casts";
+            }
+            case Phases.PHASE_EXPAND_TLS:
+            {
+                return "Expand TLS access";
+            }
+            case Phases.PHASE_EXPAND_STACK_ARR:
+            {
+                return "Expand stack array allocation";
+            }
+            case Phases.PHASE_INSERT_GC_POLLS:
+            {
+                return "Insert GC Polls";
+            }
+            case Phases.PHASE_CREATE_THROW_HELPERS:
+            {
+                return "Create throw helper blocks";
+            }
+            case Phases.PHASE_DETERMINE_FIRST_COLD_BLOCK:
+            {
+                return "Determine first cold block";
+            }
+            case Phases.PHASE_RATIONALIZE:
+            {
+                return "Rationalize IR";
+            }
+            case Phases.PHASE_REPAIR_PROFILE_POST_MORPH:
+            {
+                return "Repair profile post-morph";
+            }
+            case Phases.PHASE_REPAIR_PROFILE_PRE_LAYOUT:
+            {
+                return "Repair profile pre-layout";
+            }
+            case Phases.PHASE_DFS_BLOCKS_WASM:
+            {
+                return "Wasm remove unreachable blocks";
+            }
+            case Phases.PHASE_WASM_EH_FLOW:
+            {
+                return "Wasm eh control flow";
+            }
+            case Phases.PHASE_WASM_REPAIR_TRY_ENTRIES:
+            {
+                return "Wasm repair try entries";
+            }
+            case Phases.PHASE_WASM_TRANSFORM_SCCS:
+            {
+                return "Wasm transform sccs";
+            }
+            case Phases.PHASE_WASM_CONTROL_FLOW:
+            {
+                return "Wasm control flow";
+            }
+            case Phases.PHASE_WASM_IDENTIFY_GCSAFE_LOCALS:
+            {
+                return "Wasm identify GC safe locals";
+            }
+            case Phases.PHASE_WASM_SPILL_REFS:
+            {
+                return "Wasm spill refs";
+            }
+            case Phases.PHASE_WASM_VIRTUAL_IP:
+            {
+                return "Wasm virtual IP";
+            }
+            case Phases.PHASE_ASYNC:
+            {
+                return "Transform async";
+            }
+            case Phases.PHASE_LCLVARLIVENESS:
+            {
+                return "Local var liveness";
+            }
+            case Phases.PHASE_LCLVARLIVENESS_INIT:
+            {
+                return "Local var liveness init";
+            }
+            case Phases.PHASE_LCLVARLIVENESS_PERBLOCK:
+            {
+                return "Per block local var liveness";
+            }
+            case Phases.PHASE_LCLVARLIVENESS_INTERBLOCK:
+            {
+                return "Global local var liveness";
+            }
+            case Phases.PHASE_LOWERING_DECOMP:
+            {
+                return "Lowering decomposition";
+            }
+            case Phases.PHASE_LOWERING:
+            {
+                return "Lowering nodeinfo";
+            }
+            case Phases.PHASE_STACK_LEVEL_SETTER:
+            {
+                return "Calculate stack level slots";
+            }
+            case Phases.PHASE_LINEAR_SCAN:
+            {
+                return "Linear scan register alloc";
+            }
+            case Phases.PHASE_LINEAR_SCAN_BUILD:
+            {
+                return "LSRA build intervals";
+            }
+            case Phases.PHASE_LINEAR_SCAN_ALLOC:
+            {
+                return "LSRA allocate";
+            }
+            case Phases.PHASE_LINEAR_SCAN_RESOLVE:
+            {
+                return "LSRA resolve";
+            }
+            case Phases.PHASE_ALIGN_LOOPS:
+            {
+                return "Place 'align' instructions";
+            }
+            case Phases.PHASE_GENERATE_CODE:
+            {
+                return "Generate code";
+            }
+            case Phases.PHASE_EMIT_CODE:
+            {
+                return "Emit code";
+            }
+            case Phases.PHASE_EMIT_GCEH:
+            {
+                return "Emit GC+EH tables";
+            }
+            case Phases.PHASE_POST_EMIT:
+            {
+                return "Post-Emit";
+            }
+            case Phases.PHASE_CLR_API:
+            {
+                return "CLR API calls";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage209
+                );
+                return default!;
+            }
+        }
+    }
 
     private static ReadOnlySpan<bool> s_hasChildren => [
         false, // PHASE_PRE_IMPORT

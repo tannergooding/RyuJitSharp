@@ -100,7 +100,8 @@ public static partial class Globals
             }
             else
             {
-                throw new FatalJitException("Swift calling conventions are not supported for this target.");
+                FatalJitException.ThrowFatalJitException("Swift calling conventions are not supported for this target.");
+                return default!;
             }
         }
 
@@ -163,11 +164,11 @@ public static partial class Globals
 
     public const int REG_HIGH_BASE = 64;
 
-    public const int DSP_SRC_OPER_LEFT  = 0;
+    public const int DSP_SRC_OPER_LEFT = 0;
 
     public const int DSP_SRC_OPER_RIGHT = 1;
 
-    public const int DSP_DST_OPER_LEFT  = 1;
+    public const int DSP_DST_OPER_LEFT = 1;
 
     public const int DSP_DST_OPER_RIGHT = 0;
 
@@ -241,7 +242,8 @@ public static partial class Globals
 
     private static T UnsupportedTargetValue<T>(string message)
     {
-        throw new FatalJitException(message);
+        FatalJitException.ThrowFatalJitException(message);
+        return default!;
     }
 
     public const int BITS_PER_BYTE = 8;

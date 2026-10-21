@@ -16,8 +16,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM64 hardware intrinsics are unavailable for this target.");
+            return;
         }
 
         var intrin = new Arm64HWIntrinsic(node);

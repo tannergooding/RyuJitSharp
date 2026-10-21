@@ -917,7 +917,9 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM frame addressing is unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "ARM frame addressing is unavailable on this target.");
+            baseReg = default!;
+            return default!;
         }
 
         return lvaFrameAddress(varNum, out _, suppressFPtoSPRewrite: false,
@@ -1150,7 +1152,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD12 local widening is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD12 local widening is unsupported on this target.");
+            return default!;
         }
 
         ref var descriptor = ref lvaGetDesc(varNum);
@@ -1295,7 +1298,7 @@ public partial class Compiler
             var offset = tempDsc.tdTempOffs;
             jitprintf($" [{(IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseName : TargetRuntimeMetadata.StackPointerBaseName),2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}]\n");
         }
-        
+
         if (curState >= TENTATIVE_FRAME_LAYOUT)
         {
             jitprintf(";\n");
@@ -1495,38 +1498,38 @@ public partial class Compiler
         // Could handle this...
         assert(!lvaLocalVarRefCounted);
 
-    // You cannot allocate more space after frame layout!
-    noway_assert(lvaDoneFrameLayout < Compiler.TENTATIVE_FRAME_LAYOUT);
+        // You cannot allocate more space after frame layout!
+        noway_assert(lvaDoneFrameLayout < Compiler.TENTATIVE_FRAME_LAYOUT);
 
-    // Check if the lvaTable has to be grown
-    if ((lvaCount + cnt) > lvaTable.Length)
-    {
-        var newLvaTableCnt = lvaCount + int.Max(lvaCount / 2 + 1, cnt);
-
-        // Check for overflow
-        if (newLvaTableCnt <= lvaCount)
+        // Check if the lvaTable has to be grown
+        if ((lvaCount + cnt) > lvaTable.Length)
         {
-            IMPL_LIMITATION("too many locals");
+            var newLvaTableCnt = lvaCount + int.Max(lvaCount / 2 + 1, cnt);
+
+            // Check for overflow
+            if (newLvaTableCnt <= lvaCount)
+            {
+                IMPL_LIMITATION("too many locals");
+            }
+
+            var newLvaTable = new LclVarDsc[newLvaTableCnt];
+            lvaTable.AsSpan(0, lvaCount).CopyTo(newLvaTable);
+
+            for (var i = lvaCount; i < newLvaTableCnt; i++)
+            {
+                newLvaTable[i] = new LclVarDsc(); // call the constructor.
+            }
+
+            if (Configuration.DEBUG)
+            {
+                // Fill the old table with junks. So to detect the un-intended use.
+                lvaTable.AsSpan(0, lvaCount).Clear();
+            }
+
+            lvaTable = newLvaTable;
         }
 
-        var newLvaTable = new LclVarDsc[newLvaTableCnt];
-        lvaTable.AsSpan(0, lvaCount).CopyTo(newLvaTable);
-
-        for (var i = lvaCount; i < newLvaTableCnt; i++)
-        {
-            newLvaTable[i] = new LclVarDsc(); // call the constructor.
-        }
-
-        if (Configuration.DEBUG)
-        {
-            // Fill the old table with junks. So to detect the un-intended use.
-            lvaTable.AsSpan(0, lvaCount).Clear();
-        }
-
-        lvaTable = newLvaTable;
-    }
-
-    var tempNum = lvaCount;
+        var tempNum = lvaCount;
 
         while (cnt-- != 0)
         {
@@ -1576,7 +1579,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD initialization temps are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD initialization temps are unsupported on this target.");
+            return default!;
         }
 
         if (lvaSimdInitTempVarNum == BAD_VAR_NUM)
@@ -2222,7 +2226,7 @@ public partial class Compiler
             {
                 var typeWithoutMod = strip(corInfoType);
 
-                if (typeWithoutMod is CORINFO_TYPE_VALUECLASS or  CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF)
+                if (typeWithoutMod is CORINFO_TYPE_VALUECLASS or CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF)
                 {
                     JITDUMP($"Marking user arg{i:D2} as requiring special copy semantics\n");
                     _ = recordArgRequiresSpecialCopy(i);
@@ -2469,8 +2473,7 @@ public partial class Compiler
         {
             assert(lvaIsOSRLocal(varNum));
             var vectorLength = getRuntimeVectorTByteLength();
-            var size = varType switch
-            {
+            var size = varType switch {
                 TYP_SIMD_ARM64 => unchecked((int)vectorLength),
                 TYP_MASK => unchecked((int)(vectorLength / 8)),
                 _ => throw new UnreachableException(),
@@ -2664,7 +2667,8 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD type classification is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD type classification is unsupported on this target.");
+            return default!;
         }
 
         var maxSize = Configuration.TARGET_ARM64
@@ -2919,7 +2923,7 @@ public partial class Compiler
                     unreached();
                     break;
                 }
-        }
+            }
         }
 
         if (varDsc.lvPromoted && !wasAlreadyMarkedDoNotEnreg)

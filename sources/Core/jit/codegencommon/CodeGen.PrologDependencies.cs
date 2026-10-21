@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 stack-allocation register selection is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 stack-allocation register selection is not supported on this target.");
+            return default!;
         }
 
         return genStackAllocRegisterMaskArmCore(frameSize, maskCalleeSavedFloat);

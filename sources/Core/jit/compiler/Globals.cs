@@ -18,14 +18,56 @@ public partial class Globals
 
     public const int ROOT_FUNC_IDX = 0;
 
-    public static instruction INS_BREAKPOINT =>
-        Configuration.TARGET_XARCH ? INS_int3 :
-        Configuration.TARGET_ARM ? INS_bkpt :
-        Configuration.TARGET_ARM64 ? INS_brk :
-        Configuration.TARGET_LOONGARCH64 ? INS_break :
-        Configuration.TARGET_RISCV64 ? INS_ebreak :
-        Configuration.TARGET_WASM ? INS_unreachable :
-        throw new FatalJitException("Unsupported or unset target architecture.");
+    public static instruction INS_BREAKPOINT
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return INS_int3;
+            }
+            else
+            {
+                if (Configuration.TARGET_ARM)
+                {
+                    return INS_bkpt;
+                }
+                else
+                {
+                    if (Configuration.TARGET_ARM64)
+                    {
+                        return INS_brk;
+                    }
+                    else
+                    {
+                        if (Configuration.TARGET_LOONGARCH64)
+                        {
+                            return INS_break;
+                        }
+                        else
+                        {
+                            if (Configuration.TARGET_RISCV64)
+                            {
+                                return INS_ebreak;
+                            }
+                            else
+                            {
+                                if (Configuration.TARGET_WASM)
+                                {
+                                    return INS_unreachable;
+                                }
+                                else
+                                {
+                                    FatalJitException.ThrowFatalJitException("Unsupported or unset target architecture.");
+                                    return default!;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     public static int genMapIntRegNumToRegArgNum(regNumber regNum, CorInfoCallConvExtension callConv)
     {
@@ -52,7 +94,8 @@ public partial class Globals
         }
         NYI("Integer argument-register indexing outside AMD64/ARM64");
         fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("Integer argument-register indexing outside AMD64/ARM64.");
+        FatalJitException.ThrowFatalJitException("Integer argument-register indexing outside AMD64/ARM64.");
+        return default!;
     }
 
     /// <summary>Limit frames size to 1GB.</summary>

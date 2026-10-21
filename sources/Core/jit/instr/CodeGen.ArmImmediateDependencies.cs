@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 immediate validation is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 immediate validation is not supported for this target.");
+            return default!;
         }
 
         return validImmForInstr(ins, imm, flags);
@@ -21,7 +22,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 immediate validation is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 immediate validation is not supported for this target.");
+            return default!;
         }
 
         return RyuJitSharp.Emitter.emitIns_valid_imm_for_add(imm, flags);
@@ -31,7 +33,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 stack-pointer immediate validation is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 stack-pointer immediate validation is not supported for this target.");
+            return default!;
         }
 
         return RyuJitSharp.Emitter.emitIns_valid_imm_for_add_sp(imm);
@@ -41,7 +44,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 zero materialization is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 zero materialization is not supported for this target.");
+            return;
         }
 
         assert(genIsValidIntOrFakeReg(reg));
@@ -54,7 +58,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 relocation materialization is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 relocation materialization is not supported for this target.");
+            return;
         }
 
         assert(EA_IS_RELOC(size));
@@ -72,7 +77,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 data-label materialization is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 data-label materialization is not supported for this target.");
+            return;
         }
 
         Emitter.emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, value, reg);

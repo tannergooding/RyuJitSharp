@@ -38,7 +38,15 @@ public partial class Compiler
 
         public bool Initialize(Compiler comp)
         {
-            var store = comp.vnStore ?? throw new FatalJitException("Range-check cloning requires value numbering.");
+            var store = comp.vnStore;
+            if (store is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage168
+                );
+                return default!;
+            }
             IdxVN = store.VNNormalValue(Check.Index._vnPair.Conservative);
             LenVN = store.VNNormalValue(Check.ArrayLength._vnPair.Conservative);
             if ((IdxVN == ValueNumStore.NoVN) || (LenVN == ValueNumStore.NoVN))
@@ -113,8 +121,8 @@ public partial class Compiler
         var budget = (uint)checks.Count * RangeCheckCloningBudgetMultiplier;
         JITDUMP($"\tBudget: {budget} nodes.\n");
 
-        for (var current = first; current != last; current = current.NextStmt
-            ?? throw new FatalJitException("The final range check is not reachable from the first."))
+        var current = first;
+        while (current != last)
         {
             uint actual = 0;
             if (gtComplexityExceeds(current.RootNode, budget, _ => {
@@ -127,6 +135,17 @@ public partial class Compiler
             }
 
             JITDUMP($"\t\tSubtracting {actual} from budget in {FMT_STMT(current.Id)} statement\n");
+            var next = current.NextStmt;
+            if (next is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage169
+                );
+                return true;
+            }
+
+            current = next;
             budget -= actual;
         }
 
@@ -155,7 +174,11 @@ public partial class Compiler
         }
         if (newSize == 0)
         {
-            throw new FatalJitException("Range-check cloning exhausted the native hash table sizes.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage170
+            );
+            return default!;
         }
 
         var resized = new List<(ValueNum Index, ValueNum Length)>[newSize];
@@ -307,7 +330,17 @@ public partial class Compiler
                 $"{FMT_STMT(firstGroup[0].Stmt.Id)} to {FMT_STMT(lastStmt.Id)}\n");
 
             var next = optRangeCheckCloningDoClone(block, firstGroup, lastStmt);
-            block = next.Prev ?? throw new FatalJitException("The cloned fast path lost its predecessor.");
+            var previous = next.Prev;
+            if (previous is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage171
+                );
+                return default!;
+            }
+
+            block = previous;
             modified = true;
         }
 

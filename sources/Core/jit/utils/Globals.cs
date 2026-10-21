@@ -255,7 +255,8 @@ public partial class Globals
                         }
                         else if (!Configuration.TARGET_X86)
                         {
-                            throw new FatalJitException("Register range formatting is not supported for this target.");
+                            FatalJitException.ThrowFatalJitException("Register range formatting is not supported for this target.");
+                            return default!;
                         }
                     }
                     else

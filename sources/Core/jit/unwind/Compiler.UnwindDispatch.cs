@@ -19,7 +19,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Push unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Push unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -31,7 +32,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Paired-push unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Paired-push unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -43,8 +45,9 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Pointer-authentication unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -64,7 +67,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Return unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -100,7 +104,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -132,7 +137,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Frame-register unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame-register unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -164,7 +170,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-save unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-save unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -204,7 +211,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unwind padding is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind padding is not implemented for this target.");
+            return;
         }
     }
 
@@ -224,7 +232,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-pair unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-pair unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -236,8 +245,9 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Preindexed register-pair unwind recording is not implemented for this target.");
+            return;
         }
     }
 
@@ -249,8 +259,9 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Preindexed register unwind recording is not implemented for this target.");
+            return;
         }
     }
 }

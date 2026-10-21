@@ -288,12 +288,16 @@ public sealed partial class LinearScan
                     {
                         if (_candidates == SRBM_NONE)
                         {
-                            throw new FatalJitException("Insufficient consecutive register candidates.");
+                            FatalJitException.ThrowFatalJitException("Insufficient consecutive register candidates.");
+                            selectionScore = default!;
+                            return default!;
                         }
                     }
                     else
                     {
-                        throw new FatalJitException("Insufficient consecutive register candidates.");
+                        FatalJitException.ThrowFatalJitException("Insufficient consecutive register candidates.");
+                        selectionScore = default!;
+                        return default!;
                     }
                 }
             }
@@ -328,7 +332,9 @@ public sealed partial class LinearScan
                     var score = regSelectionOrder[index];
                     if (!mappingTable.TryGetValue(score, out var heuristic))
                     {
-                        throw new FatalJitException("Unexpected LSRA register-selection heuristic.");
+                        FatalJitException.ThrowFatalJitException("Unexpected LSRA register-selection heuristic.");
+                        selectionScore = default!;
+                        return default!;
                     }
                     heuristic();
                     if (_found)
@@ -425,8 +431,7 @@ public sealed partial class LinearScan
         }
     }
 
-    private static LsraStat getLsraStatFromScore(RegisterScore score) => score switch
-    {
+    private static LsraStat getLsraStatFromScore(RegisterScore score) => score switch {
         RegisterScore.CONST_AVAILABLE => LsraStat.STAT_CONST_AVAILABLE,
         RegisterScore.THIS_ASSIGNED => LsraStat.STAT_THIS_ASSIGNED,
         RegisterScore.COVERS => LsraStat.STAT_COVERS,

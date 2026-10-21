@@ -27,13 +27,14 @@ public abstract unsafe class RiscV64UnwindCodesBase
 
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V unwind diagnostics require RISC-V64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V unwind diagnostics require RISC-V64.");
+            return default!;
         }
 
         var pCodesStart = GetCodes();
         var pCodes = pCodesStart;
         var size = 0u;
-        for (;;)
+        for (; ; )
         {
             var b1 = *pCodes;
             if (IsEndCode(b1))

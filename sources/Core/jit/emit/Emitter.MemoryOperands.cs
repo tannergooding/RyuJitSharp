@@ -14,7 +14,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Memory operand format mapping requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Memory operand format mapping requires xarch.");
+            return default!;
         }
 
         assert((fmt >= IF_XARCH_ARD) && (fmt <= IF_XARCH_RWR_RRD_ARD_RRD));
@@ -38,7 +39,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Memory operand descriptor initialization requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Memory operand descriptor initialization requires xarch.");
+            return;
         }
 
         assert(fmt != IF_NONE);
@@ -110,7 +112,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction memory format mapping requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction memory format mapping requires xarch.");
+            return default!;
         }
 
         switch (ins)
@@ -166,7 +169,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Address scaling is only supported on xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Address scaling is only supported on xarch.");
+            return default!;
         }
 
         assert(scale is 1 or 2 or 4 or 8);

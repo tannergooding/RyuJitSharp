@@ -12,7 +12,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Saturating SIMD narrowing requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Saturating SIMD narrowing requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -27,16 +28,54 @@ public partial class Compiler
 
         var minCns = varTypeIsSigned(simdBaseType) ? gtNewVconNode(type) : null;
         var maxCns = gtNewVconNode(type);
-        var narrowBaseType = simdBaseType switch
+        var_types narrowBaseType;
+        switch (simdBaseType)
         {
-            TYP_SHORT => TYP_BYTE,
-            TYP_USHORT => TYP_UBYTE,
-            TYP_INT => TYP_SHORT,
-            TYP_UINT => TYP_USHORT,
-            TYP_LONG => TYP_INT,
-            TYP_ULONG => TYP_UINT,
-            _ => throw new FatalJitException("Unsupported saturating narrowing type."),
-        };
+            case TYP_SHORT:
+            {
+                narrowBaseType = TYP_BYTE;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                narrowBaseType = TYP_UBYTE;
+                break;
+            }
+
+            case TYP_INT:
+            {
+                narrowBaseType = TYP_SHORT;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                narrowBaseType = TYP_USHORT;
+                break;
+            }
+
+            case TYP_LONG:
+            {
+                narrowBaseType = TYP_INT;
+                break;
+            }
+
+            case TYP_ULONG:
+            {
+                narrowBaseType = TYP_UINT;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage197
+                );
+                return default!;
+            }
+        }
         switch (simdBaseType)
         {
             case TYP_SHORT:

@@ -92,7 +92,8 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildCast on this target");
-        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildCast on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildCast on this target is not implemented.");
+        return default!;
     }
 
     private int buildCastUses(GenTreeCast cast, SingleTypeRegSet candidates)
@@ -117,135 +118,145 @@ public sealed partial class LinearScan
         if (Configuration.TARGET_XARCH)
         {
             var intrinsic = tree.AsIntrinsic();
-        var operand = intrinsic.Op1;
-        assert(varTypeIsFloating(operand.Type));
-        assert(operand.Type == tree.Type);
-        RefPosition? internalFloatDef = null;
+            var operand = intrinsic.Op1;
+            assert(varTypeIsFloating(operand.Type));
+            assert(operand.Type == tree.Type);
+            RefPosition? internalFloatDef = null;
 
-        switch (intrinsic.IntrinsicName)
-        {
-            case NI_System_Math_Abs:
-            {
-                internalFloatDef = buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
-                break;
-            }
-
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
-            case NI_System_Math_Truncate:
-            case NI_System_Math_Round:
-            case NI_System_Math_Sqrt:
-            {
-                break;
-            }
-
-            default:
-            {
-                throw new FatalJitException("Unsupported scalar math intrinsic.");
-            }
-        }
-
-        assert(intrinsic.Op2 is null);
-
-        int srcCount;
-        if (operand.IsContained)
-        {
-            SingleTypeRegSet operandCandidates;
             switch (intrinsic.IntrinsicName)
             {
+                case NI_System_Math_Abs:
+                {
+                    internalFloatDef = buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
+                    break;
+                }
+
                 case NI_System_Math_Ceiling:
                 case NI_System_Math_Floor:
                 case NI_System_Math_Truncate:
                 case NI_System_Math_Round:
                 case NI_System_Math_Sqrt:
                 {
-                    operandCandidates = forceLowGprForApx(operand);
-                    break;
-                }
-
-                case NI_System_Math_Abs:
-                {
-                    operandCandidates = forceLowGprForApxIfNeeded(operand, SRBM_NONE, _evexIsSupported);
                     break;
                 }
 
                 default:
                 {
-                    throw new FatalJitException("Unsupported scalar math intrinsic.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage408
+                    );
+                    return default!;
                 }
             }
 
-            srcCount = buildOperandUses(operand, operandCandidates);
-        }
-        else
-        {
-            _targetPreferredUse = buildUse(operand);
-            srcCount = 1;
-        }
+            assert(intrinsic.Op2 is null);
 
-        if (internalFloatDef is not null)
-        {
-            buildInternalRegisterUses();
-        }
+            int srcCount;
+            if (operand.IsContained)
+            {
+                SingleTypeRegSet operandCandidates;
+                switch (intrinsic.IntrinsicName)
+                {
+                    case NI_System_Math_Ceiling:
+                    case NI_System_Math_Floor:
+                    case NI_System_Math_Truncate:
+                    case NI_System_Math_Round:
+                    case NI_System_Math_Sqrt:
+                    {
+                        operandCandidates = forceLowGprForApx(operand);
+                        break;
+                    }
 
-        _ = buildDef(tree, SRBM_NONE);
-        return srcCount;
+                    case NI_System_Math_Abs:
+                    {
+                        operandCandidates = forceLowGprForApxIfNeeded(operand, SRBM_NONE, _evexIsSupported);
+                        break;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage408
+                        );
+                        return default!;
+                    }
+                }
+
+                srcCount = buildOperandUses(operand, operandCandidates);
+            }
+            else
+            {
+                _targetPreferredUse = buildUse(operand);
+                srcCount = 1;
+            }
+
+            if (internalFloatDef is not null)
+            {
+                buildInternalRegisterUses();
+            }
+
+            _ = buildDef(tree, SRBM_NONE);
+            return srcCount;
         }
 
         if (Configuration.TARGET_ARM64)
         {
             var intrinsic = tree.AsIntrinsic();
-        var operand = intrinsic.Op1;
-        int sourceCount;
-        switch (intrinsic.IntrinsicName)
-        {
-            case NI_System_Math_Abs:
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
-            case NI_System_Math_Truncate:
-            case NI_System_Math_Round:
-            case NI_System_Math_Sqrt:
+            var operand = intrinsic.Op1;
+            int sourceCount;
+            switch (intrinsic.IntrinsicName)
             {
-                assert(varTypeIsFloating(operand.Type) && (operand.Type == tree.Type));
-                _ = buildUse(operand);
-                sourceCount = 1;
-                break;
-            }
-
-            case NI_PRIMITIVE_PopCount:
-            {
-                assert(varTypeIsIntegral(operand.Type));
-                if (!_compiler.compOpportunisticallyDependsOn(InstructionSet_Cssc))
+                case NI_System_Math_Abs:
+                case NI_System_Math_Ceiling:
+                case NI_System_Math_Floor:
+                case NI_System_Math_Truncate:
+                case NI_System_Math_Round:
+                case NI_System_Math_Sqrt:
                 {
-                    _ = buildInternalFloatRegisterDefForNode(tree, _availableFloatRegs);
+                    assert(varTypeIsFloating(operand.Type) && (operand.Type == tree.Type));
+                    _ = buildUse(operand);
+                    sourceCount = 1;
+                    break;
                 }
 
-                _ = buildUse(operand);
-                buildInternalRegisterUses();
-                sourceCount = 1;
-                break;
+                case NI_PRIMITIVE_PopCount:
+                {
+                    assert(varTypeIsIntegral(operand.Type));
+                    if (!_compiler.compOpportunisticallyDependsOn(InstructionSet_Cssc))
+                    {
+                        _ = buildInternalFloatRegisterDefForNode(tree, _availableFloatRegs);
+                    }
+
+                    _ = buildUse(operand);
+                    buildInternalRegisterUses();
+                    sourceCount = 1;
+                    break;
+                }
+
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    assert(varTypeIsIntegral(operand.Type));
+                    _ = buildUse(operand);
+                    sourceCount = 1;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException($"Unsupported ARM64 scalar intrinsic {intrinsic.IntrinsicName}.");
+                    return default!;
+                }
             }
 
-            case NI_PRIMITIVE_TrailingZeroCount:
-            {
-                assert(varTypeIsIntegral(operand.Type));
-                _ = buildUse(operand);
-                sourceCount = 1;
-                break;
-            }
-
-            default:
-            {
-                throw new FatalJitException($"Unsupported ARM64 scalar intrinsic {intrinsic.IntrinsicName}.");
-            }
-        }
-
-        _ = buildDef(tree, SRBM_NONE);
-        return sourceCount;
+            _ = buildDef(tree, SRBM_NONE);
+            return sourceCount;
         }
 
         NYI("LinearScan.buildIntrinsic on this target");
-        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildIntrinsic on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildIntrinsic on this target is not implemented.");
+        return default!;
     }
 
     private int buildSelect(GenTreeOp select)
@@ -367,6 +378,7 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildSelect on this target");
-        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildSelect on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildSelect on this target is not implemented.");
+        return default!;
     }
 }

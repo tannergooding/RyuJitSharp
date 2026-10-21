@@ -221,6 +221,7 @@ public static partial class regNumberExtensions
             return (int)REG_WASM_COUNT;
         }
 
-        throw new FatalJitException("Invalid target architecture.");
+        FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+        return default!;
     }
 }

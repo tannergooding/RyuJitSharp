@@ -26,7 +26,11 @@ public sealed partial class Lowering
                 return compiler.gtNewSimdBitwiseOrXorNode(operation, left.Type, left, right, TYP_U_IMPL, left.Type.Size);
             }
 
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unsupported SIMD memory comparison operation.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_IMPLLIMITATION,
+                FatalJitErrorCode.DirectFailureMessage259
+            );
+            return default!;
         }
 
         return CompilerInstance.gtNewBinaryNode(operation, type, left, right);

@@ -51,8 +51,12 @@ public class CSE_HeuristicRandom : CSE_HeuristicCommon
         for (var index = 0; index < selected; index++)
         {
             _ = m_compiler.NextCseAttempt();
-            var descriptor = sortTab[index]
-                ?? throw new FatalJitException("Random CSE permutation is missing a descriptor.");
+            var descriptor = sortTab[index];
+            if (descriptor is null)
+            {
+                FatalJitException.ThrowFatalJitException("Random CSE permutation is missing a descriptor.");
+                return;
+            }
             var candidate = new CSE_Candidate(this, descriptor);
 
             JITDUMP($"\nRandomly attempting {FMT_CSE(candidate.CseIndex())}\n");

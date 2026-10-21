@@ -11,7 +11,12 @@ public partial class Emitter
     {
         assert(unchecked((int)stackLevel) >= 0);
         assert(emitCurStackLvl == 0);
-        var group = emitCurIG ?? throw new FatalJitException("A current instruction group is required.");
+        var group = emitCurIG;
+        if (group is null)
+        {
+            FatalJitException.ThrowFatalJitException("A current instruction group is required.");
+            return;
+        }
         assert(group.igStkLvl == 0);
         assert(emitCurIGfreeNext == 0);
         assert(emitCurIGfreeBase is not null && emitCurIGfreeBase.Count == 0);

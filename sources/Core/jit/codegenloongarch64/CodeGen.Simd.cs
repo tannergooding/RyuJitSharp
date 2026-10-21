@@ -14,32 +14,38 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD is unavailable for this configuration.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD is unavailable for this configuration.");
+            return default!;
         }
 
         NYI("unimplemented on LOONGARCH64 yet");
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD instruction options are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD instruction options are not ported.");
+        return default!;
     }
 
     public void genSimdUpperSaveLoongArch64(GenTreeIntrinsic node)
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD is unavailable for this configuration.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD is unavailable for this configuration.");
+            return;
         }
 
         NYI("unimplemented on LOONGARCH64 yet");
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD upper-lane saving is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD upper-lane saving is not ported.");
+        return;
     }
 
     public void genSimdUpperRestoreLoongArch64(GenTreeIntrinsic node)
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD is unavailable for this configuration.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD is unavailable for this configuration.");
+            return;
         }
 
         NYI("unimplemented on LOONGARCH64 yet");
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD upper-lane restoration is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD upper-lane restoration is not ported.");
+        return;
     }
 }

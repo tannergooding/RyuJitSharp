@@ -14,13 +14,15 @@ public partial class Emitter
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_C_R");
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 static-field register instruction recording is not ported.");
+            return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -85,8 +87,9 @@ public partial class Emitter
             if (instOptions != INS_OPTS_NONE)
             {
                 NYI("ARM32 static-field instruction options");
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "ARM32 static-field instruction options are not ported.");
+                return;
             }
 
             if (ins == INS_mov)
@@ -105,14 +108,16 @@ public partial class Emitter
             if (dataOffset >= 0)
             {
                 NYI("JitDataOffset static fields");
-                throw new FatalJitException(CORJIT_SKIPPED, "JitDataOffset static fields are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JitDataOffset static fields are not ported.");
+                return;
             }
 
             if (fldHnd == FLD_GLOBAL_FS)
             {
                 NYI("Thread-Local-Storage static fields");
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Thread-Local-Storage static fields are not ported.");
+                return;
             }
 
             if (fldHnd == FLD_GLOBAL_DS)
@@ -123,8 +128,9 @@ public partial class Emitter
             else
             {
                 NYI("Normal statics are expected to be handled in the importer");
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Normal static-field instruction recording is not ported.");
+                return;
             }
 
             var regTmp = reg;
@@ -132,8 +138,9 @@ public partial class Emitter
             {
                 assert(false, "emitIns_R_C cannot be called with a floating-point target.");
                 NYI("emitIns_R_C with a floating-point target");
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "ARM32 static-field instruction recording requires a general register.");
+                return;
             }
 
             codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, address);
@@ -154,8 +161,9 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Static-field register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -233,8 +241,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "SIMD static-field instruction recording requires xarch.");
+            return;
         }
 
         RequireSupportedInstructionRecording();

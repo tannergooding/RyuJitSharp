@@ -68,7 +68,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD shuffles are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD shuffles are unsupported on this target.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && (GetSimdTypeForSize(simdSize) == type));
@@ -455,7 +456,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD constant shuffles are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD constant shuffles are unsupported on this target.");
+            return default!;
         }
     }
 }

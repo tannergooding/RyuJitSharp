@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 frame policy is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 frame policy is not supported for this target.");
+            return;
         }
 
         JITDUMP($"Setting genSaveFpLrWithAllCalleeSavedRegisters to {dspBool(value)}\n");

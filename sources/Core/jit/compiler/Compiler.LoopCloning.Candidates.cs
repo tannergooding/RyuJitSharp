@@ -143,7 +143,15 @@ public partial class Compiler
     private bool optCheckLoopCloningGDVTestProfitable(GenTreeOp guard, FlowGraphNaturalLoop loop)
     {
         JITDUMP("Checking whether cloning is profitable ...\n");
-        var block = compCurBB ?? throw new FatalJitException("Loop-cloning visitor requires a current block.");
+        var block = compCurBB;
+        if (block is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage142
+            );
+            return default!;
+        }
         if (!loop.Header.hasProfileWeight || !block.hasProfileWeight)
         {
             JITDUMP("  No; loop does not have profile data.\n");
@@ -216,7 +224,11 @@ public partial class Compiler
         {
             if (Stmt is not Statement stmt)
             {
-                throw new FatalJitException("Loop-cloning visitor requires a current statement.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage143
+                );
+                return default!;
             }
             return _compiler.optCanOptimizeByLoopCloning(use, _loop, _context, stmt, _arrayBounds, _gdvTests);
         }
@@ -230,14 +242,29 @@ public partial class Compiler
     private unsafe fgWalkResult optCanOptimizeByLoopCloning(GenTree tree, FlowGraphNaturalLoop loop,
         LoopCloneContext context, Statement stmt, bool arrayBounds, bool gdvTests)
     {
-        var block = compCurBB ?? throw new FatalJitException("Loop-cloning visitor requires a current block.");
+        var block = compCurBB;
+        if (block is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage142
+            );
+            return default!;
+        }
         var arrIndex = new ArrIndex();
         if (arrayBounds && optReconstructArrIndex(tree, arrIndex))
         {
             if (Configuration.DEBUG && verbose)
             {
-                var useBlock = arrIndex.UseBlock
-                    ?? throw new FatalJitException("Array candidate has no use block.");
+                var useBlock = arrIndex.UseBlock;
+                if (useBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage144
+                    );
+                    return default!;
+                }
                 jitprintf($"Found ArrIndex at {FMT_BB(useBlock.bbNum)} {FMT_STMT(stmt.Id)} tree " +
                     $"[{tree.TreeId:D6}] which is equivalent to: ");
                 arrIndex.Print();

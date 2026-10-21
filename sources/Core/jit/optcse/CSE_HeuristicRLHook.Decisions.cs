@@ -29,8 +29,12 @@ public partial class CSE_HeuristicRLHook
                 continue;
             }
 
-            var descriptor = m_compiler.CseCandidateTable[index]
-                ?? throw new FatalJitException("RLHook CSE candidate is missing its descriptor.");
+            var descriptor = m_compiler.CseCandidateTable[index];
+            if (descriptor is null)
+            {
+                FatalJitException.ThrowFatalJitException("RLHook CSE candidate is missing its descriptor.");
+                return;
+            }
             if (!descriptor.IsViable())
             {
                 JITDUMP($"Abandoned {FMT_CSE(descriptor.csdIndex)} -- not viable\n");
@@ -68,8 +72,12 @@ public partial class CSE_HeuristicRLHook
 
         for (var index = 0; index < m_compiler.CseCandidateCount; index++)
         {
-            var descriptor = m_compiler.CseCandidateTable[index]
-                ?? throw new FatalJitException("RLHook CSE candidate is missing its descriptor.");
+            var descriptor = m_compiler.CseCandidateTable[index];
+            if (descriptor is null)
+            {
+                FatalJitException.ThrowFatalJitException("RLHook CSE candidate is missing its descriptor.");
+                return;
+            }
             var features = new int[MaxFeatures];
             GetFeatures(descriptor, features);
 

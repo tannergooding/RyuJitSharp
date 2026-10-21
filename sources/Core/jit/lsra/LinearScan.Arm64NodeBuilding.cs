@@ -76,7 +76,8 @@ public sealed partial class LinearScan
             case GT_BLK:
             case GT_INIT_VAL:
             {
-                throw new FatalJitException($"Unexpected non-contained {tree.Oper} in ARM64 LSRA.");
+                FatalJitException.ThrowFatalJitException($"Unexpected non-contained {tree.Oper} in ARM64 LSRA.");
+                return default!;
             }
 
             case GT_NO_OP:
@@ -184,7 +185,8 @@ public sealed partial class LinearScan
                             default:
                             {
                                 unreached();
-                                throw new FatalJitException("Unexpected ARM64 scalable vector constant kind.");
+                                FatalJitException.ThrowFatalJitException("Unexpected ARM64 scalable vector constant kind.");
+                                return default!;
                             }
                         }
                     }
@@ -345,7 +347,8 @@ public sealed partial class LinearScan
             case GT_MOD:
             case GT_UMOD:
             {
-                throw new FatalJitException("ARM64 integer remainder must be lowered and floating remainder is not implemented.");
+                FatalJitException.ThrowFatalJitException("ARM64 integer remainder must be lowered and floating remainder is not implemented.");
+                return default!;
             }
 
             case GT_MUL:

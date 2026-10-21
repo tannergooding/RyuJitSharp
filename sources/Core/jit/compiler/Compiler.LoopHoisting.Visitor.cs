@@ -175,8 +175,15 @@ public partial class Compiler
                 var invariant = local.HasSsaName;
                 if (invariant)
                 {
-                    var definition = _compiler.lvaGetDesc(local.LclNum).GetPerSsaData(local.SsaNum).Block
-                        ?? throw new FatalJitException("Loop hoisting requires an SSA definition block.");
+                    var definition = _compiler.lvaGetDesc(local.LclNum).GetPerSsaData(local.SsaNum).Block;
+                    if (definition is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage157
+                        );
+                        return default!;
+                    }
                     invariant = !_loop.ContainsBlock(definition);
                 }
                 invariant = invariant && IsTreeVNInvariant(tree);

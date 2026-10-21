@@ -129,7 +129,11 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException("NativeAOT TLS expansion is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage200
+            );
+            return default!;
         }
 
         var rootAddressLocal = lvaGrabTemp(shortLifetime: true, "TlsRootAddr access");
@@ -197,7 +201,8 @@ public partial class Compiler
         if ((TargetOS.IsUnix && !TargetArchitecture.Is64Bit) ||
             (TargetOS.IsWindows && TargetArchitecture.IsArm32))
         {
-            throw new FatalJitException("CoreCLR TLS expansion is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException("CoreCLR TLS expansion is unsupported for this target.");
+            return default!;
         }
 
         JITDUMP($"Expanding thread static local access for [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}:\n");
@@ -294,13 +299,24 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException("CoreCLR TLS expansion is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage201
+            );
+            return default!;
         }
 
         var tlsDef = gtNewStoreLclVarNode(tlsLocal, tlsValue);
         var tlsLocalValue = gtNewLclVarNode(TYP_I_IMPL, tlsLocal);
-        var typeIndex = call.Args.GetUserArgByIndex(0)?.Node
-            ?? throw new FatalJitException("Thread static helper requires a type index.");
+        var typeIndex = call.Args.GetUserArgByIndex(0)?.Node;
+        if (typeIndex is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage202
+            );
+            return default!;
+        }
         assert(typeIndex.Type.ActualType is TYP_INT);
 
         if (helper is CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
@@ -393,7 +409,19 @@ public partial class Compiler
     }
 
     private GenTree CloneThreadLocalTree(GenTree tree)
-        => gtCloneExpr(tree) ?? throw new FatalJitException("Cannot clone a thread static expression.");
+    {
+        var clone = gtCloneExpr(tree);
+        if (clone is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage203
+            );
+            return default!;
+        }
+
+        return clone;
+    }
 
     private uint DspThreadLocalOffset(int offset)
         => unchecked((uint)dspOffset(unchecked((nint)(uint)offset)));

@@ -265,6 +265,7 @@ public sealed partial class CodeGen
     private void genJmpPlaceVarArgsLoongArch64()
     {
         NYI("Varargs not supported");
-        throw new FatalJitException(CORJIT_SKIPPED, "Varargs are not supported on LoongArch64.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Varargs are not supported on LoongArch64.");
+        return;
     }
 }

@@ -14,8 +14,7 @@ public partial class Emitter
 {
     private static emitAttr GetNarrowedDstAttr(instruction ins, emitAttr srcAttr)
     {
-        return ins switch
-        {
+        return ins switch {
             INS_cvtpd2dq or INS_cvtpd2ps or INS_cvttpd2dq or INS_vcvtdq2ph or INS_vcvtneps2bf16 or
                 INS_vcvtpd2udq or INS_vcvtps2phx or INS_vcvtqq2ps or INS_vcvttpd2dqs or INS_vcvttpd2udq or
                 INS_vcvttpd2udqs or INS_vcvtudq2ph or INS_vcvtuqq2ps =>
@@ -29,13 +28,23 @@ public partial class Emitter
     public unsafe void emitDispInsXarch(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InstructionDisplayMissingCompiler);
+            return;
+        }
         var ins = id.idIns();
         var debug = id.idDebugOnlyInfo();
 
         if (Configuration.DEBUG && compiler.verbose)
         {
-            var info = debug ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
+            var info = debug;
+            if (info is null)
+            {
+                FatalJitException.ThrowFatalJitException("Instruction display requires descriptor debug information.");
+                return;
+            }
             jitprintf($"IN{info.idNum:x4}: ");
         }
         if (!isNew && !asmfm)
@@ -90,8 +99,7 @@ public partial class Emitter
         }
 
         assert(id.idCodeSize() != 0 || emitInstHasNoCode(id));
-        var attr = id.idGCref() switch
-        {
+        var attr = id.idGCref() switch {
             GCT_GCREF => EA_GCREF,
             GCT_BYREF => EA_BYREF,
             _ => id.idOpSize(),
@@ -100,8 +108,7 @@ public partial class Emitter
         {
             attr = id.idOpSize();
         }
-        var sizeName = id.idGCref() switch
-        {
+        var sizeName = id.idGCref() switch {
             GCT_GCREF => "gword ptr ",
             GCT_BYREF => "bword ptr ",
             _ => emitSizeString(emitGetMemOpSize(id, !id.idHasMem())),
@@ -128,14 +135,44 @@ public partial class Emitter
         var format = id.idInsFmt();
         void Reg(int number, emitAttr? width = null)
         {
-            jitprintf(emitRegName(number switch
+            regNumber reg;
+            switch (number)
             {
-                1 => id.idReg1(),
-                2 => id.idReg2(),
-                3 => id.idReg3(),
-                4 => id.idReg4(),
-                _ => throw new FatalJitException("Invalid operand register."),
-            }, width ?? attr));
+                case 1:
+                {
+                    reg = id.idReg1();
+                    break;
+                }
+
+                case 2:
+                {
+                    reg = id.idReg2();
+                    break;
+                }
+
+                case 3:
+                {
+                    reg = id.idReg3();
+                    break;
+                }
+
+                case 4:
+                {
+                    reg = id.idReg4();
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.InvalidDisplayOperandRegister
+                    );
+                    return;
+                }
+            }
+
+            jitprintf(emitRegName(reg, width ?? attr));
         }
 
         void Mem()
@@ -157,7 +194,8 @@ public partial class Emitter
             }
             else
             {
-                throw new FatalJitException("Unexpected memory operand format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedMemoryOperandFormat);
+                return;
             }
         }
         void Mask()
@@ -670,8 +708,11 @@ public partial class Emitter
                 else if (ins == INS_mov)
                 {
                     assert(format == IF_XARCH_SWR_LABEL);
-                    var label = id as instrDescLbl
-                        ?? throw new FatalJitException("Move label requires a label descriptor.");
+                    if (id is not instrDescLbl label)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.MoveLabelMissingDescriptor);
+                        return;
+                    }
                     emitDispFrameRef(label.idAddr().iiaLclVar.lvaVarNum(),
                         unchecked((int)label.idAddr().iiaLclVar.lvaOffset()), 0, asmfm);
                     jitprintf(", ");
@@ -683,13 +724,25 @@ public partial class Emitter
                 }
                 if (id.idIsBound())
                 {
-                    emitPrintLabel(jump.idjTargetIG
-                        ?? throw new FatalJitException("Bound label descriptor has no target group."));
+                    var targetIG = jump.idjTargetIG;
+                    if (targetIG is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.BoundLabelDescriptorMissingTargetGroup
+                        );
+                        return;
+                    }
+
+                    emitPrintLabel(targetIG);
                 }
                 else
                 {
-                    var target = jump.idjTarget
-                        ?? throw new FatalJitException("Unbound label descriptor has no target block.");
+                    if (jump.idjTarget is not BasicBlock target)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnboundLabelDescriptorMissingTargetBlock);
+                        return;
+                    }
                     jitprintf($"L_M{unchecked((uint)compiler.compMethodID):D3}_BB{target.bbNum:D2}");
                 }
                 break;

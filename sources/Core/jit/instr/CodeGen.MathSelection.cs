@@ -73,12 +73,14 @@ public sealed partial class CodeGen
                 default:
                 {
                     unreached();
-                    throw new FatalJitException("Invalid floating math operator.");
+                    FatalJitException.ThrowFatalJitException("Invalid floating math operator.");
+                    return default!;
                 }
             }
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Floating-point math instruction selection is not implemented for this target.");
+        return default!;
     }
 }

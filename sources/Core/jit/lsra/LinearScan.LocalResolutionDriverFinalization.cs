@@ -22,15 +22,23 @@ public sealed partial class LinearScan
             var firstReference = interval.firstRefPosition;
             if (local.lvIsParam || local.lvIsParamRegTarget)
             {
-                var parameterReference = firstReference
-                    ?? throw new FatalJitException("A register parameter requires an initial reference.");
+                var parameterReference = firstReference;
+                if (parameterReference is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage352
+                    );
+                    return;
+                }
                 var initialMask = parameterReference.registerAssignment;
                 var initialReg = (initialMask == SRBM_NONE || parameterReference.spillAfter)
                     ? REG_STK : genRegNumFromMask(initialMask, interval.registerType);
                 if (Configuration.TARGET_ARM && varTypeIsMultiReg(local.Type))
                 {
                     assert(false, "Multi-reg types not yet supported");
-                    throw new FatalJitException(CORJIT_SKIPPED, "ARM32 multi-reg parameter assignment is not ported.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 multi-reg parameter assignment is not ported.");
+                    return;
                 }
                 else
                 {

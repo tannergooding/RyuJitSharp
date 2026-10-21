@@ -23,7 +23,12 @@ public partial struct Disassembler
 
     private unsafe string? disGetMethodFullName(nuint addr)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Disassembler has not been initialized.");
+            return default!;
+        }
 
         if (GetHelperAddrToMethodHandleMap().TryGetValue(addr, out var methodHandle))
         {
@@ -45,7 +50,12 @@ public partial struct Disassembler
             return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Disassembler has not been initialized.");
+            return;
+        }
         if (!compiler.opts.doLateDisasm)
         {
             return;

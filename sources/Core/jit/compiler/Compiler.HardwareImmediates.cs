@@ -12,7 +12,9 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsic range checking is not enabled.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsic range checking is not enabled.");
+            useFallback = default!;
+            return default!;
         }
 
         useFallback = false;

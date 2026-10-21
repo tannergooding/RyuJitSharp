@@ -30,8 +30,15 @@ public partial class Compiler
         FlowGraphNaturalLoop loop, BasicBlock exiting, PerLoopInfo loopInfo)
     {
         assert(exiting.Kind is BBJ_COND);
-        var jtrueStmt = exiting.LastStmt
-            ?? throw new FatalJitException("A conditional loop exit must have a terminal statement.");
+        var jtrueStmt = exiting.LastStmt;
+        if (jtrueStmt is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage127
+            );
+            return default!;
+        }
         var jtrue = jtrueStmt.RootNode;
         assert(jtrue.Oper is GT_JTRUE);
         var cond = jtrue.AsUnOp().Op1;
@@ -91,8 +98,15 @@ public partial class Compiler
             return false;
         }
 
-        var preheader = loop.GetPreheader()
-            ?? throw new FatalJitException("The counted loop must have a preheader.");
+        var preheader = loop.GetPreheader();
+        if (preheader is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage128
+            );
+            return default!;
+        }
         // Adding one to the backedge count gives the trip count even if it wraps.
         var tripCount = scevContext.Simplify(scevContext.NewBinop(ScevOper.Add,
             backedgeCount, scevContext.NewConstant(backedgeCount.Type, 1)));

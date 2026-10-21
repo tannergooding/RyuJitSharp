@@ -303,7 +303,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsic assertion propagation is not enabled.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsic assertion propagation is not enabled.");
+            return;
         }
 
         assert(vnStore is not null);

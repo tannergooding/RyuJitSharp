@@ -46,7 +46,11 @@ public class GenTreeOp : GenTreeUnOp
     {
         if ((oper is GT_BFIZ or GT_BFX) && !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_INTERNALERROR, "ARM64 bitfield nodes are only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage233
+            );
+            return default!;
         }
 
         return oper;
@@ -120,7 +124,8 @@ public class GenTreeOp : GenTreeUnOp
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("Comparison operand sizes are only supported on xarch targets.");
+            FatalJitException.ThrowFatalJitException("Comparison operand sizes are only supported on xarch targets.");
+            return default!;
         }
 
         assert(Oper.IsCompare || Oper is GT_CMP or GT_TEST or GT_BT);
@@ -230,7 +235,8 @@ public class GenTreeOp : GenTreeUnOp
     {
         if (Configuration.TARGET_64BIT || Configuration.TARGET_WASM)
         {
-            throw new FatalJitException("Long-multiply shape checks are only supported on non-Wasm 32-bit targets.");
+            FatalJitException.ThrowFatalJitException("Long-multiply shape checks are only supported on non-Wasm 32-bit targets.");
+            return;
         }
 
         assert(Oper is GT_MUL);

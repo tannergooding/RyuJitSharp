@@ -11,37 +11,37 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_X86)
         {
-        var data = putArgStk.Op1;
-        var targetType = data.Type.ActualType;
-        assert(targetType != TYP_LONG);
-        assert((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0);
+            var data = putArgStk.Op1;
+            var targetType = data.Type.ActualType;
+            assert(targetType != TYP_LONG);
+            assert((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0);
 
-        genAlignStackBeforeCall(putArgStk);
+            genAlignStackBeforeCall(putArgStk);
 
-        if (data.Oper is GT_FIELD_LIST)
-        {
-            genPutArgStkFieldList(putArgStk);
-            return;
-        }
+            if (data.Oper is GT_FIELD_LIST)
+            {
+                genPutArgStkFieldList(putArgStk);
+                return;
+            }
 
-        if (varTypeIsStruct(targetType))
-        {
-            _ = genAdjustStackForPutArgStk(putArgStk);
-            genPutStructArgStk(putArgStk);
-            return;
-        }
+            if (varTypeIsStruct(targetType))
+            {
+                _ = genAdjustStackForPutArgStk(putArgStk);
+                genPutStructArgStk(putArgStk);
+                return;
+            }
 
-        genConsumeRegs(data);
-        if (data.IsUsedFromReg)
-        {
-            genPushReg(targetType, data.RegNum);
-        }
-        else
-        {
-            assert(data.Type.Size == Configuration.TARGET_POINTER_SIZE);
-            inst_TT(INS_push, data.Type.EmitSize, data);
-            AddStackLevel(unchecked((uint)Configuration.TARGET_POINTER_SIZE));
-        }
+            genConsumeRegs(data);
+            if (data.IsUsedFromReg)
+            {
+                genPushReg(targetType, data.RegNum);
+            }
+            else
+            {
+                assert(data.Type.Size == Configuration.TARGET_POINTER_SIZE);
+                inst_TT(INS_push, data.Type.EmitSize, data);
+                AddStackLevel(unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+            }
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
@@ -49,505 +49,521 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARMARCH)
         {
-        assert(putArgStk.Oper is GT_PUTARG_STK);
-        var emit = GetEmitter();
-        int varNumOut;
-        uint argOffsetMax;
-        var argOffsetOut = unchecked((uint)putArgStk.ArgOffset);
+            assert(putArgStk.Oper is GT_PUTARG_STK);
+            var emit = GetEmitter();
+            int varNumOut;
+            uint argOffsetMax;
+            var argOffsetOut = unchecked((uint)putArgStk.ArgOffset);
 
-        // Fast tail calls use the incoming argument area; other calls use the outgoing area.
-        if (putArgStk.PutInIncomingArgArea)
-        {
-            varNumOut = getFirstArgWithStackSlot();
-            argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
-            if (Configuration.FEATURE_FASTTAILCALL)
+            // Fast tail calls use the incoming argument area; other calls use the outgoing area.
+            if (putArgStk.PutInIncomingArgArea)
             {
-                var call = putArgStk.Call;
-                assert(call is not null);
-                assert(call.IsFastTailCall);
-                _ = _compiler.lvaGetDesc(varNumOut);
-            }
-        }
-        else
-        {
-            varNumOut = _compiler.lvaOutgoingArgSpaceVar;
-            argOffsetMax = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
-        }
-
-        var source = putArgStk.Op1;
-        if (source.Type != TYP_STRUCT)
-        {
-            if (varTypeIsSimd(source.Type))
-            {
-                assert(!source.IsContained);
-                var srcReg = genConsumeReg(source);
-                assert((srcReg != REG_NA) && genIsValidFloatReg(srcReg));
-                assert(compAppleArm64Abi() || ((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0));
-
-                if (Configuration.TARGET_ARM64 && (putArgStk.StackByteSize == 12))
+                varNumOut = getFirstArgWithStackSlot();
+                argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
+                if (Configuration.FEATURE_FASTTAILCALL)
                 {
-                    emit.emitStoreSimd12ToLclOffset(unchecked((uint)varNumOut), argOffsetOut, srcReg, putArgStk);
-                    argOffsetOut = unchecked(argOffsetOut + 12);
-                }
-                else
-                {
-                    var simdStoreAttr = source.Type.EmitSize;
-                    emit.emitIns_S_R(INS_str, simdStoreAttr, srcReg, varNumOut, unchecked((int)argOffsetOut));
-                    argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(simdStoreAttr));
-                }
-
-                assert(argOffsetOut <= argOffsetMax);
-                return;
-            }
-
-            var slotType = genActualType(source);
-            if (compAppleArm64Abi())
-            {
-                // Apple small arguments share stack slots, so do not overwrite adjacent arguments.
-                switch (putArgStk.StackByteSize)
-                {
-                    case 1:
-                    {
-                        slotType = TYP_BYTE;
-                        break;
-                    }
-
-                    case 2:
-                    {
-                        slotType = TYP_SHORT;
-                        break;
-                    }
-
-                    default:
-                    {
-                        assert(putArgStk.StackByteSize >= 4);
-                        break;
-                    }
-                }
-            }
-
-            var storeIns = ins_Store(slotType);
-            var storeAttr = slotType.EmitSize;
-            if (source.IsContained)
-            {
-                if (Configuration.TARGET_ARM64)
-                {
-                    assert(source.Oper is GT_CNS_INT);
-                    assert(source.AsIntConCommon().IconValue == 0);
-                    emit.emitIns_S_R(storeIns, storeAttr, REG_ARM64_ZR, varNumOut, unchecked((int)argOffsetOut));
-                }
-                else
-                {
-                    throw new FatalJitException(CORJIT_SKIPPED, "ARM32 cannot place this contained stack argument.");
+                    var call = putArgStk.Call;
+                    assert(call is not null);
+                    assert(call.IsFastTailCall);
+                    _ = _compiler.lvaGetDesc(varNumOut);
                 }
             }
             else
             {
-                _ = genConsumeReg(source);
-                emit.emitIns_S_R(storeIns, storeAttr, source.RegNum, varNumOut, unchecked((int)argOffsetOut));
-                if (Configuration.TARGET_ARM && (source.Type == TYP_LONG))
-                {
-                    // Only doubles retyped as long reach this path; actual longs have been decomposed.
-                    assert(source.Oper.IsCopyOrReload);
-                    var otherReg = source.AsCopyOrReload().GetRegNumByIdx(1);
-                    assert(otherReg != REG_NA);
-                    argOffsetOut = unchecked(argOffsetOut + (uint)EA_4BYTE);
-                    emit.emitIns_S_R(storeIns, storeAttr, otherReg, varNumOut, unchecked((int)argOffsetOut));
-                }
+                varNumOut = _compiler.lvaOutgoingArgSpaceVar;
+                argOffsetMax = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
             }
 
-            argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(storeAttr));
-            assert(argOffsetOut <= argOffsetMax);
-        }
-        else
-        {
-            assert(source.IsContained);
-            if (source.Oper is GT_FIELD_LIST)
+            var source = putArgStk.Op1;
+            if (source.Type != TYP_STRUCT)
             {
-                genPutArgStkFieldList(putArgStk, varNumOut);
-            }
-            else
-            {
-                noway_assert(source.Oper.IsLocalRead || (source.Oper is GT_BLK));
-                var targetType = source.Type;
-                noway_assert(varTypeIsStruct(targetType));
+                if (varTypeIsSimd(source.Type))
+                {
+                    assert(!source.IsContained);
+                    var srcReg = genConsumeReg(source);
+                    assert((srcReg != REG_NA) && genIsValidFloatReg(srcReg));
+                    assert(compAppleArm64Abi() || ((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0));
 
-                var loReg = InternalRegisters.Extract(putArgStk);
-                var hiReg = Configuration.TARGET_ARM64 ? InternalRegisters.GetSingle(putArgStk) : REG_NA;
-                GenTreeLclVarCommon? srcLclNode = null;
-                var addrReg = REG_NA;
-                ClassLayout layout;
-                if (source.Oper.IsLocalRead)
-                {
-                    srcLclNode = source.AsLclVarCommon();
-                    layout = srcLclNode.GetLayout(_compiler)
-                        ?? throw new FatalJitException(CORJIT_INTERNALERROR, "ARM struct stack argument local has no layout.");
-                    ref var varDsc = ref _compiler.lvaGetDesc(srcLclNode.LclNum);
-                    assert(varDsc.lvOnFrame && !varDsc.lvRegister);
-                }
-                else
-                {
-                    layout = source.AsBlk().Layout;
-                    addrReg = genConsumeReg(source.AsBlk().Addr);
-                    if (Configuration.TARGET_ARM64 && (loReg == addrReg))
+                    if (Configuration.TARGET_ARM64 && (putArgStk.StackByteSize == 12))
                     {
-                        // Keep the address-overwrite case confined to the high register.
-                        loReg = hiReg;
-                        hiReg = addrReg;
+                        emit.emitStoreSimd12ToLclOffset(unchecked((uint)varNumOut), argOffsetOut, srcReg, putArgStk);
+                        argOffsetOut = unchecked(argOffsetOut + 12);
                     }
-                }
-
-                var srcSize = layout.Size;
-                if (_compiler.IsHfa(layout.ClassHandle))
-                {
-                    noway_assert(!layout.HasGCPtr);
-                }
-                if (Configuration.TARGET_ARM64)
-                {
-                    noway_assert(srcSize <= (2 * Configuration.TARGET_POINTER_SIZE));
-                    noway_assert(srcSize <= Configuration.MAX_PASS_MULTIREG_BYTES);
-                }
-                var dstSize = unchecked((uint)putArgStk.StackByteSize);
-
-                // Widen only local reads, which cannot fault, and only within the destination padding.
-                if ((dstSize != srcSize) && (srcLclNode is not null))
-                {
-                    var widenedSrcSize = roundUp(srcSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
-                    if (widenedSrcSize <= dstSize)
+                    else
                     {
-                        srcSize = widenedSrcSize;
+                        var simdStoreAttr = source.Type.EmitSize;
+                        emit.emitIns_S_R(INS_str, simdStoreAttr, srcReg, varNumOut, unchecked((int)argOffsetOut));
+                        argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(simdStoreAttr));
                     }
+
+                    assert(argOffsetOut <= argOffsetMax);
+                    return;
                 }
 
-                assert(srcSize <= dstSize);
-                var remainingSize = unchecked((int)srcSize);
-                uint structOffset = 0;
-                var lclOffset = srcLclNode is not null ? srcLclNode.LclOffs : 0u;
-                uint nextIndex = 0;
-
-                if (Configuration.TARGET_ARM64)
+                var slotType = genActualType(source);
+                if (compAppleArm64Abi())
                 {
-                    while (remainingSize >= (2 * Configuration.TARGET_POINTER_SIZE))
+                    // Apple small arguments share stack slots, so do not overwrite adjacent arguments.
+                    switch (putArgStk.StackByteSize)
                     {
-                        var type0 = layout.GetGCPtrType(unchecked((int)nextIndex));
-                        var type1 = layout.GetGCPtrType(unchecked((int)(nextIndex + 1)));
-                        if (srcLclNode is not null)
+                        case 1:
                         {
-                            emit.emitIns_R_R_S_S(INS_ldp, type0.EmitSize, type1.EmitSize, loReg, hiReg,
-                                srcLclNode.LclNum, unchecked((int)(lclOffset + structOffset)));
+                            slotType = TYP_BYTE;
+                            break;
+                        }
+
+                        case 2:
+                        {
+                            slotType = TYP_SHORT;
+                            break;
+                        }
+
+                        default:
+                        {
+                            assert(putArgStk.StackByteSize >= 4);
+                            break;
+                        }
+                    }
+                }
+
+                var storeIns = ins_Store(slotType);
+                var storeAttr = slotType.EmitSize;
+                if (source.IsContained)
+                {
+                    if (Configuration.TARGET_ARM64)
+                    {
+                        assert(source.Oper is GT_CNS_INT);
+                        assert(source.AsIntConCommon().IconValue == 0);
+                        emit.emitIns_S_R(storeIns, storeAttr, REG_ARM64_ZR, varNumOut, unchecked((int)argOffsetOut));
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 cannot place this contained stack argument.");
+                        return;
+                    }
+                }
+                else
+                {
+                    _ = genConsumeReg(source);
+                    emit.emitIns_S_R(storeIns, storeAttr, source.RegNum, varNumOut, unchecked((int)argOffsetOut));
+                    if (Configuration.TARGET_ARM && (source.Type == TYP_LONG))
+                    {
+                        // Only doubles retyped as long reach this path; actual longs have been decomposed.
+                        assert(source.Oper.IsCopyOrReload);
+                        var otherReg = source.AsCopyOrReload().GetRegNumByIdx(1);
+                        assert(otherReg != REG_NA);
+                        argOffsetOut = unchecked(argOffsetOut + (uint)EA_4BYTE);
+                        emit.emitIns_S_R(storeIns, storeAttr, otherReg, varNumOut, unchecked((int)argOffsetOut));
+                    }
+                }
+
+                argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(storeAttr));
+                assert(argOffsetOut <= argOffsetMax);
+            }
+            else
+            {
+                assert(source.IsContained);
+                if (source.Oper is GT_FIELD_LIST)
+                {
+                    genPutArgStkFieldList(putArgStk, varNumOut);
+                }
+                else
+                {
+                    noway_assert(source.Oper.IsLocalRead || (source.Oper is GT_BLK));
+                    var targetType = source.Type;
+                    noway_assert(varTypeIsStruct(targetType));
+
+                    var loReg = InternalRegisters.Extract(putArgStk);
+                    var hiReg = Configuration.TARGET_ARM64 ? InternalRegisters.GetSingle(putArgStk) : REG_NA;
+                    GenTreeLclVarCommon? srcLclNode = null;
+                    var addrReg = REG_NA;
+                    ClassLayout layout;
+                    if (source.Oper.IsLocalRead)
+                    {
+                        srcLclNode = source.AsLclVarCommon();
+                        var sourceLayout = srcLclNode.GetLayout(_compiler);
+                        if (sourceLayout is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR, "ARM struct stack argument local has no layout.");
+                            return;
+                        }
+
+                        layout = sourceLayout;
+                        ref var varDsc = ref _compiler.lvaGetDesc(srcLclNode.LclNum);
+                        assert(varDsc.lvOnFrame && !varDsc.lvRegister);
+                    }
+                    else
+                    {
+                        layout = source.AsBlk().Layout;
+                        addrReg = genConsumeReg(source.AsBlk().Addr);
+                        if (Configuration.TARGET_ARM64 && (loReg == addrReg))
+                        {
+                            // Keep the address-overwrite case confined to the high register.
+                            loReg = hiReg;
+                            hiReg = addrReg;
+                        }
+                    }
+
+                    var srcSize = layout.Size;
+                    if (_compiler.IsHfa(layout.ClassHandle))
+                    {
+                        noway_assert(!layout.HasGCPtr);
+                    }
+                    if (Configuration.TARGET_ARM64)
+                    {
+                        noway_assert(srcSize <= (2 * Configuration.TARGET_POINTER_SIZE));
+                        noway_assert(srcSize <= Configuration.MAX_PASS_MULTIREG_BYTES);
+                    }
+                    var dstSize = unchecked((uint)putArgStk.StackByteSize);
+
+                    // Widen only local reads, which cannot fault, and only within the destination padding.
+                    if ((dstSize != srcSize) && (srcLclNode is not null))
+                    {
+                        var widenedSrcSize = roundUp(srcSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                        if (widenedSrcSize <= dstSize)
+                        {
+                            srcSize = widenedSrcSize;
+                        }
+                    }
+
+                    assert(srcSize <= dstSize);
+                    var remainingSize = unchecked((int)srcSize);
+                    uint structOffset = 0;
+                    var lclOffset = srcLclNode is not null ? srcLclNode.LclOffs : 0u;
+                    uint nextIndex = 0;
+
+                    if (Configuration.TARGET_ARM64)
+                    {
+                        while (remainingSize >= (2 * Configuration.TARGET_POINTER_SIZE))
+                        {
+                            var type0 = layout.GetGCPtrType(unchecked((int)nextIndex));
+                            var type1 = layout.GetGCPtrType(unchecked((int)(nextIndex + 1)));
+                            if (srcLclNode is not null)
+                            {
+                                emit.emitIns_R_R_S_S(INS_ldp, type0.EmitSize, type1.EmitSize, loReg, hiReg,
+                                    srcLclNode.LclNum, unchecked((int)(lclOffset + structOffset)));
+                            }
+                            else
+                            {
+                                assert(loReg != addrReg);
+                                noway_assert((remainingSize == (2 * Configuration.TARGET_POINTER_SIZE)) || (hiReg != addrReg));
+                                emit.emitIns_R_R_R_IArm64(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
+                                    unchecked((nint)structOffset), INS_OPTS_NONE, type1.EmitSize);
+                            }
+
+                            emit.emitIns_S_S_R_R(INS_stp, type0.EmitSize, type1.EmitSize, loReg, hiReg, varNumOut,
+                                unchecked((int)argOffsetOut));
+                            argOffsetOut = unchecked(argOffsetOut + (2 * unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
+                            assert(argOffsetOut <= argOffsetMax);
+
+                            remainingSize -= 2 * Configuration.TARGET_POINTER_SIZE;
+                            structOffset = unchecked(structOffset + (2 * unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
+                            nextIndex = unchecked(nextIndex + 2);
+                        }
+                    }
+                    else
+                    {
+                        while (remainingSize >= Configuration.TARGET_POINTER_SIZE)
+                        {
+                            var type = layout.GetGCPtrType(unchecked((int)nextIndex));
+                            if (srcLclNode is not null)
+                            {
+                                emit.emitIns_R_S(INS_ldr, type.EmitSize, loReg, srcLclNode.LclNum,
+                                    unchecked((int)(lclOffset + structOffset)));
+                            }
+                            else
+                            {
+                                assert((loReg != addrReg) || (remainingSize == Configuration.TARGET_POINTER_SIZE));
+                                emit.emitIns_R_R_I(INS_ldr, type.EmitSize, loReg, addrReg,
+                                    unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
+                            }
+
+                            emit.emitIns_S_R(INS_str, type.EmitSize, loReg, varNumOut, unchecked((int)argOffsetOut));
+                            argOffsetOut = unchecked(argOffsetOut + unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                            assert(argOffsetOut <= argOffsetMax);
+
+                            remainingSize -= Configuration.TARGET_POINTER_SIZE;
+                            structOffset = unchecked(structOffset + unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                            nextIndex = unchecked(nextIndex + 1);
+                        }
+                    }
+                    while (remainingSize > 0)
+                    {
+                        nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+                        var_types type;
+                        if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
+                        {
+                            type = layout.GetGCPtrType(unchecked((int)nextIndex));
                         }
                         else
                         {
-                            assert(loReg != addrReg);
-                            noway_assert((remainingSize == (2 * Configuration.TARGET_POINTER_SIZE)) || (hiReg != addrReg));
-                            emit.emitIns_R_R_R_IArm64(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
-                                unchecked((nint)structOffset), INS_OPTS_NONE, type1.EmitSize);
+                            assert(!layout.IsGCPtr(unchecked((int)nextIndex)));
+                            if (remainingSize >= 4)
+                            {
+                                type = TYP_INT;
+                            }
+                            else if (remainingSize >= 2)
+                            {
+                                type = TYP_USHORT;
+                            }
+                            else
+                            {
+                                assert(remainingSize == 1);
+                                type = TYP_UBYTE;
+                            }
                         }
 
-                        emit.emitIns_S_S_R_R(INS_stp, type0.EmitSize, type1.EmitSize, loReg, hiReg, varNumOut,
-                            unchecked((int)argOffsetOut));
-                        argOffsetOut = unchecked(argOffsetOut + (2 * unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
-                        assert(argOffsetOut <= argOffsetMax);
+                        var attr = type.EmitActualSize;
+                        var moveSize = genTypeSize(type);
+                        remainingSize = unchecked((int)(unchecked((uint)remainingSize) - moveSize));
 
-                        remainingSize -= 2 * Configuration.TARGET_POINTER_SIZE;
-                        structOffset = unchecked(structOffset + (2 * unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
-                        nextIndex = unchecked(nextIndex + 2);
-                    }
-                }
-                else
-                {
-                    while (remainingSize >= Configuration.TARGET_POINTER_SIZE)
-                    {
-                        var type = layout.GetGCPtrType(unchecked((int)nextIndex));
+                        var loadIns = ins_Load(type);
                         if (srcLclNode is not null)
                         {
-                            emit.emitIns_R_S(INS_ldr, type.EmitSize, loReg, srcLclNode.LclNum,
+                            emit.emitIns_R_S(loadIns, attr, loReg, srcLclNode.LclNum,
                                 unchecked((int)(lclOffset + structOffset)));
                         }
                         else
                         {
-                            assert((loReg != addrReg) || (remainingSize == Configuration.TARGET_POINTER_SIZE));
-                            emit.emitIns_R_R_I(INS_ldr, type.EmitSize, loReg, addrReg,
-                                unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
+                            assert(loReg != addrReg);
+                            if (Configuration.TARGET_ARM64)
+                            {
+                                emit.emitIns_R_R_IArm64(loadIns, attr, loReg, addrReg,
+                                    unchecked((nint)structOffset), INS_OPTS_NONE);
+                            }
+                            else
+                            {
+                                emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg,
+                                    unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
+                            }
                         }
 
-                        emit.emitIns_S_R(INS_str, type.EmitSize, loReg, varNumOut, unchecked((int)argOffsetOut));
-                        argOffsetOut = unchecked(argOffsetOut + unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                        var storeIns = ins_Store(type);
+                        emit.emitIns_S_R(storeIns, attr, loReg, varNumOut, unchecked((int)argOffsetOut));
+                        argOffsetOut = unchecked(argOffsetOut + moveSize);
                         assert(argOffsetOut <= argOffsetMax);
-
-                        remainingSize -= Configuration.TARGET_POINTER_SIZE;
-                        structOffset = unchecked(structOffset + unchecked((uint)Configuration.TARGET_POINTER_SIZE));
-                        nextIndex = unchecked(nextIndex + 1);
+                        structOffset = unchecked(structOffset + moveSize);
                     }
-                }
-                while (remainingSize > 0)
-                {
-                    nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
-                    var_types type;
-                    if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
-                    {
-                        type = layout.GetGCPtrType(unchecked((int)nextIndex));
-                    }
-                    else
-                    {
-                        assert(!layout.IsGCPtr(unchecked((int)nextIndex)));
-                        if (remainingSize >= 4)
-                        {
-                            type = TYP_INT;
-                        }
-                        else if (remainingSize >= 2)
-                        {
-                            type = TYP_USHORT;
-                        }
-                        else
-                        {
-                            assert(remainingSize == 1);
-                            type = TYP_UBYTE;
-                        }
-                    }
-
-                    var attr = type.EmitActualSize;
-                    var moveSize = genTypeSize(type);
-                    remainingSize = unchecked((int)(unchecked((uint)remainingSize) - moveSize));
-
-                    var loadIns = ins_Load(type);
-                    if (srcLclNode is not null)
-                    {
-                        emit.emitIns_R_S(loadIns, attr, loReg, srcLclNode.LclNum,
-                            unchecked((int)(lclOffset + structOffset)));
-                    }
-                    else
-                    {
-                        assert(loReg != addrReg);
-                        if (Configuration.TARGET_ARM64)
-                        {
-                            emit.emitIns_R_R_IArm64(loadIns, attr, loReg, addrReg,
-                                unchecked((nint)structOffset), INS_OPTS_NONE);
-                        }
-                        else
-                        {
-                            emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg,
-                                unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
-                        }
-                    }
-
-                    var storeIns = ins_Store(type);
-                    emit.emitIns_S_R(storeIns, attr, loReg, varNumOut, unchecked((int)argOffsetOut));
-                    argOffsetOut = unchecked(argOffsetOut + moveSize);
-                    assert(argOffsetOut <= argOffsetMax);
-                    structOffset = unchecked(structOffset + moveSize);
                 }
             }
-        }
         }
         else if (Configuration.TARGET_RISCV64)
         {
-        assert(putArgStk.Oper is GT_PUTARG_STK);
-        var emit = GetEmitter();
-        int varNumOut;
-        uint argOffsetMax;
-        var argOffsetOut = unchecked((uint)putArgStk.ArgOffset);
+            assert(putArgStk.Oper is GT_PUTARG_STK);
+            var emit = GetEmitter();
+            int varNumOut;
+            uint argOffsetMax;
+            var argOffsetOut = unchecked((uint)putArgStk.ArgOffset);
 
-        if (putArgStk.PutInIncomingArgArea)
-        {
-            varNumOut = getFirstArgWithStackSlot();
-            argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
-            if (Configuration.FEATURE_FASTTAILCALL)
+            if (putArgStk.PutInIncomingArgArea)
             {
-                var call = putArgStk.Call;
-                assert(call is not null);
-                assert(call.IsFastTailCall);
-                _ = _compiler.lvaGetDesc(varNumOut);
-            }
-        }
-        else
-        {
-            varNumOut = _compiler.lvaOutgoingArgSpaceVar;
-            argOffsetMax = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
-        }
-
-        var source = putArgStk.Op1;
-        if (source.Type != TYP_STRUCT)
-        {
-            if (varTypeIsSimd(source.Type))
-            {
-                throw new FatalJitException(
-                    CORJIT_SKIPPED, "SIMD in genPutArgStk-----unimplemented/unused on RISCV64 yet----");
-            }
-
-            var slotType = genActualType(source);
-            var storeIns = ins_Store(slotType);
-            var storeAttr = slotType.EmitSize;
-
-            // Integer arguments narrower than XLEN occupy pointer-sized stack slots.
-            if ((EA_SIZE(storeAttr) < EA_PTRSIZE) && varTypeUsesIntReg(slotType))
-            {
-                storeAttr = EA_PTRSIZE;
-                storeIns = INS_sd;
-            }
-
-            if (source.IsContained)
-            {
-                assert(source.Oper is GT_CNS_INT);
-                assert(source.AsIntConCommon().IconValue == 0);
-                emit.emitIns_S_R(storeIns, storeAttr, REG_RISCV64_R0, varNumOut, unchecked((int)argOffsetOut));
-            }
-            else
-            {
-                _ = genConsumeReg(source);
-                emit.emitIns_S_R(storeIns, storeAttr, source.RegNum, varNumOut, unchecked((int)argOffsetOut));
-            }
-
-            argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(storeAttr));
-            assert(argOffsetOut <= argOffsetMax);
-        }
-        else
-        {
-            assert(source.IsContained);
-            if (source.Oper is GT_FIELD_LIST)
-            {
-                genPutArgStkFieldList(putArgStk, varNumOut);
-            }
-            else
-            {
-                noway_assert(source.Oper.IsLocalRead || (source.Oper is GT_BLK));
-                noway_assert(varTypeIsStruct(source.Type));
-
-                var loReg = InternalRegisters.Extract(putArgStk);
-                GenTreeLclVarCommon? srcLclNode = null;
-                var addrReg = REG_NA;
-                ClassLayout layout;
-
-                if (source.Oper.IsLocalRead)
+                varNumOut = getFirstArgWithStackSlot();
+                argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
+                if (Configuration.FEATURE_FASTTAILCALL)
                 {
-                    srcLclNode = source.AsLclVarCommon();
-                    layout = srcLclNode.GetLayout(_compiler)
-                        ?? throw new FatalJitException(
-                            CORJIT_INTERNALERROR, "RISC-V struct stack argument local has no layout.");
-                    ref var varDsc = ref _compiler.lvaGetDesc(srcLclNode.LclNum);
-                    assert(varDsc.lvOnFrame && !varDsc.lvRegister);
+                    var call = putArgStk.Call;
+                    assert(call is not null);
+                    assert(call.IsFastTailCall);
+                    _ = _compiler.lvaGetDesc(varNumOut);
+                }
+            }
+            else
+            {
+                varNumOut = _compiler.lvaOutgoingArgSpaceVar;
+                argOffsetMax = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
+            }
+
+            var source = putArgStk.Op1;
+            if (source.Type != TYP_STRUCT)
+            {
+                if (varTypeIsSimd(source.Type))
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED, "SIMD in genPutArgStk-----unimplemented/unused on RISCV64 yet----");
+                    return;
+                }
+
+                var slotType = genActualType(source);
+                var storeIns = ins_Store(slotType);
+                var storeAttr = slotType.EmitSize;
+
+                // Integer arguments narrower than XLEN occupy pointer-sized stack slots.
+                if ((EA_SIZE(storeAttr) < EA_PTRSIZE) && varTypeUsesIntReg(slotType))
+                {
+                    storeAttr = EA_PTRSIZE;
+                    storeIns = INS_sd;
+                }
+
+                if (source.IsContained)
+                {
+                    assert(source.Oper is GT_CNS_INT);
+                    assert(source.AsIntConCommon().IconValue == 0);
+                    emit.emitIns_S_R(storeIns, storeAttr, REG_RISCV64_R0, varNumOut, unchecked((int)argOffsetOut));
                 }
                 else
                 {
-                    layout = source.AsBlk().Layout;
-                    addrReg = genConsumeReg(source.AsBlk().Addr);
+                    _ = genConsumeReg(source);
+                    emit.emitIns_S_R(storeIns, storeAttr, source.RegNum, varNumOut, unchecked((int)argOffsetOut));
                 }
 
-                var srcSize = layout.Size;
-                noway_assert(srcSize <= Configuration.MAX_PASS_MULTIREG_BYTES);
-                var dstSize = unchecked((uint)putArgStk.StackByteSize);
-
-                // Reading past a local's end is safe only within the argument's padding.
-                if ((dstSize != srcSize) && (srcLclNode is not null))
+                argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(storeAttr));
+                assert(argOffsetOut <= argOffsetMax);
+            }
+            else
+            {
+                assert(source.IsContained);
+                if (source.Oper is GT_FIELD_LIST)
                 {
-                    var widenedSrcSize = roundUp(srcSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
-                    if (widenedSrcSize <= dstSize)
-                    {
-                        srcSize = widenedSrcSize;
-                    }
+                    genPutArgStkFieldList(putArgStk, varNumOut);
                 }
-
-                assert(srcSize <= dstSize);
-                var remainingSize = unchecked((int)srcSize);
-                uint structOffset = 0;
-                var lclOffset = srcLclNode is not null ? srcLclNode.LclOffs : 0u;
-                while (remainingSize > 0)
+                else
                 {
-                    var nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
-                    var_types type;
-                    if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
+                    noway_assert(source.Oper.IsLocalRead || (source.Oper is GT_BLK));
+                    noway_assert(varTypeIsStruct(source.Type));
+
+                    var loReg = InternalRegisters.Extract(putArgStk);
+                    GenTreeLclVarCommon? srcLclNode = null;
+                    var addrReg = REG_NA;
+                    ClassLayout layout;
+
+                    if (source.Oper.IsLocalRead)
                     {
-                        type = layout.GetGCPtrType(unchecked((int)nextIndex));
+                        srcLclNode = source.AsLclVarCommon();
+                        var sourceLayout = srcLclNode.GetLayout(_compiler);
+                        if (sourceLayout is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR, "RISC-V struct stack argument local has no layout.");
+                            return;
+                        }
+
+                        layout = sourceLayout;
+                        ref var varDsc = ref _compiler.lvaGetDesc(srcLclNode.LclNum);
+                        assert(varDsc.lvOnFrame && !varDsc.lvRegister);
                     }
                     else
                     {
-                        assert(!layout.IsGCPtr(unchecked((int)nextIndex)));
-                        if (remainingSize >= 4)
+                        layout = source.AsBlk().Layout;
+                        addrReg = genConsumeReg(source.AsBlk().Addr);
+                    }
+
+                    var srcSize = layout.Size;
+                    noway_assert(srcSize <= Configuration.MAX_PASS_MULTIREG_BYTES);
+                    var dstSize = unchecked((uint)putArgStk.StackByteSize);
+
+                    // Reading past a local's end is safe only within the argument's padding.
+                    if ((dstSize != srcSize) && (srcLclNode is not null))
+                    {
+                        var widenedSrcSize = roundUp(srcSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                        if (widenedSrcSize <= dstSize)
                         {
-                            type = TYP_INT;
+                            srcSize = widenedSrcSize;
                         }
-                        else if (remainingSize >= 2)
+                    }
+
+                    assert(srcSize <= dstSize);
+                    var remainingSize = unchecked((int)srcSize);
+                    uint structOffset = 0;
+                    var lclOffset = srcLclNode is not null ? srcLclNode.LclOffs : 0u;
+                    while (remainingSize > 0)
+                    {
+                        var nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+                        var_types type;
+                        if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
                         {
-                            type = TYP_USHORT;
+                            type = layout.GetGCPtrType(unchecked((int)nextIndex));
                         }
                         else
                         {
-                            assert(remainingSize == 1);
-                            type = TYP_UBYTE;
+                            assert(!layout.IsGCPtr(unchecked((int)nextIndex)));
+                            if (remainingSize >= 4)
+                            {
+                                type = TYP_INT;
+                            }
+                            else if (remainingSize >= 2)
+                            {
+                                type = TYP_USHORT;
+                            }
+                            else
+                            {
+                                assert(remainingSize == 1);
+                                type = TYP_UBYTE;
+                            }
                         }
-                    }
 
-                    var attr = type.EmitActualSize;
-                    var moveSize = genTypeSize(type);
-                    remainingSize = unchecked((int)(unchecked((uint)remainingSize) - moveSize));
+                        var attr = type.EmitActualSize;
+                        var moveSize = genTypeSize(type);
+                        remainingSize = unchecked((int)(unchecked((uint)remainingSize) - moveSize));
 
-                    var loadIns = ins_Load(type);
-                    if (srcLclNode is not null)
-                    {
-                        emit.emitIns_R_S(loadIns, attr, loReg, srcLclNode.LclNum,
-                            unchecked((int)(lclOffset + structOffset)));
-                    }
-                    else
-                    {
-                        assert(loReg != addrReg);
-                        emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg, unchecked((int)structOffset));
-                    }
+                        var loadIns = ins_Load(type);
+                        if (srcLclNode is not null)
+                        {
+                            emit.emitIns_R_S(loadIns, attr, loReg, srcLclNode.LclNum,
+                                unchecked((int)(lclOffset + structOffset)));
+                        }
+                        else
+                        {
+                            assert(loReg != addrReg);
+                            emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg, unchecked((int)structOffset));
+                        }
 
-                    emit.emitIns_S_R(ins_Store(type), attr, loReg, varNumOut, unchecked((int)argOffsetOut));
-                    argOffsetOut = unchecked(argOffsetOut + moveSize);
-                    assert(argOffsetOut <= argOffsetMax);
-                    structOffset = unchecked(structOffset + moveSize);
+                        emit.emitIns_S_R(ins_Store(type), attr, loReg, varNumOut, unchecked((int)argOffsetOut));
+                        argOffsetOut = unchecked(argOffsetOut + moveSize);
+                        assert(argOffsetOut <= argOffsetMax);
+                        structOffset = unchecked(structOffset + moveSize);
+                    }
                 }
             }
         }
-        }
         else if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
+            return;
         }
         else
         {
             Emitter.RequireSupportedInstructionRecording();
-        var data = putArgStk.Op1;
-        var targetType = data.Type.ActualType;
-        var baseVarNum = getBaseVarForPutArgStk(putArgStk);
+            var data = putArgStk.Op1;
+            var targetType = data.Type.ActualType;
+            var baseVarNum = getBaseVarForPutArgStk(putArgStk);
 
-        if (data.Oper is GT_FIELD_LIST)
-        {
-            genPutArgStkFieldList(putArgStk, baseVarNum);
-            return;
-        }
-        else if (varTypeIsStruct(targetType))
-        {
-            _stkArgVarNum = baseVarNum;
-            _stkArgOffset = putArgStk.ArgOffset;
-            genPutStructArgStk(putArgStk);
-            _stkArgVarNum = BAD_VAR_NUM;
-            return;
-        }
+            if (data.Oper is GT_FIELD_LIST)
+            {
+                genPutArgStkFieldList(putArgStk, baseVarNum);
+                return;
+            }
+            else if (varTypeIsStruct(targetType))
+            {
+                _stkArgVarNum = baseVarNum;
+                _stkArgOffset = putArgStk.ArgOffset;
+                genPutStructArgStk(putArgStk);
+                _stkArgVarNum = BAD_VAR_NUM;
+                return;
+            }
 
-        noway_assert(targetType != TYP_STRUCT);
-        var argOffset = putArgStk.ArgOffset;
-        if (Configuration.DEBUG)
-        {
-            var call = putArgStk.Call;
-            assert(call is not null);
-            var callArg = call.Args.FindByNode(putArgStk);
-            assert(callArg is not null);
-            assert(callArg.AbiInfo.HasExactlyOneStackSegment);
-            assert(argOffset == callArg.AbiInfo.Segments[0].StackOffset);
-        }
-        if (data.IsContainedIntOrIImmed)
-        {
-            Emitter.emitIns_S_I(ins_Store(targetType), targetType.EmitSize, baseVarNum, argOffset,
-                unchecked((int)data.AsIntConCommon().IconValue));
-        }
-        else
-        {
-            assert(data.IsUsedFromReg);
-            _ = genConsumeReg(data);
-            Emitter.emitIns_S_R(ins_Store(targetType), targetType.EmitSize, data.RegNum, baseVarNum, argOffset);
-        }
+            noway_assert(targetType != TYP_STRUCT);
+            var argOffset = putArgStk.ArgOffset;
+            if (Configuration.DEBUG)
+            {
+                var call = putArgStk.Call;
+                assert(call is not null);
+                var callArg = call.Args.FindByNode(putArgStk);
+                assert(callArg is not null);
+                assert(callArg.AbiInfo.HasExactlyOneStackSegment);
+                assert(argOffset == callArg.AbiInfo.Segments[0].StackOffset);
+            }
+            if (data.IsContainedIntOrIImmed)
+            {
+                Emitter.emitIns_S_I(ins_Store(targetType), targetType.EmitSize, baseVarNum, argOffset,
+                    unchecked((int)data.AsIntConCommon().IconValue));
+            }
+            else
+            {
+                assert(data.IsUsedFromReg);
+                _ = genConsumeReg(data);
+                Emitter.emitIns_S_R(ins_Store(targetType), targetType.EmitSize, data.RegNum, baseVarNum, argOffset);
+            }
         }
     }
 
@@ -555,7 +571,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -591,7 +608,8 @@ public sealed partial class CodeGen
             {
                 if (Configuration.TARGET_X86)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+                    return;
                 }
                 genStructPutArgPartialRepMovs(putArgStk);
                 break;
@@ -607,7 +625,11 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_X86)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Push struct arguments are only supported on x86.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage093
+                    );
+                    return;
                 }
                 genStructPutArgPush(putArgStk);
                 break;
@@ -640,14 +662,16 @@ public sealed partial class CodeGen
         }
         if (Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "The first incoming stack argument is not implemented for x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The first incoming stack argument is not implemented for x86.");
+            return default!;
         }
         if (Configuration.TARGET_AMD64)
         {
             return 0;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Incoming stack argument selection is not yet ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Incoming stack argument selection is not yet ported for this target.");
+        return default!;
     }
 
     public int getBaseVarForPutArgStk(GenTree treeNode)
@@ -665,11 +689,13 @@ public sealed partial class CodeGen
                 return _compiler.lvaOutgoingArgSpaceVar;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "x86 stack argument bases require fixed outgoing arguments.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 stack argument bases require fixed outgoing arguments.");
+            return default!;
         }
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires xarch.");
+            return default!;
         }
 
         assert(treeNode.Oper is GT_PUTARG_STK);
@@ -894,8 +920,9 @@ public sealed partial class CodeGen
                     {
                         if (!Configuration.TARGET_X86)
                         {
-                            throw new FatalJitException(CORJIT_SKIPPED,
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                                 "x86 stack-argument constant materialization is unavailable.");
+                            return;
                         }
 
                         genSetRegToConstXarch(intTmpReg, fieldNode.Type, fieldNode);
@@ -912,7 +939,8 @@ public sealed partial class CodeGen
 
                 if (fieldType == TYP_SIMD12 && !Configuration.FEATURE_SIMD)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 stack arguments are unavailable for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 stack arguments are unavailable for this target.");
+                    return;
                 }
                 if (Configuration.FEATURE_SIMD && fieldType == TYP_SIMD12)
                 {
@@ -1145,7 +1173,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+            return;
         }
 
         genConsumePutStructArgStk(putArgNode, REG_X64_RDI, REG_X64_RSI, REG_NA);

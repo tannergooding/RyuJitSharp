@@ -23,8 +23,9 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_XARCH)
             {
-                throw new FatalJitException(CorJitResult.CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CorJitResult.CORJIT_SKIPPED,
                     "Xarch alignment padding is unsupported on this target.");
+                return;
             }
             idCodeSize(size);
         }

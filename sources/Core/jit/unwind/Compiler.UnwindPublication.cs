@@ -34,7 +34,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch/Wasm unwind EE publication requires xarch or Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch/Wasm unwind EE publication requires xarch or Wasm.");
+            return;
         }
 
         AllocateUnwindEEInfo(hotCode, coldCode, startOffset, endOffset, unwindSize, unwindBlock, functionKind);
@@ -45,8 +46,7 @@ public partial class Compiler
     {
         if (Configuration.DEBUG && verbose)
         {
-            var functionDescription = functionKind switch
-            {
+            var functionDescription = functionKind switch {
                 CorJitFuncKind.CORJIT_FUNC_ROOT => "main function",
                 CorJitFuncKind.CORJIT_FUNC_HANDLER => "handler",
                 CorJitFuncKind.CORJIT_FUNC_FILTER => "filter",
@@ -68,7 +68,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unwind EE publication for this target is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind EE publication for this target is not ported.");
+            return;
         }
     }
 }

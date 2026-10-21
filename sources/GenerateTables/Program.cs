@@ -2469,8 +2469,10 @@ public enum InlineObservation
             var description = parts[2].AsSpan().Trim();
             var scope = parts[4].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        InlineObservation.{scope}_{name} => {description},");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            case InlineObservation.{scope}_{name}:");
+            _ = builder.AppendLine("            {");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return {description};");
+            _ = builder.AppendLine("            }");
         });
 
         var targetsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
@@ -2512,12 +2514,20 @@ namespace RyuJitSharp;
 
 public static partial class InlineObservationExtensions
 {
-    private static string GetDescription(InlineObservation observation) => observation switch
+    private static string GetDescription(InlineObservation observation)
     {
-{{descriptionsBuilder}}        _ => throw FatalJitException.CreateStaticFailure(
-            CORJIT_INTERNALERROR,
-            FatalJitErrorCode.DirectFailureMessage240),
-    };
+        switch (observation)
+        {
+{{descriptionsBuilder}}            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage240
+                );
+                return default!;
+            }
+        }
+    }
 
     private static ReadOnlySpan<InlineImpact> s_impacts => [
 {{impactsBuilder}}    ];
@@ -2626,21 +2636,77 @@ public partial class Emitter
 
 {{reverseTablesBuilder}}
 
-    private static ReadOnlySpan<instruction> emitJumpKindInstructions =>
-        Configuration.TARGET_XARCH ? s_emitJumpKindInstructionsXARCH :
-        Configuration.TARGET_ARMARCH ? s_emitJumpKindInstructionsARMARCH :
-        Configuration.TARGET_LOONGARCH64 ? s_emitJumpKindInstructionsLOONGARCH64 :
-        Configuration.TARGET_RISCV64 ? s_emitJumpKindInstructionsRISCV64 :
-        Configuration.TARGET_WASM ? s_emitJumpKindInstructionsWASM :
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping is not supported for this target.");
+    private static ReadOnlySpan<instruction> emitJumpKindInstructions
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return s_emitJumpKindInstructionsXARCH;
+            }
 
-    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds =>
-        Configuration.TARGET_XARCH ? s_emitReverseJumpKindsXARCH :
-        Configuration.TARGET_ARMARCH ? s_emitReverseJumpKindsARMARCH :
-        Configuration.TARGET_LOONGARCH64 ? s_emitReverseJumpKindsLOONGARCH64 :
-        Configuration.TARGET_RISCV64 ? s_emitReverseJumpKindsRISCV64 :
-        Configuration.TARGET_WASM ? s_emitReverseJumpKindsWASM :
-        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping is not supported for this target.");
+            if (Configuration.TARGET_ARMARCH)
+            {
+                return s_emitJumpKindInstructionsARMARCH;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_emitJumpKindInstructionsLOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_emitJumpKindInstructionsRISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_emitJumpKindInstructionsWASM;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Jump-kind instruction mapping is not supported for this target.");
+            return default;
+        }
+    }
+
+    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return s_emitReverseJumpKindsXARCH;
+            }
+
+            if (Configuration.TARGET_ARMARCH)
+            {
+                return s_emitReverseJumpKindsARMARCH;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_emitReverseJumpKindsLOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_emitReverseJumpKindsRISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_emitReverseJumpKindsWASM;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Reverse jump-kind mapping is not supported for this target.");
+            return default;
+        }
+    }
 }
 """);
     }
@@ -2972,7 +3038,9 @@ public sealed partial class CodeGen
                 return s_instructionNameRangesWasm;
             }
 
-            throw new FatalJitException("No instruction-name table is defined for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "No instruction-name table is defined for the configured target.");
+            return default;
         }
     }
 
@@ -3142,10 +3210,25 @@ public partial class Emitter
     private static ReadOnlySpan<float> insLatencyInfosAMD64 => [
 {{amd64LatencyBuilder}}    ];
 
-    private static ReadOnlySpan<float> insLatencyInfos =>
-        Configuration.TARGET_X86 ? insLatencyInfosX86 :
-        Configuration.TARGET_AMD64 ? insLatencyInfosAMD64 :
-        throw new FatalJitException("xarch instruction latency data is not available for this target.");
+    private static ReadOnlySpan<float> insLatencyInfos
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insLatencyInfosX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insLatencyInfosAMD64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch instruction latency data is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<float> insThroughputInfosX86 => [
 {{x86ThroughputBuilder}}    ];
@@ -3153,10 +3236,25 @@ public partial class Emitter
     private static ReadOnlySpan<float> insThroughputInfosAMD64 => [
 {{amd64ThroughputBuilder}}    ];
 
-    private static ReadOnlySpan<float> insThroughputInfos =>
-        Configuration.TARGET_X86 ? insThroughputInfosX86 :
-        Configuration.TARGET_AMD64 ? insThroughputInfosAMD64 :
-        throw new FatalJitException("xarch instruction throughput data is not available for this target.");
+    private static ReadOnlySpan<float> insThroughputInfos
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insThroughputInfosX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insThroughputInfosAMD64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch instruction throughput data is not available for this target.");
+            return default;
+        }
+    }
 }
 """);
 
@@ -3178,10 +3276,25 @@ public partial class Emitter
     private static ReadOnlySpan<insTupleType> s_tupleTypesAMD64 => [
 {{amd64TupleBuilder}}    ];
 
-    private static ReadOnlySpan<insTupleType> s_tupleTypes =>
-        Configuration.TARGET_X86 ? s_tupleTypesX86 :
-        Configuration.TARGET_AMD64 ? s_tupleTypesAMD64 :
-        throw new FatalJitException("xarch instruction tuple data is not available for this target.");
+    private static ReadOnlySpan<insTupleType> s_tupleTypes
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return s_tupleTypesX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return s_tupleTypesAMD64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch instruction tuple data is not available for this target.");
+            return default;
+        }
+    }
 }
 """);
 
@@ -3300,8 +3413,10 @@ public sealed partial class CodeGen
                 return s_instInfoWASM;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
                 "Instruction metadata is not available for the configured target.");
+            return default;
         }
     }
 }
@@ -3601,7 +3716,10 @@ public partial class Emitter
                 return s_emitFmtToOpsRiscV64;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Unsupported instruction format target.");
+            return default;
         }
     }
 
@@ -3639,7 +3757,10 @@ public partial class Emitter
                 return EmitFmtNamesRiscV64.Values;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Unsupported instruction format target.");
+            return default;
         }
     }
 
@@ -3939,13 +4060,25 @@ public partial class Emitter
             _ = tables.AppendLine();
 
             _ = tables.AppendLine(CultureInfo.InvariantCulture,
-                $"    private static ReadOnlySpan<ulong> {name} =>");
-            _ = tables.AppendLine(CultureInfo.InvariantCulture,
-                $"        Configuration.TARGET_X86 ? {name}X86 :");
-            _ = tables.AppendLine(CultureInfo.InvariantCulture,
-                $"        Configuration.TARGET_AMD64 ? {name}X64 :");
-            _ = tables.AppendLine(
-                "        throw new FatalJitException(\"xarch opcode table is not available for this target.\");");
+                $"    private static ReadOnlySpan<ulong> {name}");
+            _ = tables.AppendLine("    {");
+            _ = tables.AppendLine("        get");
+            _ = tables.AppendLine("        {");
+            _ = tables.AppendLine("            if (Configuration.TARGET_X86)");
+            _ = tables.AppendLine("            {");
+            _ = tables.AppendLine(CultureInfo.InvariantCulture, $"                return {name}X86;");
+            _ = tables.AppendLine("            }");
+            _ = tables.AppendLine();
+            _ = tables.AppendLine("            if (Configuration.TARGET_AMD64)");
+            _ = tables.AppendLine("            {");
+            _ = tables.AppendLine(CultureInfo.InvariantCulture, $"                return {name}X64;");
+            _ = tables.AppendLine("            }");
+            _ = tables.AppendLine();
+            _ = tables.AppendLine("            FatalJitException.ThrowFatalJitException(");
+            _ = tables.AppendLine("                \"xarch opcode table is not available for this target.\");");
+            _ = tables.AppendLine("            return default;");
+            _ = tables.AppendLine("        }");
+            _ = tables.AppendLine("    }");
             _ = tables.AppendLine();
         }
 
@@ -5563,7 +5696,10 @@ public enum Phases
             var enumName = parts[0].AsSpan().Trim();
             var stringName = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        Phases.{enumName} => {stringName},");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            case Phases.{enumName}:");
+            _ = builder.AppendLine("            {");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return {stringName};");
+            _ = builder.AppendLine("            }");
         });
 
         var hasChildrenBuilder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
@@ -5623,12 +5759,20 @@ namespace RyuJitSharp;
 
 public static partial class PhasesExtensions
 {
-    private static string GetName(Phases phase) => phase switch
+    private static string GetName(Phases phase)
     {
-{{namesBuilder}}        _ => throw FatalJitException.CreateStaticFailure(
-            CORJIT_INTERNALERROR,
-            FatalJitErrorCode.DirectFailureMessage209),
-    };
+        switch (phase)
+        {
+{{namesBuilder}}            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage209
+                );
+                return default!;
+            }
+        }
+    }
 
     private static ReadOnlySpan<bool> s_hasChildren => [
 {{hasChildrenBuilder}}    ];
@@ -6026,15 +6170,27 @@ public static partial class Globals
                 var name = parts[0].AsSpan().Trim();
                 var sname = parts[3].AsSpan().Trim();
 
-                _ = output.AppendLine(CultureInfo.InvariantCulture, $"        REG_{identity}_{name} => {sname},");
+                _ = output.AppendLine(CultureInfo.InvariantCulture, $"            case REG_{identity}_{name}:");
+                _ = output.AppendLine("            {");
+                _ = output.AppendLine(CultureInfo.InvariantCulture, $"                return {sname};");
+                _ = output.AppendLine("            }");
             });
 
-            _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"    private static string GetName{identity}(regNumber regNum) => regNum switch");
+            _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"    private static string GetName{identity}(regNumber regNum)");
             _ = namesBuilder.AppendLine("    {");
+            _ = namesBuilder.AppendLine("        switch (regNum)");
+            _ = namesBuilder.AppendLine("        {");
             _ = namesBuilder.Append(targetBuilder);
-            _ = namesBuilder.AppendLine(
-                "        _ => throw FatalJitException.CreateStaticFailure(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage445),");
-            _ = namesBuilder.AppendLine("    };");
+            _ = namesBuilder.AppendLine("            default:");
+            _ = namesBuilder.AppendLine("            {");
+            _ = namesBuilder.AppendLine("                FatalJitException.ThrowFatalJitException(");
+            _ = namesBuilder.AppendLine("                    CORJIT_INTERNALERROR,");
+            _ = namesBuilder.AppendLine("                    FatalJitErrorCode.DirectFailureMessage445");
+            _ = namesBuilder.AppendLine("                );");
+            _ = namesBuilder.AppendLine("                return default!;");
+            _ = namesBuilder.AppendLine("            }");
+            _ = namesBuilder.AppendLine("        }");
+            _ = namesBuilder.AppendLine("    }");
             _ = namesBuilder.AppendLine();
         }
 
@@ -6134,7 +6290,9 @@ public static partial class regNumberExtensions
             _ = builder.AppendLine("            }");
         }
 
-        _ = builder.AppendLine("            throw new FatalJitException(\"Invalid target architecture.\");");
+        _ = builder.AppendLine("            FatalJitException.ThrowFatalJitException(");
+        _ = builder.AppendLine("                \"Invalid target architecture.\");");
+        _ = builder.AppendLine("            return default;");
         _ = builder.AppendLine("        }");
         _ = builder.AppendLine("    }");
 
@@ -6448,9 +6606,11 @@ public static partial class Globals
                 _ = builder.AppendLine("            }");
             }
 
+            _ = builder.AppendLine("            FatalJitException.ThrowFatalJitException(");
             _ = builder.AppendLine(
                 CultureInfo.InvariantCulture,
-                $"            throw new FatalJitException(\"Register mask '{name}' is not available for the configured target.\");");
+                $"                \"Register mask '{name}' is not available for the configured target.\");");
+            _ = builder.AppendLine("            return default;");
             _ = builder.AppendLine("        }");
             _ = builder.AppendLine("    }");
         }
@@ -6500,7 +6660,10 @@ public enum var_types : byte
             var name = parts[0].AsSpan().Trim();
             var nameString = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                        var_types.TYP_{name} => {nameString}, // TYP_{name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                        case var_types.TYP_{name}:");
+            _ = builder.AppendLine("                        {");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                            return {nameString}; // TYP_{name}");
+            _ = builder.AppendLine("                        }");
         });
 
         var genActualTypesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
@@ -6624,10 +6787,14 @@ public static partial class var_typesExtensions
             {
                 if (Configuration.DEBUG)
                 {
-                    return varType switch
+                    switch (varType)
                     {
-{{varTypeNameCasesBuilder}}                        _ => throw new IndexOutOfRangeException(),
-                    };
+{{varTypeNameCasesBuilder}}                        default:
+                        {
+                            JitExceptionHelpers.ThrowIndexOutOfRangeException();
+                            return default!;
+                        }
+                    }
                 }
 
                 return varType.ToString();

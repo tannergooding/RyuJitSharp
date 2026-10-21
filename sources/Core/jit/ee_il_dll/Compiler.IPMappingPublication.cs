@@ -59,7 +59,8 @@ public partial class Compiler
 
             default:
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Unknown IP mapping kind.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage210);
+                return;
             }
         }
     }

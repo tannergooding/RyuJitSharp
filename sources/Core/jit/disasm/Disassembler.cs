@@ -90,7 +90,12 @@ public partial struct Disassembler
             return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Disassembler has not been initialized.");
+            return;
+        }
         if (!compiler.opts.doLateDisasm)
         {
             return;
@@ -108,7 +113,12 @@ public partial struct Disassembler
             return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Disassembler has not been initialized.");
+            return;
+        }
         if (!compiler.opts.doLateDisasm)
         {
             return;

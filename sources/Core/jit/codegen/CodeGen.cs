@@ -173,7 +173,8 @@ public sealed partial class CodeGen : ICodeGen
         }
 
         NYI("CodeGen.genGetGSCookieTempRegs outside xarch");
-        throw new FatalJitException(CORJIT_SKIPPED, "CodeGen.genGetGSCookieTempRegs is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "CodeGen.genGetGSCookieTempRegs is not supported for this target.");
+        return default!;
     }
 
     /// <summary>return the offset from Caller-SP to the frame pointer.</summary>
@@ -1120,7 +1121,8 @@ public sealed partial class CodeGen : ICodeGen
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
+            return;
         }
 
         genGenerateMachineCode();
@@ -1130,7 +1132,8 @@ public sealed partial class CodeGen : ICodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm funclet validation requires the Wasm target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm funclet validation requires the Wasm target.");
+            return;
         }
 
         // Reject before generating relocations: an optimized funclet method may
@@ -1151,7 +1154,8 @@ public sealed partial class CodeGen : ICodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm ReadyToRun range validation requires the Wasm target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm ReadyToRun range validation requires the Wasm target.");
+            return;
         }
 
         s_jitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange);
@@ -1204,7 +1208,8 @@ public sealed partial class CodeGen : ICodeGen
                 return REG_RISCV64_FP;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Frame-pointer register is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame-pointer register is not available for the configured target.");
+            return default!;
         }
 
         assert(funcletIndex < _compiler.compFuncInfoCount);
@@ -1245,7 +1250,8 @@ public sealed partial class CodeGen : ICodeGen
                 return REG_RISCV64_SP;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer register is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer register is not available for the configured target.");
+            return default!;
         }
 
         assert(funcletIndex < _compiler.compFuncInfoCount);

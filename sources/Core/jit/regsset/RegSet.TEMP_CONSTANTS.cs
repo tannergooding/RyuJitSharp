@@ -35,7 +35,8 @@ public partial struct RegSet
                 return 16;
             }
 
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD spill temps are unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD spill temps are unsupported for this target.");
+            return default!;
         }
     }
 }

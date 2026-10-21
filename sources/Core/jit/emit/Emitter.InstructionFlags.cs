@@ -16,7 +16,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "xarch instruction flags are unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "xarch instruction flags are unavailable on this target.");
+            return default!;
         }
 
         // BSF/BSR set ZF from the source rather than the result.

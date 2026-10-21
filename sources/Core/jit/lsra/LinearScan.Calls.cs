@@ -106,8 +106,15 @@ public sealed partial class LinearScan
 
             if (call.NeedsVzeroupper(_compiler))
             {
-                var codeGen = _compiler.codeGen
-                    ?? throw new FatalJitException("Call reference building requires initialized codegen state.");
+                var codeGen = _compiler.codeGen;
+                if (codeGen is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage279
+                    );
+                    return default!;
+                }
                 codeGen.Emitter.ContainsCallNeedingVzeroupper = true;
             }
 
@@ -364,25 +371,50 @@ public sealed partial class LinearScan
             return srcCount;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "LSRA call reference building is not implemented on this target.");
+        return default!;
     }
 
     private static regNumber getVarargsIntRegister(regNumber floatRegister)
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
-        return floatRegister switch
+        switch (floatRegister)
         {
-            REG_X64_XMM0 => REG_X64_RCX,
-            REG_X64_XMM1 => REG_X64_RDX,
-            REG_X64_XMM2 => REG_X64_R8,
-            REG_X64_XMM3 => REG_X64_R9,
-            _ => throw new FatalJitException("Windows x64 varargs requires an XMM0-XMM3 argument register."),
-        };
+            case REG_X64_XMM0:
+            {
+                return REG_X64_RCX;
+            }
+
+            case REG_X64_XMM1:
+            {
+                return REG_X64_RDX;
+            }
+
+            case REG_X64_XMM2:
+            {
+                return REG_X64_R8;
+            }
+
+            case REG_X64_XMM3:
+            {
+                return REG_X64_R9;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage280
+                );
+                return default!;
+            }
+        }
     }
 
     private bool supportsSpecialPutArg()
@@ -415,8 +447,7 @@ public sealed partial class LinearScan
             var localInterval = use.getInterval();
             assert(localInterval.isLocalVar);
             assert(_placedArgumentLocalCount < _placedArgumentLocals.Length);
-            _placedArgumentLocals[_placedArgumentLocalCount++] = new PlacedArgumentLocal
-            {
+            _placedArgumentLocals[_placedArgumentLocalCount++] = new PlacedArgumentLocal {
                 VarIndex = localInterval.getVarIndex(_compiler),
                 Register = argReg,
             };
@@ -475,14 +506,19 @@ public sealed partial class LinearScan
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "The write-barrier register contract is not available on this target.");
+            return default!;
         }
 
         if (Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS)
         {
-            var codeGen = _compiler.codeGen
-                ?? throw new FatalJitException("Optimized write barriers require initialized CodeGen.");
+            var codeGen = _compiler.codeGen;
+            if (codeGen is null)
+            {
+                FatalJitException.ThrowFatalJitException("Optimized write barriers require initialized CodeGen.");
+                return default!;
+            }
             var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree.AsStoreInd());
             if (codeGen.genUseOptimizedWriteBarriers(form))
             {
@@ -508,13 +544,18 @@ public sealed partial class LinearScan
                 (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null));
             assert(call.Next?.Oper is GT_SWIFT_ERROR);
 
-            var use = getRegisterRecord(TargetRuntimeMetadata.SwiftErrorRegister).lastRefPosition
-                ?? throw new FatalJitException("Swift error register needs an argument use at the call.");
+            var use = getRegisterRecord(TargetRuntimeMetadata.SwiftErrorRegister).lastRefPosition;
+            if (use is null)
+            {
+                FatalJitException.ThrowFatalJitException("Swift error register needs an argument use at the call.");
+                return;
+            }
             assert(use.nodeLocation == _referenceBuildLocation);
             setDelayFree(use);
             return;
         }
-        throw new FatalJitException("LSRA Swift error lifetime is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException("LSRA Swift error lifetime is not implemented on this target.");
+        return;
     }
 
     private void markAsyncContinuationBusyForCall(GenTreeCall call)
@@ -528,7 +569,8 @@ public sealed partial class LinearScan
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "LSRA async continuation register is not defined on this target.");
+        return;
     }
 }

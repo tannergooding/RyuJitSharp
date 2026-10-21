@@ -13,8 +13,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Jump-to-next-instruction removal is only available for xarch.");
+            return;
         }
 
         if (!emitContainsRemovableJmpCandidates)
@@ -43,7 +44,12 @@ public partial class Emitter
 
         while (jmp is not null)
         {
-            var jmpGroup = jmp.idjIG ?? throw new FatalJitException("A saved jump must belong to an instruction group.");
+            var jmpGroup = jmp.idjIG;
+            if (jmpGroup is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SavedJumpMissingInstructionGroup);
+                return;
+            }
             var nextJmp = jmp.idjNext;
 
             if (jmp.idjIsRemovableJmpCandidate)
@@ -69,8 +75,12 @@ public partial class Emitter
                 }
                 var targetGroup = (jmp.idjTarget is BasicBlock target
                     ? emitCodeGetCookie(target)
-                    : null) ?? throw new FatalJitException(CORJIT_SKIPPED,
-                        "A removable jump requires a resolved basic-block label cookie.");
+                    : null);
+                if (targetGroup is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnresolvedRemovableJumpTarget);
+                    return;
+                }
 
                 if (ReferenceEquals(jmpGroup.igNext, targetGroup)
                     && ((jmpGroup.igFlags & InsGroupFlags.HasRemovableJump) != 0))
@@ -170,9 +180,31 @@ public partial class Emitter
             if (totalRemovedSize > 0)
             {
                 var adjOffIG = jmpGroup.igNext;
-                var adjOffUptoIG = nextJmp is not null
-                    ? nextJmp.idjIG ?? throw new FatalJitException("A saved jump must belong to an instruction group.")
-                    : emitIGlast ?? throw new FatalJitException("Jump removal requires a final instruction group.");
+                insGroup? adjOffUptoIG;
+                if (nextJmp is not null)
+                {
+                    adjOffUptoIG = nextJmp.idjIG;
+                    if (adjOffUptoIG is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.SavedJumpMissingInstructionGroup
+                        );
+                        return;
+                    }
+                }
+                else
+                {
+                    adjOffUptoIG = emitIGlast;
+                    if (adjOffUptoIG is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage213
+                        );
+                        return;
+                    }
+                }
 
                 while ((adjOffIG is not null)
                     && (ReferenceEquals(adjOffIG, adjOffUptoIG) || adjOffIG.IsBefore(adjOffUptoIG)))

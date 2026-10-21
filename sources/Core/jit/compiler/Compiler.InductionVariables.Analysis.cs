@@ -58,7 +58,15 @@ public partial class Compiler
     private void optVisitBoundingExitingCondBlocks(FlowGraphNaturalLoop loop, Action<BasicBlock> visitor)
     {
         BasicBlock? dominates = null;
-        var domTree = _domTree ?? throw new FatalJitException("IV optimization requires dominators.");
+        var domTree = _domTree;
+        if (domTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage126
+            );
+            return;
+        }
         foreach (var backEdge in loop.BackEdges)
         {
             dominates = dominates is null

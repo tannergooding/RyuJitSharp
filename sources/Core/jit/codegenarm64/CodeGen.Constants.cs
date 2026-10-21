@@ -80,8 +80,9 @@ public partial class CodeGen
             {
                 if (!Configuration.FEATURE_SIMD)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "SIMD constants are not supported by this ARM64 configuration.");
+                    return;
                 }
 
                 var vector = tree.AsVecCon();
@@ -284,8 +285,9 @@ public partial class CodeGen
             {
                 if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Masked SIMD constants are not supported by this ARM64 configuration.");
+                    return;
                 }
 
                 var mask = tree.AsMskCon();

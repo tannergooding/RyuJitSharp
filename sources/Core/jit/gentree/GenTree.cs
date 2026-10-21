@@ -1072,7 +1072,11 @@ public partial class GenTree
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        throw new FatalJitException("GT_SLLI_UW scale-index handling is only supported on RISC-V64.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage227
+                        );
+                        return default!;
                     }
                     goto case GT_LSH;
                 }
@@ -2281,8 +2285,7 @@ public partial class GenTree
     public static string gtGetHandleKindString(GenTreeFlags flags)
     {
         var handleKind = flags & GTF_ICON_HDL_MASK;
-        return handleKind switch
-        {
+        return handleKind switch {
             0 => "",
             GTF_ICON_SCOPE_HDL => nameof(GTF_ICON_SCOPE_HDL),
             GTF_ICON_CLASS_HDL => nameof(GTF_ICON_CLASS_HDL),
@@ -2431,8 +2434,7 @@ public partial class GenTree
 
     private static bool RequiresNonNullOp2(genTreeOps oper)
     {
-        return oper switch
-        {
+        return oper switch {
             GT_ADD or GT_SUB or GT_MUL or GT_DIV or GT_MOD or GT_UDIV or GT_UMOD or
             GT_OR or GT_XOR or GT_AND or GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR or
             GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT or GT_COMMA or GT_QMARK or
@@ -3011,8 +3013,7 @@ public partial class GenTree
 
         do
         {
-            visitResult = node.VisitOperands(operand =>
-            {
+            visitResult = node.VisitOperands(operand => {
                 node = operand;
                 return VisitResult.Abort;
             });

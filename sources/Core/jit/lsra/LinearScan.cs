@@ -155,7 +155,11 @@ public sealed partial class LinearScan : IRegAlloc
         assert(codeGen is not null);
         if (codeGen is null)
         {
-            throw new FatalJitException("LSRA requires initialized codegen state.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage281
+            );
+            return;
         }
 
         initializeRegisterSets(codeGen);
@@ -437,11 +441,13 @@ public sealed partial class LinearScan : IRegAlloc
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         NYI("LinearScan.allocateRegisters<true> consecutive-register allocation");
-        throw new FatalJitException("Consecutive-register allocation is not implemented.");
+        FatalJitException.ThrowFatalJitException("Consecutive-register allocation is not implemented.");
+        return;
     }
 
     public void dumpLsraStatsCsv(StreamWriter streamWriter)

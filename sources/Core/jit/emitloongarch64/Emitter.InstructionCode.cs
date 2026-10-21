@@ -89,8 +89,9 @@ public partial class Emitter
             (uint)ins >= (uint)INS_vfmadd_s &&
             (uint)ins <= (uint)INS_xvsetallnez_d)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 SIMD instruction encoding requires FEATURE_SIMD.");
+            return default!;
         }
 
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesLoongArch64.Length);

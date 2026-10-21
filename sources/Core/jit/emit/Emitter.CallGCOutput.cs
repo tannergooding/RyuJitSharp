@@ -37,7 +37,12 @@ public partial class Emitter
 
         if (Configuration.DEBUG)
         {
-            var compiler = _compiler ?? throw new FatalJitException("GC call output requires an active compiler.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("GC call output requires an active compiler.");
+                return;
+            }
             if (compiler.verbose)
             {
                 jitprintf($"; Call at {unchecked(offs - callInstrSize):X4} [stk={unchecked((uint)emitCurStackLvl)}], GCvars=");

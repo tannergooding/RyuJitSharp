@@ -113,7 +113,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size frame initialization requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size frame initialization requires SIMD-enabled ARM64.");
+            return;
         }
 
         compUsesUnknownSizeFrame = false;
@@ -129,13 +130,13 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size local allocation requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size local allocation requires SIMD-enabled ARM64.");
+            return;
         }
 
         ref var local = ref lvaGetDesc(varNum);
         assert(varTypeHasUnknownSize(local.Type));
-        local.UnknownSizeFrameIndex = local.Type switch
-        {
+        local.UnknownSizeFrameIndex = local.Type switch {
             TYP_SIMD_ARM64 => unchecked((int)unkSizeFrame.AllocVector()),
             TYP_MASK => unchecked((int)unkSizeFrame.AllocMask()),
             _ => throw new UnreachableException(),
@@ -150,12 +151,12 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size temporary allocation requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size temporary allocation requires SIMD-enabled ARM64.");
+            return;
         }
 
         assert(varTypeHasUnknownSize(temp.tdTempType));
-        var offset = temp.tdTempType switch
-        {
+        var offset = temp.tdTempType switch {
             TYP_SIMD_ARM64 => unchecked((int)unkSizeFrame.AllocVector()),
             TYP_MASK => unchecked((int)unkSizeFrame.AllocMask()),
             _ => throw new UnreachableException(),

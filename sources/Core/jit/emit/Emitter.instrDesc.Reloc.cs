@@ -21,8 +21,9 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_ARM)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "ARM relocation descriptor size is not supported for this target.");
+                    return default!;
                 }
 
                 // ARM32 adds one 32-bit word to a small descriptor, then another for the relocation pointer.

@@ -46,9 +46,10 @@ public sealed partial class Lowering
             };
         }
 
-        throw new FatalJitException(
+        FatalJitException.ThrowFatalJitException(
             CORJIT_INTERNALERROR,
-            "Conditional compare lowering is only supported for x64 and ARM64.");
+        "Conditional compare lowering is only supported for x64 and ARM64.");
+        return default!;
     }
 
     private bool CanConvertOpToCCMP(GenTree operand, GenTree tree)
@@ -159,7 +160,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Conditional compare containment is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Conditional compare containment is not ported for this target.");
+            return;
         }
 
         var operand = compare.Op2;

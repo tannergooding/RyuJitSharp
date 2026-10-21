@@ -20,7 +20,8 @@ public partial class Emitter
             return reg == REG_X86_ESP;
         }
 
-        throw new FatalJitException("xarch address encoding is not available for this target.");
+        FatalJitException.ThrowFatalJitException("xarch address encoding is not available for this target.");
+        return default!;
     }
 
     private static bool baseRegisterRequiresDisplacement(regNumber reg)
@@ -34,7 +35,8 @@ public partial class Emitter
             return reg == REG_X86_EBP;
         }
 
-        throw new FatalJitException("xarch address encoding is not available for this target.");
+        FatalJitException.ThrowFatalJitException("xarch address encoding is not available for this target.");
+        return default!;
     }
 
     private static bool isPrefetch(instruction ins)
@@ -51,7 +53,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch address scale decoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch address scale decoding is not available for this target.");
+            return default!;
         }
 
         assert(ensz < 4);
@@ -62,7 +65,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch address instruction sizing is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch address instruction sizing is not available for this target.");
+            return default!;
         }
 
         assert(id.idIns() != INS_invalid);
@@ -261,7 +265,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch address instruction sizing is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch address instruction sizing is not available for this target.");
+            return default!;
         }
 
         assert(id.idIns() != INS_invalid);

@@ -41,13 +41,15 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_LOONGARCH64)
         {
             NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 inst_RV is unused and not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 inst_RV is unused and not implemented.");
+            return;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
             NYI_RISCV64("inst_RV-----unused on RISCV64----");
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V inst_RV is unused and not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V inst_RV is unused and not implemented.");
+            return;
         }
 
         Emitter.emitIns_R(ins, size, reg);

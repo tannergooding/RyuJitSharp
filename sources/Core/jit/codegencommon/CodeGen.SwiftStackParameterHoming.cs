@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.SWIFT_SUPPORT)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Swift stack parameter homing is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Swift stack parameter homing is not supported on this target.");
+            return;
         }
 
         for (var localNumber = 0; localNumber < _compiler.info.compArgsCount; localNumber++)

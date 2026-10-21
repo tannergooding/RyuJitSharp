@@ -480,7 +480,8 @@ public sealed partial class LinearScan
         {
             NYI("LSRA allocation table initial register set on this target");
             fatal(CORJIT_IMPLLIMITATION);
-            throw new FatalJitException("LSRA allocation table initial register set on this target.");
+            FatalJitException.ThrowFatalJitException("LSRA allocation table initial register set on this target.");
+            return;
         }
 
         _allocationDumpRegisters = new regMaskTP(smallIntegerSet | smallFloatSet | argumentRegisters);
@@ -672,8 +673,15 @@ public sealed partial class LinearScan
         else if (interval.IsUpperVector())
         {
             prefix = 'U';
-            number = interval.relatedInterval
-                ?.varNum ?? throw new FatalJitException("Upper-vector intervals must retain their related local.");
+            var relatedInterval = interval.relatedInterval;
+            if (relatedInterval is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    "Upper-vector intervals must retain their related local.");
+                return default!;
+            }
+
+            number = relatedInterval.varNum;
         }
         else if (interval.isConstant)
         {
@@ -797,8 +805,7 @@ public sealed partial class LinearScan
         }
     }
 
-    private static string? getRefTypeShortName(RefType refType) => refType switch
-    {
+    private static string? getRefTypeShortName(RefType refType) => refType switch {
         RefType.RefTypeInvalid => "Invl",
         RefType.RefTypeDef => "Def ",
         RefType.RefTypeUse => "Use ",
@@ -819,31 +826,119 @@ public sealed partial class LinearScan
         assert(stat != (uint)LsraStat.COUNT);
         assert(stat < (uint)LsraStat.COUNT);
 
-        return ((LsraStat)stat) switch
+        switch (((LsraStat)stat))
         {
-            LsraStat.STAT_SPILL => "SpillCount",
-            LsraStat.STAT_COPY_REG => "CopyReg",
-            LsraStat.STAT_RESOLUTION_MOV => "ResolutionMovs",
-            LsraStat.STAT_SPLIT_EDGE => "SplitEdges",
-            LsraStat.STAT_FREE => "FREE",
-            LsraStat.STAT_CONST_AVAILABLE => "CONST_AVAILABLE",
-            LsraStat.STAT_THIS_ASSIGNED => "THIS_ASSIGNED",
-            LsraStat.STAT_COVERS => "COVERS",
-            LsraStat.STAT_OWN_PREFERENCE => "OWN_PREFERENCE",
-            LsraStat.STAT_COVERS_RELATED => "COVERS_RELATED",
-            LsraStat.STAT_RELATED_PREFERENCE => "RELATED_PREFERENCE",
-            LsraStat.STAT_CALLER_CALLEE => "CALLER_CALLEE",
-            LsraStat.STAT_UNASSIGNED => "UNASSIGNED",
-            LsraStat.STAT_COVERS_FULL => "COVERS_FULL",
-            LsraStat.STAT_BEST_FIT => "BEST_FIT",
-            LsraStat.STAT_IS_PREV_REG => "IS_PREV_REG",
-            LsraStat.STAT_REG_ORDER => "REG_ORDER",
-            LsraStat.STAT_SPILL_COST => "SPILL_COST",
-            LsraStat.STAT_FAR_NEXT_REF => "FAR_NEXT_REF",
-            LsraStat.STAT_PREV_REG_OPT => "PREV_REG_OPT",
-            LsraStat.STAT_REG_NUM => "REG_NUM",
-            _ => throw new FatalJitException("Invalid LSRA statistic."),
-        };
+            case LsraStat.STAT_SPILL:
+            {
+                return "SpillCount";
+            }
+
+            case LsraStat.STAT_COPY_REG:
+            {
+                return "CopyReg";
+            }
+
+            case LsraStat.STAT_RESOLUTION_MOV:
+            {
+                return "ResolutionMovs";
+            }
+
+            case LsraStat.STAT_SPLIT_EDGE:
+            {
+                return "SplitEdges";
+            }
+
+            case LsraStat.STAT_FREE:
+            {
+                return "FREE";
+            }
+
+            case LsraStat.STAT_CONST_AVAILABLE:
+            {
+                return "CONST_AVAILABLE";
+            }
+
+            case LsraStat.STAT_THIS_ASSIGNED:
+            {
+                return "THIS_ASSIGNED";
+            }
+
+            case LsraStat.STAT_COVERS:
+            {
+                return "COVERS";
+            }
+
+            case LsraStat.STAT_OWN_PREFERENCE:
+            {
+                return "OWN_PREFERENCE";
+            }
+
+            case LsraStat.STAT_COVERS_RELATED:
+            {
+                return "COVERS_RELATED";
+            }
+
+            case LsraStat.STAT_RELATED_PREFERENCE:
+            {
+                return "RELATED_PREFERENCE";
+            }
+
+            case LsraStat.STAT_CALLER_CALLEE:
+            {
+                return "CALLER_CALLEE";
+            }
+
+            case LsraStat.STAT_UNASSIGNED:
+            {
+                return "UNASSIGNED";
+            }
+
+            case LsraStat.STAT_COVERS_FULL:
+            {
+                return "COVERS_FULL";
+            }
+
+            case LsraStat.STAT_BEST_FIT:
+            {
+                return "BEST_FIT";
+            }
+
+            case LsraStat.STAT_IS_PREV_REG:
+            {
+                return "IS_PREV_REG";
+            }
+
+            case LsraStat.STAT_REG_ORDER:
+            {
+                return "REG_ORDER";
+            }
+
+            case LsraStat.STAT_SPILL_COST:
+            {
+                return "SPILL_COST";
+            }
+
+            case LsraStat.STAT_FAR_NEXT_REF:
+            {
+                return "FAR_NEXT_REF";
+            }
+
+            case LsraStat.STAT_PREV_REG_OPT:
+            {
+                return "PREV_REG_OPT";
+            }
+
+            case LsraStat.STAT_REG_NUM:
+            {
+                return "REG_NUM";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException("Invalid LSRA statistic.");
+                return default!;
+            }
+        }
     }
 
     private void updateLsraStat(LsraStat stat, uint blockNumber)
@@ -853,14 +948,23 @@ public sealed partial class LinearScan
             return;
         }
 
-        var blockInfo = _blockInfo
-            ?? throw new FatalJitException("LSRA statistics require initialized block information.");
-        var blockStats = _blockStats
-            ?? throw new FatalJitException("LSRA statistics are not enabled.");
+        var blockInfo = _blockInfo;
+        if (blockInfo is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics require initialized block information.");
+            return;
+        }
+        var blockStats = _blockStats;
+        if (blockStats is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics are not enabled.");
+            return;
+        }
         var blockIndex = checked((int)blockNumber);
         if (((uint)blockIndex >= (uint)blockInfo.Length) || ((uint)blockIndex >= (uint)blockStats.Length))
         {
-            throw new FatalJitException("LSRA statistic block number is outside the block table.");
+            FatalJitException.ThrowFatalJitException("LSRA statistic block number is outside the block table.");
+            return;
         }
 
         var blockValues = blockStats[blockIndex] ??= new uint[(int)LsraStat.COUNT];
@@ -885,7 +989,8 @@ public sealed partial class LinearScan
         var blockIndex = checked((int)blockNumber);
         if (((uint)blockIndex >= (uint)blockInfo.Length) || ((uint)blockIndex >= (uint)blockStats.Length))
         {
-            throw new FatalJitException("LSRA statistic block number is outside the block table.");
+            FatalJitException.ThrowFatalJitException("LSRA statistic block number is outside the block table.");
+            return default!;
         }
 
         var blockValues = blockStats[blockIndex];
@@ -911,11 +1016,16 @@ public sealed partial class LinearScan
         var totalStats = new uint[(int)LsraStat.COUNT];
         if (_blockInfo is null)
         {
-            throw new FatalJitException("LSRA statistics require initialized block information.");
+            FatalJitException.ThrowFatalJitException("LSRA statistics require initialized block information.");
+            return;
         }
 
-        var blockStats = _blockStats
-            ?? throw new FatalJitException("LSRA statistics are not enabled.");
+        var blockStats = _blockStats;
+        if (blockStats is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics are not enabled.");
+            return;
+        }
 
         void AddBlockStats(int blockNumber)
         {

@@ -31,7 +31,8 @@ public partial struct GCInfo
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
             Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Modern GC table encoding requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Modern GC table encoding requires Windows AMD64.");
+            return;
         }
 
         var compiler = Compiler;
@@ -99,8 +100,15 @@ public partial struct GCInfo
             if ((variable.Type == TYP_STRUCT) && variable.HasGCPtr && variable.lvOnFrame &&
                 (variable.lvExactSize >= Configuration.TARGET_POINTER_SIZE))
             {
-                var layout = variable.Layout
-                    ?? throw new FatalJitException(CORJIT_SKIPPED, "GC struct local has no layout.");
+                var layout = variable.Layout;
+                if (layout is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage221
+                    );
+                    return;
+                }
                 for (var slot = 0; slot < layout.SlotCount; slot++)
                 {
                     if (!layout.IsGCPtr(slot))
@@ -220,8 +228,7 @@ public partial struct GCInfo
             {
                 assert(prologSize <= codeSize);
                 var uninterruptibleEnd = prologSize;
-                _ = _codeGen.Emitter.emitGenNoGCLst((funcIndex, offset, size, firstSize, isProlog) =>
-                {
+                _ = _codeGen.Emitter.emitGenNoGCLst((funcIndex, offset, size, firstSize, isProlog) => {
                     if (offset < uninterruptibleEnd)
                     {
                         assert(funcIndex == 0);
@@ -255,7 +262,15 @@ public partial struct GCInfo
     private readonly void gcAssignStackSlot(GcInfoEncoderWithLogging encoder, int offset,
         GcSlotFlags flags, GcStackSlotBase stackBase)
     {
-        var map = _stackSlotMap ?? throw new FatalJitException(CORJIT_SKIPPED, "Stack slot map was not initialized.");
+        var map = _stackSlotMap;
+        if (map is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                FatalJitErrorCode.DirectFailureMessage222
+            );
+            return;
+        }
         var key = new StackSlotIdKey(offset, stackBase == GC_FRAMEREG_REL, (uint)flags);
         if (!map.ContainsKey(key))
         {
@@ -266,10 +281,19 @@ public partial struct GCInfo
     private readonly uint gcGetStackSlot(int offset, GcSlotFlags flags, GcStackSlotBase stackBase)
     {
         var key = new StackSlotIdKey(offset, stackBase == GC_FRAMEREG_REL, (uint)flags);
-        var map = _stackSlotMap ?? throw new FatalJitException(CORJIT_SKIPPED, "Stack slot map was not initialized.");
+        var map = _stackSlotMap;
+        if (map is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                FatalJitErrorCode.DirectFailureMessage222
+            );
+            return default!;
+        }
         if (!map.TryGetValue(key, out var slot))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Live stack slot was not assigned.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage223);
+            return default!;
         }
         return slot;
     }
@@ -323,7 +347,15 @@ public partial struct GCInfo
             assert(reg != (uint)TargetRuntimeMetadata.StackPointerBaseRegister);
             var flags = (byrefs & bit) != 0 ? GC_SLOT_INTERIOR : GC_SLOT_BASE;
             var key = new RegSlotIdKey((ushort)reg, (uint)flags);
-            var map = _regSlotMap ?? throw new FatalJitException(CORJIT_SKIPPED, "Register slot map was not initialized.");
+            var map = _regSlotMap;
+            if (map is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.DirectFailureMessage224
+                );
+                return;
+            }
             if (mode == MakeRegPtrMode.MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
             {
                 if (!map.ContainsKey(key))
@@ -335,7 +367,11 @@ public partial struct GCInfo
             {
                 if (!map.TryGetValue(key, out var slot))
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Live register slot was not assigned.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage225
+                    );
+                    return;
                 }
                 encoder.SetSlotState(offset, slot, state);
             }
@@ -363,17 +399,39 @@ public partial struct GCInfo
         regPtrDsc first, regPtrDsc last)
     {
         assert(_codeGen.Interruptible);
-        for (var descriptor = first; descriptor != last; descriptor = descriptor.rpdNext
-            ?? throw new FatalJitException(CORJIT_SKIPPED, "Outgoing argument terminator is missing."))
+        var descriptor = first;
+        while (descriptor != last)
         {
             if (!descriptor.rpdArg)
             {
+                var next = descriptor.rpdNext;
+                if (next is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage226
+                    );
+                    return;
+                }
+
+                descriptor = next;
                 continue;
             }
             assert(descriptor.rpdGCtypeGet() != GCT_NONE && descriptor.rpdArgTypeGet() == rpdARG_PUSH);
             var flags = descriptor.rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE;
             var slot = gcGetStackSlot(descriptor.rpdCallData.rpdPtrArg, flags, GC_SP_REL);
             encoder.SetSlotState(offset, slot, GC_SLOT_DEAD);
+            var nextDescriptor = descriptor.rpdNext;
+            if (nextDescriptor is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.DirectFailureMessage226
+                );
+                return;
+            }
+
+            descriptor = nextDescriptor;
         }
     }
 

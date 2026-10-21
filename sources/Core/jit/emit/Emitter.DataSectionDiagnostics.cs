@@ -13,7 +13,12 @@ public partial class Emitter
 {
     public unsafe void emitDispDataSec(dataSecDsc section, AllocMemChunk* dataChunks)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Data-section diagnostics require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DataSectionDiagnosticsMissingCompiler);
+            return;
+        }
         jitprintf("\n");
 
         var chunk = dataChunks;
@@ -28,10 +33,18 @@ public partial class Emitter
 
             if (data.dsType is dataSection.sectionType.blockRelative32 or dataSection.sectionType.blockAbsoluteAddr)
             {
-                var firstBlock = compiler.fgFirstBB
-                    ?? throw new FatalJitException("Label-table diagnostics require the first basic block.");
-                var igFirst = emitCodeGetCookie(firstBlock)
-                    ?? throw new FatalJitException("Label-table diagnostics require the first emitted label.");
+                var firstBlock = compiler.fgFirstBB;
+                if (firstBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelTableDiagnosticsMissingFirstBasicBlock);
+                    return;
+                }
+                var igFirst = emitCodeGetCookie(firstBlock);
+                if (igFirst is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelTableDiagnosticsMissingFirstEmittedLabel);
+                    return;
+                }
                 var isRelative = data.dsType == dataSection.sectionType.blockRelative32;
                 var blockCount = data.dsSize / (isRelative ? 4u : Configuration.TARGET_POINTER_SIZE);
 
@@ -42,10 +55,18 @@ public partial class Emitter
                         jitprintf("       ");
                     }
 
-                    var block = data.Blocks[i]
-                        ?? throw new FatalJitException("Label-table diagnostics require a block for every entry.");
-                    var ig = emitCodeGetCookie(block)
-                        ?? throw new FatalJitException("Label-table diagnostics require an emitted block label.");
+                    var block = data.Blocks[i];
+                    if (block is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelTableDiagnosticsMissingBlock);
+                        return;
+                    }
+                    var ig = emitCodeGetCookie(block);
+                    if (ig is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelTableDiagnosticsMissingEmittedBlockLabel);
+                        return;
+                    }
                     var blockLabel = emitLabelString(ig);
                     var firstLabel = emitLabelString(igFirst);
 
@@ -116,8 +137,12 @@ public partial class Emitter
                     jitprintf($"\tdq\t{resumeStubName}\n");
 
                     var codeOffset = location.CodeOffset(this);
-                    var group = location.GetIG()
-                        ?? throw new FatalJitException("Async diagnostics require a valid code location.");
+                    var group = location.GetIG();
+                    if (group is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AsyncDiagnosticsMissingCodeLocation);
+                        return;
+                    }
                     if (codeOffset != group.igOffs)
                     {
                         jitprintf($"\tdq\t{emitLabelString(group)} + {codeOffset - group.igOffs}\n");
@@ -133,7 +158,12 @@ public partial class Emitter
                 assert(data.dsType == dataSection.sectionType.data);
                 if (data.dsType != dataSection.sectionType.data)
                 {
-                    throw new FatalJitException($"Unexpected data-section type {data.dsType}.");
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnexpectedDataSectionType,
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unexpected data-section type {data.dsType}."
+                    : null);
+                    return;
                 }
                 var bytes = data.Data;
                 uint elemSize = data.dsDataType.Size;
@@ -273,7 +303,12 @@ public partial class Emitter
 
                                 default:
                                 {
-                                    throw new FatalJitException($"Unexpected data-section element size {elemSize}.");
+                                    FatalJitException.ThrowFatalJitException(
+                                        FatalJitErrorCode.UnexpectedDataSectionElementSize,
+                                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                            ? $"Unexpected data-section element size {elemSize}."
+                                    : null);
+                                    return;
                                 }
                             }
                             break;

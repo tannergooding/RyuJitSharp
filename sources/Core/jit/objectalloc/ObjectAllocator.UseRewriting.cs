@@ -113,13 +113,29 @@ public sealed partial class ObjectAllocator
                     {
                         assert(retypeFields);
                         var store = parent.AsLclFld();
-                        var oldLayout = store.GetLayout(compiler)
-                            ?? throw new FatalJitException("Struct field store must have a layout.");
+                        var oldLayout = store.GetLayout(compiler);
+                        if (oldLayout is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage430
+                            );
+                            return;
+                        }
 
                         if (oldLayout.HasGCPtr)
                         {
-                            store.Layout = GetRetypedLayout(oldLayout,
-                                newLayout ?? throw new FatalJitException("Retyping struct fields requires their new layout."));
+                            var retypedLayout = newLayout;
+                            if (retypedLayout is null)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    CORJIT_INTERNALERROR,
+                                    FatalJitErrorCode.DirectFailureMessage431
+                                );
+                                return;
+                            }
+
+                            store.Layout = GetRetypedLayout(oldLayout, retypedLayout);
                         }
                     }
                     else if (varTypeIsGC(parent.Type))
@@ -286,7 +302,11 @@ public sealed partial class ObjectAllocator
                     {
                         JITDUMP($"UpdateAncestorTypes: unexpected op {parent.Oper} in [{TreeIdForDump(parent):D6}]\n");
                     }
-                    throw new FatalJitException("Unexpected parent while retyping a stack-object use.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage432
+                    );
+                    return;
                 }
             }
 
@@ -305,8 +325,15 @@ public sealed partial class ObjectAllocator
             return false;
         }
 
-        var layout = newLayout
-            ?? throw new FatalJitException("Retyping struct fields requires their new layout.");
+        var layout = newLayout;
+        if (layout is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage431
+            );
+            return default!;
+        }
         block.Layout = GetRetypedLayout(oldLayout, layout);
         return true;
     }
@@ -367,8 +394,17 @@ public sealed partial class ObjectAllocator
                     return Compiler.WALK_CONTINUE;
                 }
 
-                newLayout = descriptor.Layout
-                    ?? throw new FatalJitException("Retyped struct local requires its layout.");
+                var descriptorLayout = descriptor.Layout;
+                if (descriptorLayout is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage433
+                    );
+                    return Compiler.WALK_CONTINUE;
+                }
+
+                newLayout = descriptorLayout;
                 newType = newLayout.HasGCPtr ? TYP_BYREF : TYP_I_IMPL;
                 retypeFields = true;
             }
@@ -407,8 +443,15 @@ public sealed partial class ObjectAllocator
                     {
                         JITDUMP($"Found unbox helper call [{TreeIdForDump(call):D6}]\n");
                     }
-                    var argument = call.Args.GetArgByIndex(1)
-                        ?? throw new FatalJitException("UNBOX requires its object argument.");
+                    var argument = call.Args.GetArgByIndex(1);
+                    if (argument is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage434
+                        );
+                        return default!;
+                    }
                     var objectNode = argument.Node;
                     if ((objectNode.Oper.IsLocal || objectNode.Oper is GT_LCL_ADDR) &&
                         objectNode.Type is not TYP_REF)
@@ -425,8 +468,15 @@ public sealed partial class ObjectAllocator
 
                         if (!forEffect)
                         {
-                            var copy = compiler.gtCloneExpr(objectLocal)
-                                ?? throw new FatalJitException("UNBOX requires a cloneable local.");
+                            var copy = compiler.gtCloneExpr(objectLocal);
+                            if (copy is null)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    CORJIT_INTERNALERROR,
+                                    FatalJitErrorCode.DirectFailureMessage435
+                                );
+                                return default!;
+                            }
                             var payload = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, copy,
                                 compiler.gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE));
                             use = compiler.gtNewCommaNode(TYP_BYREF, call, payload);
@@ -435,8 +485,15 @@ public sealed partial class ObjectAllocator
                 }
                 else if (call.IsDelegateInvoke)
                 {
-                    var argument = call.Args.ThisArg
-                        ?? throw new FatalJitException("Delegate invoke requires a this argument.");
+                    var argument = call.Args.ThisArg;
+                    if (argument is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage436
+                        );
+                        return default!;
+                    }
                     var receiver = argument.Node;
                     if (receiver.Oper is GT_LCL_VAR or GT_LCL_ADDR)
                     {
@@ -447,8 +504,15 @@ public sealed partial class ObjectAllocator
                             {
                                 JITDUMP($"Expanding delegate invoke [{TreeIdForDump(call):D6}]\n");
                             }
-                            var copy = compiler.gtClone(local, complexOK: true)
-                                ?? throw new FatalJitException("Delegate invoke requires a cloneable receiver.");
+                            var copy = compiler.gtClone(local, complexOK: true);
+                            if (copy is null)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    CORJIT_INTERNALERROR,
+                                    FatalJitErrorCode.DirectFailureMessage437
+                                );
+                                return default!;
+                            }
                             var instanceOffset = compiler.eeGetEEInfo().offsetOfDelegateInstance;
                             var instanceAddr = compiler.gtNewBinaryNode(GT_ADD, TYP_I_IMPL, copy,
                                 compiler.gtNewIconNode(TYP_I_IMPL, instanceOffset));
@@ -481,9 +545,16 @@ public sealed partial class ObjectAllocator
                         indir.Addr = actualAddr;
                         indir.Flags &= ~GTF_SIDE_EFFECT;
                         indir.Flags |= GTF_IND_NONFAULTING;
-                        use = compiler.gtNewCommaNode(indir.Type,
-                            effects ?? throw new FatalJitException("UNBOX type test must retain its side-effect call."),
-                            indir);
+                        if (effects is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage438
+                            );
+                            return Compiler.WALK_CONTINUE;
+                        }
+
+                        use = compiler.gtNewCommaNode(indir.Type, effects, indir);
                     }
                 }
             }
@@ -520,8 +591,15 @@ public sealed partial class ObjectAllocator
             if (descriptor.Type is TYP_STRUCT)
             {
                 assert(_trackFields);
-                var layout = descriptor.Layout
-                    ?? throw new FatalJitException("Tracked struct requires its layout.");
+                var layout = descriptor.Layout;
+                if (layout is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage439
+                    );
+                    return;
+                }
                 if (!layout.HasGCPtr)
                 {
                     assert((newType == TYP_I_IMPL));
@@ -576,12 +654,28 @@ public sealed partial class ObjectAllocator
 
     private static string StackPointerTypeName(var_types type)
     {
-        return type switch
+        switch (type)
         {
-            TYP_REF => "ref",
-            TYP_BYREF => "byref",
-            var __targetAliasValue1 when __targetAliasValue1 == TYP_I_IMPL => "long",
-            _ => throw new FatalJitException("Unexpected type for stack-pointer retyping.")
-        };
+            case TYP_REF:
+            {
+                return "ref";
+            }
+
+            case TYP_BYREF:
+            {
+                return "byref";
+            }
+
+            case var __targetAliasValue1 when __targetAliasValue1 == TYP_I_IMPL:
+            {
+                return "long";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException("Unexpected type for stack-pointer retyping.");
+                return default!;
+            }
+        }
     }
 }

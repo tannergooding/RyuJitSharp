@@ -14,7 +14,12 @@ public partial class Emitter
     private uint getLoopSize(
         insGroup loopHeader, uint maxLoopSize, bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Loop-size calculation requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopSizeCalculationMissingCompiler);
+            return default!;
+        }
         uint loopSize = 0;
         JITDUMP($"*************** In getLoopSize() for {emitLabelString(loopHeader)}\n");
 
@@ -43,11 +48,18 @@ public partial class Emitter
                     var hasBackwardNavigation = Configuration.EMIT_BACKWARDS_NAVIGATION || Configuration.TARGET_XARCH;
                     if (hasBackwardNavigation && group.endsWithAlignInstr())
                     {
-                        var lastAlign = group.igLastIns as instrDescAlign
-                            ?? throw new FatalJitException("An aligned group requires a final alignment descriptor.");
+                        if (group.igLastIns is not instrDescAlign lastAlign)
+                        {
+                            FatalJitException.ThrowFatalJitException("An aligned group requires a final alignment descriptor.");
+                            return default!;
+                        }
                         assert(ReferenceEquals(lastAlign.idaIG, group));
-                        var targetGroup = lastAlign.idaLoopHeadPredIG?.igNext
-                            ?? throw new FatalJitException("An alignment descriptor requires a loop-head group.");
+                        var targetGroup = lastAlign.idaLoopHeadPredIG?.igNext;
+                        if (targetGroup is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AlignmentDescriptorMissingLoopHeadGroup);
+                            return default!;
+                        }
                         _ = buffer.Append(CultureInfo.InvariantCulture,
                             $"igInLoop has align instruction for : IG{targetGroup.GetDisplayId():D2}\n");
                     }
@@ -129,7 +141,12 @@ public partial class Emitter
     private uint emitCalculatePaddingForLoopAlignment(
         insGroup loopHeadIG, nuint offset, bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Loop-alignment padding requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopAlignmentPaddingMissingCompiler);
+            return default!;
+        }
         uint alignmentBoundary = compiler.opts.compJitAlignLoopBoundary;
 
         if ((offset & (alignmentBoundary - 1)) == 0)

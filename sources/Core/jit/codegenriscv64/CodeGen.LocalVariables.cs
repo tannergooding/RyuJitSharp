@@ -23,7 +23,8 @@ public sealed partial class CodeGen
         if (targetType is TYP_STRUCT)
         {
             NYI_IF(true, "GT_LCL_FLD: struct load local field not supported");
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 struct local-field loads are not supported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 struct local-field loads are not supported.");
+            return;
         }
 
         assert(targetReg is not REG_RISCV64_NA);
@@ -103,7 +104,8 @@ public sealed partial class CodeGen
             {
                 NYIRAW("NYI_RISCV64: genCodeForStoreLclVar-----unimplemented on RISCV64 yet----");
             }
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 multi-register local stores are not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 multi-register local stores are not ported.");
+            return;
         }
 
         var targetReg = lclNode.RegNum;
@@ -470,11 +472,13 @@ public sealed partial class CodeGen
     private void genEmitRiscvRelocatableImmediate(instruction ins, emitAttr attr, regNumber dataReg, regNumber addrReg,
         nint displacement)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 relocatable immediate instruction recording is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 relocatable immediate instruction recording is not ported.");
+        return;
     }
 
     private void genStoreLclTypeSimd12RiscV64(GenTreeLclVarCommon tree)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V SIMD12 local-store recording is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V SIMD12 local-store recording is not ported.");
+        return;
     }
 }

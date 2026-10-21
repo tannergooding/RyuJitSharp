@@ -12,8 +12,15 @@ public sealed partial class LinearScan
 {
     private RefPosition addKillForRegs(regMaskTP registers, LsraLocation location)
     {
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Register kills require initialized codegen state.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage387
+            );
+            return default!;
+        }
         codeGen.RegSet.rsSetRegsModified(registers, true);
 
         var killRefPosition = newRefPosition(
@@ -26,8 +33,15 @@ public sealed partial class LinearScan
         }
         else
         {
-            var killTail = _killTail
-                ?? throw new FatalJitException("A non-empty kill list must have a tail reference.");
+            var killTail = _killTail;
+            if (killTail is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage388
+                );
+                return default!;
+            }
             killTail.nextRefPosition = killRefPosition;
         }
 
@@ -129,17 +143,32 @@ public sealed partial class LinearScan
         assert(currentInterval.isActive);
         if (!currentInterval.isActive)
         {
-            throw new FatalJitException("A minimal copy-register assignment requires an active interval.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage389
+            );
+            return default!;
         }
 
         var savedRelatedInterval = currentInterval.relatedInterval;
         var oldPhysicalRegister = currentInterval.physReg;
-        var oldRegisterRecord = currentInterval.assignedReg
-            ?? throw new FatalJitException("An active copy-register interval must retain its assigned register.");
+        var oldRegisterRecord = currentInterval.assignedReg;
+        if (oldRegisterRecord is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage390
+            );
+            return default!;
+        }
         assert(oldRegisterRecord.regNum == oldPhysicalRegister);
         if (oldRegisterRecord.regNum != oldPhysicalRegister)
         {
-            throw new FatalJitException("The interval's assigned register does not match its physical register.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage391
+            );
+            return default!;
         }
 
         currentInterval.relatedInterval = null;

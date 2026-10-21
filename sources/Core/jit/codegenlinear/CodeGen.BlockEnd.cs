@@ -179,7 +179,11 @@ public sealed partial class CodeGen
 
             default:
             {
-                throw new FatalJitException("Unexpected block kind at the end of code generation.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage095
+                );
+                return;
             }
         }
         if (Configuration.FEATURE_LOOP_ALIGN)

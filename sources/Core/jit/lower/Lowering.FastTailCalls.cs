@@ -14,7 +14,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.FEATURE_FASTTAILCALL)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Fast tailcall lowering is not available for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Fast tailcall lowering is not available for this target.");
+            return;
         }
 
         var compiler = CompilerInstance;

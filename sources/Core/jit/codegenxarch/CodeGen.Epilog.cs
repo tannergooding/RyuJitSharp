@@ -19,7 +19,8 @@ public sealed partial class CodeGen
         }
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -62,7 +63,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
+            return default!;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -122,7 +124,8 @@ public sealed partial class CodeGen
         }
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -317,7 +320,15 @@ public sealed partial class CodeGen
         if (jmpEpilog)
         {
             noway_assert(block.Kind == BBJ_RETURN);
-            var last = block.GetLastNode() ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Missing JMP epilog node.");
+            var last = block.GetLastNode();
+            if (last is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage097
+                );
+                return;
+            }
             if (!Configuration.FEATURE_FASTTAILCALL)
             {
                 noway_assert(last.Oper == GT_JMP);
@@ -415,13 +426,15 @@ public sealed partial class CodeGen
         else if (Configuration.TARGET_ARM64)
         {
             unreached();
-            throw new FatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+            return;
         }
         else
         {
             NYI("instGen_Return");
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Return instruction generation is not implemented on this target.");
+            return;
         }
     }
 }

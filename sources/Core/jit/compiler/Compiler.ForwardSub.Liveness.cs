@@ -57,8 +57,8 @@ public partial class Compiler
             var number = node.AsLclVarCommon().LclNum;
             ref var descriptor = ref lvaGetDesc(number);
             var parentNumber = descriptor.lvIsStructField ? descriptor.lvParentLcl : BAD_VAR_NUM;
-            for (var candidate = first; ; candidate = candidate.Next
-                ?? throw new FatalJitException("The inserted local segment is not connected."))
+            var candidate = first;
+            for (; candidate is not null; candidate = candidate.Next)
             {
                 var newNumber = candidate.AsLclVarCommon().LclNum;
                 if (descriptor.lvPromoted)
@@ -77,6 +77,15 @@ public partial class Compiler
                         {
                             break;
                         }
+                    }
+
+                    if (candidate is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage111
+                        );
+                        return;
                     }
                 }
                 else if ((newNumber == number) || (newNumber == parentNumber))

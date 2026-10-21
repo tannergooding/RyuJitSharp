@@ -55,7 +55,8 @@ public sealed partial class CodeGen
                     {
                         if (!Configuration.FEATURE_SIMD)
                         {
-                            throw new FatalJitException(CORJIT_SKIPPED, "SIMD return values are not supported on this Wasm target.");
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD return values are not supported on this Wasm target.");
+                            return;
                         }
 
                         var zero = new byte[16];
@@ -119,7 +120,8 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_ARM)
         {
             NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         if (Configuration.TARGET_LOONGARCH64)
@@ -159,7 +161,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump generation is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Nonlocal jump generation is unsupported for this target.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -172,7 +175,8 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_ARM)
         {
             NYI_ARM("GT_FTN_ENTRY is not supported on arm32");
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
@@ -191,7 +195,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Function-entry address generation is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Function-entry address generation is unsupported for this target.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -203,7 +208,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint generation is unsupported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Patchpoint generation is unsupported on Wasm.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -256,6 +262,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint transfer is unsupported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Patchpoint transfer is unsupported for this target.");
+        return;
     }
 }

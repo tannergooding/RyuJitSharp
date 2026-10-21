@@ -126,7 +126,8 @@ public sealed partial class CodeGen
         if (targetType is TYP_STRUCT)
         {
             NYI_IF(true, "GT_LCL_FLD: struct load local field not supported");
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 struct local-field loads are not supported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 struct local-field loads are not supported.");
+            return;
         }
 
         var targetReg = tree.RegNum;
@@ -548,7 +549,8 @@ public sealed partial class CodeGen
             default:
             {
                 NO_WAY("Unknown intrinsic");
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown intrinsic reached unreachable code.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown intrinsic reached unreachable code.");
+                return;
             }
         }
 
@@ -561,7 +563,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are unavailable for this target.");
+            return;
         }
 
         if (Configuration.TARGET_XARCH)
@@ -578,17 +581,20 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic generation is not ported for this target.");
+            return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic generation is not ported.");
+        return;
     }
 
     private void genCodeForNullCheckLoongRiscV64(GenTreeIndir tree)
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Zero-register null-check generation requires LoongArch64 or RISC-V64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Zero-register null-check generation requires LoongArch64 or RISC-V64.");
+            return;
         }
 
         assert(tree.Oper is GT_NULLCHECK);

@@ -413,7 +413,8 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        throw new FatalJitException($"Unknown RISC-V intrinsic {tree.AsIntrinsic().IntrinsicName}.");
+                        FatalJitException.ThrowFatalJitException($"Unknown RISC-V intrinsic {tree.AsIntrinsic().IntrinsicName}.");
+                        return default!;
                     }
                 }
 
@@ -803,21 +804,27 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         NYI_RISCV64("-----unimplemented on RISCV64 yet----");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD LSRA is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD LSRA is not ported.");
+        return default!;
     }
 
     private int buildHWIntrinsicRiscV64(GenTreeHWIntrinsic intrinsicTree, out int destinationCount)
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            destinationCount = default!;
+            return default!;
         }
 
         NYI_RISCV64("-----unimplemented on RISCV64 yet----");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic LSRA is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic LSRA is not ported.");
+        destinationCount = default!;
+        return default!;
     }
 }

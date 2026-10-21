@@ -168,7 +168,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires xarch.");
+            return default!;
         }
         if (Configuration.TARGET_AMD64)
         {

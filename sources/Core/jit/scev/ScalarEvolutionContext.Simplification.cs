@@ -85,24 +85,76 @@ public sealed partial class ScalarEvolutionContext
                     {
                         var left = unchecked((uint)cns1.Value);
                         var right = unchecked((uint)cns2.Value);
-                        newValue = binop.Oper switch {
-                            ScevOper.Add => unchecked(left + right),
-                            ScevOper.Mul => unchecked(left * right),
-                            ScevOper.Lsh => left << (int)right,
-                            _ => throw new InvalidOperationException($"Unexpected operation {binop.Oper}."),
-                        };
+                        switch (binop.Oper)
+                        {
+                            case ScevOper.Add:
+                            {
+                                newValue = unchecked(left + right);
+                                break;
+                            }
+
+                            case ScevOper.Mul:
+                            {
+                                newValue = unchecked(left * right);
+                                break;
+                            }
+
+                            case ScevOper.Lsh:
+                            {
+                                newValue = left << (int)right;
+                                break;
+                            }
+
+                            default:
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(
+                                    "RJS-SCE-007",
+                                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                        ? $"Unexpected operation {binop.Oper}."
+                                        : null);
+                                newValue = default;
+                                break;
+                            }
+                        }
                     }
                     else
                     {
                         assert(binop.Type.Size == 8);
                         var left = unchecked((ulong)cns1.Value);
                         var right = unchecked((ulong)cns2.Value);
-                        newValue = unchecked((long)(binop.Oper switch {
-                            ScevOper.Add => unchecked(left + right),
-                            ScevOper.Mul => unchecked(left * right),
-                            ScevOper.Lsh => left << (int)right,
-                            _ => throw new InvalidOperationException($"Unexpected operation {binop.Oper}."),
-                        }));
+                        ulong value;
+                        switch (binop.Oper)
+                        {
+                            case ScevOper.Add:
+                            {
+                                value = unchecked(left + right);
+                                break;
+                            }
+
+                            case ScevOper.Mul:
+                            {
+                                value = unchecked(left * right);
+                                break;
+                            }
+
+                            case ScevOper.Lsh:
+                            {
+                                value = left << (int)right;
+                                break;
+                            }
+
+                            default:
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(
+                                    "RJS-SCE-007",
+                                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                        ? $"Unexpected operation {binop.Oper}."
+                                        : null);
+                                value = default;
+                                break;
+                            }
+                        }
+                        newValue = unchecked((long)value);
                     }
 
                     return NewConstant(binop.Type, newValue);
@@ -170,7 +222,12 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected scalar evolution operation {scev.Oper}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-003",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected scalar evolution operation {scev.Oper}."
+                        : null);
+                return default!;
             }
         }
     }

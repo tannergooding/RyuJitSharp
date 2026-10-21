@@ -25,7 +25,8 @@ public partial class Compiler
         if (tryRegions.HasSideEntry())
         {
             NYI_WASM("Try region side entry survived fgWasmRepairTryEntries");
-            throw new FatalJitException(CorJitResult.CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CorJitResult.CORJIT_SKIPPED);
+            return default!;
         }
 
         var loops = FlowGraphNaturalLoops.Find(dfsTree);

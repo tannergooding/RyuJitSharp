@@ -14,8 +14,9 @@ public partial class Emitter
     {
         if (useApxNdd && !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "APX NDD move recording requires xarch.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM)
@@ -42,7 +43,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
+            return default!;
         }
 
         assert(IsMovInstruction(ins));
@@ -151,8 +153,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 register move flags are not supported for this target.");
+            return default!;
         }
 
         return recordArm32InsMov(ins, attr, dstReg, srcReg, canSkip, flags);
@@ -162,7 +165,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Move sign-extension optimization requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Move sign-extension optimization requires xarch.");
+            return default!;
         }
 
         if ((src == TargetRuntimeMetadata.IntegerReturnRegister) && (src == dst))
@@ -189,7 +193,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Move elision is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Move elision is not implemented for this target.");
+            return default!;
         }
 
         assert(IsMovInstruction(ins));

@@ -779,7 +779,8 @@ public partial class Emitter
             jmp.idjOffs = dstOffs;
             if (jmp.idjOffs != dstOffs)
             {
-                throw new FatalJitException(CORJIT_IMPLLIMITATION, "Method is too large.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Method is too large.");
+                return default!;
             }
         }
 

@@ -30,8 +30,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register static-field instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -68,8 +69,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register stack instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -109,8 +111,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register field-immediate recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -147,8 +150,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register stack-immediate recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -186,8 +190,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register-field-register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -225,8 +230,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register-stack-register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -283,8 +289,9 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register-immediate instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -379,8 +386,9 @@ public partial class Emitter
             default:
             {
                 NYI_RISCV64("illegal ins within emitIns_R_R_I!");
-                throw new FatalJitException(
+                FatalJitException.ThrowFatalJitException(
                     CORJIT_SKIPPED, "Illegal instruction within RISC-V two-register-immediate instruction recording.");
+                return;
             }
         }
 
@@ -412,8 +420,9 @@ public partial class Emitter
         else
         {
             NYI_RISCV64("illegal ins within emitIns_R_I_I!");
-            throw new FatalJitException(
+            FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED, "Illegal instruction within RISC-V register-two-immediate instruction recording.");
+            return;
         }
 
         var id = emitNewInstr(attr);
@@ -439,8 +448,9 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "ARM32 three-register instruction options are not ported.");
+                return;
             }
 
             recordArm32InsRRR(ins, attr, targetReg, reg1, reg2, INS_FLAGS_DONT_CARE);
@@ -456,63 +466,65 @@ public partial class Emitter
         if (Configuration.TARGET_RISCV64)
         {
             RequireRiscV64Target();
-        if (tryEmitCompressedIns_R_R_R(ins, attr, targetReg, reg1, reg2, instOptions))
-        {
-            return;
-        }
-
-        var code = emitInsCodeRiscV64(ins);
-        if (IsRiscVThreeRegisterInstruction(ins))
-        {
-            // The source/data register for load-reserved must be empty.
-            assert((ins != INS_lr_w && ins != INS_lr_d) || reg2 == REG_RISCV64_R0);
-
-            code |= (unchecked((uint)targetReg) & 0x1Fu) << 7;
-            code |= (unchecked((uint)reg1) & 0x1Fu) << 15;
-            code |= (unchecked((uint)reg2) & 0x1Fu) << 20;
-            if (ins is INS_fadd_s or INS_fsub_s or INS_fmul_s or INS_fdiv_s or
-                INS_fadd_d or INS_fsub_d or INS_fmul_d or INS_fdiv_d)
+            if (tryEmitCompressedIns_R_R_R(ins, attr, targetReg, reg1, reg2, instOptions))
             {
-                code |= 0x7u << 12;
+                return;
             }
-            else if (ins is INS_sc_w or INS_sc_d)
-            {
-                // Release ordering ends the load-reserved/store-conditional loop.
-                code |= 0b10u << 25;
-            }
-            else if (ins is INS_lr_w or INS_lr_d or INS_amoswap_w or INS_amoswap_d or INS_amoadd_w or INS_amoadd_d or
-                     INS_amoxor_w or INS_amoxor_d or INS_amoand_w or INS_amoand_d or INS_amoor_w or INS_amoor_d or
-                     INS_amomin_w or INS_amomin_d or INS_amomax_w or INS_amomax_d or INS_amominu_w or INS_amominu_d or
-                     INS_amomaxu_w or INS_amomaxu_d)
-            {
-                // Interlocked APIs do not expose acquire/release ordering.
-                code |= 0b11u << 25;
-            }
-        }
-        else
-        {
-            NYI_RISCV64("illegal ins within emitIns_R_R_R!");
-            throw new FatalJitException(
-                CORJIT_SKIPPED, "Illegal instruction within RISC-V three-register instruction recording.");
-        }
 
-        var riscVId = emitNewInstr(attr);
-        riscVId.idIns(ins);
-        riscVId.idReg1(targetReg);
-        riscVId.idReg2(reg1);
-        riscVId.idReg3(reg2);
-        riscVId.idAddr().iiaInstrEncode = code;
-        riscVId.idCodeSize(4);
+            var code = emitInsCodeRiscV64(ins);
+            if (IsRiscVThreeRegisterInstruction(ins))
+            {
+                // The source/data register for load-reserved must be empty.
+                assert((ins != INS_lr_w && ins != INS_lr_d) || reg2 == REG_RISCV64_R0);
 
-        dispIns(riscVId);
-        appendToCurIG(riscVId);
+                code |= (unchecked((uint)targetReg) & 0x1Fu) << 7;
+                code |= (unchecked((uint)reg1) & 0x1Fu) << 15;
+                code |= (unchecked((uint)reg2) & 0x1Fu) << 20;
+                if (ins is INS_fadd_s or INS_fsub_s or INS_fmul_s or INS_fdiv_s or
+                    INS_fadd_d or INS_fsub_d or INS_fmul_d or INS_fdiv_d)
+                {
+                    code |= 0x7u << 12;
+                }
+                else if (ins is INS_sc_w or INS_sc_d)
+                {
+                    // Release ordering ends the load-reserved/store-conditional loop.
+                    code |= 0b10u << 25;
+                }
+                else if (ins is INS_lr_w or INS_lr_d or INS_amoswap_w or INS_amoswap_d or INS_amoadd_w or INS_amoadd_d or
+                         INS_amoxor_w or INS_amoxor_d or INS_amoand_w or INS_amoand_d or INS_amoor_w or INS_amoor_d or
+                         INS_amomin_w or INS_amomin_d or INS_amomax_w or INS_amomax_d or INS_amominu_w or INS_amominu_d or
+                         INS_amomaxu_w or INS_amomaxu_d)
+                {
+                    // Interlocked APIs do not expose acquire/release ordering.
+                    code |= 0b11u << 25;
+                }
+            }
+            else
+            {
+                NYI_RISCV64("illegal ins within emitIns_R_R_R!");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED, "Illegal instruction within RISC-V three-register instruction recording.");
+                return;
+            }
+
+            var riscVId = emitNewInstr(attr);
+            riscVId.idIns(ins);
+            riscVId.idReg1(targetReg);
+            riscVId.idReg2(reg1);
+            riscVId.idReg3(reg2);
+            riscVId.idAddr().iiaInstrEncode = code;
+            riscVId.idCodeSize(4);
+
+            dispIns(riscVId);
+            appendToCurIG(riscVId);
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Three-register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -630,8 +642,9 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Three-register-immediate instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

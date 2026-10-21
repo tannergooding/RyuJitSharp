@@ -23,7 +23,8 @@ public partial class Globals
 
         if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException("SIMD Unimplemented yet LOONGARCH");
+            FatalJitException.ThrowFatalJitException("SIMD Unimplemented yet LOONGARCH");
+            return;
         }
     }
 
@@ -40,7 +41,8 @@ public partial class Globals
 
         if (targetCount != 1)
         {
-            throw new FatalJitException("Exactly one target architecture must be selected.");
+            FatalJitException.ThrowFatalJitException("Exactly one target architecture must be selected.");
+            return;
         }
 
         var targetIs64Bit =
@@ -51,17 +53,20 @@ public partial class Globals
 
         if (Configuration.TARGET_64BIT != targetIs64Bit)
         {
-            throw new FatalJitException("Target bitness does not match the selected architecture.");
+            FatalJitException.ThrowFatalJitException("Target bitness does not match the selected architecture.");
+            return;
         }
 
         if (Configuration.UNIX_AMD64_ABI && !Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("When UNIX_AMD64_ABI is enabled, TARGET_AMD64 must be enabled.");
+            FatalJitException.ThrowFatalJitException("When UNIX_AMD64_ABI is enabled, TARGET_AMD64 must be enabled.");
+            return;
         }
 
         if (Configuration.UNIX_X86_ABI && !Configuration.TARGET_X86)
         {
-            throw new FatalJitException("When UNIX_X86_ABI is enabled, TARGET_X86 must be enabled.");
+            FatalJitException.ThrowFatalJitException("When UNIX_X86_ABI is enabled, TARGET_X86 must be enabled.");
+            return;
         }
     }
 
@@ -74,12 +79,20 @@ public partial class Globals
     {
         if (debug)
         {
-            throw new FatalJitException("No point in measuring DEBUG code.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage245
+            );
+            return;
         }
 
         if (!hostX86 && !hostAmd64)
         {
-            throw new FatalJitException("Cycle counters only hooked up on x86/x64.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage246
+            );
+            return;
         }
     }
 
@@ -338,7 +351,7 @@ public partial class Globals
 
             case ShortInlineVar:
             {
-                var iOp =opcodePtr[0];
+                var iOp = opcodePtr[0];
                 operand = $" 0x{iOp:X}";
                 break;
             }
@@ -573,6 +586,14 @@ public partial class Globals
         return getLikelyClasses(new Span<LikelyClassMethodRecord>(pLikelyClasses, maxLikelyClasses), new ReadOnlySpan<ICorJitInfo.PgoInstrumentationSchema>(schema, countSchemaItems), pInstrumentationData, ilOffset);
     }
 
+    private readonly struct LikelyClassMethodHistogramEntryLess : INativeLess<LikelyClassMethodHistogramEntry>
+    {
+        public bool Less(LikelyClassMethodHistogramEntry first, LikelyClassMethodHistogramEntry second)
+        {
+            return first._count > second._count;
+        }
+    }
+
     /// <summary>Find class/method profile data for an IL offset, and return the most likely classes/methods.</summary>
     /// <param name="likelyEntries"></param>
     /// <param name="schemas"></param>
@@ -640,7 +661,7 @@ public partial class Globals
                 {
                     // Form a histogram
                     var histogramEntries = new Span<nint>(((nint*)(pInstrumentationData + nextSchema.Offset)), nextSchema.Count);
-                    var h  = new LikelyClassMethodHistogram(histogramEntries);
+                    var h = new LikelyClassMethodHistogram(histogramEntries);
 
                     // Use histogram count as number of classes estimate
                     // Report back what we've learned
@@ -747,7 +768,7 @@ public partial class Globals
                             }
 
                             // sort by m_count (descending)
-                            sortedEntries[0..knownHandles].Sort((h1, h2) => h2._count.CompareTo(h1._count));
+                            SortNative(sortedEntries[0..knownHandles], new LikelyClassMethodHistogramEntryLess());
 
                             var numberOfClasses = int.Min(knownHandles, likelyEntries.Length);
                             var totalLikelihood = 0;
@@ -867,7 +888,7 @@ public partial class Globals
                     }
 
                     // sort by m_count (descending)
-                    sortedEntries[..h.countHistogramElements].Sort((h1, h2) => h2._count.CompareTo(h1._count));
+                    SortNative(sortedEntries[..h.countHistogramElements], new LikelyClassMethodHistogramEntryLess());
 
                     var numberOfLikelyConst = int.Min(h.countHistogramElements, likelyValues.Length);
                     var totalLikelihood = 0;

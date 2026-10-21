@@ -65,28 +65,94 @@ public readonly partial struct TernaryLogicInfo
 
     public static byte GetTernaryControlByte(genTreeOps oper, byte op1, byte op2)
     {
-        return oper switch {
-            GT_AND => unchecked((byte)(op1 & op2)),
-            GT_AND_NOT => unchecked((byte)(~op1 & op2)),
-            GT_OR => unchecked((byte)(op1 | op2)),
-            GT_XOR => unchecked((byte)(op1 ^ op2)),
-            _ => throw new InvalidOperationException($"Unexpected ternary-logic operation: {oper}."),
-        };
+        switch (oper)
+        {
+            case GT_AND:
+            {
+                return unchecked((byte)(op1 & op2));
+            }
+
+            case GT_AND_NOT:
+            {
+                return unchecked((byte)(~op1 & op2));
+            }
+
+            case GT_OR:
+            {
+                return unchecked((byte)(op1 | op2));
+            }
+
+            case GT_XOR:
+            {
+                return unchecked((byte)(op1 ^ op2));
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-TL-001",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected ternary-logic operation: {oper}."
+                        : null);
+                return default;
+            }
+        }
     }
 
     public static byte GetTernaryControlByte(TernaryLogicOperKind oper, byte op1, byte op2)
     {
-        return oper switch {
-            TernaryLogicOperKind.Select => op2,
-            TernaryLogicOperKind.Not => unchecked((byte)~op2),
-            TernaryLogicOperKind.And => unchecked((byte)(op1 & op2)),
-            TernaryLogicOperKind.Nand => unchecked((byte)~(op1 & op2)),
-            TernaryLogicOperKind.Or => unchecked((byte)(op1 | op2)),
-            TernaryLogicOperKind.Nor => unchecked((byte)~(op1 | op2)),
-            TernaryLogicOperKind.Xor => unchecked((byte)(op1 ^ op2)),
-            TernaryLogicOperKind.Xnor => unchecked((byte)~(op1 ^ op2)),
-            _ => throw new InvalidOperationException($"Unexpected ternary-logic operation: {oper}."),
-        };
+        switch (oper)
+        {
+            case TernaryLogicOperKind.Select:
+            {
+                return op2;
+            }
+
+            case TernaryLogicOperKind.Not:
+            {
+                return unchecked((byte)~op2);
+            }
+
+            case TernaryLogicOperKind.And:
+            {
+                return unchecked((byte)(op1 & op2));
+            }
+
+            case TernaryLogicOperKind.Nand:
+            {
+                return unchecked((byte)~(op1 & op2));
+            }
+
+            case TernaryLogicOperKind.Or:
+            {
+                return unchecked((byte)(op1 | op2));
+            }
+
+            case TernaryLogicOperKind.Nor:
+            {
+                return unchecked((byte)~(op1 | op2));
+            }
+
+            case TernaryLogicOperKind.Xor:
+            {
+                return unchecked((byte)(op1 ^ op2));
+            }
+
+            case TernaryLogicOperKind.Xnor:
+            {
+                return unchecked((byte)~(op1 ^ op2));
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-TL-001",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected ternary-logic operation: {oper}."
+                        : null);
+                return default;
+            }
+        }
     }
 
     public static byte GetTernaryControlByte(TernaryLogicInfo info, byte op1, byte op2, byte op3)
@@ -96,11 +162,31 @@ public readonly partial struct TernaryLogicInfo
         {
             case TernaryLogicUseFlags.None:
             {
-                first = info.Oper1 switch {
-                    TernaryLogicOperKind.False => 0x00,
-                    TernaryLogicOperKind.True => 0xFF,
-                    _ => throw new InvalidOperationException("Invalid constant ternary-logic operation."),
-                };
+                switch (info.Oper1)
+                {
+                    case TernaryLogicOperKind.False:
+                    {
+                        first = 0x00;
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.True:
+                    {
+                        first = 0xFF;
+                        break;
+                    }
+
+                    default:
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            "RJS-TL-002",
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? "Invalid constant ternary-logic operation."
+                                : null);
+                        first = default;
+                        break;
+                    }
+                }
                 break;
             }
 
@@ -126,23 +212,78 @@ public readonly partial struct TernaryLogicInfo
 
             case TernaryLogicUseFlags.ABC:
             {
-                first = info.Oper1 switch {
-                    TernaryLogicOperKind.Nor => unchecked((byte)~(op1 | op2 | op3)),
-                    TernaryLogicOperKind.Minor => 0x17,
-                    TernaryLogicOperKind.Xnor => unchecked((byte)~(op1 ^ op2 ^ op3)),
-                    TernaryLogicOperKind.Nand => unchecked((byte)~(op1 & op2 & op3)),
-                    TernaryLogicOperKind.And => unchecked((byte)(op1 & op2 & op3)),
-                    TernaryLogicOperKind.Xor => unchecked((byte)(op1 ^ op2 ^ op3)),
-                    TernaryLogicOperKind.Major => 0xE8,
-                    TernaryLogicOperKind.Or => unchecked((byte)(op1 | op2 | op3)),
-                    _ => throw new InvalidOperationException("Invalid three-input ternary operation."),
-                };
+                switch (info.Oper1)
+                {
+                    case TernaryLogicOperKind.Nor:
+                    {
+                        first = unchecked((byte)~(op1 | op2 | op3));
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.Minor:
+                    {
+                        first = 0x17;
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.Xnor:
+                    {
+                        first = unchecked((byte)~(op1 ^ op2 ^ op3));
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.Nand:
+                    {
+                        first = unchecked((byte)~(op1 & op2 & op3));
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.And:
+                    {
+                        first = unchecked((byte)(op1 & op2 & op3));
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.Xor:
+                    {
+                        first = unchecked((byte)(op1 ^ op2 ^ op3));
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.Major:
+                    {
+                        first = 0xE8;
+                        break;
+                    }
+
+                    case TernaryLogicOperKind.Or:
+                    {
+                        first = unchecked((byte)(op1 | op2 | op3));
+                        break;
+                    }
+
+                    default:
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            "RJS-TL-003",
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? "Invalid three-input ternary operation."
+                                : null);
+                        first = default;
+                        break;
+                    }
+                }
                 break;
             }
 
             default:
             {
-                throw new InvalidOperationException("Invalid first ternary-logic usage.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-TL-004",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Invalid first ternary-logic usage."
+                        : null);
+                return default;
             }
         }
 
@@ -180,16 +321,46 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                throw new InvalidOperationException("Invalid second ternary-logic usage.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-TL-005",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Invalid second ternary-logic usage."
+                        : null);
+                return default;
             }
         }
 
-        return info.Oper3Use switch {
-            TernaryLogicUseFlags.None => second,
-            TernaryLogicUseFlags.A => unchecked((byte)((first & op1) | (second & ~op1))),
-            TernaryLogicUseFlags.B => unchecked((byte)((first & op2) | (second & ~op2))),
-            TernaryLogicUseFlags.C => unchecked((byte)((first & op3) | (second & ~op3))),
-            _ => throw new InvalidOperationException("Invalid conditional ternary-logic usage."),
-        };
+        switch (info.Oper3Use)
+        {
+            case TernaryLogicUseFlags.None:
+            {
+                return second;
+            }
+
+            case TernaryLogicUseFlags.A:
+            {
+                return unchecked((byte)((first & op1) | (second & ~op1)));
+            }
+
+            case TernaryLogicUseFlags.B:
+            {
+                return unchecked((byte)((first & op2) | (second & ~op2)));
+            }
+
+            case TernaryLogicUseFlags.C:
+            {
+                return unchecked((byte)((first & op3) | (second & ~op3)));
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-TL-006",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Invalid conditional ternary-logic usage."
+                        : null);
+                return default;
+            }
+        }
     }
 }

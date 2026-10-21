@@ -15,7 +15,8 @@ public partial struct GCInfo
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
             Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Modern GC encoding requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Modern GC encoding requires Windows AMD64.");
+            return;
         }
 
         var compiler = Compiler;
@@ -38,12 +39,30 @@ public partial struct GCInfo
         {
             assert(compiler.info.compTypeCtxtArg != BAD_VAR_NUM);
             var type = compiler.info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK;
-            var contextType = type switch
+            GENERIC_CONTEXTPARAM_TYPE contextType;
+            switch (type)
             {
-                CORINFO_GENERICS_CTXT_FROM_METHODDESC => GENERIC_CONTEXTPARAM_MD,
-                CORINFO_GENERICS_CTXT_FROM_METHODTABLE => GENERIC_CONTEXTPARAM_MT,
-                _ => throw new FatalJitException(CORJIT_SKIPPED, "Unknown generic context parameter type."),
-            };
+                case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
+                {
+                    contextType = GENERIC_CONTEXTPARAM_MD;
+                    break;
+                }
+
+                case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
+                {
+                    contextType = GENERIC_CONTEXTPARAM_MT;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage220
+                    );
+                    return;
+                }
+            }
 
             var offset = compiler.lvaCachedGenericContextArgOffset();
             if (Configuration.DEBUG && compiler.opts.IsOSR)

@@ -85,7 +85,8 @@ public static partial class regNumberExtensions
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException("WebAssembly register operations require the WebAssembly target.");
+            FatalJitException.ThrowFatalJitException("WebAssembly register operations require the WebAssembly target.");
+            return;
         }
     }
 }

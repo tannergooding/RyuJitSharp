@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Long-to-int cast generation requires X86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long-to-int cast generation requires X86.");
+            return;
         }
 
         assert(cast.Oper is GT_CAST);

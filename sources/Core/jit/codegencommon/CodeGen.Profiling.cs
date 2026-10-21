@@ -169,7 +169,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks are unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks are unsupported for this target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

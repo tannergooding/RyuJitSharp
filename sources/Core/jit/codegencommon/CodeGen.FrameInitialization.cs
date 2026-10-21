@@ -15,7 +15,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Parameter homing register selection requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Parameter homing register selection requires AMD64.");
+            return default!;
         }
 
         var calleeTrash = Configuration.HAS_MORE_THAN_64_REGISTERS

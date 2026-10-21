@@ -72,7 +72,8 @@ public sealed partial class Lowering
         {
             if (!Configuration.SWIFT_SUPPORT)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Swift error returns are not supported for this target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage260);
+
             }
 
             return ref ret.AsOp().Op2Ref;

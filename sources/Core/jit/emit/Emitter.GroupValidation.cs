@@ -71,10 +71,18 @@ public partial class Emitter
 
             if (checkBackwardNavigation && (current.igInsCnt != 0))
             {
-                var savedInstructions = instructions
-                    ?? throw new FatalJitException("Backward instruction validation requires descriptor storage.");
-                var descriptors = current.igData
-                    ?? throw new FatalJitException("A saved instruction group requires descriptor storage.");
+                var savedInstructions = instructions;
+                if (savedInstructions is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Backward instruction validation requires descriptor storage.");
+                    return;
+                }
+                var descriptors = current.igData;
+                if (descriptors is null)
+                {
+                    FatalJitException.ThrowFatalJitException("A saved instruction group requires descriptor storage.");
+                    return;
+                }
                 assert(descriptors.Length == current.igInsCnt);
                 var first = descriptors[0];
                 savedInstructions.Add((current, first));
@@ -104,8 +112,12 @@ public partial class Emitter
 
         if (checkBackwardNavigation && emitGetLastIns(out var group, out var id))
         {
-            var savedInstructions = instructions
-                ?? throw new FatalJitException("Backward instruction validation requires descriptor storage.");
+            var savedInstructions = instructions;
+            if (savedInstructions is null)
+            {
+                FatalJitException.ThrowFatalJitException("Backward instruction validation requires descriptor storage.");
+                return;
+            }
             var index = savedInstructions.Count - 1;
 
             do

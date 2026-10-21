@@ -42,10 +42,25 @@ public partial class Compiler
 
         while (stmt != lastStmt)
         {
-            var current = stmt ?? throw new FatalJitException("A forward-substitution block has a broken statement list.");
+            var current = stmt;
+            if (current is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage109
+                );
+                return default!;
+            }
             var previous = current.PrevStmt;
-            var next = current.NextStmt
-                ?? throw new FatalJitException("A non-final statement must have a successor.");
+            var next = current.NextStmt;
+            if (next is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage110
+                );
+                return default!;
+            }
             var substituted = fgForwardSubStatement(current);
             if (substituted)
             {

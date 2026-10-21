@@ -15,8 +15,12 @@ public partial class Emitter
     {
         if (Configuration.DEBUG)
         {
-            var compiler = _compiler
-                ?? throw new FatalJitException("LoongArch64 jump binding requires an active compiler.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("LoongArch64 jump binding requires an active compiler.");
+                return;
+            }
             if (compiler.verbose)
             {
                 jitprintf("*************** In emitJumpDistBind()\n");
@@ -38,8 +42,12 @@ public partial class Emitter
 
             for (var jump = emitJumpList; jump is not null; jump = jump.idjNext)
             {
-                var jumpGroup = jump.idjIG
-                    ?? throw new FatalJitException("A LoongArch64 jump must be associated with an instruction group.");
+                var jumpGroup = jump.idjIG;
+                if (jumpGroup is null)
+                {
+                    FatalJitException.ThrowFatalJitException("A LoongArch64 jump must be associated with an instruction group.");
+                    return;
+                }
                 var sourceInstructionOffset = unchecked(jumpGroup.igOffs + jump.idjOffs + localAdjustment);
                 int sizeAdjustment;
 
@@ -49,8 +57,15 @@ public partial class Emitter
                     {
                         do
                         {
-                            previousJumpGroup = previousJumpGroup.igNext
-                                ?? throw new FatalJitException("A LoongArch64 jump group is missing from the group list.");
+                            var nextJumpGroup = previousJumpGroup.igNext;
+                            if (nextJumpGroup is null)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    "A LoongArch64 jump group is missing from the group list.");
+                                return;
+                            }
+
+                            previousJumpGroup = nextJumpGroup;
                             previousJumpGroup.igOffs = unchecked(previousJumpGroup.igOffs + groupAdjustment);
                             assert(IsCodeAligned(previousJumpGroup.igOffs));
                         }
@@ -64,10 +79,24 @@ public partial class Emitter
 
                 jump.idjOffs = unchecked(jump.idjOffs + localAdjustment);
 
-                var targetGroup = jump.idIsBound()
-                    ? jump.idjTargetIG
-                        ?? throw new FatalJitException("A bound LoongArch64 jump requires a target group.")
-                    : emitBindJump(jump);
+                insGroup targetGroup;
+                if (jump.idIsBound())
+                {
+                    var boundTargetGroup = jump.idjTargetIG;
+                    if (boundTargetGroup is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            "A bound LoongArch64 jump requires a target group.");
+                        return;
+                    }
+
+                    targetGroup = boundTargetGroup;
+                }
+                else
+                {
+                    targetGroup = emitBindJump(jump);
+                }
+
                 emitCheckFuncletBranch(jump, jumpGroup);
 
                 var sourceEncodingOffset = unchecked(sourceInstructionOffset + smallJumpDelaySlot);

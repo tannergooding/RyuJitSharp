@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86 && !Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Long return generation is only supported on X86 and ARM.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long return generation is only supported on X86 and ARM.");
+            return;
         }
 
         assert(tree.Oper is GT_RETURN or GT_RETFILT);
@@ -140,7 +141,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Return GC information requires a fixed-register target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return GC information requires a fixed-register target.");
+            return;
         }
 
         var descriptor = _compiler.compRetTypeDesc;
@@ -163,7 +165,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Simple return generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Simple return generation is not ported for this target.");
+            return;
         }
 
         assert(Configuration.TARGET_ARM64
@@ -224,7 +227,8 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Simple return generation is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Simple return generation is not ported for this target.");
+                    return;
                 }
             }
         }
@@ -234,7 +238,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Clearing the Wasm async continuation is only supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Clearing the Wasm async continuation is only supported on Wasm.");
+            return;
         }
 
         var emit = GetEmitter();
@@ -425,7 +430,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD || (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD split returns require SIMD support on xarch or ARM.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD split returns require SIMD support on xarch or ARM.");
+            return;
         }
 
         assert(varTypeIsSimd(source.Type) && source.IsUsedFromReg);
@@ -475,7 +481,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD split returns are not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD split returns are not ported for this target.");
+            return;
         }
     }
 
@@ -483,7 +490,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.SWIFT_SUPPORT)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Swift error returns are not supported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Swift error returns are not supported on this target.");
+            return;
         }
 
         assert(tree.Oper == GT_SWIFT_ERROR_RET);
@@ -505,7 +513,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer checking is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer checking is not ported for this target.");
+            return;
         }
 
         if (doStackPointerCheck)

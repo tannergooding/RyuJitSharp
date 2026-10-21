@@ -28,24 +28,24 @@ public sealed partial class LinearScan
             setDoubleAlign(true);
         }
         else
-        if (codeGen.IsFramePointerRequired)
-        {
-            frameType = FT_EBP_FRAME;
-        }
-        else
-        {
-            if (!_compiler.rpMustCreateEBPCalled)
+            if (codeGen.IsFramePointerRequired)
             {
-                _compiler.rpMustCreateEBPCalled = true;
-                if (_compiler.rpMustCreateEBPFrame(out var reason))
-                {
-                    JITDUMP($"; Decided to create an EBP based frame for ETW stackwalking ({reason})\n");
-                    codeGen.IsFrameRequired = true;
-                }
+                frameType = FT_EBP_FRAME;
             }
+            else
+            {
+                if (!_compiler.rpMustCreateEBPCalled)
+                {
+                    _compiler.rpMustCreateEBPCalled = true;
+                    if (_compiler.rpMustCreateEBPFrame(out var reason))
+                    {
+                        JITDUMP($"; Decided to create an EBP based frame for ETW stackwalking ({reason})\n");
+                        codeGen.IsFrameRequired = true;
+                    }
+                }
 
-            frameType = codeGen.IsFrameRequired ? FT_EBP_FRAME : FT_ESP_FRAME;
-        }
+                frameType = codeGen.IsFrameRequired ? FT_EBP_FRAME : FT_ESP_FRAME;
+            }
 
         switch (frameType)
         {
@@ -69,7 +69,11 @@ public sealed partial class LinearScan
             }
             default:
             {
-                throw new FatalJitException("LSRA frame type was not selected.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage316
+                );
+                return;
             }
         }
 
@@ -140,18 +144,21 @@ public sealed partial class LinearScan
     private regMask getFramePointerBaseMask()
     {
         NYI("RBM_FPBASE on this target");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Frame-pointer base register mask is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Frame-pointer base register mask is not ported.");
+        return default!;
     }
 
     private regNumber getOptionalFrameReserveRegister()
     {
         NYI("REG_OPT_RSVD on this target");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Reserved frame-offset register is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Reserved frame-offset register is not ported.");
+        return default!;
     }
 
     private regNumber getSavedLocallocStackPointerRegister()
     {
         NYI("REG_SAVED_LOCALLOC_SP on ARM");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Saved localloc stack-pointer register is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Saved localloc stack-pointer register is not ported.");
+        return default!;
     }
 }

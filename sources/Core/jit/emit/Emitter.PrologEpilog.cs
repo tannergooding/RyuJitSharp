@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction recording outside AMD64 is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction recording outside AMD64 is not ported.");
+            return;
         }
 
         assert(_compiler is not null);
@@ -286,7 +287,8 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            return default!;
         }
 
         return unchecked((uint)emitEpilogCnt);
@@ -316,7 +318,8 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            return;
         }
 
         assert(emitEpilogLast is not null);
@@ -327,7 +330,8 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            return default!;
         }
 
         if (emitEpilogCnt == 1)
@@ -342,7 +346,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Exit sequence recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Exit sequence recording is not implemented for this target.");
+            return;
         }
 
         assert(emitGeneratingEpilogOrFuncletEpilog());

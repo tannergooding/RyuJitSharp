@@ -71,8 +71,9 @@ public partial class Emitter
         }
         else
         {
-            throw new FatalJitException(
+            FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED, "Illegal instruction within RISC-V two-register instruction recording.");
+            return;
         }
 
         var id = emitNewInstr(attr);

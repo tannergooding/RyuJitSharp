@@ -64,12 +64,20 @@ public partial class Compiler
     private unsafe void unwindEmitFuncWasm(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
         var emitter = UnwindEmitter();
-        var startLocation = func.startLoc
-            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm unwind start location is missing.");
-        var endLocation = func.endLoc
-            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm unwind end location is missing.");
-        var startOffset = startLocation.CodeOffset(emitter);
-        var endOffset = endLocation.CodeOffset(emitter);
+        var startLocation = func.startLoc;
+        if (startLocation is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm unwind start location is missing.");
+            return;
+        }
+        var endLocation = func.endLoc;
+        if (endLocation is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm unwind end location is missing.");
+            return;
+        }
+        var startOffset = startLocation.Value.CodeOffset(emitter);
+        var endOffset = endLocation.Value.CodeOffset(emitter);
 
         // Wasm does not have cold code.
         pColdCode = null;

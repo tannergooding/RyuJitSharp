@@ -198,7 +198,8 @@ public partial struct Disassembler
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native decoder and symbol callbacks.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native decoder and symbol callbacks.");
+        return;
     }
 #pragma warning restore IDE0251
 }

@@ -28,229 +28,227 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM)
         {
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletProlog()\n");
-        }
-        assert(block is not null);
-        assert(_compiler.bbIsFuncletBeg(block));
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("*************** In genFuncletProlog()\n");
+            }
+            assert(block is not null);
+            assert(_compiler.bbIsFuncletBeg(block));
 
-        GCInfo.gcResetForBB();
-        _compiler.unwindBegProlog();
+            GCInfo.gcResetForBB();
+            _compiler.unwindBegProlog();
 
-        var maskPushRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
-        var maskPushRegsInt = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
-        var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
-        maskPushRegsInt |= maskStackAlloc;
+            var maskPushRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
+            var maskPushRegsInt = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
+            var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
+            maskPushRegsInt |= maskStackAlloc;
 
-        assert(unchecked((ulong)maskPushRegsInt.Lower) <= int.MaxValue);
-        inst_IV(INS_push, unchecked((int)maskPushRegsInt.Lower));
-        _compiler.unwindPushMaskInt(maskPushRegsInt);
+            assert(unchecked((ulong)maskPushRegsInt.Lower) <= int.MaxValue);
+            inst_IV(INS_push, unchecked((int)maskPushRegsInt.Lower));
+            _compiler.unwindPushMaskInt(maskPushRegsInt);
 
-        if (maskPushRegsFloat.IsNonEmpty)
-        {
-            genPushFltRegsArmCore(maskPushRegsFloat);
-            _compiler.unwindPushMaskFloat(maskPushRegsFloat);
-        }
+            if (maskPushRegsFloat.IsNonEmpty)
+            {
+                genPushFltRegsArmCore(maskPushRegsFloat);
+                _compiler.unwindPushMaskFloat(maskPushRegsFloat);
+            }
 
-        var liveIn = block.CatchType switch
-        {
-            BBCT_FILTER => new regMaskTP(SRBM_ARM32_R0 | SRBM_ARM32_R1),
-            BBCT_FINALLY or BBCT_FAULT => RBM_NONE,
-            _ => new regMaskTP(SRBM_ARM32_R0),
-        };
-        var initRegZeroed = false;
-        if (maskStackAlloc.IsEmpty)
-        {
-            // R3 is not live on funclet entry and is available when a large frame needs a stack-probe scratch register.
-            genAllocLclFrame(genFuncletInfo.fiSpDelta, REG_ARM32_R3, ref initRegZeroed, liveIn);
-        }
+            var liveIn = block.CatchType switch {
+                BBCT_FILTER => new regMaskTP(SRBM_ARM32_R0 | SRBM_ARM32_R1),
+                BBCT_FINALLY or BBCT_FAULT => RBM_NONE,
+                _ => new regMaskTP(SRBM_ARM32_R0),
+            };
+            var initRegZeroed = false;
+            if (maskStackAlloc.IsEmpty)
+            {
+                // R3 is not live on funclet entry and is available when a large frame needs a stack-probe scratch register.
+                genAllocLclFrame(genFuncletInfo.fiSpDelta, REG_ARM32_R3, ref initRegZeroed, liveIn);
+            }
 
-        _compiler.unwindEndProlog();
+            _compiler.unwindEndProlog();
         }
         else if (Configuration.TARGET_ARM64)
         {
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletProlog()\n");
-        }
-        assert(block is not null);
-        assert(_compiler.bbIsFuncletBeg(block));
-        GCInfo.gcResetForBB();
-        _compiler.unwindBegProlog();
-
-        if (JitConfig.JitPacEnabled != 0)
-        {
-            Emitter.emitPacInProlog();
-        }
-
-        var maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
-        var maskSaveRegsInt = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
-        assert((maskSaveRegsInt & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
-        assert((maskSaveRegsInt & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
-
-        var liveIn = block.CatchType switch
-        {
-            BBCT_FILTER => new regMaskTP(SRBM_ARM64_R0 | SRBM_ARM64_R1),
-            BBCT_FINALLY or BBCT_FAULT => RBM_NONE,
-            _ => new regMaskTP(SRBM_ARM64_R0),
-        };
-
-        if (genFuncletInfo.fiFrameType == 1)
-        {
-            if (_compiler.opts.IsOSR)
+            if (Configuration.DEBUG && _verbose)
             {
-                var scratchRegIsZero = false;
-                genAllocLclFrame(unchecked((uint)-genFuncletInfo.fiSpDelta1), TargetRuntimeMetadata.ScratchRegister,
-                    ref scratchRegIsZero, liveIn);
-                genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
-                    reportUnwindData: true);
-                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
-                _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
+                jitprintf("*************** In genFuncletProlog()\n");
             }
-            else
+            assert(block is not null);
+            assert(_compiler.bbIsFuncletBeg(block));
+            GCInfo.gcResetForBB();
+            _compiler.unwindBegProlog();
+
+            if (JitConfig.JitPacEnabled != 0)
             {
-                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
-                    genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
-                _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
+                Emitter.emitPacInProlog();
             }
 
-            maskSaveRegsInt &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
-            assert(genFuncletInfo.fiSpDelta2 == 0);
-            assert(genFuncletInfo.fiSP_to_FPLR_save_delta == 0);
-        }
-        else if (genFuncletInfo.fiFrameType == 2)
-        {
-            assert(genFuncletInfo.fiSpDelta1 < 0);
-            assert(genFuncletInfo.fiSpDelta1 >= -512);
-            genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, REG_NA, null, reportUnwindData: true);
-            assert(genFuncletInfo.fiSpDelta2 == 0);
+            var maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
+            var maskSaveRegsInt = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
+            assert((maskSaveRegsInt & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
+            assert((maskSaveRegsInt & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
 
-            Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
-                genFuncletInfo.fiSP_to_FPLR_save_delta);
-            _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
-            maskSaveRegsInt &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
-        }
-        else if (genFuncletInfo.fiFrameType == 3)
-        {
-            if (_compiler.opts.IsOSR)
-            {
-                var scratchRegIsZero = false;
-                genAllocLclFrame(unchecked((uint)-genFuncletInfo.fiSpDelta1), TargetRuntimeMetadata.ScratchRegister,
-                    ref scratchRegIsZero, liveIn);
-                genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
-                    reportUnwindData: true);
-                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
-                _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
-            }
-            else
-            {
-                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
-                    genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
-                _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
-            }
+            var liveIn = block.CatchType switch {
+                BBCT_FILTER => new regMaskTP(SRBM_ARM64_R0 | SRBM_ARM64_R1),
+                BBCT_FINALLY or BBCT_FAULT => RBM_NONE,
+                _ => new regMaskTP(SRBM_ARM64_R0),
+            };
 
-            maskSaveRegsInt &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
-        }
-        else if (genFuncletInfo.fiFrameType == 4)
-        {
-            assert(genFuncletInfo.fiSpDelta1 < 0);
-            assert(genFuncletInfo.fiSpDelta1 >= -512);
-            genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, REG_NA, null, reportUnwindData: true);
-            assert(genFuncletInfo.fiSpDelta2 == 0);
-        }
-        else
-        {
-            assert(genFuncletInfo.fiFrameType == 5);
-            if (_compiler.opts.IsOSR)
+            if (genFuncletInfo.fiFrameType == 1)
             {
-                var scratchRegIsZero = false;
-                genAllocLclFrame(unchecked((uint)-genFuncletInfo.fiSpDelta1), TargetRuntimeMetadata.ScratchRegister,
-                    ref scratchRegIsZero, liveIn);
-                genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
-                    reportUnwindData: true);
+                if (_compiler.opts.IsOSR)
+                {
+                    var scratchRegIsZero = false;
+                    genAllocLclFrame(unchecked((uint)-genFuncletInfo.fiSpDelta1), TargetRuntimeMetadata.ScratchRegister,
+                        ref scratchRegIsZero, liveIn);
+                    genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
+                        reportUnwindData: true);
+                    Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
+                    _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
+                }
+                else
+                {
+                    Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
+                        genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
+                    _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
+                }
+
+                maskSaveRegsInt &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
+                assert(genFuncletInfo.fiSpDelta2 == 0);
+                assert(genFuncletInfo.fiSP_to_FPLR_save_delta == 0);
             }
-            else
+            else if (genFuncletInfo.fiFrameType == 2)
             {
                 assert(genFuncletInfo.fiSpDelta1 < 0);
-                assert(genFuncletInfo.fiSpDelta1 >= -240);
+                assert(genFuncletInfo.fiSpDelta1 >= -512);
                 genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, REG_NA, null, reportUnwindData: true);
+                assert(genFuncletInfo.fiSpDelta2 == 0);
+
+                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
+                    genFuncletInfo.fiSP_to_FPLR_save_delta);
+                _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
+                maskSaveRegsInt &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
             }
-        }
-
-        var lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-        genSaveCalleeSavedRegistersHelpArm64(maskSaveRegsInt | maskSaveRegsFloat, lowestCalleeSavedOffset, 0);
-
-        if (genFuncletInfo.fiFrameType is 3 or 5)
-        {
-            assert(genFuncletInfo.fiSpDelta2 <= 0);
-            if (genFuncletInfo.fiSpDelta2 < 0)
+            else if (genFuncletInfo.fiFrameType == 3)
             {
-                genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta2, REG_ARM64_R2, null, reportUnwindData: true);
+                if (_compiler.opts.IsOSR)
+                {
+                    var scratchRegIsZero = false;
+                    genAllocLclFrame(unchecked((uint)-genFuncletInfo.fiSpDelta1), TargetRuntimeMetadata.ScratchRegister,
+                        ref scratchRegIsZero, liveIn);
+                    genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
+                        reportUnwindData: true);
+                    Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
+                    _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
+                }
+                else
+                {
+                    Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
+                        genFuncletInfo.fiSpDelta1, INS_OPTS_PRE_INDEX);
+                    _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
+                }
+
+                maskSaveRegsInt &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
+            }
+            else if (genFuncletInfo.fiFrameType == 4)
+            {
+                assert(genFuncletInfo.fiSpDelta1 < 0);
+                assert(genFuncletInfo.fiSpDelta1 >= -512);
+                genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, REG_NA, null, reportUnwindData: true);
+                assert(genFuncletInfo.fiSpDelta2 == 0);
             }
             else
             {
-                assert(_compiler.opts.IsOSR);
+                assert(genFuncletInfo.fiFrameType == 5);
+                if (_compiler.opts.IsOSR)
+                {
+                    var scratchRegIsZero = false;
+                    genAllocLclFrame(unchecked((uint)-genFuncletInfo.fiSpDelta1), TargetRuntimeMetadata.ScratchRegister,
+                        ref scratchRegIsZero, liveIn);
+                    genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
+                        reportUnwindData: true);
+                }
+                else
+                {
+                    assert(genFuncletInfo.fiSpDelta1 < 0);
+                    assert(genFuncletInfo.fiSpDelta1 >= -240);
+                    genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta1, REG_NA, null, reportUnwindData: true);
+                }
             }
-        }
 
-        _compiler.unwindEndProlog();
+            var lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
+            genSaveCalleeSavedRegistersHelpArm64(maskSaveRegsInt | maskSaveRegsFloat, lowestCalleeSavedOffset, 0);
+
+            if (genFuncletInfo.fiFrameType is 3 or 5)
+            {
+                assert(genFuncletInfo.fiSpDelta2 <= 0);
+                if (genFuncletInfo.fiSpDelta2 < 0)
+                {
+                    genStackPointerAdjustmentArm64(genFuncletInfo.fiSpDelta2, REG_ARM64_R2, null, reportUnwindData: true);
+                }
+                else
+                {
+                    assert(_compiler.opts.IsOSR);
+                }
+            }
+
+            _compiler.unwindEndProlog();
         }
         else if (Configuration.TARGET_RISCV64)
         {
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletProlog()\n");
-        }
-        // TODO-RISCV64: Implement varargs.
-        assert(block is not null);
-        assert(_compiler.bbIsFuncletBeg(block));
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("*************** In genFuncletProlog()\n");
+            }
+            // TODO-RISCV64: Implement varargs.
+            assert(block is not null);
+            assert(_compiler.bbIsFuncletBeg(block));
 
-        GCInfo.gcResetForBB();
-        _compiler.unwindBegProlog();
+            GCInfo.gcResetForBB();
+            _compiler.unwindBegProlog();
 
-        var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
-        assert(frameSize < 0);
+            var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
+            assert(frameSize < 0);
 
-        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED_RISCV64);
-        var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
+            var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED_RISCV64);
+            var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
 
-        // 2040 is the largest 8-byte-aligned signed-12-bit load/store offset; reserve 16 bytes for FP/RA.
-        if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) * Configuration.REGSIZE_BYTES)) <=
-            (2040 - 2 * Configuration.REGSIZE_BYTES))
-        {
-            genStackPointerAdjustmentRiscV64(frameSize, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
+            // 2040 is the largest 8-byte-aligned signed-12-bit load/store offset; reserve 16 bytes for FP/RA.
+            if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) * Configuration.REGSIZE_BYTES)) <=
+                (2040 - 2 * Configuration.REGSIZE_BYTES))
+            {
+                genStackPointerAdjustmentRiscV64(frameSize, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
 
-            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_FP, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset);
-            _compiler.unwindSaveReg(REG_RISCV64_FP, fpOffset);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_FP, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset);
+                _compiler.unwindSaveReg(REG_RISCV64_FP, fpOffset);
 
-            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_RA, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 8);
-            _compiler.unwindSaveReg(REG_RISCV64_RA, fpOffset + 8);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_RA, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 8);
+                _compiler.unwindSaveReg(REG_RISCV64_RA, fpOffset + 8);
 
-            genSaveCalleeSavedRegistersHelpRiscV64(maskSaveRegs, fpOffset + 16);
-        }
-        else
-        {
-            assert(frameSize < -2040);
+                genSaveCalleeSavedRegistersHelpRiscV64(maskSaveRegs, fpOffset + 16);
+            }
+            else
+            {
+                assert(frameSize < -2040);
 
-            genStackPointerAdjustmentRiscV64(frameSize + (fpOffset & -16), TargetRuntimeMetadata.ScratchRegister, null,
-                reportUnwindData: true);
+                genStackPointerAdjustmentRiscV64(frameSize + (fpOffset & -16), TargetRuntimeMetadata.ScratchRegister, null,
+                    reportUnwindData: true);
 
-            frameSize = -(fpOffset & -16);
-            fpOffset &= 0xf;
+                frameSize = -(fpOffset & -16);
+                fpOffset &= 0xf;
 
-            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_FP, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset);
-            _compiler.unwindSaveReg(REG_RISCV64_FP, fpOffset);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_FP, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset);
+                _compiler.unwindSaveReg(REG_RISCV64_FP, fpOffset);
 
-            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_RA, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 8);
-            _compiler.unwindSaveReg(REG_RISCV64_RA, fpOffset + 8);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_RA, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 8);
+                _compiler.unwindSaveReg(REG_RISCV64_RA, fpOffset + 8);
 
-            genSaveCalleeSavedRegistersHelpRiscV64(maskSaveRegs, fpOffset + 16);
+                genSaveCalleeSavedRegistersHelpRiscV64(maskSaveRegs, fpOffset + 16);
 
-            genStackPointerAdjustmentRiscV64(frameSize, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
-        }
+                genStackPointerAdjustmentRiscV64(frameSize, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
+            }
 
-        _compiler.unwindEndProlog();
+            _compiler.unwindEndProlog();
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
@@ -258,7 +256,8 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Funclet prologs require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Funclet prologs require xarch.");
+            return;
         }
         else
         {
@@ -266,10 +265,10 @@ public sealed partial class CodeGen
             {
                 Emitter.RequireSupportedInstructionRecording();
             }
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletProlog()\n");
-        }
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("*************** In genFuncletProlog()\n");
+            }
             if (Configuration.TARGET_AMD64)
             {
                 assert(!_regSet.rsRegsModified(new regMaskTP(SRBM_X64_RBP)));
@@ -277,8 +276,8 @@ public sealed partial class CodeGen
                 assert(IsFramePointerUsed);
             }
 
-        GCInfo.gcResetForBB();
-        _compiler.unwindBegProlog();
+            GCInfo.gcResetForBB();
+            _compiler.unwindBegProlog();
 
             if (Configuration.TARGET_AMD64)
             {
@@ -291,9 +290,9 @@ public sealed partial class CodeGen
                 genAllocLclFrame(genFuncletInfo.fiSpDelta, REG_NA, ref initRegZeroed, liveIn);
             }
 
-        _compiler.unwindEndProlog();
+            _compiler.unwindEndProlog();
             if (Configuration.TARGET_X86)
-        {
+            {
                 if (Configuration.UNIX_X86_ABI)
                 {
                     inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, 12, EA_PTRSIZE);
@@ -315,198 +314,198 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM)
         {
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletEpilog()\n");
-        }
-        var unwindStarted = false;
-        assert((genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ARM32_LR)).IsNonEmpty);
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("*************** In genFuncletEpilog()\n");
+            }
+            var unwindStarted = false;
+            assert((genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ARM32_LR)).IsNonEmpty);
 
-        var maskPopRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
-        var maskPopRegsInt = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
-        var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
-        maskPopRegsInt |= maskStackAlloc;
+            var maskPopRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
+            var maskPopRegsInt = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
+            var maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
+            maskPopRegsInt |= maskStackAlloc;
 
-        if (maskStackAlloc.IsEmpty)
-        {
-            genFreeLclFrameArm(genFuncletInfo.fiSpDelta, ref unwindStarted);
-        }
+            if (maskStackAlloc.IsEmpty)
+            {
+                genFreeLclFrameArm(genFuncletInfo.fiSpDelta, ref unwindStarted);
+            }
 
-        if (!unwindStarted)
-        {
-            _compiler.unwindBegEpilog();
-            unwindStarted = true;
-        }
+            if (!unwindStarted)
+            {
+                _compiler.unwindBegEpilog();
+                unwindStarted = true;
+            }
 
-        maskPopRegsInt &= ~new regMaskTP(SRBM_ARM32_LR);
-        maskPopRegsInt |= new regMaskTP(SRBM_ARM32_PC);
+            maskPopRegsInt &= ~new regMaskTP(SRBM_ARM32_LR);
+            maskPopRegsInt |= new regMaskTP(SRBM_ARM32_PC);
 
-        if (maskPopRegsFloat.IsNonEmpty)
-        {
-            genPopFltRegsArmCore(maskPopRegsFloat);
-            _compiler.unwindPopMaskFloat(maskPopRegsFloat);
-        }
+            if (maskPopRegsFloat.IsNonEmpty)
+            {
+                genPopFltRegsArmCore(maskPopRegsFloat);
+                _compiler.unwindPopMaskFloat(maskPopRegsFloat);
+            }
 
-        assert(unchecked((ulong)maskPopRegsInt.Lower) <= int.MaxValue);
-        inst_IV(INS_pop, unchecked((int)maskPopRegsInt.Lower));
-        _compiler.unwindPopMaskInt(maskPopRegsInt);
-        _compiler.unwindEndEpilog();
+            assert(unchecked((ulong)maskPopRegsInt.Lower) <= int.MaxValue);
+            inst_IV(INS_pop, unchecked((int)maskPopRegsInt.Lower));
+            _compiler.unwindPopMaskInt(maskPopRegsInt);
+            _compiler.unwindEndEpilog();
         }
         else if (Configuration.TARGET_ARM64)
         {
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletEpilog()\n");
-        }
-        _compiler.unwindBegEpilog();
-
-        var maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
-        var maskRestoreRegsInt = genFuncletInfo.fiSaveRegs & ~maskRestoreRegsFloat;
-        assert((maskRestoreRegsInt & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
-        assert((maskRestoreRegsInt & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
-
-        if (genFuncletInfo.fiFrameType is 3 or 5)
-        {
-            assert(genFuncletInfo.fiSpDelta2 <= 0);
-            if (genFuncletInfo.fiSpDelta2 < 0)
+            if (Configuration.DEBUG && _verbose)
             {
-                genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta2, REG_ARM64_R2, null,
-                    reportUnwindData: true);
+                jitprintf("*************** In genFuncletEpilog()\n");
             }
-            else
-            {
-                assert(_compiler.opts.IsOSR);
-            }
-        }
+            _compiler.unwindBegEpilog();
 
-        var regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
-        if (genFuncletInfo.fiFrameType is 1 or 2 or 3)
-        {
-            regsToRestoreMask &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
-        }
-        var lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-        genRestoreCalleeSavedRegistersHelpArm64(regsToRestoreMask, lowestCalleeSavedOffset, 0);
+            var maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
+            var maskRestoreRegsInt = genFuncletInfo.fiSaveRegs & ~maskRestoreRegsFloat;
+            assert((maskRestoreRegsInt & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
+            assert((maskRestoreRegsInt & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
 
-        if (genFuncletInfo.fiFrameType == 1)
-        {
-            if (_compiler.opts.IsOSR)
+            if (genFuncletInfo.fiFrameType is 3 or 5)
             {
-                Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
-                _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
-                genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
-                    reportUnwindData: true);
+                assert(genFuncletInfo.fiSpDelta2 <= 0);
+                if (genFuncletInfo.fiSpDelta2 < 0)
+                {
+                    genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta2, REG_ARM64_R2, null,
+                        reportUnwindData: true);
+                }
+                else
+                {
+                    assert(_compiler.opts.IsOSR);
+                }
             }
-            else
+
+            var regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
+            if (genFuncletInfo.fiFrameType is 1 or 2 or 3)
+            {
+                regsToRestoreMask &= ~new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
+            }
+            var lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
+            genRestoreCalleeSavedRegistersHelpArm64(regsToRestoreMask, lowestCalleeSavedOffset, 0);
+
+            if (genFuncletInfo.fiFrameType == 1)
+            {
+                if (_compiler.opts.IsOSR)
+                {
+                    Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
+                    _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
+                    genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
+                        reportUnwindData: true);
+                }
+                else
+                {
+                    Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
+                        -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
+                    _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
+                }
+
+                assert(genFuncletInfo.fiSpDelta2 == 0);
+                assert(genFuncletInfo.fiSP_to_FPLR_save_delta == 0);
+            }
+            else if (genFuncletInfo.fiFrameType == 2)
             {
                 Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
-                    -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
-                _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
-            }
-
-            assert(genFuncletInfo.fiSpDelta2 == 0);
-            assert(genFuncletInfo.fiSP_to_FPLR_save_delta == 0);
-        }
-        else if (genFuncletInfo.fiFrameType == 2)
-        {
-            Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
-                genFuncletInfo.fiSP_to_FPLR_save_delta);
-            _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
-            assert(genFuncletInfo.fiSpDelta1 < 0);
-            assert(genFuncletInfo.fiSpDelta1 >= -512);
-            genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, REG_NA, null,
-                reportUnwindData: true);
-            assert(genFuncletInfo.fiSpDelta2 == 0);
-        }
-        else if (genFuncletInfo.fiFrameType == 3)
-        {
-            if (_compiler.opts.IsOSR)
-            {
-                Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
-                _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
-                genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
-                    reportUnwindData: true);
-            }
-            else
-            {
-                Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
-                    -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
-                _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
-            }
-        }
-        else if (genFuncletInfo.fiFrameType == 4)
-        {
-            assert(genFuncletInfo.fiSpDelta1 < 0);
-            assert(genFuncletInfo.fiSpDelta1 >= -512);
-            genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, REG_NA, null,
-                reportUnwindData: true);
-            assert(genFuncletInfo.fiSpDelta2 == 0);
-        }
-        else
-        {
-            assert(genFuncletInfo.fiFrameType == 5);
-            assert(genFuncletInfo.fiSpDelta1 < 0);
-            if (_compiler.opts.IsOSR)
-            {
-                genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
-                    reportUnwindData: true);
-            }
-            else
-            {
-                assert(genFuncletInfo.fiSpDelta1 >= -240);
+                    genFuncletInfo.fiSP_to_FPLR_save_delta);
+                _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
+                assert(genFuncletInfo.fiSpDelta1 < 0);
+                assert(genFuncletInfo.fiSpDelta1 >= -512);
                 genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, REG_NA, null,
                     reportUnwindData: true);
+                assert(genFuncletInfo.fiSpDelta2 == 0);
             }
-        }
+            else if (genFuncletInfo.fiFrameType == 3)
+            {
+                if (_compiler.opts.IsOSR)
+                {
+                    Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
+                    _compiler.unwindSaveRegPair(REG_ARM64_FP, REG_ARM64_LR, 0);
+                    genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
+                        reportUnwindData: true);
+                }
+                else
+                {
+                    Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, TargetRuntimeMetadata.StackPointerBaseRegister,
+                        -genFuncletInfo.fiSpDelta1, INS_OPTS_POST_INDEX);
+                    _compiler.unwindSaveRegPairPreindexed(REG_ARM64_FP, REG_ARM64_LR, genFuncletInfo.fiSpDelta1);
+                }
+            }
+            else if (genFuncletInfo.fiFrameType == 4)
+            {
+                assert(genFuncletInfo.fiSpDelta1 < 0);
+                assert(genFuncletInfo.fiSpDelta1 >= -512);
+                genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, REG_NA, null,
+                    reportUnwindData: true);
+                assert(genFuncletInfo.fiSpDelta2 == 0);
+            }
+            else
+            {
+                assert(genFuncletInfo.fiFrameType == 5);
+                assert(genFuncletInfo.fiSpDelta1 < 0);
+                if (_compiler.opts.IsOSR)
+                {
+                    genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, TargetRuntimeMetadata.ScratchRegister, null,
+                        reportUnwindData: true);
+                }
+                else
+                {
+                    assert(genFuncletInfo.fiSpDelta1 >= -240);
+                    genStackPointerAdjustmentArm64(-genFuncletInfo.fiSpDelta1, REG_NA, null,
+                        reportUnwindData: true);
+                }
+            }
 
-        if (JitConfig.JitPacEnabled != 0)
-        {
-            Emitter.emitPacInEpilog();
-        }
+            if (JitConfig.JitPacEnabled != 0)
+            {
+                Emitter.emitPacInEpilog();
+            }
 
-        inst_RV(INS_ret, REG_ARM64_LR, TYP_I_IMPL);
-        _compiler.unwindReturn(REG_ARM64_LR);
-        _compiler.unwindEndEpilog();
+            inst_RV(INS_ret, REG_ARM64_LR, TYP_I_IMPL);
+            _compiler.unwindReturn(REG_ARM64_LR);
+            _compiler.unwindEndEpilog();
         }
         else if (Configuration.TARGET_RISCV64)
         {
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletEpilog()\n");
-        }
-        _compiler.unwindBegEpilog();
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("*************** In genFuncletEpilog()\n");
+            }
+            _compiler.unwindBegEpilog();
 
-        var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
-        assert(frameSize < 0);
+            var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
+            assert(frameSize < 0);
 
-        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED_RISCV64);
-        var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
+            var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED_RISCV64);
+            var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
 
-        // The prolog reserves the final 16 bytes of the signed-12-bit offset range for FP/RA.
-        if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) * Configuration.REGSIZE_BYTES)) >
-            (2040 - 2 * Configuration.REGSIZE_BYTES))
-        {
-            assert(frameSize < -2040);
+            // The prolog reserves the final 16 bytes of the signed-12-bit offset range for FP/RA.
+            if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) * Configuration.REGSIZE_BYTES)) >
+                (2040 - 2 * Configuration.REGSIZE_BYTES))
+            {
+                assert(frameSize < -2040);
 
-            genStackPointerAdjustmentRiscV64(fpOffset & -16, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
+                genStackPointerAdjustmentRiscV64(fpOffset & -16, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
 
-            frameSize += fpOffset & -16;
-            fpOffset &= 0xf;
-        }
+                frameSize += fpOffset & -16;
+                fpOffset &= 0xf;
+            }
 
-        genRestoreCalleeSavedRegistersHelpRiscV64(maskSaveRegs, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 16,
-            reportUnwindData: true);
+            genRestoreCalleeSavedRegistersHelpRiscV64(maskSaveRegs, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 16,
+                reportUnwindData: true);
 
-        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RISCV64_RA, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 8);
-        _compiler.unwindSaveReg(REG_RISCV64_RA, fpOffset + 8);
+            Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RISCV64_RA, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset + 8);
+            _compiler.unwindSaveReg(REG_RISCV64_RA, fpOffset + 8);
 
-        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RISCV64_FP, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset);
-        _compiler.unwindSaveReg(REG_RISCV64_FP, fpOffset);
+            Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RISCV64_FP, TargetRuntimeMetadata.StackPointerBaseRegister, fpOffset);
+            _compiler.unwindSaveReg(REG_RISCV64_FP, fpOffset);
 
-        genStackPointerAdjustmentRiscV64(-frameSize, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
+            genStackPointerAdjustmentRiscV64(-frameSize, TargetRuntimeMetadata.ScratchRegister, null, reportUnwindData: true);
 
-        Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_RISCV64_R0, REG_RISCV64_RA, 0);
-        _compiler.unwindReturn(REG_RISCV64_RA);
-        _compiler.unwindEndEpilog();
+            Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_RISCV64_R0, REG_RISCV64_RA, 0);
+            _compiler.unwindReturn(REG_RISCV64_RA);
+            _compiler.unwindEndEpilog();
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
@@ -514,7 +513,8 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Funclet epilogs require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Funclet epilogs require xarch.");
+            return;
         }
         else
         {
@@ -522,11 +522,11 @@ public sealed partial class CodeGen
             {
                 Emitter.RequireSupportedInstructionRecording();
             }
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("*************** In genFuncletEpilog()\n");
-        }
-        genClearAvxStateInEpilog();
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("*************** In genFuncletEpilog()\n");
+            }
+            genClearAvxStateInEpilog();
             if (Configuration.TARGET_AMD64)
             {
                 inst_RV_IV(INS_add, TargetRuntimeMetadata.StackPointerBaseRegister, (nint)genFuncletInfo.fiSpDelta, EA_PTRSIZE);
@@ -535,7 +535,7 @@ public sealed partial class CodeGen
             {
                 inst_RV_IV(INS_add, TargetRuntimeMetadata.StackPointerBaseRegister, 12, EA_PTRSIZE);
             }
-        instGen_Return(0);
+            instGen_Return(0);
         }
     }
 
@@ -547,238 +547,238 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM)
         {
-        if (_compiler.compHndBBtabCount == 0)
-        {
-            return;
-        }
+            if (_compiler.compHndBBtabCount == 0)
+            {
+                return;
+            }
 
-        assert(IsFramePointerUsed);
-        assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
+            assert(IsFramePointerUsed);
+            assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
 
-        var preSpillRegArgSize = unchecked((int)genCountBits(_regSet.rsMaskPreSpillRegs(true))) * Configuration.REGSIZE_BYTES;
-        var saveRegs = _regSet.rsGetModifiedCalleeSavedRegsMask() |
-            new regMaskTP(SRBM_ARM32_FP | SRBM_ARM32_LR);
-        assert((saveRegs & new regMaskTP(SRBM_ARM32_R12 | SRBM_ARM32_SP)).IsEmpty);
-        var saveRegsSize = unchecked((int)genCountBits(saveRegs)) * Configuration.REGSIZE_BYTES;
-        var saveSizeWithPsp = saveRegsSize + Configuration.REGSIZE_BYTES;
-        if (_compiler.lvaMonAcquired != BAD_VAR_NUM)
-        {
-            saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-        }
-        if (_compiler.lvaResumedIndicator != BAD_VAR_NUM)
-        {
-            saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-        }
-        if (_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM)
-        {
-            saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-        }
-        if (_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM)
-        {
-            saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-        }
-        if (_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-        {
-            saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
-        }
+            var preSpillRegArgSize = unchecked((int)genCountBits(_regSet.rsMaskPreSpillRegs(true))) * Configuration.REGSIZE_BYTES;
+            var saveRegs = _regSet.rsGetModifiedCalleeSavedRegsMask() |
+                new regMaskTP(SRBM_ARM32_FP | SRBM_ARM32_LR);
+            assert((saveRegs & new regMaskTP(SRBM_ARM32_R12 | SRBM_ARM32_SP)).IsEmpty);
+            var saveRegsSize = unchecked((int)genCountBits(saveRegs)) * Configuration.REGSIZE_BYTES;
+            var saveSizeWithPsp = saveRegsSize + Configuration.REGSIZE_BYTES;
+            if (_compiler.lvaMonAcquired != BAD_VAR_NUM)
+            {
+                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
+            }
+            if (_compiler.lvaResumedIndicator != BAD_VAR_NUM)
+            {
+                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
+            }
+            if (_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+            {
+                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
+            }
+            if (_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+            {
+                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
+            }
+            if (_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+            {
+                saveSizeWithPsp += Configuration.TARGET_POINTER_SIZE;
+            }
 
-        var outgoingArgSpaceSize = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
-        assert((outgoingArgSpaceSize % Configuration.REGSIZE_BYTES) == 0);
-        var funcletFrameSize = unchecked((uint)preSpillRegArgSize + (uint)saveSizeWithPsp + outgoingArgSpaceSize);
-        var funcletFrameSizeAligned = roundUp(funcletFrameSize, unchecked((uint)Configuration.STACK_ALIGN));
-        var spDelta = funcletFrameSizeAligned - (uint)saveRegsSize;
+            var outgoingArgSpaceSize = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
+            assert((outgoingArgSpaceSize % Configuration.REGSIZE_BYTES) == 0);
+            var funcletFrameSize = unchecked((uint)preSpillRegArgSize + (uint)saveSizeWithPsp + outgoingArgSpaceSize);
+            var funcletFrameSizeAligned = roundUp(funcletFrameSize, unchecked((uint)Configuration.STACK_ALIGN));
+            var spDelta = funcletFrameSizeAligned - (uint)saveRegsSize;
 
-        genFuncletInfo.fiSaveRegs = saveRegs;
-        genFuncletInfo.fiSpDelta = spDelta;
+            genFuncletInfo.fiSaveRegs = saveRegs;
+            genFuncletInfo.fiSpDelta = spDelta;
 
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("\nFunclet prolog / epilog info\n");
-            jitprintf("                        Save regs: ");
-            dspRegMask(saveRegs);
-            jitprintf($"\n                         SP delta: {genFuncletInfo.fiSpDelta}\n");
-        }
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("\nFunclet prolog / epilog info\n");
+                jitprintf("                        Save regs: ");
+                dspRegMask(saveRegs);
+                jitprintf($"\n                         SP delta: {genFuncletInfo.fiSpDelta}\n");
+            }
         }
         else if (Configuration.TARGET_ARM64)
         {
-        if (_compiler.compHndBBtabCount == 0)
-        {
-            return;
-        }
-
-        assert(IsFramePointerUsed);
-        assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
-        noway_assert(_compiler.lvaOutgoingArgSpaceSize.Value >= 0);
-
-        var saveRegs = _regSet.rsGetModifiedCalleeSavedRegsMask() |
-            new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
-        assert((saveRegs & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
-        assert((saveRegs & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
-        var saveRegsSize = unchecked((uint)genCountBits(saveRegs) * (uint)Configuration.REGSIZE_BYTES);
-
-        if (_compiler.info.compIsVarArgs)
-        {
-            saveRegsSize = unchecked(saveRegsSize + (uint)(Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES));
-        }
-
-        if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-        {
-            saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaMonAcquired));
-        }
-        if ((_compiler.lvaResumedIndicator != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-        {
-            saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaResumedIndicator));
-        }
-        if ((_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-        {
-            saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaAsyncThreadObjectVar));
-        }
-        if ((_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-        {
-            saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaAsyncExecutionContextVar));
-        }
-        if ((_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-        {
-            saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaAsyncSynchronizationContextVar));
-        }
-
-        var saveRegsSizeAligned = roundUp(saveRegsSize, (uint)Configuration.STACK_ALIGN);
-        var outgoingArgSpaceSize = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
-        assert((outgoingArgSpaceSize % Configuration.REGSIZE_BYTES) == 0);
-        var outgoingArgSpaceAligned = roundUp(outgoingArgSpaceSize, (uint)Configuration.STACK_ALIGN);
-        var twoSpAdjustmentFrameSizeAligned = saveRegsSizeAligned + outgoingArgSpaceAligned;
-        assert((twoSpAdjustmentFrameSizeAligned % Configuration.STACK_ALIGN) == 0);
-
-        int spToFplrSaveDelta;
-        int spToCalleeSaveDelta;
-        // Types 4-5 place FP/LR at the highest addresses to match main frames used with GS cookies or localloc.
-        // Types 3 and 5 split large outgoing areas into two aligned SP adjustments to keep save offsets encodable.
-        var useFrameType5 = genSaveFpLrWithAllCalleeSavedRegisters && genForceFuncletFrameType5 &&
-            (outgoingArgSpaceSize > 0);
-
-        if ((twoSpAdjustmentFrameSizeAligned <= 512) && !useFrameType5)
-        {
-            var oneSpAdjustmentFrameSize = unchecked(saveRegsSize + outgoingArgSpaceSize);
-            var oneSpAdjustmentFrameSizeAligned = roundUp(oneSpAdjustmentFrameSize, (uint)Configuration.STACK_ALIGN);
-            assert(oneSpAdjustmentFrameSizeAligned <= twoSpAdjustmentFrameSizeAligned);
-
-            var alignmentPad = oneSpAdjustmentFrameSizeAligned - oneSpAdjustmentFrameSize;
-            assert((alignmentPad == 0) || (alignmentPad == Configuration.REGSIZE_BYTES));
-            if (genSaveFpLrWithAllCalleeSavedRegisters)
+            if (_compiler.compHndBBtabCount == 0)
             {
-                spToFplrSaveDelta = unchecked((int)oneSpAdjustmentFrameSizeAligned - 2 * Configuration.REGSIZE_BYTES);
-                if (_compiler.info.compIsVarArgs)
+                return;
+            }
+
+            assert(IsFramePointerUsed);
+            assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
+            noway_assert(_compiler.lvaOutgoingArgSpaceSize.Value >= 0);
+
+            var saveRegs = _regSet.rsGetModifiedCalleeSavedRegsMask() |
+                new regMaskTP(SRBM_ARM64_LR | SRBM_ARM64_FP);
+            assert((saveRegs & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
+            assert((saveRegs & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
+            var saveRegsSize = unchecked((uint)genCountBits(saveRegs) * (uint)Configuration.REGSIZE_BYTES);
+
+            if (_compiler.info.compIsVarArgs)
+            {
+                saveRegsSize = unchecked(saveRegsSize + (uint)(Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES));
+            }
+
+            if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+            {
+                saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaMonAcquired));
+            }
+            if ((_compiler.lvaResumedIndicator != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+            {
+                saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaResumedIndicator));
+            }
+            if ((_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+            {
+                saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaAsyncThreadObjectVar));
+            }
+            if ((_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+            {
+                saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaAsyncExecutionContextVar));
+            }
+            if ((_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+            {
+                saveRegsSize += unchecked((uint)_compiler.lvaLclStackHomeSize(_compiler.lvaAsyncSynchronizationContextVar));
+            }
+
+            var saveRegsSizeAligned = roundUp(saveRegsSize, (uint)Configuration.STACK_ALIGN);
+            var outgoingArgSpaceSize = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
+            assert((outgoingArgSpaceSize % Configuration.REGSIZE_BYTES) == 0);
+            var outgoingArgSpaceAligned = roundUp(outgoingArgSpaceSize, (uint)Configuration.STACK_ALIGN);
+            var twoSpAdjustmentFrameSizeAligned = saveRegsSizeAligned + outgoingArgSpaceAligned;
+            assert((twoSpAdjustmentFrameSizeAligned % Configuration.STACK_ALIGN) == 0);
+
+            int spToFplrSaveDelta;
+            int spToCalleeSaveDelta;
+            // Types 4-5 place FP/LR at the highest addresses to match main frames used with GS cookies or localloc.
+            // Types 3 and 5 split large outgoing areas into two aligned SP adjustments to keep save offsets encodable.
+            var useFrameType5 = genSaveFpLrWithAllCalleeSavedRegisters && genForceFuncletFrameType5 &&
+                (outgoingArgSpaceSize > 0);
+
+            if ((twoSpAdjustmentFrameSizeAligned <= 512) && !useFrameType5)
+            {
+                var oneSpAdjustmentFrameSize = unchecked(saveRegsSize + outgoingArgSpaceSize);
+                var oneSpAdjustmentFrameSizeAligned = roundUp(oneSpAdjustmentFrameSize, (uint)Configuration.STACK_ALIGN);
+                assert(oneSpAdjustmentFrameSizeAligned <= twoSpAdjustmentFrameSizeAligned);
+
+                var alignmentPad = oneSpAdjustmentFrameSizeAligned - oneSpAdjustmentFrameSize;
+                assert((alignmentPad == 0) || (alignmentPad == Configuration.REGSIZE_BYTES));
+                if (genSaveFpLrWithAllCalleeSavedRegisters)
                 {
-                    spToFplrSaveDelta -= Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES;
+                    spToFplrSaveDelta = unchecked((int)oneSpAdjustmentFrameSizeAligned - 2 * Configuration.REGSIZE_BYTES);
+                    if (_compiler.info.compIsVarArgs)
+                    {
+                        spToFplrSaveDelta -= Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES;
+                    }
+
+                    spToCalleeSaveDelta = unchecked((int)outgoingArgSpaceSize + (int)alignmentPad);
+                    genFuncletInfo.fiFrameType = 4;
+                }
+                else
+                {
+                    spToFplrSaveDelta = unchecked((int)outgoingArgSpaceSize);
+                    spToCalleeSaveDelta = spToFplrSaveDelta + 2 * Configuration.REGSIZE_BYTES + unchecked((int)alignmentPad);
+                    genFuncletInfo.fiFrameType = outgoingArgSpaceSize == 0 ? 1 : 2;
                 }
 
-                spToCalleeSaveDelta = unchecked((int)outgoingArgSpaceSize + (int)alignmentPad);
-                genFuncletInfo.fiFrameType = 4;
+                genFuncletInfo.fiSpDelta1 = -unchecked((int)oneSpAdjustmentFrameSizeAligned);
+                genFuncletInfo.fiSpDelta2 = 0;
+                assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 ==
+                    -unchecked((int)oneSpAdjustmentFrameSizeAligned));
             }
             else
             {
-                spToFplrSaveDelta = unchecked((int)outgoingArgSpaceSize);
-                spToCalleeSaveDelta = spToFplrSaveDelta + 2 * Configuration.REGSIZE_BYTES + unchecked((int)alignmentPad);
-                genFuncletInfo.fiFrameType = outgoingArgSpaceSize == 0 ? 1 : 2;
-            }
-
-            genFuncletInfo.fiSpDelta1 = -unchecked((int)oneSpAdjustmentFrameSizeAligned);
-            genFuncletInfo.fiSpDelta2 = 0;
-            assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 ==
-                -unchecked((int)oneSpAdjustmentFrameSizeAligned));
-        }
-        else
-        {
-            var saveRegsAlignmentPad = saveRegsSizeAligned - saveRegsSize;
-            assert((saveRegsAlignmentPad == 0) || (saveRegsAlignmentPad == Configuration.REGSIZE_BYTES));
-            if (genSaveFpLrWithAllCalleeSavedRegisters)
-            {
-                spToFplrSaveDelta = unchecked((int)twoSpAdjustmentFrameSizeAligned - 2 * Configuration.REGSIZE_BYTES);
-                if (_compiler.info.compIsVarArgs)
+                var saveRegsAlignmentPad = saveRegsSizeAligned - saveRegsSize;
+                assert((saveRegsAlignmentPad == 0) || (saveRegsAlignmentPad == Configuration.REGSIZE_BYTES));
+                if (genSaveFpLrWithAllCalleeSavedRegisters)
                 {
-                    spToFplrSaveDelta -= Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES;
+                    spToFplrSaveDelta = unchecked((int)twoSpAdjustmentFrameSizeAligned - 2 * Configuration.REGSIZE_BYTES);
+                    if (_compiler.info.compIsVarArgs)
+                    {
+                        spToFplrSaveDelta -= Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES;
+                    }
+
+                    spToCalleeSaveDelta = unchecked((int)outgoingArgSpaceAligned + (int)saveRegsAlignmentPad);
+                    genFuncletInfo.fiFrameType = 5;
+                }
+                else
+                {
+                    spToFplrSaveDelta = unchecked((int)outgoingArgSpaceAligned);
+                    spToCalleeSaveDelta = spToFplrSaveDelta + 2 * Configuration.REGSIZE_BYTES +
+                        unchecked((int)saveRegsAlignmentPad);
+                    genFuncletInfo.fiFrameType = 3;
                 }
 
-                spToCalleeSaveDelta = unchecked((int)outgoingArgSpaceAligned + (int)saveRegsAlignmentPad);
-                genFuncletInfo.fiFrameType = 5;
+                genFuncletInfo.fiSpDelta1 = -unchecked((int)saveRegsSizeAligned);
+                genFuncletInfo.fiSpDelta2 = -unchecked((int)outgoingArgSpaceAligned);
+                assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 ==
+                    -unchecked((int)twoSpAdjustmentFrameSizeAligned));
             }
-            else
+
+            genFuncletInfo.fiSaveRegs = saveRegs;
+            genFuncletInfo.fiSP_to_FPLR_save_delta = spToFplrSaveDelta;
+            genFuncletInfo.fiSP_to_CalleeSave_delta = spToCalleeSaveDelta;
+            if (Configuration.DEBUG && _verbose)
             {
-                spToFplrSaveDelta = unchecked((int)outgoingArgSpaceAligned);
-                spToCalleeSaveDelta = spToFplrSaveDelta + 2 * Configuration.REGSIZE_BYTES +
-                    unchecked((int)saveRegsAlignmentPad);
-                genFuncletInfo.fiFrameType = 3;
+                jitprintf("\nFunclet prolog / epilog info\n");
+                jitprintf("                        Save regs: ");
+                dspRegMask(saveRegs);
+                jitprintf($"\n  SP to FP/LR save location delta: {spToFplrSaveDelta}\n");
+                jitprintf($"    SP to callee-saved area delta: {spToCalleeSaveDelta}\n");
+                jitprintf($"                       Frame type: {genFuncletInfo.fiFrameType}\n");
+                jitprintf($"                       SP delta 1: {genFuncletInfo.fiSpDelta1}\n");
+                jitprintf($"                       SP delta 2: {genFuncletInfo.fiSpDelta2}\n");
             }
 
-            genFuncletInfo.fiSpDelta1 = -unchecked((int)saveRegsSizeAligned);
-            genFuncletInfo.fiSpDelta2 = -unchecked((int)outgoingArgSpaceAligned);
-            assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 ==
-                -unchecked((int)twoSpAdjustmentFrameSizeAligned));
-        }
-
-        genFuncletInfo.fiSaveRegs = saveRegs;
-        genFuncletInfo.fiSP_to_FPLR_save_delta = spToFplrSaveDelta;
-        genFuncletInfo.fiSP_to_CalleeSave_delta = spToCalleeSaveDelta;
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("\nFunclet prolog / epilog info\n");
-            jitprintf("                        Save regs: ");
-            dspRegMask(saveRegs);
-            jitprintf($"\n  SP to FP/LR save location delta: {spToFplrSaveDelta}\n");
-            jitprintf($"    SP to callee-saved area delta: {spToCalleeSaveDelta}\n");
-            jitprintf($"                       Frame type: {genFuncletInfo.fiFrameType}\n");
-            jitprintf($"                       SP delta 1: {genFuncletInfo.fiSpDelta1}\n");
-            jitprintf($"                       SP delta 2: {genFuncletInfo.fiSpDelta2}\n");
-        }
-
-        if (Configuration.DEBUG)
-        {
-            assert(spToFplrSaveDelta >= 0);
-            assert(spToCalleeSaveDelta >= 0);
-        }
+            if (Configuration.DEBUG)
+            {
+                assert(spToFplrSaveDelta >= 0);
+                assert(spToCalleeSaveDelta >= 0);
+            }
         }
         else if (Configuration.TARGET_RISCV64)
         {
-        if (_compiler.compHndBBtabCount == 0)
-        {
-            return;
-        }
+            if (_compiler.compHndBBtabCount == 0)
+            {
+                return;
+            }
 
-        assert(IsFramePointerUsed);
-        assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
+            assert(IsFramePointerUsed);
+            assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
 
-        var saveRegs = _regSet.rsGetCalleeSavedRegsMask();
-        assert((saveRegs & new regMaskTP(SRBM_RISCV64_RA)).IsNonEmpty);
-        assert((saveRegs & new regMaskTP(SRBM_RISCV64_FP)).IsNonEmpty);
+            var saveRegs = _regSet.rsGetCalleeSavedRegsMask();
+            assert((saveRegs & new regMaskTP(SRBM_RISCV64_RA)).IsNonEmpty);
+            assert((saveRegs & new regMaskTP(SRBM_RISCV64_FP)).IsNonEmpty);
 
-        var frameSize = _compiler.lvaOutgoingArgSpaceSize.Value;
-        genFuncletInfo.fiSP_to_CalleeSave_delta = frameSize;
-        frameSize = unchecked(frameSize + (unchecked((int)genCountBits(saveRegs)) * Configuration.REGSIZE_BYTES));
+            var frameSize = _compiler.lvaOutgoingArgSpaceSize.Value;
+            genFuncletInfo.fiSP_to_CalleeSave_delta = frameSize;
+            frameSize = unchecked(frameSize + (unchecked((int)genCountBits(saveRegs)) * Configuration.REGSIZE_BYTES));
 
-        var pspDelta = -Configuration.TARGET_POINTER_SIZE;
-        if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-        {
-            pspDelta -= Configuration.TARGET_POINTER_SIZE;
-        }
+            var pspDelta = -Configuration.TARGET_POINTER_SIZE;
+            if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+            {
+                pspDelta -= Configuration.TARGET_POINTER_SIZE;
+            }
 
-        frameSize = unchecked(frameSize - pspDelta);
-        var alignedFrameSize = roundUp(unchecked((uint)frameSize), (uint)Configuration.STACK_ALIGN);
-        genFuncletInfo.fiSpDelta = unchecked((uint)-unchecked((int)alignedFrameSize));
-        genFuncletInfo.fiSaveRegs = saveRegs;
+            frameSize = unchecked(frameSize - pspDelta);
+            var alignedFrameSize = roundUp(unchecked((uint)frameSize), (uint)Configuration.STACK_ALIGN);
+            genFuncletInfo.fiSpDelta = unchecked((uint)-unchecked((int)alignedFrameSize));
+            genFuncletInfo.fiSaveRegs = saveRegs;
 
-        if (Configuration.DEBUG && _verbose)
-        {
-            jitprintf("\nFunclet prolog / epilog info\n");
-            jitprintf("                        Save regs: ");
-            dspRegMask(saveRegs);
-            jitprintf($"\n  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
-            jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
-        }
+            if (Configuration.DEBUG && _verbose)
+            {
+                jitprintf("\nFunclet prolog / epilog info\n");
+                jitprintf("                        Save regs: ");
+                dspRegMask(saveRegs);
+                jitprintf($"\n  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
+                jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
+            }
 
-        if (Configuration.DEBUG)
-        {
-            assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
-        }
+            if (Configuration.DEBUG)
+            {
+                assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
+            }
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
@@ -786,7 +786,8 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires xarch.");
+            return;
         }
         else if (Configuration.TARGET_AMD64)
         {

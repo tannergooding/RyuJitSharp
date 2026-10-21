@@ -27,8 +27,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Block memory generation is not implemented for this target.");
+            return;
         }
     }
 
@@ -44,8 +45,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Unrolled memmove is not implemented for this target.");
+            return;
         }
     }
 
@@ -73,8 +75,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Loop block initialization is not implemented for this target.");
+            return;
         }
     }
 
@@ -98,8 +101,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Unrolled block initialization is not implemented for this target.");
+            return;
         }
     }
 
@@ -123,8 +127,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Unrolled block copy is not implemented for this target.");
+            return;
         }
     }
 }

@@ -42,8 +42,15 @@ public partial class Compiler
         }
 
         assert(call.Args.CountUserArgs() == 2);
-        var signatureNode = call.Args.GetUserArgByIndex(1)?.Node
-            ?? throw new FatalJitException("A runtime lookup helper requires a signature argument.");
+        var signatureNode = call.Args.GetUserArgByIndex(1)?.Node;
+        if (signatureNode is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage181
+            );
+            return default!;
+        }
         if (!signatureNode.Oper.IsCnsIntOrI)
         {
             assert(false, "can't restore signature argument value");
@@ -56,7 +63,11 @@ public partial class Compiler
         JITDUMP("\n");
         if (!SignatureToLookupInfoMap.TryGetValue(signature, out var runtimeLookup))
         {
-            throw new FatalJitException("Runtime lookup signature is not registered.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage182
+            );
+            return default!;
         }
 
         var needsSizeCheck = runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK;
@@ -68,7 +79,11 @@ public partial class Compiler
         var debugInfo = stmt.DebugInfo;
         if ((runtimeLookup.indirections is 0 or > CORINFO_MAXINDIRECTIONS) || !runtimeLookup.testForNull)
         {
-            throw new FatalJitException("An expandable runtime lookup requires indirections and a null check.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage183
+            );
+            return default!;
         }
 
         var prevBb = block;
@@ -90,16 +105,39 @@ public partial class Compiler
             var rtLookupLclNum = lvaGrabTemp(shortLifetime: true, "runtime lookup");
             lvaTable[rtLookupLclNum].Type = TYP_I_IMPL;
             rtLookupLcl = gtNewLclvNode(call.Type, rtLookupLclNum);
-            callUse = gtCloneExpr(rtLookupLcl)
-                ?? throw new FatalJitException("Cannot clone runtime lookup result local.");
+            var clonedLookup = gtCloneExpr(rtLookupLcl);
+            if (clonedLookup is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage184
+                );
+                return default!;
+            }
+
+            callUse = clonedLookup;
             fgMorphStmtBlockOps(block, stmt);
             gtUpdateStmtSideEffects(stmt);
         }
 
-        var ctxTree = call.Args.GetUserArgByIndex(0)?.Node
-            ?? throw new FatalJitException("A runtime lookup helper requires a context argument.");
-        var slotPtrTree = gtCloneExpr(ctxTree)
-            ?? throw new FatalJitException("Cannot clone runtime lookup context.");
+        var ctxTree = call.Args.GetUserArgByIndex(0)?.Node;
+        if (ctxTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage185
+            );
+            return default!;
+        }
+        var slotPtrTree = gtCloneExpr(ctxTree);
+        if (slotPtrTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage186
+            );
+            return default!;
+        }
         GenTree? indOffTree = null;
         GenTree? lastIndOfTree = null;
 
@@ -110,8 +148,17 @@ public partial class Compiler
             if (indirectOffset)
             {
                 indOffTree = SpillExpression(slotPtrTree, prevBb, debugInfo);
-                slotPtrTree = gtCloneExpr(indOffTree)
-                    ?? throw new FatalJitException("Cannot clone indirect runtime lookup offset.");
+                var clonedIndOff = gtCloneExpr(indOffTree);
+                if (clonedIndOff is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage187
+                    );
+                    return default!;
+                }
+
+                slotPtrTree = clonedIndOff;
             }
 
             var lastWithSizeCheck = (i == runtimeLookup.indirections - 1) && needsSizeCheck;
@@ -128,8 +175,17 @@ public partial class Compiler
 
             if (indirectOffset)
             {
+                if (indOffTree is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage188
+                    );
+                    return default!;
+                }
+
                 slotPtrTree = gtNewBinaryNode(GT_ADD, TYP_I_IMPL,
-                    indOffTree ?? throw new FatalJitException("Missing indirect runtime lookup offset."),
+                    indOffTree,
                     slotPtrTree);
             }
 
@@ -138,8 +194,17 @@ public partial class Compiler
                 if (lastWithSizeCheck)
                 {
                     lastIndOfTree = SpillExpression(slotPtrTree, prevBb, debugInfo);
-                    slotPtrTree = gtCloneExpr(lastIndOfTree)
-                        ?? throw new FatalJitException("Cannot clone dictionary size-check base.");
+                    var clonedLastInd = gtCloneExpr(lastIndOfTree);
+                    if (clonedLastInd is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage189
+                        );
+                        return default!;
+                    }
+
+                    slotPtrTree = clonedLastInd;
                 }
 
                 slotPtrTree = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
@@ -147,9 +212,17 @@ public partial class Compiler
             }
         }
 
-        GenTree fastPathValue = gtNewIndir(TYP_I_IMPL,
-            gtCloneExpr(slotPtrTree) ?? throw new FatalJitException("Cannot clone runtime lookup slot."),
-            GTF_IND_NONFAULTING);
+        var clonedSlotPtr = gtCloneExpr(slotPtrTree);
+        if (clonedSlotPtr is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage190
+            );
+            return default!;
+        }
+
+        GenTree fastPathValue = gtNewIndir(TYP_I_IMPL, clonedSlotPtr, GTF_IND_NONFAULTING);
         var fastPathValueClone = fgMakeMultiUse(ref fastPathValue);
         var nullcheckOp = gtNewBinaryNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(TYP_I_IMPL, 0));
         nullcheckOp.Flags |= GTF_RELOP_JMP_USED;
@@ -166,7 +239,11 @@ public partial class Compiler
         {
             if (lastIndOfTree is null)
             {
-                throw new FatalJitException("A dynamic runtime lookup requires a nonzero final offset.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage191
+                );
+                return default!;
             }
 
             var sizeValueOffset = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, lastIndOfTree,

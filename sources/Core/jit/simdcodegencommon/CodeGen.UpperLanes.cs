@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane saves require xarch SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD upper-lane saves require xarch SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -51,7 +52,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane restores require xarch SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD upper-lane restores require xarch SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

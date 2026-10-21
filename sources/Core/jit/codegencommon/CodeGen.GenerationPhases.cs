@@ -302,8 +302,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.LATE_DISASM && _compiler.opts.doLateDisasm)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Late disassembly requires a native callback bridge to preserve decoder-error output.");
+            return;
         }
     }
 }

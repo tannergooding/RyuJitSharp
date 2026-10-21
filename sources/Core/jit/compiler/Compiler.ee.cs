@@ -56,7 +56,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm globals are not available on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm globals are not available on this target.");
         }
 
         if (!wasmWellKnownGlobalsInitialized)

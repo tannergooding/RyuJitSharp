@@ -13,7 +13,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+            return default!;
         }
 
         assert(opts.OptimizationEnabled);
@@ -686,7 +687,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+            return default!;
         }
 
         var intrinsic = tree.HWIntrinsicId;
@@ -731,7 +733,8 @@ public partial class Compiler
                         }
                         else
                         {
-                            throw new FatalJitException("Unsupported masked intrinsic conversion target.");
+                            FatalJitException.ThrowFatalJitException("Unsupported masked intrinsic conversion target.");
+                            return default!;
                         }
 
                         tree.SetOp(1, first);
@@ -836,7 +839,8 @@ public partial class Compiler
                 }
                 else
                 {
-                    throw new FatalJitException("Geometric-sequence intrinsic is unsupported for this target.");
+                    FatalJitException.ThrowFatalJitException("Geometric-sequence intrinsic is unsupported for this target.");
+                    return default!;
                 }
 
                 if (canGenerate)

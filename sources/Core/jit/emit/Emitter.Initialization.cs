@@ -96,8 +96,12 @@ public partial class Emitter
 
     public void Init()
     {
-        var compiler = _compiler
-            ?? throw new FatalJitException("emitBegCG must precede emitter initialization.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.EmitterInitializationBeforeCodegenStart);
+            return;
+        }
 
         VarSetOps.AssignNoCopy(compiler, ref emitPrevGCrefVars, VarSetOps.MakeEmpty(compiler));
         VarSetOps.AssignNoCopy(compiler, ref emitInitGCrefVars, VarSetOps.MakeEmpty(compiler));

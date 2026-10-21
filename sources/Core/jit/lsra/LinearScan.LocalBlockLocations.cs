@@ -11,7 +11,11 @@ public sealed partial class LinearScan
     {
         if (!_enregisterLocalVars)
         {
-            throw new FatalJitException("Local block locations require enregistered locals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage322
+            );
+            return;
         }
     }
 
@@ -33,16 +37,22 @@ public sealed partial class LinearScan
     {
         requireLocalBlockLocations();
         assert(currentBlock.bbNum == _currentBlockNumber);
-        var outMap = getOutVarToRegMap(_currentBlockNumber)
-            ?? throw new FatalJitException("Block locations require an outgoing variable map.");
+        var outMap = getOutVarToRegMap(_currentBlockNumber);
+        if (outMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage323
+            );
+            return;
+        }
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVars,
             VarSetOps.Intersection(_compiler, _registerCandidateVars, currentBlock.bbLiveOut));
         if (extendLifetimes())
         {
             VarSetOps.Assign(_compiler, ref _currentLiveVars, _registerCandidateVars);
         }
-        _ = VarSetOps.VisitBits(_compiler, _currentLiveVars, variableIndex =>
-        {
+        _ = VarSetOps.VisitBits(_compiler, _currentLiveVars, variableIndex => {
             var interval = getIntervalForLocalVar(checked((uint)variableIndex));
             if (interval.isActive)
             {
@@ -66,13 +76,38 @@ public sealed partial class LinearScan
     private void processBlockStartLocations(BasicBlock currentBlock)
     {
         requireLocalBlockLocations();
-        var blockInfo = _blockInfo
-            ?? throw new FatalJitException("Block locations require initialized LSRA block information.");
+        var blockInfo = _blockInfo;
+        if (blockInfo is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage324
+            );
+            return;
+        }
         var predecessorNumber = blockInfo[currentBlock.bbNum].predBBNum;
-        var inMap = getInVarToRegMap(checked((uint)currentBlock.bbNum))
-            ?? throw new FatalJitException("Block locations require an incoming variable map.");
-        var predecessorMap = predecessorNumber == 0 ? inMap : getOutVarToRegMap(predecessorNumber)
-            ?? throw new FatalJitException("Block locations require a predecessor outgoing map.");
+        var inMap = getInVarToRegMap(checked((uint)currentBlock.bbNum));
+        if (inMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage325
+            );
+            return;
+        }
+        var predecessorMap = inMap;
+        if (predecessorNumber != 0)
+        {
+            predecessorMap = getOutVarToRegMap(predecessorNumber);
+            if (predecessorMap is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage326
+                );
+                return;
+            }
+        }
 
         // EH entries have no register predecessor; their initialized map starts on the stack.
         if (predecessorNumber == 0)
@@ -100,8 +135,7 @@ public sealed partial class LinearScan
         }
         var inactiveRegs = RBM_NONE;
         var liveRegs = RBM_NONE;
-        _ = VarSetOps.VisitBits(_compiler, _currentLiveVars, variableIndex =>
-        {
+        _ = VarSetOps.VisitBits(_compiler, _currentLiveVars, variableIndex => {
             if (!getTrackedLocal(variableIndex).lvLRACandidate)
             {
                 return true;
@@ -146,9 +180,15 @@ public sealed partial class LinearScan
                     }
                     else
                     {
-                        var incomingReference = nextReference
-                            ?? throw new FatalJitException(
-                                "Resolution of a predecessor-spilled register requires a next reference.");
+                        var incomingReference = nextReference;
+                        if (incomingReference is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage327
+                            );
+                            return default!;
+                        }
                         if (!incomingReference.copyReg)
                         {
                             setVarReg(inMap, trackedIndex, REG_STK);
@@ -242,8 +282,15 @@ public sealed partial class LinearScan
                     !interval.recentRefPosition.copyReg &&
                     (interval.recentRefPosition.registerAssignment != genSingleTypeRegMask(targetReg)))
                 {
-                    var next = interval.getNextRefPosition()
-                        ?? throw new FatalJitException("An out-of-order interval requires a next reference.");
+                    var next = interval.getNextRefPosition();
+                    if (next is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage328
+                        );
+                        return default!;
+                    }
                     next.outOfOrder = true;
                 }
             }

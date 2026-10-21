@@ -35,8 +35,15 @@ internal sealed class RefInfoList
         {
             if (ReferenceEquals(node.treeNode, treeNode))
             {
-                var refPosition = node.refPosition
-                    ?? throw new FatalJitException("LSRA definition list entry has no reference position.");
+                var refPosition = node.refPosition;
+                if (refPosition is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage370
+                    );
+                    return default!;
+                }
                 if (refPosition.getMultiRegIdx() == multiRegIndex)
                 {
                     var next = node.next;
@@ -63,7 +70,8 @@ internal sealed class RefInfoList
         }
 
         assert(false, "Definition list does not contain the requested node and register index.");
-        throw new FatalJitException("LSRA could not match a use with its definition.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage371);
+        return default!;
     }
 }
 
@@ -88,10 +96,21 @@ public sealed partial class LinearScan
     private Interval getIntervalForLocalVar(uint varIndex)
     {
         assert(varIndex < _compiler.lvaTrackedCount);
-        var localIntervals = localVarIntervals
-            ?? throw new FatalJitException("Tracked LSRA locals require interval mappings.");
-        var interval = localIntervals[checked((int)varIndex)]
-            ?? throw new FatalJitException($"Tracked local {varIndex} has no LSRA interval.");
+        var localIntervals = localVarIntervals;
+        if (localIntervals is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage372
+            );
+            return default!;
+        }
+        var interval = localIntervals[checked((int)varIndex)];
+        if (interval is null)
+        {
+            FatalJitException.ThrowFatalJitException($"Tracked local {varIndex} has no LSRA interval.");
+            return default!;
+        }
         return interval;
     }
 
@@ -124,7 +143,8 @@ public sealed partial class LinearScan
         assert(type is not TYP_UNDEF and not TYP_STRUCT);
         if (type is TYP_UNDEF or TYP_STRUCT)
         {
-            throw new FatalJitException($"LSRA cannot define a register for {type}.");
+            FatalJitException.ThrowFatalJitException($"LSRA cannot define a register for {type}.");
+            return default!;
         }
 
         return type;
@@ -160,14 +180,16 @@ public sealed partial class LinearScan
                     return TYP_SIMD8;
                 }
 
-                throw new FatalJitException($"ARM64 multi-register HW intrinsic has unsupported SIMD size {simdSize}.");
+                FatalJitException.ThrowFatalJitException($"ARM64 multi-register HW intrinsic has unsupported SIMD size {simdSize}.");
+                return default!;
             }
             else if (Configuration.TARGET_XARCH)
             {
                 return tree.AsHWIntrinsic().GetOp(1).Type;
             }
 
-            throw new FatalJitException("Multi-register HW intrinsic register typing is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException("Multi-register HW intrinsic register typing is not implemented for this target.");
+            return default!;
         }
 
         if (tree.Oper.IsScalarLocal)
@@ -180,11 +202,16 @@ public sealed partial class LinearScan
             assert(tree.Type is TYP_STRUCT);
             assert((tree.Flags & GTF_VAR_MULTIREG) != 0);
             assert(false, "GetRegTypeByIndex is not valid for a multi-register struct local.");
-            throw new FatalJitException("GetRegTypeByIndex cannot determine a multi-register local field type.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage373
+            );
+            return default!;
         }
 
         assert(false, "Multi-register definition has no per-register type implementation.");
-        throw new FatalJitException("LSRA cannot determine a multi-register definition type.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage374);
+        return default!;
     }
 
     private void setTgtPref(Interval interval, RefPosition? targetPreferredUse)
@@ -316,8 +343,15 @@ public sealed partial class LinearScan
         else
         {
             var info = _definitionList.RemoveListNode(operand, checked((uint)multiRegIndex));
-            var definition = info.refPosition
-                ?? throw new FatalJitException("LSRA definition list entry has no reference position.");
+            var definition = info.refPosition;
+            if (definition is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage370
+                );
+                return default!;
+            }
             assert(definition.getMultiRegIdx() == multiRegIndex);
             interval = definition.getInterval();
             _listNodePool.ReturnNode(info);
@@ -385,7 +419,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         foreach (var interval in intervals)
@@ -398,18 +433,30 @@ public sealed partial class LinearScan
             if (!interval.IsUpperVector())
             {
                 assert(false, "Every non-local interval in the upper-vector lookup must be an upper-vector interval.");
-                throw new FatalJitException("LSRA upper-vector lookup encountered a non-upper-vector interval.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage375
+                );
+                return default!;
             }
 
-            var relatedInterval = interval.relatedInterval
-                ?? throw new FatalJitException("Upper-vector intervals require a related local interval.");
+            var relatedInterval = interval.relatedInterval;
+            if (relatedInterval is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage376
+                );
+                return default!;
+            }
             if (relatedInterval.getVarIndex(_compiler) == varIndex)
             {
                 return interval;
             }
         }
 
-        throw new FatalJitException($"No upper-vector interval exists for tracked local {varIndex}.");
+        FatalJitException.ThrowFatalJitException($"No upper-vector interval exists for tracked local {varIndex}.");
+        return default!;
     }
 
     private void buildUpperVectorRestoreRefPosition(
@@ -417,7 +464,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         if (!localInterval.isPartiallySpilled)
@@ -428,8 +476,15 @@ public sealed partial class LinearScan
         localInterval.isPartiallySpilled = false;
         var varIndex = localInterval.getVarIndex(_compiler);
         var upperInterval = getUpperVectorInterval(varIndex);
-        var savePosition = upperInterval.recentRefPosition
-            ?? throw new FatalJitException("A partially spilled vector requires a preceding upper-vector save.");
+        var savePosition = upperInterval.recentRefPosition;
+        if (savePosition is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage377
+            );
+            return;
+        }
         if (!isUse && !savePosition.liveVarUpperSave)
         {
             return;
@@ -463,8 +518,12 @@ public sealed partial class LinearScan
         var first = true;
         for (var node = _definitionList.First; node is not null; node = node.next)
         {
-            var treeNode = node.treeNode
-                ?? throw new FatalJitException("A definition-list entry must retain its defining node.");
+            var treeNode = node.treeNode;
+            if (treeNode is null)
+            {
+                FatalJitException.ThrowFatalJitException("A definition-list entry must retain its defining node.");
+                return;
+            }
             var sequenceNumber = unchecked((uint)treeNode._seqNum);
             jitprintf($"{(first ? "" : "; ")}N{sequenceNumber:D3}.t{treeNode.TreeId}. {treeNode.Oper.Name}");
             first = false;

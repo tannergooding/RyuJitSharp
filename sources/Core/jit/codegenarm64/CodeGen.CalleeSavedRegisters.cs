@@ -892,11 +892,13 @@ public sealed partial class CodeGen
 
     private static void genEmitPacInPrologArm64Dependency()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 prolog pointer authentication is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 prolog pointer authentication is not ported.");
+        return;
     }
 
     private static void genEmitPacInEpilogArm64Dependency()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 epilog pointer authentication is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 epilog pointer authentication is not ported.");
+        return;
     }
 }

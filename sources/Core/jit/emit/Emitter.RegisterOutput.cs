@@ -14,7 +14,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register output requires xarch.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -159,7 +160,8 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_AMD64)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "APX register output requires AMD64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "APX register output requires AMD64.");
+                    return default!;
                 }
 
                 assert(TakesEvexPrefix(id));
@@ -253,7 +255,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-pair output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-pair output requires xarch.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -411,7 +414,8 @@ public partial class Emitter
                 {
                     if (!Configuration.TARGET_AMD64)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED, "Eight-byte register-pair output requires AMD64.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Eight-byte register-pair output requires AMD64.");
+                        return default!;
                     }
 
                     if (ins != INS_xor || reg1 != reg2)
@@ -544,7 +548,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Three-register output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Three-register output requires xarch.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -584,7 +589,8 @@ public partial class Emitter
                 {
                     if (!Configuration.TARGET_AMD64)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED, "Eight-byte three-register output requires AMD64.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Eight-byte three-register output requires AMD64.");
+                        return default!;
                     }
 
                     code = AddRexWPrefix(id, code);

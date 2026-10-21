@@ -141,15 +141,60 @@ public partial class Compiler
 
     public uint fgGetCodeEstimate(BasicBlock block)
     {
-        uint costSz = block.Kind switch {
-            BBJ_ALWAYS or BBJ_EHCATCHRET or BBJ_LEAVE or BBJ_COND => 2,
-            BBJ_CALLFINALLY => 5,
-            BBJ_CALLFINALLYRET => 0,
-            BBJ_SWITCH => 10,
-            BBJ_THROW or BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHFILTERRET => 1,
-            BBJ_RETURN => 3,
-            _ => throw new FatalJitException("Unexpected block kind for code-size estimation."),
-        };
+        uint costSz;
+        switch (block.Kind)
+        {
+            case BBJ_ALWAYS:
+            case BBJ_EHCATCHRET:
+            case BBJ_LEAVE:
+            case BBJ_COND:
+            {
+                costSz = 2;
+                break;
+            }
+
+            case BBJ_CALLFINALLY:
+            {
+                costSz = 5;
+                break;
+            }
+
+            case BBJ_CALLFINALLYRET:
+            {
+                costSz = 0;
+                break;
+            }
+
+            case BBJ_SWITCH:
+            {
+                costSz = 10;
+                break;
+            }
+
+            case BBJ_THROW:
+            case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
+            case BBJ_EHFILTERRET:
+            {
+                costSz = 1;
+                break;
+            }
+
+            case BBJ_RETURN:
+            {
+                costSz = 3;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage101
+                );
+                return default;
+            }
+        }
 
         for (var stmt = block.GetFirstNonPhiDef(); stmt is not null; stmt = stmt.NextStmt)
         {

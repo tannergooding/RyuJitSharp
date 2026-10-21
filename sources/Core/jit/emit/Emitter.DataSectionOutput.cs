@@ -11,7 +11,12 @@ public partial class Emitter
 {
     public unsafe void emitOutputDataSec(dataSecDsc sec, AllocMemChunk* chunks)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Data-section output requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DataSectionOutputMissingCompiler);
+            return;
+        }
         if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"\nEmitting data sections: {sec.dsdOffs} total bytes\n");
@@ -27,7 +32,8 @@ public partial class Emitter
         assert(sec.dsdList is not null);
         if (sec.dsdOffs == 0 || sec.dsdList is null || chunks is null)
         {
-            throw new FatalJitException("Data-section output requires allocated chunks and nonempty sections.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DataSectionOutputMissingChunksOrSections);
+            return;
         }
 
         var chunk = chunks;
@@ -46,10 +52,18 @@ public partial class Emitter
                 var numElems = dscSize / Configuration.TARGET_POINTER_SIZE;
                 for (uint i = 0; i < numElems; i++)
                 {
-                    var block = dsc.Blocks[i]
-                        ?? throw new FatalJitException("An absolute-label table requires a block for every entry.");
-                    var lab = emitCodeGetCookie(block)
-                        ?? throw new FatalJitException("An absolute-label table requires an emitted block label.");
+                    var block = dsc.Blocks[i];
+                    if (block is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AbsoluteLabelTableMissingBlock);
+                        return;
+                    }
+                    var lab = emitCodeGetCookie(block);
+                    if (lab is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AbsoluteLabelTableMissingEmittedBlockLabel);
+                        return;
+                    }
                     var target = emitOffsetToPtr(lab.igOffs);
                     var targetSlot = (byte*)dstRW + unchecked((nint)(i * (uint)Configuration.TARGET_POINTER_SIZE));
 
@@ -81,17 +95,33 @@ public partial class Emitter
                 }
                 var numElems = dscSize / sizeof(uint);
                 var uDstRW = (uint*)dstRW;
-                var firstBlock = compiler.fgFirstBB
-                    ?? throw new FatalJitException("A relative-label table requires the first basic block.");
-                var labFirst = emitCodeGetCookie(firstBlock)
-                    ?? throw new FatalJitException("A relative-label table requires the first emitted label.");
+                var firstBlock = compiler.fgFirstBB;
+                if (firstBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RelativeLabelTableMissingFirstBasicBlock);
+                    return;
+                }
+                var labFirst = emitCodeGetCookie(firstBlock);
+                if (labFirst is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RelativeLabelTableMissingFirstEmittedLabel);
+                    return;
+                }
 
                 for (uint i = 0; i < numElems; i++)
                 {
-                    var block = dsc.Blocks[i]
-                        ?? throw new FatalJitException("A relative-label table requires a block for every entry.");
-                    var lab = emitCodeGetCookie(block)
-                        ?? throw new FatalJitException("A relative-label table requires an emitted block label.");
+                    var block = dsc.Blocks[i];
+                    if (block is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RelativeLabelTableMissingBlock);
+                        return;
+                    }
+                    var lab = emitCodeGetCookie(block);
+                    if (lab is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RelativeLabelTableMissingEmittedBlockLabel);
+                        return;
+                    }
                     uDstRW[i] = unchecked(lab.igOffs - labFirst.igOffs);
 
                     JITDUMP($"  {FMT_BB(block.bbNum)}: 0x{uDstRW[i]:x}\n");
@@ -145,7 +175,12 @@ public partial class Emitter
                 assert(dsc.dsType == dataSection.sectionType.data);
                 if (dsc.dsType != dataSection.sectionType.data)
                 {
-                    throw new FatalJitException($"Unexpected data-section type {dsc.dsType}.");
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnexpectedDataSectionType,
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unexpected data-section type {dsc.dsType}."
+                    : null);
+                    return;
                 }
                 var size = checked((int)dscSize);
                 dsc.Data.AsSpan(0, size).CopyTo(new Span<byte>(dstRW, size));

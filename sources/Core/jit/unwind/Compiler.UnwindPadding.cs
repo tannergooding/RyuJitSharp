@@ -45,7 +45,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Sized unwind padding requires ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Sized unwind padding requires ARM32.");
+            return;
         }
 
         if (generateCFIUnwindCodes())

@@ -77,8 +77,15 @@ public sealed partial class ValueNumStore
     {
         assert(MapIsPrecise(map));
 
-        var block = _compiler.compCurBB
-            ?? throw new FatalJitException("A precise map store requires the current block.");
+        var block = _compiler.compCurBB;
+        if (block is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage446
+            );
+            return default!;
+        }
         assert(_compiler._blockToLoop is not null);
         var loop = _compiler._blockToLoop.GetLoop(block);
         var loopIndex = loop?.Index ?? NoLoop;
@@ -372,33 +379,132 @@ public sealed partial class ValueNumStore
         }
     }
 
-    private static string VNMapTypeName(var_types type) => type switch
+    private static string VNMapTypeName(var_types type)
     {
-        TYP_HEAP => "heap",
-        TYP_MEM => "mem",
-        TYP_VOID => "void",
-        TYP_BYTE => "byte",
-        TYP_UBYTE => "ubyte",
-        TYP_SHORT => "short",
-        TYP_USHORT => "ushort",
-        TYP_INT => "int",
-        TYP_UINT => "uint",
-        TYP_LONG => "long",
-        TYP_ULONG => "ulong",
-        TYP_FLOAT => "float",
-        TYP_DOUBLE => "double",
-        TYP_REF => "ref",
-        TYP_BYREF => "byref",
-        TYP_STRUCT => "struct",
-        TYP_SIMD8 => "simd8",
-        TYP_SIMD12 => "simd12",
-        TYP_SIMD16 => "simd16",
-        TYP_SIMD32 => "simd32",
-        TYP_SIMD64 => "simd64",
-        TYP_SIMD_ARM64 => "simd",
-        TYP_MASK => "mask",
-        _ => throw new FatalJitException("Unrecognized map value type."),
-    };
+        switch (type)
+        {
+            case TYP_HEAP:
+            {
+                return "heap";
+            }
+
+            case TYP_MEM:
+            {
+                return "mem";
+            }
+
+            case TYP_VOID:
+            {
+                return "void";
+            }
+
+            case TYP_BYTE:
+            {
+                return "byte";
+            }
+
+            case TYP_UBYTE:
+            {
+                return "ubyte";
+            }
+
+            case TYP_SHORT:
+            {
+                return "short";
+            }
+
+            case TYP_USHORT:
+            {
+                return "ushort";
+            }
+
+            case TYP_INT:
+            {
+                return "int";
+            }
+
+            case TYP_UINT:
+            {
+                return "uint";
+            }
+
+            case TYP_LONG:
+            {
+                return "long";
+            }
+
+            case TYP_ULONG:
+            {
+                return "ulong";
+            }
+
+            case TYP_FLOAT:
+            {
+                return "float";
+            }
+
+            case TYP_DOUBLE:
+            {
+                return "double";
+            }
+
+            case TYP_REF:
+            {
+                return "ref";
+            }
+
+            case TYP_BYREF:
+            {
+                return "byref";
+            }
+
+            case TYP_STRUCT:
+            {
+                return "struct";
+            }
+
+            case TYP_SIMD8:
+            {
+                return "simd8";
+            }
+
+            case TYP_SIMD12:
+            {
+                return "simd12";
+            }
+
+            case TYP_SIMD16:
+            {
+                return "simd16";
+            }
+
+            case TYP_SIMD32:
+            {
+                return "simd32";
+            }
+
+            case TYP_SIMD64:
+            {
+                return "simd64";
+            }
+
+            case TYP_SIMD_ARM64:
+            {
+                return "simd";
+            }
+
+            case TYP_MASK:
+            {
+                return "mask";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException("Unrecognized map value type.");
+                return default!;
+            }
+        }
+    }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void DumpPhysicalSelector(ValueNum selector)

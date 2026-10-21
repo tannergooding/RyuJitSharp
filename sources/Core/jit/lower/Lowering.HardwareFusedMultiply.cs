@@ -13,7 +13,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Fused multiply lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Fused multiply lowering is not ported for this target.");
+            return;
         }
 
         assert(node.Operands.Length == 3);
@@ -87,7 +88,11 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new FatalJitException("Fused multiply lowering requires an FMA intrinsic.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage255
+                );
+                return;
             }
         }
 

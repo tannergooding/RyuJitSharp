@@ -14,7 +14,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Vector Dot multiply/sum lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector Dot multiply/sum lowering is not ported for this target.");
+            return default!;
         }
 
         var intrinsicId = node.HWIntrinsicId;
@@ -160,15 +161,18 @@ public sealed partial class Lowering
             if (Configuration.TARGET_RISCV64)
             {
                 NYI_RISCV64("LowerHWIntrinsicDot");
-                throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Dot lowering is not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Dot lowering is not ported.");
+                return default!;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
+                return default!;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Vector Dot lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector Dot lowering is not ported for this target.");
+            return default!;
         }
 
         var intrinsicId = node.HWIntrinsicId;

@@ -36,7 +36,8 @@ public sealed partial class CodeGen
                 else
                 {
                     unreached();
-                    throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte floating register store requires a 64-bit target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "An eight-byte floating register store requires a 64-bit target.");
+                    return default!;
                 }
             }
 
@@ -47,8 +48,9 @@ public sealed partial class CodeGen
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Masked-register stores require masked hardware intrinsics.");
+                return default!;
             }
 
             if (genIsValidMaskReg(srcReg))
@@ -77,7 +79,8 @@ public sealed partial class CodeGen
                 else
                 {
                     unreached();
-                    throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte integer register store requires a 64-bit target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "An eight-byte integer register store requires a 64-bit target.");
+                    return default!;
                 }
             }
         }

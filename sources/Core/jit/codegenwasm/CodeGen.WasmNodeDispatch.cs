@@ -463,9 +463,13 @@ public sealed partial class CodeGen
                     var isMem = node.IsMemoryLoad(out var addr) || node.IsMemoryStore(out addr);
                     assert(isMem && addr is not null);
 
-                    var memoryAddress = addr
-                        ?? throw new FatalJitException(
+                    var memoryAddress = addr;
+                    if (memoryAddress is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
                             CORJIT_INTERNALERROR, "Wasm hardware intrinsic memory node has no address.");
+                        return;
+                    }
                     var addrReg = GetMultiUseOperandReg(memoryAddress);
                     genEmitNullCheck(addrReg, memoryAddress.Type);
 
@@ -743,7 +747,8 @@ public sealed partial class CodeGen
 
             default:
             {
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm integer comparison.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm integer comparison.");
+                return;
             }
         }
 
@@ -856,7 +861,8 @@ public sealed partial class CodeGen
 
             default:
             {
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm floating-point comparison.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm floating-point comparison.");
+                return;
             }
         }
 
@@ -1020,8 +1026,12 @@ public sealed partial class CodeGen
         if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
         {
             // The base is the address itself unless this is a contained address mode, which is never materialized.
-            var baseNode = tree.Base
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "GT_IND base is unavailable for null-check codegen.");
+            var baseNode = tree.Base;
+            if (baseNode is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "GT_IND base is unavailable for null-check codegen.");
+                return;
+            }
             genEmitNullCheck(GetMultiUseOperandReg(baseNode), baseNode.Type);
         }
 
@@ -1101,10 +1111,14 @@ public sealed partial class CodeGen
         if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
         {
             // The base is the address itself unless this is a contained address mode, which is never materialized.
-            var baseNode = tree.Base
-                ?? throw new FatalJitException(
+            var baseNode = tree.Base;
+            if (baseNode is null)
+            {
+                FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    "GT_STOREIND base is unavailable for null-check codegen.");
+                "GT_STOREIND base is unavailable for null-check codegen.");
+                return;
+            }
             genEmitNullCheck(GetMultiUseOperandReg(baseNode), baseNode.Type);
         }
 
@@ -1171,10 +1185,18 @@ public sealed partial class CodeGen
 
     private void genCallWasm(GenTreeCall call)
     {
-        var thisArg = call.NeedsNullCheck
-            ? call.Args.ThisArg
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Call requiring a null check has no this argument.")
-            : null;
+        CallArg? thisArg = null;
+        if (call.NeedsNullCheck)
+        {
+            thisArg = call.Args.ThisArg;
+            if (thisArg is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR, "Call requiring a null check has no this argument.");
+                return;
+            }
+        }
+
         var thisReg = REG_WASM_NA;
 
         if (thisArg is not null)
@@ -1184,15 +1206,23 @@ public sealed partial class CodeGen
 
         foreach (var arg in call.Args.EarlyArgs)
         {
-            var earlyNode = arg.EarlyNode
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Early call argument has no node.");
+            var earlyNode = arg.EarlyNode;
+            if (earlyNode is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Early call argument has no node.");
+                return;
+            }
             genConsumeRegs(earlyNode);
         }
 
         foreach (var arg in call.Args.LateArgs)
         {
-            var lateNode = arg.LateNode
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Late call argument has no node.");
+            var lateNode = arg.LateNode;
+            if (lateNode is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Late call argument has no node.");
+                return;
+            }
             genConsumeRegs(lateNode);
         }
 
@@ -1209,8 +1239,7 @@ public sealed partial class CodeGen
     {
         ensureCurrentFuncIsUnwindable();
 
-        var parameters = new EmitCallParams
-        {
+        var parameters = new EmitCallParams {
             isJump = call.IsFastTailCall,
             hasAsyncRet = call.IsAsync,
             returnValueCall = call,
@@ -1466,8 +1495,9 @@ public sealed partial class CodeGen
             {
                 JITDUMP(
                     $"Helper '{_compiler.eeGetMethodFullName(parameters.methHnd)}' has no hard-coded signature\n");
-                throw new FatalJitException(
+                FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR, $"Wasm helper {helper} has no hard-coded signature.");
+                return;
             }
         }
 
@@ -1517,17 +1547,44 @@ public sealed partial class CodeGen
 
     private static CorInfoWasmType WasmValueTypeToCorInfoWasmType(WasmValueType type)
     {
-        return type switch
+        switch (type)
         {
-            WasmValueType.I32 => CORINFO_WASM_TYPE_I32,
-            WasmValueType.I64 => CORINFO_WASM_TYPE_I64,
-            WasmValueType.F32 => CORINFO_WASM_TYPE_F32,
-            WasmValueType.F64 => CORINFO_WASM_TYPE_F64,
-            WasmValueType.V128 => CORINFO_WASM_TYPE_V128,
-            // ExnRef is a valid Wasm type code but is not named in CorInfoWasmType.
-            WasmValueType.ExnRef => unchecked((CorInfoWasmType)0x69),
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid WebAssembly value type."),
-        };
+            case WasmValueType.I32:
+            {
+                return CORINFO_WASM_TYPE_I32;
+            }
+
+            case WasmValueType.I64:
+            {
+                return CORINFO_WASM_TYPE_I64;
+            }
+
+            case WasmValueType.F32:
+            {
+                return CORINFO_WASM_TYPE_F32;
+            }
+
+            case WasmValueType.F64:
+            {
+                return CORINFO_WASM_TYPE_F64;
+            }
+
+            case WasmValueType.V128:
+            {
+                return CORINFO_WASM_TYPE_V128;
+            }
+
+            case WasmValueType.ExnRef:
+            {
+                return unchecked((CorInfoWasmType)0x69);
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Invalid WebAssembly value type.");
+                return default!;
+            }
+        }
     }
 
     private void genCodeForNullCheckWasm(GenTreeIndir tree)
@@ -2198,11 +2255,13 @@ public sealed partial class CodeGen
 
     private static void WasmCodegenDependencyNotPorted(GenTree tree, string dependency)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported for {tree.Oper}.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported for {tree.Oper}.");
+        return;
     }
 
     private static void WasmCodegenDependencyNotPorted(string dependency)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported.");
+        return;
     }
 }

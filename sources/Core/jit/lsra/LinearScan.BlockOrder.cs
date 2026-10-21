@@ -16,13 +16,21 @@ public sealed partial class LinearScan
         assert(!_blockSequencingDone);
         if (_blockSequencingDone)
         {
-            throw new FatalJitException("LSRA block sequencing can only be initialized once.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage271
+            );
+            return;
         }
 
         assert(_blockSequence is null && _blockSequenceCount == 0);
         if (_blockSequence is not null || _blockSequenceCount != 0)
         {
-            throw new FatalJitException("LSRA block sequence was already initialized.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage272
+            );
+            return;
         }
 
         var blockCount = _compiler.fgBBcount;
@@ -65,7 +73,11 @@ public sealed partial class LinearScan
         assert(_compiler.fgPredsComputed);
         if (!_compiler.fgPredsComputed)
         {
-            throw new FatalJitException("LSRA block metadata requires computed predecessor lists.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage273
+            );
+            return;
         }
 
         JITDUMP("Start LSRA Block Sequence: \n");
@@ -82,7 +94,11 @@ public sealed partial class LinearScan
             assert(_compiler._dfsTree is not null);
             if (block is null || _compiler._dfsTree is null)
             {
-                throw new FatalJitException("The LSRA block sequence does not cover the compiler flow graph.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage274
+                );
+                return;
             }
 
             if (!_compiler._dfsTree.Contains(block))
@@ -96,7 +112,11 @@ public sealed partial class LinearScan
         assert(_blockSequenceCount == blockCount);
         if (_blockSequenceCount != blockCount)
         {
-            throw new FatalJitException("The LSRA block sequence does not cover every compiler block.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage275
+            );
+            return;
         }
 
         _blockSequencingDone = true;
@@ -231,7 +251,11 @@ public sealed partial class LinearScan
         assert(currentBlock is not null);
         if (currentBlock is null)
         {
-            throw new FatalJitException("LSRA requires a non-empty compiler flow graph.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage276
+            );
+            return default!;
         }
 
         _currentBlockSequenceNumber = 0;
@@ -258,7 +282,11 @@ public sealed partial class LinearScan
         assert(_blockSequencingDone);
         if (!_blockSequencingDone)
         {
-            throw new FatalJitException("LSRA block traversal requires an initialized block sequence.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage277
+            );
+            return default!;
         }
 
         var nextBlockSequenceNumber = _currentBlockSequenceNumber + 1;
@@ -271,7 +299,11 @@ public sealed partial class LinearScan
         assert(traits is not null);
         if (traits is null)
         {
-            throw new FatalJitException("LSRA block visitation requires initialized block traits.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage278
+            );
+            return;
         }
 
         BitVecOps.AddElemD(traits, _blockSequenceVisitedSet, block.bbPostorderNum);
@@ -283,7 +315,11 @@ public sealed partial class LinearScan
         assert(traits is not null);
         if (traits is null)
         {
-            throw new FatalJitException("LSRA block visitation requires initialized block traits.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage278
+            );
+            return;
         }
 
         BitVecOps.ClearD(traits, _blockSequenceVisitedSet);
@@ -295,7 +331,11 @@ public sealed partial class LinearScan
         assert(traits is not null);
         if (traits is null)
         {
-            throw new FatalJitException("LSRA block visitation requires initialized block traits.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage278
+            );
+            return default!;
         }
 
         return BitVecOps.IsMember(traits, _blockSequenceVisitedSet, block.bbPostorderNum);

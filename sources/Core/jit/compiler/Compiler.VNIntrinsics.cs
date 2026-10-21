@@ -44,13 +44,44 @@ public partial class Compiler
             NI_PRIMITIVE_SaturateToUInt8 or NI_PRIMITIVE_SaturateToUInt16)
         {
             assert(intrinsic.Op2 is null);
-            var func = id switch {
-                NI_PRIMITIVE_SaturateToInt8 => VNF_SaturateToInt8,
-                NI_PRIMITIVE_SaturateToInt16 => VNF_SaturateToInt16,
-                NI_PRIMITIVE_SaturateToUInt8 => VNF_SaturateToUInt8,
-                NI_PRIMITIVE_SaturateToUInt16 => VNF_SaturateToUInt16,
-                _ => throw new InvalidOperationException($"Unexpected saturating intrinsic: {id}"),
-            };
+            VNFunc func;
+            switch (id)
+            {
+                case NI_PRIMITIVE_SaturateToInt8:
+                {
+                    func = VNF_SaturateToInt8;
+                    break;
+                }
+
+                case NI_PRIMITIVE_SaturateToInt16:
+                {
+                    func = VNF_SaturateToInt16;
+                    break;
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt8:
+                {
+                    func = VNF_SaturateToUInt8;
+                    break;
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    func = VNF_SaturateToUInt16;
+                    break;
+                }
+
+                default:
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        "RJS-VN-005",
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unexpected saturating intrinsic: {id}"
+                            : null);
+                    func = default;
+                    break;
+                }
+            }
             tree._vnPair = vnStore.VNPWithExc(
                 vnStore.VNPairForFunc(tree.Type, func, arg0), arg0Exceptions);
         }

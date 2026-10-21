@@ -79,13 +79,35 @@ public sealed partial class CodeGen
         }
         else if (tree.Oper.IsShift && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2) && !setFlags)
         {
-            ins = tree.Oper switch
+            switch (tree.Oper)
             {
-                GT_LSH => INS_shlx,
-                GT_RSH => INS_sarx,
-                GT_RSZ => INS_shrx,
-                _ => throw new FatalJitException("Invalid shift operator."),
-            };
+                case GT_LSH:
+                {
+                    ins = INS_shlx;
+                    break;
+                }
+
+                case GT_RSH:
+                {
+                    ins = INS_sarx;
+                    break;
+                }
+
+                case GT_RSZ:
+                {
+                    ins = INS_shrx;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage098
+                    );
+                    break;
+                }
+            }
 
             // BMI2 encodes the count before the shifted source.
             inst_RV_RV_TT(ins, size, tree.RegNum, shiftBy.RegNum, operand, isRMW: false, INS_OPTS_NONE);
@@ -104,7 +126,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Long shift generation requires x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long shift generation requires x86.");
+            return;
         }
 
         var oper = tree.Oper;

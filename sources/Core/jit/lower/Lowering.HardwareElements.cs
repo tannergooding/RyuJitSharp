@@ -31,7 +31,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Vector GetElement lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector GetElement lowering is not ported for this target.");
+            return default!;
         }
 
         var intrinsicId = node.HWIntrinsicId;
@@ -292,7 +293,11 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new FatalJitException("Vector element extraction requires an arithmetic base type.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage254
+                );
+                return default!;
             }
         }
 

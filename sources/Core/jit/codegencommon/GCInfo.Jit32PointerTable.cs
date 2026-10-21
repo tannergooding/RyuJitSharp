@@ -37,7 +37,7 @@ public partial struct GCInfo
         0x09000201, 0x10000600, 0x15000300, 0x0a000101, 0x0a000b00, 0x0c000601, 0x09000700, 0x07000300,
     ];
 
-    private static ReadOnlySpan<uint> CallCommonDelta => [6, 8, 10, 12];
+    private static ReadOnlySpan<byte> CallCommonDelta => [6, 8, 10, 12];
 
     private static int lookupCallPattern(uint argCount, uint regMask, uint argMask, uint codeDelta)
     {
@@ -721,8 +721,12 @@ public partial struct GCInfo
                     var argumentCount = (uint)call.cdArgCnt;
                     var argumentBytes = 0u;
                     byte* argumentBytesSize = null;
-                    var argumentTable = call.cdArgTable
-                        ?? throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC call argument table is missing.");
+                    var argumentTable = call.cdArgTable;
+                    if (argumentTable is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JIT32 GC call argument table is missing.");
+                        return default!;
+                    }
 
                     if (mask != 0)
                     {
@@ -1030,7 +1034,7 @@ public partial struct GCInfo
                                         *destination++ = (byte)(((uint)commonDeltaIndex << 6) |
                                             (callArgumentCount << 3) | argumentMask);
                                         emittedCall = true;
-}
+                                    }
                                 }
                             }
 

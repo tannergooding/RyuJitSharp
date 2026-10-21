@@ -350,6 +350,7 @@ public sealed partial class Lowering
             return binOp.Next;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Binary arithmetic lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Binary arithmetic lowering is not ported for this target.");
+        return default!;
     }
 }

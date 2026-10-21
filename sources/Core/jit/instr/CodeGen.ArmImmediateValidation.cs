@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException("ARM immediate validation is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException("ARM immediate validation is not available for the configured target.");
+            return default!;
         }
 
         if (Emitter.emitInsIsLoadOrStoreForCodeGen(ins) && !instIsFP(ins))
@@ -100,7 +101,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException("ARM immediate validation is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException("ARM immediate validation is not available for the configured target.");
+            return default!;
         }
 
         if ((imm < int.MinValue) || (imm > int.MaxValue))

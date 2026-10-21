@@ -48,7 +48,8 @@ public sealed partial class CodeGen
 
     private void genEmitSwitchBlockAddress(BasicBlock target, regNumber targetReg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "ARM64 block-relative address recording is not ported.");
+        return;
     }
 }

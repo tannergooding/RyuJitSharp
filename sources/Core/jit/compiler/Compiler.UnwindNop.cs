@@ -288,7 +288,8 @@ public partial class Compiler
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target unwind reservation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target unwind reservation is not ported.");
+        return;
     }
 
     public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
@@ -352,14 +353,16 @@ public partial class Compiler
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target unwind emission is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target unwind emission is not ported.");
+        return;
     }
 
     private static void EnsureUnwindTargetSupported()
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Target unwind recording is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target unwind recording is not ported.");
+            return;
         }
     }
 
@@ -367,7 +370,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Target epilog unwind recording is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target epilog unwind recording is not ported.");
+            return;
         }
     }
 }

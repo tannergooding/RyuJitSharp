@@ -27,7 +27,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic special import requires xarch hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic special import requires xarch hardware intrinsics.");
+            return default!;
         }
 
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
@@ -189,13 +190,41 @@ public partial class Compiler
                 {
                     op1 = impCloneExpr(op1, out var clonedOp1, CHECK_SPILL_ALL,
                         "Clone op1 for CompareScalarGreaterThan");
-                    intrinsic = intrinsic switch {
-                        NI_X86Base_CompareScalarGreaterThan => NI_X86Base_CompareScalarLessThan,
-                        NI_X86Base_CompareScalarGreaterThanOrEqual => NI_X86Base_CompareScalarLessThanOrEqual,
-                        NI_X86Base_CompareScalarNotGreaterThan => NI_X86Base_CompareScalarNotLessThan,
-                        NI_X86Base_CompareScalarNotGreaterThanOrEqual => NI_X86Base_CompareScalarNotLessThanOrEqual,
-                        _ => throw new FatalJitException("Unexpected scalar comparison."),
-                    };
+                    switch (intrinsic)
+                    {
+                        case NI_X86Base_CompareScalarGreaterThan:
+                        {
+                            intrinsic = NI_X86Base_CompareScalarLessThan;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareScalarGreaterThanOrEqual:
+                        {
+                            intrinsic = NI_X86Base_CompareScalarLessThanOrEqual;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareScalarNotGreaterThan:
+                        {
+                            intrinsic = NI_X86Base_CompareScalarNotLessThan;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareScalarNotGreaterThanOrEqual:
+                        {
+                            intrinsic = NI_X86Base_CompareScalarNotLessThanOrEqual;
+                            break;
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage121
+                            );
+                            break;
+                        }
+                    }
                     var comparison = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
                         simdBaseType, simdSize, op2, op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_MoveScalar,
@@ -427,33 +456,101 @@ public partial class Compiler
                 assert(sig.numArgs == 2);
                 if ((simdSize == 64) || canUseEvexEncoding())
                 {
-                    intrinsic = intrinsic switch {
-                        NI_X86Base_CompareEqual or NI_AVX_CompareEqual or
-                            NI_AVX2_CompareEqual or NI_AVX512_CompareEqual => NI_AVX512_CompareEqualMask,
-                        NI_X86Base_CompareGreaterThan or NI_AVX_CompareGreaterThan or
-                            NI_AVX2_CompareGreaterThan or NI_AVX512_CompareGreaterThan => NI_AVX512_CompareGreaterThanMask,
-                        NI_X86Base_CompareGreaterThanOrEqual or NI_AVX_CompareGreaterThanOrEqual or
-                            NI_AVX512_CompareGreaterThanOrEqual => NI_AVX512_CompareGreaterThanOrEqualMask,
-                        NI_X86Base_CompareLessThan or NI_AVX_CompareLessThan or
-                            NI_AVX2_CompareLessThan or NI_AVX512_CompareLessThan => NI_AVX512_CompareLessThanMask,
-                        NI_X86Base_CompareLessThanOrEqual or NI_AVX_CompareLessThanOrEqual or
-                            NI_AVX512_CompareLessThanOrEqual => NI_AVX512_CompareLessThanOrEqualMask,
-                        NI_X86Base_CompareNotEqual or NI_AVX_CompareNotEqual or
-                            NI_AVX512_CompareNotEqual => NI_AVX512_CompareNotEqualMask,
-                        NI_X86Base_CompareNotGreaterThan or NI_AVX_CompareNotGreaterThan or
-                            NI_AVX512_CompareNotGreaterThan => NI_AVX512_CompareNotGreaterThanMask,
-                        NI_X86Base_CompareNotGreaterThanOrEqual or NI_AVX_CompareNotGreaterThanOrEqual or
-                            NI_AVX512_CompareNotGreaterThanOrEqual => NI_AVX512_CompareNotGreaterThanOrEqualMask,
-                        NI_X86Base_CompareNotLessThan or NI_AVX_CompareNotLessThan or
-                            NI_AVX512_CompareNotLessThan => NI_AVX512_CompareNotLessThanMask,
-                        NI_X86Base_CompareNotLessThanOrEqual or NI_AVX_CompareNotLessThanOrEqual or
-                            NI_AVX512_CompareNotLessThanOrEqual => NI_AVX512_CompareNotLessThanOrEqualMask,
-                        NI_X86Base_CompareOrdered or NI_AVX_CompareOrdered or
-                            NI_AVX512_CompareOrdered => NI_AVX512_CompareOrderedMask,
-                        NI_X86Base_CompareUnordered or NI_AVX_CompareUnordered or
-                            NI_AVX512_CompareUnordered => NI_AVX512_CompareUnorderedMask,
-                        _ => throw new FatalJitException("Unexpected special comparison."),
-                    };
+                    switch (intrinsic)
+                    {
+                        case NI_X86Base_CompareEqual or NI_AVX_CompareEqual or
+                            NI_AVX2_CompareEqual or NI_AVX512_CompareEqual:
+                        {
+                            intrinsic = NI_AVX512_CompareEqualMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareGreaterThan or NI_AVX_CompareGreaterThan or
+                            NI_AVX2_CompareGreaterThan or NI_AVX512_CompareGreaterThan:
+                        {
+                            intrinsic = NI_AVX512_CompareGreaterThanMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareGreaterThanOrEqual or NI_AVX_CompareGreaterThanOrEqual or
+                            NI_AVX512_CompareGreaterThanOrEqual:
+                        {
+                            intrinsic = NI_AVX512_CompareGreaterThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareLessThan or NI_AVX_CompareLessThan or
+                            NI_AVX2_CompareLessThan or NI_AVX512_CompareLessThan:
+                        {
+                            intrinsic = NI_AVX512_CompareLessThanMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareLessThanOrEqual or NI_AVX_CompareLessThanOrEqual or
+                            NI_AVX512_CompareLessThanOrEqual:
+                        {
+                            intrinsic = NI_AVX512_CompareLessThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareNotEqual or NI_AVX_CompareNotEqual or
+                            NI_AVX512_CompareNotEqual:
+                        {
+                            intrinsic = NI_AVX512_CompareNotEqualMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareNotGreaterThan or NI_AVX_CompareNotGreaterThan or
+                            NI_AVX512_CompareNotGreaterThan:
+                        {
+                            intrinsic = NI_AVX512_CompareNotGreaterThanMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareNotGreaterThanOrEqual or NI_AVX_CompareNotGreaterThanOrEqual or
+                            NI_AVX512_CompareNotGreaterThanOrEqual:
+                        {
+                            intrinsic = NI_AVX512_CompareNotGreaterThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareNotLessThan or NI_AVX_CompareNotLessThan or
+                            NI_AVX512_CompareNotLessThan:
+                        {
+                            intrinsic = NI_AVX512_CompareNotLessThanMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareNotLessThanOrEqual or NI_AVX_CompareNotLessThanOrEqual or
+                            NI_AVX512_CompareNotLessThanOrEqual:
+                        {
+                            intrinsic = NI_AVX512_CompareNotLessThanOrEqualMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareOrdered or NI_AVX_CompareOrdered or
+                            NI_AVX512_CompareOrdered:
+                        {
+                            intrinsic = NI_AVX512_CompareOrderedMask;
+                            break;
+                        }
+
+                        case NI_X86Base_CompareUnordered or NI_AVX_CompareUnordered or
+                            NI_AVX512_CompareUnordered:
+                        {
+                            intrinsic = NI_AVX512_CompareUnorderedMask;
+                            break;
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage122
+                            );
+                            break;
+                        }
+                    }
                     retType = TYP_MASK;
                 }
                 op2 = impSIMDPopStack();
@@ -489,15 +586,53 @@ public partial class Compiler
                 op3 = impSIMDPopStack();
                 op2 = impSIMDPopStack();
                 op1 = StripByrefCast(impPopStack().val);
-                intrinsic = intrinsic switch {
-                    NI_AVX512_CompressStore or NI_AVX512v3_CompressStore => NI_AVX512_CompressStoreMask,
-                    NI_AVX512_ExpandLoad or NI_AVX512v3_ExpandLoad => NI_AVX512_ExpandLoadMask,
-                    NI_AVX512_MaskLoad => NI_AVX512_MaskLoadMask,
-                    NI_AVX512_MaskLoadAligned => NI_AVX512_MaskLoadAlignedMask,
-                    NI_AVX512_MaskStore => NI_AVX512_MaskStoreMask,
-                    NI_AVX512_MaskStoreAligned => NI_AVX512_MaskStoreAlignedMask,
-                    _ => throw new FatalJitException("Unexpected masked memory intrinsic."),
-                };
+                switch (intrinsic)
+                {
+                    case NI_AVX512_CompressStore or NI_AVX512v3_CompressStore:
+                    {
+                        intrinsic = NI_AVX512_CompressStoreMask;
+                        break;
+                    }
+
+                    case NI_AVX512_ExpandLoad or NI_AVX512v3_ExpandLoad:
+                    {
+                        intrinsic = NI_AVX512_ExpandLoadMask;
+                        break;
+                    }
+
+                    case NI_AVX512_MaskLoad:
+                    {
+                        intrinsic = NI_AVX512_MaskLoadMask;
+                        break;
+                    }
+
+                    case NI_AVX512_MaskLoadAligned:
+                    {
+                        intrinsic = NI_AVX512_MaskLoadAlignedMask;
+                        break;
+                    }
+
+                    case NI_AVX512_MaskStore:
+                    {
+                        intrinsic = NI_AVX512_MaskStoreMask;
+                        break;
+                    }
+
+                    case NI_AVX512_MaskStoreAligned:
+                    {
+                        intrinsic = NI_AVX512_MaskStoreAlignedMask;
+                        break;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage123
+                        );
+                        break;
+                    }
+                }
                 op2 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseType, simdSize);
                 return gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2, op3);
             }

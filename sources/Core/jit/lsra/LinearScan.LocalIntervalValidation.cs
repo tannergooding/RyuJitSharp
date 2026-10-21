@@ -81,8 +81,12 @@ public sealed partial class LinearScan
             VarSetOps.DiffD(_compiler, missing, handlerLive);
         }
 
-        var trackedToLocal = _compiler.lvaTrackedToVarNum
-            ?? throw new FatalJitException("Last-use verification requires tracked local mapping.");
+        var trackedToLocal = _compiler.lvaTrackedToVarNum;
+        if (trackedToLocal is null)
+        {
+            FatalJitException.ThrowFatalJitException("Last-use verification requires tracked local mapping.");
+            return;
+        }
         _ = VarSetOps.VisitBits(_compiler, missing, variableIndex => {
             if (getTrackedLocal(variableIndex).lvLRACandidate)
             {
@@ -108,8 +112,12 @@ public sealed partial class LinearScan
     private void stressSetRandomParameterPreferences()
     {
         var random = new CLRRandom(_compiler.info.compMethodHash());
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Parameter preference stress requires initialized codegen state.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException("Parameter preference stress requires initialized codegen state.");
+            return;
+        }
         var integerRegisters = codeGen.CalleeRegArgMaskLiveIn & new regMaskTP(_rbmAllInt);
         var floatingRegisters = codeGen.CalleeRegArgMaskLiveIn & new regMaskTP(_rbmAllFloat);
 

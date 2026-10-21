@@ -278,7 +278,8 @@ public partial class Emitter
                     return;
                 }
 
-                throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V system instruction disassembly.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V system instruction disassembly.");
+                return;
             }
             case MajorOpcode.OpFp:
             {
@@ -352,8 +353,7 @@ public partial class Emitter
                 var shift = unchecked((uint)immediate) & 0x3f;
                 if (funct6 == 0b011000)
                 {
-                    mnemonic = shift switch
-                    {
+                    mnemonic = shift switch {
                         0 => "clz",
                         1 => "ctz",
                         2 => "cpop",
@@ -370,8 +370,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    mnemonic = funct6 switch
-                    {
+                    mnemonic = funct6 switch {
                         0b000000 => "slli",
                         0b001010 => "bseti",
                         0b010010 => "bclri",
@@ -419,8 +418,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    mnemonic = funct6 switch
-                    {
+                    mnemonic = funct6 switch {
                         0b000000 => "srli",
                         0b010000 => "srai",
                         0b011000 => "rori",
@@ -509,8 +507,7 @@ public partial class Emitter
                 }
                 else if (funct7 == 0b0110000)
                 {
-                    var mnemonic = shift switch
-                    {
+                    var mnemonic = shift switch {
                         0 => "clzw",
                         1 => "ctzw",
                         2 => "cpopw",
@@ -533,8 +530,7 @@ public partial class Emitter
             {
                 var funct7 = (unchecked((uint)immediate) >> 5) & 0x7f;
                 var shift = unchecked((uint)immediate) & 0x1f;
-                var mnemonic = funct7 switch
-                {
+                var mnemonic = funct7 switch {
                     0b0000000 => "srliw",
                     0b0100000 => "sraiw",
                     0b0110000 => "roriw",
@@ -564,43 +560,66 @@ public partial class Emitter
         var rs1 = (code >> 15) & 0x1f;
         var rs2 = (code >> 20) & 0x1f;
 
-        var mnemonic = funct7 switch
-        {
-            0b0000000 => funct3 switch
-            {
-                0 => "add", 1 => "sll", 2 => "slt", 3 => "sltu",
-                4 => "xor", 5 => "srl", 6 => "or", 7 => "and", _ => string.Empty,
+        var mnemonic = funct7 switch {
+            0b0000000 => funct3 switch {
+                0 => "add",
+                1 => "sll",
+                2 => "slt",
+                3 => "sltu",
+                4 => "xor",
+                5 => "srl",
+                6 => "or",
+                7 => "and",
+                _ => string.Empty,
             },
-            0b0100000 => funct3 switch
-            {
-                0 => "sub", 4 => "xnor", 5 => "sra", 6 => "orn", 7 => "andn", _ => string.Empty,
+            0b0100000 => funct3 switch {
+                0 => "sub",
+                4 => "xnor",
+                5 => "sra",
+                6 => "orn",
+                7 => "andn",
+                _ => string.Empty,
             },
-            0b0000001 => funct3 switch
-            {
-                0 => "mul", 1 => "mulh", 2 => "mulhsu", 3 => "mulhu",
-                4 => "div", 5 => "divu", 6 => "rem", 7 => "remu", _ => string.Empty,
+            0b0000001 => funct3 switch {
+                0 => "mul",
+                1 => "mulh",
+                2 => "mulhsu",
+                3 => "mulhu",
+                4 => "div",
+                5 => "divu",
+                6 => "rem",
+                7 => "remu",
+                _ => string.Empty,
             },
-            0b0010000 => funct3 switch
-            {
-                2 => "sh1add", 4 => "sh2add", 6 => "sh3add", _ => string.Empty,
+            0b0010000 => funct3 switch {
+                2 => "sh1add",
+                4 => "sh2add",
+                6 => "sh3add",
+                _ => string.Empty,
             },
-            0b0110000 => funct3 switch
-            {
-                1 => "rol", 5 => "ror", _ => string.Empty,
+            0b0110000 => funct3 switch {
+                1 => "rol",
+                5 => "ror",
+                _ => string.Empty,
             },
-            0b0000101 => funct3 switch
-            {
-                4 => "min", 5 => "minu", 6 => "max", 7 => "maxu", _ => string.Empty,
+            0b0000101 => funct3 switch {
+                4 => "min",
+                5 => "minu",
+                6 => "max",
+                7 => "maxu",
+                _ => string.Empty,
             },
             0b0010100 => funct3 == 1 ? "bset" : string.Empty,
-            0b0100100 => funct3 switch
-            {
-                1 => "bclr", 5 => "bext", _ => string.Empty,
+            0b0100100 => funct3 switch {
+                1 => "bclr",
+                5 => "bext",
+                _ => string.Empty,
             },
             0b0110100 => funct3 == 1 ? "binv" : string.Empty,
-            0b0000111 => funct3 switch
-            {
-                5 => "czero.eqz", 7 => "czero.nez", _ => string.Empty,
+            0b0000111 => funct3 switch {
+                5 => "czero.eqz",
+                7 => "czero.nez",
+                _ => string.Empty,
             },
             _ => string.Empty,
         };
@@ -613,8 +632,7 @@ public partial class Emitter
 
         if (funct7 == 0b0000101)
         {
-            mnemonic = funct3 switch
-            {
+            mnemonic = funct3 switch {
                 4 => "min ",
                 6 => "max ",
                 _ => mnemonic,
@@ -632,30 +650,38 @@ public partial class Emitter
         var rs1 = (code >> 15) & 0x1f;
         var rs2 = (code >> 20) & 0x1f;
 
-        var mnemonic = funct7 switch
-        {
-            0b0000000 => funct3 switch
-            {
-                0 => "addw", 1 => "sllw", 5 => "srlw", _ => string.Empty,
+        var mnemonic = funct7 switch {
+            0b0000000 => funct3 switch {
+                0 => "addw",
+                1 => "sllw",
+                5 => "srlw",
+                _ => string.Empty,
             },
-            0b0100000 => funct3 switch
-            {
-                0 => "subw", 5 => "sraw", _ => string.Empty,
+            0b0100000 => funct3 switch {
+                0 => "subw",
+                5 => "sraw",
+                _ => string.Empty,
             },
-            0b0000001 => funct3 switch
-            {
-                0 => "mulw", 4 => "divw", 5 => "divuw", 6 => "remw", 7 => "remuw", _ => string.Empty,
+            0b0000001 => funct3 switch {
+                0 => "mulw",
+                4 => "divw",
+                5 => "divuw",
+                6 => "remw",
+                7 => "remuw",
+                _ => string.Empty,
             },
-            0b0010000 => funct3 switch
-            {
-                2 => "sh1add.uw", 4 => "sh2add.uw", 6 => "sh3add.uw", _ => string.Empty,
+            0b0010000 => funct3 switch {
+                2 => "sh1add.uw",
+                4 => "sh2add.uw",
+                6 => "sh3add.uw",
+                _ => string.Empty,
             },
-            0b0110000 => funct3 switch
-            {
-                1 => "rolw", 5 => "rorw", _ => string.Empty,
+            0b0110000 => funct3 switch {
+                1 => "rolw",
+                5 => "rorw",
+                _ => string.Empty,
             },
-            0b0000100 => funct3 switch
-            {
+            0b0000100 => funct3 switch {
                 0 => rs2 == (uint)REG_RISCV64_ZERO ? "zext.w" : "add.uw",
                 4 => rs2 == (uint)REG_RISCV64_ZERO ? "zext.h" : string.Empty,
                 _ => string.Empty,
@@ -783,8 +809,7 @@ public partial class Emitter
             if (funct3 <= 3)
             {
                 var rs1 = (code >> 15) & 0x1f;
-                var mnemonic = funct3 switch
-                {
+                var mnemonic = funct3 switch {
                     1 => "csrrw",
                     2 => "csrrs",
                     3 => "csrrc",
@@ -800,8 +825,7 @@ public partial class Emitter
             }
 
             var immediate = (code >> 15) & 0x1f;
-            var immediateMnemonic = funct3 switch
-            {
+            var immediateMnemonic = funct3 switch {
                 5 => "csrrwi",
                 6 => "csrrsi",
                 7 => "csrrci",
@@ -896,8 +920,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    var prefix = (type, funct3) switch
-                    {
+                    var prefix = (type, funct3) switch {
                         ('s', 0) => "fmv.s",
                         ('s', 1) => "fneg.s",
                         ('s', 2) => "fabs.s",
@@ -911,15 +934,15 @@ public partial class Emitter
             }
             case 0b00101:
             {
-                var mnemonic = funct3 switch
-                {
+                var mnemonic = funct3 switch {
                     0 => $"fmin.{type}",
                     1 => $"fmax.{type}",
                     _ => string.Empty,
                 };
                 if (mnemonic.Length == 0)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point min/max instruction.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point min/max instruction.");
+                    return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{fd}, {fs1}, {fs2}");
                 return;
@@ -936,8 +959,7 @@ public partial class Emitter
             }
             case 0b11000:
             {
-                var mnemonic = rs2Field switch
-                {
+                var mnemonic = rs2Field switch {
                     0 => $"fcvt.w.{type}",
                     1 => $"fcvt.wu.{type}",
                     2 => $"fcvt.l.{type}",
@@ -946,7 +968,8 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point conversion instruction.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point conversion instruction.");
+                    return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{xd}, {fs1}");
                 return;
@@ -958,23 +981,22 @@ public partial class Emitter
                     emitDispIllegalInstructionRiscV64(code);
                     return;
                 }
-                var mnemonic = funct3 switch
-                {
+                var mnemonic = funct3 switch {
                     0 => $"fmv.x.{(type == 's' ? 'w' : type)}",
                     1 => $"fclass.{type}",
                     _ => string.Empty,
                 };
                 if (mnemonic.Length == 0)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point register operation.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point register operation.");
+                    return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{xd}, {fs1}");
                 return;
             }
             case 0b10100:
             {
-                var mnemonic = funct3 switch
-                {
+                var mnemonic = funct3 switch {
                     0 => $"fle.{type}",
                     1 => $"flt.{type}",
                     2 => $"feq.{type}",
@@ -982,15 +1004,15 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point compare instruction.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point compare instruction.");
+                    return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{xd}, {fs1}, {fs2}");
                 return;
             }
             case 0b11010:
             {
-                var mnemonic = rs2Field switch
-                {
+                var mnemonic = rs2Field switch {
                     0 => $"fcvt.{type}.w",
                     1 => $"fcvt.{type}.wu",
                     2 => $"fcvt.{type}.l",
@@ -999,7 +1021,8 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point conversion instruction.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point conversion instruction.");
+                    return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{fd}, {xs1}");
                 return;
@@ -1016,7 +1039,8 @@ public partial class Emitter
             }
             default:
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point disassembly opcode.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point disassembly opcode.");
+                return;
             }
         }
     }
@@ -1050,8 +1074,7 @@ public partial class Emitter
     private void emitDispAmoRiscV64(uint code)
     {
         var funct5 = (code >> 27) & 0x1f;
-        var mnemonic = funct5 switch
-        {
+        var mnemonic = funct5 switch {
             0b00010 => "lr",
             0b00011 => "sc",
             0b00001 => "amoswap",
@@ -1071,8 +1094,7 @@ public partial class Emitter
             return;
         }
 
-        var width = ((code >> 12) & 0x7) switch
-        {
+        var width = ((code >> 12) & 0x7) switch {
             2 => 'w',
             3 => 'd',
             _ => '?',
@@ -1140,8 +1162,7 @@ public partial class Emitter
         var funct2 = (code >> 5) & 0x3;
         var rdRs1 = (uint)getRegNumberFromRvcReg((code >> 7) & 0x7);
         var rs2 = (uint)getRegNumberFromRvcReg((code >> 2) & 0x7);
-        var mnemonic = (funct6, funct2) switch
-        {
+        var mnemonic = (funct6, funct2) switch {
             (0b100011, 0b00) => "sub",
             (0b100011, 0b01) => "xor",
             (0b100011, 0b10) => "or",

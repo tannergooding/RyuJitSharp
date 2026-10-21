@@ -49,29 +49,79 @@ public sealed partial class CodeGen
         _compiler.eeSetEHcount(count);
         _compiler.Metrics.EHClauseCount = count;
         var clauses = new EHClauseInfo[count];
-        var ehToVmOrder = _compiler.compEHTabOrderToVMClauseOrder
-            ?? throw new FatalJitException(CORJIT_SKIPPED, "EH-to-VM clause order has not been initialized.");
+        var ehToVmOrder = _compiler.compEHTabOrderToVMClauseOrder;
+        if (ehToVmOrder is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage079);
+            return;
+        }
 
         for (ushort XTnum = 0; XTnum < count; XTnum++)
         {
             ref var HBtab = ref _compiler.compHndBBtab[XTnum];
             var tryBeg = _compiler.ehCodeOffset(HBtab.ebdTryBeg);
             var hndBeg = _compiler.ehCodeOffset(HBtab.ebdHndBeg);
-            var tryEnd = HBtab.ebdTryLast == _compiler.fgLastBB
-                ? unchecked((uint)_compiler.info.compNativeCodeSize)
-                : _compiler.ehCodeOffset(HBtab.ebdTryLast.Next
-                    ?? throw new FatalJitException(CORJIT_SKIPPED, "EH try end has no successor."));
-            var hndEnd = HBtab.ebdHndLast == _compiler.fgLastBB
-                ? unchecked((uint)_compiler.info.compNativeCodeSize)
-                : _compiler.ehCodeOffset(HBtab.ebdHndLast.Next
-                    ?? throw new FatalJitException(CORJIT_SKIPPED, "EH handler end has no successor."));
-            var hndTyp = HBtab.HasFilter
-                ? unchecked((int)_compiler.ehCodeOffset(HBtab.ebdFilter
-                    ?? throw new FatalJitException(CORJIT_SKIPPED, "EH filter has no start block.")))
-                : (int)HBtab.ebdTyp;
-
-            var clause = new CORINFO_EH_CLAUSE
+            uint tryEnd;
+            if (HBtab.ebdTryLast == _compiler.fgLastBB)
             {
+                tryEnd = unchecked((uint)_compiler.info.compNativeCodeSize);
+            }
+            else
+            {
+                var tryLastNext = HBtab.ebdTryLast.Next;
+                if (tryLastNext is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage080
+                    );
+                    return;
+                }
+
+                tryEnd = _compiler.ehCodeOffset(tryLastNext);
+            }
+
+            uint hndEnd;
+            if (HBtab.ebdHndLast == _compiler.fgLastBB)
+            {
+                hndEnd = unchecked((uint)_compiler.info.compNativeCodeSize);
+            }
+            else
+            {
+                var hndLastNext = HBtab.ebdHndLast.Next;
+                if (hndLastNext is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage081
+                    );
+                    return;
+                }
+
+                hndEnd = _compiler.ehCodeOffset(hndLastNext);
+            }
+
+            int hndTyp;
+            if (HBtab.HasFilter)
+            {
+                var filter = HBtab.ebdFilter;
+                if (filter is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage082
+                    );
+                    return;
+                }
+
+                hndTyp = unchecked((int)_compiler.ehCodeOffset(filter));
+            }
+            else
+            {
+                hndTyp = (int)HBtab.ebdTyp;
+            }
+
+            var clause = new CORINFO_EH_CLAUSE {
                 Flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab.ebdHandlerType),
                 TryOffset = unchecked((int)tryBeg),
                 TryLength = unchecked((int)tryEnd),
@@ -89,8 +139,12 @@ public sealed partial class CodeGen
     public unsafe void genReportEHClauses(EHClauseInfo[] clauses)
     {
         var lastFuncletIndex = 0u;
-        var vmToEhOrder = _compiler.compVMClauseOrderToEHTabOrder
-            ?? throw new FatalJitException(CORJIT_SKIPPED, "VM-to-EH clause order has not been initialized.");
+        var vmToEhOrder = _compiler.compVMClauseOrderToEHTabOrder;
+        if (vmToEhOrder is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage083);
+            return;
+        }
 
         for (var vmIndex = 0; vmIndex < _compiler.compHndBBtabCount; vmIndex++)
         {
@@ -130,13 +184,33 @@ public sealed partial class CodeGen
 
     internal static CORINFO_EH_CLAUSE_FLAGS ToCORINFO_EH_CLAUSE_FLAGS(EHHandlerType type)
     {
-        return type switch
+        switch (type)
         {
-            EH_HANDLER_CATCH => CORINFO_EH_CLAUSE_NONE,
-            EH_HANDLER_FILTER => CORINFO_EH_CLAUSE_FILTER,
-            EH_HANDLER_FAULT or EH_HANDLER_FAULT_WAS_FINALLY => CORINFO_EH_CLAUSE_FAULT,
-            EH_HANDLER_FINALLY => CORINFO_EH_CLAUSE_FINALLY,
-            _ => throw new FatalJitException(CORJIT_SKIPPED, "Unknown EH handler type."),
-        };
+            case EH_HANDLER_CATCH:
+            {
+                return CORINFO_EH_CLAUSE_NONE;
+            }
+
+            case EH_HANDLER_FILTER:
+            {
+                return CORINFO_EH_CLAUSE_FILTER;
+            }
+
+            case EH_HANDLER_FAULT or EH_HANDLER_FAULT_WAS_FINALLY:
+            {
+                return CORINFO_EH_CLAUSE_FAULT;
+            }
+
+            case EH_HANDLER_FINALLY:
+            {
+                return CORINFO_EH_CLAUSE_FINALLY;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage084);
+                return default!;
+            }
+        }
     }
 }

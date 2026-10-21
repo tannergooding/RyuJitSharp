@@ -851,7 +851,7 @@ public partial class Compiler
         }
     }
 
-    public bool PreciseRefCountsRequired =>  opts.OptimizationEnabled;
+    public bool PreciseRefCountsRequired => opts.OptimizationEnabled;
 
     public int CNT_CALLEE_TRASH_FLOAT =>
         Configuration.TARGET_AMD64 ? cntCalleeTrashFloat : Globals.CNT_CALLEE_TRASH_FLOAT;
@@ -900,7 +900,8 @@ public partial class Compiler
             return SRBM_NONE;
         }
 
-        throw new FatalJitException("Mask registers are not defined for the configured target.");
+        FatalJitException.ThrowFatalJitException("Mask registers are not defined for the configured target.");
+        return default!;
     }
 
     public regMask SRBM_ALLMASK => getMaskRegisterSet(srbmAllMask);
@@ -2498,13 +2499,37 @@ public partial class Compiler
 
     public static var_types roundUpGprType(int size)
     {
-        return roundUpGprSize(size) switch {
-            1 => TYP_UBYTE,
-            2 => TYP_USHORT,
-            4 => TYP_INT,
-            8 when Configuration.TARGET_64BIT => TYP_LONG,
-            _ => throw new FatalJitException("Invalid GPR size."),
-        };
+        switch (roundUpGprSize(size))
+        {
+            case 1:
+            {
+                return TYP_UBYTE;
+            }
+
+            case 2:
+            {
+                return TYP_USHORT;
+            }
+
+            case 4:
+            {
+                return TYP_INT;
+            }
+
+            case 8 when Configuration.TARGET_64BIT:
+            {
+                return TYP_LONG;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage102
+                );
+                return default!;
+            }
+        }
     }
 
     /// <summary>rounds the given size up to the nearest SIMD size available on the target.</summary>
@@ -3238,8 +3263,7 @@ public partial class Compiler
             return;
         }
 
-        var reserved = vn switch
-        {
+        var reserved = vn switch {
             ValueNumStore.RecursiveVN => "$VN.Recursive",
             ValueNumStore.NoVN => "$VN.No",
             0 => "$VN.Null",
@@ -3257,8 +3281,12 @@ public partial class Compiler
         jitprintf($"${vn:x}");
         if (level > 0)
         {
-            var store = vnStore
-                ?? throw new FatalJitException("VN diagnostics require a value number store.");
+            var store = vnStore;
+            if (store is null)
+            {
+                FatalJitException.ThrowFatalJitException("VN diagnostics require a value number store.");
+                return;
+            }
             store.vnDump(this, vn);
         }
     }

@@ -158,25 +158,85 @@ public partial class Globals
         : SRBM_X64_XMM0 | SRBM_X64_XMM1 | SRBM_X64_XMM2 | SRBM_X64_XMM3
             | SRBM_X64_XMM4 | SRBM_X64_XMM5;
 
-    public static regNumber REG_PROFILER_ENTER_ARG_0 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_R14
-        : throw new FatalJitException("Profiler entry register is unavailable for this ABI.");
+    public static regNumber REG_PROFILER_ENTER_ARG_0
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_R14;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_PROFILER_ENTER_ARG_0 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_R14
-        : throw new FatalJitException("Profiler entry register is unavailable for this ABI.");
+    public static regMask SRBM_PROFILER_ENTER_ARG_0
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_R14;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_PROFILER_ENTER_ARG_1 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_R15
-        : throw new FatalJitException("Profiler entry register is unavailable for this ABI.");
+    public static regNumber REG_PROFILER_ENTER_ARG_1
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_R15;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_PROFILER_ENTER_ARG_1 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_R15
-        : throw new FatalJitException("Profiler entry register is unavailable for this ABI.");
+    public static regMask SRBM_PROFILER_ENTER_ARG_1
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_R15;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_DEFAULT_PROFILER_CALL_TARGET => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_R11
-        : throw new FatalJitException("Profiler call target is unavailable for this ABI.");
+    public static regNumber REG_DEFAULT_PROFILER_CALL_TARGET
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_R11;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Profiler call target is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
     public const regMask SRBM_MSK_CALLEE_TRASH_INIT_AMD64 = SRBM_NONE;
 
@@ -186,7 +246,7 @@ public partial class Globals
 
     public static regMask SRBM_OSR_INT_CALLEE_SAVED => SRBM_INT_CALLEE_SAVED_AMD64 | SRBM_X64_EBP;
 
-    public const regNumber REG_FLT_CALLEE_SAVED_FIRST_AMD64   = REG_X64_XMM6;
+    public const regNumber REG_FLT_CALLEE_SAVED_FIRST_AMD64 = REG_X64_XMM6;
 
     public const regNumber REG_FLT_CALLEE_SAVED_LAST_AMD64 = REG_X64_XMM15;
 
@@ -536,7 +596,7 @@ public partial class Globals
     public const regNumber REG_FLOATRET_1_AMD64 = REG_X64_XMM1;
 
     public const regMask SRBM_FLOATRET_1_AMD64 = SRBM_X64_XMM1;
-    
+
     public const regNumber REG_DOUBLERET_1 = REG_X64_XMM1;
 
     public const regMask SRBM_DOUBLERET_1_AMD64 = SRBM_X64_XMM1;
@@ -580,13 +640,37 @@ public partial class Globals
     public static regNumber REG_ARG_3_AMD64 =>
         Configuration.UNIX_AMD64_ABI ? REG_X64_ECX : REG_X64_R9;
 
-    public static regNumber REG_ARG_4_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_R8
-        : throw new FatalJitException("The AMD64 ABI has no fifth integer argument register.");
+    public static regNumber REG_ARG_4_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_R8;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth integer argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_ARG_5_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_R9
-        : throw new FatalJitException("The AMD64 ABI has no sixth integer argument register.");
+    public static regNumber REG_ARG_5_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_R9;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth integer argument register.");
+                return default!;
+            }
+        }
+    }
 
     public static regMask SRBM_ARG_0_AMD64 =>
         Configuration.UNIX_AMD64_ABI ? SRBM_X64_RDI : SRBM_X64_ECX;
@@ -600,13 +684,37 @@ public partial class Globals
     public static regMask SRBM_ARG_3_AMD64 =>
         Configuration.UNIX_AMD64_ABI ? SRBM_X64_ECX : SRBM_X64_R9;
 
-    public static regMask SRBM_ARG_4_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_R8
-        : throw new FatalJitException("The AMD64 ABI has no fifth integer argument register.");
+    public static regMask SRBM_ARG_4_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_R8;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth integer argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_ARG_5_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_R9
-        : throw new FatalJitException("The AMD64 ABI has no sixth integer argument register.");
+    public static regMask SRBM_ARG_5_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_R9;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth integer argument register.");
+                return default!;
+            }
+        }
+    }
 
     public const regNumber REG_FLTARG_0_AMD64 = REG_X64_XMM0;
 
@@ -624,37 +732,133 @@ public partial class Globals
 
     public const regMask SRBM_FLTARG_3_AMD64 = SRBM_X64_XMM3;
 
-    public static regNumber REG_FLTARG_4_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_XMM4
-        : throw new FatalJitException("The AMD64 ABI has no fifth floating-point argument register.");
+    public static regNumber REG_FLTARG_4_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_XMM4;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_FLTARG_5_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_XMM5
-        : throw new FatalJitException("The AMD64 ABI has no sixth floating-point argument register.");
+    public static regNumber REG_FLTARG_5_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_XMM5;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_FLTARG_6_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_XMM6
-        : throw new FatalJitException("The AMD64 ABI has no seventh floating-point argument register.");
+    public static regNumber REG_FLTARG_6_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_XMM6;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no seventh floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_FLTARG_7_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_XMM7
-        : throw new FatalJitException("The AMD64 ABI has no eighth floating-point argument register.");
+    public static regNumber REG_FLTARG_7_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_XMM7;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no eighth floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_FLTARG_4_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_XMM4
-        : throw new FatalJitException("The AMD64 ABI has no fifth floating-point argument register.");
+    public static regMask SRBM_FLTARG_4_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_XMM4;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_FLTARG_5_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_XMM5
-        : throw new FatalJitException("The AMD64 ABI has no sixth floating-point argument register.");
+    public static regMask SRBM_FLTARG_5_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_XMM5;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_FLTARG_6_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_XMM6
-        : throw new FatalJitException("The AMD64 ABI has no seventh floating-point argument register.");
+    public static regMask SRBM_FLTARG_6_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_XMM6;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no seventh floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_FLTARG_7_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_XMM7
-        : throw new FatalJitException("The AMD64 ABI has no eighth floating-point argument register.");
+    public static regMask SRBM_FLTARG_7_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_XMM7;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no eighth floating-point argument register.");
+                return default!;
+            }
+        }
+    }
 
     public static regMask SRBM_ARG_REGS_AMD64 => Configuration.UNIX_AMD64_ABI
         ? SRBM_ARG_0_AMD64 | SRBM_ARG_1_AMD64 | SRBM_ARG_2_AMD64 | SRBM_ARG_3_AMD64 | SRBM_ARG_4_AMD64 | SRBM_ARG_5_AMD64
@@ -677,11 +881,11 @@ public partial class Globals
     // TODO: Port once instruction enum exists
     // // Pointer-sized string move instructions
     // public const instruction INS_movsp = INS_movsq;
-    // 
+    //
     // public const instruction INS_r_movsp = INS_r_movsq;
-    // 
+    //
     // public const instruction INS_stosp = INS_stosq;
-    // 
+    //
     // public const instruction INS_r_stosp = INS_r_stosq;
 
     // AMD64 uses FEATURE_FIXED_OUT_ARGS so this can be zero.
@@ -697,35 +901,118 @@ public partial class Globals
     public static regNumber REG_SWIFT_ERROR_AMD64 =>
         Configuration.UNIX_AMD64_ABI ? REG_X64_R12 : REG_X64_NA;
 
-    public static regMask SRBM_SWIFT_ERROR_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_R12
-        : throw new FatalJitException("Swift ABI error register is unavailable for this ABI.");
+    public static regMask SRBM_SWIFT_ERROR_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_R12;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI error register is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
     public static regNumber REG_SWIFT_SELF_AMD64 =>
         Configuration.UNIX_AMD64_ABI ? REG_X64_R13 : REG_X64_NA;
 
-    public static regMask SRBM_SWIFT_SELF_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_R13
-        : throw new FatalJitException("Swift ABI self register is unavailable for this ABI.");
+    public static regMask SRBM_SWIFT_SELF_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_R13;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI self register is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static ReadOnlySpan<regNumber> REG_SWIFT_INTRET_ORDER_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? [REG_X64_RAX, REG_X64_RDX, REG_X64_RCX, REG_X64_R8]
-        : throw new FatalJitException("Swift ABI return registers are unavailable for this ABI.");
+    public static ReadOnlySpan<regNumber> REG_SWIFT_INTRET_ORDER_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return [REG_X64_RAX, REG_X64_RDX, REG_X64_RCX, REG_X64_R8];
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI return registers are unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static ReadOnlySpan<regNumber> REG_SWIFT_FLOATRET_ORDER_AMD64 => Configuration.UNIX_AMD64_ABI
-        ? [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3]
-        : throw new FatalJitException("Swift ABI return registers are unavailable for this ABI.");
+    public static ReadOnlySpan<regNumber> REG_SWIFT_FLOATRET_ORDER_AMD64
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3];
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI return registers are unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static regNumber REG_SWIFT_ARG_RET_BUFF => Configuration.UNIX_AMD64_ABI
-        ? REG_X64_RAX
-        : throw new FatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+    public static regNumber REG_SWIFT_ARG_RET_BUFF
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return REG_X64_RAX;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static regMask SRBM_SWIFT_ARG_RET_BUFF => Configuration.UNIX_AMD64_ABI
-        ? SRBM_X64_RAX
-        : throw new FatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+    public static regMask SRBM_SWIFT_ARG_RET_BUFF
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return SRBM_X64_RAX;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 
-    public static int SWIFT_RET_BUFF_ARGNUM => Configuration.UNIX_AMD64_ABI
-        ? MAX_REG_ARG_AMD64
-        : throw new FatalJitException("Swift ABI return buffer is unavailable for this ABI.");
-
+    public static int SWIFT_RET_BUFF_ARGNUM
+    {
+        get
+        {
+            if (Configuration.UNIX_AMD64_ABI)
+            {
+                return MAX_REG_ARG_AMD64;
+            }
+            else
+            {
+                FatalJitException.ThrowFatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+                return default!;
+            }
+        }
+    }
 }

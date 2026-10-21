@@ -400,33 +400,106 @@ public static partial class var_typesExtensions
             {
                 if (Configuration.DEBUG)
                 {
-                    return varType switch
+                    switch (varType)
                     {
-                        var_types.TYP_UNDEF => "<UNDEF>", // TYP_UNDEF
-                        var_types.TYP_VOID => "void", // TYP_VOID
-                        var_types.TYP_BYTE => "byte", // TYP_BYTE
-                        var_types.TYP_UBYTE => "ubyte", // TYP_UBYTE
-                        var_types.TYP_SHORT => "short", // TYP_SHORT
-                        var_types.TYP_USHORT => "ushort", // TYP_USHORT
-                        var_types.TYP_INT => "int", // TYP_INT
-                        var_types.TYP_UINT => "uint", // TYP_UINT
-                        var_types.TYP_LONG => "long", // TYP_LONG
-                        var_types.TYP_ULONG => "ulong", // TYP_ULONG
-                        var_types.TYP_FLOAT => "float", // TYP_FLOAT
-                        var_types.TYP_DOUBLE => "double", // TYP_DOUBLE
-                        var_types.TYP_REF => "ref", // TYP_REF
-                        var_types.TYP_BYREF => "byref", // TYP_BYREF
-                        var_types.TYP_STRUCT => "struct", // TYP_STRUCT
-                        var_types.TYP_SIMD8 => "simd8", // TYP_SIMD8
-                        var_types.TYP_SIMD12 => "simd12", // TYP_SIMD12
-                        var_types.TYP_SIMD16 => "simd16", // TYP_SIMD16
-                        var_types.TYP_SIMD32 => "simd32", // TYP_SIMD32
-                        var_types.TYP_SIMD64 => "simd64", // TYP_SIMD64
-                        var_types.TYP_SIMD_ARM64 => "simd", // TYP_SIMD_ARM64
-                        var_types.TYP_MASK => "mask", // TYP_MASK
-                        var_types.TYP_UNKNOWN => "unknown", // TYP_UNKNOWN
-                        _ => throw new IndexOutOfRangeException(),
-                    };
+                        case var_types.TYP_UNDEF:
+                        {
+                            return "<UNDEF>"; // TYP_UNDEF
+                        }
+                        case var_types.TYP_VOID:
+                        {
+                            return "void"; // TYP_VOID
+                        }
+                        case var_types.TYP_BYTE:
+                        {
+                            return "byte"; // TYP_BYTE
+                        }
+                        case var_types.TYP_UBYTE:
+                        {
+                            return "ubyte"; // TYP_UBYTE
+                        }
+                        case var_types.TYP_SHORT:
+                        {
+                            return "short"; // TYP_SHORT
+                        }
+                        case var_types.TYP_USHORT:
+                        {
+                            return "ushort"; // TYP_USHORT
+                        }
+                        case var_types.TYP_INT:
+                        {
+                            return "int"; // TYP_INT
+                        }
+                        case var_types.TYP_UINT:
+                        {
+                            return "uint"; // TYP_UINT
+                        }
+                        case var_types.TYP_LONG:
+                        {
+                            return "long"; // TYP_LONG
+                        }
+                        case var_types.TYP_ULONG:
+                        {
+                            return "ulong"; // TYP_ULONG
+                        }
+                        case var_types.TYP_FLOAT:
+                        {
+                            return "float"; // TYP_FLOAT
+                        }
+                        case var_types.TYP_DOUBLE:
+                        {
+                            return "double"; // TYP_DOUBLE
+                        }
+                        case var_types.TYP_REF:
+                        {
+                            return "ref"; // TYP_REF
+                        }
+                        case var_types.TYP_BYREF:
+                        {
+                            return "byref"; // TYP_BYREF
+                        }
+                        case var_types.TYP_STRUCT:
+                        {
+                            return "struct"; // TYP_STRUCT
+                        }
+                        case var_types.TYP_SIMD8:
+                        {
+                            return "simd8"; // TYP_SIMD8
+                        }
+                        case var_types.TYP_SIMD12:
+                        {
+                            return "simd12"; // TYP_SIMD12
+                        }
+                        case var_types.TYP_SIMD16:
+                        {
+                            return "simd16"; // TYP_SIMD16
+                        }
+                        case var_types.TYP_SIMD32:
+                        {
+                            return "simd32"; // TYP_SIMD32
+                        }
+                        case var_types.TYP_SIMD64:
+                        {
+                            return "simd64"; // TYP_SIMD64
+                        }
+                        case var_types.TYP_SIMD_ARM64:
+                        {
+                            return "simd"; // TYP_SIMD_ARM64
+                        }
+                        case var_types.TYP_MASK:
+                        {
+                            return "mask"; // TYP_MASK
+                        }
+                        case var_types.TYP_UNKNOWN:
+                        {
+                            return "unknown"; // TYP_UNKNOWN
+                        }
+                        default:
+                        {
+                            JitExceptionHelpers.ThrowIndexOutOfRangeException();
+                            return default!;
+                        }
+                    }
                 }
 
                 return varType.ToString();

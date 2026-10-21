@@ -15,8 +15,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "WebAssembly emitter operations require WebAssembly.");
+            return;
         }
     }
 

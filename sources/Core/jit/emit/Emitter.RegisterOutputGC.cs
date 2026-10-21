@@ -14,7 +14,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch GC register classification is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch GC register classification is not available for this target.");
+            return default!;
         }
 
         if (Configuration.DEBUG)
@@ -38,7 +39,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch GC register output is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch GC register output is not available for this target.");
+            return;
         }
 
         var reg1 = id.idReg1();
@@ -160,7 +162,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch GC register output is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch GC register output is not available for this target.");
+            return default!;
         }
 
         var ins = id.idIns();

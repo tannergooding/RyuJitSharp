@@ -218,6 +218,9 @@ internal static class Configuration
 
     internal static bool NODEBASH_STATS => GetOptionalFeatureSwitch(nameof(NODEBASH_STATS));
 
+    internal static bool DETAILED_FATAL_ERROR_MESSAGES =>
+        DEBUG || GetOptionalFeatureSwitch(nameof(DETAILED_FATAL_ERROR_MESSAGES));
+
     // Fixed-value substitutions
     internal static bool ARM_SOFTFP => GetFeatureSwitch(nameof(ARM_SOFTFP));
 
@@ -226,11 +229,11 @@ internal static class Configuration
     // JIT-only optional switches
     internal static bool DEBUG_EMIT => GetOptionalFeatureSwitch(nameof(DEBUG_EMIT));
 
+    internal static bool MEASURE_CLRAPI_CALLS => GetOptionalFeatureSwitch(nameof(MEASURE_CLRAPI_CALLS));
+
     internal static bool VARSET_COUNTOPS => GetOptionalFeatureSwitch(nameof(VARSET_COUNTOPS));
 
     internal static bool ALLVARSET_COUNTOPS => GetOptionalFeatureSwitch(nameof(ALLVARSET_COUNTOPS));
-    internal static bool MEASURE_CLRAPI_CALLS => GetOptionalFeatureSwitch(nameof(MEASURE_CLRAPI_CALLS));
-
 
     internal static bool EMIT_BACKWARDS_NAVIGATION => GetOptionalFeatureSwitch(nameof(EMIT_BACKWARDS_NAVIGATION));
 
@@ -380,13 +383,49 @@ internal static class Configuration
     internal static int STACK_ALIGN =>
         TARGET_ARM ? 8 : TARGET_X86 ? (UNIX_X86_ABI ? 16 : 4) : 16;
 
-    internal static int EMIT_JUMPKIND_COUNT =>
-        TARGET_XARCH ? (int)emitJumpKind.EJ_XARCH_COUNT :
-        TARGET_ARMARCH ? (int)emitJumpKind.EJ_ARMARCH_COUNT :
-        TARGET_LOONGARCH64 ? (int)emitJumpKind.EJ_LOONGARCH64_COUNT :
-        TARGET_RISCV64 ? (int)emitJumpKind.EJ_RISCV64_COUNT :
-        TARGET_WASM ? (int)emitJumpKind.EJ_WASM_COUNT :
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump kinds are not supported for this target.");
+    internal static int EMIT_JUMPKIND_COUNT
+    {
+        get
+        {
+            if (TARGET_XARCH)
+            {
+                return (int)emitJumpKind.EJ_XARCH_COUNT;
+            }
+            else
+            {
+                if (TARGET_ARMARCH)
+                {
+                    return (int)emitJumpKind.EJ_ARMARCH_COUNT;
+                }
+                else
+                {
+                    if (TARGET_LOONGARCH64)
+                    {
+                        return (int)emitJumpKind.EJ_LOONGARCH64_COUNT;
+                    }
+                    else
+                    {
+                        if (TARGET_RISCV64)
+                        {
+                            return (int)emitJumpKind.EJ_RISCV64_COUNT;
+                        }
+                        else
+                        {
+                            if (TARGET_WASM)
+                            {
+                                return (int)emitJumpKind.EJ_WASM_COUNT;
+                            }
+                            else
+                            {
+                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump kinds are not supported for this target.");
+                                return default!;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Runtime support checks and feature-switch helpers
 
@@ -394,7 +433,8 @@ internal static class Configuration
     {
         if (!TARGET_WASM)
         {
-            throw new FatalJitException("WebAssembly-only compiler code requires the WebAssembly target.");
+            FatalJitException.ThrowFatalJitException("WebAssembly-only compiler code requires the WebAssembly target.");
+            return;
         }
     }
 
@@ -407,7 +447,8 @@ internal static class Configuration
             return;
         }
 
-        throw new FatalJitException($"Unsupported host architecture: {RuntimeInformation.ProcessArchitecture}.");
+        FatalJitException.ThrowFatalJitException($"Unsupported host architecture: {RuntimeInformation.ProcessArchitecture}.");
+        return;
     }
 
     private static bool GetOptionalFeatureSwitch(string featureName, bool defaultValue = false)

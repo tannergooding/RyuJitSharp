@@ -1430,7 +1430,8 @@ public sealed partial class BasicBlock : LIR.Range
     {
         Debug.Assert(Configuration.MEASURE_BLOCK_SIZE);
         s_Count += 1;
-        throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
+        return;
     }
 
     public static BasicBlock New(Compiler compiler, BBKinds kind)
@@ -2137,7 +2138,7 @@ public sealed partial class BasicBlock : LIR.Range
         static string dspBlockNum(FlowEdge e)
         {
             var b = e.DestinationBlock;
-            var result = (b is not null) ? FMT_BB(b.bbNum) : "NULL"; 
+            var result = (b is not null) ? FMT_BB(b.bbNum) : "NULL";
 
             const bool printEdgeLikelihoods = true; // TODO: parameterize this?
 

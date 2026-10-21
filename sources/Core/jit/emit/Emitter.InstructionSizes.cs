@@ -131,7 +131,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+            return default!;
         }
 
         if (Configuration.TARGET_X86)
@@ -306,7 +307,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+            return default!;
         }
 
         size += emitGetPrefixSize(id, code, includeRexPrefixSize);

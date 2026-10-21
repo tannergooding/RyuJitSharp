@@ -48,7 +48,11 @@ public readonly struct LC_Expr
     {
         if (Type is not ExprType.Ident)
         {
-            throw new FatalJitException("Cannot materialize an invalid loop-cloning expression.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage250
+            );
+            return default!;
         }
         return Ident.ToGenTree(compiler, block);
     }

@@ -87,7 +87,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic immediate discovery requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic immediate discovery requires hardware intrinsics.");
+            return;
         }
 
         if (Configuration.TARGET_XARCH)
@@ -136,7 +137,8 @@ public partial class Compiler
 
         NYI("Hardware-intrinsic immediate discovery outside xarch");
         fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("Hardware-intrinsic immediate discovery outside xarch.");
+        FatalJitException.ThrowFatalJitException("Hardware-intrinsic immediate discovery outside xarch.");
+        return;
     }
 
     private GenTree addRangeCheckIfNeeded(

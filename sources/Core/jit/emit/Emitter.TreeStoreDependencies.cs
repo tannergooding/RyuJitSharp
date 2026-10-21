@@ -11,19 +11,20 @@ public partial class Emitter
     {
         if (!Configuration.CPU_LOAD_STORE_ARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Target instruction store classification is not implemented.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-        // The encoder-only predicate uses a checked unsigned conversion.
+            // The encoder-only predicate uses a checked unsigned conversion.
             return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out _) && emitInsIsStoreArm64(ins);
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-        // Pseudo instructions such as LEA are not represented in the instruction table.
+            // Pseudo instructions such as LEA are not represented in the instruction table.
             return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
                    (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
                    (((byte)CodeGen.instInfo[nativeOrdinal] & RISCV64_ST) != 0);
@@ -31,7 +32,7 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-        // Pseudo instructions such as LEA are not represented in the instruction table.
+            // Pseudo instructions such as LEA are not represented in the instruction table.
             return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
                    (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
                    (((byte)CodeGen.instInfo[nativeOrdinal] & LOONGARCH64_ST) != 0);
@@ -47,10 +48,12 @@ public partial class Emitter
 
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_INTERNALERROR,
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
                 $"Wasm store classification is unreachable for instruction {ins}.");
+            return default!;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
+        return default!;
     }
 }

@@ -15,7 +15,7 @@
     <RyuJitVerifyGcTables Condition="'$(RyuJitVerifyGcTables)' == ''">false</RyuJitVerifyGcTables>
   </PropertyGroup>
 
-  <!-- Release keeps debugger support and exception messages, but omits stack-trace data for size. -->
+  <!-- Release keeps debugger support but defaults to omitting fatal error details and stack-trace data. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebuggerSupport>true</DebuggerSupport>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -709,6 +709,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Set RyuJitDetailedFatalErrorMessages=true to keep expanded Release fatal JIT messages. -->
+    <RyuJitSubstitutionEnabled Include="DETAILED_FATAL_ERROR_MESSAGES" Condition="'$(Configuration)' == 'Debug' or '$(RyuJitDetailedFatalErrorMessages)' == 'true'" />
+
     <RyuJitSubstitutionEnabled Include="DEBUG_EMIT" Condition="'$(RyuJitEnableDebugEmit)' == 'true'" />
     <RyuJitSubstitutionEnabled Include="VARSET_COUNTOPS" Condition="'$(RyuJitEnableVarSetCountOps)' == 'true'" />
     <RyuJitSubstitutionEnabled Include="ALLVARSET_COUNTOPS" Condition="'$(RyuJitEnableAllVarSetCountOps)' == 'true'" />
@@ -920,16 +923,17 @@
     <RyuJitSubstitution Include="MEASURE_NOWAY" />
     <RyuJitSubstitution Include="MEASURE_PTRTAB_SIZE" />
     <RyuJitSubstitution Include="NODEBASH_STATS" />
+    <RyuJitSubstitution Include="DETAILED_FATAL_ERROR_MESSAGES" />
     <RyuJitSubstitution Include="ARM_SOFTFP" FixedValue="false" />
     <RyuJitSubstitution Include="DISASM_DEBUG" FixedValue="false" />
 
     <!-- JIT-only feature switches -->
     <RyuJitSubstitution Include="DEBUG_EMIT" />
+    <RyuJitSubstitution Include="MEASURE_CLRAPI_CALLS" />
     <RyuJitSubstitution Include="VARSET_COUNTOPS" />
     <RyuJitSubstitution Include="ALLVARSET_COUNTOPS" />
     <RyuJitSubstitution Include="EMIT_BACKWARDS_NAVIGATION" />
     <RyuJitSubstitution Include="OPTIONAL_STATISTICS" />
-    <RyuJitSubstitution Include="MEASURE_CLRAPI_CALLS" />
 
     <!-- Target-derived features -->
     <RyuJitSubstitution Include="FEATURE_ITINSTRUCTION" FixedValue="false" />

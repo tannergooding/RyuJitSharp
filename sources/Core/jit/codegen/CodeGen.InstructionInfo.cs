@@ -62,8 +62,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Wasm SIMD metadata is not available for the configured target.");
+            return default!;
         }
 
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);

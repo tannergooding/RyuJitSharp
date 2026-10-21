@@ -619,7 +619,8 @@ public struct ReturnTypeDesc
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            throw new FatalJitException("ABI return-register masks are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("ABI return-register masks are unsupported on this target.");
+            return default!;
         }
 
         var resultMask = new regMaskTP(SRBM_NONE);

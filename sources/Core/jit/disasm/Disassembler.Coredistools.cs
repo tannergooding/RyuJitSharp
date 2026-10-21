@@ -81,7 +81,8 @@ public partial struct Disassembler
             return CoreDisTarget.RiscV64;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools does not support this JIT target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "CoreDisTools does not support this JIT target.");
+        return default!;
     }
 
     private unsafe void DoneCoredistoolsDisasm()
@@ -93,7 +94,8 @@ public partial struct Disassembler
 
         if (s_PtrFinishDisasm == null)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools decoder cleanup requires the FinishDisasm export.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "CoreDisTools decoder cleanup requires the FinishDisasm export.");
+            return;
         }
 
         s_PtrFinishDisasm(_corDisasm);
@@ -120,7 +122,8 @@ public partial struct Disassembler
         {
             if (s_PtrDumpInstruction == null)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools decoding requires the DumpInstruction export.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "CoreDisTools decoding requires the DumpInstruction export.");
+                return;
             }
 
             var instrLen = s_PtrDumpInstruction(_corDisasm, address, codeBytes, codeSizeBytes);
@@ -164,11 +167,20 @@ public partial struct Disassembler
         {
             if (outputBuffer == null)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools returned a null buffered output pointer.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED, "CoreDisTools returned a null buffered output pointer.");
+                return default!;
             }
 
-            return Marshal.PtrToStringUTF8((nint)outputBuffer)
-                ?? throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools returned invalid buffered output.");
+            var output = Marshal.PtrToStringUTF8((nint)outputBuffer);
+            if (output is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED, "CoreDisTools returned invalid buffered output.");
+                return default!;
+            }
+
+            return output;
         }
         finally
         {

@@ -11,15 +11,23 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         if (Configuration.DEBUG)
         {
             JITDUMP($"Inserting UpperVectorSave for RP #{reference.rpNum} before {tree.TreeId}.{tree.Oper.Name}:\n");
         }
-        var localInterval = upper.relatedInterval
-            ?? throw new FatalJitException("An upper-vector save requires its local interval.");
+        var localInterval = upper.relatedInterval;
+        if (localInterval is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage353
+            );
+            return;
+        }
         assert(localInterval.isLocalVar && ReferenceEquals(reference.getInterval(), upper));
         var localReg = localInterval.physReg;
         if (localReg == REG_NA)
@@ -43,8 +51,7 @@ public sealed partial class LinearScan
         {
             source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
         }
-        var save = new GenTreeIntrinsic(saveType, source, NI_SIMD_UpperSave, methodHandle: null)
-        {
+        var save = new GenTreeIntrinsic(saveType, source, NI_SIMD_UpperSave, methodHandle: null) {
             RegNum = spillReg,
         };
         if (Configuration.FEATURE_READYTORUN)
@@ -76,15 +83,23 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         if (Configuration.DEBUG)
         {
             JITDUMP($"Inserting UpperVectorRestore for RP #{reference.rpNum} ");
         }
-        var localInterval = upper.relatedInterval
-            ?? throw new FatalJitException("An upper-vector restore requires its local interval.");
+        var localInterval = upper.relatedInterval;
+        if (localInterval is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage354
+            );
+            return;
+        }
         assert(localInterval.isLocalVar && localInterval.physReg != REG_NA);
         ref var local = ref _compiler.lvaGetDesc(checked((int)localInterval.varNum));
         assert(LsraConfiguration.VarTypeNeedsPartialCalleeSave(local.GetRegisterType()));
@@ -130,7 +145,11 @@ public sealed partial class LinearScan
             {
                 if (!block.TryGetUse(useNode, out var use))
                 {
-                    throw new FatalJitException("An upper-vector restore requires an owning use.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage355
+                    );
+                    return;
                 }
                 useNode = use.User();
                 if (!useNode.IsContained)
@@ -147,8 +166,15 @@ public sealed partial class LinearScan
             if (block.Kind is BBJ_COND or BBJ_SWITCH)
             {
                 noway_assert(!block.IsEmpty);
-                var branch = block.LastNode
-                    ?? throw new FatalJitException("A vector restore before a branch requires a terminator.");
+                var branch = block.LastNode;
+                if (branch is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage356
+                    );
+                    return;
+                }
                 assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);
                 block.InsertBefore(branch, LIR.SeqTree(_compiler, restore));
             }

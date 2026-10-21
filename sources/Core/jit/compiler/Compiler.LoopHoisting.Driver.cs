@@ -12,7 +12,15 @@ public partial class Compiler
 {
     protected PhaseStatus optHoistLoopCode()
     {
-        var loops = _loops ?? throw new FatalJitException("Loop hoisting requires loop discovery.");
+        var loops = _loops;
+        if (loops is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage153
+            );
+            return default!;
+        }
         if (loops.NumLoops == 0)
         {
             JITDUMP("\nNo loops; no hoisting\n");
@@ -65,8 +73,15 @@ public partial class Compiler
     private bool optHoistThisLoop(FlowGraphNaturalLoop loop, LoopHoistContext context)
     {
         context.CurLoopVnInvariantCache.Clear();
-        var sideEffects = _loopSideEffects?[loop.Index]
-            ?? throw new FatalJitException("Loop hoisting requires loop side-effect analysis.");
+        var sideEffects = _loopSideEffects?[loop.Index];
+        if (sideEffects is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage154
+            );
+            return default!;
+        }
         if (Configuration.DEBUG && verbose)
         {
             jitprintf("optHoistThisLoop processing ");
@@ -152,8 +167,24 @@ public partial class Compiler
                 context.HoistedMskExprCount = 0;
             }
         }
-        var dfsTree = _dfsTree ?? throw new FatalJitException("Loop hoisting requires a DFS tree.");
-        var domTree = _domTree ?? throw new FatalJitException("Loop hoisting requires dominators.");
+        var dfsTree = _dfsTree;
+        if (dfsTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage155
+            );
+            return default!;
+        }
+        var domTree = _domTree;
+        if (domTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage156
+            );
+            return default!;
+        }
         var traits = dfsTree.PostOrderTraits();
         var defExec = BitVecOps.MakeEmpty(traits);
 

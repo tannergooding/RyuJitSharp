@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Varargs shadow-slot homing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Varargs shadow-slot homing requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

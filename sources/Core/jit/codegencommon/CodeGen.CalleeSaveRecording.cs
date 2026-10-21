@@ -44,7 +44,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-save pushes require xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -109,7 +110,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "APX callee-save pushes require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "APX callee-save pushes require AMD64.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -154,7 +156,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating callee-save recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -195,7 +198,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save restoration requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating callee-save restoration requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

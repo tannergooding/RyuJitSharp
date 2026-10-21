@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction display is not used on LoongArch64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction display is not used on LoongArch64.");
+            return;
         }
 
         if (Configuration.DEBUG)
@@ -90,8 +91,9 @@ public partial class Emitter
                 s_arm64InstructionLoadStoreFlags[nativeOrdinal] != 0;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Load/store classification is only supported on ARM32 and ARM64.");
+        return default!;
     }
 
     private void emitInsSanityCheck(instrDesc id)
@@ -131,8 +133,9 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Instruction sanity checking is not implemented for this target.");
+        return;
     }
 
     public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
@@ -174,15 +177,17 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction display is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction display is not implemented for this target.");
+        return;
     }
 
     private bool emitInsIsLoadArm32(instruction ins)
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 instruction classification is only supported on ARM32.");
+            return default!;
         }
 
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
@@ -194,8 +199,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 instruction classification is only supported on ARM32.");
+            return default!;
         }
 
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
@@ -207,8 +213,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 instruction classification is only supported on ARM32.");
+            return default!;
         }
 
         if (!id.idIsLclVar())
@@ -224,8 +231,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 instruction classification is only supported on ARM32.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -238,8 +246,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 instruction classification is only supported on ARM32.");
+            return default!;
         }
 
         var ins = id.idIns();

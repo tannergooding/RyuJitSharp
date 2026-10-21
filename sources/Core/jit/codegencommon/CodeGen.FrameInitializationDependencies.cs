@@ -16,7 +16,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Prespilled unmapped registers are only supported on ARM.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Prespilled unmapped registers are only supported on ARM.");
+            return default!;
         }
 
         var regs = _regSet.rsMaskPreSpillRegs(false);
@@ -56,14 +57,16 @@ public sealed partial class CodeGen
         {
             if (inUnwindRegion)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Unwind-region immediate materialization is not implemented for ARM.");
+                return default!;
             }
             return genInstrWithConstantArm(ins, attr, reg1, reg2, imm, tmpReg, INS_FLAGS_DONT_CARE);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Immediate materialization is not implemented for this target.");
+        return default!;
     }
 
     private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1,
@@ -71,8 +74,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Instruction flags for immediate materialization are only supported on ARM.");
+            return default!;
         }
 
         return genInstrWithConstantArm(ins, attr, reg1, reg2, imm, tmpReg, flags);

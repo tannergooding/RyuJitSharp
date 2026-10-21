@@ -178,7 +178,7 @@ public sealed class GenTreeCall : GenTree
     {
         get
         {
-            return (CORINFO_GENERIC_HANDLE) (_anonymous4);
+            return (CORINFO_GENERIC_HANDLE)(_anonymous4);
         }
 
         set
@@ -720,7 +720,11 @@ public sealed class GenTreeCall : GenTree
 
             default:
             {
-                throw new FatalJitException("Unsupported call kind in vzeroupper classification.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage231
+                );
+                return default!;
             }
         }
 

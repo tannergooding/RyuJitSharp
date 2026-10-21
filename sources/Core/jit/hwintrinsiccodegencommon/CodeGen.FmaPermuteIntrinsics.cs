@@ -11,12 +11,14 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+            return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "FMA generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "FMA generation requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -102,12 +104,14 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+            return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "PermuteVar2x generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "PermuteVar2x generation requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

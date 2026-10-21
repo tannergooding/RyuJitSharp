@@ -44,7 +44,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         assert((candidates & ~_availableMaskRegs) == SRBM_NONE);
@@ -56,8 +57,15 @@ public sealed partial class LinearScan
         assert(_internalDefinitionCount <= MaxInternalRegisters);
         for (var index = 0; index < _internalDefinitionCount; index++)
         {
-            var definition = _internalDefinitions[index]
-                ?? throw new FatalJitException("LSRA internal definition state contains an empty entry.");
+            var definition = _internalDefinitions[index];
+            if (definition is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage282
+                );
+                return;
+            }
             var use = newRefPosition(definition.getInterval(), _referenceBuildLocation, RefType.RefTypeUse,
                 definition.treeNode, definition.registerAssignment);
             if (_setInternalRegistersDelayFree)
@@ -145,8 +153,15 @@ public sealed partial class LinearScan
 
             for (var node = _definitionList.First; node is not null; node = node.next)
             {
-                var definition = node.refPosition
-                    ?? throw new FatalJitException("An LSRA definition-list entry must retain its reference.");
+                var definition = node.refPosition;
+                if (definition is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage283
+                    );
+                    return default!;
+                }
                 var interval = definition.getInterval();
                 if (!interval.isLocalVar)
                 {
@@ -207,8 +222,15 @@ public sealed partial class LinearScan
         {
             assert((fpCalleeKillSet & _rbmFltCalleeTrash) != SRBM_NONE);
             assert((fpCalleeKillSet & TargetRuntimeMetadata.FloatingCalleeSavedMask) == SRBM_NONE);
-            var block = _compiler.compCurBB
-                ?? throw new FatalJitException("Upper-vector saves require the current basic block.");
+            var block = _compiler.compCurBB;
+            if (block is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage284
+                );
+                return;
+            }
             var liveDefinitions = VarSetOps.MakeEmpty(_compiler);
             VarSetOps.UnionD(_compiler, liveDefinitions, block.bbLiveIn);
             VarSetOps.UnionD(_compiler, liveDefinitions, block.bbVarDef);
@@ -243,16 +265,30 @@ public sealed partial class LinearScan
 
         for (var node = _definitionList.First; node is not null; node = node.next)
         {
-            var treeNode = node.treeNode
-                ?? throw new FatalJitException("An LSRA definition-list entry must retain its defining node.");
+            var treeNode = node.treeNode;
+            if (treeNode is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage285
+                );
+                return;
+            }
             var registerType = getUpperVectorTemporaryType(treeNode);
             if (!LsraConfiguration.VarTypeNeedsPartialCalleeSave(registerType))
             {
                 continue;
             }
 
-            var definition = node.refPosition
-                ?? throw new FatalJitException("An LSRA definition-list entry must retain its reference.");
+            var definition = node.refPosition;
+            if (definition is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage283
+                );
+                return;
+            }
             var interval = definition.getInterval();
             if (interval.recentRefPosition?.refType is not RefType.RefTypeUpperVectorSave)
             {
@@ -277,7 +313,11 @@ public sealed partial class LinearScan
         assert(tree.Oper.IsCall);
         if (!tree.Oper.IsCall)
         {
-            throw new FatalJitException("LSRA struct temporaries must be local variables or calls.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage286
+            );
+            return default!;
         }
 
         var call = tree.AsCall();
@@ -308,7 +348,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         assert(!tree.AsCall().HasMultiRegRetVal);

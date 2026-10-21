@@ -12,8 +12,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 immediate materialization requires LoongArch64.");
+            return;
         }
 
         assert(!EA_IS_RELOC(attr));

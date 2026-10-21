@@ -28,20 +28,28 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException("emitDispFrameRef-----unused on LoongArch64.");
+            FatalJitException.ThrowFatalJitException("emitDispFrameRef-----unused on LoongArch64.");
+            return;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
+            FatalJitException.ThrowFatalJitException("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
+            return;
         }
 
-        throw new FatalJitException("Frame-reference display is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException("Frame-reference display is not implemented for this target.");
+        return;
     }
 
     private void emitDispFrameRefXarch(int variable, int displacement, uint ilOffset, bool assembly)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FrameReferenceDisplayMissingCompiler);
+            return;
+        }
         jitprintf("[");
         if (!assembly || compiler.lvaDoneFrameLayout == Compiler.NO_FRAME_LAYOUT)
         {
@@ -114,7 +122,12 @@ public partial class Emitter
 
     private void emitDispFrameRefArm(int variable, int displacement, uint ilOffset)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FrameReferenceDisplayMissingCompiler);
+            return;
+        }
         jitprintf("[");
         if (variable < 0)
         {
@@ -162,10 +175,16 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Static xarch reference display requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static xarch reference display requires xarch.");
+            return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("Static reference display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.StaticReferenceDisplayMissingCompiler);
+            return;
+        }
         if (Configuration.TARGET_X86)
         {
             offset = unchecked((int)offset);

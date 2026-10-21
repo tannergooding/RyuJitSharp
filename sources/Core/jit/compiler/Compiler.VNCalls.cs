@@ -387,87 +387,293 @@ public partial class Compiler
     public VNFunc fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
     {
         assert(helpFunc.IsPure || helpFunc.IsAllocator);
-        return helpFunc switch
+        switch (helpFunc)
         {
-            CORINFO_HELP_DIV or CORINFO_HELP_LDIV => VNF_DIV,
-            CORINFO_HELP_MOD or CORINFO_HELP_LMOD or CORINFO_HELP_FLTREM or CORINFO_HELP_DBLREM => VNF_MOD,
-            CORINFO_HELP_UDIV or CORINFO_HELP_ULDIV => VNF_UDIV,
-            CORINFO_HELP_UMOD or CORINFO_HELP_ULMOD => VNF_UMOD,
-            CORINFO_HELP_LLSH => VNF_LSH,
-            CORINFO_HELP_LRSH => VNF_RSH,
-            CORINFO_HELP_LRSZ => VNF_RSZ,
-            CORINFO_HELP_LMUL => VNF_MUL,
-            CORINFO_HELP_LMUL_OVF => VNF_MUL_OVF,
-            CORINFO_HELP_ULMUL_OVF => VNF_MUL_UN_OVF,
-            CORINFO_HELP_NEWFAST or CORINFO_HELP_NEWSFAST or CORINFO_HELP_NEWSFAST_FINALIZE or
+            case CORINFO_HELP_DIV or CORINFO_HELP_LDIV:
+            {
+                return VNF_DIV;
+            }
+            case CORINFO_HELP_MOD or CORINFO_HELP_LMOD or CORINFO_HELP_FLTREM or CORINFO_HELP_DBLREM:
+            {
+                return VNF_MOD;
+            }
+            case CORINFO_HELP_UDIV or CORINFO_HELP_ULDIV:
+            {
+                return VNF_UDIV;
+            }
+            case CORINFO_HELP_UMOD or CORINFO_HELP_ULMOD:
+            {
+                return VNF_UMOD;
+            }
+            case CORINFO_HELP_LLSH:
+            {
+                return VNF_LSH;
+            }
+            case CORINFO_HELP_LRSH:
+            {
+                return VNF_RSH;
+            }
+            case CORINFO_HELP_LRSZ:
+            {
+                return VNF_RSZ;
+            }
+            case CORINFO_HELP_LMUL:
+            {
+                return VNF_MUL;
+            }
+            case CORINFO_HELP_LMUL_OVF:
+            {
+                return VNF_MUL_OVF;
+            }
+            case CORINFO_HELP_ULMUL_OVF:
+            {
+                return VNF_MUL_UN_OVF;
+            }
+            case CORINFO_HELP_NEWFAST or CORINFO_HELP_NEWSFAST or CORINFO_HELP_NEWSFAST_FINALIZE or
                 CORINFO_HELP_NEWSFAST_ALIGN8 or CORINFO_HELP_NEWSFAST_ALIGN8_VC or
-                CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE => VNF_JitNew,
-            CORINFO_HELP_READYTORUN_NEW => VNF_JitReadyToRunNew,
-            CORINFO_HELP_NEWARR_1_DIRECT or CORINFO_HELP_NEWARR_1_PTR or
-                CORINFO_HELP_NEWARR_1_VC or CORINFO_HELP_NEWARR_1_ALIGN8 => VNF_JitNewArr,
-            CORINFO_HELP_NEW_MDARR or CORINFO_HELP_NEW_MDARR_RARE => VNF_JitNewMdArr,
-            CORINFO_HELP_READYTORUN_NEWARR_1 => VNF_JitReadyToRunNewArr,
-            CORINFO_HELP_NEWFAST_MAYBEFROZEN => IsAot ? VNF_JitReadyToRunNew : VNF_JitNew,
-            CORINFO_HELP_NEWARR_1_MAYBEFROZEN => IsAot ? VNF_JitReadyToRunNewArr : VNF_JitNewArr,
-            CORINFO_HELP_GET_GCSTATIC_BASE => VNF_GetGcstaticBase,
-            CORINFO_HELP_GET_NONGCSTATIC_BASE => VNF_GetNongcstaticBase,
-            CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE => VNF_GetdynamicGcstaticBase,
-            CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE => VNF_GetdynamicNongcstaticBase,
-            CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR => VNF_GetdynamicGcstaticBaseNoctor,
-            CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR => VNF_GetdynamicNongcstaticBaseNoctor,
-            CORINFO_HELP_GETPINNED_GCSTATIC_BASE => VNF_GetpinnedGcstaticBase,
-            CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE => VNF_GetpinnedNongcstaticBase,
-            CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR => VNF_GetpinnedGcstaticBaseNoctor,
-            CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR => VNF_GetpinnedNongcstaticBaseNoctor,
-            CORINFO_HELP_READYTORUN_GCSTATIC_BASE => VNF_ReadyToRunStaticBaseGC,
-            CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE => VNF_ReadyToRunStaticBaseNonGC,
-            CORINFO_HELP_READYTORUN_THREADSTATIC_BASE => VNF_ReadyToRunStaticBaseThread,
-            CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR => VNF_ReadyToRunStaticBaseThreadNoctor,
-            CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE => VNF_ReadyToRunStaticBaseThreadNonGC,
-            CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE => VNF_ReadyToRunGenericStaticBase,
-            CORINFO_HELP_GET_GCTHREADSTATIC_BASE => VNF_GetGcthreadstaticBase,
-            CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE => VNF_GetNongcthreadstaticBase,
-            CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR => VNF_GetGcthreadstaticBaseNoctor,
-            CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR => VNF_GetNongcthreadstaticBaseNoctor,
-            CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE => VNF_GetdynamicGcthreadstaticBase,
-            CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE => VNF_GetdynamicNongcthreadstaticBase,
-            CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR => VNF_GetdynamicGcthreadstaticBaseNoctor,
-            CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR => VNF_GetdynamicNongcthreadstaticBaseNoctor,
-            CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED =>
-                VNF_GetdynamicGcthreadstaticBaseNoctorOptimized,
-            CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED =>
-                VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized,
-            CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 =>
-                VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2,
-            CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT =>
-                VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2NoJitOpt,
-            CORINFO_HELP_GETSTATICFIELDADDR_TLS => VNF_GetStaticAddrTLS,
-            CORINFO_HELP_RUNTIMEHANDLE_METHOD => VNF_RuntimeHandleMethod,
-            CORINFO_HELP_READYTORUN_GENERIC_HANDLE => VNF_ReadyToRunGenericHandle,
-            CORINFO_HELP_RUNTIMEHANDLE_CLASS => VNF_RuntimeHandleClass,
-            CORINFO_HELP_CHKCASTCLASS or CORINFO_HELP_CHKCASTCLASS_SPECIAL or CORINFO_HELP_CHKCASTARRAY or
-                CORINFO_HELP_CHKCASTINTERFACE or CORINFO_HELP_CHKCASTANY => VNF_CastClass,
-            CORINFO_HELP_READYTORUN_CHKCAST => VNF_ReadyToRunCastClass,
-            CORINFO_HELP_ISINSTANCEOFCLASS or CORINFO_HELP_ISINSTANCEOFINTERFACE or
-                CORINFO_HELP_ISINSTANCEOFARRAY or CORINFO_HELP_ISINSTANCEOFANY => VNF_IsInstanceOf,
-            CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE => VNF_TypeHandleToRuntimeType,
-            CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE => VNF_TypeHandleToRuntimeTypeHandle,
-            CORINFO_HELP_READYTORUN_ISINSTANCEOF => VNF_ReadyToRunIsInstanceOf,
-            CORINFO_HELP_LDELEMA_REF => VNF_LdElemA,
-            CORINFO_HELP_UNBOX => VNF_Unbox,
-            CORINFO_HELP_UNBOX_TYPETEST => VNF_Unbox_TypeTest,
-            CORINFO_HELP_GETREFANY => VNF_GetRefanyVal,
-            CORINFO_HELP_GETCLASSFROMMETHODPARAM => VNF_GetClassFromMethodParam,
-            CORINFO_HELP_GETSYNCFROMCLASSHANDLE => VNF_GetSyncFromClassHandle,
-            CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR => VNF_LoopCloneChoiceAddr,
-            CORINFO_HELP_BOX => VNF_Box,
-            CORINFO_HELP_BOX_NULLABLE => VNF_BoxNullable,
-            CORINFO_HELP_VIRTUAL_FUNC_PTR => VNF_VirtualFuncPtr,
-            CORINFO_HELP_GVMLOOKUP_FOR_SLOT => VNF_GVMLookupForSlot,
-            CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT => VNF_InterfaceLookupForSlot,
-            CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR => VNF_ReadyToRunVirtualFuncPtr,
-            _ => throw new System.Diagnostics.UnreachableException($"Unmapped VN helper: {helpFunc}"),
-        };
+                CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
+            {
+                return VNF_JitNew;
+            }
+            case CORINFO_HELP_READYTORUN_NEW:
+            {
+                return VNF_JitReadyToRunNew;
+            }
+            case CORINFO_HELP_NEWARR_1_DIRECT or CORINFO_HELP_NEWARR_1_PTR or
+                CORINFO_HELP_NEWARR_1_VC or CORINFO_HELP_NEWARR_1_ALIGN8:
+            {
+                return VNF_JitNewArr;
+            }
+            case CORINFO_HELP_NEW_MDARR or CORINFO_HELP_NEW_MDARR_RARE:
+            {
+                return VNF_JitNewMdArr;
+            }
+            case CORINFO_HELP_READYTORUN_NEWARR_1:
+            {
+                return VNF_JitReadyToRunNewArr;
+            }
+            case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
+            {
+                return IsAot ? VNF_JitReadyToRunNew : VNF_JitNew;
+            }
+            case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+            {
+                return IsAot ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
+            }
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            {
+                return VNF_GetGcstaticBase;
+            }
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            {
+                return VNF_GetNongcstaticBase;
+            }
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            {
+                return VNF_GetdynamicGcstaticBase;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            {
+                return VNF_GetdynamicNongcstaticBase;
+            }
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetdynamicGcstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetdynamicNongcstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            {
+                return VNF_GetpinnedGcstaticBase;
+            }
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            {
+                return VNF_GetpinnedNongcstaticBase;
+            }
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetpinnedGcstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetpinnedNongcstaticBaseNoctor;
+            }
+            case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+            {
+                return VNF_ReadyToRunStaticBaseGC;
+            }
+            case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+            {
+                return VNF_ReadyToRunStaticBaseNonGC;
+            }
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+            {
+                return VNF_ReadyToRunStaticBaseThread;
+            }
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
+            {
+                return VNF_ReadyToRunStaticBaseThreadNoctor;
+            }
+            case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
+            {
+                return VNF_ReadyToRunStaticBaseThreadNonGC;
+            }
+            case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
+            {
+                return VNF_ReadyToRunGenericStaticBase;
+            }
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            {
+                return VNF_GetGcthreadstaticBase;
+            }
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            {
+                return VNF_GetNongcthreadstaticBase;
+            }
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetGcthreadstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetNongcthreadstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            {
+                return VNF_GetdynamicGcthreadstaticBase;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            {
+                return VNF_GetdynamicNongcthreadstaticBase;
+            }
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetdynamicGcthreadstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            {
+                return VNF_GetdynamicNongcthreadstaticBaseNoctor;
+            }
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            {
+                return VNF_GetdynamicGcthreadstaticBaseNoctorOptimized;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            {
+                return VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            {
+                return VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2;
+            }
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+            {
+                return VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2NoJitOpt;
+            }
+            case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
+            {
+                return VNF_GetStaticAddrTLS;
+            }
+            case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+            {
+                return VNF_RuntimeHandleMethod;
+            }
+            case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+            {
+                return VNF_ReadyToRunGenericHandle;
+            }
+            case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+            {
+                return VNF_RuntimeHandleClass;
+            }
+            case CORINFO_HELP_CHKCASTCLASS or CORINFO_HELP_CHKCASTCLASS_SPECIAL or CORINFO_HELP_CHKCASTARRAY or
+                CORINFO_HELP_CHKCASTINTERFACE or CORINFO_HELP_CHKCASTANY:
+            {
+                return VNF_CastClass;
+            }
+            case CORINFO_HELP_READYTORUN_CHKCAST:
+            {
+                return VNF_ReadyToRunCastClass;
+            }
+            case CORINFO_HELP_ISINSTANCEOFCLASS or CORINFO_HELP_ISINSTANCEOFINTERFACE or
+                CORINFO_HELP_ISINSTANCEOFARRAY or CORINFO_HELP_ISINSTANCEOFANY:
+            {
+                return VNF_IsInstanceOf;
+            }
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+            {
+                return VNF_TypeHandleToRuntimeType;
+            }
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
+            {
+                return VNF_TypeHandleToRuntimeTypeHandle;
+            }
+            case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+            {
+                return VNF_ReadyToRunIsInstanceOf;
+            }
+            case CORINFO_HELP_LDELEMA_REF:
+            {
+                return VNF_LdElemA;
+            }
+            case CORINFO_HELP_UNBOX:
+            {
+                return VNF_Unbox;
+            }
+            case CORINFO_HELP_UNBOX_TYPETEST:
+            {
+                return VNF_Unbox_TypeTest;
+            }
+            case CORINFO_HELP_GETREFANY:
+            {
+                return VNF_GetRefanyVal;
+            }
+            case CORINFO_HELP_GETCLASSFROMMETHODPARAM:
+            {
+                return VNF_GetClassFromMethodParam;
+            }
+            case CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
+            {
+                return VNF_GetSyncFromClassHandle;
+            }
+            case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
+            {
+                return VNF_LoopCloneChoiceAddr;
+            }
+            case CORINFO_HELP_BOX:
+            {
+                return VNF_Box;
+            }
+            case CORINFO_HELP_BOX_NULLABLE:
+            {
+                return VNF_BoxNullable;
+            }
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            {
+                return VNF_VirtualFuncPtr;
+            }
+            case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            {
+                return VNF_GVMLookupForSlot;
+            }
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            {
+                return VNF_InterfaceLookupForSlot;
+            }
+            case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+            {
+                return VNF_ReadyToRunVirtualFuncPtr;
+            }
+            default:
+            {
+                JitExceptionHelpers.ThrowUnreachableException(
+                    "RJS-VN-001",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unmapped VN helper: {helpFunc}" : null);
+                return default;
+            }
+        }
     }
 
     public unsafe bool fgValueNumberHelperCall(GenTreeCall call)

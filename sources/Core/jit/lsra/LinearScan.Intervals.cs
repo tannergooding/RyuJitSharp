@@ -13,7 +13,11 @@ public sealed partial class LinearScan
 
         if (registerType is TYP_UNDEF or TYP_STRUCT)
         {
-            throw new FatalJitException("LSRA interval requires a concrete register type.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage318
+            );
+            return default!;
         }
 
         if (registerType is TYP_DOUBLE)
@@ -21,13 +25,33 @@ public sealed partial class LinearScan
             return _availableDoubleRegs;
         }
 
-        return registerType.Register switch
+        switch (registerType.Register)
         {
-            VTR_INT => _availableIntRegs,
-            VTR_FLOAT => _availableFloatRegs,
-            VTR_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS => _availableMaskRegs,
-            _ => throw new FatalJitException($"LSRA has no register bank for {registerType}."),
-        };
+            case VTR_INT:
+            {
+                return _availableIntRegs;
+            }
+
+            case VTR_FLOAT:
+            {
+                return _availableFloatRegs;
+            }
+
+            case VTR_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS:
+            {
+                return _availableMaskRegs;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    FatalJitErrorCode.MissingRegisterBank,
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"LSRA has no register bank for {registerType}."
+                : null);
+                return default!;
+            }
+        }
     }
 
     private Interval newInterval(RegisterType registerType)

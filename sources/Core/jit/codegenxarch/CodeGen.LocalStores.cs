@@ -148,11 +148,29 @@ public sealed partial class CodeGen
 
     public void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
     {
-        var noRegister = Configuration.TARGET_X86 ? REG_X86_NA
-            : Configuration.TARGET_AMD64 ? REG_X64_NA
-            : Configuration.TARGET_ARM ? REG_ARM32_NA
-            : Configuration.TARGET_ARM64 ? REG_ARM64_NA
-            : throw new FatalJitException(CORJIT_SKIPPED, "Local-store lifetime updates use a separate target implementation.");
+        regNumber noRegister;
+        if (Configuration.TARGET_X86)
+        {
+            noRegister = REG_X86_NA;
+        }
+        else if (Configuration.TARGET_AMD64)
+        {
+            noRegister = REG_X64_NA;
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            noRegister = REG_ARM32_NA;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            noRegister = REG_ARM64_NA;
+        }
+        else
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED, "Local-store lifetime updates use a separate target implementation.");
+            return;
+        }
 
         if (targetReg != noRegister)
         {
@@ -172,7 +190,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -203,7 +222,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

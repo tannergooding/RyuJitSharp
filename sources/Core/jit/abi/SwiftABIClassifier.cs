@@ -16,7 +16,8 @@ public ref struct SwiftABIClassifier
     {
         if (!Configuration.SWIFT_SUPPORT)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Swift ABI classification is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Swift ABI classification is unsupported for this target.");
+            return;
         }
 
         _classifier = new PlatformClassifier(info);

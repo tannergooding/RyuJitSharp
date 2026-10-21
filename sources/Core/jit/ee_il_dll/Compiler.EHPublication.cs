@@ -40,8 +40,12 @@ public partial class Compiler
             throw new InvalidOperationException("Outgoing EH diagnostics are only available in Debug builds.");
         }
 
-        var emitter = codeGen?.Emitter
-            ?? throw new FatalJitException(CORJIT_SKIPPED, "EH diagnostics require an emitter.");
+        var emitter = codeGen?.Emitter;
+        if (emitter is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "EH diagnostics require an emitter.");
+            return;
+        }
 
         if (opts.dspDiffable)
         {
@@ -98,7 +102,8 @@ public partial class Compiler
             default:
             {
                 jitprintf($"(UNKNOWN type {(uint)(clause.Flags & typeMask)}!)");
-                throw new FatalJitException(CORJIT_SKIPPED, "Unknown outgoing EH clause type.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown outgoing EH clause type.");
+                return;
             }
         }
 

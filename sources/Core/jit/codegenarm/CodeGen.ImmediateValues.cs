@@ -14,7 +14,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 immediate materialization requires ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 immediate materialization requires ARM32.");
+            return;
         }
 
         assert(!genIsValidFloatReg(reg));

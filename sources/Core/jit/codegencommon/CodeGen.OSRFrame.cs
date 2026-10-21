@@ -187,14 +187,16 @@ public sealed partial class CodeGen
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR callee-save restoration is unsupported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "OSR callee-save restoration is unsupported for this target.");
+        return;
     }
 
     public unsafe void genOSRSaveRemainingCalleeSavedRegisters()
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "OSR callee-save recording requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "OSR callee-save recording requires AMD64.");
+            return;
         }
 
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());

@@ -154,7 +154,9 @@ public static partial class Globals
                 default:
                 {
                     unreached();
-                    throw new FatalJitException("Unexpected scalable vector constant kind.");
+                    FatalJitException.ThrowFatalJitException("Unexpected scalable vector constant kind.");
+                    result = default!;
+                    return default!;
                 }
             }
         }

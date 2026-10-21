@@ -43,8 +43,7 @@ public partial class Emitter
 
         // An empty reused group may still have the preceding function's index.
         placeholder.igFuncIdx = _compiler.compCurrFuncIdx;
-        var data = new insPlaceholderGroupData
-        {
+        var data = new insPlaceholderGroupData {
             igPhType = igType,
             igPhBB = block,
             igPhPrevGCrefRegs = new(emitPrevGCrefRegs),
@@ -139,8 +138,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Last-instruction call tracking is not supported for this target.");
+            return default!;
         }
 
         return (emitLastIns is not null) && (emitLastIns.idIns() == INS_call);
@@ -150,8 +150,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Pre-epilog nop insertion is not supported for this target.");
+            return;
         }
 
         if (emitIsLastInsCall())

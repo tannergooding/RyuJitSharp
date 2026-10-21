@@ -361,7 +361,8 @@ public sealed partial class Lowering
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM && !Configuration.TARGET_ARM64 &&
             !Configuration.TARGET_RISCV64 && !Configuration.TARGET_WASM && !Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Local-store lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local-store lowering is not ported for this target.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM && (storeLoc.Oper is GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc.Type) &&
@@ -404,7 +405,8 @@ public sealed partial class Lowering
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM && !Configuration.TARGET_ARM64 &&
             !Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Local-store containment is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local-store containment is not ported for this target.");
+            return;
         }
 
         assert(storeLoc.Oper.IsLocalStore);
@@ -509,7 +511,8 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Local-store containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local-store containment is not ported for this target.");
+        return;
     }
 
     private void LowerLclVar(GenTreeLclVar local)

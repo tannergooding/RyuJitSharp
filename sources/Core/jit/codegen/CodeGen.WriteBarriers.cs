@@ -36,12 +36,28 @@ public sealed partial class CodeGen
             _genWriteBarrierUsed = true;
         }
 
-        return writeBarrierForm switch
+        switch (writeBarrierForm)
         {
-            GCInfo.WriteBarrierForm.WBF_BarrierChecked => CORINFO_HELP_CHECKED_ASSIGN_REF,
-            GCInfo.WriteBarrierForm.WBF_BarrierUnchecked => CORINFO_HELP_ASSIGN_REF,
-            _ => throw new FatalJitException($"No write-barrier helper exists for {writeBarrierForm}."),
-        };
+            case GCInfo.WriteBarrierForm.WBF_BarrierChecked:
+            {
+                return CORINFO_HELP_CHECKED_ASSIGN_REF;
+            }
+
+            case GCInfo.WriteBarrierForm.WBF_BarrierUnchecked:
+            {
+                return CORINFO_HELP_ASSIGN_REF;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    FatalJitErrorCode.UnsupportedWriteBarrierForm,
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"No write-barrier helper exists for {writeBarrierForm}."
+                : null);
+                return default!;
+            }
+        }
     }
 
     public void genGCWriteBarrier(GCInfo.WriteBarrierForm writeBarrierForm)

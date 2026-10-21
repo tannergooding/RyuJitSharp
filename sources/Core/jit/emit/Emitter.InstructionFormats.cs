@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction update modes outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction update modes outside xarch are not implemented.");
+            return default!;
         }
 
         var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
@@ -26,7 +27,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction format selection outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction format selection outside xarch is not implemented.");
+            return default!;
         }
 
         assert((uint)IF_XARCH_RRD + (uint)IUM_RD == (uint)IF_XARCH_RRD);
@@ -42,15 +44,42 @@ public partial class Emitter
             }
 
             // NDD writes a separate destination instead of updating the first source.
-            return baseFormat switch
+            switch (baseFormat)
             {
-                IF_XARCH_RRD_RRD_RRD => IF_XARCH_RWR_RRD_RRD,
-                IF_XARCH_RRD_RRD_ARD => IF_XARCH_RWR_RRD_ARD,
-                IF_XARCH_RRD_RRD_CNS => IF_XARCH_RWR_RRD_CNS,
-                IF_XARCH_RRD_RRD_SRD => IF_XARCH_RWR_RRD_SRD,
-                IF_XARCH_RRD_RRD => IF_XARCH_RWR_RRD,
-                _ => throw new FatalJitException("Invalid instruction format for APX NDD."),
-            };
+                case IF_XARCH_RRD_RRD_RRD:
+                {
+                    return IF_XARCH_RWR_RRD_RRD;
+                }
+
+                case IF_XARCH_RRD_RRD_ARD:
+                {
+                    return IF_XARCH_RWR_RRD_ARD;
+                }
+
+                case IF_XARCH_RRD_RRD_CNS:
+                {
+                    return IF_XARCH_RWR_RRD_CNS;
+                }
+
+                case IF_XARCH_RRD_RRD_SRD:
+                {
+                    return IF_XARCH_RWR_RRD_SRD;
+                }
+
+                case IF_XARCH_RRD_RRD:
+                {
+                    return IF_XARCH_RWR_RRD;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage212
+                    );
+                    return default!;
+                }
+            }
         }
 
         return (insFormat)unchecked((uint)baseFormat + (uint)emitInsUpdateMode(ins));
@@ -60,8 +89,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Instruction scheduling metadata outside xarch is not implemented.");
+            return default!;
         }
 
         if ((uint)insFmt < (uint)emitFmtToSchedInfo.Length)
@@ -77,8 +107,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "APX instruction classification outside xarch is not implemented.");
+            return default!;
         }
 
         var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
@@ -91,7 +122,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "APX instruction classification outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "APX instruction classification outside xarch is not implemented.");
+            return default!;
         }
 
         if (!Configuration.TARGET_64BIT)

@@ -75,7 +75,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register copies are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register copies are not supported on Wasm.");
+            return;
         }
 
         assert((node.RegNum != REG_NA) && (needReg != REG_NA));
@@ -98,8 +99,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Indexed register consumption is not supported on Wasm.");
+            return default!;
         }
 
         var reg = tree.GetRegByIndex(multiRegIndex);

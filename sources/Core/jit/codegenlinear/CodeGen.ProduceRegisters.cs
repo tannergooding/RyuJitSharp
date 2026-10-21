@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-local spills are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-local spills are not supported on Wasm.");
+            return;
         }
 
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);

@@ -41,8 +41,7 @@ public partial class Compiler
         double benefit = 0;
         foreach (var option in options)
         {
-            var (cycles, checkBlock) = option switch
-            {
+            var (cycles, checkBlock) = option switch {
                 LcJaggedArrayOptInfo array => (2.0, array.ArrIndex.UseBlock),
                 LcSpanOptInfo span => (2.0, span.SpanIndex.UseBlock),
                 LcMdArrayOptInfo => (3.0, (BasicBlock?)null),
@@ -214,7 +213,11 @@ public partial class Compiler
         JITDUMP("\n*************** In optCloneLoops()\n");
         if (_loops is null)
         {
-            throw new FatalJitException("Loop cloning requires discovered natural loops.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage147
+            );
+            return default!;
         }
         if (_loops.NumLoops == 0)
         {

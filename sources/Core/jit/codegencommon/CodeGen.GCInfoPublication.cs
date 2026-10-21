@@ -14,7 +14,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "The JIT32 GC encoder requires X86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The JIT32 GC encoder requires X86.");
+            return default!;
         }
 
 #pragma warning disable IDE0007
@@ -137,7 +138,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC-info publication is unsupported for this target.");
+            return;
         }
 
         genCreateAndStoreGCInfoX64(codeSize, prologSize);
@@ -247,7 +249,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC-info publication requires AMD64.");
+            return;
         }
 
         using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);

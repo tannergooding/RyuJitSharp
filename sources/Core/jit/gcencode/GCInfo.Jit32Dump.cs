@@ -82,7 +82,8 @@ public partial struct GCInfo
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC table dumping requires the JIT32 GC encoder.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JIT32 GC table dumping requires the JIT32 GC encoder.");
+            return;
         }
     }
 
@@ -170,8 +171,7 @@ public partial struct GCInfo
         {
             assert(reg < 8);
 
-            return reg switch
-            {
+            return reg switch {
                 0 => "EAX",
                 1 => "ECX",
                 2 => "EDX",
@@ -188,8 +188,7 @@ public partial struct GCInfo
         {
             assert(reg < 4);
 
-            return reg switch
-            {
+            return reg switch {
                 0 => "EDI",
                 1 => "ESI",
                 2 => "EBX",

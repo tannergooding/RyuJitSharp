@@ -85,7 +85,11 @@ public partial class Compiler
         {
             if (!toOperands.MoveNext())
             {
-                throw new FatalJitException("Cloned hoist expression has fewer operands than its source.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage151
+                );
+                return;
             }
             optCopyLoopMemoryDependence(fromOperands.Current, toOperands.Current);
         }
@@ -105,8 +109,15 @@ public partial class Compiler
             gtDispTree(origExpr);
             jitprintf("\n");
         }
-        var hoistExpr = gtCloneExpr(origExpr)
-            ?? throw new FatalJitException("Loop hoisting requires a clone of its invariant expression.");
+        var hoistExpr = gtCloneExpr(origExpr);
+        if (hoistExpr is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage152
+            );
+            return;
+        }
         hoistExpr.ClearRegNum();
         optCopyLoopMemoryDependence(origExpr, hoistExpr);
         hoistExpr.Flags |= GTF_MAKE_CSE;
@@ -133,7 +144,8 @@ public partial class Compiler
                 jitprintf("Node ");
                 printTreeId(origExpr);
                 jitprintf(" was declared 'do not hoist', but is being hoisted.\n");
-                throw new FatalJitException("A forbidden test expression was hoisted.");
+                FatalJitException.ThrowFatalJitException("A forbidden test expression was hoisted.");
+                return;
             }
             if (annotation._num != depth)
             {
@@ -141,7 +153,8 @@ public partial class Compiler
                 printTreeId(origExpr);
                 jitprintf($" was declared as hoistable from loop at nesting depth {annotation._num}; " +
                     $"actually hoisted from loop at depth {depth}.\n");
-                throw new FatalJitException("Loop hoist violated a node test annotation.");
+                FatalJitException.ThrowFatalJitException("Loop hoist violated a node test annotation.");
+                return;
             }
 
             _ = _nodeTestData.Remove(origExpr);

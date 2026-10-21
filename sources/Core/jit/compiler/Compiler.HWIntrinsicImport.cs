@@ -33,7 +33,8 @@ public partial class Compiler
         {
             NYI("Hardware-intrinsic import without hardware-intrinsic and SIMD support");
             fatal(CORJIT_IMPLLIMITATION);
-            throw new FatalJitException("Hardware-intrinsic import without hardware-intrinsic and SIMD support.");
+            FatalJitException.ThrowFatalJitException("Hardware-intrinsic import without hardware-intrinsic and SIMD support.");
+            return default!;
         }
 
         var category = HWIntrinsicInfo.lookupCategory(intrinsic);

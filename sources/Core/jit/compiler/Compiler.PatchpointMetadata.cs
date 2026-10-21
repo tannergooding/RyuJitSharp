@@ -23,7 +23,8 @@ public partial class Compiler
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64 &&
             !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint metadata generation is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Patchpoint metadata generation is not implemented for this target.");
+            return;
         }
 
         var totalFrameSize = codeGen.genTotalFrameSize;

@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require AMD64.");
+            return default!;
         }
 
         // VEX removes MOVAPS's size advantage; MOVDQA can use more ports on older CPUs.
@@ -24,7 +25,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Block-based prolog initialization is not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Block-based prolog initialization is not supported on Wasm.");
+            return;
         }
         else if (Configuration.TARGET_ARM)
         {
@@ -211,7 +213,8 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires a supported target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires a supported target.");
+            return;
         }
         else
         {

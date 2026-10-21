@@ -21,7 +21,8 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target register instruction recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target register instruction recording is not implemented.");
+        return;
     }
 
     public void emitIns_R_R_I(
@@ -50,7 +51,8 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target two-register-immediate instruction recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target two-register-immediate instruction recording is not implemented.");
+        return;
     }
 
     public void emitIns_R_I_I(
@@ -75,17 +77,20 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target register-immediate instruction recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target register-immediate instruction recording is not implemented.");
+        return;
     }
 
     public void emitLoadImmediateAddress(emitAttr attr, regNumber reg, nint immediate)
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Address constant materialization is not implemented for this target.");
+            return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 address constant materialization is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 address constant materialization is not ported.");
+        return;
     }
 }

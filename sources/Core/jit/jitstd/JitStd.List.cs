@@ -149,7 +149,11 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
                 distance++;
             }
 
-            throw new InvalidOperationException("The list iterators are not part of the same sequence.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "The list iterators are not part of the same sequence."
+                    : null);
+            return default;
         }
 
         public static bool operator ==(Iterator left, Iterator right) => left.Equals(right);
@@ -173,10 +177,21 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
 
         private Node getNode()
         {
-            var node = getNodeOrEnd() ?? throw new InvalidOperationException("The end iterator cannot be dereferenced.");
+            var node = getNodeOrEnd();
+            if (node is null)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The end iterator cannot be dereferenced."
+                        : null);
+            }
+
             if (!node.isAlive)
             {
-                throw new InvalidOperationException("The iterator refers to an erased node.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The iterator refers to an erased node."
+                        : null);
             }
 
             return node;
@@ -186,7 +201,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         {
             if (_node is not null && !_node.isAlive)
             {
-                throw new InvalidOperationException("The iterator refers to an erased node.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The iterator refers to an erased node."
+                        : null);
             }
 
             return _node;
@@ -386,13 +404,27 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
     internal ref T front()
     {
         throwIfUnavailable();
-        return ref (_head ?? throw new InvalidOperationException("The list is empty.")).value;
+        var head = _head;
+        if (head is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "The list is empty." : null);
+        }
+
+        return ref head.value;
     }
 
     internal ref T back()
     {
         throwIfUnavailable();
-        return ref (_tail ?? throw new InvalidOperationException("The list is empty.")).value;
+        var tail = _tail;
+        if (tail is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "The list is empty." : null);
+        }
+
+        return ref tail.value;
     }
 
     internal Iterator backPosition()
@@ -491,7 +523,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         {
             if (current.node is null)
             {
-                throw new ArgumentException("The end iterator is not reachable from the start iterator.");
+                JitExceptionHelpers.ThrowArgumentException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The end iterator is not reachable from the start iterator."
+                        : null);
             }
 
             values.Add(current.value);
@@ -541,7 +576,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         throwIfUnavailable();
         if (_head is null)
         {
-            throw new InvalidOperationException("Cannot remove an element from an empty list.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "Cannot remove an element from an empty list."
+                    : null);
         }
 
         eraseNode(_head, callElementDestructor: true);
@@ -552,7 +590,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         throwIfUnavailable();
         if (_tail is null)
         {
-            throw new InvalidOperationException("Cannot remove an element from an empty list.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "Cannot remove an element from an empty list."
+                    : null);
         }
 
         eraseNode(_tail, callElementDestructor: true);
@@ -574,7 +615,15 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         var lastNode = validatePosition(last);
         while (!ReferenceEquals(current, lastNode))
         {
-            var node = current ?? throw new ArgumentException("The end iterator is not reachable from the start iterator.");
+            if (current is null)
+            {
+                JitExceptionHelpers.ThrowArgumentException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The end iterator is not reachable from the start iterator."
+                        : null);
+            }
+
+            var node = current;
             current = node.next;
             eraseNode(node, callElementDestructor: false);
         }
@@ -608,7 +657,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         {
             if (current.node is null)
             {
-                throw new ArgumentException("The end iterator is not reachable from the start iterator.");
+                JitExceptionHelpers.ThrowArgumentException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The end iterator is not reachable from the start iterator."
+                        : null);
             }
 
             values.Add(current.value);
@@ -929,7 +981,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
         {
             if (!ReferenceEquals(iterator._endOwner, this))
             {
-                throw new InvalidOperationException("The end iterator does not belong to this list.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The end iterator does not belong to this list."
+                        : null);
             }
 
             return null;
@@ -937,7 +992,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
 
         if (!node.isAlive || !ReferenceEquals(node.owner, this))
         {
-            throw new InvalidOperationException("The iterator does not refer to a live node in this list.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "The iterator does not refer to a live node in this list."
+                    : null);
         }
 
         return node;
@@ -945,7 +1003,16 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
 
     private Node validateElement(Iterator iterator)
     {
-        return validatePosition(iterator) ?? throw new InvalidOperationException("The end iterator cannot be dereferenced.");
+        var node = validatePosition(iterator);
+        if (node is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "The end iterator cannot be dereferenced."
+                    : null);
+        }
+
+        return node;
     }
 
     private static void updateOwners(Node? node, JitStdList<T> owner)
@@ -961,7 +1028,10 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
     {
         if (!ReferenceEquals(_allocator.scope, other._allocator.scope))
         {
-            throw new InvalidOperationException("List node transfer requires a shared allocation scope.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "List node transfer requires a shared allocation scope."
+                    : null);
         }
     }
 

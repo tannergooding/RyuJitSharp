@@ -22,7 +22,11 @@ public partial class Compiler
 
         if (_loops is null)
         {
-            throw new FatalJitException("Loop unrolling requires discovered natural loops.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage158
+            );
+            return default!;
         }
         if (_loops.NumLoops == 0)
         {
@@ -97,8 +101,7 @@ public partial class Compiler
 
     private bool optTryUnrollLoop(FlowGraphNaturalLoop loop, ref bool changedIR)
     {
-        var iterLimit = compCodeOpt switch
-        {
+        var iterLimit = compCodeOpt switch {
             BLENDED_CODE => 10u,
             SMALL_CODE => 0u,
             FAST_CODE => 20u,
@@ -109,8 +112,7 @@ public partial class Compiler
             iterLimit *= 10;
         }
 
-        var unrollLimitSz = compCodeOpt switch
-        {
+        var unrollLimitSz = compCodeOpt switch {
             BLENDED_CODE => 300,
             SMALL_CODE => 0,
             FAST_CODE => 600,
@@ -131,8 +133,15 @@ public partial class Compiler
             return false;
         }
 
-        var testBlock = iterInfo.TestBlock
-            ?? throw new FatalJitException("An analyzed loop must have a test block.");
+        var testBlock = iterInfo.TestBlock;
+        if (testBlock is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage159
+            );
+            return default!;
+        }
         assert(loop.ContainsBlock(testBlock.TrueTarget) != loop.ContainsBlock(testBlock.FalseTarget));
         if (testBlock.TrueTarget != loop.Header && testBlock.FalseTarget != loop.Header)
         {
@@ -147,8 +156,15 @@ public partial class Compiler
         var iterInc = iterInfo.IterConst();
         var iterOper = iterInfo.IterOper();
         var iterOperType = iterInfo.IterOperType();
-        var testTree = iterInfo.TestTree
-            ?? throw new FatalJitException("An analyzed loop must have a test tree.");
+        var testTree = iterInfo.TestTree;
+        if (testTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage160
+            );
+            return default!;
+        }
         var unsTest = (testTree.Flags & GTF_UNSIGNED) != 0;
         assert(!lvaGetDesc(lvar).IsAddressExposed && !lvaGetDesc(lvar).lvIsStructField);
 
@@ -185,8 +201,15 @@ public partial class Compiler
             return false;
         }
 
-        var increment = iterInfo.IterTree
-            ?? throw new FatalJitException("An analyzed loop must have an increment.");
+        var increment = iterInfo.IterTree;
+        if (increment is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage161
+            );
+            return default!;
+        }
         if (increment.Oper is not GT_STORE_LCL_VAR)
         {
             JITDUMP($"Failed to unroll loop L{loop.Index:D2}: unknown increment op ({increment.Oper.Name})\n");
@@ -201,7 +224,11 @@ public partial class Compiler
             increment.AsOp().Op2.AsIntCon().IconValue != iterInc ||
             testBlock.LastStmt?.RootNode.AsUnOp().Op1 != testTree)
         {
-            throw new FatalJitException("Bad precondition in Compiler::optUnrollLoops().");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage162
+            );
+            return default!;
         }
 
         var unrollLoopsWithEH = false;
@@ -263,12 +290,29 @@ public partial class Compiler
             var clonedTest = blockMap.GetValue(testBlock);
             optRedirectPrevUnrollIteration(loop, prevTestBlock, blockMap.GetValue(loop.Header));
             prevTestBlock = clonedTest;
-            lval = iterOper switch
+            switch (iterOper)
             {
-                GT_ADD => unchecked(lval + iterInc),
-                GT_SUB => unchecked(lval - iterInc),
-                _ => throw new FatalJitException("Unexpected loop increment operator."),
-            };
+                case GT_ADD:
+                {
+                    lval = unchecked(lval + iterInc);
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    lval = unchecked(lval - iterInc);
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage163
+                    );
+                    break;
+                }
+            }
         }
 
         optRedirectPrevUnrollIteration(loop, prevTestBlock, exit);

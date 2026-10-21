@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.PROFILING_SUPPORTED)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 profiling callbacks are unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 profiling callbacks are unavailable.");
+            return;
         }
 
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -53,7 +54,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.PROFILING_SUPPORTED)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 profiling callbacks are unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 profiling callbacks are unavailable.");
+            return;
         }
 
         assert(helper is CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL);

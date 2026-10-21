@@ -59,7 +59,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Address relocation hints require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Address relocation hints require AMD64.");
+            return default!;
         }
 
         return _compiler.eeGetRelocTypeHint((void*)addr);

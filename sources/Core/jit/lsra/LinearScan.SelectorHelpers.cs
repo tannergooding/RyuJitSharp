@@ -54,25 +54,66 @@ public sealed partial class LinearScan
                 return mask;
             }
 
-            var constrainedMask = limit switch
+            regMask constrainedMask;
+            switch (limit)
             {
-                LimitCallee when !_compiler.opts.compDbgEnC => getRegSetForType(
-                    TargetRuntimeMetadata.IntegerCalleeSavedMask, TargetRuntimeMetadata.FloatingCalleeSavedMask, TargetRuntimeMetadata.MaskCalleeSavedMask, registerType),
-                LimitCallee => mask,
-                LimitCaller => getRegSetForType(
-                    _compiler.SRBM_INT_CALLEE_TRASH, _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH,
-                    registerType),
-                LimitSmallSet => getRegSetForType(
-                    Configuration.UNIX_AMD64_ABI
-                        ? SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_X64_R13
-                        : SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_RSI | SRBM_X64_RDI,
-                    SRBM_X64_XMM0 | SRBM_X64_XMM1 | SRBM_X64_XMM2 | SRBM_X64_XMM6 | SRBM_X64_XMM7,
-                    _compiler.SRBM_MSK_CALLEE_TRASH,
-                    registerType),
-                LimitUpperSimdSet => varTypeUsesFloatReg(registerType) ? SRBM_HIGHFLOAT : mask,
-                LimitExtGprSet => varTypeUsesIntReg(registerType) ? SRBM_HIGHINT | SRBM_ETW_FRAMED_EBP : mask,
-                _ => throw new FatalJitException($"Unsupported LSRA register stress limit: 0x{limit:X}."),
-            };
+                case LimitCallee when !_compiler.opts.compDbgEnC:
+                {
+                    constrainedMask = getRegSetForType(
+                        TargetRuntimeMetadata.IntegerCalleeSavedMask,
+                        TargetRuntimeMetadata.FloatingCalleeSavedMask,
+                        TargetRuntimeMetadata.MaskCalleeSavedMask,
+                        registerType);
+                    break;
+                }
+
+                case LimitCallee:
+                {
+                    constrainedMask = mask;
+                    break;
+                }
+
+                case LimitCaller:
+                {
+                    constrainedMask = getRegSetForType(
+                        _compiler.SRBM_INT_CALLEE_TRASH,
+                        _compiler.SRBM_FLT_CALLEE_TRASH,
+                        _compiler.SRBM_MSK_CALLEE_TRASH,
+                        registerType);
+                    break;
+                }
+
+                case LimitSmallSet:
+                {
+                    constrainedMask = getRegSetForType(
+                        Configuration.UNIX_AMD64_ABI
+                            ? SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_X64_R13
+                            : SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_RSI | SRBM_X64_RDI,
+                        SRBM_X64_XMM0 | SRBM_X64_XMM1 | SRBM_X64_XMM2 | SRBM_X64_XMM6 | SRBM_X64_XMM7,
+                        _compiler.SRBM_MSK_CALLEE_TRASH,
+                        registerType);
+                    break;
+                }
+
+                case LimitUpperSimdSet:
+                {
+                    constrainedMask = varTypeUsesFloatReg(registerType) ? SRBM_HIGHFLOAT : mask;
+                    break;
+                }
+
+                case LimitExtGprSet:
+                {
+                    constrainedMask = varTypeUsesIntReg(registerType) ? SRBM_HIGHINT | SRBM_ETW_FRAMED_EBP : mask;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        $"Unsupported LSRA register stress limit: 0x{limit:X}.");
+                    return default!;
+                }
+            }
 
             if (constrainedMask != mask)
             {
@@ -89,151 +130,203 @@ public sealed partial class LinearScan
         }
         else if (Configuration.TARGET_ARM64)
         {
-        if (refPosition is not null &&
-            refPosition.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
-        {
-            return mask;
-        }
-
-        var limit = _lsraStressMask & 0x3;
-        if (limit == 0)
-        {
-            return mask;
-        }
-
-        var count = refPosition?.minRegCandidateCount ?? 1;
-        switch (limit)
-        {
-            case 1:
+            if (refPosition is not null &&
+                refPosition.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
             {
-                if (!_compiler.opts.compDbgEnC)
+                return mask;
+            }
+
+            var limit = _lsraStressMask & 0x3;
+            if (limit == 0)
+            {
+                return mask;
+            }
+
+            var count = refPosition?.minRegCandidateCount ?? 1;
+            switch (limit)
+            {
+                case 1:
                 {
-                    mask = getConstrainedRegMask(refPosition, registerType, mask,
-                        calleeSaveRegs(registerType), count);
+                    if (!_compiler.opts.compDbgEnC)
+                    {
+                        mask = getConstrainedRegMask(refPosition, registerType, mask,
+                            calleeSaveRegs(registerType), count);
+                    }
+                    break;
                 }
-                break;
-            }
-            case 2:
-            {
-                var trash = regType(registerType) switch
+
+                case 2:
                 {
-                    TYP_INT => SRBM_INT_CALLEE_TRASH,
-                    TYP_FLOAT or TYP_DOUBLE => SRBM_FLT_CALLEE_TRASH,
-                    TYP_MASK => _compiler.SRBM_MSK_CALLEE_TRASH,
-                    _ => throw new FatalJitException("Unsupported ARM64 LSRA stress register type."),
-                };
-                mask = getConstrainedRegMask(refPosition, registerType, mask, trash, count);
-                break;
-            }
-            case 3:
-            {
-                var smallInt = SRBM_ARM64_R0 | SRBM_ARM64_R1 | SRBM_ARM64_R2 | SRBM_ARM64_R19 | SRBM_ARM64_R20;
-                var smallFloat = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V8 | SRBM_ARM64_V9;
-                var small = regType(registerType) switch
-                {
-                    TYP_INT => smallInt,
-                    TYP_FLOAT or TYP_DOUBLE => smallFloat,
-                    TYP_MASK => SRBM_NONE,
-                    _ => throw new FatalJitException("Unsupported ARM64 LSRA stress register type."),
-                };
-                if ((mask & small) != SRBM_NONE)
-                {
-                    mask = getConstrainedRegMask(refPosition, registerType, mask, small, count);
+                    regMask trash;
+                    switch (regType(registerType))
+                    {
+                        case TYP_INT:
+                        {
+                            trash = SRBM_INT_CALLEE_TRASH;
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            trash = SRBM_FLT_CALLEE_TRASH;
+                            break;
+                        }
+
+                        case TYP_MASK:
+                        {
+                            trash = _compiler.SRBM_MSK_CALLEE_TRASH;
+                            break;
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                "Unsupported ARM64 LSRA stress register type.");
+                            return default!;
+                        }
+                    }
+
+                    mask = getConstrainedRegMask(refPosition, registerType, mask, trash, count);
+                    break;
                 }
-                break;
+
+                case 3:
+                {
+                    var smallInt = SRBM_ARM64_R0 | SRBM_ARM64_R1 | SRBM_ARM64_R2 | SRBM_ARM64_R19 | SRBM_ARM64_R20;
+                    var smallFloat = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V8 | SRBM_ARM64_V9;
+                    regMask small;
+                    switch (regType(registerType))
+                    {
+                        case TYP_INT:
+                        {
+                            small = smallInt;
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            small = smallFloat;
+                            break;
+                        }
+
+                        case TYP_MASK:
+                        {
+                            small = SRBM_NONE;
+                            break;
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                "Unsupported ARM64 LSRA stress register type.");
+                            return default!;
+                        }
+                    }
+
+                    if ((mask & small) != SRBM_NONE)
+                    {
+                        mask = getConstrainedRegMask(refPosition, registerType, mask, small, count);
+                    }
+                    break;
+                }
             }
-        }
 
-        if (refPosition is not null && refPosition.isFixedRegRef)
-        {
-            mask |= refPosition.registerAssignment;
-        }
+            if (refPosition is not null && refPosition.isFixedRegRef)
+            {
+                mask |= refPosition.registerAssignment;
+            }
 
-        return mask;
+            return mask;
         }
         else if (Configuration.TARGET_X86 || Configuration.TARGET_ARM ||
                  Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-        var limit = _lsraStressMask & 0x3;
-        if (limit == 0)
-        {
-            return mask;
-        }
-
-        var minimumCount = refPosition?.minRegCandidateCount ?? 1u;
-        switch (limit)
-        {
-            case 1:
+            var limit = _lsraStressMask & 0x3;
+            if (limit == 0)
             {
-                if (!_compiler.opts.compDbgEnC)
+                return mask;
+            }
+
+            var minimumCount = refPosition?.minRegCandidateCount ?? 1u;
+            switch (limit)
+            {
+                case 1:
+                {
+                    if (!_compiler.opts.compDbgEnC)
+                    {
+                        mask = getConstrainedRegMask(refPosition, registerType, mask,
+                            getOtherTargetStressCalleeMask(registerType, saved: true), minimumCount);
+                    }
+                    break;
+                }
+
+                case 2:
                 {
                     mask = getConstrainedRegMask(refPosition, registerType, mask,
-                        getOtherTargetStressCalleeMask(registerType, saved: true), minimumCount);
+                        getOtherTargetStressCalleeMask(registerType, saved: false), minimumCount);
+                    break;
                 }
-                break;
-            }
-            case 2:
-            {
-                mask = getConstrainedRegMask(refPosition, registerType, mask,
-                    getOtherTargetStressCalleeMask(registerType, saved: false), minimumCount);
-                break;
-            }
-            case 3:
-            {
-                // The floating subset keeps five registers for Vector4 InitN; ARM32
-                // also needs six integer registers for virtual-call target setup.
-                SingleTypeRegSet smallInt;
-                SingleTypeRegSet smallFloat;
-                if (Configuration.TARGET_X86)
-                {
-                    smallInt = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EDI;
-                    smallFloat = SRBM_X86_XMM0 | SRBM_X86_XMM1 | SRBM_X86_XMM2 | SRBM_X86_XMM6 | SRBM_X86_XMM7;
-                }
-                else if (Configuration.TARGET_ARM)
-                {
-                    smallInt = SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R2 | SRBM_ARM32_R3 | SRBM_ARM32_R4 | SRBM_ARM32_R5;
-                    smallFloat = SRBM_ARM32_F0 | SRBM_ARM32_F1 | SRBM_ARM32_F2 | SRBM_ARM32_F16 | SRBM_ARM32_F17;
-                }
-                else if (Configuration.TARGET_LOONGARCH64)
-                {
-                    smallInt = SRBM_LOONGARCH64_T1 | SRBM_LOONGARCH64_T3 | SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_T0;
-                    smallFloat = SRBM_LOONGARCH64_F0 | SRBM_LOONGARCH64_F1 | SRBM_LOONGARCH64_F2 |
-                        SRBM_LOONGARCH64_F8 | SRBM_LOONGARCH64_F9;
-                }
-                else if (Configuration.TARGET_RISCV64)
-                {
-                    smallInt = SRBM_RISCV64_T1 | SRBM_RISCV64_T3 | SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_T0;
-                    smallFloat = SRBM_RISCV64_FT0 | SRBM_RISCV64_FT1 | SRBM_RISCV64_FT2 |
-                        SRBM_RISCV64_FS0 | SRBM_RISCV64_FS1;
-                }
-                else
-                {
-                    throw new FatalJitException(CORJIT_SKIPPED);
-                }
-                if ((mask & smallInt) != SRBM_NONE)
-                {
-                    mask = getConstrainedRegMask(refPosition, registerType, mask, smallInt, minimumCount);
-                }
-                else if ((mask & smallFloat) != SRBM_NONE)
-                {
-                    mask = getConstrainedRegMask(refPosition, registerType, mask, smallFloat, minimumCount);
-                }
-                break;
-            }
-        }
 
-        if (refPosition is not null && refPosition.isFixedRegRef)
-        {
-            mask |= refPosition.registerAssignment;
-        }
+                case 3:
+                {
+                    // The floating subset keeps five registers for Vector4 InitN; ARM32
+                    // also needs six integer registers for virtual-call target setup.
+                    SingleTypeRegSet smallInt;
+                    SingleTypeRegSet smallFloat;
+                    if (Configuration.TARGET_X86)
+                    {
+                        smallInt = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EDI;
+                        smallFloat = SRBM_X86_XMM0 | SRBM_X86_XMM1 | SRBM_X86_XMM2 | SRBM_X86_XMM6 | SRBM_X86_XMM7;
+                    }
+                    else if (Configuration.TARGET_ARM)
+                    {
+                        smallInt = SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R2 | SRBM_ARM32_R3 | SRBM_ARM32_R4 | SRBM_ARM32_R5;
+                        smallFloat = SRBM_ARM32_F0 | SRBM_ARM32_F1 | SRBM_ARM32_F2 | SRBM_ARM32_F16 | SRBM_ARM32_F17;
+                    }
+                    else if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        smallInt = SRBM_LOONGARCH64_T1 | SRBM_LOONGARCH64_T3 | SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_T0;
+                        smallFloat = SRBM_LOONGARCH64_F0 | SRBM_LOONGARCH64_F1 | SRBM_LOONGARCH64_F2 |
+                            SRBM_LOONGARCH64_F8 | SRBM_LOONGARCH64_F9;
+                    }
+                    else if (Configuration.TARGET_RISCV64)
+                    {
+                        smallInt = SRBM_RISCV64_T1 | SRBM_RISCV64_T3 | SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_T0;
+                        smallFloat = SRBM_RISCV64_FT0 | SRBM_RISCV64_FT1 | SRBM_RISCV64_FT2 |
+                            SRBM_RISCV64_FS0 | SRBM_RISCV64_FS1;
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                        return default!;
+                    }
+                    if ((mask & smallInt) != SRBM_NONE)
+                    {
+                        mask = getConstrainedRegMask(refPosition, registerType, mask, smallInt, minimumCount);
+                    }
+                    else if ((mask & smallFloat) != SRBM_NONE)
+                    {
+                        mask = getConstrainedRegMask(refPosition, registerType, mask, smallFloat, minimumCount);
+                    }
+                    break;
+                }
+            }
 
-        return mask;
+            if (refPosition is not null && refPosition.isFixedRegRef)
+            {
+                mask |= refPosition.registerAssignment;
+            }
+
+            return mask;
         }
         else
         {
             NYI("LSRA stress register limiting on this target");
             fatal(CORJIT_IMPLLIMITATION);
-            throw new FatalJitException("LSRA stress register limiting on this target is not ported.");
+            FatalJitException.ThrowFatalJitException("LSRA stress register limiting on this target is not ported.");
+            return default!;
         }
     }
 
@@ -309,7 +402,8 @@ public sealed partial class LinearScan
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         if (varTypeUsesFloatReg(registerType))
@@ -326,25 +420,54 @@ public sealed partial class LinearScan
     }
 
     private static SingleTypeRegSet getRegSetForType(
-        regMask intRegisters, regMask floatRegisters, regMask maskRegisters, RegisterType registerType) =>
-        regType(registerType) switch
+        regMask intRegisters, regMask floatRegisters, regMask maskRegisters, RegisterType registerType)
+    {
+        switch (regType(registerType))
         {
-            TYP_INT => intRegisters,
-            TYP_FLOAT or TYP_DOUBLE => floatRegisters,
-            TYP_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS => maskRegisters,
-            _ => throw new FatalJitException($"Unsupported LSRA register type: {registerType}."),
-        };
+            case TYP_INT:
+            {
+                return intRegisters;
+            }
+
+            case TYP_FLOAT or TYP_DOUBLE:
+            {
+                return floatRegisters;
+            }
+
+            case TYP_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS:
+            {
+                return maskRegisters;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException($"Unsupported LSRA register type: {registerType}.");
+                return default!;
+            }
+        }
+    }
 
     private void resolveConflictingDefAndUse(Interval interval, RefPosition defRefPosition)
     {
         assert(!interval.isLocalVar);
         if (interval.isLocalVar)
         {
-            throw new FatalJitException("Def-use conflict resolution is only valid for temporary intervals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage409
+            );
+            return;
         }
 
-        var useRefPosition = defRefPosition.nextRefPosition
-            ?? throw new FatalJitException("A conflicting definition must be followed by its use.");
+        var useRefPosition = defRefPosition.nextRefPosition;
+        if (useRefPosition is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage410
+            );
+            return;
+        }
         assert(ReferenceEquals(defRefPosition.referent, interval));
         assert(ReferenceEquals(useRefPosition.referent, interval));
         assert(RefTypeIsUse(useRefPosition.refType));
@@ -352,7 +475,11 @@ public sealed partial class LinearScan
             !ReferenceEquals(useRefPosition.referent, interval) ||
             !RefTypeIsUse(useRefPosition.refType))
         {
-            throw new FatalJitException("Def-use conflict references must be ordered references of one interval.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage411
+            );
+            return;
         }
 
         var useRegAssignment = useRefPosition.registerAssignment;
@@ -362,8 +489,15 @@ public sealed partial class LinearScan
         dumpLsraAllocationEvent(LsraDumpEvent.DEFUSE_CONFLICT, null, defRefPosition);
 
         // Changing multi-register assignments can introduce cyclic parallel copies in codegen.
-        var defTree = defRefPosition.treeNode
-            ?? throw new FatalJitException("A temporary definition must retain its source tree node.");
+        var defTree = defRefPosition.treeNode;
+        if (defTree is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage412
+            );
+            return;
+        }
         var canChangeDef = !defTree.IsMultiRegNode;
 
         if (canChangeDef && defRefPosition.isFixedRegRef)
@@ -385,7 +519,11 @@ public sealed partial class LinearScan
             assert(nextRegLocation <= useRefPosition.nodeLocation);
             if (nextRegLocation > useRefPosition.nodeLocation)
             {
-                throw new FatalJitException("A fixed use must be present in the next-fixed-reference map.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage413
+                );
+                return;
             }
 
             if (nextRegLocation == useRefPosition.nodeLocation)
@@ -393,8 +531,15 @@ public sealed partial class LinearScan
                 var useRegRecord = getRegisterRecord(useReg);
                 if (!useRegConflict && (useRegRecord.assignedInterval is not null))
                 {
-                    var possiblyConflictingRef = useRegRecord.assignedInterval.recentRefPosition
-                        ?? throw new FatalJitException("An assigned interval must retain its recent reference.");
+                    var possiblyConflictingRef = useRegRecord.assignedInterval.recentRefPosition;
+                    if (possiblyConflictingRef is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage414
+                        );
+                        return;
+                    }
                     if (possiblyConflictingRef.getRefEndLocation() >= defRefPosition.nodeLocation)
                     {
                         useRegConflict = true;
@@ -644,7 +789,11 @@ public sealed partial class LinearScan
         assert(assignedInterval is not null);
         if (assignedInterval is null)
         {
-            throw new FatalJitException("Cannot spill an unassigned physical register.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage415
+            );
+            return default!;
         }
 
         var recentRefPosition = assignedInterval.recentRefPosition;
@@ -657,14 +806,22 @@ public sealed partial class LinearScan
         assert(assignedInterval.isLocalVar);
         if (!assignedInterval.isLocalVar)
         {
-            throw new FatalJitException("A physical register without a recent reference must belong to a local.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage416
+            );
+            return default!;
         }
 
         var isParameter = assignedInterval.getLocalVar(_compiler).lvIsParam;
         assert(isParameter);
         if (!isParameter)
         {
-            throw new FatalJitException("A local without a recent reference must be a parameter.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage417
+            );
+            return default!;
         }
 
         return false;
@@ -674,7 +831,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         assert(genIsValidDoubleReg(record.regNum));
@@ -712,7 +870,11 @@ public sealed partial class LinearScan
         assert(refPosition.refType is not RefType.RefTypeKill);
         if (refPosition.refType is RefType.RefTypeKill)
         {
-            throw new FatalJitException("Kill references do not have a spill weight.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage418
+            );
+            return default!;
         }
 
         var treeNode = refPosition.treeNode;
@@ -730,8 +892,15 @@ public sealed partial class LinearScan
                 var interval = refPosition.getInterval();
                 if (interval.isSpilled)
                 {
-                    var firstRefPosition = interval.firstRefPosition
-                        ?? throw new FatalJitException("A spilled interval must have a first reference.");
+                    var firstRefPosition = interval.firstRefPosition;
+                    if (firstRefPosition is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage419
+                        );
+                        return default!;
+                    }
 
                     if (local.IsLiveInOutOfHandler || firstRefPosition.singleDefSpill)
                     {
@@ -752,8 +921,15 @@ public sealed partial class LinearScan
 
     private weight_t getBlockWeight(uint blockNumber)
     {
-        var blockInfo = _blockInfo
-            ?? throw new FatalJitException("LSRA block weights are unavailable before interval construction.");
+        var blockInfo = _blockInfo;
+        if (blockInfo is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage420
+            );
+            return default!;
+        }
 
         return blockInfo[checked((int)blockNumber)].weight;
     }

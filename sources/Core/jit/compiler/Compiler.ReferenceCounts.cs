@@ -76,7 +76,8 @@ public partial class Compiler
             return type is TYP_SIMD16 or TYP_SIMD12;
         }
 
-        throw new FatalJitException("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE.");
+        FatalJitException.ThrowFatalJitException("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE.");
+        return default!;
     }
 
     public void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)

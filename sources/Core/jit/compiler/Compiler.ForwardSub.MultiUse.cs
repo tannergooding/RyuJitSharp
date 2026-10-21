@@ -44,16 +44,33 @@ public partial class Compiler
             var link = gtFindLink(nextStmt, visitor.Uses[i]);
             if (Unsafe.IsNullRef(ref link.result))
             {
-                throw new FatalJitException("A collected forward-substitution use lost its owner.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage112
+                );
+                return default!;
             }
-            link.result = gtCloneExpr(fwdSubNode)
-                ?? throw new FatalJitException("A cheap forward-substitution address could not be cloned.");
+            var cloned = gtCloneExpr(fwdSubNode);
+            if (cloned is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage113
+                );
+                return false;
+            }
+
+            link.result = cloned;
         }
 
         var lastLink = gtFindLink(nextStmt, visitor.Uses[lastIndex]);
         if (Unsafe.IsNullRef(ref lastLink.result))
         {
-            throw new FatalJitException("The final forward-substitution use lost its owner.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage114
+            );
+            return default!;
         }
         lastLink.result = fwdSubNode;
 

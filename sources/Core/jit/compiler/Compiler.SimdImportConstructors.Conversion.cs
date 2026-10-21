@@ -12,7 +12,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD conversion requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD conversion requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -26,20 +27,50 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdCvtNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdCvtNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) || simdTargetBaseType == TYP_INT);
         if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
         {
-            var intrinsic = simdTargetBaseType switch
+            NamedIntrinsic intrinsic;
+            switch (simdTargetBaseType)
             {
-                TYP_INT => NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation,
-                TYP_UINT => NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation,
-                TYP_LONG => NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation,
-                TYP_ULONG => NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation,
-                _ => throw new FatalJitException("Unsupported SIMD conversion target."),
-            };
+                case TYP_INT:
+                {
+                    intrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
+                    break;
+                }
+
+                case TYP_UINT:
+                {
+                    intrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
+                    break;
+                }
+
+                case TYP_LONG:
+                {
+                    intrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
+                    break;
+                }
+
+                case TYP_ULONG:
+                {
+                    intrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage124
+                    );
+                    return default!;
+                }
+            }
+
             return gtNewSimdHWIntrinsicNode(type, intrinsic, simdSourceBaseType, simdSize, op1);
         }
 
@@ -94,7 +125,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Native SIMD conversion requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native SIMD conversion requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -109,53 +141,183 @@ public partial class Compiler
             {
                 case TYP_FLOAT:
                 {
-                    intrinsic = simdTargetBaseType switch
+                    switch (simdTargetBaseType)
                     {
-                        TYP_INT => simdSize switch
+                        case TYP_INT:
                         {
-                            64 => NI_AVX512_ConvertToVector512Int32WithTruncation,
-                            32 => NI_AVX_ConvertToVector256Int32WithTruncation,
-                            16 => NI_X86Base_ConvertToVector128Int32WithTruncation,
-                            _ => throw new FatalJitException("Unsupported SIMD conversion width."),
-                        },
-                        TYP_UINT => simdSize switch
+                            switch (simdSize)
+                            {
+                                case 64:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector512Int32WithTruncation;
+                                    break;
+                                }
+
+                                case 32:
+                                {
+                                    intrinsic = NI_AVX_ConvertToVector256Int32WithTruncation;
+                                    break;
+                                }
+
+                                case 16:
+                                {
+                                    intrinsic = NI_X86Base_ConvertToVector128Int32WithTruncation;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    FatalJitException.ThrowFatalJitException(
+                                        CORJIT_INTERNALERROR,
+                                        FatalJitErrorCode.DirectFailureMessage192
+                                    );
+                                    return default!;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        case TYP_UINT:
                         {
-                            64 => NI_AVX512_ConvertToVector512UInt32WithTruncation,
-                            32 => NI_AVX512_ConvertToVector256UInt32WithTruncation,
-                            16 => NI_AVX512_ConvertToVector128UInt32WithTruncation,
-                            _ => throw new FatalJitException("Unsupported SIMD conversion width."),
-                        },
-                        _ => throw new FatalJitException("Unsupported SIMD conversion target."),
-                    };
+                            switch (simdSize)
+                            {
+                                case 64:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector512UInt32WithTruncation;
+                                    break;
+                                }
+
+                                case 32:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector256UInt32WithTruncation;
+                                    break;
+                                }
+
+                                case 16:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector128UInt32WithTruncation;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    FatalJitException.ThrowFatalJitException(
+                                        CORJIT_INTERNALERROR,
+                                        FatalJitErrorCode.DirectFailureMessage192
+                                    );
+                                    return default!;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage124
+                            );
+                            return default!;
+                        }
+                    }
                     break;
                 }
 
                 case TYP_DOUBLE:
                 {
-                    intrinsic = simdTargetBaseType switch
+                    switch (simdTargetBaseType)
                     {
-                        TYP_LONG => simdSize switch
+                        case TYP_LONG:
                         {
-                            64 => NI_AVX512_ConvertToVector512Int64WithTruncation,
-                            32 => NI_AVX512_ConvertToVector256Int64WithTruncation,
-                            16 => NI_AVX512_ConvertToVector128Int64WithTruncation,
-                            _ => throw new FatalJitException("Unsupported SIMD conversion width."),
-                        },
-                        TYP_ULONG => simdSize switch
+                            switch (simdSize)
+                            {
+                                case 64:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector512Int64WithTruncation;
+                                    break;
+                                }
+
+                                case 32:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector256Int64WithTruncation;
+                                    break;
+                                }
+
+                                case 16:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector128Int64WithTruncation;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    FatalJitException.ThrowFatalJitException(
+                                        CORJIT_INTERNALERROR,
+                                        FatalJitErrorCode.DirectFailureMessage192
+                                    );
+                                    return default!;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        case TYP_ULONG:
                         {
-                            64 => NI_AVX512_ConvertToVector512UInt64WithTruncation,
-                            32 => NI_AVX512_ConvertToVector256UInt64WithTruncation,
-                            16 => NI_AVX512_ConvertToVector128UInt64WithTruncation,
-                            _ => throw new FatalJitException("Unsupported SIMD conversion width."),
-                        },
-                        _ => throw new FatalJitException("Unsupported SIMD conversion target."),
-                    };
+                            switch (simdSize)
+                            {
+                                case 64:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector512UInt64WithTruncation;
+                                    break;
+                                }
+
+                                case 32:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector256UInt64WithTruncation;
+                                    break;
+                                }
+
+                                case 16:
+                                {
+                                    intrinsic = NI_AVX512_ConvertToVector128UInt64WithTruncation;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    FatalJitException.ThrowFatalJitException(
+                                        CORJIT_INTERNALERROR,
+                                        FatalJitErrorCode.DirectFailureMessage192
+                                    );
+                                    return default!;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage124
+                            );
+                            return default!;
+                        }
+                    }
                     break;
                 }
 
                 default:
                 {
-                    throw new FatalJitException("Unsupported SIMD conversion source.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage193
+                    );
+                    return default!;
                 }
             }
 
@@ -262,6 +424,7 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, intrinsic, simdSourceBaseType, simdSize, op1);
         }
 
-        throw new FatalJitException("gtNewSimdCvtNativeNode requires its target-specific implementation.");
+        FatalJitException.ThrowFatalJitException("gtNewSimdCvtNativeNode requires its target-specific implementation.");
+        return default!;
     }
 }

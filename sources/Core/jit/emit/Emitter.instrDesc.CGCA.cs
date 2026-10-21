@@ -61,8 +61,9 @@ public partial class Emitter
                     return 56;
                 }
 
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "The call descriptor layout is not ported for this target.");
+                return default!;
             }
         }
 

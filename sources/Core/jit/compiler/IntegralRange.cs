@@ -301,7 +301,8 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
                     {
                         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
                         {
-                            throw new FatalJitException("Unsupported platform for hardware intrinsic range analysis.");
+                            FatalJitException.ThrowFatalJitException("Unsupported platform for hardware intrinsic range analysis.");
+                            return default!;
                         }
 
                         // TODO-WASM: Support CTZ/CLZ ranges here when native does.

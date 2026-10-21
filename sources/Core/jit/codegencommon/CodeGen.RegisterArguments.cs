@@ -19,7 +19,8 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register argument generation is not ported for this target.");
+            return;
         }
         else
         {

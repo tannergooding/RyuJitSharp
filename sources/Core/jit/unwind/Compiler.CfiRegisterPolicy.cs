@@ -73,6 +73,7 @@ public partial class Compiler
             return (new regMaskTP(mask), REG_X64_XMM0, REG_X64_XMM31, REG_X64_R31, 8);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "The target CFI register policy is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The target CFI register policy is not ported.");
+        return default!;
     }
 }

@@ -69,13 +69,27 @@ public sealed partial class ScalarEvolutionContext
 
     public ScevAddRec NewAddRec(Scev start, Scev step)
     {
-        var loop = _loop ?? throw new InvalidOperationException("Scalar evolution requires a loop.");
+        var loop = _loop;
+        if (loop is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-002",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+        }
+
         return new ScevAddRec(start.Type, start, step, loop);
     }
 
     private Scev? CreateSimpleInvariantScev(GenTree tree)
     {
-        var loop = _loop ?? throw new InvalidOperationException("Scalar evolution requires a loop.");
+        var loop = _loop;
+        if (loop is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-002",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+        }
+
         if (tree.Oper is GT_CNS_INT or GT_CNS_LNG)
         {
             return CreateScevForConstant(tree.AsIntConCommon());
@@ -106,7 +120,14 @@ public sealed partial class ScalarEvolutionContext
 
     private Scev? AnalyzeNew(BasicBlock block, GenTree tree, int depth)
     {
-        var loop = _loop ?? throw new InvalidOperationException("Scalar evolution requires a loop.");
+        var loop = _loop;
+        if (loop is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-002",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+        }
+
         if (!varTypeIsIntegralOrI(tree.Type))
         {
             return null;
@@ -306,7 +327,12 @@ public sealed partial class ScalarEvolutionContext
 
                     default:
                     {
-                        throw new InvalidOperationException($"Unexpected operator {tree.Oper}.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            "RJS-SCE-008",
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? $"Unexpected operator {tree.Oper}."
+                                : null);
+                        return default!;
                     }
                 }
 
@@ -438,7 +464,9 @@ public sealed partial class ScalarEvolutionContext
     {
         if (_loop is null)
         {
-            throw new InvalidOperationException("Scalar evolution requires a loop.");
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-002",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
         }
 
         return Analyze(block, tree, 0);

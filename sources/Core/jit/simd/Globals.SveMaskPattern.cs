@@ -103,7 +103,8 @@ public static partial class Globals
             default:
             {
                 unreached();
-                throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 SIMD element type.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 SIMD element type.");
+                return default!;
             }
         }
     }
@@ -173,14 +174,46 @@ public static partial class Globals
     public static SveMaskPattern EvaluateSimdMaskToPattern<TSimd>(var_types baseType, simdmask_t mask)
         where TSimd : unmanaged
     {
-        var laneSize = baseType switch
+        int laneSize;
+        switch (baseType)
         {
-            TYP_FLOAT or TYP_INT or TYP_UINT => 4,
-            TYP_DOUBLE or TYP_LONG or TYP_ULONG => 8,
-            TYP_BYTE or TYP_UBYTE => 1,
-            TYP_SHORT or TYP_USHORT => 2,
-            _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 mask element type."),
-        };
+            case TYP_FLOAT:
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                laneSize = 4;
+                break;
+            }
+
+            case TYP_DOUBLE:
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                laneSize = 8;
+                break;
+            }
+
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                laneSize = 1;
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                laneSize = 2;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_IMPLLIMITATION, "Unsupported ARM64 mask element type.");
+                return default!;
+            }
+        }
 
         var count = Unsafe.SizeOf<TSimd>() / laneSize;
         var bits = unchecked((ulong)mask.RawBits);

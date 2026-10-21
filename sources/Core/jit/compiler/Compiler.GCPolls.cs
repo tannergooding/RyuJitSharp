@@ -267,12 +267,20 @@ public partial class Compiler
 
             case BBJ_SWITCH:
             {
-                throw new FatalJitException("SWITCH should be a call rather than an inlined poll.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage118
+                );
+                return default!;
             }
 
             default:
             {
-                throw new FatalJitException("Unknown block type for updating predecessor lists.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage119
+                );
+                return default!;
             }
         }
 

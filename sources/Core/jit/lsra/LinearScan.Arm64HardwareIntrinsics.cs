@@ -11,7 +11,9 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            destinationCount = default!;
+            return default!;
         }
 
         var id = intrinsic.HWIntrinsicId;
@@ -103,7 +105,9 @@ public sealed partial class LinearScan
 
                         default:
                         {
-                            throw new FatalJitException("ARM64 RMW operand position exceeds three.");
+                            FatalJitException.ThrowFatalJitException("ARM64 RMW operand position exceeds three.");
+                            destinationCount = default!;
+                            return default!;
                         }
                     }
                 }
@@ -179,8 +183,12 @@ public sealed partial class LinearScan
         if (HWIntrinsicInfo.IsFmaIntrinsic(embedded.HWIntrinsicId))
         {
             assert(embedded.Operands.Length == 3);
-            var blockSequence = _blockSequence
-                ?? throw new FatalJitException("Embedded FMA allocation requires block sequence.");
+            var blockSequence = _blockSequence;
+            if (blockSequence is null)
+            {
+                FatalJitException.ThrowFatalJitException("Embedded FMA allocation requires block sequence.");
+                return default!;
+            }
             GenTree? user = null;
             if (blockSequence[_currentBlockSequenceNumber].TryGetUse(embedded, out var use))
             {
@@ -298,9 +306,9 @@ public sealed partial class LinearScan
         }
         else
         {
-            immediate = id switch
+            switch (id)
             {
-                NI_AdvSimd_DuplicateSelectedScalarToVector64 or
+                case NI_AdvSimd_DuplicateSelectedScalarToVector64 or
                 NI_AdvSimd_DuplicateSelectedScalarToVector128 or
                 NI_AdvSimd_Extract or NI_AdvSimd_Insert or NI_AdvSimd_InsertScalar or
                 NI_AdvSimd_LoadAndInsertScalar or
@@ -310,32 +318,49 @@ public sealed partial class LinearScan
                 NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2 or
                 NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3 or
                 NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4 or
-                NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128 => node.GetOp(2),
+                NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+                {
+                    immediate = node.GetOp(2);
+                    break;
+                }
 
-                NI_AdvSimd_ExtractVector64 or NI_AdvSimd_ExtractVector128 or
+                case NI_AdvSimd_ExtractVector64 or NI_AdvSimd_ExtractVector128 or
                 NI_AdvSimd_StoreSelectedScalar or NI_AdvSimd_Arm64_StoreSelectedScalar or
                 NI_Sha3_XorRotateRight or NI_Sve_AddRotateComplex or
                 NI_Sve_Prefetch16Bit or NI_Sve_Prefetch32Bit or
                 NI_Sve_Prefetch64Bit or NI_Sve_Prefetch8Bit or
-                NI_Sve_ExtractVector or NI_Sve_TrigonometricMultiplyAddCoefficient =>
-                    node.GetOp(3),
+                NI_Sve_ExtractVector or NI_Sve_TrigonometricMultiplyAddCoefficient:
+                {
+                    immediate = node.GetOp(3);
+                    break;
+                }
 
-                NI_Sve_CreateTrueMaskByte or NI_Sve_CreateTrueMaskDouble or
+                case NI_Sve_CreateTrueMaskByte or NI_Sve_CreateTrueMaskDouble or
                 NI_Sve_CreateTrueMaskInt16 or NI_Sve_CreateTrueMaskInt32 or
                 NI_Sve_CreateTrueMaskInt64 or NI_Sve_CreateTrueMaskSByte or
                 NI_Sve_CreateTrueMaskSingle or NI_Sve_CreateTrueMaskUInt16 or
                 NI_Sve_CreateTrueMaskUInt32 or NI_Sve_CreateTrueMaskUInt64 or
                 NI_Sve_Count16BitElements or NI_Sve_Count32BitElements or
-                NI_Sve_Count64BitElements or NI_Sve_Count8BitElements =>
-                    node.GetOp(1),
+                NI_Sve_Count64BitElements or NI_Sve_Count8BitElements:
+                {
+                    immediate = node.GetOp(1);
+                    break;
+                }
 
-                NI_Sve_ShiftRightArithmeticForDivide => node.GetOp(2),
+                case NI_Sve_ShiftRightArithmeticForDivide:
+                {
+                    immediate = node.GetOp(2);
+                    break;
+                }
 
-                NI_Sve_GatherPrefetch8Bit or NI_Sve_GatherPrefetch16Bit or
-                NI_Sve_GatherPrefetch32Bit or NI_Sve_GatherPrefetch64Bit =>
-                    node.GetOp(varTypeIsSimd(node.GetOp(2).Type) ? 3 : 4),
+                case NI_Sve_GatherPrefetch8Bit or NI_Sve_GatherPrefetch16Bit or
+                NI_Sve_GatherPrefetch32Bit or NI_Sve_GatherPrefetch64Bit:
+                {
+                    immediate = node.GetOp(varTypeIsSimd(node.GetOp(2).Type) ? 3 : 4);
+                    break;
+                }
 
-                NI_Sve_SaturatingDecrementBy16BitElementCount or
+                case NI_Sve_SaturatingDecrementBy16BitElementCount or
                 NI_Sve_SaturatingDecrementBy32BitElementCount or
                 NI_Sve_SaturatingDecrementBy64BitElementCount or
                 NI_Sve_SaturatingDecrementBy8BitElementCount or
@@ -348,23 +373,41 @@ public sealed partial class LinearScan
                 NI_Sve_SaturatingDecrementBy64BitElementCountScalar or
                 NI_Sve_SaturatingIncrementBy16BitElementCountScalar or
                 NI_Sve_SaturatingIncrementBy32BitElementCountScalar or
-                NI_Sve_SaturatingIncrementBy64BitElementCountScalar =>
-                    getPairedArm64Immediate(node, 2, 3),
+                NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                {
+                    immediate = getPairedArm64Immediate(node, 2, 3);
+                    break;
+                }
 
-                NI_Sve_MultiplyAddRotateComplexBySelectedScalar or
+                case NI_Sve_MultiplyAddRotateComplexBySelectedScalar or
                 NI_Sve2_MultiplyAddRotateComplexBySelectedScalar or
                 NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar or
-                NI_Sve2_DotProductRotateComplexBySelectedIndex =>
-                    getPairedArm64Immediate(node, 4, 5),
+                NI_Sve2_DotProductRotateComplexBySelectedIndex:
+                {
+                    immediate = getPairedArm64Immediate(node, 4, 5);
+                    break;
+                }
 
-                NI_Sve_MultiplyAddRotateComplex or NI_Sve2_MultiplyAddRotateComplex or
+                case NI_Sve_MultiplyAddRotateComplex or NI_Sve2_MultiplyAddRotateComplex or
                 NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplex or
-                NI_Sve2_DotProductRotateComplex => node.GetOp(4),
+                NI_Sve2_DotProductRotateComplex:
+                {
+                    immediate = node.GetOp(4);
+                    break;
+                }
 
-                NI_AdvSimd_Arm64_InsertSelectedScalar =>
-                    getContainedArm64InsertImmediate(node),
-                _ => throw new FatalJitException($"ARM64 intrinsic {id} has unhandled immediate requirements."),
-            };
+                case NI_AdvSimd_Arm64_InsertSelectedScalar:
+                {
+                    immediate = getContainedArm64InsertImmediate(node);
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException($"ARM64 intrinsic {id} has unhandled immediate requirements.");
+                    return;
+                }
+            }
         }
 
         if ((immediate is not null) && !immediate.IsContainedIntOrIImmed)
@@ -505,41 +548,53 @@ public sealed partial class LinearScan
         if (HWIntrinsicInfo.IsLowVectorOperation(id))
         {
             assert(!varTypeUsesMaskReg(operand.Type));
-            var restrict = id switch
+            bool restrict;
+            switch (id)
             {
-                NI_Sve_DotProductBySelectedScalar or
-                NI_Sve_FusedMultiplyAddBySelectedScalar or
-                NI_Sve_FusedMultiplySubtractBySelectedScalar or
-                NI_Sve_MultiplyAddRotateComplexBySelectedScalar or
-                NI_Sve2_DotProductRotateComplexBySelectedIndex or
-                NI_Sve2_MultiplyAddBySelectedScalar or
-                NI_Sve2_MultiplyAddRotateComplexBySelectedScalar or
-                NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd or
-                NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd or
-                NI_Sve2_MultiplySubtractBySelectedScalar or
-                NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract or
-                NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract or
-                NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven or
-                NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd or
-                NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven or
-                NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd or
-                NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh or
-                NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh or
-                NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar =>
-                    operandNumber == 3,
+                case NI_Sve_DotProductBySelectedScalar:
+                case NI_Sve_FusedMultiplyAddBySelectedScalar:
+                case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+                case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_DotProductRotateComplexBySelectedIndex:
+                case NI_Sve2_MultiplyAddBySelectedScalar:
+                case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
+                case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
+                case NI_Sve2_MultiplySubtractBySelectedScalar:
+                case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
+                case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+                case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven:
+                case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd:
+                case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven:
+                case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
+                case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh:
+                case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
+                {
+                    restrict = operandNumber == 3;
+                    break;
+                }
 
-                NI_Sve_MultiplyBySelectedScalar or
-                NI_Sve2_MultiplyBySelectedScalar or
-                NI_Sve2_MultiplyBySelectedScalarWideningEven or
-                NI_Sve2_MultiplyBySelectedScalarWideningOdd or
-                NI_Sve2_MultiplyDoublingBySelectedScalarSaturateHigh or
-                NI_Sve2_MultiplyDoublingWideningSaturateEvenBySelectedScalar or
-                NI_Sve2_MultiplyDoublingWideningSaturateOddBySelectedScalar or
-                NI_Sve2_MultiplyRoundedDoublingBySelectedScalarSaturateHigh =>
-                    operandNumber == 2,
+                case NI_Sve_MultiplyBySelectedScalar:
+                case NI_Sve2_MultiplyBySelectedScalar:
+                case NI_Sve2_MultiplyBySelectedScalarWideningEven:
+                case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
+                case NI_Sve2_MultiplyDoublingBySelectedScalarSaturateHigh:
+                case NI_Sve2_MultiplyDoublingWideningSaturateEvenBySelectedScalar:
+                case NI_Sve2_MultiplyDoublingWideningSaturateOddBySelectedScalar:
+                case NI_Sve2_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
+                {
+                    restrict = operandNumber == 2;
+                    break;
+                }
 
-                _ => throw new FatalJitException($"Unhandled ARM64 low-vector intrinsic {id}."),
-            };
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        $"Unhandled ARM64 low-vector intrinsic {id}.");
+                    return SRBM_NONE;
+                }
+            }
             if (restrict)
             {
                 var elementSize = id is NI_Sve2_DotProductRotateComplexBySelectedIndex
@@ -663,8 +718,10 @@ public sealed partial class LinearScan
 
             default:
             {
-                throw new FatalJitException(
+                FatalJitException.ThrowFatalJitException(
                     $"ARM64 intrinsic {intrinsic.HWIntrinsicId} has unhandled consecutive register requirements.");
+                consecutiveDestination = default!;
+                return default!;
             }
         }
     }

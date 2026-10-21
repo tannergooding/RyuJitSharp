@@ -21,7 +21,8 @@ public partial class Emitter
             return emitTryCoalesceLastMemBarrierArm64(barrier);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Memory-barrier coalescing is not supported for this target.");
+        return default!;
     }
 }

@@ -18,7 +18,8 @@ public sealed partial class CodeGen
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64 &&
             !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "OSR local homing is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "OSR local homing is not ported for this target.");
+            return;
         }
 
         assert(_compiler.opts.IsOSR);

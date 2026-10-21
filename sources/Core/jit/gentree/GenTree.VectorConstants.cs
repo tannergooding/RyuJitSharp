@@ -17,13 +17,29 @@ public partial class GenTree
                 assert(baseType == value.BaseType);
 
                 // Native uses raw 64-bit arithmetic here, without narrowing to the element width.
-                return value.Kind switch {
-                    SimdScalableKind.SimdScalableRepeated => value.Index.u64[0],
-                    SimdScalableKind.SimdScalableSequence =>
-                        unchecked(value.Index.u64[0] + (value.Step.u64[0] * (ulong)index)),
-                    SimdScalableKind.SimdScalableScalar => index == 0 ? value.Index.u64[0] : 0,
-                    _ => throw new FatalJitException("Unexpected scalable vector constant kind."),
-                };
+                switch (value.Kind)
+                {
+                    case SimdScalableKind.SimdScalableRepeated:
+                    {
+                        return value.Index.u64[0];
+                    }
+
+                    case SimdScalableKind.SimdScalableSequence:
+                    {
+                        return unchecked(value.Index.u64[0] + (value.Step.u64[0] * (ulong)index));
+                    }
+
+                    case SimdScalableKind.SimdScalableScalar:
+                    {
+                        return index == 0 ? value.Index.u64[0] : 0;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException("Unexpected scalable vector constant kind.");
+                        return default!;
+                    }
+                }
             }
             var integralType = baseType switch {
                 TYP_FLOAT => TYP_INT,

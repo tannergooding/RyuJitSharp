@@ -2189,8 +2189,23 @@ public partial class Emitter
         INS_TT_NONE, // INS_data16
     ];
 
-    private static ReadOnlySpan<insTupleType> s_tupleTypes =>
-        Configuration.TARGET_X86 ? s_tupleTypesX86 :
-        Configuration.TARGET_AMD64 ? s_tupleTypesAMD64 :
-        throw new FatalJitException("xarch instruction tuple data is not available for this target.");
+    private static ReadOnlySpan<insTupleType> s_tupleTypes
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return s_tupleTypesX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return s_tupleTypesAMD64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch instruction tuple data is not available for this target.");
+            return default;
+        }
+    }
 }

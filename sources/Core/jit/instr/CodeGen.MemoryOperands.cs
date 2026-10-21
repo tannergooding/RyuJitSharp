@@ -14,7 +14,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires xarch.");
+            return default!;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -53,8 +54,9 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Hardware instruction operands require hardware intrinsics.");
+                    return default!;
                 }
 
                 var intrinsic = op.AsHWIntrinsic();
@@ -166,13 +168,15 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "Vector constant operands require SIMD support.");
+                        return default!;
                     }
                     if (!Configuration.TARGET_XARCH)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "Emitter vector-constant operands are not implemented outside xarch.");
+                        return default!;
                     }
 
                     var tupleType = Emitter.insTupleTypeInfo(ins);
@@ -191,8 +195,9 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "Mask constant operands require masked hardware intrinsics.");
+                        return default!;
                     }
 
                     return new OperandDesc(Emitter.emitSimdMaskConst(op.AsMskCon().SimdMaskVal));
@@ -215,8 +220,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Single-operand instruction generation requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -269,8 +275,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register/operand instruction generation requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -330,8 +337,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register/register/immediate instruction generation requires xarch.");
+            return;
         }
 
         assert(ins is INS_shld or INS_shrd or INS_shufps or INS_shufpd or INS_pshufd or
@@ -346,8 +354,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register/memory/immediate instruction generation requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -361,8 +370,7 @@ public sealed partial class CodeGen
             }
             else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
             {
-                ins = ins switch
-                {
+                ins = ins switch {
                     INS_vextractf64x2 => INS_vextractf32x4,
                     INS_vextracti64x2 => INS_vextracti32x4,
                     _ => ins,
@@ -410,8 +418,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "SIMD register/operand/immediate generation requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -424,8 +433,7 @@ public sealed partial class CodeGen
             }
             else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
             {
-                ins = ins switch
-                {
+                ins = ins switch {
                     INS_vinsertf64x2 => INS_vinsertf32x4,
                     INS_vinserti64x2 => INS_vinserti32x4,
                     _ => ins,
@@ -483,8 +491,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Embedded broadcast instruction options require xarch hardware intrinsics.");
+            return default!;
         }
 
         assert((options & INS_OPTS_EVEX_b_MASK) == 0);
@@ -496,8 +505,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Three-operand register/memory instruction generation requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -511,8 +521,7 @@ public sealed partial class CodeGen
             }
             else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
             {
-                ins = ins switch
-                {
+                ins = ins switch {
                     INS_vpandq => INS_pandd,
                     INS_vpandnq => INS_pandnd,
                     INS_vporq => INS_pord,

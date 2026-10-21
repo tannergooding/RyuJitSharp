@@ -15,7 +15,12 @@ public partial class Emitter
         }
 
         EnsureLoopAlignmentTargetSupported();
-        var compiler = _compiler ?? throw new FatalJitException("Loop-alignment adjustment requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopAlignmentAdjustmentMissingCompiler);
+            return;
+        }
         JITDUMP("*************** In emitLoopAlignAdjustments()\n");
         JITDUMP($"compJitAlignLoopAdaptive       = {(compiler.opts.compJitAlignLoopAdaptive ? "true" : "false")}\n");
         JITDUMP($"compJitAlignLoopBoundary       = {compiler.opts.compJitAlignLoopBoundary}\n");
@@ -35,12 +40,24 @@ public partial class Emitter
         {
             assert(alignInstr.idIns() == INS_align);
 
-            var loopHeadPredIG = alignInstr.idaLoopHeadPredIG
-                ?? throw new FatalJitException("An alignment descriptor requires a loop-head predecessor.");
-            var loopHeadIG = alignInstr.loopHeadIG()
-                ?? throw new FatalJitException("An alignment descriptor requires a loop-head group.");
-            var containingIG = alignInstr.idaIG
-                ?? throw new FatalJitException("An alignment descriptor requires a containing group.");
+            var loopHeadPredIG = alignInstr.idaLoopHeadPredIG;
+            if (loopHeadPredIG is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AlignmentDescriptorMissingLoopHeadPredecessor);
+                return;
+            }
+            var loopHeadIG = alignInstr.loopHeadIG();
+            if (loopHeadIG is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AlignmentDescriptorMissingLoopHeadGroup);
+                return;
+            }
+            var containingIG = alignInstr.idaIG;
+            if (containingIG is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AlignmentDescriptorMissingContainingGroup);
+                return;
+            }
 
             JITDUMP($"  Adjusting 'align' instruction in IG{containingIG.GetDisplayId():D2} " +
                 $"that is targeted for IG{loopHeadIG.GetDisplayId():D2} \n");
@@ -141,9 +158,31 @@ public partial class Emitter
 
             var nextAlign = emitAlignInNextIG(alignInstr);
             var adjOffIG = containingIG.igNext;
-            var adjOffUptoIG = nextAlign is not null
-                ? nextAlign.idaIG ?? throw new FatalJitException("An alignment descriptor requires a containing group.")
-                : emitIGlast ?? throw new FatalJitException("Alignment adjustment requires a final instruction group.");
+            insGroup? adjOffUptoIG;
+            if (nextAlign is not null)
+            {
+                adjOffUptoIG = nextAlign.idaIG;
+                if (adjOffUptoIG is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.AlignmentDescriptorMissingContainingGroup
+                    );
+                    return;
+                }
+            }
+            else
+            {
+                adjOffUptoIG = emitIGlast;
+                if (adjOffUptoIG is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage214
+                    );
+                    return;
+                }
+            }
 
             while ((adjOffIG is not null)
                 && (ReferenceEquals(adjOffIG, adjOffUptoIG) || adjOffIG.IsBefore(adjOffUptoIG)))

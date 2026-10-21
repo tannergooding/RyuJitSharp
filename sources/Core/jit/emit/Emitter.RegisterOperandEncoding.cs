@@ -24,7 +24,8 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_X86)
             {
-                throw new FatalJitException("xarch register encoding is not available for this target.");
+                FatalJitException.ThrowFatalJitException("xarch register encoding is not available for this target.");
+                return default!;
             }
 
             return RegEncoding(reg);
@@ -74,7 +75,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("REX.X output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("REX.X output requires AMD64.");
+            return default!;
         }
 
         // VEX/EVEX store X inverted; REX and REX2 store it directly.
@@ -99,7 +101,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("REX.B output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("REX.B output requires AMD64.");
+            return default!;
         }
 
         // VEX/EVEX store B inverted; REX and REX2 store it directly.
@@ -124,7 +127,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("REX output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("REX output requires AMD64.");
+            return default!;
         }
 
         assert(!IsVexEncodableInstruction(ins));

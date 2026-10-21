@@ -152,7 +152,11 @@ public partial class Compiler
         {
             if (callUse is not GenTree use)
             {
-                throw new FatalJitException("Static initialization call has no owning use.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage199
+                );
+                return default!;
             }
 
             use.BashToNOP();

@@ -37,8 +37,9 @@ public partial class Emitter
 
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Target local-stack instruction recording is not implemented.");
+            return;
         }
 
         assert(_compiler is not null);

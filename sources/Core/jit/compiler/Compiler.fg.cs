@@ -5117,8 +5117,12 @@ public partial class Compiler
             // we avoid this situation by never generating single-block filters on x86 (see impPushCatchArgOnStack).
             if (Configuration.JIT32_GCENCODER && insertingIntoFilter)
             {
-                var filterEndBlk = endBlk
-                    ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Filter end block is missing.");
+                var filterEndBlk = endBlk;
+                if (filterEndBlk is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Filter end block is missing.");
+                    return default!;
+                }
                 if (bestBlk == filterEndBlk.Prev)
                 {
                     assert(bestBlk != startBlk);

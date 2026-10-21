@@ -196,10 +196,12 @@ public sealed partial class Lowering
 
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not supported for Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not supported for Wasm.");
+            return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not ported for this target.");
+        return;
     }
 
     private void InsertBitCastIfNecessary(ref GenTree argNode, in AbiPassingSegment registerSegment)

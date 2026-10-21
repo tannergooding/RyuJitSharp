@@ -91,8 +91,7 @@ public sealed partial class ObjectAllocator
 
             if (compiler.bbIsTryBeg(block))
             {
-                var cloneTryInfo = new CloneTryInfo(compiler)
-                {
+                var cloneTryInfo = new CloneTryInfo(compiler) {
                     Map = map,
                     AddEdges = false,
                     ProfileScale = info.ProfileScale,
@@ -100,7 +99,11 @@ public sealed partial class ObjectAllocator
                 };
                 if (compiler.fgCloneTryRegion(block, cloneTryInfo, ref insertionPoint) is null)
                 {
-                    throw new FatalJitException("The selected try region could not be cloned.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage427
+                    );
+                    return;
                 }
                 continue;
             }

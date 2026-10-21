@@ -2063,7 +2063,7 @@ public partial class Compiler
 
                         if (op1.Oper is GT_RET_EXPR)
                         {
-                            retExpr = op1.AsRetExpr();  
+                            retExpr = op1.AsRetExpr();
                             call = retExpr.InlineCandidate.AsCall();
                         }
 
@@ -3753,7 +3753,14 @@ public partial class Compiler
 
                             if (!isNative)
                             {
-                                var op1CloneNode = op1Clone ?? throw new FatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                var op1CloneNode = op1Clone;
+                                if (op1CloneNode is null)
+                                {
+                                    FatalJitException.ThrowFatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                    intrinsicName = default!;
+                                    isSpecialIntrinsic = default!;
+                                    return default!;
+                                }
 
                                 // Select an input NaN where needed, preferring the first when both are NaN.
 
@@ -3763,27 +3770,74 @@ public partial class Compiler
                                     minMax = compiler.impCloneExpr(minMax, out var minMaxClone, CHECK_SPILL_NONE, "Clone min/max result in Math.Min/MaxNumber");
 
                                     var isNumberComparison = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, minMax, minMaxClone);
+                                    var minMaxCloneCopy = compiler.gtCloneExpr(minMaxClone);
+                                    if (minMaxCloneCopy is null)
+                                    {
+                                        FatalJitException.ThrowFatalJitException("Unable to clone the Math.Min/Max result.");
+                                        intrinsicName = default!;
+                                        isSpecialIntrinsic = default!;
+                                        return default!;
+                                    }
 
                                     minMax = compiler.gtNewQmarkNode(callType, isNumberComparison,
                                         compiler.gtNewColonNode(callType,
-                                            compiler.gtCloneExpr(minMaxClone) ?? throw new FatalJitException("Unable to clone the Math.Min/Max result."),
+                                            minMaxCloneCopy,
                                             op1CloneNode));
                                 }
                                 else
                                 {
                                     // Build expression:  isNumber(op1) ? (isNumber(op2) ? minMax : op2) : op1
-                                    var op2CloneNode = op2Clone ?? throw new FatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                    var op2CloneNode = op2Clone;
+                                    if (op2CloneNode is null)
+                                    {
+                                        FatalJitException.ThrowFatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                        intrinsicName = default!;
+                                        isSpecialIntrinsic = default!;
+                                        return default!;
+                                    }
+                                    var op1CloneNodeCopy = compiler.gtCloneExpr(op1CloneNode);
+                                    if (op1CloneNodeCopy is null)
+                                    {
+                                        FatalJitException.ThrowFatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                        intrinsicName = default!;
+                                        isSpecialIntrinsic = default!;
+                                        return default!;
+                                    }
                                     var isOp1Number = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, op1CloneNode,
-                                        compiler.gtCloneExpr(op1CloneNode) ?? throw new FatalJitException("Unable to clone the first Math.Min/Max operand."));
+                                        op1CloneNodeCopy);
+                                    var op2CloneNodeCopy = compiler.gtCloneExpr(op2CloneNode);
+                                    if (op2CloneNodeCopy is null)
+                                    {
+                                        FatalJitException.ThrowFatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                        intrinsicName = default!;
+                                        isSpecialIntrinsic = default!;
+                                        return default!;
+                                    }
                                     var isOp2Number = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, op2CloneNode,
-                                        compiler.gtCloneExpr(op2CloneNode) ?? throw new FatalJitException("Unable to clone the second Math.Min/Max operand."));
+                                        op2CloneNodeCopy);
 
+                                    var op2CloneNodeCopyForQmark = compiler.gtCloneExpr(op2CloneNode);
+                                    if (op2CloneNodeCopyForQmark is null)
+                                    {
+                                        FatalJitException.ThrowFatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                        intrinsicName = default!;
+                                        isSpecialIntrinsic = default!;
+                                        return default!;
+                                    }
                                     minMax = compiler.gtNewQmarkNode(callType, isOp2Number,
                                         compiler.gtNewColonNode(callType, minMax,
-                                            compiler.gtCloneExpr(op2CloneNode) ?? throw new FatalJitException("Unable to clone the second Math.Min/Max operand.")));
+                                            op2CloneNodeCopyForQmark));
+                                    var op1CloneNodeCopyForQmark = compiler.gtCloneExpr(op1CloneNode);
+                                    if (op1CloneNodeCopyForQmark is null)
+                                    {
+                                        FatalJitException.ThrowFatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                        intrinsicName = default!;
+                                        isSpecialIntrinsic = default!;
+                                        return default!;
+                                    }
                                     minMax = compiler.gtNewQmarkNode(callType, isOp1Number,
                                         compiler.gtNewColonNode(callType, minMax,
-                                            compiler.gtCloneExpr(op1CloneNode) ?? throw new FatalJitException("Unable to clone the first Math.Min/Max operand.")));
+                                            op1CloneNodeCopyForQmark));
                                 }
 
                                 // Top-level QMARK needs to be in a variable

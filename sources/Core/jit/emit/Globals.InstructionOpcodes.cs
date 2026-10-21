@@ -29,7 +29,8 @@ public static partial class Globals
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, unsupportedMessage);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, unsupportedMessage);
+            return default!;
         }
 
         return InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);

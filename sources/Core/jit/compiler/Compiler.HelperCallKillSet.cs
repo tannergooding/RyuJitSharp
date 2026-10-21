@@ -56,7 +56,8 @@ public partial class Compiler
             return RBM_CALLEE_TRASH;
         }
 
-        throw new FatalJitException("Unsupported or unset target architecture.");
+        FatalJitException.ThrowFatalJitException("Unsupported or unset target architecture.");
+        return default!;
     }
 
     private regMaskTP compHelperCallKillSetArm64(CorInfoHelpFunc helper)

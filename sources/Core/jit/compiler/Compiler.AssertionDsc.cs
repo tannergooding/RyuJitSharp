@@ -463,7 +463,8 @@ public partial class Compiler
         {
             if (!Configuration.FEATURE_SIMD)
             {
-                throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD assertions are unsupported on this target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD assertions are unsupported on this target.");
+                return default!;
             }
 
             assert(varTypeIsSimd(cns.Type));

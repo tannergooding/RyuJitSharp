@@ -19,8 +19,7 @@ public sealed partial class CodeGen
         {
             // Opportunistic EVEX forms can use shorter VEX encodings when no
             // embedded feature requires the wider encoding.
-            ins = ins switch
-            {
+            ins = ins switch {
                 INS_vbroadcastf64x2 => INS_vbroadcastf32x4,
                 INS_vbroadcasti64x2 => INS_vbroadcasti32x4,
                 INS_vmovdqa64 => INS_movdqa32,
@@ -119,14 +118,41 @@ public sealed partial class CodeGen
                         }
                         else if (instructionFixup)
                         {
-                            ins = ins switch
+                            switch (ins)
                             {
-                                INS_vpbroadcastb => INS_vpbroadcastb_gpr,
-                                INS_vpbroadcastd => INS_vpbroadcastd_gpr,
-                                INS_vpbroadcastq => INS_vpbroadcastq_gpr,
-                                INS_vpbroadcastw => INS_vpbroadcastw_gpr,
-                                _ => throw new FatalJitException("Unexpected scalar broadcast instruction."),
-                            };
+                                case INS_vpbroadcastb:
+                                {
+                                    ins = INS_vpbroadcastb_gpr;
+                                    break;
+                                }
+
+                                case INS_vpbroadcastd:
+                                {
+                                    ins = INS_vpbroadcastd_gpr;
+                                    break;
+                                }
+
+                                case INS_vpbroadcastq:
+                                {
+                                    ins = INS_vpbroadcastq_gpr;
+                                    break;
+                                }
+
+                                case INS_vpbroadcastw:
+                                {
+                                    ins = INS_vpbroadcastw_gpr;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    FatalJitException.ThrowFatalJitException(
+                                        CORJIT_INTERNALERROR,
+                                        FatalJitErrorCode.DirectFailureMessage238
+                                    );
+                                    break;
+                                }
+                            }
                         }
                     }
                     Emitter.emitIns_R_R(ins, attr, reg, rmReg, options);

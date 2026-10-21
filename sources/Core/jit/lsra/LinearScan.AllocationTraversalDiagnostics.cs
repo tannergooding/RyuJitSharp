@@ -124,7 +124,8 @@ public sealed partial class LinearScan
             }
             default:
             {
-                throw new FatalJitException($"Unsupported full LSRA allocation event: {allocationEvent}.");
+                FatalJitException.ThrowFatalJitException($"Unsupported full LSRA allocation event: {allocationEvent}.");
+                return;
             }
         }
     }

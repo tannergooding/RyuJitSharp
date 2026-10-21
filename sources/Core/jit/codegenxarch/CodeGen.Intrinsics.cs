@@ -68,7 +68,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Finite-check code generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Finite-check code generation requires xarch.");
+            return;
         }
 
         genProduceReg(tree);

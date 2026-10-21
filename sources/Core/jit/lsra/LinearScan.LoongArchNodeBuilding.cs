@@ -602,10 +602,14 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            destinationCount = default!;
+            return default!;
         }
 
         NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic LSRA is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic LSRA is not ported.");
+        destinationCount = default!;
+        return default!;
     }
 }

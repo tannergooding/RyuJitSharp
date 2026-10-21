@@ -134,14 +134,42 @@ public sealed partial class CodeGen
 
             void EmitScalarLoadStore(bool load, uint accessSize, regNumber reg, uint offset)
             {
-                var memType = accessSize switch
+                var_types memType;
+                switch (accessSize)
                 {
-                    1 => TYP_UBYTE,
-                    2 => TYP_USHORT,
-                    4 => TYP_INT,
-                    8 => TYP_LONG,
-                    _ => throw new FatalJitException("Invalid scalar memmove width."),
-                };
+                    case 1:
+                    {
+                        memType = TYP_UBYTE;
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        memType = TYP_USHORT;
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        memType = TYP_INT;
+                        break;
+                    }
+
+                    case 8:
+                    {
+                        memType = TYP_LONG;
+                        break;
+                    }
+
+                    default:
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage096
+                        );
+                        return;
+                    }
+                }
 
                 if (load)
                 {

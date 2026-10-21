@@ -62,8 +62,9 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_ARM64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "ARM64 empty-alignment descriptors are not supported for this target.");
+                return default!;
             }
 
             return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
@@ -99,8 +100,9 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_XARCH)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Previous-instruction sizes are only supported on xarch.");
+                return default!;
             }
 
             return _idScaledPrevOffset * 4;
@@ -110,8 +112,9 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_XARCH)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Previous-instruction sizes are only supported on xarch.");
+                return;
             }
 
             assert((previousSize % 4) == 0);
@@ -256,8 +259,9 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_WASM)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "WebAssembly instruction descriptors are not supported for this target.");
+                return;
             }
         }
 

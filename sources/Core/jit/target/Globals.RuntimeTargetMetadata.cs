@@ -168,7 +168,8 @@ public static partial class Globals
                 return REG_VAR_ORDER_WASM;
             }
 
-            throw new FatalJitException("Register order is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException("Register order is unavailable for this target.");
+            return default!;
         }
     }
 
@@ -213,7 +214,8 @@ public static partial class Globals
                 return REG_VAR_ORDER_FLT_WASM;
             }
 
-            throw new FatalJitException("Floating-point register order is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException("Floating-point register order is unavailable for this target.");
+            return default!;
         }
     }
 
@@ -236,7 +238,8 @@ public static partial class Globals
                 return [];
             }
 
-            throw new FatalJitException("Mask-register allocation order is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException("Mask-register allocation order is unavailable for this target.");
+            return default!;
         }
     }
 }

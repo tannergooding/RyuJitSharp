@@ -43,19 +43,58 @@ public unsafe struct LC_Ident
         {
             return false;
         }
-        return Type switch
+        switch (Type)
         {
-            IdentType.Const => Constant == that.Constant,
-            IdentType.ClassHandle => ClsHnd == that.ClsHnd,
-            IdentType.Var => (LclNum == that.LclNum) && (LclType == that.LclType) && (Offset == that.Offset),
-            IdentType.IndirOfLocal => (LclNum == that.LclNum) && (IndirOffs == that.IndirOffs) &&
-                (LclType == that.LclType),
-            IdentType.ArrAccess => ArrAccess.Matches(that.ArrAccess) && (Offset == that.Offset),
-            IdentType.SpanAccess => SpanAccess.Matches(that.SpanAccess),
-            IdentType.Null => true,
-            IdentType.MethodAddr or IdentType.IndirOfMethodAddrSlot => MethAddr == that.MethAddr,
-            _ => throw new FatalJitException("Unknown loop-cloning identifier type."),
-        };
+            case IdentType.Const:
+            {
+                return Constant == that.Constant;
+            }
+
+            case IdentType.ClassHandle:
+            {
+                return ClsHnd == that.ClsHnd;
+            }
+
+            case IdentType.Var:
+            {
+                return (LclNum == that.LclNum) && (LclType == that.LclType) && (Offset == that.Offset);
+            }
+
+            case IdentType.IndirOfLocal:
+            {
+                return (LclNum == that.LclNum) && (IndirOffs == that.IndirOffs) &&
+                            (LclType == that.LclType);
+            }
+
+            case IdentType.ArrAccess:
+            {
+                return ArrAccess.Matches(that.ArrAccess) && (Offset == that.Offset);
+            }
+
+            case IdentType.SpanAccess:
+            {
+                return SpanAccess.Matches(that.SpanAccess);
+            }
+
+            case IdentType.Null:
+            {
+                return true;
+            }
+
+            case IdentType.MethodAddr or IdentType.IndirOfMethodAddrSlot:
+            {
+                return MethAddr == that.MethAddr;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage251
+                );
+                return default!;
+            }
+        }
     }
 
     [Conditional("DEBUG")]
@@ -205,7 +244,11 @@ public unsafe struct LC_Ident
 
             default:
             {
-                throw new FatalJitException("Cannot materialize an invalid loop-cloning identifier.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage252
+                );
+                return default!;
             }
         }
     }
@@ -232,16 +275,14 @@ public unsafe struct LC_Ident
         => new() { Type = IdentType.ClassHandle, ClsHnd = clsHnd };
 
     public static LC_Ident CreateMethodAddr(
-        void* methAddr, CORINFO_METHOD_HANDLE targetMethHnd = default) => new()
-        {
+        void* methAddr, CORINFO_METHOD_HANDLE targetMethHnd = default) => new() {
             Type = IdentType.MethodAddr,
             MethAddr = methAddr,
             TargetMethHnd = targetMethHnd,
         };
 
     public static LC_Ident CreateIndirMethodAddrSlot(
-        void* methAddrSlot, CORINFO_METHOD_HANDLE targetMethHnd = default) => new()
-        {
+        void* methAddrSlot, CORINFO_METHOD_HANDLE targetMethHnd = default) => new() {
             Type = IdentType.IndirOfMethodAddrSlot,
             MethAddr = methAddrSlot,
             TargetMethHnd = targetMethHnd,

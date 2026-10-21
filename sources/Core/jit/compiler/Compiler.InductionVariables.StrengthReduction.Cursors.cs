@@ -57,7 +57,8 @@ public partial class Compiler
                     jitprintf($"    [{i}] [{cursor.Tree.TreeId:D6}]: ");
                     if (cursor.IV is not ScevAddRec iv)
                     {
-                        throw new FatalJitException("An initialized IV cursor needs a recurrence.");
+                        FatalJitException.ThrowFatalJitException("An initialized IV cursor needs a recurrence.");
+                        return default!;
                     }
                     iv.Dump(_compiler);
                     jitprintf("\n");
@@ -86,8 +87,15 @@ public partial class Compiler
                 return false;
             }
 
-            var domTree = _compiler._domTree
-                ?? throw new FatalJitException("Strength reduction requires dominators.");
+            var domTree = _compiler._domTree;
+            if (domTree is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage130
+                );
+                return default!;
+            }
             foreach (var edge in _loop.BackEdges)
             {
                 if (!domTree.Dominates(block, edge.SourceBlock))
@@ -109,8 +117,15 @@ public partial class Compiler
                 var cursor = cursors[i];
                 var nextCursor = nextCursors[i];
                 assert((nextCursor.Block == cursor.Block) && (nextCursor.Stmt == cursor.Stmt));
-                var cursorIV = cursor.IV
-                    ?? throw new FatalJitException("An active IV cursor needs a recurrence.");
+                var cursorIV = cursor.IV;
+                if (cursorIV is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage131
+                    );
+                    return;
+                }
                 nextCursor.Tree = cursor.Tree;
                 nextCursor.AdvancedTree = cursor.Tree;
                 do
@@ -165,8 +180,15 @@ public partial class Compiler
                 while (true)
                 {
                     var cursor = cursors[i];
-                    var cursorIV = cursor.IV
-                        ?? throw new FatalJitException("An active IV cursor needs a recurrence.");
+                    var cursorIV = cursor.IV;
+                    if (cursorIV is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage131
+                        );
+                        return;
+                    }
                     var current = cursor.Tree;
                     var parent = _compiler.optFindIVParent(cursor.Stmt, current);
                     if ((parent is null) || ((parent.Oper is GT_COMMA) && parent.AsOp().Op1 == current))
@@ -365,7 +387,11 @@ public partial class Compiler
             if (!iv.Step.GetConstantValue(_compiler, out var ivStep) ||
                 !sourceIV.Step.GetConstantValue(_compiler, out var sourceStep))
             {
-                throw new FatalJitException("Rephrasing an IV requires constant steps.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage132
+                );
+                return default!;
             }
             assert(iv.Type == sourceIV.Type);
             if (iv.Type is TYP_INT)
@@ -388,7 +414,11 @@ public partial class Compiler
                     : _compiler.gtNewBinaryNode(GT_MUL, TYP_LONG, sourceTree,
                         _compiler.gtNewLconNode(scale));
             }
-            throw new FatalJitException("Only 32- and 64-bit IVs can be rephrased.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage133
+            );
+            return default!;
         }
     }
 }

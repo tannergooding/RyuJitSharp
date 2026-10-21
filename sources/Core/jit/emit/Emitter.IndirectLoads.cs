@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Indirect-load recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indirect-load recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

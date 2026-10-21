@@ -13,8 +13,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Implicit register-pair destinations are only defined for xarch.");
+            return default!;
         }
 
         return ins is INS_mulEAX or INS_imulEAX or INS_div or INS_idiv;
@@ -25,7 +26,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Binary operand recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Binary operand recording requires xarch.");
+            return default!;
         }
 
         if (Configuration.TARGET_AMD64)

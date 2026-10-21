@@ -20,7 +20,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import requires hardware intrinsics.");
+            return default!;
         }
 
         if (Configuration.TARGET_XARCH)
@@ -39,7 +40,8 @@ public partial class Compiler
                 simdBaseType, retType, simdSize, mustExpand);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import outside xarch is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import outside xarch is not ported.");
+        return default!;
     }
 
     private GenTreeHWIntrinsic? impNonConstFallback(
@@ -47,7 +49,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback requires hardware intrinsics.");
+            return default!;
         }
 
         if (Configuration.TARGET_XARCH)
@@ -61,9 +64,11 @@ public partial class Compiler
         else if (Configuration.TARGET_WASM)
         {
             unreached();
-            throw new FatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable Wasm hardware-intrinsic nonconstant fallback.");
+            FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable Wasm hardware-intrinsic nonconstant fallback.");
+            return default!;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback outside xarch is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback outside xarch is not ported.");
+        return default!;
     }
 }

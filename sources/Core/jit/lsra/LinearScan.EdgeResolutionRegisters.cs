@@ -13,10 +13,28 @@ public sealed partial class LinearScan
     private regNumber getTempRegForResolution(BasicBlock fromBlock, BasicBlock? toBlock,
         var_types type, VARSET_TP sharedCriticalLiveSet, regMaskTP terminatorConsumedRegs)
     {
-        var fromMap = getOutVarToRegMap(checked((uint)fromBlock.bbNum))
-            ?? throw new FatalJitException("Edge resolution requires the predecessor's register map.");
-        var toMap = toBlock is null ? null : getInVarToRegMap(checked((uint)toBlock.bbNum))
-            ?? throw new FatalJitException("Edge resolution requires the successor's register map.");
+        var fromMap = getOutVarToRegMap(checked((uint)fromBlock.bbNum));
+        if (fromMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage313
+            );
+            return default!;
+        }
+        regNumberSmall[]? toMap = null;
+        if (toBlock is not null)
+        {
+            toMap = getInVarToRegMap(checked((uint)toBlock.bbNum));
+            if (toMap is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage314
+                );
+                return default;
+            }
+        }
         var freeRegs = Configuration.TARGET_ARM
             ? allRegs(type is TYP_DOUBLE ? TYP_FLOAT : type)
             : getAvailableGPRsForType(allRegs(type), type is TYP_INT ? TYP_REF : type);
@@ -33,8 +51,7 @@ public sealed partial class LinearScan
         freeRegs &= ~terminatorConsumedRegs.GetRegSetForType(type);
 
         var liveVariables = toBlock is null ? fromBlock.bbLiveOut : toBlock.bbLiveIn;
-        _ = VarSetOps.VisitBits(_compiler, liveVariables, index =>
-        {
+        _ = VarSetOps.VisitBits(_compiler, liveVariables, index => {
             var fromReg = getVarReg(fromMap, checked((uint)index));
             assert(fromReg != REG_NA);
             if (fromReg != REG_STK)
@@ -54,10 +71,16 @@ public sealed partial class LinearScan
         });
         if (toBlock is null)
         {
-            var sharedMap = _sharedCriticalVarToRegMap
-                ?? throw new FatalJitException("Shared critical resolution requires a register map.");
-            _ = VarSetOps.VisitBits(_compiler, sharedCriticalLiveSet, index =>
+            var sharedMap = _sharedCriticalVarToRegMap;
+            if (sharedMap is null)
             {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage315
+                );
+                return default!;
+            }
+            _ = VarSetOps.VisitBits(_compiler, sharedCriticalLiveSet, index => {
                 var register = getVarReg(sharedMap, checked((uint)index));
                 assert(register != REG_NA);
                 if (register != REG_STK)

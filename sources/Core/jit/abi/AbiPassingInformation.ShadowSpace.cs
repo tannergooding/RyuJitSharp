@@ -25,7 +25,9 @@ public partial struct AbiPassingInformation
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Caller shadow-space offsets require Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Caller shadow-space offsets require Windows AMD64.");
+            offset = default!;
+            return default!;
         }
 
         switch ((WindowsAmd64Register)(uint)reg)

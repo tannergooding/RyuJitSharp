@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register copy generation is not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register copy generation is not supported on Wasm.");
+            return;
         }
 
         assert(treeNode.Oper is GT_COPY);
@@ -85,7 +86,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Indexed register copies are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indexed register copies are not supported on Wasm.");
+            return default!;
         }
 
         assert(treeNode.Oper is GT_COPY);

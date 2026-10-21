@@ -72,13 +72,32 @@ public sealed partial class CodeGen
             {
                 case INS_cdq:
                 {
-                    return id.idOpSize() switch
+                    switch (id.idOpSize())
                     {
-                        EA_8BYTE => "cqo",
-                        EA_4BYTE => "cdq",
-                        EA_2BYTE => "cwd",
-                        _ => throw new FatalJitException("Invalid sign-extension size."),
-                    };
+                        case EA_8BYTE:
+                        {
+                            return "cqo";
+                        }
+
+                        case EA_4BYTE:
+                        {
+                            return "cdq";
+                        }
+
+                        case EA_2BYTE:
+                        {
+                            return "cwd";
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage243
+                            );
+                            return default!;
+                        }
+                    }
                 }
 
                 case INS_cmppd:
@@ -117,13 +136,32 @@ public sealed partial class CodeGen
 
                 case INS_cwde:
                 {
-                    return id.idOpSize() switch
+                    switch (id.idOpSize())
                     {
-                        EA_8BYTE => "cdqe",
-                        EA_4BYTE => "cwde",
-                        EA_2BYTE => "cbw",
-                        _ => throw new FatalJitException("Invalid sign-extension size."),
-                    };
+                        case EA_8BYTE:
+                        {
+                            return "cdqe";
+                        }
+
+                        case EA_4BYTE:
+                        {
+                            return "cwde";
+                        }
+
+                        case EA_2BYTE:
+                        {
+                            return "cbw";
+                        }
+
+                        default:
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage243
+                            );
+                            return default!;
+                        }
+                    }
                 }
 
                 case INS_movdqa32:
@@ -148,8 +186,7 @@ public sealed partial class CodeGen
 
                 case INS_pclmulqdq:
                 {
-                    return (unchecked((byte)global::RyuJitSharp.Emitter.emitGetInsSC(id)) & 0x11) switch
-                    {
+                    return (unchecked((byte)global::RyuJitSharp.Emitter.emitGetInsSC(id)) & 0x11) switch {
                         0 => RemoveVexPrefixIfNeeded("vpclmullqlqdq"),
                         1 => RemoveVexPrefixIfNeeded("vpclmulhqlqdq"),
                         0x10 => RemoveVexPrefixIfNeeded("vpclmullqhqdq"),
@@ -259,7 +296,11 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    throw new FatalJitException("Unexpected instruction with pseudo name.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage244
+                    );
+                    return default!;
                 }
             }
         }

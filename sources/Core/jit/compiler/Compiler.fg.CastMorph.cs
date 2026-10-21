@@ -164,7 +164,8 @@ public partial class Compiler
                 }
                 else
                 {
-                    throw new FatalJitException("New target requires floating-to-small-integer saturation support.");
+                    FatalJitException.ThrowFatalJitException("New target requires floating-to-small-integer saturation support.");
+                    return default!;
                 }
 
                 operand = gtNewCastNode(TYP_INT, operand, false, TYP_INT);

@@ -10,8 +10,7 @@ public partial struct GCInfo
     internal void gcCallDescAppend(uint offset, byte instructionSize, regMask gcrefRegs, regMask byrefRegs,
         ushort argCount, uint argMask, uint byrefArgMask)
     {
-        var descriptor = new CallDsc
-        {
+        var descriptor = new CallDsc {
             cdBlock = 0,
             cdOffs = offset,
             cdCallInstrSize = instructionSize,
@@ -39,8 +38,15 @@ public partial struct GCInfo
     internal readonly uint[] gcCallDescAllocArgTable(ushort count)
     {
         assert(count != 0);
-        var descriptor = gcCallDescLast
-            ?? throw new FatalJitException("A GC call descriptor is required before allocating its argument table.");
+        var descriptor = gcCallDescLast;
+        if (descriptor is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage248
+            );
+            return default!;
+        }
         assert(descriptor.cdArgCnt == count);
         var table = new uint[count];
         descriptor.cdArgTable = table;

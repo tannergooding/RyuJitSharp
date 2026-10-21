@@ -16,7 +16,14 @@ public sealed partial class ScalarEvolutionContext
     {
         result = null;
         resultVNP = new ValueNumPair();
-        var vnStore = _compiler.vnStore ?? throw new InvalidOperationException("Scalar evolution requires value numbering.");
+        var vnStore = _compiler.vnStore;
+        if (vnStore is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-001",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+        }
+
         switch (scev)
         {
             case ScevConstant constant:
@@ -85,12 +92,38 @@ public sealed partial class ScalarEvolutionContext
                     return false;
                 }
 
-                var oper = binop.Oper switch {
-                    ScevOper.Add => GT_ADD,
-                    ScevOper.Mul => GT_MUL,
-                    ScevOper.Lsh => GT_LSH,
-                    _ => throw new InvalidOperationException($"Unexpected binary scalar evolution operation {binop.Oper}."),
-                };
+                genTreeOps oper;
+                switch (binop.Oper)
+                {
+                    case ScevOper.Add:
+                    {
+                        oper = GT_ADD;
+                        break;
+                    }
+
+                    case ScevOper.Mul:
+                    {
+                        oper = GT_MUL;
+                        break;
+                    }
+
+                    case ScevOper.Lsh:
+                    {
+                        oper = GT_LSH;
+                        break;
+                    }
+
+                    default:
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(
+                            "RJS-SCE-004",
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? $"Unexpected binary scalar evolution operation {binop.Oper}."
+                                : null);
+                        oper = default;
+                        break;
+                    }
+                }
                 resultVNP = vnStore.VNPairForFunc(binop.Type, (VNFunc)oper, op1VN, op2VN);
                 if (createIR)
                 {
@@ -123,7 +156,12 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected scalar evolution operation {scev.Oper}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-003",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected scalar evolution operation {scev.Oper}."
+                        : null);
+                return false;
             }
         }
 

@@ -20,7 +20,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register spills are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register spills are not supported on Wasm.");
+            return;
         }
 
         Emitter.emitIns_S_R(ins_Store(type), type.EmitActualSize, reg, temp.tdTempNum, 0);
@@ -30,7 +31,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
+            return;
         }
 
         Emitter.emitIns_R_S(ins_Load(type), type.EmitActualSize, reg, temp.tdTempNum, 0);

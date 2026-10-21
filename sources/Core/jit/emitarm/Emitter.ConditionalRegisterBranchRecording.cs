@@ -17,7 +17,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 conditional-register branches are not available for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 conditional-register branches are not available for this target.");
+            return;
         }
 
         assert(dst.HasFlag(BBF_HAS_LABEL));

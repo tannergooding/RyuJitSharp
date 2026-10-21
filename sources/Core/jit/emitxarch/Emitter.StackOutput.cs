@@ -176,14 +176,16 @@ public partial class Emitter
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED, "Stack output is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack output is not implemented for this target.");
+                        return default!;
                     }
                     break;
                 }
 
                 default:
                 {
-                    throw new FatalJitException("Unexpected stack operand size.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedStackOperandSize);
+                    return default!;
                 }
             }
 
@@ -196,7 +198,12 @@ public partial class Emitter
 
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
 
-        var compiler = _compiler ?? throw new FatalJitException("An initialized compiler is required for stack output.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.StackOutputMissingCompiler);
+            return default!;
+        }
         var varNum = id.idAddr().iiaLclVar.lvaVarNum();
         var adr = compiler.lvaFrameAddress(varNum, out var ebpBased);
         var dsp = unchecked(adr + (int)id.idAddr().iiaLclVar.lvaOffset());
@@ -323,7 +330,8 @@ public partial class Emitter
 
                 default:
                 {
-                    throw new FatalJitException("Unexpected stack immediate size.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedStackImmediateSize);
+                    return default!;
                 }
             }
 
@@ -386,8 +394,9 @@ public partial class Emitter
                     {
                         emitDispIns(id, false, false, false);
                     }
-                    throw new FatalJitException(
+                    FatalJitException.ThrowFatalJitException(
                         $"Unexpected GC reference stack instruction format {id.idInsFmt()} for {ins}.");
+                    return default!;
                 }
             }
         }

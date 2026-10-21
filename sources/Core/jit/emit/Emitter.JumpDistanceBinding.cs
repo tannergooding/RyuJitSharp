@@ -41,7 +41,12 @@ public partial class Emitter
         if (Configuration.DEBUG)
         {
             interestingJumpNumber = -1;
-            var compiler = _compiler ?? throw new FatalJitException("Jump distance binding requires an active compiler.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("Jump distance binding requires an active compiler.");
+                return;
+            }
             if (compiler.verbose)
             {
                 jitprintf("*************** In emitJumpDistBind()\n");
@@ -79,7 +84,12 @@ public partial class Emitter
 
             for (var jump = emitJumpList; jump is not null; jump = jump.idjNext)
             {
-                var jumpIG = jump.idjIG ?? throw new FatalJitException("A saved jump requires an instruction group.");
+                var jumpIG = jump.idjIG;
+                if (jumpIG is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SavedJumpRequiresInstructionGroup);
+                    return;
+                }
                 var size = jump.idCodeSize();
                 instrDescDebugInfo? debugInfo;
                 if (Configuration.DEBUG)
@@ -145,7 +155,8 @@ public partial class Emitter
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown ARM jump instruction.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM jump instruction.");
+                        return;
                     }
                 }
                 else if (Configuration.TARGET_ARM64)
@@ -175,7 +186,8 @@ public partial class Emitter
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown ARM64 jump instruction.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM64 jump instruction.");
+                        return;
                     }
                 }
                 else if (Configuration.TARGET_RISCV64)
@@ -197,12 +209,14 @@ public partial class Emitter
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown RISC-V jump instruction.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown RISC-V jump instruction.");
+                        return;
                     }
                 }
                 else
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Jump distance binding is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump distance binding is not supported for this target.");
+                    return;
                 }
 
                 if (Configuration.DEBUG)
@@ -220,8 +234,17 @@ public partial class Emitter
                     {
                         do
                         {
-                            previousJumpIG = previousJumpIG.igNext
-                                ?? throw new FatalJitException("A jump's instruction group is absent from the group list.");
+                            var nextJumpIG = previousJumpIG.igNext;
+                            if (nextJumpIG is null)
+                            {
+                                FatalJitException.ThrowFatalJitException(
+                                    CORJIT_INTERNALERROR,
+                                    FatalJitErrorCode.JumpInstructionGroupMissingFromList
+                                );
+                                return;
+                            }
+
+                            previousJumpIG = nextJumpIG;
                             if (Configuration.DEBUG && _compiler!.verbose)
                             {
                                 jitprintf($"Adjusted offset of {FMT_BB(checked((int)previousJumpIG.GetDisplayId()))} " +
@@ -277,8 +300,17 @@ public partial class Emitter
                         continue;
                     }
 
-                    targetIG = jump.idjTargetIG
-                        ?? throw new FatalJitException("A bound jump requires an instruction-group target.");
+                    var boundTargetIG = jump.idjTargetIG;
+                    if (boundTargetIG is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.BoundJumpMissingTarget
+                        );
+                        return;
+                    }
+
+                    targetIG = boundTargetIG;
                 }
                 else
                 {
@@ -456,8 +488,9 @@ public partial class Emitter
                 }
                 else
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Short-jump size update is not supported for this target.");
+                    return;
                 }
 
                 goto NEXT_JMP;

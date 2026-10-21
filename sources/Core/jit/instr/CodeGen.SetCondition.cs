@@ -16,8 +16,7 @@ public sealed partial class CodeGen
                 Emitter.RequireSupportedInstructionRecording();
             }
 
-            var ins = condition switch
-            {
+            var ins = condition switch {
                 EJ_XARCH_js => INS_sets,
                 EJ_XARCH_jns => INS_setns,
                 EJ_XARCH_je => INS_sete,
@@ -101,6 +100,7 @@ public sealed partial class CodeGen
         }
 
         NYI("inst_SET");
-        throw new FatalJitException(CORJIT_SKIPPED, "Set-condition generation is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Set-condition generation is not implemented on this target.");
+        return;
     }
 }

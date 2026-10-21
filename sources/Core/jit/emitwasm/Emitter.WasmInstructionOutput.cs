@@ -209,12 +209,20 @@ public partial class Emitter
                 assert(_compiler is not null);
                 assert(emitCurIG is not null);
                 var func = _compiler.funGetFunc(emitCurIG.igFuncIdx);
-                var startLocation = func.startLoc
-                    ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm function start location is missing.");
-                var endLocation = func.endLoc
-                    ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm function end location is missing.");
-                var startOffset = startLocation.CodeOffset(this);
-                var endOffset = endLocation.CodeOffset(this);
+                var startLocation = func.startLoc;
+                if (startLocation is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm function start location is missing.");
+                    return default!;
+                }
+                var endLocation = func.endLoc;
+                if (endLocation is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm function end location is missing.");
+                    return default!;
+                }
+                var startOffset = startLocation.Value.CodeOffset(this);
+                var endOffset = endLocation.Value.CodeOffset(this);
                 assert(endOffset >= startOffset + PADDED_RELOC_SIZE);
                 var codeSize = endOffset - startOffset - PADDED_RELOC_SIZE;
                 dst += emitOutputULEB128Padded(dst, codeSize);
@@ -254,8 +262,9 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException(CORJIT_INTERNALERROR,
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
                     $"Unexpected Wasm instruction output format {format}.");
+                return default!;
             }
         }
 

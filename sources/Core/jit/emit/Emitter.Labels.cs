@@ -147,8 +147,9 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             $"Zero-operand instruction recording is unsupported for this target ({ins}).");
+        return;
     }
 
     private void emitInsLoongArch64(instruction ins)
@@ -170,8 +171,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 emitter operations require LoongArch64.");
+            return;
         }
     }
 }

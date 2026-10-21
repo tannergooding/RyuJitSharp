@@ -128,8 +128,12 @@ public partial class Emitter
             return;
         }
 
-        var lastIns = emitLastIns
-            ?? throw new FatalJitException("Peephole iteration requires a last instruction.");
+        var lastIns = emitLastIns;
+        if (lastIns is null)
+        {
+            FatalJitException.ThrowFatalJitException("Peephole iteration requires a last instruction.");
+            return;
+        }
         _ = action(lastIns);
     }
 
@@ -151,8 +155,7 @@ public partial class Emitter
         }
 
         var result = false;
-        emitPeepholeIterateLastInstrs(id =>
-        {
+        emitPeepholeIterateLastInstrs(id => {
             if (emitIsInstrWritingToReg(id, reg))
             {
                 switch (id.idIns())
@@ -216,8 +219,7 @@ public partial class Emitter
         }
 
         var result = false;
-        emitPeepholeIterateLastInstrs(id =>
-        {
+        emitPeepholeIterateLastInstrs(id => {
             if (emitIsInstrWritingToReg(id, reg))
             {
                 switch (id.idIns())
@@ -261,7 +263,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction write classification requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction write classification requires xarch.");
+            return default!;
         }
 
         assert(genIsValidIntReg(reg));

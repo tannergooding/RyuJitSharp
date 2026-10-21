@@ -18,7 +18,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -42,7 +43,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -54,7 +56,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            return default!;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -88,7 +91,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment with probing requires xarch.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();
@@ -112,7 +116,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Local heap generation uses a separate Wasm path.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local heap generation uses a separate Wasm path.");
+            return;
         }
 
         if (Configuration.TARGET_ARM)
@@ -141,7 +146,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Local heap generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local heap generation is not ported for this target.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

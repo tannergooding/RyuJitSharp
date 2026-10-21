@@ -17,8 +17,12 @@ public partial class Emitter
     {
         RequireRiscV64Target();
 
-        var compiler = _compiler ??
-            throw new FatalJitException(CORJIT_INTERNALERROR, "Indirect load/store recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Indirect load/store recording requires an active compiler.");
+            return;
+        }
         var addr = indir.Addr;
 
         if (addr.IsContained)
@@ -83,8 +87,13 @@ public partial class Emitter
             }
             else if (isValidSimm12(offset))
             {
-                var baseReg = memBase?.RegNum ??
-                    throw new FatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base register.");
+                var nullableBaseReg = memBase?.RegNum;
+                if (nullableBaseReg is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base register.");
+                    return;
+                }
+                var baseReg = nullableBaseReg.Value;
                 emitIns_R_R_I(ins, attr, dataReg, baseReg, unchecked((int)offset));
             }
             else
@@ -95,8 +104,12 @@ public partial class Emitter
                 var tmpReg = codeGen.InternalRegisters.GetSingle(indir);
                 _ = emitLoadImmediate(true, EA_PTRSIZE, tmpReg, offset);
 
-                var baseTree = memBase ??
-                    throw new FatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base tree.");
+                var baseTree = memBase;
+                if (baseTree is null)
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base tree.");
+                    return;
+                }
                 var addType = varTypeIsGC(baseTree.Type) ? EA_BYREF : EA_PTRSIZE;
                 emitIns_R_R_R(INS_add, addType, tmpReg, baseTree.RegNum, tmpReg);
                 emitIns_R_R_I(ins, attr, dataReg, tmpReg, unchecked((int)lo12));

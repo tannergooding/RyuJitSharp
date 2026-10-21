@@ -217,7 +217,16 @@ public sealed partial class LinearScan
             return 1;
         }
 
-        var addrMode = (addr ?? throw new FatalJitException("A contained address use requires an address mode.")).AsAddrMode();
+        if (addr is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage368
+            );
+            return 0;
+        }
+
+        var addrMode = addr.AsAddrMode();
         var srcCount = 0;
         if (addrMode.HasBaseAddress && !addrMode.BaseAddress.IsContained)
         {
@@ -242,8 +251,15 @@ public sealed partial class LinearScan
         var srcCount = 0;
         foreach (var arg in call.Args.LateArgs)
         {
-            var argNode = arg.LateNode
-                ?? throw new FatalJitException("A late call argument must have a lowered node.");
+            var argNode = arg.LateNode;
+            if (argNode is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage369
+                );
+                return default!;
+            }
 
             if (Configuration.FEATURE_MULTIREG_ARGS && argNode.Oper.IsFieldList)
             {

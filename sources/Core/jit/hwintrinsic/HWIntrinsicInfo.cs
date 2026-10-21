@@ -25,7 +25,8 @@ public readonly partial struct HWIntrinsicInfo
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
             Globals.NYI("Hardware-intrinsic metadata without hardware-intrinsic support");
-            throw new FatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
+            return;
         }
     }
 
@@ -416,7 +417,8 @@ public readonly partial struct HWIntrinsicInfo
         if (!Configuration.FEATURE_SIMD)
         {
             Globals.NYI("Hardware-intrinsic SIMD size lookup without SIMD support");
-            throw new FatalJitException("Hardware-intrinsic SIMD size lookup is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("Hardware-intrinsic SIMD size lookup is unsupported on this target.");
+            return default!;
         }
 
         var simdBaseType = compiler.getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);

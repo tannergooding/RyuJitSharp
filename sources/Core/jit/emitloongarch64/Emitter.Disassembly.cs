@@ -41,7 +41,12 @@ public partial class Emitter
         if (Configuration.DEBUG)
         {
             _ = id;
-            var compiler = _compiler ?? throw new FatalJitException("LoongArch64 disassembly requires an active compiler.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("LoongArch64 disassembly requires an active compiler.");
+                return;
+            }
             if (!compiler.opts.disCodeBytes)
             {
                 return;
@@ -66,7 +71,8 @@ public partial class Emitter
     {
         if (_compiler is null)
         {
-            throw new FatalJitException("LoongArch64 disassembly requires an active compiler.");
+            FatalJitException.ThrowFatalJitException("LoongArch64 disassembly requires an active compiler.");
+            return;
         }
         var instructionAddress = address - writeableOffset;
 
@@ -250,8 +256,7 @@ public partial class Emitter
             case insDisasmFmt.DF_G_2R12I:
             {
                 var immediate = unchecked((int)((code >> 10) & 0xfff) << 20) >> 20;
-                operands = ins switch
-                {
+                operands = ins switch {
                     INS_preld => $"0x{destination:x}, {RegName(source)}, {immediate}",
                     INS_lu52i_d => $"{RegName(destination)}, {RegName(source)}, 0x{immediate & 0xfff:x}",
                     _ => $"{RegName(destination)}, {RegName(source)}, {immediate}",

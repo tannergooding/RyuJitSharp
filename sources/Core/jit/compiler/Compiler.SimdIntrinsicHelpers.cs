@@ -20,7 +20,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD hardware intrinsics are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD hardware intrinsics are unsupported on this target.");
+            return default!;
         }
 
         return new GenTreeHWIntrinsic(type, hwIntrinsicId, simdBaseType, simdSize, operands);
@@ -30,7 +31,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD equality is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD equality is unsupported on this target.");
+            return default!;
         }
 
         var simdType = GetSimdTypeForSize(simdSize);
@@ -52,12 +54,17 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD bitwise operations are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD bitwise operations are unsupported on this target.");
+            return default!;
         }
 
         if (op is not GT_OR and not GT_XOR)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Only SIMD OR and XOR operations are supported.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_IMPLLIMITATION,
+                FatalJitErrorCode.DirectFailureMessage198
+            );
+            return default!;
         }
 
         assert(varTypeIsSimd(type));
@@ -121,7 +128,8 @@ public partial class Compiler
             return (op is GT_OR) ? NI_PackedSimd_Or : NI_PackedSimd_Xor;
         }
 
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD bitwise operations are unsupported on this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD bitwise operations are unsupported on this target.");
+        return default!;
     }
 
     public GenTreeHWIntrinsic gtNewScalarHWIntrinsicNode(
@@ -131,7 +139,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Hardware intrinsics are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Hardware intrinsics are unsupported on this target.");
+            return default!;
         }
 
         return new GenTreeHWIntrinsic(type, hwIntrinsicId, TYP_UNKNOWN, simdSize: 0, operands);
@@ -147,7 +156,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            return default!;
         }
 
         if (op1.Oper.IsConst)
@@ -181,7 +191,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            return default!;
         }
 
         return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
@@ -198,7 +209,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            return default!;
         }
 
         if (op1.Oper.IsConst)
@@ -237,7 +249,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+            return default!;
         }
 
         return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
@@ -253,12 +266,14 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar extraction is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar extraction is unsupported on this target.");
+            return default!;
         }
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar extraction is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar extraction is unsupported on this target.");
+            return default!;
         }
 
         assert(varTypeIsArithmetic(type));

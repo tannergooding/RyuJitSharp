@@ -31,8 +31,7 @@ public sealed partial class LinearScan
 
         if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && _enregisterLocalVars)
         {
-            _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, variableIndex =>
-            {
+            _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, variableIndex => {
                 getIntervalForLocalVar(checked((uint)variableIndex)).isPartiallySpilled = false;
                 return true;
             });
@@ -119,8 +118,12 @@ public sealed partial class LinearScan
                         lastAllocatedRefPosition.getInterval().isLocalVar))
                 {
                     assert(lastAllocatedRefPosition.registerAssignment != SRBM_NONE);
-                    var assigned = lastAllocatedRefPosition.getInterval().assignedReg
-                        ?? throw new FatalJitException("Stress spilling requires an assigned register.");
+                    var assigned = lastAllocatedRefPosition.getInterval().assignedReg;
+                    if (assigned is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("Stress spilling requires an assigned register.");
+                        return;
+                    }
                     _activeRefPosition = lastAllocatedRefPosition;
                     unassignPhysReg(assigned, lastAllocatedRefPosition);
                     _activeRefPosition = null;
@@ -297,10 +300,24 @@ public sealed partial class LinearScan
                     dumpFullAllocationEvent(FullAllocationEvent.ZERO_REF, reference, interval);
                     reference.lastUse = true;
                 }
-                var blockInfo = _blockInfo
-                    ?? throw new FatalJitException("Entry allocation requires block information.");
-                var firstBlock = _compiler.fgFirstBB
-                    ?? throw new FatalJitException("Entry allocation requires a first block.");
+                var blockInfo = _blockInfo;
+                if (blockInfo is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage261
+                    );
+                    return;
+                }
+                var firstBlock = _compiler.fgFirstBB;
+                if (firstBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage262
+                    );
+                    return;
+                }
                 var local = interval.getLocalVar(_compiler);
                 assert(!blockInfo[firstBlock.bbNum].hasEHBoundaryIn || interval.isWriteThru);
                 if (blockInfo[firstBlock.bbNum].hasEHBoundaryIn ||
@@ -314,13 +331,36 @@ public sealed partial class LinearScan
                 {
                     allocate = false;
                 }
-                else if ((interval.physReg == REG_STK) &&
-                    ((nextReference ?? throw new FatalJitException(
-                        "A stack entry definition requires a next reference.")).treeNode
-                        ?? throw new FatalJitException(
-                            "The next stack entry reference requires a tree.")).Oper is GT_BITCAST)
+                else if (interval.physReg == REG_STK)
                 {
-                    allocate = false;
+                    var nextRef = nextReference;
+                    if (nextRef is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage263
+                        );
+                        return;
+                    }
+
+                    var nextTree = nextRef.treeNode;
+                    if (nextTree is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage264
+                        );
+                        return;
+                    }
+
+                    if (nextTree.Oper is GT_BITCAST)
+                    {
+                        allocate = false;
+                    }
+                    else if (interval.isWriteThru && (refType is RefType.RefTypeZeroInit))
+                    {
+                        allocate = false;
+                    }
                 }
                 else if (interval.isWriteThru && (refType is RefType.RefTypeZeroInit))
                 {
@@ -346,8 +386,15 @@ public sealed partial class LinearScan
             else if (Configuration.FEATURE_SIMD &&
                 Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && interval.isUpperVector)
             {
-                var localInterval = interval.relatedInterval
-                    ?? throw new FatalJitException("Upper-vector references require a related local.");
+                var localInterval = interval.relatedInterval;
+                if (localInterval is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage265
+                    );
+                    return;
+                }
                 assert(localInterval.isLocalVar);
                 if (refType is RefType.RefTypeUpperVectorSave)
                 {
@@ -366,8 +413,15 @@ public sealed partial class LinearScan
                             {
                                 reference.skipSaveRestore = true;
                                 assert(nextReference?.refType is RefType.RefTypeUpperVectorRestore);
-                                (nextReference ?? throw new FatalJitException(
-                                    "An upper-vector save requires a matching restore.")).skipSaveRestore = true;
+                                var matchingRestore = nextReference;
+                                if (matchingRestore is null)
+                                {
+                                    FatalJitException.ThrowFatalJitException(
+                                        "An upper-vector save requires a matching restore.");
+                                    return;
+                                }
+
+                                matchingRestore.skipSaveRestore = true;
                             }
                             if (assignedRegister != REG_NA)
                             {
@@ -420,8 +474,15 @@ public sealed partial class LinearScan
                 if (assignedRegister != REG_NA)
                 {
                     var register = getRegisterRecord(assignedRegister);
-                    var assigned = register.assignedInterval
-                        ?? throw new FatalJitException("Upper-vector save requires an assigned interval.");
+                    var assigned = register.assignedInterval;
+                    if (assigned is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage266
+                        );
+                        return;
+                    }
                     unassignPhysReg(register, interval.firstRefPosition);
                     if (assigned.isConstant)
                     {
@@ -448,8 +509,15 @@ public sealed partial class LinearScan
 
             if (interval.isSpecialPutArg)
             {
-                var source = interval.relatedInterval
-                    ?? throw new FatalJitException("Special putarg requires a source local.");
+                var source = interval.relatedInterval;
+                if (source is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage267
+                    );
+                    return;
+                }
                 assert(source.isLocalVar);
                 if (refType is RefType.RefTypeDef)
                 {
@@ -491,8 +559,15 @@ public sealed partial class LinearScan
                 {
                     if (RefTypeIsUse(refType))
                     {
-                        var inMap = getInVarToRegMap(_currentBlockNumber)
-                            ?? throw new FatalJitException("Exposed use requires an incoming local map.");
+                        var inMap = getInVarToRegMap(_currentBlockNumber);
+                        if (inMap is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage268
+                            );
+                            return;
+                        }
                         assert(_enregisterLocalVars &&
                             ((regNumber)inMap[interval.getVarIndex(_compiler)] == REG_STK) &&
                             (previousReference is not null) &&
@@ -527,12 +602,26 @@ public sealed partial class LinearScan
                 var matchesPreferences = (preferences & assignedBit) != SRBM_NONE;
                 var keepAssignment = true;
                 var nextFixedLocation = _nextFixedRef[(int)assignedRegister];
-                var lastReference = interval.lastRefPosition
-                    ?? throw new FatalJitException("A preassigned local requires a last reference.");
+                var lastReference = interval.lastRefPosition;
+                if (lastReference is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage269
+                    );
+                    return;
+                }
                 if (nextFixedLocation <= lastReference.nodeLocation)
                 {
-                    var followingReference = nextReference
-                        ?? throw new FatalJitException("A conflicting preassigned local requires a next reference.");
+                    var followingReference = nextReference;
+                    if (followingReference is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage270
+                        );
+                        return;
+                    }
                     if (!matchesPreferences || (nextFixedLocation < followingReference.nodeLocation) ||
                         ((followingReference.registerAssignment != assignedBit) &&
                             (nextFixedLocation <= followingReference.getRefEndLocation())))
@@ -868,8 +957,12 @@ public sealed partial class LinearScan
                     {
                         if (RefTypeIsUse(reference.refType) && reference.bbNum != previousBlockNumber)
                         {
-                            var inMap = getInVarToRegMap(reference.bbNum)
-                                ?? throw new FatalJitException("A live this interval requires an incoming map.");
+                            var inMap = getInVarToRegMap(reference.bbNum);
+                            if (inMap is null)
+                            {
+                                FatalJitException.ThrowFatalJitException("A live this interval requires an incoming map.");
+                                return;
+                            }
                             setVarReg(inMap, thisLocal._varIndex, REG_STK);
                         }
 
@@ -940,7 +1033,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         assert(reference.refType is RefType.RefTypeUpperVectorSave);

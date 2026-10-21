@@ -22,7 +22,8 @@ public sealed partial class GenTreeHWIntrinsic
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64))
         {
-            throw new FatalJitException("RMW hardware-intrinsic operand selection is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("RMW hardware-intrinsic operand selection is unsupported on this target.");
+            return default!;
         }
 
         assert(!Configuration.TARGET_XARCH ||
@@ -67,7 +68,8 @@ public sealed partial class GenTreeHWIntrinsic
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("Embedded-broadcast compatibility is only supported on xarch targets.");
+            FatalJitException.ThrowFatalJitException("Embedded-broadcast compatibility is only supported on xarch targets.");
+            return default!;
         }
 
         var id = HWIntrinsicId;

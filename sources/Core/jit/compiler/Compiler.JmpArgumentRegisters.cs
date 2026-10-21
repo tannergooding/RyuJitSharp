@@ -11,7 +11,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Varargs float register mapping requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Varargs float register mapping requires Windows AMD64.");
+            return default!;
         }
 
         assert(compFeatureVarArg());

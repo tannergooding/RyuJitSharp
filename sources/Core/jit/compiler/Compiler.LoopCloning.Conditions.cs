@@ -71,7 +71,11 @@ public partial class Compiler
                 }
                 default:
                 {
-                    throw new FatalJitException("Unknown loop-cloning candidate.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage145
+                    );
+                    return default!;
                 }
             }
         }
@@ -312,13 +316,38 @@ public partial class Compiler
             return false;
         }
 
-        var limitOp = test switch
+        genTreeOps limitOp;
+        switch (test)
         {
-            GT_LT => GT_LE,
-            GT_LE or GT_GE or GT_GT => GT_LT,
-            GT_NE => increasing ? GT_LE : GT_LT,
-            _ => throw new FatalJitException("Unrecognized loop-cloning exit comparison."),
-        };
+            case GT_LT:
+            {
+                limitOp = GT_LE;
+                break;
+            }
+
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+            {
+                limitOp = GT_LT;
+                break;
+            }
+
+            case GT_NE:
+            {
+                limitOp = increasing ? GT_LE : GT_LT;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage146
+                );
+                return false;
+            }
+        }
         foreach (var option in options)
         {
             switch (option)
@@ -354,7 +383,11 @@ public partial class Compiler
                 }
                 default:
                 {
-                    throw new FatalJitException("Unknown loop-cloning candidate.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage145
+                    );
+                    return default!;
                 }
             }
         }

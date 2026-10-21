@@ -515,7 +515,8 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Multiply containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Multiply containment is not ported for this target.");
+        return;
     }
 
     private GenTree? LowerMul(GenTreeOp mul)
@@ -590,6 +591,7 @@ public sealed partial class Lowering
             return mul.Next;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Multiply lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Multiply lowering is not ported for this target.");
+        return default!;
     }
 }

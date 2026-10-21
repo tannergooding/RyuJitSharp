@@ -2189,10 +2189,25 @@ public partial class Emitter
         PERFSCORE_LATENCY_ZERO, // INS_data16
     ];
 
-    private static ReadOnlySpan<float> insLatencyInfos =>
-        Configuration.TARGET_X86 ? insLatencyInfosX86 :
-        Configuration.TARGET_AMD64 ? insLatencyInfosAMD64 :
-        throw new FatalJitException("xarch instruction latency data is not available for this target.");
+    private static ReadOnlySpan<float> insLatencyInfos
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insLatencyInfosX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insLatencyInfosAMD64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch instruction latency data is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<float> insThroughputInfosX86 => [
         PERFSCORE_THROUGHPUT_ILLEGAL, // INS_invalid
@@ -4374,8 +4389,23 @@ public partial class Emitter
         PERFSCORE_THROUGHPUT_4X, // INS_data16
     ];
 
-    private static ReadOnlySpan<float> insThroughputInfos =>
-        Configuration.TARGET_X86 ? insThroughputInfosX86 :
-        Configuration.TARGET_AMD64 ? insThroughputInfosAMD64 :
-        throw new FatalJitException("xarch instruction throughput data is not available for this target.");
+    private static ReadOnlySpan<float> insThroughputInfos
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insThroughputInfosX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insThroughputInfosAMD64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch instruction throughput data is not available for this target.");
+            return default;
+        }
+    }
 }

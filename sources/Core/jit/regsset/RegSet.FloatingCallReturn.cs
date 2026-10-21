@@ -11,7 +11,8 @@ public partial struct RegSet
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Floating-point stack spills require x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-point stack spills require x86.");
+            return;
         }
 
         var treeType = call.Type;

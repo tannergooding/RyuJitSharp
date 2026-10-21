@@ -193,8 +193,11 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
-                            "Insertion into a homed parameter register is not supported on this target.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_SKIPPED,
+                            FatalJitErrorCode.DirectFailureMessage092
+                        );
+                        return;
                     }
                 }
             }

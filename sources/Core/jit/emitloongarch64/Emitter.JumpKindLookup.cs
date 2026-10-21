@@ -11,23 +11,27 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 jump-kind mapping is not supported for this target.");
+            return default!;
         }
 
-        throw new FatalJitException(
+        FatalJitException.ThrowFatalJitException(
             CORJIT_SKIPPED, "emitInsToJumpKind-----unimplemented on LOONGARCH64 yet----");
+        return default!;
     }
 
     public void emitIns_J_R_LoongArch64(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 register jump recording is not supported for this target.");
+            return;
         }
 
-        throw new FatalJitException(
+        FatalJitException.ThrowFatalJitException(
             CORJIT_SKIPPED, "emitIns_J_R-----unimplemented/unused on LOONGARCH64 yet----");
+        return;
     }
 }

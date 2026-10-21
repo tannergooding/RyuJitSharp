@@ -46,11 +46,21 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
+            return default!;
         }
 
-        var id = i as instrDescJmp ?? throw new FatalJitException("Label output requires a jump descriptor.");
-        var compiler = _compiler ?? throw new FatalJitException("Label output requires an active compiler.");
+        if (i is not instrDescJmp id)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelOutputRequiresJumpDescriptor);
+            return default!;
+        }
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelOutputMissingCompiler);
+            return default!;
+        }
         var ins = id.idIns();
         var relAddr = true;
         bool jmp;
@@ -106,8 +116,12 @@ public partial class Emitter
 
         var srcOffs = emitCurCodeOffs(dst);
         var srcAddr = emitOffsetToPtr(srcOffs);
-        var targetIG = id.idjTargetIG
-            ?? throw new FatalJitException("A label instruction requires a bound target group.");
+        var targetIG = id.idjTargetIG;
+        if (targetIG is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LabelInstructionMissingBoundTargetGroup);
+            return default!;
+        }
         var dstOffs = targetIG.igOffs;
         var dstAddr = emitOffsetToPtr(dstOffs);
         if (!relAddr)

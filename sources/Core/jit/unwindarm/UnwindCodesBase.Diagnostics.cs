@@ -16,14 +16,15 @@ public abstract unsafe class ArmUnwindCodesBase
 
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind diagnostics require ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 unwind diagnostics require ARM32.");
+            return default!;
         }
 
         var codesStart = GetCodes();
         var codes = codesStart;
         var size = 0u;
 
-        for (;;)
+        for (; ; )
         {
             var header = *codes;
             if (header >= 0xFD)

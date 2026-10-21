@@ -12,7 +12,8 @@ internal static class RegSetCalleeSavedRegisterTrackingExtensions
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 &&
             !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Callee-saved register masks are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-saved register masks are unavailable for this target.");
+            return;
         }
 
         regSet.CalleeSavedRegsMask = mask;
@@ -22,7 +23,8 @@ internal static class RegSetCalleeSavedRegisterTrackingExtensions
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Callee-saved register masks are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-saved register masks are unavailable for this target.");
+            return default!;
         }
 
         return regSet.CalleeSavedRegsMask;

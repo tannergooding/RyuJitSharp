@@ -151,8 +151,9 @@ public sealed partial class Lowering
                 else
                 {
                     NYI("Unimplemented long->long no-op cast decomposition");
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Long-to-long no-op cast decomposition is not ported.");
+                    return default!;
                 }
             }
             else if (varTypeIsIntegralOrI(srcType))
@@ -193,7 +194,8 @@ public sealed partial class Lowering
             else
             {
                 NYI("Unimplemented cast decomposition");
-                throw new FatalJitException(CORJIT_SKIPPED, "Cast decomposition is not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Cast decomposition is not ported.");
+                return default!;
             }
 
             return FinalizeDecomposition(ref use, loResult, hiResult, hiResult);

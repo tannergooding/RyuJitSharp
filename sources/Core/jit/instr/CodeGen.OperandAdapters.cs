@@ -23,7 +23,8 @@ public sealed partial class CodeGen
         }
 
         NYI("inst_RV_RV_RV");
-        throw new FatalJitException(CORJIT_SKIPPED, "inst_RV_RV_RV is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "inst_RV_RV_RV is not implemented for this target.");
+        return;
     }
 
     public void inst_IV_handle(instruction ins, nint value)
@@ -41,7 +42,8 @@ public sealed partial class CodeGen
 
             if (tree is not GenTreeLclVar local)
             {
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Stack variable reference requires a local variable or store.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Stack variable reference requires a local variable or store.");
+                return;
             }
 
             Emitter.emitVarRefOffs = local.LclIlOffs;

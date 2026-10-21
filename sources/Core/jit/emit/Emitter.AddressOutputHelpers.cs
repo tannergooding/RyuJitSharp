@@ -46,7 +46,8 @@ public partial class Emitter
         }
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("xarch SIB register encoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch SIB register encoding is not available for this target.");
+            return default!;
         }
 
         assert((code is not null) || (reg < REG_X64_R8) ||

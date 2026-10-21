@@ -14,15 +14,28 @@ public sealed partial class LinearScan
     {
         var sumStats = new uint[(int)LsraStat.STAT_FREE];
         var weightedStats = new double[(int)LsraStat.STAT_FREE];
-        var blockInfo = _blockInfo
-            ?? throw new FatalJitException("LSRA statistics require initialized block information.");
-        var blockStats = _blockStats
-            ?? throw new FatalJitException("LSRA statistics are not enabled.");
+        var blockInfo = _blockInfo;
+        if (blockInfo is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics require initialized block information.");
+            return;
+        }
+        var blockStats = _blockStats;
+        if (blockStats is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics are not enabled.");
+            return;
+        }
 
         for (var index = 0; index < sumStats.Length; index++)
         {
-            var stat = blockStats[0]?[index]
-                ?? throw new FatalJitException("The entry block has no LSRA statistics.");
+            var nullableStat = blockStats[0]?[index];
+            if (nullableStat is null)
+            {
+                FatalJitException.ThrowFatalJitException("The entry block has no LSRA statistics.");
+                return;
+            }
+            var stat = nullableStat.Value;
             sumStats[index] = unchecked(sumStats[index] + stat);
             weightedStats[index] += stat * blockInfo[0].weight;
         }
@@ -34,8 +47,12 @@ public sealed partial class LinearScan
                 continue;
             }
 
-            var stats = blockStats[block.bbNum]
-                ?? throw new FatalJitException("A pre-resolution block has no LSRA statistics.");
+            var stats = blockStats[block.bbNum];
+            if (stats is null)
+            {
+                FatalJitException.ThrowFatalJitException("A pre-resolution block has no LSRA statistics.");
+                return;
+            }
             for (var index = 0; index < sumStats.Length; index++)
             {
                 var stat = stats[index];

@@ -19,16 +19,18 @@ public sealed partial class CodeGen
                 return INS_mov;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Integer copy instruction selection is not implemented on this target.");
+            return default!;
         }
 
         if (varTypeUsesMaskReg(dstType))
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Masked-register copies require masked hardware intrinsics.");
+                return default!;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -41,8 +43,9 @@ public sealed partial class CodeGen
                 return INS_sve_mov;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Masked-register copies are not implemented for this target.");
+            return default!;
         }
 
         assert(varTypeUsesFloatReg(dstType));
@@ -101,8 +104,9 @@ public sealed partial class CodeGen
             }
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Floating-point copy instruction selection is not implemented on this target.");
+        return default!;
     }
 
     public instruction ins_Copy(regNumber srcReg, var_types dstType)
@@ -123,8 +127,9 @@ public sealed partial class CodeGen
                     return INS_kmovq_gpr;
                 }
 
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Masked-register to integer copies are not implemented for this target.");
+                return default!;
             }
 
             assert(genIsValidFloatReg(srcReg));
@@ -163,16 +168,18 @@ public sealed partial class CodeGen
                 return EA_SIZE(dstType.EmitActualSize) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Floating-point to integer copies are not implemented on this target.");
+            return default!;
         }
 
         if (varTypeUsesMaskReg(dstType))
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Masked-register copies require masked hardware intrinsics.");
+                return default!;
             }
 
             if (genIsValidMaskReg(srcReg))
@@ -191,8 +198,9 @@ public sealed partial class CodeGen
                 return INS_sve_mov;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Masked-register copies are not implemented for this target.");
+            return default!;
         }
 
         assert(varTypeUsesFloatReg(dstType));
@@ -257,8 +265,9 @@ public sealed partial class CodeGen
             }
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Integer to floating-point copies are not implemented on this target.");
+        return default!;
     }
 
     public void inst_Mov(var_types dstType, regNumber dstReg, regNumber srcReg, bool canSkip,
@@ -287,7 +296,8 @@ public sealed partial class CodeGen
             {
                 NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
                 NYI_RISCV64("CodeGen::inst_Mov dstType");
-                throw new FatalJitException(CORJIT_SKIPPED, "Register move destination type is not implemented.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register move destination type is not implemented.");
+                return;
             }
         }
 

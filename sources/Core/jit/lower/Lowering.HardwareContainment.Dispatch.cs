@@ -76,7 +76,8 @@ public sealed partial class Lowering
 
     private void ContainCheckHWIntrinsicLoongArch64(GenTreeHWIntrinsic node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic containment is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic containment is not ported.");
+        return;
     }
 
     private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)

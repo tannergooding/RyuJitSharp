@@ -12,7 +12,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 immediate discovery requires ARM64 hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 immediate discovery requires ARM64 hardware intrinsics.");
+            return;
         }
 
         if (!HWIntrinsicInfo.HasImmediateOperand(intrinsic))
@@ -40,7 +41,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic fallback requires ARM64 hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic fallback requires ARM64 hardware intrinsics.");
+            return default!;
         }
 
         var isRightShift = true;
@@ -66,8 +68,7 @@ public partial class Compiler
                     op2 = gtNewUnaryNode(GT_NEG, op2.Type.ActualType, op2);
                 }
 
-                var fallbackIntrinsic = intrinsic switch
-                {
+                var fallbackIntrinsic = intrinsic switch {
                     NI_AdvSimd_ShiftLeftLogical or NI_AdvSimd_ShiftRightLogical => NI_AdvSimd_ShiftLogical,
                     NI_AdvSimd_ShiftLeftLogicalScalar or NI_AdvSimd_ShiftRightLogicalScalar =>
                         NI_AdvSimd_ShiftLogicalScalar,
@@ -90,7 +91,8 @@ public partial class Compiler
     private static NamedIntrinsic unreachableArm64FallbackIntrinsic()
     {
         unreached();
-        throw new FatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable ARM64 fallback intrinsic.");
+        FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable ARM64 fallback intrinsic.");
+        return default!;
     }
 
     private unsafe GenTree? impSpecialIntrinsicArm64Core(
@@ -100,7 +102,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic special import requires ARM64 hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic special import requires ARM64 hardware intrinsics.");
+            return default!;
         }
 
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
@@ -937,7 +940,8 @@ public partial class Compiler
             default:
             {
                 unreached();
-                throw new FatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable ARM64 SIMD element size.");
+                FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable ARM64 SIMD element size.");
+                return default!;
             }
         }
     }

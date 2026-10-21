@@ -1088,7 +1088,8 @@ public partial struct LclVarDsc
         {
             if (!Configuration.HAS_FIXED_REGISTER_SET)
             {
-                throw new FatalJitException("Local register masks require a fixed register set.");
+                FatalJitException.ThrowFatalJitException("Local register masks require a fixed register set.");
+                return default!;
             }
 
             if (_lvRegNum != REG_STK)
@@ -1117,7 +1118,7 @@ public partial struct LclVarDsc
     }
 
     /// <summary>Get a bitset of flags that represents this local fully dying.</summary>
-    public readonly GenTreeFlags FullDeathFlags => lvPromoted? AllFieldDeathFlags : GTF_VAR_DEATH;
+    public readonly GenTreeFlags FullDeathFlags => lvPromoted ? AllFieldDeathFlags : GTF_VAR_DEATH;
 
     /// <summary>access reference count for this local var</summary>
     /// <param name="state">the requestor's expected ref count state; defaults to RCS_NORMAL</param>
@@ -1278,7 +1279,7 @@ public partial struct LclVarDsc
             if (Type is TYP_STRUCT)
             {
                 assert(_layout is not null);
-                return new ValueSize(_layout.Size); 
+                return new ValueSize(_layout.Size);
             }
             else
             {

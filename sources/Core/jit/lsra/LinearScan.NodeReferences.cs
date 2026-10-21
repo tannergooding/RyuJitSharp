@@ -168,8 +168,12 @@ public sealed partial class LinearScan
                             var shouldCheckConflictingDefUse = true;
                             if (Configuration.TARGET_ARM64)
                             {
-                                var firstReference = interval.firstRefPosition
-                                    ?? throw new FatalJitException("A live interval must have a first reference.");
+                                var firstReference = interval.firstRefPosition;
+                                if (firstReference is null)
+                                {
+                                    FatalJitException.ThrowFatalJitException("A live interval must have a first reference.");
+                                    return;
+                                }
                                 assert(firstReference.treeNode is not null);
                                 shouldCheckConflictingDefUse =
                                     !firstReference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation);

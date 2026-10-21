@@ -300,26 +300,69 @@ public sealed partial class CodeGen
                 return false;
             }
 
-            return lhs.vlType switch
+            switch (lhs.vlType)
             {
-                VLT_STK or VLT_STK_BYREF => (lhs.vlStk.vlsBaseReg == rhs.vlStk.vlsBaseReg) &&
-                    (lhs.vlStk.vlsOffset == rhs.vlStk.vlsOffset),
-                VLT_STK2 => (lhs.vlStk2.vls2BaseReg == rhs.vlStk2.vls2BaseReg) &&
-                    (lhs.vlStk2.vls2Offset == rhs.vlStk2.vls2Offset),
-                VLT_REG or VLT_REG_FP or VLT_REG_BYREF => lhs.vlReg.vlrReg == rhs.vlReg.vlrReg,
-                VLT_REG_REG => (lhs.vlRegReg.vlrrReg1 == rhs.vlRegReg.vlrrReg1) &&
-                    (lhs.vlRegReg.vlrrReg2 == rhs.vlRegReg.vlrrReg2),
-                VLT_REG_STK => (lhs.vlRegStk.vlrsReg == rhs.vlRegStk.vlrsReg) &&
-                    (lhs.vlRegStk.vlrsStk.vlrssBaseReg == rhs.vlRegStk.vlrsStk.vlrssBaseReg) &&
-                    (lhs.vlRegStk.vlrsStk.vlrssOffset == rhs.vlRegStk.vlrsStk.vlrssOffset),
-                VLT_STK_REG => (lhs.vlStkReg.vlsrReg == rhs.vlStkReg.vlsrReg) &&
-                    (lhs.vlStkReg.vlsrStk.vlsrsBaseReg == rhs.vlStkReg.vlsrStk.vlsrsBaseReg) &&
-                    (lhs.vlStkReg.vlsrStk.vlsrsOffset == rhs.vlStkReg.vlsrStk.vlsrsOffset),
-                VLT_FPSTK => lhs.vlFPstk.vlfReg == rhs.vlFPstk.vlfReg,
-                VLT_FIXED_VA => lhs.vlFixedVarArg.vlfvOffset == rhs.vlFixedVarArg.vlfvOffset,
-                VLT_COUNT or VLT_INVALID => true,
-                _ => throw new FatalJitException("Invalid variable location kind."),
-            };
+                case VLT_STK or VLT_STK_BYREF:
+                {
+                    return (lhs.vlStk.vlsBaseReg == rhs.vlStk.vlsBaseReg) &&
+                                    (lhs.vlStk.vlsOffset == rhs.vlStk.vlsOffset);
+                }
+
+                case VLT_STK2:
+                {
+                    return (lhs.vlStk2.vls2BaseReg == rhs.vlStk2.vls2BaseReg) &&
+                                    (lhs.vlStk2.vls2Offset == rhs.vlStk2.vls2Offset);
+                }
+
+                case VLT_REG or VLT_REG_FP or VLT_REG_BYREF:
+                {
+                    return lhs.vlReg.vlrReg == rhs.vlReg.vlrReg;
+                }
+
+                case VLT_REG_REG:
+                {
+                    return (lhs.vlRegReg.vlrrReg1 == rhs.vlRegReg.vlrrReg1) &&
+                                    (lhs.vlRegReg.vlrrReg2 == rhs.vlRegReg.vlrrReg2);
+                }
+
+                case VLT_REG_STK:
+                {
+                    return (lhs.vlRegStk.vlrsReg == rhs.vlRegStk.vlrsReg) &&
+                                    (lhs.vlRegStk.vlrsStk.vlrssBaseReg == rhs.vlRegStk.vlrsStk.vlrssBaseReg) &&
+                                    (lhs.vlRegStk.vlrsStk.vlrssOffset == rhs.vlRegStk.vlrsStk.vlrssOffset);
+                }
+
+                case VLT_STK_REG:
+                {
+                    return (lhs.vlStkReg.vlsrReg == rhs.vlStkReg.vlsrReg) &&
+                                    (lhs.vlStkReg.vlsrStk.vlsrsBaseReg == rhs.vlStkReg.vlsrStk.vlsrsBaseReg) &&
+                                    (lhs.vlStkReg.vlsrStk.vlsrsOffset == rhs.vlStkReg.vlsrStk.vlsrsOffset);
+                }
+
+                case VLT_FPSTK:
+                {
+                    return lhs.vlFPstk.vlfReg == rhs.vlFPstk.vlfReg;
+                }
+
+                case VLT_FIXED_VA:
+                {
+                    return lhs.vlFixedVarArg.vlfvOffset == rhs.vlFixedVarArg.vlfvOffset;
+                }
+
+                case VLT_COUNT or VLT_INVALID:
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage440
+                    );
+                    return default!;
+                }
+            }
         }
 
         private void siFillStackVarLoc(in LclVarDsc varDsc, var_types type, regNumber baseReg, int offset,
@@ -346,12 +389,20 @@ public sealed partial class CodeGen
                         (!Configuration.FEATURE_SIMD ||
                          ((type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH)))
                     {
-                        throw new FatalJitException("Invalid stack variable type.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage441
+                        );
+                        return;
                     }
                     if ((type is TYP_MASK) &&
                         !Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        throw new FatalJitException("Invalid stack variable type.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage441
+                        );
+                        return;
                     }
                     if ((type is TYP_LONG or TYP_DOUBLE) && !Configuration.TARGET_64BIT)
                     {
@@ -386,7 +437,11 @@ public sealed partial class CodeGen
                 }
                 default:
                 {
-                    throw new FatalJitException("Invalid stack variable type.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage441
+                    );
+                    return;
                 }
             }
         }
@@ -460,12 +515,20 @@ public sealed partial class CodeGen
                         (!Configuration.FEATURE_SIMD ||
                          ((type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH)))
                     {
-                        throw new FatalJitException("Invalid register variable type.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage442
+                        );
+                        return;
                     }
                     if ((type is TYP_MASK) &&
                         !Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        throw new FatalJitException("Invalid register variable type.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage442
+                        );
+                        return;
                     }
 
                     var debugReg = mapRegNumToDebugRegNum(varDsc.RegNum);
@@ -481,7 +544,11 @@ public sealed partial class CodeGen
                 }
                 default:
                 {
-                    throw new FatalJitException("Invalid register variable type.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage442
+                    );
+                    return;
                 }
             }
         }

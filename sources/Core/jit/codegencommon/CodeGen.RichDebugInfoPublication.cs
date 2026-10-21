@@ -62,8 +62,12 @@ public sealed partial class CodeGen
 
         lock (DebugData.RichDebugInfoFileLock)
         {
-            var path = Marshal.PtrToStringUTF8((nint)pathPointer)
-                ?? throw new FatalJitException(CORJIT_SKIPPED, "Rich debug-info file path is invalid.");
+            var path = Marshal.PtrToStringUTF8((nint)pathPointer);
+            if (path is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Rich debug-info file path is invalid.");
+                return;
+            }
             using var file = OpenRichDebugInfoFile(path);
             if (file is null)
             {

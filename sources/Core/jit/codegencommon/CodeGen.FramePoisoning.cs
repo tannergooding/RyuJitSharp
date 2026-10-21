@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Frame poisoning is not implemented for Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame poisoning is not implemented for Wasm.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -135,7 +136,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unknown-size frame poisoning requires ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown-size frame poisoning requires ARM64.");
+            return;
         }
 
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);

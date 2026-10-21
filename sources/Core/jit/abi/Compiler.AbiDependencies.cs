@@ -13,7 +13,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Trivial pointer-sized struct classification requires x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Trivial pointer-sized struct classification requires x86.");
+            return default!;
         }
 
         assert(info.compCompHnd->isValueClass(clsHnd));
@@ -22,7 +23,7 @@ public partial class Compiler
             return false;
         }
 
-        for (;;)
+        for (; ; )
         {
             // Every nested value class in the chain must also have exactly one field.
             if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) is not 1)
@@ -55,7 +56,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Floating-point struct lowering is unsupported for this target.");
         }
 

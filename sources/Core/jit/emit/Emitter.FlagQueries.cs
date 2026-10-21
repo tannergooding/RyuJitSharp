@@ -11,8 +11,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Redundant comparison queries outside xarch are not implemented.");
+            return default!;
         }
 
         if (!genIsValidIntReg(reg1))
@@ -31,8 +32,7 @@ public partial class Emitter
         }
 
         var result = false;
-        emitPeepholeIterateLastInstrs(id =>
-        {
+        emitPeepholeIterateLastInstrs(id => {
             var ins = id.idIns();
             if (ins == INS_cmp)
             {
@@ -69,8 +69,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Zero-comparison flag queries outside xarch are not implemented.");
+            return default!;
         }
 
         assert(reg != REG_NA);
@@ -123,8 +124,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Sign-jump flag queries outside xarch are not implemented.");
+            return default!;
         }
 
         assert(reg != REG_NA);
@@ -232,8 +234,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Xarch instruction-flag metadata is not available for this target.");
+            return;
         }
     }
 }

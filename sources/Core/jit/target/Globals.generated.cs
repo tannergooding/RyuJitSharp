@@ -409,7 +409,9 @@ public static partial class Globals
             {
                 return RBM_X64_EAX;
             }
-            throw new FatalJitException("Register mask 'EAX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'EAX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_ECX
@@ -424,7 +426,9 @@ public static partial class Globals
             {
                 return RBM_X64_ECX;
             }
-            throw new FatalJitException("Register mask 'ECX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'ECX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_EDX
@@ -439,7 +443,9 @@ public static partial class Globals
             {
                 return RBM_X64_EDX;
             }
-            throw new FatalJitException("Register mask 'EDX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'EDX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_EBX
@@ -454,7 +460,9 @@ public static partial class Globals
             {
                 return RBM_X64_EBX;
             }
-            throw new FatalJitException("Register mask 'EBX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'EBX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_ESP
@@ -469,7 +477,9 @@ public static partial class Globals
             {
                 return RBM_X64_ESP;
             }
-            throw new FatalJitException("Register mask 'ESP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'ESP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_EBP
@@ -484,7 +494,9 @@ public static partial class Globals
             {
                 return RBM_X64_EBP;
             }
-            throw new FatalJitException("Register mask 'EBP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'EBP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_ESI
@@ -499,7 +511,9 @@ public static partial class Globals
             {
                 return RBM_X64_ESI;
             }
-            throw new FatalJitException("Register mask 'ESI' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'ESI' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_EDI
@@ -514,7 +528,9 @@ public static partial class Globals
             {
                 return RBM_X64_EDI;
             }
-            throw new FatalJitException("Register mask 'EDI' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'EDI' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RAX
@@ -529,7 +545,9 @@ public static partial class Globals
             {
                 return RBM_X64_RAX;
             }
-            throw new FatalJitException("Register mask 'RAX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RAX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RCX
@@ -544,7 +562,9 @@ public static partial class Globals
             {
                 return RBM_X64_RCX;
             }
-            throw new FatalJitException("Register mask 'RCX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RCX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RDX
@@ -559,7 +579,9 @@ public static partial class Globals
             {
                 return RBM_X64_RDX;
             }
-            throw new FatalJitException("Register mask 'RDX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RDX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RBX
@@ -574,7 +596,9 @@ public static partial class Globals
             {
                 return RBM_X64_RBX;
             }
-            throw new FatalJitException("Register mask 'RBX' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RBX' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RSP
@@ -589,7 +613,9 @@ public static partial class Globals
             {
                 return RBM_X64_RSP;
             }
-            throw new FatalJitException("Register mask 'RSP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RSP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RBP
@@ -604,7 +630,9 @@ public static partial class Globals
             {
                 return RBM_X64_RBP;
             }
-            throw new FatalJitException("Register mask 'RBP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RBP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RSI
@@ -619,7 +647,9 @@ public static partial class Globals
             {
                 return RBM_X64_RSI;
             }
-            throw new FatalJitException("Register mask 'RSI' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RSI' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RDI
@@ -634,7 +664,9 @@ public static partial class Globals
             {
                 return RBM_X64_RDI;
             }
-            throw new FatalJitException("Register mask 'RDI' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RDI' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM0
@@ -649,7 +681,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM0;
             }
-            throw new FatalJitException("Register mask 'XMM0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM1
@@ -664,7 +698,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM1;
             }
-            throw new FatalJitException("Register mask 'XMM1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM2
@@ -679,7 +715,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM2;
             }
-            throw new FatalJitException("Register mask 'XMM2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM3
@@ -694,7 +732,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM3;
             }
-            throw new FatalJitException("Register mask 'XMM3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM4
@@ -709,7 +749,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM4;
             }
-            throw new FatalJitException("Register mask 'XMM4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM5
@@ -724,7 +766,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM5;
             }
-            throw new FatalJitException("Register mask 'XMM5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM6
@@ -739,7 +783,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM6;
             }
-            throw new FatalJitException("Register mask 'XMM6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM7
@@ -754,7 +800,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM7;
             }
-            throw new FatalJitException("Register mask 'XMM7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K0
@@ -769,7 +817,9 @@ public static partial class Globals
             {
                 return RBM_X64_K0;
             }
-            throw new FatalJitException("Register mask 'K0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K1
@@ -784,7 +834,9 @@ public static partial class Globals
             {
                 return RBM_X64_K1;
             }
-            throw new FatalJitException("Register mask 'K1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K2
@@ -799,7 +851,9 @@ public static partial class Globals
             {
                 return RBM_X64_K2;
             }
-            throw new FatalJitException("Register mask 'K2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K3
@@ -814,7 +868,9 @@ public static partial class Globals
             {
                 return RBM_X64_K3;
             }
-            throw new FatalJitException("Register mask 'K3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K4
@@ -829,7 +885,9 @@ public static partial class Globals
             {
                 return RBM_X64_K4;
             }
-            throw new FatalJitException("Register mask 'K4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K5
@@ -844,7 +902,9 @@ public static partial class Globals
             {
                 return RBM_X64_K5;
             }
-            throw new FatalJitException("Register mask 'K5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K6
@@ -859,7 +919,9 @@ public static partial class Globals
             {
                 return RBM_X64_K6;
             }
-            throw new FatalJitException("Register mask 'K6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_K7
@@ -874,7 +936,9 @@ public static partial class Globals
             {
                 return RBM_X64_K7;
             }
-            throw new FatalJitException("Register mask 'K7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'K7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_STK
@@ -909,7 +973,9 @@ public static partial class Globals
             {
                 return RBM_WASM_STK;
             }
-            throw new FatalJitException("Register mask 'STK' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'STK' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R8
@@ -932,7 +998,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_R8;
             }
-            throw new FatalJitException("Register mask 'R8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R9
@@ -951,7 +1019,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R9;
             }
-            throw new FatalJitException("Register mask 'R9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R10
@@ -970,7 +1040,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R10;
             }
-            throw new FatalJitException("Register mask 'R10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R11
@@ -989,7 +1061,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R11;
             }
-            throw new FatalJitException("Register mask 'R11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R12
@@ -1008,7 +1082,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R12;
             }
-            throw new FatalJitException("Register mask 'R12' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R12' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R13
@@ -1027,7 +1103,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R13;
             }
-            throw new FatalJitException("Register mask 'R13' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R13' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R14
@@ -1046,7 +1124,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R14;
             }
-            throw new FatalJitException("Register mask 'R14' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R14' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R15
@@ -1065,7 +1145,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R15;
             }
-            throw new FatalJitException("Register mask 'R15' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R15' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R16
@@ -1080,7 +1162,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R16;
             }
-            throw new FatalJitException("Register mask 'R16' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R16' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R17
@@ -1095,7 +1179,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R17;
             }
-            throw new FatalJitException("Register mask 'R17' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R17' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R18
@@ -1110,7 +1196,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R18;
             }
-            throw new FatalJitException("Register mask 'R18' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R18' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R19
@@ -1125,7 +1213,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R19;
             }
-            throw new FatalJitException("Register mask 'R19' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R19' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R20
@@ -1140,7 +1230,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R20;
             }
-            throw new FatalJitException("Register mask 'R20' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R20' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R21
@@ -1159,7 +1251,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_R21;
             }
-            throw new FatalJitException("Register mask 'R21' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R21' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R22
@@ -1174,7 +1268,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R22;
             }
-            throw new FatalJitException("Register mask 'R22' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R22' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R23
@@ -1189,7 +1285,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R23;
             }
-            throw new FatalJitException("Register mask 'R23' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R23' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R24
@@ -1204,7 +1302,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R24;
             }
-            throw new FatalJitException("Register mask 'R24' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R24' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R25
@@ -1219,7 +1319,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R25;
             }
-            throw new FatalJitException("Register mask 'R25' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R25' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R26
@@ -1234,7 +1336,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R26;
             }
-            throw new FatalJitException("Register mask 'R26' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R26' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R27
@@ -1249,7 +1353,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R27;
             }
-            throw new FatalJitException("Register mask 'R27' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R27' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R28
@@ -1264,7 +1370,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R28;
             }
-            throw new FatalJitException("Register mask 'R28' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R28' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R29
@@ -1279,7 +1387,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R29;
             }
-            throw new FatalJitException("Register mask 'R29' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R29' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R30
@@ -1294,7 +1404,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R30;
             }
-            throw new FatalJitException("Register mask 'R30' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R30' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R31
@@ -1305,7 +1417,9 @@ public static partial class Globals
             {
                 return RBM_X64_R31;
             }
-            throw new FatalJitException("Register mask 'R31' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R31' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM8
@@ -1316,7 +1430,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM8;
             }
-            throw new FatalJitException("Register mask 'XMM8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM9
@@ -1327,7 +1443,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM9;
             }
-            throw new FatalJitException("Register mask 'XMM9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM10
@@ -1338,7 +1456,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM10;
             }
-            throw new FatalJitException("Register mask 'XMM10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM11
@@ -1349,7 +1469,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM11;
             }
-            throw new FatalJitException("Register mask 'XMM11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM12
@@ -1360,7 +1482,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM12;
             }
-            throw new FatalJitException("Register mask 'XMM12' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM12' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM13
@@ -1371,7 +1495,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM13;
             }
-            throw new FatalJitException("Register mask 'XMM13' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM13' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM14
@@ -1382,7 +1508,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM14;
             }
-            throw new FatalJitException("Register mask 'XMM14' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM14' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM15
@@ -1393,7 +1521,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM15;
             }
-            throw new FatalJitException("Register mask 'XMM15' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM15' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM16
@@ -1404,7 +1534,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM16;
             }
-            throw new FatalJitException("Register mask 'XMM16' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM16' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM17
@@ -1415,7 +1547,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM17;
             }
-            throw new FatalJitException("Register mask 'XMM17' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM17' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM18
@@ -1426,7 +1560,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM18;
             }
-            throw new FatalJitException("Register mask 'XMM18' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM18' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM19
@@ -1437,7 +1573,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM19;
             }
-            throw new FatalJitException("Register mask 'XMM19' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM19' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM20
@@ -1448,7 +1586,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM20;
             }
-            throw new FatalJitException("Register mask 'XMM20' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM20' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM21
@@ -1459,7 +1599,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM21;
             }
-            throw new FatalJitException("Register mask 'XMM21' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM21' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM22
@@ -1470,7 +1612,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM22;
             }
-            throw new FatalJitException("Register mask 'XMM22' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM22' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM23
@@ -1481,7 +1625,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM23;
             }
-            throw new FatalJitException("Register mask 'XMM23' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM23' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM24
@@ -1492,7 +1638,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM24;
             }
-            throw new FatalJitException("Register mask 'XMM24' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM24' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM25
@@ -1503,7 +1651,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM25;
             }
-            throw new FatalJitException("Register mask 'XMM25' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM25' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM26
@@ -1514,7 +1664,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM26;
             }
-            throw new FatalJitException("Register mask 'XMM26' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM26' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM27
@@ -1525,7 +1677,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM27;
             }
-            throw new FatalJitException("Register mask 'XMM27' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM27' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM28
@@ -1536,7 +1690,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM28;
             }
-            throw new FatalJitException("Register mask 'XMM28' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM28' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM29
@@ -1547,7 +1703,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM29;
             }
-            throw new FatalJitException("Register mask 'XMM29' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM29' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM30
@@ -1558,7 +1716,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM30;
             }
-            throw new FatalJitException("Register mask 'XMM30' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM30' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_XMM31
@@ -1569,7 +1729,9 @@ public static partial class Globals
             {
                 return RBM_X64_XMM31;
             }
-            throw new FatalJitException("Register mask 'XMM31' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'XMM31' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R0
@@ -1592,7 +1754,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_R0;
             }
-            throw new FatalJitException("Register mask 'R0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R1
@@ -1607,7 +1771,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R1;
             }
-            throw new FatalJitException("Register mask 'R1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R2
@@ -1622,7 +1788,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R2;
             }
-            throw new FatalJitException("Register mask 'R2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R3
@@ -1637,7 +1805,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R3;
             }
-            throw new FatalJitException("Register mask 'R3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R4
@@ -1652,7 +1822,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R4;
             }
-            throw new FatalJitException("Register mask 'R4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R5
@@ -1667,7 +1839,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R5;
             }
-            throw new FatalJitException("Register mask 'R5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R6
@@ -1682,7 +1856,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R6;
             }
-            throw new FatalJitException("Register mask 'R6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_R7
@@ -1697,7 +1873,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_R7;
             }
-            throw new FatalJitException("Register mask 'R7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'R7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_SP
@@ -1720,7 +1898,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_SP;
             }
-            throw new FatalJitException("Register mask 'SP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'SP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_LR
@@ -1735,7 +1915,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_LR;
             }
-            throw new FatalJitException("Register mask 'LR' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'LR' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_PC
@@ -1746,7 +1928,9 @@ public static partial class Globals
             {
                 return RBM_ARM32_PC;
             }
-            throw new FatalJitException("Register mask 'PC' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'PC' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FP
@@ -1769,7 +1953,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FP;
             }
-            throw new FatalJitException("Register mask 'FP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F0
@@ -1784,7 +1970,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F0;
             }
-            throw new FatalJitException("Register mask 'F0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F1
@@ -1799,7 +1987,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F1;
             }
-            throw new FatalJitException("Register mask 'F1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F2
@@ -1814,7 +2004,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F2;
             }
-            throw new FatalJitException("Register mask 'F2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F3
@@ -1829,7 +2021,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F3;
             }
-            throw new FatalJitException("Register mask 'F3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F4
@@ -1844,7 +2038,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F4;
             }
-            throw new FatalJitException("Register mask 'F4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F5
@@ -1859,7 +2055,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F5;
             }
-            throw new FatalJitException("Register mask 'F5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F6
@@ -1874,7 +2072,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F6;
             }
-            throw new FatalJitException("Register mask 'F6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F7
@@ -1889,7 +2089,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F7;
             }
-            throw new FatalJitException("Register mask 'F7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F8
@@ -1904,7 +2106,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F8;
             }
-            throw new FatalJitException("Register mask 'F8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F9
@@ -1919,7 +2123,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F9;
             }
-            throw new FatalJitException("Register mask 'F9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F10
@@ -1934,7 +2140,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F10;
             }
-            throw new FatalJitException("Register mask 'F10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F11
@@ -1949,7 +2157,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F11;
             }
-            throw new FatalJitException("Register mask 'F11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F12
@@ -1964,7 +2174,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F12;
             }
-            throw new FatalJitException("Register mask 'F12' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F12' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F13
@@ -1979,7 +2191,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F13;
             }
-            throw new FatalJitException("Register mask 'F13' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F13' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F14
@@ -1994,7 +2208,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F14;
             }
-            throw new FatalJitException("Register mask 'F14' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F14' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F15
@@ -2009,7 +2225,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F15;
             }
-            throw new FatalJitException("Register mask 'F15' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F15' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F16
@@ -2024,7 +2242,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F16;
             }
-            throw new FatalJitException("Register mask 'F16' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F16' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F17
@@ -2039,7 +2259,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F17;
             }
-            throw new FatalJitException("Register mask 'F17' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F17' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F18
@@ -2054,7 +2276,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F18;
             }
-            throw new FatalJitException("Register mask 'F18' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F18' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F19
@@ -2069,7 +2293,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F19;
             }
-            throw new FatalJitException("Register mask 'F19' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F19' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F20
@@ -2084,7 +2310,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F20;
             }
-            throw new FatalJitException("Register mask 'F20' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F20' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F21
@@ -2099,7 +2327,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F21;
             }
-            throw new FatalJitException("Register mask 'F21' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F21' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F22
@@ -2114,7 +2344,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F22;
             }
-            throw new FatalJitException("Register mask 'F22' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F22' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F23
@@ -2129,7 +2361,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F23;
             }
-            throw new FatalJitException("Register mask 'F23' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F23' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F24
@@ -2144,7 +2378,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F24;
             }
-            throw new FatalJitException("Register mask 'F24' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F24' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F25
@@ -2159,7 +2395,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F25;
             }
-            throw new FatalJitException("Register mask 'F25' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F25' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F26
@@ -2174,7 +2412,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F26;
             }
-            throw new FatalJitException("Register mask 'F26' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F26' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F27
@@ -2189,7 +2429,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F27;
             }
-            throw new FatalJitException("Register mask 'F27' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F27' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F28
@@ -2204,7 +2446,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F28;
             }
-            throw new FatalJitException("Register mask 'F28' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F28' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F29
@@ -2219,7 +2463,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F29;
             }
-            throw new FatalJitException("Register mask 'F29' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F29' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F30
@@ -2234,7 +2480,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F30;
             }
-            throw new FatalJitException("Register mask 'F30' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F30' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_F31
@@ -2249,7 +2497,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_F31;
             }
-            throw new FatalJitException("Register mask 'F31' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'F31' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_IP0
@@ -2260,7 +2510,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_IP0;
             }
-            throw new FatalJitException("Register mask 'IP0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'IP0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_IP1
@@ -2271,7 +2523,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_IP1;
             }
-            throw new FatalJitException("Register mask 'IP1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'IP1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_PR
@@ -2282,7 +2536,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_PR;
             }
-            throw new FatalJitException("Register mask 'PR' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'PR' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_ZR
@@ -2293,7 +2549,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_ZR;
             }
-            throw new FatalJitException("Register mask 'ZR' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'ZR' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V0
@@ -2304,7 +2562,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V0;
             }
-            throw new FatalJitException("Register mask 'V0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V1
@@ -2315,7 +2575,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V1;
             }
-            throw new FatalJitException("Register mask 'V1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V2
@@ -2326,7 +2588,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V2;
             }
-            throw new FatalJitException("Register mask 'V2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V3
@@ -2337,7 +2601,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V3;
             }
-            throw new FatalJitException("Register mask 'V3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V4
@@ -2348,7 +2614,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V4;
             }
-            throw new FatalJitException("Register mask 'V4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V5
@@ -2359,7 +2627,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V5;
             }
-            throw new FatalJitException("Register mask 'V5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V6
@@ -2370,7 +2640,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V6;
             }
-            throw new FatalJitException("Register mask 'V6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V7
@@ -2381,7 +2653,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V7;
             }
-            throw new FatalJitException("Register mask 'V7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V8
@@ -2392,7 +2666,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V8;
             }
-            throw new FatalJitException("Register mask 'V8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V9
@@ -2403,7 +2679,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V9;
             }
-            throw new FatalJitException("Register mask 'V9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V10
@@ -2414,7 +2692,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V10;
             }
-            throw new FatalJitException("Register mask 'V10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V11
@@ -2425,7 +2705,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V11;
             }
-            throw new FatalJitException("Register mask 'V11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V12
@@ -2436,7 +2718,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V12;
             }
-            throw new FatalJitException("Register mask 'V12' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V12' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V13
@@ -2447,7 +2731,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V13;
             }
-            throw new FatalJitException("Register mask 'V13' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V13' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V14
@@ -2458,7 +2744,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V14;
             }
-            throw new FatalJitException("Register mask 'V14' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V14' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V15
@@ -2469,7 +2757,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V15;
             }
-            throw new FatalJitException("Register mask 'V15' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V15' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V16
@@ -2480,7 +2770,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V16;
             }
-            throw new FatalJitException("Register mask 'V16' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V16' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V17
@@ -2491,7 +2783,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V17;
             }
-            throw new FatalJitException("Register mask 'V17' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V17' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V18
@@ -2502,7 +2796,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V18;
             }
-            throw new FatalJitException("Register mask 'V18' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V18' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V19
@@ -2513,7 +2809,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V19;
             }
-            throw new FatalJitException("Register mask 'V19' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V19' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V20
@@ -2524,7 +2822,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V20;
             }
-            throw new FatalJitException("Register mask 'V20' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V20' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V21
@@ -2535,7 +2835,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V21;
             }
-            throw new FatalJitException("Register mask 'V21' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V21' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V22
@@ -2546,7 +2848,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V22;
             }
-            throw new FatalJitException("Register mask 'V22' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V22' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V23
@@ -2557,7 +2861,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V23;
             }
-            throw new FatalJitException("Register mask 'V23' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V23' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V24
@@ -2568,7 +2874,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V24;
             }
-            throw new FatalJitException("Register mask 'V24' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V24' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V25
@@ -2579,7 +2887,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V25;
             }
-            throw new FatalJitException("Register mask 'V25' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V25' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V26
@@ -2590,7 +2900,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V26;
             }
-            throw new FatalJitException("Register mask 'V26' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V26' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V27
@@ -2601,7 +2913,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V27;
             }
-            throw new FatalJitException("Register mask 'V27' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V27' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V28
@@ -2612,7 +2926,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V28;
             }
-            throw new FatalJitException("Register mask 'V28' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V28' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V29
@@ -2623,7 +2939,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V29;
             }
-            throw new FatalJitException("Register mask 'V29' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V29' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V30
@@ -2634,7 +2952,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V30;
             }
-            throw new FatalJitException("Register mask 'V30' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V30' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_V31
@@ -2645,7 +2965,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_V31;
             }
-            throw new FatalJitException("Register mask 'V31' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'V31' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P0
@@ -2656,7 +2978,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P0;
             }
-            throw new FatalJitException("Register mask 'P0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P1
@@ -2667,7 +2991,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P1;
             }
-            throw new FatalJitException("Register mask 'P1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P2
@@ -2678,7 +3004,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P2;
             }
-            throw new FatalJitException("Register mask 'P2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P3
@@ -2689,7 +3017,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P3;
             }
-            throw new FatalJitException("Register mask 'P3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P4
@@ -2700,7 +3030,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P4;
             }
-            throw new FatalJitException("Register mask 'P4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P5
@@ -2711,7 +3043,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P5;
             }
-            throw new FatalJitException("Register mask 'P5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P6
@@ -2722,7 +3056,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P6;
             }
-            throw new FatalJitException("Register mask 'P6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P7
@@ -2733,7 +3069,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P7;
             }
-            throw new FatalJitException("Register mask 'P7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P8
@@ -2744,7 +3082,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P8;
             }
-            throw new FatalJitException("Register mask 'P8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P9
@@ -2755,7 +3095,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P9;
             }
-            throw new FatalJitException("Register mask 'P9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P10
@@ -2766,7 +3108,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P10;
             }
-            throw new FatalJitException("Register mask 'P10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P11
@@ -2777,7 +3121,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P11;
             }
-            throw new FatalJitException("Register mask 'P11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P12
@@ -2788,7 +3134,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P12;
             }
-            throw new FatalJitException("Register mask 'P12' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P12' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P13
@@ -2799,7 +3147,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P13;
             }
-            throw new FatalJitException("Register mask 'P13' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P13' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P14
@@ -2810,7 +3160,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P14;
             }
-            throw new FatalJitException("Register mask 'P14' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P14' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_P15
@@ -2821,7 +3173,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_P15;
             }
-            throw new FatalJitException("Register mask 'P15' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'P15' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FFR
@@ -2832,7 +3186,9 @@ public static partial class Globals
             {
                 return RBM_ARM64_FFR;
             }
-            throw new FatalJitException("Register mask 'FFR' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FFR' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_RA
@@ -2847,7 +3203,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_RA;
             }
-            throw new FatalJitException("Register mask 'RA' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'RA' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_TP
@@ -2862,7 +3220,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_TP;
             }
-            throw new FatalJitException("Register mask 'TP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'TP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A0
@@ -2877,7 +3237,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A0;
             }
-            throw new FatalJitException("Register mask 'A0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A1
@@ -2892,7 +3254,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A1;
             }
-            throw new FatalJitException("Register mask 'A1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A2
@@ -2907,7 +3271,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A2;
             }
-            throw new FatalJitException("Register mask 'A2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A3
@@ -2922,7 +3288,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A3;
             }
-            throw new FatalJitException("Register mask 'A3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A4
@@ -2937,7 +3305,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A4;
             }
-            throw new FatalJitException("Register mask 'A4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A5
@@ -2952,7 +3322,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A5;
             }
-            throw new FatalJitException("Register mask 'A5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A6
@@ -2967,7 +3339,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A6;
             }
-            throw new FatalJitException("Register mask 'A6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_A7
@@ -2982,7 +3356,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_A7;
             }
-            throw new FatalJitException("Register mask 'A7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'A7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T0
@@ -2997,7 +3373,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T0;
             }
-            throw new FatalJitException("Register mask 'T0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T1
@@ -3012,7 +3390,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T1;
             }
-            throw new FatalJitException("Register mask 'T1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T2
@@ -3027,7 +3407,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T2;
             }
-            throw new FatalJitException("Register mask 'T2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T3
@@ -3042,7 +3424,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T3;
             }
-            throw new FatalJitException("Register mask 'T3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T4
@@ -3057,7 +3441,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T4;
             }
-            throw new FatalJitException("Register mask 'T4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T5
@@ -3072,7 +3458,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T5;
             }
-            throw new FatalJitException("Register mask 'T5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T6
@@ -3087,7 +3475,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_T6;
             }
-            throw new FatalJitException("Register mask 'T6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T7
@@ -3098,7 +3488,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_T7;
             }
-            throw new FatalJitException("Register mask 'T7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_T8
@@ -3109,7 +3501,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_T8;
             }
-            throw new FatalJitException("Register mask 'T8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'T8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_X0
@@ -3120,7 +3514,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_X0;
             }
-            throw new FatalJitException("Register mask 'X0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'X0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S0
@@ -3131,7 +3527,9 @@ public static partial class Globals
             {
                 return RBM_LOONGARCH64_S0;
             }
-            throw new FatalJitException("Register mask 'S0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S1
@@ -3146,7 +3544,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S1;
             }
-            throw new FatalJitException("Register mask 'S1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S2
@@ -3161,7 +3561,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S2;
             }
-            throw new FatalJitException("Register mask 'S2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S3
@@ -3176,7 +3578,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S3;
             }
-            throw new FatalJitException("Register mask 'S3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S4
@@ -3191,7 +3595,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S4;
             }
-            throw new FatalJitException("Register mask 'S4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S5
@@ -3206,7 +3612,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S5;
             }
-            throw new FatalJitException("Register mask 'S5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S6
@@ -3221,7 +3629,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S6;
             }
-            throw new FatalJitException("Register mask 'S6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S7
@@ -3236,7 +3646,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S7;
             }
-            throw new FatalJitException("Register mask 'S7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S8
@@ -3251,7 +3663,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S8;
             }
-            throw new FatalJitException("Register mask 'S8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_GP
@@ -3262,7 +3676,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_GP;
             }
-            throw new FatalJitException("Register mask 'GP' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'GP' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S9
@@ -3273,7 +3689,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S9;
             }
-            throw new FatalJitException("Register mask 'S9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S10
@@ -3284,7 +3702,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S10;
             }
-            throw new FatalJitException("Register mask 'S10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_S11
@@ -3295,7 +3715,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_S11;
             }
-            throw new FatalJitException("Register mask 'S11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'S11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_ZERO
@@ -3306,7 +3728,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_ZERO;
             }
-            throw new FatalJitException("Register mask 'ZERO' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'ZERO' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT0
@@ -3317,7 +3741,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT0;
             }
-            throw new FatalJitException("Register mask 'FT0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT1
@@ -3328,7 +3754,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT1;
             }
-            throw new FatalJitException("Register mask 'FT1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT2
@@ -3339,7 +3767,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT2;
             }
-            throw new FatalJitException("Register mask 'FT2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT3
@@ -3350,7 +3780,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT3;
             }
-            throw new FatalJitException("Register mask 'FT3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT4
@@ -3361,7 +3793,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT4;
             }
-            throw new FatalJitException("Register mask 'FT4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT5
@@ -3372,7 +3806,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT5;
             }
-            throw new FatalJitException("Register mask 'FT5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT6
@@ -3383,7 +3819,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT6;
             }
-            throw new FatalJitException("Register mask 'FT6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT7
@@ -3394,7 +3832,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT7;
             }
-            throw new FatalJitException("Register mask 'FT7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS0
@@ -3405,7 +3845,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS0;
             }
-            throw new FatalJitException("Register mask 'FS0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS1
@@ -3416,7 +3858,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS1;
             }
-            throw new FatalJitException("Register mask 'FS1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA0
@@ -3427,7 +3871,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA0;
             }
-            throw new FatalJitException("Register mask 'FA0' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA0' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA1
@@ -3438,7 +3884,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA1;
             }
-            throw new FatalJitException("Register mask 'FA1' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA1' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA2
@@ -3449,7 +3897,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA2;
             }
-            throw new FatalJitException("Register mask 'FA2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA3
@@ -3460,7 +3910,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA3;
             }
-            throw new FatalJitException("Register mask 'FA3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA4
@@ -3471,7 +3923,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA4;
             }
-            throw new FatalJitException("Register mask 'FA4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA5
@@ -3482,7 +3936,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA5;
             }
-            throw new FatalJitException("Register mask 'FA5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA6
@@ -3493,7 +3949,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA6;
             }
-            throw new FatalJitException("Register mask 'FA6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FA7
@@ -3504,7 +3962,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FA7;
             }
-            throw new FatalJitException("Register mask 'FA7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FA7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS2
@@ -3515,7 +3975,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS2;
             }
-            throw new FatalJitException("Register mask 'FS2' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS2' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS3
@@ -3526,7 +3988,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS3;
             }
-            throw new FatalJitException("Register mask 'FS3' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS3' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS4
@@ -3537,7 +4001,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS4;
             }
-            throw new FatalJitException("Register mask 'FS4' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS4' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS5
@@ -3548,7 +4014,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS5;
             }
-            throw new FatalJitException("Register mask 'FS5' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS5' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS6
@@ -3559,7 +4027,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS6;
             }
-            throw new FatalJitException("Register mask 'FS6' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS6' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS7
@@ -3570,7 +4040,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS7;
             }
-            throw new FatalJitException("Register mask 'FS7' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS7' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS8
@@ -3581,7 +4053,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS8;
             }
-            throw new FatalJitException("Register mask 'FS8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS9
@@ -3592,7 +4066,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS9;
             }
-            throw new FatalJitException("Register mask 'FS9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS10
@@ -3603,7 +4079,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS10;
             }
-            throw new FatalJitException("Register mask 'FS10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FS11
@@ -3614,7 +4092,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FS11;
             }
-            throw new FatalJitException("Register mask 'FS11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FS11' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT8
@@ -3625,7 +4105,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT8;
             }
-            throw new FatalJitException("Register mask 'FT8' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT8' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT9
@@ -3636,7 +4118,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT9;
             }
-            throw new FatalJitException("Register mask 'FT9' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT9' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT10
@@ -3647,7 +4131,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT10;
             }
-            throw new FatalJitException("Register mask 'FT10' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT10' is not available for the configured target.");
+            return default;
         }
     }
     public static regMaskTP RBM_FT11
@@ -3658,7 +4144,9 @@ public static partial class Globals
             {
                 return RBM_RISCV64_FT11;
             }
-            throw new FatalJitException("Register mask 'FT11' is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "Register mask 'FT11' is not available for the configured target.");
+            return default;
         }
     }
 

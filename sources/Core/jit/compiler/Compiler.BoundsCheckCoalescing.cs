@@ -71,7 +71,15 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-        var store = vnStore ?? throw new FatalJitException("Bounds-check coalescing requires value numbering.");
+        var store = vnStore;
+        if (store is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage100
+            );
+            return default!;
+        }
         var modified = false;
         var candidates = new List<BoundsCheckCandidate>();
         var groupMap = new Dictionary<(int BarrierCount, ValueNum LengthVN), int>();

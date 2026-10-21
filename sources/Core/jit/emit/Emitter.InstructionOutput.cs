@@ -39,7 +39,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction output is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction output is not implemented for this target.");
+            return default!;
         }
 
         return emitOutputInstrXarch(ig, id, dp);
@@ -419,8 +420,9 @@ public partial class Emitter
                         {
                             if (!Configuration.TARGET_AMD64)
                             {
-                                throw new FatalJitException(CORJIT_INTERNALERROR,
+                                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
                                     "8-byte APX immediate operands require AMD64.");
+                                return default!;
                             }
 
                             code = AddRexWPrefix(id, code);
@@ -429,7 +431,8 @@ public partial class Emitter
                         }
                         default:
                         {
-                            throw new FatalJitException("Unexpected APX immediate operand size.");
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedApxImmediateOperandSize);
+                            return default!;
                         }
                     }
                     dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
@@ -483,7 +486,8 @@ public partial class Emitter
                         {
                             emitDispIns(id, false, false, false);
                         }
-                        throw new FatalJitException("Unexpected APX immediate instruction format.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedApxImmediateInstructionFormat);
+                        return default!;
                     }
                     break;
                 }
@@ -958,12 +962,14 @@ public partial class Emitter
             case IF_XARCH_RRW_SRD_RRD:
             {
                 assert(IsAVX2GatherInstruction(ins));
-                throw new FatalJitException("A gather cannot use a stack instruction format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.GatherWithStackMemoryFormat);
+                return default!;
             }
 
             case IF_XARCH_SWR_RRD_RRD:
             {
-                throw new FatalJitException("Unexpected three-register stack-store format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedThreeRegisterStackStoreFormat);
+                return default!;
             }
 
             case IF_XARCH_MRD:
@@ -1170,12 +1176,14 @@ public partial class Emitter
             case IF_XARCH_RRW_MRD_RRD:
             {
                 assert(IsAVX2GatherInstruction(ins));
-                throw new FatalJitException("A gather cannot use a static-memory instruction format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.GatherWithStaticMemoryFormat);
+                return default!;
             }
 
             case IF_XARCH_MWR_RRD_RRD:
             {
-                throw new FatalJitException("Unexpected three-register static-store format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedThreeRegisterStaticStoreFormat);
+                return default!;
             }
 
             default:
@@ -1184,7 +1192,8 @@ public partial class Emitter
                 {
                     jitprintf($"unexpected format {emitIfName(id.idInsFmt())}\n");
                 }
-                throw new FatalJitException("Unknown instruction-output format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownInstructionOutputFormat);
+                return default!;
             }
         }
         goto DONE_OUTPUT;
@@ -1280,58 +1289,61 @@ public partial class Emitter
         }
 
     DONE_OUTPUT:
-            if (Configuration.TARGET_AMD64)
-            {
-                assert((ins == INS_jmp && id.idIns() == INS_nop) || sz == emitSizeOfInsDsc(id));
-            }
-            else
-            {
-                assert(sz == emitSizeOfInsDsc(id));
-            }
+        if (Configuration.TARGET_AMD64)
+        {
+            assert((ins == INS_jmp && id.idIns() == INS_nop) || sz == emitSizeOfInsDsc(id));
+        }
+        else
+        {
+            assert(sz == emitSizeOfInsDsc(id));
+        }
 
-            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            var updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
+            updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
+            if (updateStackLevel)
             {
-                var updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
-                updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
-                if (updateStackLevel)
+                switch (ins)
                 {
-                    switch (ins)
+                    case INS_push:
                     {
-                        case INS_push:
+                        emitStackPush(dst, id.idGCref());
+                        break;
+                    }
+
+                    case INS_pop:
+                    {
+                        emitStackPop(dst, false, 0);
+                        break;
+                    }
+
+                    case INS_sub:
+                    {
+                        if (id.idInsFmt() == IF_XARCH_RRW_CNS &&
+                            id.idReg1() == TargetRuntimeMetadata.StackPointerBaseRegister)
                         {
-                            emitStackPush(dst, id.idGCref());
-                            break;
+                            assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
+                            emitStackPushN(dst,
+                                unchecked((uint)(emitGetInsSC(id) / Configuration.TARGET_POINTER_SIZE)));
                         }
-                        case INS_pop:
+                        break;
+                    }
+
+                    case INS_add:
+                    {
+                        if (id.idInsFmt() == IF_XARCH_RRW_CNS &&
+                            id.idReg1() == TargetRuntimeMetadata.StackPointerBaseRegister)
                         {
-                            emitStackPop(dst, false, 0);
-                            break;
+                            assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
+                            emitStackPop(dst, false, 0,
+                                unchecked((uint)(emitGetInsSC(id) / Configuration.TARGET_POINTER_SIZE)));
                         }
-                        case INS_sub:
-                        {
-                            if (id.idInsFmt() == IF_XARCH_RRW_CNS &&
-                                id.idReg1() == TargetRuntimeMetadata.StackPointerBaseRegister)
-                            {
-                                assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
-                                emitStackPushN(dst,
-                                    unchecked((uint)(emitGetInsSC(id) / Configuration.TARGET_POINTER_SIZE)));
-                            }
-                            break;
-                        }
-                        case INS_add:
-                        {
-                            if (id.idInsFmt() == IF_XARCH_RRW_CNS &&
-                                id.idReg1() == TargetRuntimeMetadata.StackPointerBaseRegister)
-                            {
-                                assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
-                                emitStackPop(dst, false, 0,
-                                    unchecked((uint)(emitGetInsSC(id) / Configuration.TARGET_POINTER_SIZE)));
-                            }
-                            break;
-                        }
+                        break;
                     }
                 }
             }
+        }
         assert(emitCurStackLvl >= 0);
         assert(*dp != dst || emitInstHasNoCode(id));
         var display = _compiler.opts.disAsm || (Configuration.DEBUG && _compiler.verbose);

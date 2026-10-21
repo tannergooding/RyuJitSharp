@@ -17,7 +17,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD intrinsic generation is not ported.");
+        return;
     }
 
     public void genSIMDIntrinsicUpperSave(GenTree simdNode)
@@ -26,7 +27,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicUpperSave-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane saving is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane saving is not ported.");
+        return;
     }
 
     public void genSIMDIntrinsicUpperRestore(GenTree simdNode)
@@ -35,7 +37,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicUpperRestore-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane restoration is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane restoration is not ported.");
+        return;
     }
 
     public void genStoreIndTypeSIMD12(GenTree treeNode)
@@ -44,7 +47,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genStoreIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect stores are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect stores are not ported.");
+        return;
     }
 
     public void genLoadIndTypeSIMD12(GenTree treeNode)
@@ -53,7 +57,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genLoadIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect loads are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect loads are not ported.");
+        return;
     }
 
     public void genStoreLclTypeSIMD12(GenTree treeNode)
@@ -62,7 +67,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genStoreLclTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 local stores are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 local stores are not ported.");
+        return;
     }
 
     public insOpts genGetSimdInsOptRiscV64(emitAttr size, var_types elementType)
@@ -71,7 +77,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genGetSimdInsOpt-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD instruction options are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD instruction options are not ported.");
+        return default!;
     }
 
     // The native SIMDIntrinsicID type is unported; this unused NYI path never inspects its value.
@@ -81,7 +88,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: getOpForSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD instruction selection is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD instruction selection is not ported.");
+        return default!;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -91,7 +99,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicInit-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD initialization is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD initialization is not ported.");
+        return;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -101,7 +110,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicInitN-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD multi-operand initialization is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD multi-operand initialization is not ported.");
+        return;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -111,7 +121,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicUnOp-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 unary SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 unary SIMD intrinsic generation is not ported.");
+        return;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -121,7 +132,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicWiden-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD widening is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD widening is not ported.");
+        return;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -131,7 +143,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicNarrow-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD narrowing is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD narrowing is not ported.");
+        return;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -141,7 +154,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicBinOp-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 binary SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 binary SIMD intrinsic generation is not ported.");
+        return;
     }
 
     // The upstream implementation is an unused NYI path and does not inspect the unported SIMD node.
@@ -151,7 +165,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicGetItem-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD get-item intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD get-item intrinsic generation is not ported.");
+        return;
     }
 
     // The upstream implementation is an unused NYI path and does not inspect the unported SIMD node.
@@ -161,7 +176,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicSetItem-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD set-item intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD set-item intrinsic generation is not ported.");
+        return;
     }
 
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
@@ -171,7 +187,8 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicRelOp-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD comparison is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD comparison is not ported.");
+        return;
     }
 
     public void genSIMDIntrinsicDotProduct(GenTree simdNode)
@@ -180,6 +197,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicDotProduct-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 dot-product SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 dot-product SIMD intrinsic generation is not ported.");
+        return;
     }
 }

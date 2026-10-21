@@ -20,11 +20,22 @@ public partial class Emitter
     {
         assert(dst.HasFlag(BBF_HAS_LABEL));
 
-        var format = ins switch
+        insFormat format;
+        switch (ins)
         {
-            INS_adr => IF_ARM64_LARGEADR,
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected ARM64 label-address instruction {ins}."),
-        };
+            case INS_adr:
+            {
+                format = IF_ARM64_LARGEADR;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR, $"Unexpected ARM64 label-address instruction {ins}.");
+                return;
+            }
+        }
 
         var id = emitNewInstrJmp();
         id.idIns(ins);
@@ -64,11 +75,22 @@ public partial class Emitter
     {
         assert(dst is not null);
 
-        var format = ins switch
+        insFormat format;
+        switch (ins)
         {
-            INS_adr => IF_ARM64_LARGEADR,
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected ARM64 label-address instruction {ins}."),
-        };
+            case INS_adr:
+            {
+                format = IF_ARM64_LARGEADR;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR, $"Unexpected ARM64 label-address instruction {ins}.");
+                return;
+            }
+        }
 
         var id = emitNewInstrJmp();
         id.idIns(ins);

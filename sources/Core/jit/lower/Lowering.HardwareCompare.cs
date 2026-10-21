@@ -178,6 +178,7 @@ public sealed partial class Lowering
 
     private GenTree? LowerHWIntrinsicCmpOpLoongArch64(GenTreeHWIntrinsic node, genTreeOps cmpOp)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic comparisons are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic comparisons are not ported.");
+        return default!;
     }
 }

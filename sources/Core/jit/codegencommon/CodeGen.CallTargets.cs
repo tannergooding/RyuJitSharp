@@ -65,7 +65,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm tailcall epilog-register verification is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm tailcall epilog-register verification is not ported.");
+            return;
         }
 
         if (!call.IsFastTailCall)

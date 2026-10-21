@@ -11,8 +11,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Flag branch generation has no native implementation for this target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -37,8 +38,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Conditional branch sequences have no native implementation for this target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -69,8 +71,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Flag-result generation has no native implementation for this target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

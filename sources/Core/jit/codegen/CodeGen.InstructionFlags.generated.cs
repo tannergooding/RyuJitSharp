@@ -6018,8 +6018,10 @@ public sealed partial class CodeGen
                 return s_instInfoWASM;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
                 "Instruction metadata is not available for the configured target.");
+            return default;
         }
     }
 }

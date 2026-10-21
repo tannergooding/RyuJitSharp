@@ -22,11 +22,26 @@ public sealed partial class LinearScan
             var sourceInterval = sourceUse.getInterval();
             if (sourceInterval.relatedInterval is null)
             {
-                if (!sourceInterval.isLocalVar ||
-                    ((sourceUse.treeNode ?? throw new FatalJitException("A local source use requires its tree.")).Flags &
-                        GTF_VAR_DEATH) != 0)
+                if (!sourceInterval.isLocalVar)
                 {
                     sourceInterval.assignRelatedInterval(interval);
+                }
+                else
+                {
+                    var sourceTree = sourceUse.treeNode;
+                    if (sourceTree is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage357
+                        );
+                        return;
+                    }
+
+                    if ((sourceTree.Flags & GTF_VAR_DEATH) != 0)
+                    {
+                        sourceInterval.assignRelatedInterval(interval);
+                    }
                 }
             }
             else if (!sourceInterval.isLocalVar)
@@ -221,8 +236,9 @@ public sealed partial class LinearScan
             }
             else
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "The 32-bit long return-register contract is not available on this target.");
+                return default!;
             }
             return 2;
         }
@@ -306,8 +322,7 @@ public sealed partial class LinearScan
                 SingleTypeRegSet candidates;
                 if (Configuration.TARGET_X86)
                 {
-                    candidates = tree.Type switch
-                    {
+                    candidates = tree.Type switch {
                         TYP_FLOAT or TYP_DOUBLE => SRBM_NONE,
                         TYP_LONG => SRBM_X86_EAX | SRBM_X86_EDX,
                         _ => SRBM_X86_EAX,
@@ -315,8 +330,7 @@ public sealed partial class LinearScan
                 }
                 else if (Configuration.TARGET_ARM)
                 {
-                    candidates = tree.Type switch
-                    {
+                    candidates = tree.Type switch {
                         TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_ARM32_F0),
                         TYP_LONG => genSingleTypeRegMask(TargetRuntimeMetadata.Register0) | genSingleTypeRegMask(REG_ARM32_R1),
                         _ => genSingleTypeRegMask(TargetRuntimeMetadata.Register0),
@@ -324,16 +338,14 @@ public sealed partial class LinearScan
                 }
                 else if (Configuration.TARGET_LOONGARCH64)
                 {
-                    candidates = tree.Type switch
-                    {
+                    candidates = tree.Type switch {
                         TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_LOONGARCH64_F0),
                         _ => genSingleTypeRegMask(REG_LOONGARCH64_A0),
                     };
                 }
                 else if (Configuration.TARGET_RISCV64)
                 {
-                    candidates = tree.Type switch
-                    {
+                    candidates = tree.Type switch {
                         TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_RISCV64_FA0),
                         _ => genSingleTypeRegMask(REG_RISCV64_A0),
                     };
@@ -344,8 +356,7 @@ public sealed partial class LinearScan
                 }
                 else if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
                 {
-                    candidates = tree.Type switch
-                    {
+                    candidates = tree.Type switch {
                         TYP_FLOAT => TargetRuntimeMetadata.FloatingReturnMask,
                         TYP_DOUBLE => TargetRuntimeMetadata.DoubleReturnMask,
                         TYP_LONG => TargetRuntimeMetadata.LongReturnMask,
@@ -354,8 +365,9 @@ public sealed partial class LinearScan
                 }
                 else
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "The return-register contract is not available on this target.");
+                    return default!;
                 }
                 _ = buildUse(value, candidates);
                 return 1;

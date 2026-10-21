@@ -18,8 +18,12 @@ public partial class Compiler
 
     public uint ehCodeOffset(BasicBlock block)
     {
-        var emitter = codeGen?.Emitter
-            ?? throw new FatalJitException(CORJIT_SKIPPED, "EH code offset requires an emitter.");
+        var emitter = codeGen?.Emitter;
+        if (emitter is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage247);
+            return default!;
+        }
         return emitter.emitCodeOffset(ehEmitCookie(block), 0);
     }
 }

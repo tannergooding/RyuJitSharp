@@ -181,14 +181,16 @@ public partial class Emitter
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                        return default!;
                     }
                     break;
                 }
 
                 default:
                 {
-                    throw new FatalJitException("Unexpected static operand size.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedStaticOperandSize);
+                    return default!;
                 }
             }
         }
@@ -222,7 +224,12 @@ public partial class Emitter
                 var byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, false));
                 if (emitChkAlign && ins != INS_lea)
                 {
-                    var compiler = _compiler ?? throw new FatalJitException("An initialized compiler is required for static output.");
+                    var compiler = _compiler;
+                    if (compiler is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("An initialized compiler is required for static output.");
+                        return default!;
+                    }
                     var alignment = compiler.compCodeOpt == Compiler.SMALL_CODE ? 4 : byteSize;
                     assert(((nuint)addr % (uint)alignment) == 0);
                 }
@@ -266,7 +273,8 @@ public partial class Emitter
 
                     default:
                     {
-                        throw new FatalJitException("Unexpected static immediate size.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedStaticImmediateSize);
+                        return default!;
                     }
                 }
             }
@@ -288,7 +296,8 @@ public partial class Emitter
             }
             else
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                return default!;
             }
 
             if (id.idIsDspReloc())
@@ -307,7 +316,8 @@ public partial class Emitter
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Absolute accumulator address output is unavailable on AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Absolute accumulator address output is unavailable on AMD64.");
+            return default!;
         }
 
         if (addc is not null)
@@ -342,7 +352,8 @@ public partial class Emitter
 
                 default:
                 {
-                    throw new FatalJitException("Unexpected static immediate size.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedStaticImmediateSize);
+                    return default!;
                 }
             }
 
@@ -393,8 +404,9 @@ public partial class Emitter
                     {
                         emitDispIns(id, false, false, false);
                     }
-                    throw new FatalJitException(
+                    FatalJitException.ThrowFatalJitException(
                         $"Unexpected GC reference static instruction format {id.idInsFmt()} for {ins}.");
+                    return default!;
                 }
             }
         }

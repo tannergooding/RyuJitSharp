@@ -199,7 +199,13 @@ public sealed partial class Lowering
 
                         default:
                         {
-                            throw new System.InvalidOperationException($"Unexpected tuple type: {tupleType}.");
+                            JitExceptionHelpers.ThrowInvalidOperationException(
+                                "RJS-HW-001",
+                                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                    ? $"Unexpected tuple type: {tupleType}."
+                                    : null);
+                            supportsRegOptional = false;
+                            return false;
                         }
                     }
                 }
@@ -251,7 +257,13 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException($"Unexpected intrinsic category: {category}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-HW-002",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected intrinsic category: {category}."
+                        : null);
+                supportsRegOptional = false;
+                return false;
             }
         }
 

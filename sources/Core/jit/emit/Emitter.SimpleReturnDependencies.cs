@@ -17,10 +17,18 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            var compiler = _compiler
-                ?? throw new FatalJitException("LoongArch64 jump recording requires an active compiler.");
-            var currentBlock = compiler.compCurBB
-                ?? throw new FatalJitException("LoongArch64 jump recording requires a current basic block.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("LoongArch64 jump recording requires an active compiler.");
+                return;
+            }
+            var currentBlock = compiler.compCurBB;
+            if (currentBlock is null)
+            {
+                FatalJitException.ThrowFatalJitException("LoongArch64 jump recording requires a current basic block.");
+                return;
+            }
             assert(target is not null);
             assert(target.HasFlag(BBF_HAS_LABEL));
 
@@ -53,16 +61,18 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Target conditional-branch recording is not implemented.");
+        return;
     }
 
     public void emitIns_J_cond_la(instruction ins, BasicBlock target)
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 conditional-branch recording requires LoongArch64.");
+            return;
         }
 
         emitIns_J_cond_la(ins, target, TargetRuntimeMetadata.Register0, TargetRuntimeMetadata.Register0);
@@ -83,7 +93,12 @@ public partial class Emitter
     {
         RequireRiscV64Target();
 
-        var compiler = _compiler ?? throw new FatalJitException("Relocated-address instruction recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Relocated-address instruction recording requires an active compiler.");
+            return;
+        }
 
         assert(EA_IS_RELOC(attr));
         assert(compiler.opts.compReloc ||
@@ -109,7 +124,12 @@ public partial class Emitter
     {
         RequireRiscV64Target();
 
-        var compiler = _compiler ?? throw new FatalJitException("Address range checks require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Address range checks require an active compiler.");
+            return default!;
+        }
 
         if (compiler.opts.compReloc)
         {

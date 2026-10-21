@@ -40,11 +40,30 @@ public partial class Compiler
         private readonly TempList _intTemps = new(compiler);
         private readonly TempList _refTemps = new(compiler);
 
-        public int GrabTemp(var_types type) => type.ActualType switch {
-            TYP_INT => _intTemps.GetTemp(),
-            TYP_REF => _refTemps.GetTemp(),
-            _ => throw new FatalJitException("An MD-array temporary must be an int or object reference."),
-        };
+        public int GrabTemp(var_types type)
+        {
+            switch (type.ActualType)
+            {
+                case TYP_INT:
+                {
+                    return _intTemps.GetTemp();
+                }
+
+                case TYP_REF:
+                {
+                    return _refTemps.GetTemp();
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage099
+                    );
+                    return default!;
+                }
+            }
+        }
 
         public void Reset()
         {

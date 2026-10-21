@@ -14,8 +14,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 instruction classification requires LoongArch64.");
+            return default!;
         }
 
         // Pseudo instructions such as LEA are not represented in the instruction table.
@@ -28,8 +29,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 instruction classification requires LoongArch64.");
+            return default!;
         }
 
         // Pseudo instructions such as LEA are not represented in the instruction table.
@@ -42,8 +44,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 GC-register classification requires LoongArch64.");
+            return default!;
         }
 
         assert(ins != INS_invalid);
@@ -67,8 +70,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 stack-store classification requires LoongArch64.");
+            return default!;
         }
 
         if (!id.idIsLclVar())
@@ -77,8 +81,7 @@ public partial class Emitter
         }
 
         // This list mirrors stores accepted by emitIns_S_R and excludes floating-point locals.
-        return id.idIns() switch
-        {
+        return id.idIns() switch {
             INS_st_d or
             INS_st_w or
             INS_st_b or

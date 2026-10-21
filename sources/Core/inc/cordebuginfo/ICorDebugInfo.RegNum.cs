@@ -269,7 +269,8 @@ public partial struct ICorDebugInfo
                 return RegNum.REGNUM_WASM_COUNT;
             }
 
-            throw new FatalJitException("Register numbers are not defined for this target.");
+            FatalJitException.ThrowFatalJitException("Register numbers are not defined for this target.");
+            return default!;
         }
     }
 
@@ -312,7 +313,8 @@ public partial struct ICorDebugInfo
                 return RegNum.REGNUM_WASM_AMBIENT_SP;
             }
 
-            throw new FatalJitException("Ambient stack-pointer register number is not defined for this target.");
+            FatalJitException.ThrowFatalJitException("Ambient stack-pointer register number is not defined for this target.");
+            return default!;
         }
     }
 
@@ -336,7 +338,8 @@ public partial struct ICorDebugInfo
                 return (RegNum)0;
             }
 
-            throw new FatalJitException("Floating-point register numbering is not defined for this target.");
+            FatalJitException.ThrowFatalJitException("Floating-point register numbering is not defined for this target.");
+            return default!;
         }
     }
 }

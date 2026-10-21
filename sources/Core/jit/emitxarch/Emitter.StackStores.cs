@@ -80,7 +80,8 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack stores are not enabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD stack stores are not enabled for this target.");
+            return;
         }
 
         assert(varNum != unchecked((uint)BAD_VAR_NUM));

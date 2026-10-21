@@ -243,7 +243,8 @@ public sealed partial class UnwindInfo
 
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unwind storage diagnostics for this target are not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind storage diagnostics for this target are not ported.");
+            return;
         }
 
         var first = uwiFragmentFirst
@@ -273,7 +274,8 @@ public sealed partial class UnwindInfo
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unwind instruction-size queries require ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind instruction-size queries require ARM32.");
+            return default!;
         }
 
         CheckInitialized();
@@ -290,7 +292,8 @@ public sealed partial class UnwindInfo
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Fragmented unwind storage for this target is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Fragmented unwind storage for this target is not ported.");
+            return;
         }
     }
 
@@ -347,8 +350,7 @@ public sealed partial class UnwindInfo
         {
             if (header <= 0x7F || (header >= 0xC0 && header <= 0xE7) || header >= 0xF0)
             {
-                return header switch
-                {
+                return header switch {
                     >= 0xF5 and <= 0xF6 => 2,
                     0xF7 or 0xF9 => 3,
                     0xF8 or 0xFA => 4,
@@ -369,8 +371,7 @@ public sealed partial class UnwindInfo
 
     internal static uint GetArmOpcodeSize(byte header)
     {
-        var size = header switch
-        {
+        var size = header switch {
             <= 0x7F => 2,
             <= 0xBF => 4,
             <= 0xD7 => 2,
@@ -411,7 +412,7 @@ public sealed partial class UnwindInfo
             var start = CodeStart;
             var index = start;
             var size = 0u;
-            for (;;)
+            for (; ; )
             {
                 var code = codes[index];
                 if (IsEndCode(code))
@@ -665,7 +666,8 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Unwind prolog diagnostics for this target are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind prolog diagnostics for this target are not ported.");
+                return;
             }
 
             var indentation = DebugIndent(indent);
@@ -825,7 +827,8 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Unwind epilog diagnostics for this target are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind epilog diagnostics for this target are not ported.");
+                return;
             }
 
             var indentation = DebugIndent(indent);
@@ -856,7 +859,8 @@ public sealed partial class UnwindInfo
         {
             if (!Configuration.TARGET_LOONGARCH64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Compiler-free unwind epilog diagnostics require LoongArch64.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Compiler-free unwind epilog diagnostics require LoongArch64.");
+                return;
             }
 
             DumpLoongArch64(indent);
@@ -973,7 +977,8 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Unwind epilog-scope diagnostics for this target are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind epilog-scope diagnostics for this target are not ported.");
+                return;
             }
 
             var indentation = DebugIndent(indent);
@@ -1358,7 +1363,8 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Numbered unwind fragment diagnostics require RISC-V64.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Numbered unwind fragment diagnostics require RISC-V64.");
+                return;
             }
 
             var epilogCount = 0;

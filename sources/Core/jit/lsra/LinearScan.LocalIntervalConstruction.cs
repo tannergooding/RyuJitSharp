@@ -13,7 +13,11 @@ public sealed partial class LinearScan
     {
         if (!_enregisterLocalVars)
         {
-            throw new FatalJitException("Local interval construction requires enregistered locals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage330
+            );
+            return;
         }
 
         JITDUMP("\nbuildIntervals ========\n");
@@ -62,8 +66,15 @@ public sealed partial class LinearScan
         }
 
         _currentBlockNumber = 0;
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Interval construction requires initialized codegen state.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage331
+            );
+            return;
+        }
         ref var incomingRegisters = ref codeGen.CalleeRegArgMaskLiveIn;
         incomingRegisters = RBM_NONE;
         _regsInUseThisLocation = RBM_NONE;
@@ -280,8 +291,15 @@ public sealed partial class LinearScan
                 GenTreeCall? tailCall = null;
                 if (isTailCall)
                 {
-                    var lastNode = block.LastNode
-                        ?? throw new FatalJitException("A tailcall block must contain its jump or call.");
+                    var lastNode = block.LastNode;
+                    if (lastNode is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage332
+                        );
+                        return;
+                    }
                     if (lastNode.Oper is GT_CALL)
                     {
                         tailCall = lastNode.AsCall();
@@ -392,8 +410,15 @@ public sealed partial class LinearScan
 
         if (_compiler.compHndBBtabCount > 0)
         {
-            var blockInfo = _blockInfo
-                ?? throw new FatalJitException("Write-through heuristics require block sequencing.");
+            var blockInfo = _blockInfo;
+            if (blockInfo is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage333
+                );
+                return;
+            }
             _ = VarSetOps.VisitBits(_compiler, _exceptVars, variableIndex => {
                 ref var local = ref getTrackedLocal(variableIndex);
                 var interval = getIntervalForLocalVar(checked((uint)variableIndex));
@@ -510,8 +535,15 @@ public sealed partial class LinearScan
 
     private ref LclVarDsc getTrackedLocal(int variableIndex)
     {
-        var trackedToLocal = _compiler.lvaTrackedToVarNum
-            ?? throw new FatalJitException("Tracked local mapping is required for interval construction.");
+        var trackedToLocal = _compiler.lvaTrackedToVarNum;
+        if (trackedToLocal is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage334
+            );
+
+        }
         return ref _compiler.lvaGetDesc(trackedToLocal[variableIndex]);
     }
 

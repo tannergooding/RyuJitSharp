@@ -529,8 +529,9 @@ public sealed partial class Lowering
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Hardware-intrinsic lowering requires hardware intrinsics to be enabled.");
+                    return default!;
                 }
 
                 return LowerHWIntrinsic(node.AsHWIntrinsic());

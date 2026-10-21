@@ -17,7 +17,12 @@ public partial class Emitter
 
     public string emitLabelString(insGroup ig)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction group labels require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InstructionGroupLabelsMissingCompiler);
+            return default!;
+        }
         return $"G_M{unchecked((uint)compiler.compMethodID):D3}_IG{ig.GetDisplayId():D2}";
     }
 
@@ -69,7 +74,12 @@ public partial class Emitter
     [Conditional("DEBUG")]
     public unsafe void emitDispIG(insGroup ig, bool displayFunc = false, bool displayInstructions = false, bool displayLocation = true)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction-group diagnostics require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Instruction-group diagnostics require an active compiler.");
+            return;
+        }
         var label = emitLabelString(ig) + ":        ";
         jitprintf(label + "; ");
 
@@ -81,10 +91,13 @@ public partial class Emitter
 
         if ((ig.igFlags & InsGroupFlags.Placeholder) != 0)
         {
-            var placeholder = ig.igPhData
-                ?? throw new FatalJitException("A placeholder instruction group requires placeholder data.");
-            var typeName = placeholder.igPhType switch
+            var placeholder = ig.igPhData;
+            if (placeholder is null)
             {
+                FatalJitException.ThrowFatalJitException("A placeholder instruction group requires placeholder data.");
+                return;
+            }
+            var typeName = placeholder.igPhType switch {
                 insGroupPlaceholderType.IGPT_PROLOG => "prolog",
                 insGroupPlaceholderType.IGPT_EPILOG => "epilog",
                 insGroupPlaceholderType.IGPT_FUNCLET_PROLOG => "funclet prolog",
@@ -273,9 +286,18 @@ public partial class Emitter
 
         for (var jump = emitJumpList; jump is not null; jump = jump.idjNext)
         {
-            var group = jump.idjIG ?? throw new FatalJitException("A saved jump must belong to an instruction group.");
-            var debugInfo = jump.idDebugOnlyInfo()
-                ?? throw new FatalJitException("Jump-list diagnostics require descriptor debug information.");
+            var group = jump.idjIG;
+            if (group is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SavedJumpMissingInstructionGroup);
+                return;
+            }
+            var debugInfo = jump.idDebugOnlyInfo();
+            if (debugInfo is null)
+            {
+                FatalJitException.ThrowFatalJitException("Jump-list diagnostics require descriptor debug information.");
+                return;
+            }
 
             jitprintf(
                 $"IG{group.GetDisplayId():D2} IN{debugInfo.idNum:x4} {codeGen.genInsDisplayName(jump),3}[{jump.idCodeSize()}]");

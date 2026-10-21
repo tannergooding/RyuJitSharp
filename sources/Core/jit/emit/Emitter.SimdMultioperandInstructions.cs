@@ -13,13 +13,15 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
+            return;
         }
 
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "SIMD multioperand recording requires hardware intrinsics.");
+            return;
         }
 
         RequireSupportedInstructionRecording();

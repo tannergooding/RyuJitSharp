@@ -318,8 +318,12 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
             Softmax(choices);
 
             _ = m_compiler.NextCseAttempt();
-            var descriptor = sortTab![index]
-                ?? throw new FatalJitException("RL CSE update candidate was previously consumed.");
+            var descriptor = sortTab![index];
+            if (descriptor is null)
+            {
+                FatalJitException.ThrowFatalJitException("RL CSE update candidate was previously consumed.");
+                return;
+            }
             assert(sortTab[descriptor.csdIndex - 1] == descriptor);
             sortTab[descriptor.csdIndex - 1] = null;
             if (!descriptor.IsViable())
@@ -367,7 +371,8 @@ public unsafe class CSE_HeuristicRL : CSE_HeuristicParameterized
     {
         if ((uint)step >= MaxSteps)
         {
-            throw new FatalJitException("RL CSE update sequence exceeds the native reward capacity.");
+            FatalJitException.ThrowFatalJitException("RL CSE update sequence exceeds the native reward capacity.");
+            return default!;
         }
         return step;
     }

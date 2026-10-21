@@ -21,7 +21,16 @@ public sealed partial class CodeGen
 
     public VariableLiveKeeper getVariableLiveKeeper()
     {
-        return varLiveKeeper ?? throw new FatalJitException("Variable live ranges have not been initialized.");
+        if (varLiveKeeper is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage443
+            );
+            return default!;
+        }
+
+        return varLiveKeeper;
     }
 
     public sealed partial class VariableLiveKeeper
@@ -70,10 +79,16 @@ public sealed partial class CodeGen
         {
             if (m_compiler.opts.compDbgInfo)
             {
-                _ = VarSetOps.VisitBits(m_compiler, varsIndexSet, varIndex =>
-                {
-                    var trackedToVarNum = m_compiler.lvaTrackedToVarNum ??
-                        throw new FatalJitException("Tracked local mapping has not been initialized.");
+                _ = VarSetOps.VisitBits(m_compiler, varsIndexSet, varIndex => {
+                    var trackedToVarNum = m_compiler.lvaTrackedToVarNum;
+                    if (trackedToVarNum is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage444
+                        );
+                        return default!;
+                    }
                     var varNum = trackedToVarNum[varIndex];
                     ref var varDsc = ref m_compiler.lvaGetDesc(varNum);
                     siStartOrCloseVariableLiveRange(in varDsc, varNum, isBorn, isDying);
@@ -117,10 +132,16 @@ public sealed partial class CodeGen
             {
                 if ((m_compiler.lvaTrackedCount > 0) || !m_compiler.opts.OptimizationDisabled)
                 {
-                    _ = VarSetOps.VisitBits(m_compiler, varsToClose, varIndex =>
-                    {
-                        var trackedToVarNum = m_compiler.lvaTrackedToVarNum ??
-                            throw new FatalJitException("Tracked local mapping has not been initialized.");
+                    _ = VarSetOps.VisitBits(m_compiler, varsToClose, varIndex => {
+                        var trackedToVarNum = m_compiler.lvaTrackedToVarNum;
+                        if (trackedToVarNum is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage444
+                            );
+                            return default!;
+                        }
                         var varNum = trackedToVarNum[varIndex];
                         siEndVariableLiveRange(varNum);
                         return true;

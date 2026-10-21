@@ -25,7 +25,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic special import requires Wasm hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic special import requires Wasm hardware intrinsics.");
+            return default!;
         }
 
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);

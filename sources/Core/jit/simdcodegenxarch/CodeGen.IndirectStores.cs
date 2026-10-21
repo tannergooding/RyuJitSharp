@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 indirect stores require xarch SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 indirect stores require xarch SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

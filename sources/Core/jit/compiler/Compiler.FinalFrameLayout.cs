@@ -77,7 +77,8 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Reserved-register frame checks are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Reserved-register frame checks are unavailable for this target.");
+            return default!;
         }
 
         var frameSize = lvaFrameSize(curState);
@@ -192,8 +193,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG && verbose)
         {
-            var stateName = curState switch
-            {
+            var stateName = curState switch {
                 INITIAL_FRAME_LAYOUT => nameof(INITIAL_FRAME_LAYOUT),
                 PRE_REGALLOC_FRAME_LAYOUT => nameof(PRE_REGALLOC_FRAME_LAYOUT),
                 REGALLOC_FRAME_LAYOUT => nameof(REGALLOC_FRAME_LAYOUT),
@@ -342,8 +342,9 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(
+            FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED, "Pre-spilled register arguments are unavailable for this target.");
+            return default!;
         }
 
         ref var dsc = ref lvaGetDesc(lclNum);

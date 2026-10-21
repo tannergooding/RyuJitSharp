@@ -17,14 +17,40 @@ public sealed partial class LinearScan
         ResolveSharedCritical,
     }
 
-    private static string GetResolveTypeName(ResolveType resolveType) => resolveType switch
+    private static string GetResolveTypeName(ResolveType resolveType)
     {
-        ResolveType.ResolveSplit => "Split",
-        ResolveType.ResolveJoin => "Join",
-        ResolveType.ResolveCritical => "Critical",
-        ResolveType.ResolveSharedCritical => "SharedCritical",
-        _ => throw new FatalJitException("Invalid LSRA edge resolution type."),
-    };
+        switch (resolveType)
+        {
+            case ResolveType.ResolveSplit:
+            {
+                return "Split";
+            }
+
+            case ResolveType.ResolveJoin:
+            {
+                return "Join";
+            }
+
+            case ResolveType.ResolveCritical:
+            {
+                return "Critical";
+            }
+
+            case ResolveType.ResolveSharedCritical:
+            {
+                return "SharedCritical";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage287
+                );
+                return default!;
+            }
+        }
+    }
 
     private void requireLocalEdgeResolution()
     {
@@ -32,7 +58,11 @@ public sealed partial class LinearScan
             (_inVarToRegMaps is null) || (_outVarToRegMaps is null) ||
             (_splitOrSpilledVars is null))
         {
-            throw new FatalJitException("LSRA edge resolution requires allocated local maps and block sequence.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage288
+            );
+            return;
         }
     }
 
@@ -75,8 +105,17 @@ public sealed partial class LinearScan
                 // introduce more than one consecutive empty resolution block.
                 while ((uint)predecessor.bbNum > _bbNumMaxBeforeResolution)
                 {
-                    predecessor = predecessor.GetUniquePred(_compiler)
-                        ?? throw new FatalJitException("Split edge requires a unique original predecessor.");
+                    var uniquePredecessor = predecessor.GetUniquePred(_compiler);
+                    if (uniquePredecessor is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage289
+                        );
+                        return;
+                    }
+
+                    predecessor = uniquePredecessor;
                 }
                 resolveEdge(predecessor, block, ResolveType.ResolveSplit, incoming, RBM_NONE);
             }
@@ -111,15 +150,33 @@ public sealed partial class LinearScan
                 var successor = block;
                 do
                 {
-                    successor = successor.UniqueSucc
-                        ?? throw new FatalJitException("A split edge requires a single successor.");
+                    var uniqueSuccessor = successor.UniqueSucc;
+                    if (uniqueSuccessor is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage290
+                        );
+                        return;
+                    }
+
+                    successor = uniqueSuccessor;
                 } while (((uint)successor.bbNum > _bbNumMaxBeforeResolution) && successor.isEmpty());
 
                 var predecessor = block;
                 do
                 {
-                    predecessor = predecessor.GetUniquePred(_compiler)
-                        ?? throw new FatalJitException("A split edge requires a single predecessor.");
+                    var uniquePredecessor = predecessor.GetUniquePred(_compiler);
+                    if (uniquePredecessor is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage291
+                        );
+                        return;
+                    }
+
+                    predecessor = uniquePredecessor;
                 } while (((uint)predecessor.bbNum > _bbNumMaxBeforeResolution) && predecessor.isEmpty());
 
                 var successorNumber = checked((uint)successor.bbNum);
@@ -141,8 +198,7 @@ public sealed partial class LinearScan
                     assert(successorNumber <= _bbNumMaxBeforeResolution &&
                         predecessorNumber <= _bbNumMaxBeforeResolution);
                 }
-                splitMap.Add(checked((uint)block.bbNum), new SplitEdgeInfo
-                {
+                splitMap.Add(checked((uint)block.bbNum), new SplitEdgeInfo {
                     fromBBNum = predecessorNumber,
                     toBBNum = successorNumber,
                 });
@@ -160,14 +216,21 @@ public sealed partial class LinearScan
                 {
                     continue;
                 }
-                var incomingMap = getInVarToRegMap(checked((uint)block.bbNum))
-                    ?? throw new FatalJitException("Resolution validation requires an incoming map.");
+                var incomingMap = getInVarToRegMap(checked((uint)block.bbNum));
+                if (incomingMap is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Resolution validation requires an incoming map.");
+                    return;
+                }
                 foreach (var predBlock in block.PredBlocks)
                 {
-                    var outgoingMap = getOutVarToRegMap(checked((uint)predBlock.bbNum))
-                        ?? throw new FatalJitException("Resolution validation requires an outgoing map.");
-                    _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, index =>
+                    var outgoingMap = getOutVarToRegMap(checked((uint)predBlock.bbNum));
+                    if (outgoingMap is null)
                     {
+                        FatalJitException.ThrowFatalJitException("Resolution validation requires an outgoing map.");
+                        return;
+                    }
+                    _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, index => {
                         var from = getVarReg(outgoingMap, checked((uint)index));
                         var to = getVarReg(incomingMap, checked((uint)index));
                         if (from != to)
@@ -201,13 +264,19 @@ public sealed partial class LinearScan
         }
         var same = VarSetOps.MakeEmpty(_compiler);
         var different = VarSetOps.MakeEmpty(_compiler);
-        var outgoingMap = getOutVarToRegMap(checked((uint)block.bbNum))
-            ?? throw new FatalJitException("Critical edge requires an outgoing register map.");
+        var outgoingMap = getOutVarToRegMap(checked((uint)block.bbNum));
+        if (outgoingMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage292
+            );
+            return;
+        }
         assert(block.NumSucc > 1);
 
         var liveOutRegs = RBM_NONE;
-        _ = VarSetOps.VisitBits(_compiler, block.bbLiveOut, index =>
-        {
+        _ = VarSetOps.VisitBits(_compiler, block.bbLiveOut, index => {
             var from = getVarReg(outgoingMap, checked((uint)index));
             if (from != REG_STK)
             {
@@ -220,11 +289,25 @@ public sealed partial class LinearScan
         uint? secondTerminatorLocal = null;
         if (block.Kind is BBJ_SWITCH)
         {
-            var terminator = block.LastNode
-                ?? throw new FatalJitException("A switch edge requires its switch table.");
+            var terminator = block.LastNode;
+            if (terminator is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage293
+                );
+                return;
+            }
             assert(terminator.Oper is GT_SWITCH_TABLE);
-            var codeGen = _compiler.codeGen
-                ?? throw new FatalJitException("Switch edge resolution requires codegen state.");
+            var codeGen = _compiler.codeGen;
+            if (codeGen is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage294
+                );
+                return;
+            }
             consumed = new regMaskTP(codeGen.InternalRegisters.GetAll(terminator).GetRegSetForType(TYP_INT));
             var first = terminator.AsOp().Op1;
             var second = terminator.AsOp().Op2;
@@ -238,8 +321,15 @@ public sealed partial class LinearScan
         }
         else if (block.Kind is BBJ_COND)
         {
-            var terminator = block.LastNode
-                ?? throw new FatalJitException("A conditional edge requires its branch.");
+            var terminator = block.LastNode;
+            if (terminator is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage295
+                );
+                return;
+            }
             if (terminator.Oper is GT_JTRUE or GT_JCMP or GT_JTEST)
             {
                 var first = terminator.Oper is GT_JTRUE
@@ -272,12 +362,18 @@ public sealed partial class LinearScan
             }
         }
 
-        var sharedMap = _sharedCriticalVarToRegMap
-            ?? throw new FatalJitException("Critical edge resolution requires the shared map.");
+        var sharedMap = _sharedCriticalVarToRegMap;
+        if (sharedMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage296
+            );
+            return;
+        }
         var sameWrites = RBM_NONE;
         var differentReads = RBM_NONE;
-        _ = VarSetOps.VisitBits(_compiler, outgoing, index =>
-        {
+        _ = VarSetOps.VisitBits(_compiler, outgoing, index => {
             var trackedIndex = checked((uint)index);
             var from = getVarReg(outgoingMap, trackedIndex);
             var liveOnSomeOnly = false;
@@ -295,8 +391,15 @@ public sealed partial class LinearScan
                     liveOnlyAtSplit = successor.GetUniquePred(_compiler) is not null &&
                         successor != _compiler.fgFirstBB;
                 }
-                var targetMap = getInVarToRegMap(checked((uint)successor.bbNum))
-                    ?? throw new FatalJitException("Critical edge requires a successor register map.");
+                var targetMap = getInVarToRegMap(checked((uint)successor.bbNum));
+                if (targetMap is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage297
+                    );
+                    return default!;
+                }
                 var target = getVarReg(targetMap, trackedIndex);
                 if (commonTarget == REG_NA)
                 {
@@ -363,11 +466,17 @@ public sealed partial class LinearScan
                 {
                     continue;
                 }
-                var targetMap = getInVarToRegMap(checked((uint)successor.bbNum))
-                    ?? throw new FatalJitException("Critical edge requires a successor register map.");
-                var edgeSet = VarSetOps.Intersection(_compiler, different, successor.bbLiveIn);
-                _ = VarSetOps.VisitBits(_compiler, edgeSet, index =>
+                var targetMap = getInVarToRegMap(checked((uint)successor.bbNum));
+                if (targetMap is null)
                 {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage297
+                    );
+                    return;
+                }
+                var edgeSet = VarSetOps.Intersection(_compiler, different, successor.bbLiveIn);
+                _ = VarSetOps.VisitBits(_compiler, edgeSet, index => {
                     if (getVarReg(outgoingMap, checked((uint)index)) ==
                         getVarReg(targetMap, checked((uint)index)))
                     {
@@ -383,8 +492,7 @@ public sealed partial class LinearScan
                     VarSetOps.IsSubset(_compiler, edgeSet, _exceptVars))
                 {
                     var insertion = successor.FirstNode;
-                    _ = VarSetOps.VisitBits(_compiler, edgeSet, index =>
-                    {
+                    _ = VarSetOps.VisitBits(_compiler, edgeSet, index => {
                         var target = getVarReg(targetMap, checked((uint)index));
                         setVarReg(targetMap, checked((uint)index), REG_STK);
                         if (target != REG_STK)

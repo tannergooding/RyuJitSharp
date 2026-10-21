@@ -49,7 +49,8 @@ public sealed partial class LinearScan
         {
             if (!Configuration.TARGET_ARM)
             {
-                throw new FatalJitException(CORJIT_SKIPPED);
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                return default!;
             }
 
             // An ARM double occupies an even register and its following odd half.
@@ -95,8 +96,7 @@ public sealed partial class LinearScan
 
             internal SelectorDebugData(RegisterSelection selector)
             {
-                MappingTable = new(HeuristicCount)
-                {
+                MappingTable = new(HeuristicCount) {
                     [RegisterScore.FREE] = selector.try_FREE,
                     [RegisterScore.CONST_AVAILABLE] = selector.try_CONST_AVAILABLE,
                     [RegisterScore.THIS_ASSIGNED] = selector.try_THIS_ASSIGNED,
@@ -146,7 +146,8 @@ public sealed partial class LinearScan
                 assert(mappingTable.Count == HeuristicCount);
                 if (mappingTable.Count != HeuristicCount)
                 {
-                    throw new FatalJitException("LSRA selector heuristic mapping is incomplete.");
+                    FatalJitException.ThrowFatalJitException("LSRA selector heuristic mapping is incomplete.");
+                    return;
                 }
 
                 foreach (var score in mappingTable.Keys)
@@ -171,14 +172,14 @@ public sealed partial class LinearScan
                 if (ordering.Length < HeuristicCount)
                 {
                     assert(false, "Invalid lsraOrdering value.");
-                    throw new FatalJitException("Invalid lsraOrdering value.");
+                    FatalJitException.ThrowFatalJitException("Invalid lsraOrdering value.");
+                    return;
                 }
 
                 for (var orderId = 0; orderId < HeuristicCount; orderId++)
                 {
                     assert(regSelectionOrder[orderId] is RegisterScore.NONE);
-                    regSelectionOrder[orderId] = ordering[orderId] switch
-                    {
+                    regSelectionOrder[orderId] = ordering[orderId] switch {
                         'A' => RegisterScore.FREE,
                         'B' => RegisterScore.CONST_AVAILABLE,
                         'C' => RegisterScore.THIS_ASSIGNED,
@@ -202,11 +203,39 @@ public sealed partial class LinearScan
             }
         }
 
-        private Interval CurrentInterval =>
-            _currentInterval ?? throw new FatalJitException("Register selection has not been reset.");
+        private Interval CurrentInterval
+        {
+            get
+            {
+                if (_currentInterval is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage396
+                    );
+                    return default!;
+                }
 
-        private RefPosition CurrentRefPosition =>
-            _refPosition ?? throw new FatalJitException("Register selection has not been reset.");
+                return _currentInterval;
+            }
+        }
+
+        private RefPosition CurrentRefPosition
+        {
+            get
+            {
+                if (_refPosition is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage396
+                    );
+                    return default!;
+                }
+
+                return _refPosition;
+            }
+        }
 
         internal bool foundUnassignedReg()
         {
@@ -259,7 +288,12 @@ public sealed partial class LinearScan
             assert(!_linearScan._enregisterLocalVars);
             if (_linearScan._enregisterLocalVars)
             {
-                throw new FatalJitException("Minimal LSRA selection requires local variables to remain un-enregistered.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage397
+                );
+                selectionScore = default!;
+                return default!;
             }
 
             resetMinimal(currentInterval, refPosition);
@@ -295,7 +329,12 @@ public sealed partial class LinearScan
             assert(_candidates != SRBM_NONE);
             if (_candidates == SRBM_NONE)
             {
-                throw new FatalJitException("Minimal LSRA selection has no candidate registers.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage398
+                );
+                selectionScore = default!;
+                return default!;
             }
 
             var fixedRegMask = SRBM_NONE;
@@ -352,7 +391,12 @@ public sealed partial class LinearScan
                 assert(refPosition.RegOptional());
                 if (!refPosition.RegOptional())
                 {
-                    throw new FatalJitException("A required reference lost all candidate registers.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage399
+                    );
+                    selectionScore = default!;
+                    return default!;
                 }
 
                 currentInterval.assignedReg = null;
@@ -397,7 +441,12 @@ public sealed partial class LinearScan
             assert(_found && isSingleRegister(_candidates));
             if (!_found || !isSingleRegister(_candidates))
             {
-                throw new FatalJitException("Minimal LSRA selection did not choose exactly one register.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage400
+                );
+                selectionScore = default!;
+                return default!;
             }
 
             return _candidates;
@@ -458,7 +507,11 @@ public sealed partial class LinearScan
             assert(isSingleRegister(selectionCandidate));
             if (!isSingleRegister(selectionCandidate))
             {
-                throw new FatalJitException("A single-register heuristic must select exactly one register.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage401
+                );
+                return default!;
             }
 
             var newCandidates = _candidates & selectionCandidate;
@@ -512,8 +565,15 @@ public sealed partial class LinearScan
                     var nextPhysRefLocation = _linearScan.getNextFixedRef(regNum, _regType);
                     var coversCandidateLocation = Math.Min(nextPhysRefLocation, nextIntervalLocation);
 
-                    var rangeEndRefPosition = _rangeEndRefPosition
-                        ?? throw new FatalJitException("Register selection is missing its range-end reference.");
+                    var rangeEndRefPosition = _rangeEndRefPosition;
+                    if (rangeEndRefPosition is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage402
+                        );
+                        return;
+                    }
                     if ((coversCandidateLocation == _rangeEndLocation) &&
                         rangeEndRefPosition.isFixedRefOfReg(regNum))
                     {
@@ -709,8 +769,15 @@ public sealed partial class LinearScan
                 var nextIntervalLocation = _linearScan.getNextIntervalRef(regNum, _regType);
                 var nextPhysRefLocation = _linearScan.getNextFixedRef(regNum, _regType);
                 nextPhysRefLocation = Math.Min(nextPhysRefLocation, nextIntervalLocation);
-                var rangeEndRefPosition = _rangeEndRefPosition
-                    ?? throw new FatalJitException("Register selection is missing its range-end reference.");
+                var rangeEndRefPosition = _rangeEndRefPosition;
+                if (rangeEndRefPosition is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage402
+                    );
+                    return;
+                }
                 if ((nextPhysRefLocation == _rangeEndLocation) && rangeEndRefPosition.isFixedRefOfReg(regNum))
                 {
                     nextPhysRefLocation = unchecked(nextPhysRefLocation + 1);
@@ -795,8 +862,11 @@ public sealed partial class LinearScan
                 var recentRefPosition = assignedInterval?.recentRefPosition;
                 if (!Configuration.TARGET_ARM64 && assignedInterval is null)
                 {
-                    throw new FatalJitException(
-                        "Spill-cost selection requires each busy candidate to have an assigned interval.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage403
+                    );
+                    return;
                 }
                 var currentSpillWeight = 0.0;
 
@@ -812,8 +882,15 @@ public sealed partial class LinearScan
                 {
                     if (_linearScan.getNextIntervalRef(regNum, _regType) == thisLocation)
                     {
-                        var nextIntervalRef = assignedInterval.getNextRefPosition()
-                            ?? throw new FatalJitException("A current next-interval location must have a reference.");
+                        var nextIntervalRef = assignedInterval.getNextRefPosition();
+                        if (nextIntervalRef is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage404
+                            );
+                            return;
+                        }
 
                         if (!nextIntervalRef.RegOptional())
                         {
@@ -995,7 +1072,8 @@ public sealed partial class LinearScan
         private static RegisterScore InvalidOrderingCharacter()
         {
             assert(false, "Invalid lsraOrdering value.");
-            throw new FatalJitException("Invalid lsraOrdering value.");
+            FatalJitException.ThrowFatalJitException("Invalid lsraOrdering value.");
+            return default!;
         }
     }
 
@@ -1006,8 +1084,7 @@ public sealed partial class LinearScan
         Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore) =>
         _regSelector.selectMinimal(currentInterval, refPosition, out selectionScore);
 
-    private static string getScoreName(RegisterScore score) => score switch
-    {
+    private static string getScoreName(RegisterScore score) => score switch {
         RegisterScore.FREE => "FREE ",
         RegisterScore.CONST_AVAILABLE => "CONST",
         RegisterScore.THIS_ASSIGNED => "THISA",

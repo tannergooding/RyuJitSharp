@@ -31,13 +31,44 @@ public sealed partial class LinearScan
     private void resolveEdge(BasicBlock fromBlock, BasicBlock? toBlock, ResolveType resolveType,
         VARSET_TP liveSet, regMaskTP terminatorConsumedRegs)
     {
-        var fromMap = getOutVarToRegMap(checked((uint)fromBlock.bbNum))
-            ?? throw new FatalJitException("Resolution requires a predecessor outgoing map.");
-        var toMap = (resolveType is ResolveType.ResolveSharedCritical
-            ? _sharedCriticalVarToRegMap
-            : getInVarToRegMap(checked((uint)(toBlock
-                ?? throw new FatalJitException("Resolution requires a successor block.")).bbNum)))
-            ?? throw new FatalJitException("Resolution requires a successor register map.");
+        var fromMap = getOutVarToRegMap(checked((uint)fromBlock.bbNum));
+        if (fromMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage300
+            );
+            return;
+        }
+        regNumberSmall[]? toMap;
+        if (resolveType is ResolveType.ResolveSharedCritical)
+        {
+            toMap = _sharedCriticalVarToRegMap;
+        }
+        else
+        {
+            var targetBlock = toBlock;
+            if (targetBlock is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage301
+                );
+                return;
+            }
+
+            toMap = getInVarToRegMap(checked((uint)targetBlock.bbNum));
+        }
+
+        if (toMap is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage302
+            );
+            return;
+        }
+
         BasicBlock block;
         switch (resolveType)
         {
@@ -49,13 +80,30 @@ public sealed partial class LinearScan
             }
             case ResolveType.ResolveSplit:
             {
-                block = toBlock ?? throw new FatalJitException("Split resolution requires a successor.");
+                if (toBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage303
+                    );
+                    return;
+                }
+
+                block = toBlock;
                 break;
             }
             case ResolveType.ResolveCritical:
             {
-                block = _compiler.fgSplitEdge(fromBlock,
-                    toBlock ?? throw new FatalJitException("Critical resolution requires a successor."));
+                if (toBlock is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage304
+                    );
+                    return;
+                }
+
+                block = _compiler.fgSplitEdge(fromBlock, toBlock);
                 if (Configuration.TRACK_LSRA_STATS)
                 {
                     updateLsraStat(LsraStat.STAT_SPLIT_EDGE, checked((uint)fromBlock.bbNum));
@@ -64,7 +112,11 @@ public sealed partial class LinearScan
             }
             default:
             {
-                throw new FatalJitException("Unknown LSRA edge-resolution type.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage305
+                );
+                return;
             }
         }
 
@@ -112,7 +164,8 @@ public sealed partial class LinearScan
         {
             if (!Configuration.TARGET_ARM)
             {
-                throw new FatalJitException(CORJIT_SKIPPED);
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                return;
             }
 
             var original = source[(int)otherHalf];
@@ -128,8 +181,7 @@ public sealed partial class LinearScan
         {
             var extra = VarSetOps.Diff(_compiler, block.bbLiveOut, toBlock!.bbLiveIn);
             VarSetOps.IntersectionD(_compiler, extra, _exceptVars);
-            _ = VarSetOps.VisitBits(_compiler, extra, index =>
-            {
+            _ = VarSetOps.VisitBits(_compiler, extra, index => {
                 var interval = getIntervalForLocalVar(checked((uint)index));
                 assert(interval.isWriteThru);
                 var from = getVarReg(fromMap, checked((uint)index));
@@ -143,8 +195,7 @@ public sealed partial class LinearScan
             });
         }
 
-        _ = VarSetOps.VisitBits(_compiler, liveSet, index =>
-        {
+        _ = VarSetOps.VisitBits(_compiler, liveSet, index => {
             var trackedIndex = checked((uint)index);
             var interval = getIntervalForLocalVar(trackedIndex);
             var from = getVarReg(fromMap, trackedIndex);
@@ -201,8 +252,12 @@ public sealed partial class LinearScan
                 if (Configuration.TARGET_ARM)
                 {
                     var original = source[(int)target];
-                    var interval = sourceIntervals[(int)original]
-                        ?? throw new FatalJitException("Ready resolution target requires a source interval.");
+                    var interval = sourceIntervals[(int)original];
+                    if (interval is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("Ready resolution target requires a source interval.");
+                        return;
+                    }
                     var otherTarget = REG_NA;
                     Interval? otherInterval = null;
                     if (genIsValidFloatReg(target) && !genIsValidDoubleReg(target))
@@ -253,8 +308,15 @@ public sealed partial class LinearScan
                 assert((uint)original < (uint)REG_COUNT);
                 var from = location[(int)original];
                 assert(from < REG_STK);
-                var interval = sourceIntervals[(int)original]
-                    ?? throw new FatalJitException("Ready resolution target requires an interval.");
+                var interval = sourceIntervals[(int)original];
+                if (interval is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage306
+                    );
+                    return;
+                }
                 addResolution(block, insertionPoint, interval, target, from,
                     fromBlock, toBlock, GetResolveTypeName(resolveType));
                 sourceIntervals[(int)original] = null;
@@ -267,8 +329,12 @@ public sealed partial class LinearScan
                         targetsReady |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
                         if (Configuration.TARGET_ARM && genIsValidDoubleReg(from))
                         {
-                            var nextInterval = sourceIntervals[(int)source[(int)from]]
-                                ?? throw new FatalJitException("Double resolution requires a pending source.");
+                            var nextInterval = sourceIntervals[(int)source[(int)from]];
+                            if (nextInterval is null)
+                            {
+                                FatalJitException.ThrowFatalJitException("Double resolution requires a pending source.");
+                                return;
+                            }
                             var upper = from + 1;
                             if (nextInterval.registerType is TYP_DOUBLE && location[(int)upper] != REG_NA)
                             {
@@ -305,8 +371,12 @@ public sealed partial class LinearScan
             var tempReg = isFloat ? floatTemp : intTemp;
             if (Configuration.TARGET_ARM && isFloat)
             {
-                var sourceAtLocation = sourceIntervals[(int)fromReg]
-                    ?? throw new FatalJitException("Floating resolution requires a source interval.");
+                var sourceAtLocation = sourceIntervals[(int)fromReg];
+                if (sourceAtLocation is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Floating resolution requires a source interval.");
+                    return;
+                }
                 if (sourceAtLocation.registerType is TYP_DOUBLE)
                 {
                     tempReg = doubleTemp;
@@ -339,10 +409,24 @@ public sealed partial class LinearScan
                 assert(otherTargetReg != REG_NA);
                 if (useSwap)
                 {
-                    var swapped = sourceIntervals[(int)source[(int)otherTargetReg]]
-                        ?? throw new FatalJitException("Swap resolution requires the displaced interval.");
-                    var moved = sourceIntervals[(int)sourceReg]
-                        ?? throw new FatalJitException("Swap resolution requires the source interval.");
+                    var swapped = sourceIntervals[(int)source[(int)otherTargetReg]];
+                    if (swapped is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage307
+                        );
+                        return;
+                    }
+                    var moved = sourceIntervals[(int)sourceReg];
+                    if (moved is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage308
+                        );
+                        return;
+                    }
                     insertSwap(block, insertionPoint, swapped.varNum, targetReg, moved.varNum, fromReg);
                     location[(int)sourceReg] = REG_NA;
                     location[(int)source[(int)otherTargetReg]] = fromReg;
@@ -353,8 +437,15 @@ public sealed partial class LinearScan
                 }
                 else
                 {
-                    var displaced = sourceIntervals[(int)source[(int)otherTargetReg]]
-                        ?? throw new FatalJitException("Cycle spill requires a displaced interval.");
+                    var displaced = sourceIntervals[(int)source[(int)otherTargetReg]];
+                    if (displaced is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage309
+                        );
+                        return;
+                    }
                     setIntervalAsSpilled(displaced);
                     addResolution(block, insertionPoint, displaced, REG_STK, targetReg,
                         fromBlock, toBlock, GetResolveTypeName(resolveType));
@@ -363,8 +454,15 @@ public sealed partial class LinearScan
                     stackToRegIntervals[(int)otherTargetReg] = displaced;
                     targetsToDo &= ~regMaskTP.CreateFromRegNum(otherTargetReg, genSingleTypeRegMask(otherTargetReg));
 
-                    var moved = sourceIntervals[(int)sourceReg]
-                        ?? throw new FatalJitException("Cycle resolution requires a source interval.");
+                    var moved = sourceIntervals[(int)sourceReg];
+                    if (moved is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage310
+                        );
+                        return;
+                    }
                     addResolution(block, insertionPoint, moved, targetReg, fromReg,
                         fromBlock, toBlock, GetResolveTypeName(resolveType));
                     location[(int)sourceReg] = REG_NA;
@@ -373,8 +471,12 @@ public sealed partial class LinearScan
                         targetsReady |= regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
                         if (Configuration.TARGET_ARM && genIsValidDoubleReg(fromReg))
                         {
-                            var nextInterval = sourceIntervals[(int)source[(int)fromReg]]
-                                ?? throw new FatalJitException("Double resolution requires a pending source.");
+                            var nextInterval = sourceIntervals[(int)source[(int)fromReg]];
+                            if (nextInterval is null)
+                            {
+                                FatalJitException.ThrowFatalJitException("Double resolution requires a pending source.");
+                                return;
+                            }
                             if (nextInterval.registerType is TYP_DOUBLE && location[(int)(fromReg + 1)] != REG_NA)
                             {
                                 targetsReady &= ~regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
@@ -397,8 +499,12 @@ public sealed partial class LinearScan
                         otherTarget = targetReg - 1;
                         otherInterval = sourceIntervals[(int)otherTarget];
                     }
-                    var sourceAtLocation = sourceIntervals[(int)fromReg]
-                        ?? throw new FatalJitException("Double resolution requires a source interval.");
+                    var sourceAtLocation = sourceIntervals[(int)fromReg];
+                    if (sourceAtLocation is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("Double resolution requires a source interval.");
+                        return;
+                    }
                     if (sourceAtLocation.registerType is TYP_DOUBLE)
                     {
                         assert(genIsValidDoubleReg(targetReg) && genIsValidDoubleReg(tempReg));
@@ -413,8 +519,15 @@ public sealed partial class LinearScan
                     }
                     else
                     {
-                        var displaced = sourceIntervals[(int)targetReg]
-                            ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
+                        var displaced = sourceIntervals[(int)targetReg];
+                        if (displaced is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage311
+                            );
+                            return;
+                        }
                         addResolution(block, insertionPoint, displaced, tempReg, targetReg,
                             fromBlock, toBlock, GetResolveTypeName(resolveType));
                         location[(int)targetReg] = tempReg;
@@ -427,8 +540,15 @@ public sealed partial class LinearScan
                 }
                 else
                 {
-                    var displaced = sourceIntervals[(int)targetReg]
-                        ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
+                    var displaced = sourceIntervals[(int)targetReg];
+                    if (displaced is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage311
+                        );
+                        return;
+                    }
                     addResolution(block, insertionPoint, displaced, tempReg, targetReg,
                         fromBlock, toBlock, GetResolveTypeName(resolveType));
                     location[(int)targetReg] = tempReg;
@@ -440,8 +560,15 @@ public sealed partial class LinearScan
         while (targetsFromStack.IsNonEmpty)
         {
             var target = popResolutionRegister(ref targetsFromStack);
-            var interval = stackToRegIntervals[(int)target]
-                ?? throw new FatalJitException("Stack resolution requires a pending interval.");
+            var interval = stackToRegIntervals[(int)target];
+            if (interval is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage312
+                );
+                return;
+            }
             addResolution(block, insertionPoint, interval, target, REG_STK,
                 fromBlock, toBlock, GetResolveTypeName(resolveType));
         }

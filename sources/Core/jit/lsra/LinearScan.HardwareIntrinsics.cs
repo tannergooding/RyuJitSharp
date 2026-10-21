@@ -17,7 +17,9 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            destinationCount = default!;
+            return default!;
         }
 
         var intrinsicId = intrinsic.HWIntrinsicId;
@@ -416,8 +418,16 @@ public sealed partial class LinearScan
                     assert(operandCount == 3 && isRmw && HWIntrinsicInfo.IsPermuteVar2x(intrinsicId));
                     assert(!op1.IsContained && !op2.IsContained);
 
-                    var currentBlock = _blockSequence
-                        ?? throw new FatalJitException("An intrinsic reference requires an initialized block sequence.");
+                    var currentBlock = _blockSequence;
+                    if (currentBlock is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage317
+                        );
+                        destinationCount = default!;
+                        return default!;
+                    }
                     GenTree? user = null;
                     if (currentBlock[_currentBlockSequenceNumber].TryGetUse(intrinsic, out var use))
                     {

@@ -32,8 +32,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Signed 20-bit immediates are not supported for this target.");
+            return default!;
         }
 
         const int ImmediateLimit = 1 << 19;
@@ -44,8 +45,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "General-register-or-zero validation is not supported for this target.");
+            return default!;
         }
 
         return (reg >= TargetRuntimeMetadata.FirstRegister) &&
@@ -64,8 +66,9 @@ public partial class Emitter
             return isValidVectorIndexLoongArch64(datasize, elemsize, index);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Vector-index validation is not supported for this target.");
+        return default!;
     }
 
     public static bool isFloatReg(regNumber reg)

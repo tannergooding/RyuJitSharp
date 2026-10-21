@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Call register argument placement requires a native target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call register argument placement requires a native target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

@@ -11,14 +11,56 @@ public partial class Emitter
 {
     // emit.h:932-1007: small constants fill the remainder of the second
     // descriptor word after target flags, relocation and predecessor bits.
-    private static int ID_EXTRA_BITFIELD_BITS =>
-        Configuration.TARGET_ARM ? 16 :
-        Configuration.TARGET_ARM64 ? 23 :
-        Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 14 :
-        Configuration.TARGET_X86 ? 18 :
-        Configuration.TARGET_AMD64 ? 20 :
-        Configuration.TARGET_WASM ? -4 :
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction descriptor constants are not supported for this target.");
+    private static int ID_EXTRA_BITFIELD_BITS
+    {
+        get
+        {
+            if (Configuration.TARGET_ARM)
+            {
+                return 16;
+            }
+            else
+            {
+                if (Configuration.TARGET_ARM64)
+                {
+                    return 23;
+                }
+                else
+                {
+                    if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                    {
+                        return 14;
+                    }
+                    else
+                    {
+                        if (Configuration.TARGET_X86)
+                        {
+                            return 18;
+                        }
+                        else
+                        {
+                            if (Configuration.TARGET_AMD64)
+                            {
+                                return 20;
+                            }
+                            else
+                            {
+                                if (Configuration.TARGET_WASM)
+                                {
+                                    return -4;
+                                }
+                                else
+                                {
+                                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction descriptor constants are not supported for this target.");
+                                    return default!;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private static int ID_EXTRA_PREV_OFFSET_BITS =>
         Configuration.TARGET_XARCH ? Configuration.HOST_64BIT ? 5 : 4 : 0;
@@ -92,7 +134,8 @@ public partial class Emitter
                 if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
                     Configuration.TARGET_WASM))
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Constant descriptor size is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Constant descriptor size is not ported for this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.Constant;
@@ -114,7 +157,8 @@ public partial class Emitter
             {
                 if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64))
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Displacement descriptor size is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Displacement descriptor size is not ported for this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.Displacement;
@@ -139,7 +183,8 @@ public partial class Emitter
             {
                 if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64))
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Constant/displacement descriptor size is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Constant/displacement descriptor size is not ported for this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.ConstantDisplacement;
@@ -161,7 +206,8 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_XARCH)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Address-mode descriptor size is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Address-mode descriptor size is not ported for this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.AddressMode;
@@ -184,7 +230,8 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_XARCH)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Constant/address-mode descriptor size is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Constant/address-mode descriptor size is not ported for this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.ConstantAddressMode;

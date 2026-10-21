@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "x87 floating-point return generation requires X86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x87 floating-point return generation requires X86.");
+            return;
         }
 
         assert(tree.Oper is GT_RETURN or GT_RETFILT);

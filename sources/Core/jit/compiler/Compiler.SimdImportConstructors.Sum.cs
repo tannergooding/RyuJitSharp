@@ -13,7 +13,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD sums require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD sums require hardware intrinsics.");
+            return default!;
         }
 
         var simdType = GetSimdTypeForSize(simdSize);
@@ -122,7 +123,8 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdSumNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdSumNode requires its target-specific implementation.");
+            return default!;
         }
 
         if (varTypeIsFloating(simdBaseType))

@@ -11,7 +11,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD ceiling requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD ceiling requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -47,7 +48,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException("gtNewSimdCeilNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdCeilNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(intrinsic != NI_Illegal);
@@ -58,7 +60,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD floor requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD floor requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -94,7 +97,8 @@ public partial class Compiler
         }
         else
         {
-            throw new FatalJitException("gtNewSimdFloorNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdFloorNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(intrinsic != NI_Illegal);
@@ -105,7 +109,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD rounding requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD rounding requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -143,14 +148,16 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_RoundToNearest, simdBaseType, simdSize, op1);
         }
 
-        throw new FatalJitException("gtNewSimdRoundNode requires its target-specific implementation.");
+        FatalJitException.ThrowFatalJitException("gtNewSimdRoundNode requires its target-specific implementation.");
+        return default!;
     }
 
     public GenTree gtNewSimdLoadNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD loads require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD loads require hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -162,7 +169,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Aligned SIMD loads require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Aligned SIMD loads require hardware intrinsics.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
@@ -176,14 +184,14 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdLoadAlignedNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdLoadAlignedNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(op1 is not null && varTypeIsArithmetic(simdBaseType));
 
-        var intrinsic = simdSize switch
-        {
+        var intrinsic = simdSize switch {
             64 => NI_AVX512_LoadAlignedVector512,
             32 => NI_AVX_LoadAlignedVector256,
             _ => NI_X86Base_LoadAlignedVector128,
@@ -195,7 +203,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Non-temporal SIMD loads require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Non-temporal SIMD loads require hardware intrinsics.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
@@ -209,7 +218,8 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdLoadNonTemporalNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdLoadNonTemporalNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -259,7 +269,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD stores require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD stores require hardware intrinsics.");
+            return default!;
         }
 
         assert(op1 is not null && op2 is not null);
@@ -277,7 +288,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require hardware intrinsics.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
@@ -291,15 +303,15 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdStoreAlignedNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdStoreAlignedNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(op1 is not null && op2 is not null);
         assert(varTypeIsSimd(op2.Type) && GetSimdTypeForSize(simdSize) == op2.Type);
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsic = simdSize switch
-        {
+        var intrinsic = simdSize switch {
             32 => NI_AVX_StoreAligned,
             64 => NI_AVX512_StoreAligned,
             _ => NI_X86Base_StoreAligned,
@@ -316,7 +328,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Non-temporal SIMD stores require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Non-temporal SIMD stores require hardware intrinsics.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
@@ -330,15 +343,15 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdStoreNonTemporalNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdStoreNonTemporalNode requires its target-specific implementation.");
+            return default!;
         }
 
         assert(op1 is not null && op2 is not null);
         assert(varTypeIsSimd(op2.Type) && GetSimdTypeForSize(simdSize) == op2.Type);
         assert(varTypeIsArithmetic(simdBaseType));
 
-        var intrinsic = simdSize switch
-        {
+        var intrinsic = simdSize switch {
             64 => NI_AVX512_StoreAlignedNonTemporal,
             32 => NI_AVX_StoreAlignedNonTemporal,
             _ => NI_X86Base_StoreAlignedNonTemporal,
@@ -355,7 +368,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD dot products require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD dot products require hardware intrinsics.");
+            return default!;
         }
 
         var simdType = GetSimdTypeForSize(simdSize);
@@ -381,7 +395,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD fused multiply-add requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD fused multiply-add requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -422,10 +437,12 @@ public partial class Compiler
         {
             // Wasm has no single rounding FMA, and this should be guarded against already in import.
             unreached();
-            throw new FatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable Wasm SIMD fused multiply-add.");
+            FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable Wasm SIMD fused multiply-add.");
+            return default!;
         }
 
-        throw new FatalJitException("gtNewSimdFmaNode requires its target-specific implementation.");
+        FatalJitException.ThrowFatalJitException("gtNewSimdFmaNode requires its target-specific implementation.");
+        return default!;
     }
 
     public GenTree gtNewSimdCmpOpAnyNode(genTreeOps op, var_types type, GenTree op1, GenTree op2,
@@ -433,7 +450,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD comparisons require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD comparisons require hardware intrinsics.");
+            return default!;
         }
 
         assert(type == TYP_INT);
@@ -455,8 +473,7 @@ public partial class Compiler
                     compIsaSupportedDebugOnly(InstructionSet_AVX2));
                 op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
                 op2 = gtNewZeroConNode(simdType);
-                simdBaseType = simdBaseType switch
-                {
+                simdBaseType = simdBaseType switch {
                     TYP_FLOAT => TYP_INT,
                     TYP_DOUBLE => TYP_LONG,
                     _ => simdBaseType,
@@ -485,7 +502,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD ternary logic requires xarch hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD ternary logic requires xarch hardware intrinsics.");
+            return default!;
         }
 
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512));

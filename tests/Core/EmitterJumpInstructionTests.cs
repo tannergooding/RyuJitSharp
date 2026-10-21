@@ -16,6 +16,7 @@ using JumpLists = RyuJitSharp.UnitTests.EmitterGroupBufferTests.DescriptorFactor
 
 namespace RyuJitSharp.UnitTests;
 
+[NonParallelizable]
 internal static class EmitterJumpInstructionTests
 {
     [TestCase(EJ_NONE, INS_nop)]
@@ -41,6 +42,56 @@ internal static class EmitterJumpInstructionTests
         emitJumpKind kind, instruction expected)
     {
         Assert.That(Emitter.emitJumpKindToIns(kind), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void InvalidJumpKindFailuresRetainStableCodesAndGateDetailedMessages()
+    {
+        const string switchName = "RyuJitSharp.DETAILED_FATAL_ERROR_MESSAGES";
+        Assume.That(!Configuration.TARGET_WASM);
+
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        var invalidKind = (emitJumpKind)int.MaxValue;
+
+        AppContext.SetSwitch(switchName, false);
+        try
+        {
+            var exception = Assert.Throws<FatalJitException>(() => Emitter.emitReverseJumpKind(invalidKind));
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.InvalidJumpKind));
+            Assert.That(exception.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
+
+            var forwardException = Assert.Throws<FatalJitException>(() => Emitter.emitJumpKindToIns(invalidKind));
+            Assert.That(forwardException, Is.Not.Null);
+            Assert.That(forwardException!.ErrorCode, Is.EqualTo(FatalJitErrorCode.InvalidJumpKind));
+            Assert.That(forwardException.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
+
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(exception.Message, Does.Contain($"Invalid jump kind {invalidKind}."));
+                Assert.That(forwardException.Message, Does.Contain($"Invalid jump kind {invalidKind}."));
+            }
+            else
+            {
+                Assert.That(exception.Message, Does.Not.Contain("Invalid jump kind"));
+                Assert.That(forwardException.Message, Does.Not.Contain("Invalid jump kind"));
+            }
+
+            AppContext.SetSwitch(switchName, true);
+            exception = Assert.Throws<FatalJitException>(() => Emitter.emitReverseJumpKind(invalidKind));
+            Assert.That(exception, Is.Not.Null);
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.InvalidJumpKind));
+            Assert.That(exception.Message, Does.Contain($"Invalid jump kind {invalidKind}."));
+
+            forwardException = Assert.Throws<FatalJitException>(() => Emitter.emitJumpKindToIns(invalidKind));
+            Assert.That(forwardException, Is.Not.Null);
+            Assert.That(forwardException!.ErrorCode, Is.EqualTo(FatalJitErrorCode.InvalidJumpKind));
+            Assert.That(forwardException.Message, Does.Contain($"Invalid jump kind {invalidKind}."));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
     }
 
     [TestCase(INS_jmp, false, 5u)]

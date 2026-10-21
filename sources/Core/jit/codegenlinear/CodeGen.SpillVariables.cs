@@ -12,7 +12,8 @@ public sealed partial class CodeGen
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
             // ICodeGen exposes this entry point even on targets without a fixed register set.
-            throw new FatalJitException(CORJIT_SKIPPED, "Local-variable spills require a fixed register set.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local-variable spills require a fixed register set.");
+            return;
         }
 
         var varNum = tree.AsLclVarCommon().LclNum;

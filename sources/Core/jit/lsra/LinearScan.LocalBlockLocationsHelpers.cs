@@ -101,8 +101,15 @@ public sealed partial class LinearScan
                 assert(assigned.isConstant || assigned.IsUpperVector());
                 inMap = null;
             }
-            var assignedRecord = assigned.assignedReg
-                ?? throw new FatalJitException("An assigned interval requires its register record.");
+            var assignedRecord = assigned.assignedReg;
+            if (assignedRecord is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage329
+                );
+                return;
+            }
             var assignedReg = assignedRecord.regNum;
             assigned.isActive = false;
             unassignPhysReg(assignedRecord, (RefPosition?)null);

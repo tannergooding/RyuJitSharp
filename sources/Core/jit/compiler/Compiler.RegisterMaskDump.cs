@@ -30,7 +30,8 @@ public partial class Compiler
         {
             NYI("Compiler.dumpRegMask outside AMD64");
             fatal(CORJIT_IMPLLIMITATION);
-            throw new FatalJitException("Compiler.dumpRegMask outside AMD64.");
+            FatalJitException.ThrowFatalJitException("Compiler.dumpRegMask outside AMD64.");
+            return;
         }
 
         // AMD64 aliases RBM_ALLDOUBLE to the current RBM_ALLFLOAT set.

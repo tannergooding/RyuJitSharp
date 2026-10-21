@@ -92,8 +92,9 @@ public unsafe partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM64 register-immediate instruction recording requires ARM64.");
+            return;
         }
 
         var size = EA_SIZE(attr);

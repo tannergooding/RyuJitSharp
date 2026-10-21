@@ -9,7 +9,12 @@ public partial class Emitter
 {
     private unsafe void emitDispCommentForHandle(nint handle, nint cookie, GenTreeFlags flags)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Handle display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.HandleDisplayMissingCompiler);
+            return;
+        }
         var prefix = Configuration.TARGET_XARCH ? "      ;"
             : Configuration.TARGET_WASM ? "      ;;"
             : "      //";
@@ -38,8 +43,7 @@ public partial class Emitter
             return;
         }
 
-        var description = kind switch
-        {
+        var description = kind switch {
             GTF_ICON_STR_HDL => "string handle",
             GTF_ICON_CONST_PTR => "const ptr",
             GTF_ICON_GLOBAL_PTR => "global ptr",

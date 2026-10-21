@@ -20,7 +20,8 @@ public struct ConfigIntArray
         {
             if (str is null)
             {
-                throw new FatalJitException("ConfigIntArray requires a configuration string.");
+                FatalJitException.ThrowFatalJitException("ConfigIntArray requires a configuration string.");
+                return;
             }
 
             Init(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(str));

@@ -22,7 +22,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-local reloads are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-local reloads are not supported on Wasm.");
+            return;
         }
 
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
@@ -77,8 +78,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Indexed register reloads are not supported on Wasm.");
+            return;
         }
 
         var unspillTree = tree;
@@ -130,7 +132,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
+            return;
         }
 
         var unspillTree = tree;

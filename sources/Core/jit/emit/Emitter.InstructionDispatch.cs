@@ -28,12 +28,14 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 binary instruction recording is unused and not ported.");
+            return default!;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Binary operand recording is not supported for this target.");
+        return default!;
     }
 
     public regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree dst, GenTree src1, GenTree src2)
@@ -58,7 +60,8 @@ public partial class Emitter
             return emitInsTernaryRiscV64(ins, attr, dst, src1, src2);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Ternary instruction recording is not supported for this target.");
+        return default!;
     }
 }

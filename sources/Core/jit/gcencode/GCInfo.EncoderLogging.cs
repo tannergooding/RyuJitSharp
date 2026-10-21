@@ -32,26 +32,90 @@ internal sealed class GcInfoEncoderWithLogging
         }
     }
 
-    private static string GetStackBaseName(GcStackSlotBase stackBase) => stackBase switch
+    private static string GetStackBaseName(GcStackSlotBase stackBase)
     {
-        GcStackSlotBase.GC_CALLER_SP_REL => "caller.sp",
-        GcStackSlotBase.GC_SP_REL => "sp",
-        GcStackSlotBase.GC_FRAMEREG_REL => "frame",
-        _ => throw new FatalJitException("Invalid stack slot base."),
-    };
+        switch (stackBase)
+        {
+            case GcStackSlotBase.GC_CALLER_SP_REL:
+            {
+                return "caller.sp";
+            }
 
-    private static string GetSlotFlagName(GcSlotFlags flags) => ((int)flags & 7) switch
+            case GcStackSlotBase.GC_SP_REL:
+            {
+                return "sp";
+            }
+
+            case GcStackSlotBase.GC_FRAMEREG_REL:
+            {
+                return "frame";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage217
+                );
+                return default!;
+            }
+        }
+    }
+
+    private static string GetSlotFlagName(GcSlotFlags flags)
     {
-        0 => "",
-        1 => "(byref) ",
-        2 => "(pinned) ",
-        3 => "(byref, pinned) ",
-        4 => "(untracked) ",
-        5 => "(byref, untracked) ",
-        6 => "(pinned, untracked) ",
-        7 => "(byref, pinned, untracked) ",
-        _ => throw new FatalJitException("Invalid GC slot flags."),
-    };
+        switch (((int)flags & 7))
+        {
+            case 0:
+            {
+                return "";
+            }
+
+            case 1:
+            {
+                return "(byref) ";
+            }
+
+            case 2:
+            {
+                return "(pinned) ";
+            }
+
+            case 3:
+            {
+                return "(byref, pinned) ";
+            }
+
+            case 4:
+            {
+                return "(untracked) ";
+            }
+
+            case 5:
+            {
+                return "(byref, untracked) ";
+            }
+
+            case 6:
+            {
+                return "(pinned, untracked) ";
+            }
+
+            case 7:
+            {
+                return "(byref, pinned, untracked) ";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage218
+                );
+                return default!;
+            }
+        }
+    }
 
     public uint GetStackSlotId(int offset, GcSlotFlags flags, GcStackSlotBase stackBase = GcStackSlotBase.GC_CALLER_SP_REL)
     {
@@ -147,8 +211,7 @@ internal sealed class GcInfoEncoderWithLogging
         _encoder.SetGenericsInstContextStackSlot(offset, type);
         if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
-            var typeName = type switch
-            {
+            var typeName = type switch {
                 GENERIC_CONTEXTPARAM_TYPE.GENERIC_CONTEXTPARAM_THIS => "THIS",
                 GENERIC_CONTEXTPARAM_TYPE.GENERIC_CONTEXTPARAM_MT => "MT",
                 GENERIC_CONTEXTPARAM_TYPE.GENERIC_CONTEXTPARAM_MD => "MD",

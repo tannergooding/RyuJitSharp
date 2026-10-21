@@ -103,8 +103,15 @@ internal sealed class PerLoopInfo
         Func<BasicBlock, Statement, GenTreeLclVarCommon, bool> visitor)
     {
         return VisitLoopNestInfo(loop, info => {
-            var occurrences = info.LocalToOccurrences
-                ?? throw new FatalJitException("Loop occurrences must be initialized before visiting.");
+            var occurrences = info.LocalToOccurrences;
+            if (occurrences is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage129
+                );
+                return default!;
+            }
             if (!occurrences.TryGetValue(lclNum, out var occurrence))
             {
                 return true;
@@ -130,8 +137,15 @@ internal sealed class PerLoopInfo
         Func<BasicBlock, Statement, bool> visitor)
     {
         return VisitLoopNestInfo(loop, info => {
-            var occurrences = info.LocalToOccurrences
-                ?? throw new FatalJitException("Loop occurrences must be initialized before visiting.");
+            var occurrences = info.LocalToOccurrences;
+            if (occurrences is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage129
+                );
+                return default!;
+            }
             if (!occurrences.TryGetValue(lclNum, out var occurrence))
             {
                 return true;

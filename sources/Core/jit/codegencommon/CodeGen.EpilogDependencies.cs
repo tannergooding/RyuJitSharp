@@ -27,7 +27,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration is not supported by this dispatcher.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-save restoration is not supported by this dispatcher.");
+            return;
         }
     }
 
@@ -35,7 +36,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch callee-save restoration is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch callee-save restoration is not supported on this target.");
+            return default!;
         }
 
         return genPopCalleeSavedRegistersFromMaskXarch(popRegs);
@@ -65,7 +67,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation is not supported by this dispatcher.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Root epilog generation is not supported by this dispatcher.");
+            return;
         }
     }
 
@@ -79,7 +82,8 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_ARM64)
         {
             unreached();
-            throw new FatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+            return;
         }
         if (Configuration.TARGET_XARCH)
         {
@@ -88,6 +92,7 @@ public sealed partial class CodeGen
         }
 
         NYI("instGen_Return");
-        throw new FatalJitException(CORJIT_SKIPPED, "Return instruction generation is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return instruction generation is not implemented on this target.");
+        return;
     }
 }

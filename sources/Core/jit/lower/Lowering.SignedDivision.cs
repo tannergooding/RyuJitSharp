@@ -39,8 +39,10 @@ public sealed partial class Lowering
         assert(type is TYP_INT or TYP_LONG);
         if (Configuration.USE_HELPERS_FOR_INT_DIV)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Integral division should be lowered to helper calls for this target.");
+            nextNode = default!;
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64 && (divMod.Oper is GT_MOD) && divisor.IsIntegralConstPow2)
@@ -111,9 +113,11 @@ public sealed partial class Lowering
                 }
                 else
                 {
-                    throw new FatalJitException(
+                    FatalJitException.ThrowFatalJitException(
                         CORJIT_SKIPPED,
-                        "64-bit signed magic division requires a 64-bit target.");
+                    "64-bit signed magic division requires a 64-bit target.");
+                    nextNode = default!;
+                    return default!;
                 }
 
                 divisor.AsIntCon().IconValue = (nint)magic;

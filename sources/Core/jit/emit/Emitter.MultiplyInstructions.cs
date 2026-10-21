@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Three-operand IMUL selection requires x86 architecture support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Three-operand IMUL selection requires x86 architecture support.");
+            return default!;
         }
 
         assert(reg.IsIntReg);
@@ -43,7 +44,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("Three-operand IMUL register layout is not available for this target.");
+            FatalJitException.ThrowFatalJitException("Three-operand IMUL register layout is not available for this target.");
+            return;
         }
 
 #pragma warning disable CA1508 // Retain the native encoding-layout assertions.

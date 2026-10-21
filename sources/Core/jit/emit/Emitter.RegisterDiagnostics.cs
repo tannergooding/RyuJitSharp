@@ -11,7 +11,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException("ARM32 double-register validation is not available for this target.");
+            FatalJitException.ThrowFatalJitException("ARM32 double-register validation is not available for this target.");
+            return default!;
         }
 
         var register = unchecked((uint)reg);

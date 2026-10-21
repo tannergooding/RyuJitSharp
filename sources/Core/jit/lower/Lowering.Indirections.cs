@@ -176,7 +176,8 @@ public sealed partial class Lowering
             }
             if (Configuration.FEATURE_SIMD)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "RISC-V SIMD indirection containment is not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V SIMD indirection containment is not ported.");
+                return;
             }
 
             var addr = node.Addr;
@@ -206,7 +207,8 @@ public sealed partial class Lowering
 
             if (Configuration.FEATURE_SIMD)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "LoongArch SIMD indirection containment is not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch SIMD indirection containment is not ported.");
+                return;
             }
 
             var addr = node.Addr;
@@ -269,7 +271,8 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirection containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indirection containment is not ported for this target.");
+        return;
     }
 
     // Wasm memarg offsets use infinite-precision addition, unlike wrapping i32.add. Requiring a GC base
@@ -358,8 +361,9 @@ public sealed partial class Lowering
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Unused indirection lowering is not ported for this target.");
+            return default!;
         }
         if (useNullCheck && (ind.Oper is not GT_NULLCHECK))
         {

@@ -93,8 +93,9 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "WebAssembly SIMD stores require SIMD support.");
+                        return default!;
                     }
 
                     return INS_v128_store;
@@ -187,16 +188,18 @@ public sealed partial class CodeGen
                 return ins;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Integer store selection requires a supported target.");
+            return default!;
         }
 
         if (varTypeUsesMaskReg(dstType))
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Masked-register stores require masked hardware intrinsics.");
+                return default!;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -209,8 +212,9 @@ public sealed partial class CodeGen
                 return INS_sve_str;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Masked-register stores are not implemented for this target.");
+            return default!;
         }
 
         assert(varTypeUsesFloatReg(dstType));
@@ -278,7 +282,8 @@ public sealed partial class CodeGen
             }
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Floating-point store selection requires a supported target.");
+        return default!;
     }
 }

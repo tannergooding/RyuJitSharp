@@ -14,8 +14,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register memory instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -53,8 +54,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Two-register memory-immediate recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -86,8 +88,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register-address-register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -129,7 +132,8 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "ARM32 four-register instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 four-register instruction options are not ported.");
+                return;
             }
 
             recordArm32InsRRRR(ins, attr, targetReg, reg1, reg2, reg3);
@@ -144,7 +148,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Four-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Four-register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

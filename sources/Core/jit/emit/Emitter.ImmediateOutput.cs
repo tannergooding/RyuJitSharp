@@ -17,7 +17,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-immediate output requires xarch.");
+            return default!;
         }
 
         var size = id.idOpSize();
@@ -188,8 +189,9 @@ public partial class Emitter
                 {
                     if (!Configuration.TARGET_AMD64)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "Eight-byte immediate encoding requires AMD64.");
+                        return default!;
                     }
 
                     code = AddRexWPrefix(id, code) | 1;
@@ -233,8 +235,9 @@ public partial class Emitter
                     {
                         if ((size == EA_8BYTE) && !Configuration.TARGET_AMD64)
                         {
-                            throw new FatalJitException(CORJIT_SKIPPED,
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                                 "Eight-byte immediate output requires AMD64.");
+                            return default!;
                         }
 
                         dst += emitOutputLong(dst, (long)val);
@@ -336,7 +339,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Immediate output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Immediate output requires xarch.");
+            return default!;
         }
 
         var ins = id.idIns();

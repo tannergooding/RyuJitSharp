@@ -141,8 +141,7 @@ public partial class Compiler
 
             if (bbIsTryBeg(block))
             {
-                var info = new CloneTryInfo(this)
-                {
+                var info = new CloneTryInfo(this) {
                     Map = map,
                     AddEdges = false,
                     ProfileScale = weightScale,
@@ -150,7 +149,11 @@ public partial class Compiler
                 };
                 if (fgCloneTryRegion(block, info, ref currentInsertAfter) is null)
                 {
-                    throw new FatalJitException("A loop try region passed feasibility but could not be cloned.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage164
+                    );
+                    return default!;
                 }
 
                 ehIndexShift += info.EHIndexShift;

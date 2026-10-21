@@ -89,13 +89,27 @@ public sealed partial class ObjectAllocator
 
         if ((allocObj.Flags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
         {
-            var predecessor = block.GetUniquePred(compiler)
-                ?? throw new FatalJitException("An empty-static allocation requires one predecessor.");
+            var predecessor = block.GetUniquePred(compiler);
+            if (predecessor is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage428
+                );
+                return default!;
+            }
             assert(predecessor.Kind is BBJ_COND);
             JITDUMP($"Empty static pattern controlled by {FMT_BB(predecessor.bbNum)}, optimizing to always use stack allocated instance\n");
 
-            var controllingStmt = predecessor.LastStmt
-                ?? throw new FatalJitException("An empty-static predecessor requires its branch statement.");
+            var controllingStmt = predecessor.LastStmt;
+            if (controllingStmt is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage429
+                );
+                return default!;
+            }
             var branch = controllingStmt.RootNode;
             assert(branch.Oper is GT_JTRUE);
             var trueEdge = predecessor.TrueEdge;

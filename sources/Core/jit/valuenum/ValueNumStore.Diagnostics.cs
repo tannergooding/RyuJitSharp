@@ -335,7 +335,8 @@ public sealed partial class ValueNumStore
 
                     default:
                     {
-                        throw new FatalJitException("Unexpected scalable SIMD constant kind.");
+                        FatalJitException.ThrowFatalJitException("Unexpected scalable SIMD constant kind.");
+                        return;
                     }
                 }
                 break;
@@ -364,7 +365,8 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                throw new FatalJitException("Unexpected VN constant type.");
+                FatalJitException.ThrowFatalJitException("Unexpected VN constant type.");
+                return;
             }
         }
     }
@@ -467,8 +469,7 @@ public sealed partial class ValueNumStore
     {
         assert(app.FuncIs(VNF_MemOpaque));
         var loop = app.GetArg(0);
-        jitprintf(loop switch
-        {
+        jitprintf(loop switch {
             NoLoop => "MemOpaque:NotInLoop",
             UnknownLoop => "MemOpaque:Indeterminate",
             _ => $"MemOpaque:L{loop:D2}",
@@ -535,15 +536,13 @@ public sealed partial class ValueNumStore
         jitprintf($": {compiler.typGetLayoutByNum(layoutNumber).ClassName})");
     }
 
-    private static string NativeTypeName(var_types type) => type switch
-    {
+    private static string NativeTypeName(var_types type) => type switch {
         TYP_UNDEF => "<UNDEF>",
         TYP_UNKNOWN => "unknown",
         _ => VNMapTypeName(type),
     };
 
-    private static string HandleKindName(GenTreeFlags flags) => (flags & GTF_ICON_HDL_MASK) switch
-    {
+    private static string HandleKindName(GenTreeFlags flags) => (flags & GTF_ICON_HDL_MASK) switch {
         GTF_EMPTY => "",
         GTF_ICON_SCOPE_HDL => nameof(GTF_ICON_SCOPE_HDL),
         GTF_ICON_CLASS_HDL => nameof(GTF_ICON_CLASS_HDL),

@@ -49,30 +49,86 @@ public sealed partial class FlowGraphNaturalLoop
 
     private static bool EvaluateRelop(int left, int right, genTreeOps oper)
     {
-        return oper switch
+        switch (oper)
         {
-            GT_EQ => left == right,
-            GT_NE => left != right,
-            GT_LT => left < right,
-            GT_LE => left <= right,
-            GT_GT => left > right,
-            GT_GE => left >= right,
-            _ => throw new FatalJitException($"Unexpected loop comparison: {oper}"),
-        };
+            case GT_EQ:
+            {
+                return left == right;
+            }
+
+            case GT_NE:
+            {
+                return left != right;
+            }
+
+            case GT_LT:
+            {
+                return left < right;
+            }
+
+            case GT_LE:
+            {
+                return left <= right;
+            }
+
+            case GT_GT:
+            {
+                return left > right;
+            }
+
+            case GT_GE:
+            {
+                return left >= right;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException($"Unexpected loop comparison: {oper}");
+                return default!;
+            }
+        }
     }
 
     private static bool EvaluateRelop(uint left, uint right, genTreeOps oper)
     {
-        return oper switch
+        switch (oper)
         {
-            GT_EQ => left == right,
-            GT_NE => left != right,
-            GT_LT => left < right,
-            GT_LE => left <= right,
-            GT_GT => left > right,
-            GT_GE => left >= right,
-            _ => throw new FatalJitException($"Unexpected loop comparison: {oper}"),
-        };
+            case GT_EQ:
+            {
+                return left == right;
+            }
+
+            case GT_NE:
+            {
+                return left != right;
+            }
+
+            case GT_LT:
+            {
+                return left < right;
+            }
+
+            case GT_LE:
+            {
+                return left <= right;
+            }
+
+            case GT_GT:
+            {
+                return left > right;
+            }
+
+            case GT_GE:
+            {
+                return left >= right;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException($"Unexpected loop comparison: {oper}");
+                return default!;
+            }
+        }
     }
 
     private bool CheckLoopConditionBaseCase(BasicBlock preheader, NaturalLoopIterInfo info)
@@ -130,8 +186,15 @@ public sealed partial class FlowGraphNaturalLoop
     private bool IsZeroTripTest(BasicBlock guardBlock, bool entersWhenTrue, NaturalLoopIterInfo info)
     {
         assert(guardBlock.Kind is BBJ_COND);
-        var enteringJTrue = guardBlock.LastStmt?.RootNode
-            ?? throw new FatalJitException("A loop entry guard requires a condition.");
+        var enteringJTrue = guardBlock.LastStmt?.RootNode;
+        if (enteringJTrue is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage208
+            );
+            return default!;
+        }
         assert(enteringJTrue.Oper is GT_JTRUE);
         var relop = enteringJTrue.AsUnOp().Op1;
         if (!relop.Oper.IsCmpCompare)

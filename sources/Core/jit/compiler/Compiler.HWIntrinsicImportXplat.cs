@@ -26,7 +26,8 @@ public partial class Compiler
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Cross-platform intrinsic import requires a supported hardware-intrinsic target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Cross-platform intrinsic import requires a supported hardware-intrinsic target.");
+            return default!;
         }
 
         assert(HWIntrinsicInfo.lookupIsa(intrinsic) == InstructionSet_Vector);
@@ -470,7 +471,11 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    throw new FatalJitException("Unsupported SIMD conversion target.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage124
+                    );
+                    return default!;
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, impSIMDPopStack());
@@ -555,7 +560,11 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    throw new FatalJitException("Unsupported SIMD conversion target.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage124
+                    );
+                    return default!;
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, impSIMDPopStack());
@@ -1097,7 +1106,8 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    throw new FatalJitException("Unsupported SIMD narrowing target.");
+                    FatalJitException.ThrowFatalJitException("Unsupported SIMD narrowing target.");
+                    return default!;
                 }
                 break;
             }
@@ -1170,7 +1180,8 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    throw new FatalJitException("Unsupported SIMD shift target.");
+                    FatalJitException.ThrowFatalJitException("Unsupported SIMD shift target.");
+                    return default!;
                 }
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2);
                 break;
@@ -1572,7 +1583,8 @@ public partial class Compiler
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Saturating SIMD operations require a supported hardware-intrinsic target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Saturating SIMD operations require a supported hardware-intrinsic target.");
+            return default!;
         }
 
         var addition = intrinsic == NI_Vector_AddSaturate;
@@ -1612,7 +1624,8 @@ public partial class Compiler
             }
             else
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Unsupported saturating SIMD target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported saturating SIMD target.");
+                return default!;
             }
 
             return gtNewSimdHWIntrinsicNode(retType, saturatingIntrinsic,

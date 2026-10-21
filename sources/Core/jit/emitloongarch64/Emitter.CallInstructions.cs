@@ -18,12 +18,17 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 call recording is only supported on LoongArch64.");
+            return;
         }
 
-        var compiler = _compiler
-            ?? throw new FatalJitException("LoongArch64 call recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 call recording requires an active compiler.");
+            return;
+        }
 
         assert(parameters.xreg == REG_LOONGARCH64_NA && parameters.xmul == 0 && parameters.disp == 0);
         assert(parameters.callType is EC_INDIR_R or EC_FUNC_TOKEN);

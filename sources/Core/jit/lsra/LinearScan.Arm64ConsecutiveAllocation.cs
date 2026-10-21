@@ -44,14 +44,25 @@ public sealed partial class LinearScan
             {
                 var upper = next.getInterval();
                 assert(upper.isUpperVector && upper.relatedInterval is not null);
-                var related = upper.relatedInterval
-                    ?? throw new FatalJitException("A consecutive upper-vector restore requires a related interval.");
+                var related = upper.relatedInterval;
+                if (related is null)
+                {
+                    FatalJitException.ThrowFatalJitException("A consecutive upper-vector restore requires a related interval.");
+                    return;
+                }
                 if (related.isPartiallySpilled)
                 {
                     next.registerAssignment &= ~_consecutiveRegsInUseThisLocation;
                 }
-                next = getNextConsecutiveRefPosition(next)
-                    ?? throw new FatalJitException("A consecutive upper-vector restore must precede a use.");
+                var nextReference = getNextConsecutiveRefPosition(next);
+                if (nextReference is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        "A consecutive upper-vector restore must precede a use.");
+                    return;
+                }
+
+                next = nextReference;
             }
             assert(next.refType is RefType.RefTypeDef or RefType.RefTypeUse);
             next.registerAssignment = genSingleTypeRegMask(register);
@@ -81,16 +92,30 @@ public sealed partial class LinearScan
         var register = firstRegister;
         for (var index = 1; index < first.regCount; index++)
         {
-            next = getNextConsecutiveRefPosition(next)
-                ?? throw new FatalJitException("A consecutive register sequence ended prematurely.");
+            var nextReference = getNextConsecutiveRefPosition(next);
+            if (nextReference is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    "A consecutive register sequence ended prematurely.");
+                return false;
+            }
+
+            next = nextReference;
             register = getNextFPRegWraparound(register);
             if (!isFree(getRegisterRecord(register)))
             {
                 if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
                     next.refType is RefType.RefTypeUpperVectorRestore)
                 {
-                    next = getNextConsecutiveRefPosition(next)
-                        ?? throw new FatalJitException("A consecutive upper-vector restore must precede a use.");
+                    nextReference = getNextConsecutiveRefPosition(next);
+                    if (nextReference is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            "A consecutive upper-vector restore must precede a use.");
+                        return false;
+                    }
+
+                    next = nextReference;
                 }
                 var interval = next.getInterval();
                 if (interval is not null && !isRegInUse(register, interval.registerType) &&
@@ -252,8 +277,13 @@ public sealed partial class LinearScan
             var freeStarts = filterConsecutiveCandidates(free, needed, out var allFree);
             if (freeStarts != SRBM_NONE)
             {
-                var next = getNextConsecutiveRefPosition(first)
-                    ?? throw new FatalJitException("A consecutive sequence requires additional references.");
+                var next = getNextConsecutiveRefPosition(first);
+                if (next is null)
+                {
+                    FatalJitException.ThrowFatalJitException("A consecutive sequence requires additional references.");
+                    busyCandidates = default!;
+                    return default!;
+                }
                 var firstAssigned = REG_ARM64_NA;
                 var previousAssigned = REG_ARM64_NA;
                 var foundCount = 0;
@@ -262,8 +292,16 @@ public sealed partial class LinearScan
                     var interval = next.getInterval();
                     if (index + 1 < needed)
                     {
-                        next = getNextConsecutiveRefPosition(next)
-                            ?? throw new FatalJitException("A consecutive sequence ended prematurely.");
+                        var nextReference = getNextConsecutiveRefPosition(next);
+                        if (nextReference is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                "A consecutive sequence ended prematurely.");
+                            busyCandidates = default!;
+                            return default!;
+                        }
+
+                        next = nextReference;
                     }
                     if (!interval.isActive)
                     {
@@ -271,8 +309,14 @@ public sealed partial class LinearScan
                         continue;
                     }
 
-                    var current = interval.assignedReg?.regNum
-                        ?? throw new FatalJitException("An active consecutive interval has no register.");
+                    var nullableCurrent = interval.assignedReg?.regNum;
+                    if (nullableCurrent is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("An active consecutive interval has no register.");
+                        busyCandidates = default!;
+                        return default!;
+                    }
+                    var current = nullableCurrent.Value;
                     if (previousAssigned == REG_ARM64_NA ||
                         (int)previousAssigned + 1 == (int)current ||
                         (previousAssigned == TargetRuntimeMetadata.FloatingRegisterLast && current == TargetRuntimeMetadata.FloatingRegisterFirst))

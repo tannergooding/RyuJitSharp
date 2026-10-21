@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Boolean condition generation requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Boolean condition generation requires AMD64.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

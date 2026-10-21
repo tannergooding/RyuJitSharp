@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -91,7 +92,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -155,7 +157,8 @@ public partial class Emitter
         }
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -204,7 +207,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires xarch.");
+            return;
         }
         if (Configuration.TARGET_AMD64)
         {
@@ -240,7 +244,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch shift instruction classification is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch shift instruction classification is not supported for this target.");
+            return default!;
         }
 
         return ins is INS_rcl_1 or INS_rcr_1 or INS_rol_1 or INS_ror_1 or INS_shl_1 or INS_shr_1 or INS_sar_1

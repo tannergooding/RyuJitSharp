@@ -2189,10 +2189,25 @@ public static partial class Globals
         unchecked((ulong)(0x000066)), // INS_data16
     ];
 
-    private static ReadOnlySpan<ulong> insCodes =>
-        Configuration.TARGET_X86 ? insCodesX86 :
-        Configuration.TARGET_AMD64 ? insCodesX64 :
-        throw new FatalJitException("xarch opcode table is not available for this target.");
+    private static ReadOnlySpan<ulong> insCodes
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insCodesX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insCodesX64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch opcode table is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<ulong> insCodesACCX86 => [
         unchecked((ulong)(BAD_CODE)), // INS_invalid
@@ -2248,10 +2263,25 @@ public static partial class Globals
         unchecked((ulong)(BAD_CODE)), // INS_lea
     ];
 
-    private static ReadOnlySpan<ulong> insCodesACC =>
-        Configuration.TARGET_X86 ? insCodesACCX86 :
-        Configuration.TARGET_AMD64 ? insCodesACCX64 :
-        throw new FatalJitException("xarch opcode table is not available for this target.");
+    private static ReadOnlySpan<ulong> insCodesACC
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insCodesACCX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insCodesACCX64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch opcode table is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<ulong> insCodesRRX86 => [
         unchecked((ulong)(BAD_CODE)), // INS_invalid
@@ -2283,10 +2313,25 @@ public static partial class Globals
         unchecked((ulong)(0x00C80F)), // INS_bswap
     ];
 
-    private static ReadOnlySpan<ulong> insCodesRR =>
-        Configuration.TARGET_X86 ? insCodesRRX86 :
-        Configuration.TARGET_AMD64 ? insCodesRRX64 :
-        throw new FatalJitException("xarch opcode table is not available for this target.");
+    private static ReadOnlySpan<ulong> insCodesRR
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insCodesRRX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insCodesRRX64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch opcode table is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<ulong> insCodesRMX86 => [
         unchecked((ulong)(BAD_CODE)), // INS_invalid
@@ -4298,10 +4343,25 @@ public static partial class Globals
         unchecked((ulong)(BAD_CODE)), // INS_sar_N
     ];
 
-    private static ReadOnlySpan<ulong> insCodesRM =>
-        Configuration.TARGET_X86 ? insCodesRMX86 :
-        Configuration.TARGET_AMD64 ? insCodesRMX64 :
-        throw new FatalJitException("xarch opcode table is not available for this target.");
+    private static ReadOnlySpan<ulong> insCodesRM
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insCodesRMX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insCodesRMX64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch opcode table is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<ulong> insCodesMIX86 => [
         unchecked((ulong)(BAD_CODE)), // INS_invalid
@@ -6319,10 +6379,25 @@ public static partial class Globals
         unchecked((ulong)(0x0000E8)), // INS_call
     ];
 
-    private static ReadOnlySpan<ulong> insCodesMI =>
-        Configuration.TARGET_X86 ? insCodesMIX86 :
-        Configuration.TARGET_AMD64 ? insCodesMIX64 :
-        throw new FatalJitException("xarch opcode table is not available for this target.");
+    private static ReadOnlySpan<ulong> insCodesMI
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insCodesMIX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insCodesMIX64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch opcode table is not available for this target.");
+            return default;
+        }
+    }
 
     private static ReadOnlySpan<ulong> insCodesMRX86 => [
         unchecked((ulong)(BAD_CODE)), // INS_invalid
@@ -8432,10 +8507,25 @@ public static partial class Globals
         unchecked((ulong)(0x0020FF)), // INS_i_jmp
     ];
 
-    private static ReadOnlySpan<ulong> insCodesMR =>
-        Configuration.TARGET_X86 ? insCodesMRX86 :
-        Configuration.TARGET_AMD64 ? insCodesMRX64 :
-        throw new FatalJitException("xarch opcode table is not available for this target.");
+    private static ReadOnlySpan<ulong> insCodesMR
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return insCodesMRX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return insCodesMRX64;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                "xarch opcode table is not available for this target.");
+            return default;
+        }
+    }
 
 
 }

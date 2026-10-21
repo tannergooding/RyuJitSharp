@@ -11,7 +11,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Static-field instruction sizing requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static-field instruction sizing requires AMD64.");
+            return default!;
         }
 
         assert(id.idIns() != INS_invalid);

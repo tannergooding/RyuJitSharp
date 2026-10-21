@@ -10,7 +10,7 @@ public sealed partial class LinearScan
     private int buildBlockStore(GenTreeBlk block)
     {
         if (Configuration.TARGET_XARCH)
-            {
+        {
             var destinationAddress = block.Addr;
             var source = block.Data;
             var size = block.Size;
@@ -82,7 +82,12 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        throw new FatalJitException($"Unsupported initialization block kind {block._kind}.");
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnsupportedInitializationBlockKind,
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? $"Unsupported initialization block kind {block._kind}."
+                        : null);
+                        return default!;
                     }
                 }
             }
@@ -169,7 +174,12 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        throw new FatalJitException($"Unsupported copy block kind {block._kind}.");
+                        FatalJitException.ThrowFatalJitException(
+                            FatalJitErrorCode.UnsupportedCopyBlockKind,
+                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                                ? $"Unsupported copy block kind {block._kind}."
+                        : null);
+                        return default!;
                     }
                 }
             }
@@ -211,7 +221,8 @@ public sealed partial class LinearScan
                     if (internalIntDef is null)
                     {
                         noway_assert(false, "An x86 byte block store requires an internal integer definition.");
-                        throw new FatalJitException("An x86 byte block store requires an internal integer definition.");
+                        FatalJitException.ThrowFatalJitException("An x86 byte block store requires an internal integer definition.");
+                        return default!;
                     }
 
                     internalIntDef.registerAssignment = SRBM_X86_EAX;
@@ -224,7 +235,7 @@ public sealed partial class LinearScan
         }
 
         if (Configuration.TARGET_ARM64)
-            {
+        {
             var destinationAddress = block.Addr;
             var source = block.Data;
             var size = block.Size;
@@ -264,7 +275,8 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        throw new FatalJitException($"Unsupported ARM64 initialization block kind {block._kind}.");
+                        FatalJitException.ThrowFatalJitException($"Unsupported ARM64 initialization block kind {block._kind}.");
+                        return default!;
                     }
                 }
             }
@@ -329,7 +341,8 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        throw new FatalJitException($"Unsupported ARM64 copy block kind {block._kind}.");
+                        FatalJitException.ThrowFatalJitException($"Unsupported ARM64 copy block kind {block._kind}.");
+                        return default!;
                     }
                 }
             }
@@ -342,8 +355,12 @@ public sealed partial class LinearScan
             }
             else if (destinationAddress.Oper.IsAddrMode)
             {
-                var baseAddress = destinationAddress.AsAddrMode().BaseAddress
-                    ?? throw new FatalJitException("Contained ARM64 block destination requires a base address.");
+                var baseAddress = destinationAddress.AsAddrMode().BaseAddress;
+                if (baseAddress is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Contained ARM64 block destination requires a base address.");
+                    return default!;
+                }
                 useCount += buildAddrUses(baseAddress);
             }
 
@@ -356,8 +373,12 @@ public sealed partial class LinearScan
                 }
                 else if (sourceAddressOrFill.Oper.IsAddrMode)
                 {
-                    var baseAddress = sourceAddressOrFill.AsAddrMode().BaseAddress
-                        ?? throw new FatalJitException("Contained ARM64 block source requires a base address.");
+                    var baseAddress = sourceAddressOrFill.AsAddrMode().BaseAddress;
+                    if (baseAddress is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("Contained ARM64 block source requires a base address.");
+                        return default!;
+                    }
                     useCount += buildAddrUses(baseAddress);
                 }
             }
@@ -368,11 +389,11 @@ public sealed partial class LinearScan
         }
 
         if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
+        {
+            if (Configuration.TARGET_RISCV64)
             {
-                if (Configuration.TARGET_RISCV64)
-                {
-                    assert(block.Oper.IsStoreBlk);
-                }
+                assert(block.Oper.IsStoreBlk);
+            }
 
             var destinationAddress = block.Addr;
             var source = block.Data;
@@ -424,10 +445,12 @@ public sealed partial class LinearScan
                         if (Configuration.TARGET_LOONGARCH64)
                         {
                             unreached();
-                            throw new FatalJitException(CORJIT_SKIPPED,
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                                 $"Unsupported LoongArch64 initialization block kind {block._kind}.");
+                            return default!;
                         }
-                        throw new FatalJitException($"Unsupported RISC-V initialization block kind {block._kind}.");
+                        FatalJitException.ThrowFatalJitException($"Unsupported RISC-V initialization block kind {block._kind}.");
+                        return default!;
                     }
                 }
             }
@@ -452,10 +475,12 @@ public sealed partial class LinearScan
                         if (Configuration.TARGET_LOONGARCH64)
                         {
                             unreached();
-                            throw new FatalJitException(CORJIT_SKIPPED,
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                                 $"Unsupported LoongArch64 copy block kind {block._kind}.");
+                            return default!;
                         }
-                        throw new FatalJitException($"Unsupported RISC-V copy block kind {block._kind}.");
+                        FatalJitException.ThrowFatalJitException($"Unsupported RISC-V copy block kind {block._kind}.");
+                        return default!;
                     }
                 }
             }
@@ -503,15 +528,16 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildBlockStore on this target");
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "LinearScan.buildBlockStore on this target is not implemented.");
+        return default!;
     }
 
     private int buildPutArgStk(GenTreePutArgStk argument)
     {
         if (Configuration.TARGET_XARCH)
-            {
-                var source = argument.Op1;
+        {
+            var source = argument.Op1;
             if (source.Oper is GT_FIELD_LIST)
             {
                 assert(source.IsContained);
@@ -549,8 +575,12 @@ public sealed partial class LinearScan
 
                             if (!canStoreFullSlot && varTypeIsByte(field.Type))
                             {
-                                var byteTemp = intTemp
-                                    ?? throw new FatalJitException("A partial x86 field store requires an internal register.");
+                                var byteTemp = intTemp;
+                                if (byteTemp is null)
+                                {
+                                    FatalJitException.ThrowFatalJitException("A partial x86 field store requires an internal register.");
+                                    return default!;
+                                }
                                 byteTemp.registerAssignment &= _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                             }
                         }
@@ -623,7 +653,12 @@ public sealed partial class LinearScan
                 }
                 default:
                 {
-                    throw new FatalJitException($"Unsupported stack argument kind {argument._kind}.");
+                    FatalJitException.ThrowFatalJitException(
+                        FatalJitErrorCode.UnsupportedStackArgumentKind,
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unsupported stack argument kind {argument._kind}."
+                    : null);
+                    return default!;
                 }
             }
 
@@ -637,7 +672,7 @@ public sealed partial class LinearScan
         }
 
         if (Configuration.TARGET_ARM64)
-            {
+        {
             var source = argument.Op1;
             var sourceCount = 0;
             if (source.Type is TYP_STRUCT)
@@ -685,7 +720,7 @@ public sealed partial class LinearScan
         }
 
         if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
-            {
+        {
             assert(argument.Oper.IsPutArgStk);
 
             var source = argument.Op1;
@@ -729,7 +764,8 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildPutArgStk on this target");
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "LinearScan.buildPutArgStk on this target is not implemented.");
+        return default!;
     }
 }

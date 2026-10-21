@@ -15,6 +15,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genCodeForSwap-----unimplemented/unused on RISCV64 yet----");
         }
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 GT_SWAP generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 GT_SWAP generation is not ported.");
+        return;
     }
 }

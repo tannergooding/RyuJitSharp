@@ -15,8 +15,15 @@ public partial class Compiler
         ushort outermostTryIndex, ushort enclosingTryIndex, ushort enclosingHndIndex,
         int regionCount, int clonedOutermostIndex)
     {
-        var map = info.Map
-            ?? throw new FatalJitException("Cloning a try region requires a block map.");
+        var map = info.Map;
+        if (map is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage103
+            );
+            return default!;
+        }
         assert(ehGetDsc(outermostTryIndex).ebdTryBeg == tryEntry);
         info.EHIndexShift = checked((uint)regionCount);
 
@@ -63,8 +70,15 @@ public partial class Compiler
         JITDUMP("Cloning blocks for try...\n");
         foreach (var block in blocks)
         {
-            var insertionPoint = insertAfter
-                ?? throw new FatalJitException("Cloning a try region requires an insertion point.");
+            var insertionPoint = insertAfter;
+            if (insertionPoint is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage104
+                );
+                return default!;
+            }
             var clone = fgNewBBafter(BBJ_ALWAYS, insertionPoint, extendRegion: false);
             JITDUMP($"Adding {FMT_BB(clone.bbNum)} (copy of {FMT_BB(block.bbNum)}) after {FMT_BB(insertionPoint.bbNum)}\n");
             map.Set(block, clone);
@@ -84,7 +98,11 @@ public partial class Compiler
         {
             if (!map.TryGetValue(block, out var clone))
             {
-                throw new FatalJitException("A cloned block requires its block-map entry.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage108
+                );
+                return default!;
             }
 
             void UpdateBlockReferences(ushort region)
@@ -191,8 +209,7 @@ public partial class Compiler
                 {
                     add.Dump();
                 }
-                var cloned = new AddCodeDsc
-                {
+                var cloned = new AddCodeDsc {
                     acdDstBlk = null,
                     acdTryIndex = cloneTry
                         ? checked((ushort)(add.acdTryIndex + indexShift)) : add.acdTryIndex,

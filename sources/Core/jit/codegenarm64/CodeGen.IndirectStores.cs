@@ -85,8 +85,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM64 SIMD12 indirect stores are unavailable for this target.");
+            return;
         }
 
         assert(treeNode.Oper is GT_STOREIND);

@@ -48,7 +48,8 @@ public partial class Compiler
             }
             else
             {
-                throw new FatalJitException("Unsupported or unset target architecture.");
+                FatalJitException.ThrowFatalJitException("Unsupported or unset target architecture.");
+                return;
             }
         }
 

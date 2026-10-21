@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARMARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM code generation was requested for a non-ARM target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM code generation was requested for a non-ARM target.");
+            return;
         }
 
         var targetReg = treeNode.RegNum;
@@ -84,8 +85,9 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_SIMD)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "SIMD constants are not supported by this ARM configuration.");
+                    return;
                 }
 
                 requireArm64Codegen(treeNode);
@@ -98,8 +100,9 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Masked SIMD constants are not supported by this ARM configuration.");
+                    return;
                 }
 
                 requireArm64Codegen(treeNode);
@@ -276,8 +279,9 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.SWIFT_SUPPORT)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Swift error returns are not supported by this ARM configuration.");
+                    return;
                 }
 
                 genSwiftErrorReturn(treeNode);
@@ -379,8 +383,9 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Hardware intrinsics are not supported by this ARM configuration.");
+                    return;
                 }
 
                 requireArm64Codegen(treeNode);
@@ -562,8 +567,9 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.SWIFT_SUPPORT)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "Swift error values are not supported by this ARM configuration.");
+                    return;
                 }
 
                 genCodeForSwiftErrorReg(treeNode);
@@ -727,8 +733,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 $"ARM64 code generation for {treeNode.Oper} is not supported on this target.");
+            return;
         }
     }
 
@@ -736,8 +743,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 $"ARM32 code generation for {treeNode.Oper} is not supported on this target.");
+            return;
         }
     }
 }

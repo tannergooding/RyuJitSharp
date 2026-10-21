@@ -11,8 +11,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "X86 stack-depth adjustment is not supported for this target.");
+            return;
         }
 
         if (emitCntStackDepth == 0)

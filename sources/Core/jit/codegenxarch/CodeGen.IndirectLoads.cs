@@ -45,7 +45,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 indirect loads require SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 indirect loads require SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

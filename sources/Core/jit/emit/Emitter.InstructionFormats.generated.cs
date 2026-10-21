@@ -889,7 +889,10 @@ public partial class Emitter
                 return s_emitFmtToOpsRiscV64;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Unsupported instruction format target.");
+            return default;
         }
     }
 
@@ -927,7 +930,10 @@ public partial class Emitter
                 return EmitFmtNamesRiscV64.Values;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Unsupported instruction format target.");
+            return default;
         }
     }
 

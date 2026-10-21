@@ -63,8 +63,9 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "WebAssembly SIMD loads require SIMD support.");
+                        return default!;
                     }
 
                     return INS_v128_load64_zero;
@@ -74,8 +75,9 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "WebAssembly SIMD loads require SIMD support.");
+                        return default!;
                     }
 
                     return INS_v128_load;
@@ -169,16 +171,18 @@ public sealed partial class CodeGen
                 return ins;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Integer load selection requires a supported target.");
+            return default!;
         }
 
         if (varTypeUsesMaskReg(srcType))
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Masked-register loads require masked hardware intrinsics.");
+                return default!;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -191,8 +195,9 @@ public sealed partial class CodeGen
                 return INS_sve_ldr;
             }
 
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Masked-register loads are not implemented for this target.");
+            return default!;
         }
 
         assert(varTypeUsesFloatReg(srcType));
@@ -260,6 +265,7 @@ public sealed partial class CodeGen
             }
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating-point load selection requires a supported target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-point load selection requires a supported target.");
+        return default!;
     }
 }

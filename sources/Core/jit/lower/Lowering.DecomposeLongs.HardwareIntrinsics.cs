@@ -15,9 +15,10 @@ public sealed partial class Lowering
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new FatalJitException(
+                FatalJitException.ThrowFatalJitException(
                     CORJIT_SKIPPED,
-                    "Hardware-intrinsic long decomposition is not available.");
+                "Hardware-intrinsic long decomposition is not available.");
+                return default!;
             }
 
             var tree = use.Def();

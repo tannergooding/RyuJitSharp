@@ -11,7 +11,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction sizing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-register instruction sizing requires xarch.");
+            return default!;
         }
 
         assert(id.idIns() != INS_invalid);
@@ -35,7 +36,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate instruction sizing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-immediate instruction sizing requires xarch.");
+            return default!;
         }
 
         var ins = id.idIns();

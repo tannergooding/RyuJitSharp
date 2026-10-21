@@ -11,7 +11,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch instruction tuple information is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch instruction tuple information is not available for this target.");
+            return default!;
         }
 
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_tupleTypes.Length);

@@ -20,20 +20,23 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_S");
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM64 stack instruction recording is not ported.");
+            return;
         }
 
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_S");
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 stack instruction recording is not ported.");
+            return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -69,21 +72,24 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_S_I");
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM64 stack-immediate instruction recording is not ported.");
+            return;
         }
 
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_S_I");
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 stack-immediate instruction recording is not ported.");
+            return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Stack-immediate instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

@@ -53,7 +53,8 @@ public partial class GenTree
             assert(false, "GetRegTypeByIndex for LclVar requires GetFieldTypeByIndex and a Compiler.");
         }
 
-        throw new FatalJitException("Invalid node type for GetRegTypeByIndex.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage228);
+        return default!;
     }
 
     public GenTreeFlags GetRegSpillFlagByIdx(int regIndex)
@@ -80,7 +81,8 @@ public partial class GenTree
             return AsLclVar().GetRegSpillFlagByIdx(checked((byte)regIndex));
         }
 
-        throw new FatalJitException("Invalid node type for GetRegSpillFlagByIdx.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage229);
+        return default!;
     }
 
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
@@ -112,6 +114,7 @@ public partial class GenTree
         }
 
         assert(false, "Invalid node type for SetRegSpillFlagByIdx");
-        throw new FatalJitException("Invalid node type for indexed register spill flags.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage230);
+        return;
     }
 }

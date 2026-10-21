@@ -313,7 +313,12 @@ public partial class Emitter
 
     public unsafe void emitDispInsHexArm32(instrDesc id, byte* code, nuint size)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Instruction display requires an active compiler.");
+            return;
+        }
         if (!compiler.opts.disCodeBytes || compiler.opts.disDiffable)
         {
             return;
@@ -417,11 +422,20 @@ public partial class Emitter
     private unsafe void emitDispInsHelpArm32(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset, byte* code, nuint size, insGroup? ig)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("Instruction display requires an active compiler.");
+            return;
+        }
         if (Configuration.DEBUG && compiler.verbose)
         {
-            var debugInfo = id.idDebugOnlyInfo()
-                ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
+            var debugInfo = id.idDebugOnlyInfo();
+            if (debugInfo is null)
+            {
+                FatalJitException.ThrowFatalJitException("Instruction display requires descriptor debug information.");
+                return;
+            }
             jitprintf($"IN{debugInfo.idNum:x4}: ");
         }
 
@@ -453,8 +467,7 @@ public partial class Emitter
         emitDispInstArm32(ins, id.idInsFlags());
         assert(!isNew || ((nuint)emitSizeOfInsDsc(id) == emitCurIGfreeNext - id.StorageOffset));
 
-        var attr = id.idGCref() switch
-        {
+        var attr = id.idGCref() switch {
             GCT_GCREF => EA_GCREF,
             GCT_BYREF => EA_BYREF,
             _ => id.idOpSize(),
@@ -520,8 +533,12 @@ public partial class Emitter
             case IF_ARM32_T1_D2:
             {
                 emitDispRegArm32(id.idReg3(), attr, false);
-                var debugInfo = id.idDebugOnlyInfo()
-                    ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
+                var debugInfo = id.idDebugOnlyInfo();
+                if (debugInfo is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Instruction display requires descriptor debug information.");
+                    return;
+                }
                 if (debugInfo.idMemCookie != 0)
                 {
                     methodName = compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie);
@@ -600,18 +617,33 @@ public partial class Emitter
                 {
                     var blocks = labelTable.Blocks;
                     assert(blocks.Length > 0);
-                    var isBound = emitCodeGetCookie(blocks[0]
-                        ?? throw new FatalJitException("An ARM32 label table contains a null block.")) is not null;
+                    var firstBlock = blocks[0];
+                    if (firstBlock is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            "An ARM32 label table contains a null block.");
+                        return;
+                    }
+
+                    var isBound = emitCodeGetCookie(firstBlock) is not null;
                     if (isBound)
                     {
                         jitprintf($"\n\n    J_M{compiler.compMethodID:D3}_DS{immediate:D2} LABEL   DWORD");
                         var blockCount = labelTable.dsSize / Configuration.TARGET_POINTER_SIZE;
                         for (uint index = 0; index < blockCount; index++)
                         {
-                            var block = blocks[index]
-                                ?? throw new FatalJitException("An ARM32 label table contains a null block.");
-                            var label = emitCodeGetCookie(block)
-                                ?? throw new FatalJitException("A bound ARM32 label table contains an unbound block.");
+                            var block = blocks[index];
+                            if (block is null)
+                            {
+                                FatalJitException.ThrowFatalJitException("An ARM32 label table contains a null block.");
+                                return;
+                            }
+                            var label = emitCodeGetCookie(block);
+                            if (label is null)
+                            {
+                                FatalJitException.ThrowFatalJitException("A bound ARM32 label table contains an unbound block.");
+                                return;
+                            }
                             jitprintf($"\n            DD      {emitLabelString(label)}");
                         }
                     }
@@ -991,18 +1023,32 @@ public partial class Emitter
                 emitDispRegArm32(id.idReg1(), attr, true);
                 if (id.idIsBound())
                 {
-                    var jump = id as instrDescJmp
-                        ?? throw new FatalJitException("A bound ARM32 label instruction has no jump descriptor.");
-                    var target = jump.idjTargetIG
-                        ?? throw new FatalJitException("A bound ARM32 label instruction has no instruction group.");
+                    if (id is not instrDescJmp jump)
+                    {
+                        FatalJitException.ThrowFatalJitException("A bound ARM32 label instruction has no jump descriptor.");
+                        return;
+                    }
+                    var target = jump.idjTargetIG;
+                    if (target is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("A bound ARM32 label instruction has no instruction group.");
+                        return;
+                    }
                     emitPrintLabel(target);
                 }
                 else
                 {
-                    var jump = id as instrDescJmp
-                        ?? throw new FatalJitException("An unbound ARM32 label instruction has no jump descriptor.");
-                    var target = jump.idjTarget
-                        ?? throw new FatalJitException("An unbound ARM32 label instruction has no basic block.");
+                    if (id is not instrDescJmp jump)
+                    {
+                        FatalJitException.ThrowFatalJitException("An unbound ARM32 label instruction has no jump descriptor.");
+                        return;
+                    }
+                    var target = jump.idjTarget;
+                    if (target is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("An unbound ARM32 label instruction has no basic block.");
+                        return;
+                    }
                     jitprintf($"L_M{compiler.compMethodID:D3}_{FMT_BB(target.bbNum)}");
                 }
                 break;
@@ -1055,18 +1101,32 @@ public partial class Emitter
                 }
                 else if (id.idIsBound())
                 {
-                    var jump = id as instrDescJmp
-                        ?? throw new FatalJitException("A bound ARM32 branch has no jump descriptor.");
-                    var target = jump.idjTargetIG
-                        ?? throw new FatalJitException("A bound ARM32 branch has no instruction group.");
+                    if (id is not instrDescJmp jump)
+                    {
+                        FatalJitException.ThrowFatalJitException("A bound ARM32 branch has no jump descriptor.");
+                        return;
+                    }
+                    var target = jump.idjTargetIG;
+                    if (target is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("A bound ARM32 branch has no instruction group.");
+                        return;
+                    }
                     emitPrintLabel(target);
                 }
                 else
                 {
-                    var jump = id as instrDescJmp
-                        ?? throw new FatalJitException("An unbound ARM32 branch has no jump descriptor.");
-                    var target = jump.idjTarget
-                        ?? throw new FatalJitException("An unbound ARM32 branch has no basic block.");
+                    if (id is not instrDescJmp jump)
+                    {
+                        FatalJitException.ThrowFatalJitException("An unbound ARM32 branch has no jump descriptor.");
+                        return;
+                    }
+                    var target = jump.idjTarget;
+                    if (target is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("An unbound ARM32 branch has no basic block.");
+                        return;
+                    }
                     jitprintf($"L_M{compiler.compMethodID:D3}_{FMT_BB(target.bbNum)}");
                 }
                 break;
@@ -1074,8 +1134,12 @@ public partial class Emitter
 
             case IF_ARM32_T2_J3:
             {
-                var debugInfo = id.idDebugOnlyInfo()
-                    ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
+                var debugInfo = id.idDebugOnlyInfo();
+                if (debugInfo is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Instruction display requires descriptor debug information.");
+                    return;
+                }
                 methodName = compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie);
                 jitprintf(methodName);
                 break;

@@ -20,7 +20,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm throw-helper generation uses a separate target path.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm throw-helper generation uses a separate target path.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -89,7 +90,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Overflow checking uses a separate target path.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Overflow checking uses a separate target path.");
+            return;
         }
 
         noway_assert(tree.HasOverflowCheck);
@@ -116,7 +118,8 @@ public sealed partial class CodeGen
             }
             else
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Overflow checking is not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Overflow checking is not implemented for this target.");
+                return;
             }
         }
 
@@ -154,7 +157,8 @@ public sealed partial class CodeGen
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump instruction generation is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump instruction generation is not implemented for this target.");
+        return;
     }
 
     public void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize)
@@ -190,8 +194,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Helper call generation is not implemented for this target.");
+            return;
         }
     }
 }

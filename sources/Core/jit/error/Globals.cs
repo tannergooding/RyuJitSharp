@@ -116,7 +116,8 @@ public partial class Globals
             }
         }
 
-        throw new FatalJitException(jitResult);
+        FatalJitException.ThrowFatalJitException(jitResult);
+        return;
     }
 
     [DoesNotReturn]
@@ -189,6 +190,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void RECORD_NOWAY_ASSERT(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         if (Configuration.MEASURE_NOWAY)
@@ -198,6 +200,7 @@ public partial class Globals
     }
 
     [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void BADCODE(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         debugError(message, filePath, lineNumber);
@@ -212,11 +215,12 @@ public partial class Globals
     }
 
     // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         RECORD_NOWAY_ASSERT(conditionExpression, filePath, lineNumber);
 
-        if (!condition)                                                                                                   
+        if (!condition)
         {
             if (Configuration.DEBUG)
             {
@@ -230,6 +234,7 @@ public partial class Globals
     }
 
     [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void unreached([CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         if (Configuration.DEBUG)
@@ -243,6 +248,7 @@ public partial class Globals
     }
 
     [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NO_WAY(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         if (Configuration.DEBUG)
@@ -260,6 +266,7 @@ public partial class Globals
     [Conditional("DEBUG")]
     public static void NO_WAY_NOASSERT(ReadOnlySpan<char> message) => noWay();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NOWAY_MSG(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         if (Configuration.DEBUG)
@@ -288,6 +295,7 @@ public partial class Globals
     // supported by our current implementation because of various
     // limitations (that could be removed in the future)
     [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void IMPL_LIMITATION(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
         debugError(message, filePath, lineNumber);
@@ -374,6 +382,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_AMD64(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",
@@ -385,6 +394,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_X86(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",
@@ -396,6 +406,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_ARM(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",
@@ -407,6 +418,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_ARM64(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",
@@ -418,6 +430,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_LOONGARCH64(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",
@@ -429,6 +442,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_RISCV64(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",
@@ -440,6 +454,7 @@ public partial class Globals
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void NYI_WASM(
         ReadOnlySpan<char> message,
         [CallerFilePath] ReadOnlySpan<char> filePath = "",

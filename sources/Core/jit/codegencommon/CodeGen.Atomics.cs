@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Locked addition generation outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Locked addition generation outside xarch is not implemented.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -229,7 +230,8 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+            return;
         }
 
         if (Configuration.TARGET_RISCV64)
@@ -251,14 +253,40 @@ public sealed partial class CodeGen
 
             var dataSize = riscvData.Type.EmitActualSize;
             var is4 = dataSize == EA_4BYTE;
-            var ins = node.Oper switch {
-                GT_XORR => is4 ? INS_amoor_w : INS_amoor_d,
-                GT_XAND => is4 ? INS_amoand_w : INS_amoand_d,
-                GT_XCHG => is4 ? INS_amoswap_w : INS_amoswap_d,
-                GT_XADD => is4 ? INS_amoadd_w : INS_amoadd_d,
-                _ => throw new FatalJitException(CORJIT_INTERNALERROR,
-                    "Unexpected operation in locked instruction generation."),
-            };
+            instruction ins;
+            switch (node.Oper)
+            {
+                case GT_XORR:
+                {
+                    ins = is4 ? INS_amoor_w : INS_amoor_d;
+                    break;
+                }
+
+                case GT_XAND:
+                {
+                    ins = is4 ? INS_amoand_w : INS_amoand_d;
+                    break;
+                }
+
+                case GT_XCHG:
+                {
+                    ins = is4 ? INS_amoswap_w : INS_amoswap_d;
+                    break;
+                }
+
+                case GT_XADD:
+                {
+                    ins = is4 ? INS_amoadd_w : INS_amoadd_d;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR, "Unexpected operation in locked instruction generation.");
+                    return;
+                }
+            }
 
             Emitter.emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 
@@ -271,7 +299,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Locked instruction generation outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Locked instruction generation outside xarch is not implemented.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -338,7 +367,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+            return;
         }
 
         if (Configuration.TARGET_RISCV64)
@@ -524,7 +554,8 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Compare-exchange generation outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Compare-exchange generation outside xarch is not implemented.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -616,7 +647,8 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_LOONGARCH64 || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Memory barrier generation outside supported targets is not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Memory barrier generation outside supported targets is not implemented.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

@@ -13,7 +13,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm stackification was dispatched for another target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm stackification was dispatched for another target.");
+            return;
         }
 
         // Stackification runs before liveness so any newly introduced locals participate in register allocation.
@@ -99,8 +100,7 @@ public sealed partial class Lowering
                     break;
                 }
 
-                _ = node.VisitOperandUses((ref GenTree operand) =>
-                {
+                _ = node.VisitOperandUses((ref GenTree operand) => {
                     _uses.Push(StackifierUse.FromUse(ref operand, node));
                     return GenTree.VisitResult.Continue;
                 });
@@ -311,7 +311,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_WASM || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic lowering is not available.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic lowering is not available.");
+            return default!;
         }
 
         var intrinsic = node.HWIntrinsicId;

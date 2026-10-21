@@ -41,8 +41,9 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Immediate-only instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -89,7 +90,8 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException("Unexpected immediate-only instruction.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedImmediateOnlyInstruction);
+                return;
             }
         }
 
@@ -110,8 +112,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "X86 stack-depth adjustment is not supported for this target.");
+            return;
         }
 
         if (ins == INS_push)

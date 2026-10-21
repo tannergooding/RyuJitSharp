@@ -12,29 +12,93 @@ public partial class Compiler
 {
     private static bool optIterSmallOverflow(int iterAtExit, var_types incrType)
     {
-        var maximum = incrType switch
+        int maximum;
+        switch (incrType)
         {
-            TYP_BYTE => sbyte.MaxValue,
-            TYP_UBYTE => byte.MaxValue,
-            TYP_SHORT => short.MaxValue,
-            TYP_USHORT => ushort.MaxValue,
-            TYP_INT or TYP_UINT => int.MaxValue,
-            _ => throw new FatalJitException("Unexpected loop iterator type."),
-        };
+            case TYP_BYTE:
+            {
+                maximum = sbyte.MaxValue;
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                maximum = byte.MaxValue;
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                maximum = short.MaxValue;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                maximum = ushort.MaxValue;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                maximum = int.MaxValue;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage165
+                );
+                return false;
+            }
+        }
 
         return iterAtExit > maximum;
     }
 
     private static bool optIterSmallUnderflow(int iterAtExit, var_types decrType)
     {
-        var minimum = decrType switch
+        int minimum;
+        switch (decrType)
         {
-            TYP_BYTE => sbyte.MinValue,
-            TYP_SHORT => short.MinValue,
-            TYP_UBYTE or TYP_USHORT => 0,
-            TYP_INT or TYP_UINT => int.MinValue,
-            _ => throw new FatalJitException("Unexpected loop iterator type."),
-        };
+            case TYP_BYTE:
+            {
+                minimum = sbyte.MinValue;
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                minimum = short.MinValue;
+                break;
+            }
+
+            case TYP_UBYTE:
+            case TYP_USHORT:
+            {
+                minimum = 0;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                minimum = int.MinValue;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage165
+                );
+                return false;
+            }
+        }
 
         return iterAtExit < minimum;
     }
@@ -86,7 +150,12 @@ public partial class Compiler
 
             default:
             {
-                throw new FatalJitException("Unexpected loop iterator type.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage165
+                );
+                iterCount = default!;
+                return default!;
             }
         }
 
@@ -110,7 +179,12 @@ public partial class Compiler
                 return false;
             }
 
-            throw new FatalJitException("Unexpected loop iterator operator.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage166
+            );
+            iterCount = default!;
+            return default!;
         }
 
         uint loopCount = 0;
@@ -178,7 +252,12 @@ public partial class Compiler
 
             default:
             {
-                throw new FatalJitException("Unexpected loop test operator.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage167
+                );
+                iterCount = default!;
+                return default!;
             }
         }
 
@@ -199,14 +278,43 @@ public partial class Compiler
             return false;
         }
 
-        var stillInLoop = testOper switch
+        bool stillInLoop;
+        switch (testOper)
         {
-            GT_NE or GT_LT => iterAtExitX < constLimitX,
-            GT_LE => iterAtExitX <= constLimitX,
-            GT_GT => iterAtExitX > constLimitX,
-            GT_GE => iterAtExitX >= constLimitX,
-            _ => throw new FatalJitException("Unexpected loop test operator."),
-        };
+            case GT_NE:
+            case GT_LT:
+            {
+                stillInLoop = iterAtExitX < constLimitX;
+                break;
+            }
+
+            case GT_LE:
+            {
+                stillInLoop = iterAtExitX <= constLimitX;
+                break;
+            }
+
+            case GT_GT:
+            {
+                stillInLoop = iterAtExitX > constLimitX;
+                break;
+            }
+
+            case GT_GE:
+            {
+                stillInLoop = iterAtExitX >= constLimitX;
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage167
+                );
+                return false;
+            }
+        }
         if (stillInLoop)
         {
             return false;

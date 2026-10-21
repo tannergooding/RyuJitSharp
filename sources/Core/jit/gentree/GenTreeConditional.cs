@@ -20,7 +20,11 @@ public sealed class GenTreeConditional : GenTreeOp
     {
         if ((oper is GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG) && !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_INTERNALERROR, "ARM64 conditional-select nodes are only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage232
+            );
+            return default!;
         }
 
         return oper;

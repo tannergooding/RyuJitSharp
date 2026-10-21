@@ -65,7 +65,15 @@ public sealed partial class LinearScan
         }
         else if (block.Kind is BBJ_COND or BBJ_SWITCH)
         {
-            var branch = block.LastNode ?? throw new FatalJitException("Branch resolution requires a terminator.");
+            var branch = block.LastNode;
+            if (branch is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage298
+                );
+                return;
+            }
             assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);
             block.InsertBefore(branch, treeRange);
         }
@@ -106,7 +114,15 @@ public sealed partial class LinearScan
         }
         else if (block.Kind is BBJ_COND or BBJ_SWITCH)
         {
-            var branch = block.LastNode ?? throw new FatalJitException("Swap resolution requires a terminator.");
+            var branch = block.LastNode;
+            if (branch is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage299
+                );
+                return;
+            }
             assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);
             block.InsertBefore(branch, range);
         }
@@ -161,7 +177,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         var upperFrom = fromReg + 1;

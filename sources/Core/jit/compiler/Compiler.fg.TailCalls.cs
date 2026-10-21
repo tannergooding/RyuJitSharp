@@ -178,7 +178,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_FASTTAILCALL)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Fast tail-call argument checks are not supported on this platform.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Fast tail-call argument checks are not supported on this platform.");
+            return default!;
         }
 
         if (SupportsImplicitByRefs)
@@ -199,7 +200,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_FASTTAILCALL)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Fast tail-call argument checks are not supported on this platform.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Fast tail-call argument checks are not supported on this platform.");
+            return default!;
         }
 
         if (!argument.AbiInfo.IsPassedByReference)

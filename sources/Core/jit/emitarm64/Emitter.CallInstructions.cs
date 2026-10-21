@@ -16,7 +16,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 call recording is only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 call recording is only supported on ARM64.");
+            return;
         }
 
         assert(_compiler is not null);

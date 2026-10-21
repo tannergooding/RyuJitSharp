@@ -76,7 +76,8 @@ public ref struct PlatformClassifier
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "No ABI classifier is available for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "No ABI classifier is available for this target.");
+            return;
         }
     }
 
@@ -84,19 +85,63 @@ public ref struct PlatformClassifier
         "Design",
         "CA1065:Do not raise exceptions in unexpected locations",
         Justification = "An invalid ABI classifier kind indicates corrupt compiler state and must terminate compilation.")]
-    public readonly int StackSize => _kind switch
+    public readonly int StackSize
     {
-        ClassifierKind.X86 when Configuration.TARGET_XARCH && !Configuration.TARGET_64BIT => _x86.StackSize,
-        ClassifierKind.WindowsAmd64 when Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI =>
-            _windowsAmd64.StackSize,
-        ClassifierKind.UnixAmd64 when Configuration.UNIX_AMD64_ABI => _unixAmd64.StackSize,
-        ClassifierKind.Arm64 when Configuration.TARGET_ARM64 => _arm64.StackSize,
-        ClassifierKind.Arm32 when Configuration.TARGET_ARM => _arm32.StackSize,
-        ClassifierKind.RiscV64 when Configuration.TARGET_RISCV64 => _riscV64.StackSize,
-        ClassifierKind.LoongArch64 when Configuration.TARGET_LOONGARCH64 => _loongArch64.StackSize,
-        ClassifierKind.Wasm when Configuration.TARGET_WASM => _wasm.StackSize,
-        _ => throw new FatalJitException("Invalid ABI classifier kind."),
-    };
+        get
+        {
+            switch (_kind)
+            {
+                case ClassifierKind.X86 when Configuration.TARGET_XARCH && !Configuration.TARGET_64BIT:
+                {
+                    return _x86.StackSize;
+                }
+
+                case ClassifierKind.WindowsAmd64 when Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI:
+                {
+                    return _windowsAmd64.StackSize;
+                }
+
+                case ClassifierKind.UnixAmd64 when Configuration.UNIX_AMD64_ABI:
+                {
+                    return _unixAmd64.StackSize;
+                }
+
+                case ClassifierKind.Arm64 when Configuration.TARGET_ARM64:
+                {
+                    return _arm64.StackSize;
+                }
+
+                case ClassifierKind.Arm32 when Configuration.TARGET_ARM:
+                {
+                    return _arm32.StackSize;
+                }
+
+                case ClassifierKind.RiscV64 when Configuration.TARGET_RISCV64:
+                {
+                    return _riscV64.StackSize;
+                }
+
+                case ClassifierKind.LoongArch64 when Configuration.TARGET_LOONGARCH64:
+                {
+                    return _loongArch64.StackSize;
+                }
+
+                case ClassifierKind.Wasm when Configuration.TARGET_WASM:
+                {
+                    return _wasm.StackSize;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage077
+                    );
+                    return default!;
+                }
+            }
+        }
+    }
 
     public unsafe AbiPassingInformation Classify(
         Compiler comp, var_types type, ClassLayout? structLayout, WellKnownArg wellKnownParam)
@@ -145,7 +190,11 @@ public ref struct PlatformClassifier
 
             default:
             {
-                throw new FatalJitException("Invalid ABI classifier kind.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage077
+                );
+                return default!;
             }
         }
     }

@@ -60,8 +60,12 @@ public sealed partial class CodeGen
                 var pathPointer = JitConfig.JitRawHexCodeFile;
                 if (pathPointer is not null)
                 {
-                    var path = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint)pathPointer)
-                        ?? throw new FatalJitException(CORJIT_SKIPPED, "Raw-hex output file path is invalid.");
+                    var path = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint)pathPointer);
+                    if (path is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Raw-hex output file path is invalid.");
+                        return;
+                    }
                     using var file = OpenRichDebugInfoFile(path);
                     if (file is not null)
                     {

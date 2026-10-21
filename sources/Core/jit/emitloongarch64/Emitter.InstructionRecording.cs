@@ -77,9 +77,18 @@ public partial class Emitter
             return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 jump recording requires an active compiler.");
-        var currentBlock = compiler.compCurBB
-            ?? throw new FatalJitException("LoongArch64 jump recording requires a current basic block.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 jump recording requires an active compiler.");
+            return;
+        }
+        var currentBlock = compiler.compCurBB;
+        if (currentBlock is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 jump recording requires a current basic block.");
+            return;
+        }
         assert(target.HasFlag(BBF_HAS_LABEL));
         assert(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_bceqz, INS_bl));
 
@@ -112,8 +121,12 @@ public partial class Emitter
     private void emitInsRLoongArchLabel(instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
         assert(target.HasFlag(BBF_HAS_LABEL));
-        var compiler = _compiler
-            ?? throw new FatalJitException("LoongArch64 label recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 label recording requires an active compiler.");
+            return;
+        }
         var id = emitNewInstr(attr);
 
         id.idIns(ins);
@@ -158,8 +171,12 @@ public partial class Emitter
     private void emitInsRLoongArchGroupLabel(instruction ins, emitAttr attr, insGroup target, regNumber reg)
     {
         assert(target is not null);
-        var compiler = _compiler
-            ?? throw new FatalJitException("LoongArch64 instruction-group label recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 instruction-group label recording requires an active compiler.");
+            return;
+        }
         var id = emitNewInstr(attr);
 
         id.idIns(ins);
@@ -189,7 +206,12 @@ public partial class Emitter
                 INS_st_b or INS_st_h or INS_stx_b or INS_stx_h);
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 stack stores require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 stack stores require an active compiler.");
+            return;
+        }
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var imm = offset < 0 ? unchecked((nint)(-offset - 8)) : unchecked((nint)(baseOffset + offset));
         var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
@@ -246,7 +268,12 @@ public partial class Emitter
             assert(size == EA_8BYTE);
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 stack loads require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 stack loads require an active compiler.");
+            return;
+        }
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var imm = offset < 0 ? unchecked((nint)(-offset - 8)) : unchecked((nint)(baseOffset + offset));
         var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
@@ -793,8 +820,7 @@ public partial class Emitter
                 code |= unchecked((uint)reg1) & 0x1f;
                 code |= unchecked((uint)reg2) << 5;
                 code |= (unchecked((uint)imm1) & 0xff) << 10;
-                var indexMask = ins switch
-                {
+                var indexMask = ins switch {
                     INS_vstelm_d => 0x1,
                     INS_vstelm_w or INS_xvstelm_d => 0x3,
                     INS_vstelm_h or INS_xvstelm_w => 0x7,
@@ -1044,13 +1070,13 @@ public partial class Emitter
             }
         }
         else
-        if (attr == EA_4BYTE && ins == INS_mov)
-        {
-            emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
-        }
-        else
-        {
-            emitIns_R_R(ins, attr, dstReg, srcReg);
-        }
+            if (attr == EA_4BYTE && ins == INS_mov)
+            {
+                emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
+            }
+            else
+            {
+                emitIns_R_R(ins, attr, dstReg, srcReg);
+            }
     }
 }

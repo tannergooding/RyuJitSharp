@@ -76,8 +76,12 @@ public sealed partial class CodeGen
         Emitter.emitIns(INS_code_size);
 
         ref var func = ref _compiler.funGetFunc(ROOT_FUNC_IDX);
-        var localDeclarations = func.funWasmLocalDecls
-            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm local declarations are missing.");
+        var localDeclarations = func.funWasmLocalDecls;
+        if (localDeclarations is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm local declarations are missing.");
+            return;
+        }
         assert(_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX);
 
         Emitter.emitIns_I(INS_local_cnt, EA_8BYTE, localDeclarations.Count);
@@ -202,13 +206,34 @@ public sealed partial class CodeGen
             return INS_none;
         }
 
-        return (toType, fromType) switch {
-            (TYP_INT, TYP_FLOAT) => INS_i32_reinterpret_f32,
-            (TYP_FLOAT, TYP_INT) => INS_f32_reinterpret_i32,
-            (TYP_LONG, TYP_DOUBLE) => INS_i64_reinterpret_f64,
-            (TYP_DOUBLE, TYP_LONG) => INS_f64_reinterpret_i64,
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm bitcast."),
-        };
+        switch ((toType, fromType))
+        {
+            case (TYP_INT, TYP_FLOAT):
+            {
+                return INS_i32_reinterpret_f32;
+            }
+
+            case (TYP_FLOAT, TYP_INT):
+            {
+                return INS_f32_reinterpret_i32;
+            }
+
+            case (TYP_LONG, TYP_DOUBLE):
+            {
+                return INS_i64_reinterpret_f64;
+            }
+
+            case (TYP_DOUBLE, TYP_LONG):
+            {
+                return INS_f64_reinterpret_i64;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm bitcast.");
+                return default!;
+            }
+        }
     }
 
     internal var_types genParamStackTypeWasm(in LclVarDsc descriptor, in AbiPassingSegment segment)
@@ -420,8 +445,12 @@ public sealed partial class CodeGen
         var funcletIndex = _compiler.funCurrentFuncIdx();
         assert(funcletIndex > 0);
         ref var func = ref _compiler.funGetFunc(funcletIndex);
-        var localDeclarations = func.funWasmLocalDecls
-            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm funclet local declarations are missing.");
+        var localDeclarations = func.funWasmLocalDecls;
+        if (localDeclarations is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm funclet local declarations are missing.");
+            return;
+        }
         Emitter.emitIns_I(INS_local_cnt, EA_8BYTE, localDeclarations.Count);
 
         uint localsCount = 0;

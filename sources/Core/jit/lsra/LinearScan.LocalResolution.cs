@@ -11,7 +11,11 @@ public sealed partial class LinearScan
     {
         if ((block is null) != (treeNode is null) || !_enregisterLocalVars)
         {
-            throw new FatalJitException("Local register resolution requires matching block/node ownership and enregistered locals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage335
+            );
+            return;
         }
         assert((block is null) == (treeNode is null));
         assert(_enregisterLocalVars);
@@ -30,8 +34,15 @@ public sealed partial class LinearScan
                 (interval.physReg == REG_NA) && currentRefPosition.RegOptional() &&
                 currentRefPosition.lastUse && (currentRefPosition.refType is RefType.RefTypeUse))
             {
-                var inMap = getInVarToRegMap(_currentBlockNumber)
-                    ?? throw new FatalJitException("Contained local resolution requires an incoming variable map.");
+                var inMap = getInVarToRegMap(_currentBlockNumber);
+                if (inMap is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage336
+                    );
+                    return;
+                }
                 assert(getVarReg(inMap, local._varIndex) == REG_STK);
                 currentRefPosition.registerAssignment = SRBM_NONE;
                 writeLocalReg(treeNode, interval.varNum, REG_NA);
@@ -55,7 +66,11 @@ public sealed partial class LinearScan
             {
                 if (treeNode is null)
                 {
-                    throw new FatalJitException("A contained local use requires its tree node.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage337
+                    );
+                    return;
                 }
                 if (!treeNode.IsMultiReg)
                 {
@@ -85,8 +100,15 @@ public sealed partial class LinearScan
         if ((currentRefPosition.refType is RefType.RefTypeUse) && !currentRefPosition.reload &&
             (interval.physReg == REG_NA))
         {
-            var inMap = getInVarToRegMap(_currentBlockNumber)
-                ?? throw new FatalJitException("Reload resolution requires an incoming variable map.");
+            var inMap = getInVarToRegMap(_currentBlockNumber);
+            if (inMap is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage338
+                );
+                return;
+            }
             assert(getVarReg(inMap, local._varIndex) == REG_STK);
             currentRefPosition.reload = true;
         }
@@ -157,7 +179,11 @@ public sealed partial class LinearScan
             {
                 if (treeNode is null)
                 {
-                    throw new FatalJitException("A copied or moved local reference requires its tree node.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage339
+                    );
+                    return;
                 }
                 writeLocalReg(treeNode, interval.varNum, interval.physReg);
 
@@ -175,8 +201,15 @@ public sealed partial class LinearScan
                 // copies and home-register moves require an explicit GT_COPY.
                 if (!currentRefPosition.isFixedRegRef || currentRefPosition.moveReg)
                 {
-                    var owningBlock = block
-                        ?? throw new FatalJitException("A copied local reference requires its owning block.");
+                    var owningBlock = block;
+                    if (owningBlock is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage340
+                        );
+                        return;
+                    }
                     insertCopyOrReload(owningBlock, treeNode, currentRefPosition.getMultiRegIdx(), currentRefPosition);
                 }
             }

@@ -9,8 +9,15 @@ public partial class Compiler
 {
     public void optRecordLoopMemoryDependence(GenTree tree, BasicBlock block, ValueNum memoryVN)
     {
-        var store = vnStore
-            ?? throw new FatalJitException("Loop memory dependence requires a value number store.");
+        var store = vnStore;
+        if (store is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage207
+            );
+            return;
+        }
         var updateLoop = store.LoopOfVN(memoryVN);
         if (updateLoop is null)
         {

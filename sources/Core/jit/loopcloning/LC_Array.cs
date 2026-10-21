@@ -82,7 +82,11 @@ public struct LC_Array
     {
         if (Type is not ArrType.Jagged)
         {
-            throw new FatalJitException("LC_Array.ToGenTree does not support MD arrays in the pinned native implementation.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage249
+            );
+            return default!;
         }
 
         GenTree array = compiler.gtNewLclvNode(compiler.lvaGetDesc(ArrIndex.ArrLcl).Type, ArrIndex.ArrLcl);

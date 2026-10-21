@@ -30,7 +30,11 @@ public sealed partial class LinearScan
         assert(!_enregisterLocalVars);
         if (_enregisterLocalVars)
         {
-            throw new FatalJitException("Minimal register allocation cannot run with enregistered locals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage359
+            );
+            return;
         }
 
         JITDUMP("*************** In LinearScan::allocateRegistersMinimal()\n");
@@ -121,8 +125,12 @@ public sealed partial class LinearScan
             {
                 assert(lastAllocatedRefPosition.registerAssignment != SRBM_NONE);
                 var lastAllocatedInterval = lastAllocatedRefPosition.getInterval();
-                var register = lastAllocatedInterval.assignedReg
-                    ?? throw new FatalJitException("Stress spilling requires an assigned register.");
+                var register = lastAllocatedInterval.assignedReg;
+                if (register is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Stress spilling requires an assigned register.");
+                    return;
+                }
                 _activeRefPosition = lastAllocatedRefPosition;
                 unassignPhysReg(register, lastAllocatedRefPosition);
                 _activeRefPosition = null;
@@ -264,7 +272,11 @@ public sealed partial class LinearScan
             assert(!currentInterval.isLocalVar);
             if (currentInterval.isLocalVar)
             {
-                throw new FatalJitException("Minimal LSRA references must not be local-variable intervals.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage360
+                );
+                return;
             }
 
             var assignedRegister = currentInterval.physReg;
@@ -276,10 +288,24 @@ public sealed partial class LinearScan
                 if (assignedRegister != REG_NA)
                 {
                     var register = getRegisterRecord(assignedRegister);
-                    var assignedInterval = register.assignedInterval
-                        ?? throw new FatalJitException("An upper-vector save requires an assigned register.");
-                    var firstReference = currentInterval.firstRefPosition
-                        ?? throw new FatalJitException("An upper-vector interval must have a first reference.");
+                    var assignedInterval = register.assignedInterval;
+                    if (assignedInterval is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage361
+                        );
+                        return;
+                    }
+                    var firstReference = currentInterval.firstRefPosition;
+                    if (firstReference is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage362
+                        );
+                        return;
+                    }
                     unassignPhysReg(register, firstReference);
                     if (assignedInterval.isConstant)
                     {
@@ -367,7 +393,11 @@ public sealed partial class LinearScan
                     var copyRegister = assignCopyRegMinimal(currentRefPosition);
                     if (copyRegister == REG_NA)
                     {
-                        throw new FatalJitException("A required copy-register allocation found no register.");
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage363
+                        );
+                        return;
                     }
 
                     lastAllocatedRefPosition = currentRefPosition;
@@ -783,7 +813,8 @@ public sealed partial class LinearScan
             }
             default:
             {
-                throw new FatalJitException($"Unsupported minimal LSRA dump event: {allocationEvent}.");
+                FatalJitException.ThrowFatalJitException($"Unsupported minimal LSRA dump event: {allocationEvent}.");
+                return;
             }
         }
     }

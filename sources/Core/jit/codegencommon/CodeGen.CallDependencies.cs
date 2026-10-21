@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.UNIX_AMD64_ABI && call.Args.IsVarArgs)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unix AMD64 varargs are unsupported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unix AMD64 varargs are unsupported.");
+            return;
         }
 
         if (Configuration.TARGET_XARCH)
@@ -36,7 +37,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Call generation is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call generation is not implemented for this target.");
+            return;
         }
     }
 
@@ -64,8 +66,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Call-instruction generation is not implemented for this target.");
+            return;
         }
     }
 }

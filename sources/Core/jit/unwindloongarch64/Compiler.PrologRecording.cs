@@ -133,7 +133,8 @@ public partial class Compiler
 
     public void unwindSaveRegPairLoongArch64(regNumber reg1, regNumber reg2, int offset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "unwindSaveRegPair is not implemented for LoongArch64.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unwindSaveRegPair is not implemented for LoongArch64.");
+        return;
     }
 
     public void unwindReturnLoongArch64(regNumber reg)

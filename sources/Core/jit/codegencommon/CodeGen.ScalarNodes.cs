@@ -35,8 +35,9 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Saturating increment generation is not implemented for this target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -59,7 +60,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -118,8 +120,9 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Physical register generation is not implemented for this target.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

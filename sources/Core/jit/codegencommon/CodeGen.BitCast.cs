@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm register bitcast generation is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm register bitcast generation is not ported.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

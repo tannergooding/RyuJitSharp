@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -32,7 +33,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+            return default!;
         }
 
         var isInfo = emitGetSchedInfo(insFmt);

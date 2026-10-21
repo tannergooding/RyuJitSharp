@@ -91,8 +91,15 @@ public sealed partial class ObjectAllocator
         }
         else
         {
-            var reason = candidate.OnHeapReason
-                ?? throw new FatalJitException("A rejected stack allocation requires a reason.");
+            var reason = candidate.OnHeapReason;
+            if (reason is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage421
+                );
+                return;
+            }
             _ = reason;
             if (Configuration.DEBUG)
             {
@@ -142,17 +149,38 @@ public sealed partial class ObjectAllocator
                 continue;
             }
 
-            var dfs = compiler._dfsTree
-                ?? throw new FatalJitException("Conditional escape cloning requires a DFS tree.");
+            var dfs = compiler._dfsTree;
+            if (dfs is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage422
+                );
+                return default!;
+            }
             if (!dfs.Contains(candidate.Block))
             {
                 continue;
             }
 
-            var dom = compiler._domTree
-                ?? throw new FatalJitException("Conditional escape cloning requires dominators.");
-            var definition = clone.DefBlock
-                ?? throw new FatalJitException("Conditional escape cloning requires a definition block.");
+            var dom = compiler._domTree;
+            if (dom is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage423
+                );
+                return default!;
+            }
+            var definition = clone.DefBlock;
+            if (definition is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage424
+                );
+                return default!;
+            }
             if (dom.Dominates(clone.GuardBlock, candidate.Block) &&
                 !dom.Dominates(definition, candidate.Block))
             {
@@ -181,7 +209,11 @@ public sealed partial class ObjectAllocator
 
             default:
             {
-                throw new FatalJitException("Unexpected object allocation candidate kind.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage425
+                );
+                return default!;
             }
         }
     }
@@ -198,8 +230,15 @@ public sealed partial class ObjectAllocator
 
         var call = candidate.Tree.AsLclVar().Data.AsCall();
         var clsHnd = compiler.gtGetHelperCallClassHandle(call, out var isExact, out var isNonNull);
-        var length = call.Args.GetUserArgByIndex(1)?.Node
-            ?? throw new FatalJitException("A new-array helper requires a length argument.");
+        var length = call.Args.GetUserArgByIndex(1)?.Node;
+        if (length is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage426
+            );
+            return default!;
+        }
         var blockSize = 0;
         compiler.Metrics.NewArrayHelperCalls++;
 

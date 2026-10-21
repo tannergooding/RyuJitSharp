@@ -18,7 +18,8 @@ public sealed unsafe partial class GcInfoEncoder
     {
         if (Configuration.TARGET_ARM || Configuration.TARGET_ARMARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "GC info encoding is not implemented for ARM targets.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC info encoding is not implemented for ARM targets.");
+            return;
         }
 
         if (!Configuration.TARGET_AMD64)
@@ -192,8 +193,9 @@ public sealed unsafe partial class GcInfoEncoder
 
     public void SetSizeOfEditAndContinueFixedStackFrame(uint size)
     {
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "ARM64 Edit-and-Continue GC-info metadata is not implemented.");
+        return;
     }
 
     public void SetWantsReportOnlyLeaf()

@@ -20,7 +20,11 @@ public partial class Compiler
         var link = gtFindLink(stmt, tree);
         if (Unsafe.IsNullRef(ref link.result))
         {
-            throw new FatalJitException("An induction variable use is not owned by its statement.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage138
+            );
+            return default!;
         }
         return link.parent;
     }
@@ -28,7 +32,15 @@ public partial class Compiler
     private bool optIsIVWideningProfitable(int lclNum, BasicBlock initBlock, bool initedToConstant,
         FlowGraphNaturalLoop loop, PerLoopInfo loopInfo)
     {
-        var loops = _loops ?? throw new FatalJitException("IV widening requires natural loops.");
+        var loops = _loops;
+        if (loops is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage139
+            );
+            return default!;
+        }
         foreach (var otherLoop in loops.InReversePostOrder())
         {
             if (otherLoop == loop)
@@ -91,7 +103,15 @@ public partial class Compiler
         });
 
         const double allowedSizeRegressionPerCycleImprovement = 2;
-        var entry = fgFirstBB ?? throw new FatalJitException("IV widening requires an entry block.");
+        var entry = fgFirstBB;
+        if (entry is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage140
+            );
+            return default!;
+        }
         var cycleImprovementPerInvocation = savedCost / entry.getBBWeight(this);
         JITDUMP($"  Estimated cycle improvement: {FMT_WT(cycleImprovementPerInvocation)} cycles per invocation\n");
         JITDUMP($"  Estimated size improvement: {savedSize} bytes\n");
@@ -320,8 +340,15 @@ public partial class Compiler
         Statement? insertInitAfter = null;
         if (initBlock != preheader)
         {
-            var narrowInitRoot = startSsa.DefNode
-                ?? throw new FatalJitException("A non-preheader IV initializer needs its SSA definition.");
+            var narrowInitRoot = startSsa.DefNode;
+            if (narrowInitRoot is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage141
+                );
+                return default!;
+            }
             for (var stmt = initBlock.FirstStmt; stmt is not null; stmt = stmt.NextStmt)
             {
                 if (gtFindNodeInTree(stmt.RootNode, tree => tree == narrowInitRoot, GTF_EMPTY) is not null)

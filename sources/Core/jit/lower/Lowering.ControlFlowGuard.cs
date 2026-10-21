@@ -167,9 +167,10 @@ public sealed partial class Lowering
                 if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64 &&
                     !Configuration.TARGET_WASM && !Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
                 {
-                    throw new FatalJitException(
+                    FatalJitException.ThrowFatalJitException(
                         CORJIT_IMPLLIMITATION,
-                        "Lowering.LowerCFGCall dispatcher register is not ported for this target.");
+                    "Lowering.LowerCFGCall dispatcher register is not ported for this target.");
+                    return;
                 }
 
                 var dispatchRegister = TargetRuntimeMetadata.DispatchIndirectCallAddressRegister;

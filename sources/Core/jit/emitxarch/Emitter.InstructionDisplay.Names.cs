@@ -23,18 +23,61 @@ public partial class Emitter
             return "bword ptr ";
         }
 
-        return attr switch
+        switch (attr)
         {
-            EA_UNKNOWN => "",
-            EA_1BYTE => "byte  ptr ",
-            EA_2BYTE => "word  ptr ",
-            EA_4BYTE => "dword ptr ",
-            EA_8BYTE => "qword ptr ",
-            EA_16BYTE => "xmmword ptr ",
-            EA_32BYTE => "ymmword ptr ",
-            EA_64BYTE => "zmmword ptr ",
-            _ when EA_IS_DSP_RELOC(attr) => "rword ptr ",
-            _ => throw new FatalJitException("Invalid display operand size."),
-        };
+            case EA_UNKNOWN:
+            {
+                return "";
+            }
+
+            case EA_1BYTE:
+            {
+                return "byte  ptr ";
+            }
+
+            case EA_2BYTE:
+            {
+                return "word  ptr ";
+            }
+
+            case EA_4BYTE:
+            {
+                return "dword ptr ";
+            }
+
+            case EA_8BYTE:
+            {
+                return "qword ptr ";
+            }
+
+            case EA_16BYTE:
+            {
+                return "xmmword ptr ";
+            }
+
+            case EA_32BYTE:
+            {
+                return "ymmword ptr ";
+            }
+
+            case EA_64BYTE:
+            {
+                return "zmmword ptr ";
+            }
+
+            case var _ when EA_IS_DSP_RELOC(attr):
+            {
+                return "rword ptr ";
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage215
+                );
+                return default!;
+            }
+        }
     }
 }

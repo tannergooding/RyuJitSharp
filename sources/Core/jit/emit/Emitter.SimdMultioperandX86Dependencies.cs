@@ -66,11 +66,13 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "AVX-512 blend classification is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "AVX-512 blend classification is not implemented for this target.");
+            return default!;
         }
         if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "x86 AVX-512 blend classification without hardware intrinsics is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 AVX-512 blend classification without hardware intrinsics is not ported.");
+            return default!;
         }
 
         return ins is INS_vblendmps or INS_vblendmpd or INS_vpblendmb or INS_vpblendmd or INS_vpblendmq or INS_vpblendmw;
@@ -80,11 +82,13 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "AVX blend classification is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "AVX blend classification is not implemented for this target.");
+            return default!;
         }
         if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "x86 AVX blend classification without hardware intrinsics is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 AVX blend classification without hardware intrinsics is not ported.");
+            return default!;
         }
 
         return ins is INS_vblendvps or INS_vblendvpd or INS_vpblendvb;
@@ -94,11 +98,13 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification is not implemented for this target.");
+            return default!;
         }
         if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification without hardware intrinsics is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification without hardware intrinsics is not ported.");
+            return default!;
         }
 
         return ins is INS_blendvps or INS_blendvpd or INS_pblendvb;

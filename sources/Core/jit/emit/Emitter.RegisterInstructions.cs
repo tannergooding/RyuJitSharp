@@ -16,14 +16,16 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "ARM32 register-immediate instruction options are not ported.");
+                return;
             }
 
             if (Configuration.DEBUG && (targetHandle != 0))
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "ARM32 register-immediate recording does not accept a target handle.");
+                return;
             }
 
             recordArm32InsRI(ins, attr, reg, unchecked((int)val), INS_FLAGS_DONT_CARE, gtFlags);
@@ -92,8 +94,9 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Register-immediate instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -300,8 +303,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM32 register-immediate instruction flags are not supported for this target.");
+            return;
         }
 
         recordArm32InsRI(ins, attr, reg, unchecked((int)val), flags, gtFlags);
@@ -314,7 +318,8 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "ARM32 register-register instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 register-register instruction options are not ported.");
+                return;
             }
 
             recordArm32InsRR(ins, attr, reg1, reg2, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
@@ -337,8 +342,9 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "RISC-V register-register instruction options are not implemented.");
+                return;
             }
 
             emitIns_R_RRiscV64(ins, attr, reg1, reg2);
@@ -347,7 +353,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

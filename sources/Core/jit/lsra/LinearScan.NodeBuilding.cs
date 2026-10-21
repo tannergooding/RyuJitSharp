@@ -76,7 +76,8 @@ public sealed partial class LinearScan
                 case GT_BLK:
                 case GT_INIT_VAL:
                 {
-                    throw new FatalJitException($"Unexpected non-contained {tree.Oper} in LSRA node building.");
+                    FatalJitException.ThrowFatalJitException($"Unexpected non-contained {tree.Oper} in LSRA node building.");
+                    return default!;
                 }
 
                 case GT_NO_OP:
@@ -678,24 +679,25 @@ public sealed partial class LinearScan
         }
         else if (Configuration.TARGET_ARM)
         {
-        return buildNodeArm(tree);
+            return buildNodeArm(tree);
         }
         else if (Configuration.TARGET_ARM64)
         {
-        return buildNodeArm64(tree);
+            return buildNodeArm64(tree);
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
-        return buildNodeLoongArch64(tree);
+            return buildNodeLoongArch64(tree);
         }
         else if (Configuration.TARGET_RISCV64)
         {
-        return buildNodeRiscV64(tree);
+            return buildNodeRiscV64(tree);
         }
         else
         {
             NYI("LinearScan.buildNode for an unsupported target.");
-            throw new FatalJitException(CORJIT_SKIPPED, "LinearScan target is not supported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan target is not supported.");
+            return default!;
         }
     }
 

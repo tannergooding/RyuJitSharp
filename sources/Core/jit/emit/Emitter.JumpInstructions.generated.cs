@@ -124,19 +124,75 @@ public partial class Emitter
     ];
 
 
-    private static ReadOnlySpan<instruction> emitJumpKindInstructions =>
-        Configuration.TARGET_XARCH ? s_emitJumpKindInstructionsXARCH :
-        Configuration.TARGET_ARMARCH ? s_emitJumpKindInstructionsARMARCH :
-        Configuration.TARGET_LOONGARCH64 ? s_emitJumpKindInstructionsLOONGARCH64 :
-        Configuration.TARGET_RISCV64 ? s_emitJumpKindInstructionsRISCV64 :
-        Configuration.TARGET_WASM ? s_emitJumpKindInstructionsWASM :
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping is not supported for this target.");
+    private static ReadOnlySpan<instruction> emitJumpKindInstructions
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return s_emitJumpKindInstructionsXARCH;
+            }
 
-    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds =>
-        Configuration.TARGET_XARCH ? s_emitReverseJumpKindsXARCH :
-        Configuration.TARGET_ARMARCH ? s_emitReverseJumpKindsARMARCH :
-        Configuration.TARGET_LOONGARCH64 ? s_emitReverseJumpKindsLOONGARCH64 :
-        Configuration.TARGET_RISCV64 ? s_emitReverseJumpKindsRISCV64 :
-        Configuration.TARGET_WASM ? s_emitReverseJumpKindsWASM :
-        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping is not supported for this target.");
+            if (Configuration.TARGET_ARMARCH)
+            {
+                return s_emitJumpKindInstructionsARMARCH;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_emitJumpKindInstructionsLOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_emitJumpKindInstructionsRISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_emitJumpKindInstructionsWASM;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Jump-kind instruction mapping is not supported for this target.");
+            return default;
+        }
+    }
+
+    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return s_emitReverseJumpKindsXARCH;
+            }
+
+            if (Configuration.TARGET_ARMARCH)
+            {
+                return s_emitReverseJumpKindsARMARCH;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_emitReverseJumpKindsLOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_emitReverseJumpKindsRISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_emitReverseJumpKindsWASM;
+            }
+
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                "Reverse jump-kind mapping is not supported for this target.");
+            return default;
+        }
+    }
 }

@@ -12,11 +12,19 @@ public partial class Emitter
         if (Configuration.TARGET_LOONGARCH64)
         {
             assert(!jump.idIsBound());
-            var targetBlock = jump.idjTarget
-                ?? throw new FatalJitException("An unbound LoongArch64 jump requires a basic-block target.");
+            var targetBlock = jump.idjTarget;
+            if (targetBlock is null)
+            {
+                FatalJitException.ThrowFatalJitException("An unbound LoongArch64 jump requires a basic-block target.");
+                return default!;
+            }
             assert(targetBlock.HasFlag(BBF_HAS_LABEL));
-            var targetGroup = emitCodeGetCookie(targetBlock)
-                ?? throw new FatalJitException("A LoongArch64 jump target has no instruction-group cookie.");
+            var targetGroup = emitCodeGetCookie(targetBlock);
+            if (targetGroup is null)
+            {
+                FatalJitException.ThrowFatalJitException("A LoongArch64 jump target has no instruction-group cookie.");
+                return default!;
+            }
             jump.LoongArchIGlabel = targetGroup;
             jump.idjTargetIG = targetGroup;
             jump.idSetIsBound();
@@ -24,31 +32,59 @@ public partial class Emitter
         }
 
         assert(!jump.idIsBound());
-        var block = jump.idjTarget ?? throw new FatalJitException("An unbound jump requires a basic-block target.");
-        if (Configuration.DEBUG &&
-            (_compiler ?? throw new FatalJitException("Jump target binding requires an active compiler.")).verbose)
+        var block = jump.idjTarget;
+        if (block is null)
         {
-            jitprintf("Binding: ");
-            emitDispIns(jump, false, false, false);
-            jitprintf($"Binding L_M{unchecked((uint)_compiler!.compMethodID):D3}_{FMT_BB(block.bbNum)}");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnboundJumpMissingBasicBlockTarget);
+            return default!;
+        }
+        if (Configuration.DEBUG)
+        {
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("Jump target binding requires an active compiler.");
+                return default!;
+            }
+
+            if (compiler.verbose)
+            {
+                jitprintf("Binding: ");
+                emitDispIns(jump, false, false, false);
+                jitprintf($"Binding L_M{unchecked((uint)compiler.compMethodID):D3}_{FMT_BB(block.bbNum)}");
+            }
         }
 
         var target = emitCodeGetCookie(block);
-        if (Configuration.DEBUG &&
-            (_compiler ?? throw new FatalJitException("Jump target binding requires an active compiler.")).verbose)
+        if (Configuration.DEBUG)
         {
-            if (target is not null)
+            var compiler = _compiler;
+            if (compiler is null)
             {
-                jitprintf($" to {emitLabelString(target)}\n");
+                FatalJitException.ThrowFatalJitException("Jump target binding requires an active compiler.");
+                return default!;
             }
-            else
+
+            if (compiler.verbose)
             {
-                jitprintf($"-- ERROR, no emitter cookie for {FMT_BB(block.bbNum)}; it is probably missing BBF_HAS_LABEL.\n");
+                if (target is not null)
+                {
+                    jitprintf($" to {emitLabelString(target)}\n");
+                }
+                else
+                {
+                    jitprintf($"-- ERROR, no emitter cookie for {FMT_BB(block.bbNum)}; it is probably missing BBF_HAS_LABEL.\n");
+                }
             }
         }
 
         assert(block.HasFlag(BBF_HAS_LABEL));
-        var boundTarget = target ?? throw new FatalJitException("A jump target requires an emitter label cookie.");
+        var boundTarget = target;
+        if (boundTarget is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.JumpTargetMissingEmitterLabelCookie);
+            return default!;
+        }
         jump.idjTargetIG = boundTarget;
         jump.idSetIsBound();
         return boundTarget;
@@ -79,16 +115,29 @@ public partial class Emitter
                 return;
             }
 
-            var targetIG = jump.idjTargetIG
-                ?? throw new FatalJitException("A bound branch requires an instruction-group target.");
+            var targetIG = jump.idjTargetIG;
+            if (targetIG is null)
+            {
+                FatalJitException.ThrowFatalJitException("A bound branch requires an instruction-group target.");
+                return;
+            }
             if (targetIG.igFuncIdx == jumpIG.igFuncIdx)
             {
                 return;
             }
 
-            var compiler = _compiler ?? throw new FatalJitException("Funclet branch checking requires an active compiler.");
-            var debugInfo = jump.idDebugOnlyInfo()
-                ?? throw new FatalJitException("Funclet branch validation requires debug information.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException("Funclet branch checking requires an active compiler.");
+                return;
+            }
+            var debugInfo = jump.idDebugOnlyInfo();
+            if (debugInfo is null)
+            {
+                FatalJitException.ThrowFatalJitException("Funclet branch validation requires debug information.");
+                return;
+            }
             if (debugInfo.idFinallyCall)
             {
                 assert(targetIG.igFuncIdx > 0);
@@ -139,7 +188,8 @@ public partial class Emitter
             return jump.idInsFmt() is insFormat.IF_ARM32_T2_J1 or insFormat.IF_ARM32_T1_K or insFormat.IF_ARM32_LARGEJMP;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not supported for this target.");
+        return default!;
     }
 
     private static bool emitIsLoadLabel(instrDesc jump)
@@ -154,7 +204,8 @@ public partial class Emitter
             return jump.idInsFmt() is insFormat.IF_ARM32_T2_M1 or insFormat.IF_ARM32_T1_J3 or insFormat.IF_ARM32_T2_N1;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not supported for this target.");
+        return default!;
     }
     private static bool emitIsUncondJump(instrDesc jump)
     {
@@ -173,16 +224,18 @@ public partial class Emitter
             return emitIsUncondJump(jump.idIns());
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Unconditional jump classification is not supported for this target.");
+        return default!;
     }
 
     private static bool emitIsUncondJump(instruction ins)
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "RISC-V jump classification is not supported for this target.");
+            return default!;
         }
 
         return ins is INS_j or INS_jal;
@@ -200,16 +253,18 @@ public partial class Emitter
             return emitIsCmpJump(jump.idIns());
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Compare-jump classification is not supported for this target.");
+        return default!;
     }
 
     private static bool emitIsCmpJump(instruction ins)
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "RISC-V compare-jump classification is not supported for this target.");
+            return default!;
         }
 
         return ins is INS_beqz or INS_bnez or INS_bne or INS_beq
@@ -255,16 +310,18 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Medium-jump selection is not supported for this target.");
+        return;
     }
 
     private static bool emitIsLoadConstant(instrDesc jump)
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "ARM64 constant-load classification is not supported for this target.");
+            return default!;
         }
 
         return jump.idInsFmt() is insFormat.IF_ARM64_LS_1A or insFormat.IF_ARM64_LARGELDC;
@@ -369,7 +426,8 @@ public partial class Emitter
 
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
+            return;
         }
 
         if (Configuration.TARGET_RISCV64)
@@ -384,7 +442,8 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
+        return;
     }
 
     private static void emitSetShortJump(instrDescJmp jump)
@@ -397,8 +456,9 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Short-jump selection is implemented by the LoongArch64 binder.");
+            return;
         }
 
         emitSetShortJumpNonXarch(jump);

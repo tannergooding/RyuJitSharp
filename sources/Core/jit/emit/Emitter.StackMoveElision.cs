@@ -31,8 +31,9 @@ public partial class Emitter
             return IsLoongArch64MovInstruction(ins);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Move-instruction classification is not supported for this target.");
+        return default!;
     }
 
     private static bool IsXarchMovInstruction(instruction ins)
@@ -118,8 +119,9 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_64BIT)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED,
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                         "MOVSXD side-effect classification is only supported on 64-bit xarch.");
+                    return default!;
                 }
 
                 hasSideEffect = true;
@@ -134,7 +136,8 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException("Invalid move instruction for side-effect classification.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidMoveSideEffectClassification);
+                return default!;
             }
         }
 
@@ -210,8 +213,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Xarch stack-move optimization is not supported for this target.");
+            return;
         }
     }
 }

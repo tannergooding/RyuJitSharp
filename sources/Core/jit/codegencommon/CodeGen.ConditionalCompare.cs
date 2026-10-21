@@ -14,7 +14,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "EVEX conditional-compare mapping requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "EVEX conditional-compare mapping requires AMD64.");
+            return default!;
         }
 
         ReadOnlySpan<instruction> table =
@@ -31,7 +32,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "EVEX conditional-compare options require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "EVEX conditional-compare options require AMD64.");
+            return default!;
         }
 
         var opts = INS_OPTS_NONE;
@@ -122,7 +124,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Conditional compare is only supported on AMD64 and ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Conditional compare is only supported on AMD64 and ARM64.");
+            return;
         }
     }
 }

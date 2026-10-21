@@ -123,7 +123,8 @@ public partial class Emitter
             return otherLatency;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Execution-cost estimates are not available for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Execution-cost estimates are not available for this target.");
+        return default!;
     }
 
     internal struct insExecutionCharacteristics

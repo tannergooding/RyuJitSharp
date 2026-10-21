@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch floating-point stack stores are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch floating-point stack stores are not supported for this target.");
+            return;
         }
 
         Emitter.emitIns_S(ins, size, temp.tdTempNum, unchecked((int)offset));

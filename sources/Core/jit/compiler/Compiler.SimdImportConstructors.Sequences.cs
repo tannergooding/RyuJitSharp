@@ -11,7 +11,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD indices require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD indices require hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -54,7 +55,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD sequences require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD sequences require hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -167,7 +169,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Alternating SIMD sequences require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Alternating SIMD sequences require hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);

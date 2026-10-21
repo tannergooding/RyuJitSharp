@@ -32,8 +32,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Xarch instruction recording requires xarch.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)

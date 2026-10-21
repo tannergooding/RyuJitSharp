@@ -16,7 +16,12 @@ public sealed partial class LinearScan
         assert(!_enregisterLocalVars);
         if (_enregisterLocalVars)
         {
-            throw new FatalJitException("Minimal register allocation requires locals to remain un-enregistered.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage358
+            );
+            selectionScore = default!;
+            return default!;
         }
 
         var foundRegBit = selectMinimal(currentInterval, refPosition, out selectionScore);

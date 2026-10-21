@@ -106,9 +106,17 @@ public partial class Compiler
         fgInsertStmtAtEnd(lengthCheckBb, fgNewStmtFromTree(bytesWrittenDefaultVal, di: debugInfo));
 
         var dstLen = call.Args.GetUserArgByIndex(3)!.Node;
-        var lengthCheck = gtNewBinaryNode(GT_LT, TYP_INT,
-            gtCloneExpr(dstLen) ?? throw new FatalJitException("Cannot clone ReadUtf8 destination length."),
-            srcLenU8Node);
+        var clonedDstLen = gtCloneExpr(dstLen);
+        if (clonedDstLen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage204
+            );
+            return default!;
+        }
+
+        var lengthCheck = gtNewBinaryNode(GT_LT, TYP_INT, clonedDstLen, srcLenU8Node);
         lengthCheck.Flags |= GTF_RELOP_JMP_USED;
         var lengthCheckStmt = fgNewStmtFromTree(gtNewUnaryNode(GT_JTRUE, TYP_VOID, lengthCheck), di: debugInfo);
         fgInsertStmtAtEnd(lengthCheckBb, lengthCheckStmt);
@@ -133,16 +141,32 @@ public partial class Compiler
             var utf8cnsChunkNode = gtNewGenericCon(maxLoadType, bufferU8.Slice(offset, chunkSize));
             fgValueNumberTreeConst(utf8cnsChunkNode);
 
-            var dstAddOffsetNode = gtNewBinaryNode(GT_ADD, dstPtr.Type,
-                gtCloneExpr(dstPtr) ?? throw new FatalJitException("Cannot clone ReadUtf8 destination pointer."),
-                offsetNode);
+            var clonedDstPtr = gtCloneExpr(dstPtr);
+            if (clonedDstPtr is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage205
+                );
+                return default!;
+            }
+
+            var dstAddOffsetNode = gtNewBinaryNode(GT_ADD, dstPtr.Type, clonedDstPtr, offsetNode);
             var storeInd = gtNewStoreIndNode(maxLoadType, dstAddOffsetNode, utf8cnsChunkNode);
             fgInsertStmtAtEnd(fastpathBb, fgNewStmtFromTree(storeInd, di: debugInfo));
         }
 
-        var finalStmt = fgNewStmtFromTree(gtNewStoreLclVarNode(resultLclNum,
-            gtCloneExpr(srcLenU8Node) ?? throw new FatalJitException("Cannot clone ReadUtf8 byte length.")),
-            di: debugInfo);
+        var clonedSrcLen = gtCloneExpr(srcLenU8Node);
+        if (clonedSrcLen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage206
+            );
+            return default!;
+        }
+
+        var finalStmt = fgNewStmtFromTree(gtNewStoreLclVarNode(resultLclNum, clonedSrcLen), di: debugInfo);
         fgInsertStmtAtEnd(fastpathBb, finalStmt);
         fastpathBb.bbCodeOffs = block.bbCodeOffsEnd;
         fastpathBb.bbCodeOffsEnd = block.bbCodeOffsEnd;

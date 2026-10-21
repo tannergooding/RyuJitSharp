@@ -14,7 +14,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("Instruction encodability checks require xarch.");
+            FatalJitException.ThrowFatalJitException("Instruction encodability checks require xarch.");
+            return default!;
         }
 
         if (!Configuration.TARGET_X86)
@@ -60,7 +61,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("VEX output requires xarch.");
+            FatalJitException.ThrowFatalJitException("VEX output requires xarch.");
+            return default!;
         }
 
         // Carry the three-byte VEX encoding until emission, when all conditions
@@ -94,7 +96,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch register/register sizing is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch register/register sizing is not available for this target.");
+            return default!;
         }
 
         var ins = id.idIns();

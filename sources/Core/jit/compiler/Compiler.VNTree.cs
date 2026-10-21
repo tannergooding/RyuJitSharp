@@ -35,14 +35,34 @@ public partial class Compiler
                     assert(varTypeIsFloating(op2.Type));
                     if ((node.Flags & GTF_RELOP_NAN_UN) != 0)
                     {
-                        return oper switch
+                        switch (oper)
                         {
-                            GT_LT => VNF_LT_UN,
-                            GT_LE => VNF_LE_UN,
-                            GT_GE => VNF_GE_UN,
-                            GT_GT => VNF_GT_UN,
-                            _ => throw new System.Diagnostics.UnreachableException(),
-                        };
+                            case GT_LT:
+                            {
+                                return VNF_LT_UN;
+                            }
+
+                            case GT_LE:
+                            {
+                                return VNF_LE_UN;
+                            }
+
+                            case GT_GE:
+                            {
+                                return VNF_GE_UN;
+                            }
+
+                            case GT_GT:
+                            {
+                                return VNF_GT_UN;
+                            }
+
+                            default:
+                            {
+                                JitExceptionHelpers.ThrowUnreachableException();
+                                return default;
+                            }
+                        }
                     }
                 }
                 else
@@ -50,14 +70,34 @@ public partial class Compiler
                     assert(varTypeIsIntegralOrI(op1.Type) && varTypeIsIntegralOrI(op2.Type));
                     if (node.AsOp().IsUnsigned)
                     {
-                        return oper switch
+                        switch (oper)
                         {
-                            GT_LT => VNF_LT_UN,
-                            GT_LE => VNF_LE_UN,
-                            GT_GE => VNF_GE_UN,
-                            GT_GT => VNF_GT_UN,
-                            _ => throw new System.Diagnostics.UnreachableException(),
-                        };
+                            case GT_LT:
+                            {
+                                return VNF_LT_UN;
+                            }
+
+                            case GT_LE:
+                            {
+                                return VNF_LE_UN;
+                            }
+
+                            case GT_GE:
+                            {
+                                return VNF_GE_UN;
+                            }
+
+                            case GT_GT:
+                            {
+                                return VNF_GT_UN;
+                            }
+
+                            default:
+                            {
+                                JitExceptionHelpers.ThrowUnreachableException();
+                                return default;
+                            }
+                        }
                     }
                 }
                 break;
@@ -70,16 +110,44 @@ public partial class Compiler
                 if (varTypeIsIntegralOrI(node.AsOp().Op1.Type) && node.HasOverflowCheck)
                 {
                     assert(varTypeIsIntegralOrI(node.AsOp().Op2.Type));
-                    return (oper, node.AsOp().IsUnsigned) switch
+                    switch ((oper, node.AsOp().IsUnsigned))
                     {
-                        (GT_ADD, false) => VNF_ADD_OVF,
-                        (GT_SUB, false) => VNF_SUB_OVF,
-                        (GT_MUL, false) => VNF_MUL_OVF,
-                        (GT_ADD, true) => VNF_ADD_UN_OVF,
-                        (GT_SUB, true) => VNF_SUB_UN_OVF,
-                        (GT_MUL, true) => VNF_MUL_UN_OVF,
-                        _ => throw new System.Diagnostics.UnreachableException(),
-                    };
+                        case (GT_ADD, false):
+                        {
+                            return VNF_ADD_OVF;
+                        }
+
+                        case (GT_SUB, false):
+                        {
+                            return VNF_SUB_OVF;
+                        }
+
+                        case (GT_MUL, false):
+                        {
+                            return VNF_MUL_OVF;
+                        }
+
+                        case (GT_ADD, true):
+                        {
+                            return VNF_ADD_UN_OVF;
+                        }
+
+                        case (GT_SUB, true):
+                        {
+                            return VNF_SUB_UN_OVF;
+                        }
+
+                        case (GT_MUL, true):
+                        {
+                            return VNF_MUL_UN_OVF;
+                        }
+
+                        default:
+                        {
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            return default;
+                        }
+                    }
                 }
                 break;
             }
@@ -91,8 +159,12 @@ public partial class Compiler
             }
             case GT_CAST:
             {
-                throw new System.Diagnostics.UnreachableException(
-                    "Cast nodes use fgValueNumberCastTree instead of GetVNFuncForNode.");
+                JitExceptionHelpers.ThrowUnreachableException(
+                    "RJS-VN-002",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Cast nodes use fgValueNumberCastTree instead of GetVNFuncForNode."
+                        : null);
+                return default;
             }
 
             default:
@@ -222,8 +294,12 @@ public partial class Compiler
 
                 default:
                 {
-                    throw new System.Diagnostics.UnreachableException(
-                        $"Unhandled leaf {oper} in fgValueNumberTree.");
+                    JitExceptionHelpers.ThrowUnreachableException(
+                        "RJS-VN-003",
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unhandled leaf {oper} in fgValueNumberTree."
+                            : null);
+                    return;
                 }
             }
         }
@@ -579,8 +655,12 @@ public partial class Compiler
 
                 case GT_ARR_ELEM:
                 {
-                    throw new System.Diagnostics.UnreachableException(
-                        "ARR_ELEM must be morphed before value numbering.");
+                    JitExceptionHelpers.ThrowUnreachableException(
+                        "RJS-VN-004",
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? "ARR_ELEM must be morphed before value numbering."
+                            : null);
+                    return;
                 }
 
                 case GT_FIELD_LIST:

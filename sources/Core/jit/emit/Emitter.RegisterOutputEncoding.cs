@@ -42,8 +42,7 @@ public partial class Emitter
 
     private static regNumber getBmiRegNumber(instruction ins)
     {
-        var reg = ins switch
-        {
+        var reg = ins switch {
             INS_blsi => (regNumber)3,
             INS_blsmsk => (regNumber)2,
             INS_blsr => (regNumber)1,
@@ -60,8 +59,7 @@ public partial class Emitter
 
     private static regNumber getSseShiftRegNumber(instruction ins)
     {
-        var reg = ins switch
-        {
+        var reg = ins switch {
             INS_psrldq => (regNumber)3,
             INS_pslldq => (regNumber)7,
             INS_psrld or INS_psrlw or INS_psrlq => (regNumber)2,
@@ -111,7 +109,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch prefix output is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch prefix output is not available for this target.");
+            return default!;
         }
 
         if (TakesEvexPrefix(id))
@@ -133,7 +132,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch prefix output is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch prefix output is not available for this target.");
+            return default!;
         }
 
         if (TakesEvexPrefix(id))
@@ -155,7 +155,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("REX2 output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("REX2 output requires AMD64.");
+            return default!;
         }
 
         assert(IsRex2EncodableInstruction(ins));
@@ -175,12 +176,12 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("CCMP and CTEST output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("CCMP and CTEST output requires AMD64.");
+            return default!;
         }
 
         assert(IsCCMP(ins) || IsCTEST(ins));
-        return ins switch
-        {
+        return ins switch {
             INS_ccmpo or INS_ctesto => 0,
             INS_ccmpno or INS_ctestno => 1,
             INS_ccmpb or INS_ctestb => 2,
@@ -205,7 +206,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("EVEX output requires xarch.");
+            FatalJitException.ThrowFatalJitException("EVEX output requires xarch.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -364,7 +366,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("REX.R output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("REX.R output requires AMD64.");
+            return default!;
         }
 
         if (hasEvexPrefix(code))
@@ -387,7 +390,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException("EVEX R-prime output requires AMD64.");
+            FatalJitException.ThrowFatalJitException("EVEX R-prime output requires AMD64.");
+            return default!;
         }
 
         assert((UseEvexEncodings || UsePromotedEvexEncodings) && hasEvexPrefix(code));
@@ -399,7 +403,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch register encoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch register encoding is not available for this target.");
+            return default!;
         }
 
         assert(Globals.genIsValidReg(reg));
@@ -445,7 +450,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch register encoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch register encoding is not available for this target.");
+            return default!;
         }
 
         var ins = id.idIns();

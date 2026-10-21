@@ -3596,8 +3596,17 @@ public partial class Compiler
                 InlineCandidateInfo? inlineInfo = null;
                 if (call.IsInlineCandidate)
                 {
-                    inlineInfo = call.SingleInlineCandidateInfo
-                        ?? throw new FatalJitException("Missing inline candidate information.");
+                    var candidateInfo = call.SingleInlineCandidateInfo;
+                    if (candidateInfo is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage125
+                        );
+                        return default!;
+                    }
+
+                    inlineInfo = candidateInfo;
                     assert(inlineInfo.retExpr is null);
                     call.ClearInlineInfo();
                 }
@@ -9874,7 +9883,7 @@ public partial class Compiler
                                 //      3) Perform the 'is instance' check on the input object
                                 // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                                op2 = impTokenToHandle(resolvedToken, mustRestoreHandle:false);
+                                op2 = impTokenToHandle(resolvedToken, mustRestoreHandle: false);
 
                                 if (op2 is null)
                                 {
@@ -18171,7 +18180,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+            return default!;
         }
 
         int op1Tmp;
@@ -18198,7 +18208,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+            return default!;
         }
 
         assert(IsSystemHalfClass(halfClsHnd));
@@ -19188,7 +19199,7 @@ public partial class Compiler
                         else if (Configuration.TARGET_X86)
                         {
                             // Find second last arg
-                            var  secondLastArg = null as CallArg;
+                            var secondLastArg = null as CallArg;
 
                             foreach (var arg in args.Args)
                             {
@@ -23618,8 +23629,7 @@ public partial class Compiler
 
     private static ManagedInstructionSet Arm64VersionOfIsa(ManagedInstructionSet isa)
     {
-        return isa switch
-        {
+        return isa switch {
             InstructionSet_AdvSimd => InstructionSet_AdvSimd_Arm64,
             InstructionSet_Aes => InstructionSet_Aes_Arm64,
             InstructionSet_ArmBase => InstructionSet_ArmBase_Arm64,
@@ -23957,7 +23967,7 @@ public partial class Compiler
 
                             if (thisNode.Oper is GT_LCL_VAR)
                             {
-                                var thisLclNum = thisNode.AsLclVarCommon().LclNum;                                
+                                var thisLclNum = thisNode.AsLclVarCommon().LclNum;
 
                                 if (lvaGetDesc(thisLclNum).lvIsEnumerator)
                                 {

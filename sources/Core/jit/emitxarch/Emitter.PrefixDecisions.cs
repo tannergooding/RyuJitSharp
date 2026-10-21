@@ -211,7 +211,8 @@ public partial class Emitter
 
                 default:
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "Unsupported REX.WX instruction.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnsupportedRexWxInstruction);
+                    return default!;
                 }
             }
         }

@@ -71,7 +71,8 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "ARM64 local-pair descriptors are unavailable on this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 local-pair descriptors are unavailable on this target.");
+                    return default!;
                 }
 
                 return Full + 8;
@@ -84,7 +85,8 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "ARM64 local-pair descriptors are unavailable on this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 local-pair descriptors are unavailable on this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.Constant + 8;
@@ -98,7 +100,8 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_RISCV64)
                 {
-                    throw new FatalJitException(CORJIT_SKIPPED, "RISC-V load-immediate descriptors are unavailable on this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V load-immediate descriptors are unavailable on this target.");
+                    return default!;
                 }
 
                 return ConstantDescriptorSizes.Constant +
@@ -408,8 +411,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "The ARM64 call descriptor layout is only supported on ARM64.");
+            return default!;
         }
 
         if (Configuration.TARGET_WINDOWS)
@@ -418,7 +422,8 @@ public partial class Emitter
             // units at offsets 68 and 72, rounding the complete descriptor to 80.
             return 80;
         }
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "The ARM64 call descriptor layout is not established for this ABI.");
+        return default!;
     }
 }

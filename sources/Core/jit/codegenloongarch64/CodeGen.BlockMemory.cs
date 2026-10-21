@@ -13,7 +13,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "This block-store implementation requires LoongArch64 or RISC-V64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "This block-store implementation requires LoongArch64 or RISC-V64.");
+            return;
         }
 
         assert(node.Oper is GT_STORE_BLK);
@@ -444,7 +445,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 memory barrier generation requires LoongArch64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 memory barrier generation requires LoongArch64.");
+            return;
         }
 
         if (Configuration.DEBUG && JitConfig.JitNoMemoryBarriers == 1)

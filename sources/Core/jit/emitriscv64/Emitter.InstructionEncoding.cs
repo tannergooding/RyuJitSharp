@@ -264,8 +264,7 @@ public partial class Emitter
     internal static uint tryGetRvcRegisterNumber(regNumber reg)
     {
         // The compressed register field encodes x8 through x15 as 0 through 7.
-        return reg switch
-        {
+        return reg switch {
             REG_RISCV64_FP => 0,
             REG_RISCV64_S1 => 1,
             REG_RISCV64_A0 => 2,
@@ -319,7 +318,8 @@ public partial class Emitter
             default:
             {
                 unreached();
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid compressed register number.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Invalid compressed register number.");
+                return default!;
             }
         }
     }
@@ -358,7 +358,8 @@ public partial class Emitter
             default:
             {
                 unreached();
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid compressed arithmetic instruction.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Invalid compressed arithmetic instruction.");
+                return default!;
             }
         }
     }

@@ -44,8 +44,15 @@ public partial class Compiler
 
             case BBJ_EHFINALLYRET:
             {
-                var targets = block.EhfTargets
-                    ?? throw new FatalJitException("A finally return requires its successor table.");
+                var targets = block.EhfTargets;
+                if (targets is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage107
+                    );
+                    return;
+                }
                 var successors = new FlowEdge[targets.Succs.Length];
                 for (var index = 0; index < successors.Length; index++)
                 {

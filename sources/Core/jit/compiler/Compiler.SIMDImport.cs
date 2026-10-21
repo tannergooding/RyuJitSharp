@@ -25,7 +25,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsic arguments are not supported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsic arguments are not supported on this target.");
+            return default!;
         }
 
         GenTree arg;

@@ -13,7 +13,11 @@ public sealed partial class LinearScan
     {
         if (_enregisterLocalVars)
         {
-            throw new FatalJitException("Minimal interval construction cannot run with enregistered locals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage364
+            );
+            return;
         }
 
         JITDUMP("\nbuildIntervals ========\n");
@@ -62,8 +66,15 @@ public sealed partial class LinearScan
         }
 
         _currentBlockNumber = 0;
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Interval construction requires initialized codegen state.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage331
+            );
+            return;
+        }
         ref var incomingRegisters = ref codeGen.CalleeRegArgMaskLiveIn;
         incomingRegisters = RBM_NONE;
         _regsInUseThisLocation = RBM_NONE;
@@ -184,8 +195,15 @@ public sealed partial class LinearScan
                 GenTreeCall? tailCallNode = null;
                 if (isTailCall)
                 {
-                    var lastNode = block.LastNode
-                        ?? throw new FatalJitException("A tailcall block must contain its jump or call.");
+                    var lastNode = block.LastNode;
+                    if (lastNode is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage332
+                        );
+                        return;
+                    }
                     if (lastNode.Oper is GT_CALL)
                     {
                         tailCallNode = lastNode.AsCall();

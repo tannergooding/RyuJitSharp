@@ -103,8 +103,9 @@ public sealed partial class Lowering
             return next;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Indirect-store lowering is not ported for this target.");
+        return default!;
     }
 
     private void ContainCheckStoreIndir(GenTreeStoreInd node)
@@ -346,7 +347,8 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED,
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
             "Indirect-store containment is not ported for this target.");
+        return;
     }
 }

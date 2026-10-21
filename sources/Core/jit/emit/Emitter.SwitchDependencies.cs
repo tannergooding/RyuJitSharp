@@ -14,8 +14,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "LoongArch64 embedded-data recording requires a LoongArch64 target.");
+            return;
         }
 
         assert(offset >= 0);
@@ -29,8 +30,12 @@ public partial class Emitter
         id.idSmallCns(offset);
         id.idInsOpt(INS_OPTS_RC);
 
-        var compiler = _compiler
-            ?? throw new FatalJitException("LoongArch64 embedded-data recording requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("LoongArch64 embedded-data recording requires an active compiler.");
+            return;
+        }
         if (compiler.opts.compReloc || id.idIsReloc())
         {
             id.idSetIsDspReloc();
@@ -62,8 +67,9 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "RISC-V embedded-data recording requires a RISC-V64 target.");
+            return;
         }
 
         var id = emitNewInstr(attr);

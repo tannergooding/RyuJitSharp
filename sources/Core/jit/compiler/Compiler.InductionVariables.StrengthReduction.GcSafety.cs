@@ -23,8 +23,15 @@ public partial class Compiler
             }
 
             var baseValue = start;
-            var store = _compiler.vnStore
-                ?? throw new FatalJitException("GC-pointer strength reduction requires value numbering.");
+            var store = _compiler.vnStore;
+            if (store is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage134
+                );
+                return default!;
+            }
             store.PeelOffsets(ref baseValue.LiberalAddr, out var liberalOffset);
             store.PeelOffsets(ref baseValue.ConservativeAddr, out var conservativeOffset);
             if (liberalOffset != conservativeOffset)

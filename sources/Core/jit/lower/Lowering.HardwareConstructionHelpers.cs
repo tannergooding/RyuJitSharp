@@ -11,7 +11,8 @@ public sealed partial class Lowering
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD lowering is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD lowering is unsupported on this target.");
+            return default!;
         }
 
         assert(varTypeIsSimd(simdType));

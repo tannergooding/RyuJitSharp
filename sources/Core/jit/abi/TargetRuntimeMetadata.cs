@@ -221,7 +221,8 @@ internal static class TargetRuntimeMetadata
                 return REG_ARM32_LR;
             }
 
-            throw new FatalJitException("A link register is not available for this target.");
+            FatalJitException.ThrowFatalJitException("A link register is not available for this target.");
+            return default!;
         }
     }
 
@@ -339,7 +340,8 @@ internal static class TargetRuntimeMetadata
         {
             if (Configuration.TARGET_WASM)
             {
-                throw new FatalJitException("Long return registers are not available for this target.");
+                FatalJitException.ThrowFatalJitException("Long return registers are not available for this target.");
+                return default!;
             }
 
             var mask = Globals.genRegMask(LongReturnLowRegister).Lower;
@@ -418,7 +420,8 @@ internal static class TargetRuntimeMetadata
                 return SRBM_NONE;
             }
 
-            throw new FatalJitException("Encoded callee-saved registers are not defined for this target.");
+            FatalJitException.ThrowFatalJitException("Encoded callee-saved registers are not defined for this target.");
+            return default!;
         }
     }
 
@@ -436,7 +439,8 @@ internal static class TargetRuntimeMetadata
                 return [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3];
             }
 
-            throw new FatalJitException("Swift return registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Swift return registers are not supported for this target.");
+            return default!;
         }
     }
 
@@ -454,7 +458,8 @@ internal static class TargetRuntimeMetadata
                 return [REG_X64_RAX, REG_X64_RDX, REG_X64_RCX, REG_X64_R8];
             }
 
-            throw new FatalJitException("Swift return registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Swift return registers are not supported for this target.");
+            return default!;
         }
     }
 
@@ -477,7 +482,8 @@ internal static class TargetRuntimeMetadata
                 return REG_STACK_PROBE_HELPER_ARG_ARM;
             }
 
-            throw new FatalJitException("Stack-probe helper arguments are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Stack-probe helper arguments are not supported for this target.");
+            return default!;
         }
     }
 
@@ -500,7 +506,8 @@ internal static class TargetRuntimeMetadata
                 return REG_RISCV64_ZERO;
             }
 
-            throw new FatalJitException("A zero register is not available for this target.");
+            FatalJitException.ThrowFatalJitException("A zero register is not available for this target.");
+            return default!;
         }
     }
 
@@ -523,7 +530,8 @@ internal static class TargetRuntimeMetadata
                 return REG_MASK_FIRST_ARM64;
             }
 
-            throw new FatalJitException("Masked registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Masked registers are not supported for this target.");
+            return default!;
         }
     }
 
@@ -546,7 +554,8 @@ internal static class TargetRuntimeMetadata
                 return REG_MASK_LAST_ARM64;
             }
 
-            throw new FatalJitException("Masked registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Masked registers are not supported for this target.");
+            return default!;
         }
     }
 
@@ -627,7 +636,8 @@ internal static class TargetRuntimeMetadata
                 return REG_SWIFT_SELF_AMD64;
             }
 
-            throw new FatalJitException("Swift ABI registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Swift ABI registers are not supported for this target.");
+            return default!;
         }
     }
 
@@ -645,7 +655,8 @@ internal static class TargetRuntimeMetadata
                 return REG_SWIFT_ERROR_AMD64;
             }
 
-            throw new FatalJitException("Swift ABI registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException("Swift ABI registers are not supported for this target.");
+            return default!;
         }
     }
 
@@ -661,7 +672,8 @@ internal static class TargetRuntimeMetadata
             return amd64;
         }
 
-        throw new FatalJitException("xarch metadata is unavailable for this architecture.");
+        FatalJitException.ThrowFatalJitException("xarch metadata is unavailable for this architecture.");
+        return default!;
     }
 
     internal static T Select<T>(T x86, T amd64, T arm64, T arm, T loongArch64, T riscv64, T wasm)
@@ -701,6 +713,7 @@ internal static class TargetRuntimeMetadata
             return wasm;
         }
 
-        throw new FatalJitException("Target metadata is unavailable for this architecture.");
+        FatalJitException.ThrowFatalJitException("Target metadata is unavailable for this architecture.");
+        return default!;
     }
 }

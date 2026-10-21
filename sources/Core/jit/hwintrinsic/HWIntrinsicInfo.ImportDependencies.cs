@@ -42,18 +42,54 @@ public readonly partial struct HWIntrinsicInfo
 
         assert(HasScalarInputVariant(id));
 
-        return id switch
+        switch (id)
         {
-            NI_Sve_ConditionalExtractAfterLastActiveElement => NI_Sve_ConditionalExtractAfterLastActiveElementScalar,
-            NI_Sve_ConditionalExtractLastActiveElement => NI_Sve_ConditionalExtractLastActiveElementScalar,
-            NI_Sve_SaturatingDecrementBy16BitElementCount => NI_Sve_SaturatingDecrementBy16BitElementCountScalar,
-            NI_Sve_SaturatingDecrementBy32BitElementCount => NI_Sve_SaturatingDecrementBy32BitElementCountScalar,
-            NI_Sve_SaturatingDecrementBy64BitElementCount => NI_Sve_SaturatingDecrementBy64BitElementCountScalar,
-            NI_Sve_SaturatingIncrementBy16BitElementCount => NI_Sve_SaturatingIncrementBy16BitElementCountScalar,
-            NI_Sve_SaturatingIncrementBy32BitElementCount => NI_Sve_SaturatingIncrementBy32BitElementCountScalar,
-            NI_Sve_SaturatingIncrementBy64BitElementCount => NI_Sve_SaturatingIncrementBy64BitElementCountScalar,
-            _ => throw new FatalJitException("Unexpected ARM64 scalar-input variant intrinsic."),
-        };
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+            {
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+            }
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+            {
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+            }
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            {
+                return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
+            }
+
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            {
+                return NI_Sve_SaturatingDecrementBy32BitElementCountScalar;
+            }
+
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            {
+                return NI_Sve_SaturatingDecrementBy64BitElementCountScalar;
+            }
+
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            {
+                return NI_Sve_SaturatingIncrementBy16BitElementCountScalar;
+            }
+
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            {
+                return NI_Sve_SaturatingIncrementBy32BitElementCountScalar;
+            }
+
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            {
+                return NI_Sve_SaturatingIncrementBy64BitElementCountScalar;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException("Unexpected ARM64 scalar-input variant intrinsic.");
+                return default!;
+            }
+        }
     }
 
     public static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types simdBaseType)

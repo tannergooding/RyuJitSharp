@@ -143,6 +143,7 @@ internal static class FeatureConfigurationTests
             "RyuJitSharp.VARSET_COUNTOPS",
             "RyuJitSharp.ALLVARSET_COUNTOPS",
             "RyuJitSharp.EMIT_BACKWARDS_NAVIGATION",
+            "RyuJitSharp.MEASURE_CLRAPI_CALLS",
             "RyuJitSharp.DUMP_FLOWGRAPHS",
             "RyuJitSharp.DUMP_GC_TABLES",
             "RyuJitSharp.TRACK_LSRA_STATS",
@@ -156,6 +157,7 @@ internal static class FeatureConfigurationTests
             "RyuJitSharp.MEASURE_BLOCK_SIZE",
             "RyuJitSharp.MEASURE_FATAL",
             "RyuJitSharp.MEASURE_NODE_SIZE",
+            "RyuJitSharp.MEASURE_NOWAY",
             "RyuJitSharp.MEASURE_PTRTAB_SIZE",
             "RyuJitSharp.NODEBASH_STATS",
         };
@@ -174,9 +176,9 @@ internal static class FeatureConfigurationTests
             Assert.That(Configuration.VARSET_COUNTOPS, Is.EqualTo(enabled));
             Assert.That(Configuration.ALLVARSET_COUNTOPS, Is.EqualTo(enabled));
             Assert.That(Configuration.EMIT_BACKWARDS_NAVIGATION, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_CLRAPI_CALLS, Is.EqualTo(enabled));
             Assert.That(Configuration.DUMP_FLOWGRAPHS, Is.EqualTo(enabled));
             Assert.That(Configuration.DUMP_GC_TABLES, Is.EqualTo(enabled));
-            Assert.That(Configuration.MEASURE_CLRAPI_CALLS, Is.EqualTo(enabled));
             Assert.That(Configuration.TRACK_LSRA_STATS, Is.EqualTo(enabled));
             Assert.That(Configuration.FUNC_INFO_LOGGING, Is.EqualTo(enabled));
             Assert.That(Configuration.VERIFY_GC_TABLES, Is.EqualTo(enabled));
@@ -188,9 +190,9 @@ internal static class FeatureConfigurationTests
             Assert.That(Configuration.MEASURE_BLOCK_SIZE, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_FATAL, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_NODE_SIZE, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_NOWAY, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_PTRTAB_SIZE, Is.EqualTo(enabled));
             Assert.That(Configuration.NODEBASH_STATS, Is.EqualTo(enabled));
-            Assert.That(Configuration.MEASURE_NOWAY, Is.EqualTo(enabled));
             Assert.That(Configuration.OPTIONAL_STATISTICS, Is.EqualTo(enabled));
         }
         finally
@@ -199,6 +201,24 @@ internal static class FeatureConfigurationTests
             {
                 AppContext.SetSwitch(switchNames[i], hadOriginalValue[i] && originalValues[i]);
             }
+        }
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DetailedFatalErrorMessagesUseTheDebugDefaultAndRuntimeSwitch(bool enabled)
+    {
+        const string switchName = "RyuJitSharp.DETAILED_FATAL_ERROR_MESSAGES";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, enabled);
+
+        try
+        {
+            Assert.That(Configuration.DETAILED_FATAL_ERROR_MESSAGES, Is.EqualTo(Configuration.DEBUG || enabled));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
         }
     }
 

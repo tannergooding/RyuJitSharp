@@ -9,395 +9,1535 @@ namespace RyuJitSharp;
 
 public static partial class regNumberExtensions
 {
-    private static string GetNameX86(regNumber regNum) => regNum switch
+    private static string GetNameX86(regNumber regNum)
     {
-        REG_X86_EAX => "eax",
-        REG_X86_ECX => "ecx",
-        REG_X86_EDX => "edx",
-        REG_X86_EBX => "ebx",
-        REG_X86_ESP => "esp",
-        REG_X86_EBP => "ebp",
-        REG_X86_ESI => "esi",
-        REG_X86_EDI => "edi",
-        REG_X86_XMM0 => "mm0",
-        REG_X86_XMM1 => "mm1",
-        REG_X86_XMM2 => "mm2",
-        REG_X86_XMM3 => "mm3",
-        REG_X86_XMM4 => "mm4",
-        REG_X86_XMM5 => "mm5",
-        REG_X86_XMM6 => "mm6",
-        REG_X86_XMM7 => "mm7",
-        REG_X86_K0 => "k0",
-        REG_X86_K1 => "k1",
-        REG_X86_K2 => "k2",
-        REG_X86_K3 => "k3",
-        REG_X86_K4 => "k4",
-        REG_X86_K5 => "k5",
-        REG_X86_K6 => "k6",
-        REG_X86_K7 => "k7",
-        REG_X86_STK => "STK",
-        _ => throw new FatalJitException("Invalid register number."),
-    };
+        switch (regNum)
+        {
+            case REG_X86_EAX:
+            {
+                return "eax";
+            }
+            case REG_X86_ECX:
+            {
+                return "ecx";
+            }
+            case REG_X86_EDX:
+            {
+                return "edx";
+            }
+            case REG_X86_EBX:
+            {
+                return "ebx";
+            }
+            case REG_X86_ESP:
+            {
+                return "esp";
+            }
+            case REG_X86_EBP:
+            {
+                return "ebp";
+            }
+            case REG_X86_ESI:
+            {
+                return "esi";
+            }
+            case REG_X86_EDI:
+            {
+                return "edi";
+            }
+            case REG_X86_XMM0:
+            {
+                return "mm0";
+            }
+            case REG_X86_XMM1:
+            {
+                return "mm1";
+            }
+            case REG_X86_XMM2:
+            {
+                return "mm2";
+            }
+            case REG_X86_XMM3:
+            {
+                return "mm3";
+            }
+            case REG_X86_XMM4:
+            {
+                return "mm4";
+            }
+            case REG_X86_XMM5:
+            {
+                return "mm5";
+            }
+            case REG_X86_XMM6:
+            {
+                return "mm6";
+            }
+            case REG_X86_XMM7:
+            {
+                return "mm7";
+            }
+            case REG_X86_K0:
+            {
+                return "k0";
+            }
+            case REG_X86_K1:
+            {
+                return "k1";
+            }
+            case REG_X86_K2:
+            {
+                return "k2";
+            }
+            case REG_X86_K3:
+            {
+                return "k3";
+            }
+            case REG_X86_K4:
+            {
+                return "k4";
+            }
+            case REG_X86_K5:
+            {
+                return "k5";
+            }
+            case REG_X86_K6:
+            {
+                return "k6";
+            }
+            case REG_X86_K7:
+            {
+                return "k7";
+            }
+            case REG_X86_STK:
+            {
+                return "STK";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage445
+                );
+                return default!;
+            }
+        }
+    }
 
-    private static string GetNameX64(regNumber regNum) => regNum switch
+    private static string GetNameX64(regNumber regNum)
     {
-        REG_X64_RAX => "rax",
-        REG_X64_RCX => "rcx",
-        REG_X64_RDX => "rdx",
-        REG_X64_RBX => "rbx",
-        REG_X64_RSP => "rsp",
-        REG_X64_RBP => "rbp",
-        REG_X64_RSI => "rsi",
-        REG_X64_RDI => "rdi",
-        REG_X64_R8 => "r8",
-        REG_X64_R9 => "r9",
-        REG_X64_R10 => "r10",
-        REG_X64_R11 => "r11",
-        REG_X64_R12 => "r12",
-        REG_X64_R13 => "r13",
-        REG_X64_R14 => "r14",
-        REG_X64_R15 => "r15",
-        REG_X64_R16 => "r16",
-        REG_X64_R17 => "r17",
-        REG_X64_R18 => "r18",
-        REG_X64_R19 => "r19",
-        REG_X64_R20 => "r20",
-        REG_X64_R21 => "r21",
-        REG_X64_R22 => "r22",
-        REG_X64_R23 => "r23",
-        REG_X64_R24 => "r24",
-        REG_X64_R25 => "r25",
-        REG_X64_R26 => "r26",
-        REG_X64_R27 => "r27",
-        REG_X64_R28 => "r28",
-        REG_X64_R29 => "r29",
-        REG_X64_R30 => "r30",
-        REG_X64_R31 => "r31",
-        REG_X64_XMM0 => "mm0",
-        REG_X64_XMM1 => "mm1",
-        REG_X64_XMM2 => "mm2",
-        REG_X64_XMM3 => "mm3",
-        REG_X64_XMM4 => "mm4",
-        REG_X64_XMM5 => "mm5",
-        REG_X64_XMM6 => "mm6",
-        REG_X64_XMM7 => "mm7",
-        REG_X64_XMM8 => "mm8",
-        REG_X64_XMM9 => "mm9",
-        REG_X64_XMM10 => "mm10",
-        REG_X64_XMM11 => "mm11",
-        REG_X64_XMM12 => "mm12",
-        REG_X64_XMM13 => "mm13",
-        REG_X64_XMM14 => "mm14",
-        REG_X64_XMM15 => "mm15",
-        REG_X64_XMM16 => "mm16",
-        REG_X64_XMM17 => "mm17",
-        REG_X64_XMM18 => "mm18",
-        REG_X64_XMM19 => "mm19",
-        REG_X64_XMM20 => "mm20",
-        REG_X64_XMM21 => "mm21",
-        REG_X64_XMM22 => "mm22",
-        REG_X64_XMM23 => "mm23",
-        REG_X64_XMM24 => "mm24",
-        REG_X64_XMM25 => "mm25",
-        REG_X64_XMM26 => "mm26",
-        REG_X64_XMM27 => "mm27",
-        REG_X64_XMM28 => "mm28",
-        REG_X64_XMM29 => "mm29",
-        REG_X64_XMM30 => "mm30",
-        REG_X64_XMM31 => "mm31",
-        REG_X64_K0 => "k0",
-        REG_X64_K1 => "k1",
-        REG_X64_K2 => "k2",
-        REG_X64_K3 => "k3",
-        REG_X64_K4 => "k4",
-        REG_X64_K5 => "k5",
-        REG_X64_K6 => "k6",
-        REG_X64_K7 => "k7",
-        REG_X64_STK => "STK",
-        _ => throw new FatalJitException("Invalid register number."),
-    };
+        switch (regNum)
+        {
+            case REG_X64_RAX:
+            {
+                return "rax";
+            }
+            case REG_X64_RCX:
+            {
+                return "rcx";
+            }
+            case REG_X64_RDX:
+            {
+                return "rdx";
+            }
+            case REG_X64_RBX:
+            {
+                return "rbx";
+            }
+            case REG_X64_RSP:
+            {
+                return "rsp";
+            }
+            case REG_X64_RBP:
+            {
+                return "rbp";
+            }
+            case REG_X64_RSI:
+            {
+                return "rsi";
+            }
+            case REG_X64_RDI:
+            {
+                return "rdi";
+            }
+            case REG_X64_R8:
+            {
+                return "r8";
+            }
+            case REG_X64_R9:
+            {
+                return "r9";
+            }
+            case REG_X64_R10:
+            {
+                return "r10";
+            }
+            case REG_X64_R11:
+            {
+                return "r11";
+            }
+            case REG_X64_R12:
+            {
+                return "r12";
+            }
+            case REG_X64_R13:
+            {
+                return "r13";
+            }
+            case REG_X64_R14:
+            {
+                return "r14";
+            }
+            case REG_X64_R15:
+            {
+                return "r15";
+            }
+            case REG_X64_R16:
+            {
+                return "r16";
+            }
+            case REG_X64_R17:
+            {
+                return "r17";
+            }
+            case REG_X64_R18:
+            {
+                return "r18";
+            }
+            case REG_X64_R19:
+            {
+                return "r19";
+            }
+            case REG_X64_R20:
+            {
+                return "r20";
+            }
+            case REG_X64_R21:
+            {
+                return "r21";
+            }
+            case REG_X64_R22:
+            {
+                return "r22";
+            }
+            case REG_X64_R23:
+            {
+                return "r23";
+            }
+            case REG_X64_R24:
+            {
+                return "r24";
+            }
+            case REG_X64_R25:
+            {
+                return "r25";
+            }
+            case REG_X64_R26:
+            {
+                return "r26";
+            }
+            case REG_X64_R27:
+            {
+                return "r27";
+            }
+            case REG_X64_R28:
+            {
+                return "r28";
+            }
+            case REG_X64_R29:
+            {
+                return "r29";
+            }
+            case REG_X64_R30:
+            {
+                return "r30";
+            }
+            case REG_X64_R31:
+            {
+                return "r31";
+            }
+            case REG_X64_XMM0:
+            {
+                return "mm0";
+            }
+            case REG_X64_XMM1:
+            {
+                return "mm1";
+            }
+            case REG_X64_XMM2:
+            {
+                return "mm2";
+            }
+            case REG_X64_XMM3:
+            {
+                return "mm3";
+            }
+            case REG_X64_XMM4:
+            {
+                return "mm4";
+            }
+            case REG_X64_XMM5:
+            {
+                return "mm5";
+            }
+            case REG_X64_XMM6:
+            {
+                return "mm6";
+            }
+            case REG_X64_XMM7:
+            {
+                return "mm7";
+            }
+            case REG_X64_XMM8:
+            {
+                return "mm8";
+            }
+            case REG_X64_XMM9:
+            {
+                return "mm9";
+            }
+            case REG_X64_XMM10:
+            {
+                return "mm10";
+            }
+            case REG_X64_XMM11:
+            {
+                return "mm11";
+            }
+            case REG_X64_XMM12:
+            {
+                return "mm12";
+            }
+            case REG_X64_XMM13:
+            {
+                return "mm13";
+            }
+            case REG_X64_XMM14:
+            {
+                return "mm14";
+            }
+            case REG_X64_XMM15:
+            {
+                return "mm15";
+            }
+            case REG_X64_XMM16:
+            {
+                return "mm16";
+            }
+            case REG_X64_XMM17:
+            {
+                return "mm17";
+            }
+            case REG_X64_XMM18:
+            {
+                return "mm18";
+            }
+            case REG_X64_XMM19:
+            {
+                return "mm19";
+            }
+            case REG_X64_XMM20:
+            {
+                return "mm20";
+            }
+            case REG_X64_XMM21:
+            {
+                return "mm21";
+            }
+            case REG_X64_XMM22:
+            {
+                return "mm22";
+            }
+            case REG_X64_XMM23:
+            {
+                return "mm23";
+            }
+            case REG_X64_XMM24:
+            {
+                return "mm24";
+            }
+            case REG_X64_XMM25:
+            {
+                return "mm25";
+            }
+            case REG_X64_XMM26:
+            {
+                return "mm26";
+            }
+            case REG_X64_XMM27:
+            {
+                return "mm27";
+            }
+            case REG_X64_XMM28:
+            {
+                return "mm28";
+            }
+            case REG_X64_XMM29:
+            {
+                return "mm29";
+            }
+            case REG_X64_XMM30:
+            {
+                return "mm30";
+            }
+            case REG_X64_XMM31:
+            {
+                return "mm31";
+            }
+            case REG_X64_K0:
+            {
+                return "k0";
+            }
+            case REG_X64_K1:
+            {
+                return "k1";
+            }
+            case REG_X64_K2:
+            {
+                return "k2";
+            }
+            case REG_X64_K3:
+            {
+                return "k3";
+            }
+            case REG_X64_K4:
+            {
+                return "k4";
+            }
+            case REG_X64_K5:
+            {
+                return "k5";
+            }
+            case REG_X64_K6:
+            {
+                return "k6";
+            }
+            case REG_X64_K7:
+            {
+                return "k7";
+            }
+            case REG_X64_STK:
+            {
+                return "STK";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage445
+                );
+                return default!;
+            }
+        }
+    }
 
-    private static string GetNameARM32(regNumber regNum) => regNum switch
+    private static string GetNameARM32(regNumber regNum)
     {
-        REG_ARM32_R0 => "r0",
-        REG_ARM32_R1 => "r1",
-        REG_ARM32_R2 => "r2",
-        REG_ARM32_R3 => "r3",
-        REG_ARM32_R4 => "r4",
-        REG_ARM32_R5 => "r5",
-        REG_ARM32_R6 => "r6",
-        REG_ARM32_R7 => "r7",
-        REG_ARM32_R8 => "r8",
-        REG_ARM32_R9 => "r9",
-        REG_ARM32_R10 => "r10",
-        REG_ARM32_R11 => "r11",
-        REG_ARM32_R12 => "r12",
-        REG_ARM32_SP => "sp",
-        REG_ARM32_LR => "lr",
-        REG_ARM32_PC => "pc",
-        REG_ARM32_F0 => "f0",
-        REG_ARM32_F1 => "f1",
-        REG_ARM32_F2 => "f2",
-        REG_ARM32_F3 => "f3",
-        REG_ARM32_F4 => "f4",
-        REG_ARM32_F5 => "f5",
-        REG_ARM32_F6 => "f6",
-        REG_ARM32_F7 => "f7",
-        REG_ARM32_F8 => "f8",
-        REG_ARM32_F9 => "f9",
-        REG_ARM32_F10 => "f10",
-        REG_ARM32_F11 => "f11",
-        REG_ARM32_F12 => "f12",
-        REG_ARM32_F13 => "f13",
-        REG_ARM32_F14 => "f14",
-        REG_ARM32_F15 => "f15",
-        REG_ARM32_F16 => "f16",
-        REG_ARM32_F17 => "f17",
-        REG_ARM32_F18 => "f18",
-        REG_ARM32_F19 => "f19",
-        REG_ARM32_F20 => "f20",
-        REG_ARM32_F21 => "f21",
-        REG_ARM32_F22 => "f22",
-        REG_ARM32_F23 => "f23",
-        REG_ARM32_F24 => "f24",
-        REG_ARM32_F25 => "f25",
-        REG_ARM32_F26 => "f26",
-        REG_ARM32_F27 => "f27",
-        REG_ARM32_F28 => "f28",
-        REG_ARM32_F29 => "f29",
-        REG_ARM32_F30 => "f30",
-        REG_ARM32_F31 => "f31",
-        REG_ARM32_STK => "STK",
-        _ => throw new FatalJitException("Invalid register number."),
-    };
+        switch (regNum)
+        {
+            case REG_ARM32_R0:
+            {
+                return "r0";
+            }
+            case REG_ARM32_R1:
+            {
+                return "r1";
+            }
+            case REG_ARM32_R2:
+            {
+                return "r2";
+            }
+            case REG_ARM32_R3:
+            {
+                return "r3";
+            }
+            case REG_ARM32_R4:
+            {
+                return "r4";
+            }
+            case REG_ARM32_R5:
+            {
+                return "r5";
+            }
+            case REG_ARM32_R6:
+            {
+                return "r6";
+            }
+            case REG_ARM32_R7:
+            {
+                return "r7";
+            }
+            case REG_ARM32_R8:
+            {
+                return "r8";
+            }
+            case REG_ARM32_R9:
+            {
+                return "r9";
+            }
+            case REG_ARM32_R10:
+            {
+                return "r10";
+            }
+            case REG_ARM32_R11:
+            {
+                return "r11";
+            }
+            case REG_ARM32_R12:
+            {
+                return "r12";
+            }
+            case REG_ARM32_SP:
+            {
+                return "sp";
+            }
+            case REG_ARM32_LR:
+            {
+                return "lr";
+            }
+            case REG_ARM32_PC:
+            {
+                return "pc";
+            }
+            case REG_ARM32_F0:
+            {
+                return "f0";
+            }
+            case REG_ARM32_F1:
+            {
+                return "f1";
+            }
+            case REG_ARM32_F2:
+            {
+                return "f2";
+            }
+            case REG_ARM32_F3:
+            {
+                return "f3";
+            }
+            case REG_ARM32_F4:
+            {
+                return "f4";
+            }
+            case REG_ARM32_F5:
+            {
+                return "f5";
+            }
+            case REG_ARM32_F6:
+            {
+                return "f6";
+            }
+            case REG_ARM32_F7:
+            {
+                return "f7";
+            }
+            case REG_ARM32_F8:
+            {
+                return "f8";
+            }
+            case REG_ARM32_F9:
+            {
+                return "f9";
+            }
+            case REG_ARM32_F10:
+            {
+                return "f10";
+            }
+            case REG_ARM32_F11:
+            {
+                return "f11";
+            }
+            case REG_ARM32_F12:
+            {
+                return "f12";
+            }
+            case REG_ARM32_F13:
+            {
+                return "f13";
+            }
+            case REG_ARM32_F14:
+            {
+                return "f14";
+            }
+            case REG_ARM32_F15:
+            {
+                return "f15";
+            }
+            case REG_ARM32_F16:
+            {
+                return "f16";
+            }
+            case REG_ARM32_F17:
+            {
+                return "f17";
+            }
+            case REG_ARM32_F18:
+            {
+                return "f18";
+            }
+            case REG_ARM32_F19:
+            {
+                return "f19";
+            }
+            case REG_ARM32_F20:
+            {
+                return "f20";
+            }
+            case REG_ARM32_F21:
+            {
+                return "f21";
+            }
+            case REG_ARM32_F22:
+            {
+                return "f22";
+            }
+            case REG_ARM32_F23:
+            {
+                return "f23";
+            }
+            case REG_ARM32_F24:
+            {
+                return "f24";
+            }
+            case REG_ARM32_F25:
+            {
+                return "f25";
+            }
+            case REG_ARM32_F26:
+            {
+                return "f26";
+            }
+            case REG_ARM32_F27:
+            {
+                return "f27";
+            }
+            case REG_ARM32_F28:
+            {
+                return "f28";
+            }
+            case REG_ARM32_F29:
+            {
+                return "f29";
+            }
+            case REG_ARM32_F30:
+            {
+                return "f30";
+            }
+            case REG_ARM32_F31:
+            {
+                return "f31";
+            }
+            case REG_ARM32_STK:
+            {
+                return "STK";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage445
+                );
+                return default!;
+            }
+        }
+    }
 
-    private static string GetNameARM64(regNumber regNum) => regNum switch
+    private static string GetNameARM64(regNumber regNum)
     {
-        REG_ARM64_R0 => "x0",
-        REG_ARM64_R1 => "x1",
-        REG_ARM64_R2 => "x2",
-        REG_ARM64_R3 => "x3",
-        REG_ARM64_R4 => "x4",
-        REG_ARM64_R5 => "x5",
-        REG_ARM64_R6 => "x6",
-        REG_ARM64_R7 => "x7",
-        REG_ARM64_R8 => "x8",
-        REG_ARM64_R9 => "x9",
-        REG_ARM64_R10 => "x10",
-        REG_ARM64_R11 => "x11",
-        REG_ARM64_R12 => "x12",
-        REG_ARM64_R13 => "x13",
-        REG_ARM64_R14 => "x14",
-        REG_ARM64_R15 => "x15",
-        REG_ARM64_IP0 => "xip0",
-        REG_ARM64_IP1 => "xip1",
-        REG_ARM64_PR => "xpr",
-        REG_ARM64_R19 => "x19",
-        REG_ARM64_R20 => "x20",
-        REG_ARM64_R21 => "x21",
-        REG_ARM64_R22 => "x22",
-        REG_ARM64_R23 => "x23",
-        REG_ARM64_R24 => "x24",
-        REG_ARM64_R25 => "x25",
-        REG_ARM64_R26 => "x26",
-        REG_ARM64_R27 => "x27",
-        REG_ARM64_R28 => "x28",
-        REG_ARM64_FP => "fp",
-        REG_ARM64_LR => "lr",
-        REG_ARM64_ZR => "xzr",
-        REG_ARM64_V0 => "d0",
-        REG_ARM64_V1 => "d1",
-        REG_ARM64_V2 => "d2",
-        REG_ARM64_V3 => "d3",
-        REG_ARM64_V4 => "d4",
-        REG_ARM64_V5 => "d5",
-        REG_ARM64_V6 => "d6",
-        REG_ARM64_V7 => "d7",
-        REG_ARM64_V8 => "d8",
-        REG_ARM64_V9 => "d9",
-        REG_ARM64_V10 => "d10",
-        REG_ARM64_V11 => "d11",
-        REG_ARM64_V12 => "d12",
-        REG_ARM64_V13 => "d13",
-        REG_ARM64_V14 => "d14",
-        REG_ARM64_V15 => "d15",
-        REG_ARM64_V16 => "d16",
-        REG_ARM64_V17 => "d17",
-        REG_ARM64_V18 => "d18",
-        REG_ARM64_V19 => "d19",
-        REG_ARM64_V20 => "d20",
-        REG_ARM64_V21 => "d21",
-        REG_ARM64_V22 => "d22",
-        REG_ARM64_V23 => "d23",
-        REG_ARM64_V24 => "d24",
-        REG_ARM64_V25 => "d25",
-        REG_ARM64_V26 => "d26",
-        REG_ARM64_V27 => "d27",
-        REG_ARM64_V28 => "d28",
-        REG_ARM64_V29 => "d29",
-        REG_ARM64_V30 => "d30",
-        REG_ARM64_V31 => "d31",
-        REG_ARM64_P0 => "p0",
-        REG_ARM64_P1 => "p1",
-        REG_ARM64_P2 => "p2",
-        REG_ARM64_P3 => "p3",
-        REG_ARM64_P4 => "p4",
-        REG_ARM64_P5 => "p5",
-        REG_ARM64_P6 => "p6",
-        REG_ARM64_P7 => "p7",
-        REG_ARM64_P8 => "p8",
-        REG_ARM64_P9 => "p9",
-        REG_ARM64_P10 => "p10",
-        REG_ARM64_P11 => "p11",
-        REG_ARM64_P12 => "p12",
-        REG_ARM64_P13 => "p13",
-        REG_ARM64_P14 => "p14",
-        REG_ARM64_P15 => "p15",
-        REG_ARM64_SP => "sp",
-        REG_ARM64_FFR => "ffr",
-        REG_ARM64_STK => "STK",
-        _ => throw new FatalJitException("Invalid register number."),
-    };
+        switch (regNum)
+        {
+            case REG_ARM64_R0:
+            {
+                return "x0";
+            }
+            case REG_ARM64_R1:
+            {
+                return "x1";
+            }
+            case REG_ARM64_R2:
+            {
+                return "x2";
+            }
+            case REG_ARM64_R3:
+            {
+                return "x3";
+            }
+            case REG_ARM64_R4:
+            {
+                return "x4";
+            }
+            case REG_ARM64_R5:
+            {
+                return "x5";
+            }
+            case REG_ARM64_R6:
+            {
+                return "x6";
+            }
+            case REG_ARM64_R7:
+            {
+                return "x7";
+            }
+            case REG_ARM64_R8:
+            {
+                return "x8";
+            }
+            case REG_ARM64_R9:
+            {
+                return "x9";
+            }
+            case REG_ARM64_R10:
+            {
+                return "x10";
+            }
+            case REG_ARM64_R11:
+            {
+                return "x11";
+            }
+            case REG_ARM64_R12:
+            {
+                return "x12";
+            }
+            case REG_ARM64_R13:
+            {
+                return "x13";
+            }
+            case REG_ARM64_R14:
+            {
+                return "x14";
+            }
+            case REG_ARM64_R15:
+            {
+                return "x15";
+            }
+            case REG_ARM64_IP0:
+            {
+                return "xip0";
+            }
+            case REG_ARM64_IP1:
+            {
+                return "xip1";
+            }
+            case REG_ARM64_PR:
+            {
+                return "xpr";
+            }
+            case REG_ARM64_R19:
+            {
+                return "x19";
+            }
+            case REG_ARM64_R20:
+            {
+                return "x20";
+            }
+            case REG_ARM64_R21:
+            {
+                return "x21";
+            }
+            case REG_ARM64_R22:
+            {
+                return "x22";
+            }
+            case REG_ARM64_R23:
+            {
+                return "x23";
+            }
+            case REG_ARM64_R24:
+            {
+                return "x24";
+            }
+            case REG_ARM64_R25:
+            {
+                return "x25";
+            }
+            case REG_ARM64_R26:
+            {
+                return "x26";
+            }
+            case REG_ARM64_R27:
+            {
+                return "x27";
+            }
+            case REG_ARM64_R28:
+            {
+                return "x28";
+            }
+            case REG_ARM64_FP:
+            {
+                return "fp";
+            }
+            case REG_ARM64_LR:
+            {
+                return "lr";
+            }
+            case REG_ARM64_ZR:
+            {
+                return "xzr";
+            }
+            case REG_ARM64_V0:
+            {
+                return "d0";
+            }
+            case REG_ARM64_V1:
+            {
+                return "d1";
+            }
+            case REG_ARM64_V2:
+            {
+                return "d2";
+            }
+            case REG_ARM64_V3:
+            {
+                return "d3";
+            }
+            case REG_ARM64_V4:
+            {
+                return "d4";
+            }
+            case REG_ARM64_V5:
+            {
+                return "d5";
+            }
+            case REG_ARM64_V6:
+            {
+                return "d6";
+            }
+            case REG_ARM64_V7:
+            {
+                return "d7";
+            }
+            case REG_ARM64_V8:
+            {
+                return "d8";
+            }
+            case REG_ARM64_V9:
+            {
+                return "d9";
+            }
+            case REG_ARM64_V10:
+            {
+                return "d10";
+            }
+            case REG_ARM64_V11:
+            {
+                return "d11";
+            }
+            case REG_ARM64_V12:
+            {
+                return "d12";
+            }
+            case REG_ARM64_V13:
+            {
+                return "d13";
+            }
+            case REG_ARM64_V14:
+            {
+                return "d14";
+            }
+            case REG_ARM64_V15:
+            {
+                return "d15";
+            }
+            case REG_ARM64_V16:
+            {
+                return "d16";
+            }
+            case REG_ARM64_V17:
+            {
+                return "d17";
+            }
+            case REG_ARM64_V18:
+            {
+                return "d18";
+            }
+            case REG_ARM64_V19:
+            {
+                return "d19";
+            }
+            case REG_ARM64_V20:
+            {
+                return "d20";
+            }
+            case REG_ARM64_V21:
+            {
+                return "d21";
+            }
+            case REG_ARM64_V22:
+            {
+                return "d22";
+            }
+            case REG_ARM64_V23:
+            {
+                return "d23";
+            }
+            case REG_ARM64_V24:
+            {
+                return "d24";
+            }
+            case REG_ARM64_V25:
+            {
+                return "d25";
+            }
+            case REG_ARM64_V26:
+            {
+                return "d26";
+            }
+            case REG_ARM64_V27:
+            {
+                return "d27";
+            }
+            case REG_ARM64_V28:
+            {
+                return "d28";
+            }
+            case REG_ARM64_V29:
+            {
+                return "d29";
+            }
+            case REG_ARM64_V30:
+            {
+                return "d30";
+            }
+            case REG_ARM64_V31:
+            {
+                return "d31";
+            }
+            case REG_ARM64_P0:
+            {
+                return "p0";
+            }
+            case REG_ARM64_P1:
+            {
+                return "p1";
+            }
+            case REG_ARM64_P2:
+            {
+                return "p2";
+            }
+            case REG_ARM64_P3:
+            {
+                return "p3";
+            }
+            case REG_ARM64_P4:
+            {
+                return "p4";
+            }
+            case REG_ARM64_P5:
+            {
+                return "p5";
+            }
+            case REG_ARM64_P6:
+            {
+                return "p6";
+            }
+            case REG_ARM64_P7:
+            {
+                return "p7";
+            }
+            case REG_ARM64_P8:
+            {
+                return "p8";
+            }
+            case REG_ARM64_P9:
+            {
+                return "p9";
+            }
+            case REG_ARM64_P10:
+            {
+                return "p10";
+            }
+            case REG_ARM64_P11:
+            {
+                return "p11";
+            }
+            case REG_ARM64_P12:
+            {
+                return "p12";
+            }
+            case REG_ARM64_P13:
+            {
+                return "p13";
+            }
+            case REG_ARM64_P14:
+            {
+                return "p14";
+            }
+            case REG_ARM64_P15:
+            {
+                return "p15";
+            }
+            case REG_ARM64_SP:
+            {
+                return "sp";
+            }
+            case REG_ARM64_FFR:
+            {
+                return "ffr";
+            }
+            case REG_ARM64_STK:
+            {
+                return "STK";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage445
+                );
+                return default!;
+            }
+        }
+    }
 
-    private static string GetNameLOONGARCH64(regNumber regNum) => regNum switch
+    private static string GetNameLOONGARCH64(regNumber regNum)
     {
-        REG_LOONGARCH64_R0 => "zero",
-        REG_LOONGARCH64_RA => "ra",
-        REG_LOONGARCH64_TP => "tp",
-        REG_LOONGARCH64_SP => "sp",
-        REG_LOONGARCH64_A0 => "a0",
-        REG_LOONGARCH64_A1 => "a1",
-        REG_LOONGARCH64_A2 => "a2",
-        REG_LOONGARCH64_A3 => "a3",
-        REG_LOONGARCH64_A4 => "a4",
-        REG_LOONGARCH64_A5 => "a5",
-        REG_LOONGARCH64_A6 => "a6",
-        REG_LOONGARCH64_A7 => "a7",
-        REG_LOONGARCH64_T0 => "t0",
-        REG_LOONGARCH64_T1 => "t1",
-        REG_LOONGARCH64_T2 => "t2",
-        REG_LOONGARCH64_T3 => "t3",
-        REG_LOONGARCH64_T4 => "t4",
-        REG_LOONGARCH64_T5 => "t5",
-        REG_LOONGARCH64_T6 => "t6",
-        REG_LOONGARCH64_T7 => "t7",
-        REG_LOONGARCH64_T8 => "t8",
-        REG_LOONGARCH64_X0 => "x0",
-        REG_LOONGARCH64_FP => "fp",
-        REG_LOONGARCH64_S0 => "s0",
-        REG_LOONGARCH64_S1 => "s1",
-        REG_LOONGARCH64_S2 => "s2",
-        REG_LOONGARCH64_S3 => "s3",
-        REG_LOONGARCH64_S4 => "s4",
-        REG_LOONGARCH64_S5 => "s5",
-        REG_LOONGARCH64_S6 => "s6",
-        REG_LOONGARCH64_S7 => "s7",
-        REG_LOONGARCH64_S8 => "s8",
-        REG_LOONGARCH64_F0 => "f0",
-        REG_LOONGARCH64_F1 => "f1",
-        REG_LOONGARCH64_F2 => "f2",
-        REG_LOONGARCH64_F3 => "f3",
-        REG_LOONGARCH64_F4 => "f4",
-        REG_LOONGARCH64_F5 => "f5",
-        REG_LOONGARCH64_F6 => "f6",
-        REG_LOONGARCH64_F7 => "f7",
-        REG_LOONGARCH64_F8 => "f8",
-        REG_LOONGARCH64_F9 => "f9",
-        REG_LOONGARCH64_F10 => "f10",
-        REG_LOONGARCH64_F11 => "f11",
-        REG_LOONGARCH64_F12 => "f12",
-        REG_LOONGARCH64_F13 => "f13",
-        REG_LOONGARCH64_F14 => "f14",
-        REG_LOONGARCH64_F15 => "f15",
-        REG_LOONGARCH64_F16 => "f16",
-        REG_LOONGARCH64_F17 => "f17",
-        REG_LOONGARCH64_F18 => "f18",
-        REG_LOONGARCH64_F19 => "f19",
-        REG_LOONGARCH64_F20 => "f20",
-        REG_LOONGARCH64_F21 => "f21",
-        REG_LOONGARCH64_F22 => "f22",
-        REG_LOONGARCH64_F23 => "f23",
-        REG_LOONGARCH64_F24 => "f24",
-        REG_LOONGARCH64_F25 => "f25",
-        REG_LOONGARCH64_F26 => "f26",
-        REG_LOONGARCH64_F27 => "f27",
-        REG_LOONGARCH64_F28 => "f28",
-        REG_LOONGARCH64_F29 => "f29",
-        REG_LOONGARCH64_F30 => "f30",
-        REG_LOONGARCH64_F31 => "f31",
-        REG_LOONGARCH64_STK => "STK",
-        _ => throw new FatalJitException("Invalid register number."),
-    };
+        switch (regNum)
+        {
+            case REG_LOONGARCH64_R0:
+            {
+                return "zero";
+            }
+            case REG_LOONGARCH64_RA:
+            {
+                return "ra";
+            }
+            case REG_LOONGARCH64_TP:
+            {
+                return "tp";
+            }
+            case REG_LOONGARCH64_SP:
+            {
+                return "sp";
+            }
+            case REG_LOONGARCH64_A0:
+            {
+                return "a0";
+            }
+            case REG_LOONGARCH64_A1:
+            {
+                return "a1";
+            }
+            case REG_LOONGARCH64_A2:
+            {
+                return "a2";
+            }
+            case REG_LOONGARCH64_A3:
+            {
+                return "a3";
+            }
+            case REG_LOONGARCH64_A4:
+            {
+                return "a4";
+            }
+            case REG_LOONGARCH64_A5:
+            {
+                return "a5";
+            }
+            case REG_LOONGARCH64_A6:
+            {
+                return "a6";
+            }
+            case REG_LOONGARCH64_A7:
+            {
+                return "a7";
+            }
+            case REG_LOONGARCH64_T0:
+            {
+                return "t0";
+            }
+            case REG_LOONGARCH64_T1:
+            {
+                return "t1";
+            }
+            case REG_LOONGARCH64_T2:
+            {
+                return "t2";
+            }
+            case REG_LOONGARCH64_T3:
+            {
+                return "t3";
+            }
+            case REG_LOONGARCH64_T4:
+            {
+                return "t4";
+            }
+            case REG_LOONGARCH64_T5:
+            {
+                return "t5";
+            }
+            case REG_LOONGARCH64_T6:
+            {
+                return "t6";
+            }
+            case REG_LOONGARCH64_T7:
+            {
+                return "t7";
+            }
+            case REG_LOONGARCH64_T8:
+            {
+                return "t8";
+            }
+            case REG_LOONGARCH64_X0:
+            {
+                return "x0";
+            }
+            case REG_LOONGARCH64_FP:
+            {
+                return "fp";
+            }
+            case REG_LOONGARCH64_S0:
+            {
+                return "s0";
+            }
+            case REG_LOONGARCH64_S1:
+            {
+                return "s1";
+            }
+            case REG_LOONGARCH64_S2:
+            {
+                return "s2";
+            }
+            case REG_LOONGARCH64_S3:
+            {
+                return "s3";
+            }
+            case REG_LOONGARCH64_S4:
+            {
+                return "s4";
+            }
+            case REG_LOONGARCH64_S5:
+            {
+                return "s5";
+            }
+            case REG_LOONGARCH64_S6:
+            {
+                return "s6";
+            }
+            case REG_LOONGARCH64_S7:
+            {
+                return "s7";
+            }
+            case REG_LOONGARCH64_S8:
+            {
+                return "s8";
+            }
+            case REG_LOONGARCH64_F0:
+            {
+                return "f0";
+            }
+            case REG_LOONGARCH64_F1:
+            {
+                return "f1";
+            }
+            case REG_LOONGARCH64_F2:
+            {
+                return "f2";
+            }
+            case REG_LOONGARCH64_F3:
+            {
+                return "f3";
+            }
+            case REG_LOONGARCH64_F4:
+            {
+                return "f4";
+            }
+            case REG_LOONGARCH64_F5:
+            {
+                return "f5";
+            }
+            case REG_LOONGARCH64_F6:
+            {
+                return "f6";
+            }
+            case REG_LOONGARCH64_F7:
+            {
+                return "f7";
+            }
+            case REG_LOONGARCH64_F8:
+            {
+                return "f8";
+            }
+            case REG_LOONGARCH64_F9:
+            {
+                return "f9";
+            }
+            case REG_LOONGARCH64_F10:
+            {
+                return "f10";
+            }
+            case REG_LOONGARCH64_F11:
+            {
+                return "f11";
+            }
+            case REG_LOONGARCH64_F12:
+            {
+                return "f12";
+            }
+            case REG_LOONGARCH64_F13:
+            {
+                return "f13";
+            }
+            case REG_LOONGARCH64_F14:
+            {
+                return "f14";
+            }
+            case REG_LOONGARCH64_F15:
+            {
+                return "f15";
+            }
+            case REG_LOONGARCH64_F16:
+            {
+                return "f16";
+            }
+            case REG_LOONGARCH64_F17:
+            {
+                return "f17";
+            }
+            case REG_LOONGARCH64_F18:
+            {
+                return "f18";
+            }
+            case REG_LOONGARCH64_F19:
+            {
+                return "f19";
+            }
+            case REG_LOONGARCH64_F20:
+            {
+                return "f20";
+            }
+            case REG_LOONGARCH64_F21:
+            {
+                return "f21";
+            }
+            case REG_LOONGARCH64_F22:
+            {
+                return "f22";
+            }
+            case REG_LOONGARCH64_F23:
+            {
+                return "f23";
+            }
+            case REG_LOONGARCH64_F24:
+            {
+                return "f24";
+            }
+            case REG_LOONGARCH64_F25:
+            {
+                return "f25";
+            }
+            case REG_LOONGARCH64_F26:
+            {
+                return "f26";
+            }
+            case REG_LOONGARCH64_F27:
+            {
+                return "f27";
+            }
+            case REG_LOONGARCH64_F28:
+            {
+                return "f28";
+            }
+            case REG_LOONGARCH64_F29:
+            {
+                return "f29";
+            }
+            case REG_LOONGARCH64_F30:
+            {
+                return "f30";
+            }
+            case REG_LOONGARCH64_F31:
+            {
+                return "f31";
+            }
+            case REG_LOONGARCH64_STK:
+            {
+                return "STK";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage445
+                );
+                return default!;
+            }
+        }
+    }
 
-    private static string GetNameRISCV64(regNumber regNum) => regNum switch
+    private static string GetNameRISCV64(regNumber regNum)
     {
-        REG_RISCV64_R0 => "zero",
-        REG_RISCV64_RA => "ra",
-        REG_RISCV64_SP => "sp",
-        REG_RISCV64_GP => "gp",
-        REG_RISCV64_TP => "tp",
-        REG_RISCV64_T0 => "t0",
-        REG_RISCV64_T1 => "t1",
-        REG_RISCV64_T2 => "t2",
-        REG_RISCV64_FP => "fp",
-        REG_RISCV64_S1 => "s1",
-        REG_RISCV64_A0 => "a0",
-        REG_RISCV64_A1 => "a1",
-        REG_RISCV64_A2 => "a2",
-        REG_RISCV64_A3 => "a3",
-        REG_RISCV64_A4 => "a4",
-        REG_RISCV64_A5 => "a5",
-        REG_RISCV64_A6 => "a6",
-        REG_RISCV64_A7 => "a7",
-        REG_RISCV64_S2 => "s2",
-        REG_RISCV64_S3 => "s3",
-        REG_RISCV64_S4 => "s4",
-        REG_RISCV64_S5 => "s5",
-        REG_RISCV64_S6 => "s6",
-        REG_RISCV64_S7 => "s7",
-        REG_RISCV64_S8 => "s8",
-        REG_RISCV64_S9 => "s9",
-        REG_RISCV64_S10 => "s10",
-        REG_RISCV64_S11 => "s11",
-        REG_RISCV64_T3 => "t3",
-        REG_RISCV64_T4 => "t4",
-        REG_RISCV64_T5 => "t5",
-        REG_RISCV64_T6 => "t6",
-        REG_RISCV64_FT0 => "ft0",
-        REG_RISCV64_FT1 => "ft1",
-        REG_RISCV64_FT2 => "ft2",
-        REG_RISCV64_FT3 => "ft3",
-        REG_RISCV64_FT4 => "ft4",
-        REG_RISCV64_FT5 => "ft5",
-        REG_RISCV64_FT6 => "ft6",
-        REG_RISCV64_FT7 => "ft7",
-        REG_RISCV64_FS0 => "fs0",
-        REG_RISCV64_FS1 => "fs1",
-        REG_RISCV64_FA0 => "fa0",
-        REG_RISCV64_FA1 => "fa1",
-        REG_RISCV64_FA2 => "fa2",
-        REG_RISCV64_FA3 => "fa3",
-        REG_RISCV64_FA4 => "fa4",
-        REG_RISCV64_FA5 => "fa5",
-        REG_RISCV64_FA6 => "fa6",
-        REG_RISCV64_FA7 => "fa7",
-        REG_RISCV64_FS2 => "fs2",
-        REG_RISCV64_FS3 => "fs3",
-        REG_RISCV64_FS4 => "fs4",
-        REG_RISCV64_FS5 => "fs5",
-        REG_RISCV64_FS6 => "fs6",
-        REG_RISCV64_FS7 => "fs7",
-        REG_RISCV64_FS8 => "fs8",
-        REG_RISCV64_FS9 => "fs9",
-        REG_RISCV64_FS10 => "fs10",
-        REG_RISCV64_FS11 => "fs11",
-        REG_RISCV64_FT8 => "ft8",
-        REG_RISCV64_FT9 => "ft9",
-        REG_RISCV64_FT10 => "ft10",
-        REG_RISCV64_FT11 => "ft11",
-        REG_RISCV64_STK => "STK",
-        _ => throw new FatalJitException("Invalid register number."),
-    };
+        switch (regNum)
+        {
+            case REG_RISCV64_R0:
+            {
+                return "zero";
+            }
+            case REG_RISCV64_RA:
+            {
+                return "ra";
+            }
+            case REG_RISCV64_SP:
+            {
+                return "sp";
+            }
+            case REG_RISCV64_GP:
+            {
+                return "gp";
+            }
+            case REG_RISCV64_TP:
+            {
+                return "tp";
+            }
+            case REG_RISCV64_T0:
+            {
+                return "t0";
+            }
+            case REG_RISCV64_T1:
+            {
+                return "t1";
+            }
+            case REG_RISCV64_T2:
+            {
+                return "t2";
+            }
+            case REG_RISCV64_FP:
+            {
+                return "fp";
+            }
+            case REG_RISCV64_S1:
+            {
+                return "s1";
+            }
+            case REG_RISCV64_A0:
+            {
+                return "a0";
+            }
+            case REG_RISCV64_A1:
+            {
+                return "a1";
+            }
+            case REG_RISCV64_A2:
+            {
+                return "a2";
+            }
+            case REG_RISCV64_A3:
+            {
+                return "a3";
+            }
+            case REG_RISCV64_A4:
+            {
+                return "a4";
+            }
+            case REG_RISCV64_A5:
+            {
+                return "a5";
+            }
+            case REG_RISCV64_A6:
+            {
+                return "a6";
+            }
+            case REG_RISCV64_A7:
+            {
+                return "a7";
+            }
+            case REG_RISCV64_S2:
+            {
+                return "s2";
+            }
+            case REG_RISCV64_S3:
+            {
+                return "s3";
+            }
+            case REG_RISCV64_S4:
+            {
+                return "s4";
+            }
+            case REG_RISCV64_S5:
+            {
+                return "s5";
+            }
+            case REG_RISCV64_S6:
+            {
+                return "s6";
+            }
+            case REG_RISCV64_S7:
+            {
+                return "s7";
+            }
+            case REG_RISCV64_S8:
+            {
+                return "s8";
+            }
+            case REG_RISCV64_S9:
+            {
+                return "s9";
+            }
+            case REG_RISCV64_S10:
+            {
+                return "s10";
+            }
+            case REG_RISCV64_S11:
+            {
+                return "s11";
+            }
+            case REG_RISCV64_T3:
+            {
+                return "t3";
+            }
+            case REG_RISCV64_T4:
+            {
+                return "t4";
+            }
+            case REG_RISCV64_T5:
+            {
+                return "t5";
+            }
+            case REG_RISCV64_T6:
+            {
+                return "t6";
+            }
+            case REG_RISCV64_FT0:
+            {
+                return "ft0";
+            }
+            case REG_RISCV64_FT1:
+            {
+                return "ft1";
+            }
+            case REG_RISCV64_FT2:
+            {
+                return "ft2";
+            }
+            case REG_RISCV64_FT3:
+            {
+                return "ft3";
+            }
+            case REG_RISCV64_FT4:
+            {
+                return "ft4";
+            }
+            case REG_RISCV64_FT5:
+            {
+                return "ft5";
+            }
+            case REG_RISCV64_FT6:
+            {
+                return "ft6";
+            }
+            case REG_RISCV64_FT7:
+            {
+                return "ft7";
+            }
+            case REG_RISCV64_FS0:
+            {
+                return "fs0";
+            }
+            case REG_RISCV64_FS1:
+            {
+                return "fs1";
+            }
+            case REG_RISCV64_FA0:
+            {
+                return "fa0";
+            }
+            case REG_RISCV64_FA1:
+            {
+                return "fa1";
+            }
+            case REG_RISCV64_FA2:
+            {
+                return "fa2";
+            }
+            case REG_RISCV64_FA3:
+            {
+                return "fa3";
+            }
+            case REG_RISCV64_FA4:
+            {
+                return "fa4";
+            }
+            case REG_RISCV64_FA5:
+            {
+                return "fa5";
+            }
+            case REG_RISCV64_FA6:
+            {
+                return "fa6";
+            }
+            case REG_RISCV64_FA7:
+            {
+                return "fa7";
+            }
+            case REG_RISCV64_FS2:
+            {
+                return "fs2";
+            }
+            case REG_RISCV64_FS3:
+            {
+                return "fs3";
+            }
+            case REG_RISCV64_FS4:
+            {
+                return "fs4";
+            }
+            case REG_RISCV64_FS5:
+            {
+                return "fs5";
+            }
+            case REG_RISCV64_FS6:
+            {
+                return "fs6";
+            }
+            case REG_RISCV64_FS7:
+            {
+                return "fs7";
+            }
+            case REG_RISCV64_FS8:
+            {
+                return "fs8";
+            }
+            case REG_RISCV64_FS9:
+            {
+                return "fs9";
+            }
+            case REG_RISCV64_FS10:
+            {
+                return "fs10";
+            }
+            case REG_RISCV64_FS11:
+            {
+                return "fs11";
+            }
+            case REG_RISCV64_FT8:
+            {
+                return "ft8";
+            }
+            case REG_RISCV64_FT9:
+            {
+                return "ft9";
+            }
+            case REG_RISCV64_FT10:
+            {
+                return "ft10";
+            }
+            case REG_RISCV64_FT11:
+            {
+                return "ft11";
+            }
+            case REG_RISCV64_STK:
+            {
+                return "STK";
+            }
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage445
+                );
+                return default!;
+            }
+        }
+    }
 
 
 
@@ -816,7 +1956,9 @@ public static partial class regNumberExtensions
             {
                 return s_masks_WASM;
             }
-            throw new FatalJitException("Invalid target architecture.");
+            FatalJitException.ThrowFatalJitException(
+                "Invalid target architecture.");
+            return default;
         }
     }
 

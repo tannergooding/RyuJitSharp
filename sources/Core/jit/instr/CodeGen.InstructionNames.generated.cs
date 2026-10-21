@@ -4520,7 +4520,9 @@ public sealed partial class CodeGen
                 return s_instructionNameRangesWasm;
             }
 
-            throw new FatalJitException("No instruction-name table is defined for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                "No instruction-name table is defined for the configured target.");
+            return default;
         }
     }
 

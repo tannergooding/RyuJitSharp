@@ -39,11 +39,17 @@ public partial class Emitter
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "GC-delta indentation is not supported for this target.");
+            return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("GC delta diagnostics require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("GC delta diagnostics require an active compiler.");
+            return;
+        }
         // Native %.*s cannot print past its 29-character space literal.
         const string indentation = "                             ";
         var indent = compiler.opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
@@ -87,7 +93,12 @@ public partial class Emitter
         {
             throw new InvalidOperationException("GC delta diagnostics are only available in Debug builds.");
         }
-        var compiler = _compiler ?? throw new FatalJitException("GC delta diagnostics require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("GC delta diagnostics require an active compiler.");
+            return;
+        }
         if (VarSetOps.Equal(compiler, debugPrevGCrefVars, debugThisGCrefVars))
         {
             return;
@@ -215,7 +226,12 @@ public partial class Emitter
         {
             throw new InvalidOperationException("GC tracking diagnostics are only available in Debug builds.");
         }
-        var compiler = _compiler ?? throw new FatalJitException("GC tracking diagnostics require an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException("GC tracking diagnostics require an active compiler.");
+            return;
+        }
         // Keep the diagnostic field addresses stable while formatting can allocate.
         fixed (regMask* previousGCref = &emitPrevGCrefRegs, previousByref = &emitPrevByrefRegs,
             initialGCref = &emitInitGCrefRegs, initialByref = &emitInitByrefRegs,

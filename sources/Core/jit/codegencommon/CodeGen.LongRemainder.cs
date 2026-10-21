@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Long unsigned remainder generation requires X86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long unsigned remainder generation requires X86.");
+            return;
         }
 
         assert(node.Oper is GT_UMOD);

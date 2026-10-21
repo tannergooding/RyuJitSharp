@@ -587,7 +587,11 @@ internal static class LinearScanEdgeResolutionTests
             EnregisterLocals(allocator) = false;
             var originalMaximum = compiler.fgBBNumMax;
             var exception = Assert.Throws<FatalJitException>(() => ResolveEdges(allocator));
-            Assert.That(exception!.Message, Does.Contain("requires allocated local maps"));
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.DirectFailureMessage288));
+            if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+            {
+                Assert.That(exception.Message, Does.Contain("requires allocated local maps"));
+            }
             Assert.That(compiler.fgBBNumMax, Is.EqualTo(originalMaximum));
             Assert.That(SetOps.IsEmpty(compiler, ResolutionCandidates(allocator)), Is.True);
         });

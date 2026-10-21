@@ -12,7 +12,12 @@ public partial class Emitter
 {
     public void emitDispReloc(nint value)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InstructionDisplayMissingCompiler);
+            return;
+        }
         if (compiler.opts.disAsm && compiler.opts.disDiffable)
         {
             jitprintf("(reloc)");
@@ -32,7 +37,12 @@ public partial class Emitter
 
     public void emitDispAddrMode(instrDesc id)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Address-mode display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AddressModeDisplayMissingCompiler);
+            return;
+        }
         var ins = id.idIns();
         var disp = ins is INS_call or INS_tail_i_jmp ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
         if (Configuration.TARGET_X86)
@@ -163,7 +173,12 @@ public partial class Emitter
 
     public unsafe void emitDispInsHexXarch(instrDesc id, byte* code, nuint size)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InstructionDisplayMissingCompiler);
+            return;
+        }
         if (!compiler.opts.disCodeBytes || compiler.opts.disDiffable)
         {
             return;
@@ -204,13 +219,38 @@ public partial class Emitter
             return;
         }
         assert(!id.idHasMem());
-        jitprintf(id.idGetEvexbContext() switch
+        string rounding;
+        switch (id.idGetEvexbContext())
         {
-            1 => " {rd-sae}",
-            2 => " {ru-sae}",
-            3 => " {rz-sae}",
-            _ => throw new FatalJitException("Invalid EVEX rounding mode."),
-        });
+            case 1:
+            {
+                rounding = " {rd-sae}";
+                break;
+            }
+
+            case 2:
+            {
+                rounding = " {ru-sae}";
+                break;
+            }
+
+            case 3:
+            {
+                rounding = " {rz-sae}";
+                break;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.InvalidEvexRoundingMode
+                );
+                return;
+            }
+        }
+
+        jitprintf(rounding);
     }
 
     public void emitDispEmbMasking(instrDesc id)
@@ -266,7 +306,12 @@ public partial class Emitter
             return;
         }
 
-        var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InstructionDisplayMissingCompiler);
+            return;
+        }
         var val = constant.cnsVal;
         if (Configuration.TARGET_X86)
         {

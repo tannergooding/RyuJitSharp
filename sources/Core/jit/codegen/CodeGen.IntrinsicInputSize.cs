@@ -11,7 +11,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction input size metadata requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction input size metadata requires xarch.");
+            return default!;
         }
 
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);

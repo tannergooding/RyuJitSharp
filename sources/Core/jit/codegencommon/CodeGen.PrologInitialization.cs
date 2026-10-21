@@ -12,7 +12,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm has no architectural integer zero register.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm has no architectural integer zero register.");
+            return default!;
         }
 
         if (Configuration.TARGET_ARM64)
@@ -45,7 +46,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm has no architectural floating-point registers.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm has no architectural floating-point registers.");
+            return;
         }
 
         if (Configuration.TARGET_AMD64)
@@ -102,7 +104,8 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED, "Floating-register zeroing is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-register zeroing is not implemented for this target.");
+                        return;
                     }
                     fltInitReg = reg;
                 }
@@ -145,7 +148,8 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED, "Floating-register zeroing is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-register zeroing is not implemented for this target.");
+                        return;
                     }
                     dblInitReg = reg;
                 }
@@ -254,7 +258,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 floating-register zeroing is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 floating-register zeroing is unavailable.");
+            return;
         }
 
         Emitter.emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
@@ -264,7 +269,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm frame initialization is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm frame initialization is unavailable for this target.");
+            return;
         }
 
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -293,7 +299,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Wasm generic-context reporting is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm generic-context reporting is unavailable for this target.");
+            return;
         }
 
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -323,7 +330,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 generic-context storage is unavailable.");
+            return;
         }
 
         Emitter.emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
@@ -334,7 +342,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 generic-context storage is unavailable.");
+            return;
         }
 
         _ = genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
@@ -345,7 +354,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 generic-context storage is unavailable.");
+            return;
         }
 
         _ = genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
@@ -356,7 +366,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 generic-context storage is unavailable.");
+            return;
         }
 
         _ = genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
@@ -367,7 +378,8 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Native generic-context loading is unavailable on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native generic-context loading is unavailable on Wasm.");
+            return;
         }
 
         var frameReg = IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
@@ -378,7 +390,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "xarch generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "xarch generic-context storage is unavailable.");
+            return;
         }
 
         var frameReg = IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
@@ -389,7 +402,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM || !Configuration.PROFILING_SUPPORTED)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 profiling pre-spill information is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 profiling pre-spill information is unavailable.");
+            return default!;
         }
 
         return _compiler.compIsProfilerHookNeeded
@@ -475,7 +489,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Generic-context reporting is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Generic-context reporting is not implemented for this target.");
+            return;
         }
     }
 }

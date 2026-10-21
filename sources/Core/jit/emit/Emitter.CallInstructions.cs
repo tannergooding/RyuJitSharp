@@ -240,8 +240,9 @@ public partial class Emitter
 
                 default:
                 {
-                    throw new FatalJitException(CORJIT_INTERNALERROR,
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
                         $"Unexpected Wasm call type {parameters.callType}.");
+                    return;
                 }
             }
 
@@ -286,7 +287,8 @@ public partial class Emitter
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call instruction recording is not implemented for this target.");
+        return;
     }
 
     private static ulong AddRexWPrefix(instrDesc id, ulong code)
@@ -308,7 +310,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_AMD64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "REX.W prefix emission is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "REX.W prefix emission is not implemented for this target.");
+            return default!;
         }
 
         if (hasEvexPrefix(code))

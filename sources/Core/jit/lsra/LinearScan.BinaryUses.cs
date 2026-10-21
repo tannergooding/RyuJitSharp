@@ -80,7 +80,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return default!;
         }
 
         if (Configuration.TARGET_X86 && varTypeIsByte(node.Type))

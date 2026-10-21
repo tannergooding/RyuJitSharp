@@ -11,7 +11,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic fallback requires xarch hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic fallback requires xarch hardware intrinsics.");
+            return default!;
         }
 
         assert((HWIntrinsicInfo.lookupFlags(intrinsic) &

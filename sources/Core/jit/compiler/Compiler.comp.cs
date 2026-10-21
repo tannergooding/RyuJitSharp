@@ -267,10 +267,10 @@ public partial class Compiler
 
     /// <summary>Timer data structure (by phases) for current compilation.</summary>
     private unsafe JitTimer? compJitTimer;
-    
+
     /// <summary>Summary of the Timer information for the whole run.</summary>
     private static CompTimeSummaryInfo s_compJitTimerSummary;
-    
+
     /// <summary>If a log file for JIT time is desired, filename to write it to.</summary>
     private static nint compJitTimeLogFilename;
 
@@ -555,7 +555,7 @@ public partial class Compiler
         _wrapICorJitInfo = null;
     }
 
-    private unsafe void InitializeClrApiTimingProxy()
+    internal unsafe void InitializeClrApiTimingProxy()
     {
         if (JitConfig.JitEECallTimingInfo is 0)
         {
@@ -585,11 +585,6 @@ public partial class Compiler
         noway_assert(info.compCompHnd is not null);
         noway_assert(info.compMethodHnd is not null);
 
-        if (JitConfig.JitEECallTimingInfo is not 0)
-        {
-            EnsureClrApiTimingSupported();
-        }
-
         if (Configuration.FEATURE_JIT_METHOD_PERF)
         {
             if (!s_checkedForJitTimeLog)
@@ -604,8 +599,6 @@ public partial class Compiler
 
             InitializeJitTimer();
         }
-
-        InitializeClrApiTimingProxy();
 
         if (Configuration.FUNC_INFO_LOGGING)
         {
@@ -1573,8 +1566,7 @@ public partial class Compiler
 
     public unsafe void compInitOptions(JitFlags* jitFlags)
     {
-        opts = new Options
-        {
+        opts = new Options {
             compUseSoftFP = Configuration.ARM_SOFTFP && Configuration.TARGET_ARM,
         };
 
@@ -2212,7 +2204,7 @@ public partial class Compiler
             if ((JitConfig.JitEnableOptRepeat != 0) &&
                 (JitConfig.JitOptRepeat.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
             {
-                opts.optRepeat      = true;
+                opts.optRepeat = true;
                 opts.optRepeatCount = JitConfig.JitOptRepeatCount;
             }
         }
@@ -2630,7 +2622,8 @@ public partial class Compiler
         {
             if (Configuration.TARGET_X86 == Configuration.TARGET_AMD64)
             {
-                throw new FatalJitException("xarch register metadata is not defined for the configured target.");
+                FatalJitException.ThrowFatalJitException("xarch register metadata is not defined for the configured target.");
+                return;
             }
 
             srbmAllMask = Configuration.TARGET_X86
@@ -3494,8 +3487,7 @@ public partial class Compiler
             DoPhase(this, PHASE_DFS_BLOCKS3, fgDfsBlocksAndRemove);
 
             // Adjust heuristic-derived edge likelihoods into paths that are known to throw.
-            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, () =>
-            {
+            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, () => {
                 // Native ActionPhase discards a functor's returned status.
                 _ = ProfileSynthesis.AdjustThrowEdgeLikelihoods(this);
             });

@@ -381,6 +381,7 @@ public sealed partial class Lowering
             return false;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Immediate containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Immediate containment is not ported for this target.");
+        return default!;
     }
 }

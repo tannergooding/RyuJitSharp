@@ -162,7 +162,9 @@ public partial class GenTree
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("Xarch embedded-masking compatibility is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("Xarch embedded-masking compatibility is unsupported on this target.");
+            broadcastOperandIndex = default!;
+            return default!;
         }
 
         broadcastOperandIndex = 0;

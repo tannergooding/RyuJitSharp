@@ -151,7 +151,8 @@ public partial class Compiler
             return MapAmd64CfiRegNumToDwarfReg(reg);
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+        return default!;
     }
 
     private static short MapPortableCfiRegNumToDwarfReg(regNumber reg)
@@ -182,45 +183,178 @@ public partial class Compiler
 
         if (Configuration.TARGET_ARM)
         {
-            return reg switch
+            switch (reg)
             {
-                REG_ARM32_R0 => 0,
-                REG_ARM32_R1 => 1,
-                REG_ARM32_R2 => 2,
-                REG_ARM32_R3 => 3,
-                REG_ARM32_R4 => 4,
-                REG_ARM32_R5 => 5,
-                REG_ARM32_R6 => 6,
-                REG_ARM32_R7 => 7,
-                REG_ARM32_R8 => 8,
-                REG_ARM32_R9 => 9,
-                REG_ARM32_R10 => 10,
-                REG_ARM32_R11 => 11,
-                REG_ARM32_R12 => 12,
-                REG_ARM32_SP => 13,
-                REG_ARM32_LR => 14,
-                REG_ARM32_PC => 15,
-                REG_ARM32_F0 => 256,
-                REG_ARM32_F2 => 257,
-                REG_ARM32_F4 => 258,
-                REG_ARM32_F6 => 259,
-                REG_ARM32_F8 => 260,
-                REG_ARM32_F10 => 261,
-                REG_ARM32_F12 => 262,
-                REG_ARM32_F14 => 263,
-                REG_ARM32_F16 => 264,
-                REG_ARM32_F18 => 265,
-                REG_ARM32_F20 => 266,
-                REG_ARM32_F22 => 267,
-                REG_ARM32_F24 => 268,
-                REG_ARM32_F26 => 269,
-                REG_ARM32_F28 => 270,
-                REG_ARM32_F30 => 271,
-                _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM DWARF register."),
-            };
+                case REG_ARM32_R0:
+                {
+                    return 0;
+                }
+
+                case REG_ARM32_R1:
+                {
+                    return 1;
+                }
+
+                case REG_ARM32_R2:
+                {
+                    return 2;
+                }
+
+                case REG_ARM32_R3:
+                {
+                    return 3;
+                }
+
+                case REG_ARM32_R4:
+                {
+                    return 4;
+                }
+
+                case REG_ARM32_R5:
+                {
+                    return 5;
+                }
+
+                case REG_ARM32_R6:
+                {
+                    return 6;
+                }
+
+                case REG_ARM32_R7:
+                {
+                    return 7;
+                }
+
+                case REG_ARM32_R8:
+                {
+                    return 8;
+                }
+
+                case REG_ARM32_R9:
+                {
+                    return 9;
+                }
+
+                case REG_ARM32_R10:
+                {
+                    return 10;
+                }
+
+                case REG_ARM32_R11:
+                {
+                    return 11;
+                }
+
+                case REG_ARM32_R12:
+                {
+                    return 12;
+                }
+
+                case REG_ARM32_SP:
+                {
+                    return 13;
+                }
+
+                case REG_ARM32_LR:
+                {
+                    return 14;
+                }
+
+                case REG_ARM32_PC:
+                {
+                    return 15;
+                }
+
+                case REG_ARM32_F0:
+                {
+                    return 256;
+                }
+
+                case REG_ARM32_F2:
+                {
+                    return 257;
+                }
+
+                case REG_ARM32_F4:
+                {
+                    return 258;
+                }
+
+                case REG_ARM32_F6:
+                {
+                    return 259;
+                }
+
+                case REG_ARM32_F8:
+                {
+                    return 260;
+                }
+
+                case REG_ARM32_F10:
+                {
+                    return 261;
+                }
+
+                case REG_ARM32_F12:
+                {
+                    return 262;
+                }
+
+                case REG_ARM32_F14:
+                {
+                    return 263;
+                }
+
+                case REG_ARM32_F16:
+                {
+                    return 264;
+                }
+
+                case REG_ARM32_F18:
+                {
+                    return 265;
+                }
+
+                case REG_ARM32_F20:
+                {
+                    return 266;
+                }
+
+                case REG_ARM32_F22:
+                {
+                    return 267;
+                }
+
+                case REG_ARM32_F24:
+                {
+                    return 268;
+                }
+
+                case REG_ARM32_F26:
+                {
+                    return 269;
+                }
+
+                case REG_ARM32_F28:
+                {
+                    return 270;
+                }
+
+                case REG_ARM32_F30:
+                {
+                    return 271;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM DWARF register.");
+                    return default!;
+                }
+            }
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+        return default!;
     }
 
     private static short MapAmd64CfiRegNumToDwarfReg(regNumber reg)
@@ -295,8 +429,7 @@ public partial class Compiler
 
     private static short MapArm64CfiRegNumToDwarfReg(regNumber reg)
     {
-        short dwarfReg = reg switch
-        {
+        short dwarfReg = reg switch {
             REG_ARM64_R0 => 0,
             REG_ARM64_R1 => 1,
             REG_ARM64_R2 => 2,

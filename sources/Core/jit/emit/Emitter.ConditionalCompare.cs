@@ -19,8 +19,9 @@ public partial class Emitter
             return (immediate & 0x1f) == immediate;
         }
 
-        throw new FatalJitException(
+        FatalJitException.ThrowFatalJitException(
             CORJIT_INTERNALERROR,
-            "Conditional compare immediates are only supported for x64 and ARM64.");
+        "Conditional compare immediates are only supported for x64 and ARM64.");
+        return default!;
     }
 }

@@ -11,8 +11,9 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_64BIT || Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Split-long local stores are not supported on this target.");
+            return;
         }
 
         var lclNum = tree.LclNum;

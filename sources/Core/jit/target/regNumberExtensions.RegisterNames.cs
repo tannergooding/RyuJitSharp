@@ -83,14 +83,16 @@ public static partial class regNumberExtensions
             return GetWasmRegNameCore(regNum);
         }
 
-        throw new FatalJitException("Unsupported target architecture.");
+        FatalJitException.ThrowFatalJitException("Unsupported target architecture.");
+        return default!;
     }
 
     public static string GetWasmRegName(regNumber reg)
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new FatalJitException("WebAssembly register names require the WebAssembly target.");
+            FatalJitException.ThrowFatalJitException("WebAssembly register names require the WebAssembly target.");
+            return default!;
         }
 
         return GetWasmRegNameCore(reg);

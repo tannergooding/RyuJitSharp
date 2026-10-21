@@ -15,7 +15,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     private CORINFO_CONST_LOOKUP _entryPoint;
 
     private regNumber _otherReg;
-    private MultiRegSpillFlags _spillFlags;   
+    private MultiRegSpillFlags _spillFlags;
     private var_types _auxiliaryType;
     private var_types _simdBaseType;
     private byte _simdSize;
@@ -88,7 +88,8 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             {
                 NYI("Hardware-intrinsic user call without hardware-intrinsic support");
                 fatal(CORJIT_IMPLLIMITATION);
-                throw new FatalJitException("Hardware-intrinsic user calls are unsupported on this target.");
+                FatalJitException.ThrowFatalJitException("Hardware-intrinsic user calls are unsupported on this target.");
+                return;
             }
 
             Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);

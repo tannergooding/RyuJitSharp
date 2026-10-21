@@ -43,11 +43,13 @@ public partial class Emitter
 
         if (Configuration.TARGET_WASM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "WebAssembly local-stack store recording is not implemented.");
+            return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Target local-stack store recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target local-stack store recording is not implemented.");
+        return;
     }
 
     public void emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber tmpReg,

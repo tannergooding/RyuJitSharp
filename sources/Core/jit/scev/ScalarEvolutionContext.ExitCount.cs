@@ -16,7 +16,14 @@ public sealed partial class ScalarEvolutionContext
 {
     public RelopEvaluationResult EvaluateRelop(ValueNum vn)
     {
-        var store = _compiler.vnStore ?? throw new InvalidOperationException("Scalar evolution requires value numbering.");
+        var store = _compiler.vnStore;
+        if (store is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-001",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+        }
+
         if (store.IsVNConstant(vn))
         {
             assert(store.TypeOfVN(vn) is TYP_INT);
@@ -24,8 +31,17 @@ public sealed partial class ScalarEvolutionContext
         }
 
         assert(_compiler._domTree is not null);
+        var loop = _loop;
+        if (loop is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-002",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+        }
+
         return _compiler.EvaluateScalarEvolutionRelop(
-            _loop ?? throw new InvalidOperationException("Scalar evolution requires a loop."), vn);
+            loop,
+            vn);
     }
 
     private bool MayOverflowBeforeExit(ScevAddRec lhs, Scev rhs, VNFunc exitOp)
@@ -65,7 +81,10 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected exit operation {exitOp}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-005",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected exit operation {exitOp}." : null);
+                return default;
             }
         }
 
@@ -92,7 +111,14 @@ public sealed partial class ScalarEvolutionContext
         var steppedVal = Simplify(NewBinop(ScevOper.Add, rhs, step));
         var steppedValVNP = MaterializeVN(steppedVal);
         var rhsVNP = MaterializeVN(rhs);
-        var store = _compiler.vnStore ?? throw new InvalidOperationException("Scalar evolution requires value numbering.");
+        var store = _compiler.vnStore;
+        if (store is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-001",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+        }
+
         var relop = store.VNForFunc(TYP_INT, exitOp, steppedValVNP.Liberal, rhsVNP.Liberal);
         return EvaluateRelop(relop) is not RelopEvaluationResult.True;
     }
@@ -129,38 +155,132 @@ public sealed partial class ScalarEvolutionContext
             return (VNFunc)oper;
         }
 
-        return oper switch {
-            GT_EQ or GT_NE => (VNFunc)oper,
-            GT_LT => VNF_LT_UN,
-            GT_LE => VNF_LE_UN,
-            GT_GT => VNF_GT_UN,
-            GT_GE => VNF_GE_UN,
-            _ => throw new InvalidOperationException($"Unexpected relational operation {oper}."),
-        };
+        switch (oper)
+        {
+            case GT_EQ:
+            case GT_NE:
+            {
+                return (VNFunc)oper;
+            }
+
+            case GT_LT:
+            {
+                return VNF_LT_UN;
+            }
+
+            case GT_LE:
+            {
+                return VNF_LE_UN;
+            }
+
+            case GT_GT:
+            {
+                return VNF_GT_UN;
+            }
+
+            case GT_GE:
+            {
+                return VNF_GE_UN;
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-006",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected relational operation {oper}." : null);
+                return default;
+            }
+        }
     }
 
-    private static genTreeOps ReverseExitRelop(genTreeOps oper) => oper switch {
-        GT_LT => GT_GE,
-        GT_LE => GT_GT,
-        GT_GT => GT_LE,
-        GT_GE => GT_LT,
-        _ => throw new InvalidOperationException($"Unexpected exit operation {oper}."),
-    };
+    private static genTreeOps ReverseExitRelop(genTreeOps oper)
+    {
+        switch (oper)
+        {
+            case GT_LT:
+            {
+                return GT_GE;
+            }
 
-    private static genTreeOps SwapExitRelop(genTreeOps oper) => oper switch {
-        GT_LT => GT_GT,
-        GT_LE => GT_GE,
-        GT_GT => GT_LT,
-        GT_GE => GT_LE,
-        _ => throw new InvalidOperationException($"Unexpected exit operation {oper}."),
-    };
+            case GT_LE:
+            {
+                return GT_GT;
+            }
+
+            case GT_GT:
+            {
+                return GT_LE;
+            }
+
+            case GT_GE:
+            {
+                return GT_LT;
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-005",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected exit operation {oper}." : null);
+                return default;
+            }
+        }
+    }
+
+    private static genTreeOps SwapExitRelop(genTreeOps oper)
+    {
+        switch (oper)
+        {
+            case GT_LT:
+            {
+                return GT_GT;
+            }
+
+            case GT_LE:
+            {
+                return GT_GE;
+            }
+
+            case GT_GT:
+            {
+                return GT_LT;
+            }
+
+            case GT_GE:
+            {
+                return GT_LE;
+            }
+
+            default:
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-005",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected exit operation {oper}." : null);
+                return default;
+            }
+        }
+    }
 
     public Scev? ComputeExitNotTakenCount(BasicBlock exiting)
     {
-        var loop = _loop ?? throw new InvalidOperationException("Scalar evolution requires a loop.");
+        var loop = _loop;
+        if (loop is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-002",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+        }
+
         assert(exiting.Kind is BBJ_COND);
         assert(loop.ContainsBlock(exiting.TrueTarget) != loop.ContainsBlock(exiting.FalseTarget));
-        var jump = exiting.LastStmt?.RootNode ?? throw new InvalidOperationException("An exiting block must have a condition.");
+        var jump = exiting.LastStmt?.RootNode;
+        if (jump is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-009",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "An exiting block must have a condition." : null);
+        }
+
         assert(jump.Oper is GT_JTRUE);
         var cond = jump.AsUnOp().Op1;
         if (cond.Oper is not (GT_LT or GT_LE or GT_GT or GT_GE))
@@ -211,13 +331,45 @@ public sealed partial class ScalarEvolutionContext
         {
             jitprintf($"  L{loop.Index:D2} exits when:\n  ");
             lhs.Dump(_compiler);
-            jitprintf(exitOp switch {
-                GT_LT => " < ",
-                GT_LE => " <= ",
-                GT_GT => " > ",
-                GT_GE => " >= ",
-                _ => throw new InvalidOperationException($"Unexpected exit operation {exitOp}."),
-            });
+            string relation;
+            switch (exitOp)
+            {
+                case GT_LT:
+                {
+                    relation = " < ";
+                    break;
+                }
+
+                case GT_LE:
+                {
+                    relation = " <= ";
+                    break;
+                }
+
+                case GT_GT:
+                {
+                    relation = " > ";
+                    break;
+                }
+
+                case GT_GE:
+                {
+                    relation = " >= ";
+                    break;
+                }
+
+                default:
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        "RJS-SCE-005",
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unexpected exit operation {exitOp}."
+                            : null);
+                    relation = default!;
+                    break;
+                }
+            }
+            jitprintf(relation);
             rhs.Dump(_compiler);
             jitprintf("\n");
         }
@@ -278,7 +430,12 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected exit operation {exitOpVNF}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(
+                    "RJS-SCE-005",
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? $"Unexpected exit operation {exitOpVNF}."
+                        : null);
+                return null;
             }
         }
 
@@ -295,7 +452,14 @@ public sealed partial class ScalarEvolutionContext
             upperBound.Dump(_compiler);
         }
 
-        var store = _compiler.vnStore ?? throw new InvalidOperationException("Scalar evolution requires value numbering.");
+        var store = _compiler.vnStore;
+        if (store is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(
+                "RJS-SCE-001",
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+        }
+
         var relopFunc = ValueNumStore.VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
         var lowerBoundVNP = MaterializeVN(lowerBound);
         if (lowerBoundVNP.Liberal == ValueNumStore.NoVN)
@@ -311,12 +475,39 @@ public sealed partial class ScalarEvolutionContext
 
         var relop = store.VNForFunc(TYP_INT, relopFunc, lowerBoundVNP.Liberal, upperBoundVNP.Liberal);
         var result = EvaluateRelop(relop);
-        JITDUMP(result switch {
-            RelopEvaluationResult.Unknown => ": unknown\n",
-            RelopEvaluationResult.True => ": true\n",
-            RelopEvaluationResult.False => ": false\n",
-            _ => throw new InvalidOperationException($"Unexpected relational result {result}."),
-        });
+        if (Configuration.DEBUG)
+        {
+            switch (result)
+            {
+                case RelopEvaluationResult.Unknown:
+                {
+                    JITDUMP(": unknown\n");
+                    break;
+                }
+
+                case RelopEvaluationResult.True:
+                {
+                    JITDUMP(": true\n");
+                    break;
+                }
+
+                case RelopEvaluationResult.False:
+                {
+                    JITDUMP(": false\n");
+                    break;
+                }
+
+                default:
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(
+                        "RJS-SCE-010",
+                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                            ? $"Unexpected relational result {result}."
+                            : null);
+                    return null;
+                }
+            }
+        }
         if (result is not RelopEvaluationResult.True)
         {
             return null;

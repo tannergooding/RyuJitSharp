@@ -11,7 +11,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Data-size prefix output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Data-size prefix output requires xarch.");
+            return default!;
         }
 
         if (Configuration.TARGET_X86)
@@ -29,7 +30,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "NOP output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "NOP output requires xarch.");
+            return default!;
         }
 
         assert(nBytes <= 15);
@@ -159,16 +161,25 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Loop-alignment output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Loop-alignment output requires xarch.");
+            return default!;
         }
 
-        var alignInstr = id as instrDescAlign
-            ?? throw new FatalJitException("Loop alignment requires an alignment descriptor.");
+        if (id is not instrDescAlign alignInstr)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopAlignmentMissingDescriptor);
+            return default!;
+        }
         if (!Configuration.DEBUG)
         {
             _ = alignInstr;
         }
-        var compiler = _compiler ?? throw new FatalJitException("Loop alignment requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopAlignmentMissingCompiler);
+            return default!;
+        }
         nuint offset;
         bool validatePadding;
         if (Configuration.DEBUG)
@@ -189,12 +200,24 @@ public partial class Emitter
 
         if (Configuration.DEBUG && validatePadding)
         {
-            var loopHead = alignInstr.idaIG?.igNext
-                ?? throw new FatalJitException("An alignment descriptor requires a following loop group.");
-            var containingIG = alignInstr.idaIG
-                ?? throw new FatalJitException("An alignment descriptor requires a containing group.");
-            var loopHeadPredIG = alignInstr.idaLoopHeadPredIG
-                ?? throw new FatalJitException("An alignment descriptor requires a loop-head predecessor.");
+            var loopHead = alignInstr.idaIG?.igNext;
+            if (loopHead is null)
+            {
+                FatalJitException.ThrowFatalJitException("An alignment descriptor requires a following loop group.");
+                return default!;
+            }
+            var containingIG = alignInstr.idaIG;
+            if (containingIG is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AlignmentDescriptorMissingContainingGroup);
+                return default!;
+            }
+            var loopHeadPredIG = alignInstr.idaLoopHeadPredIG;
+            if (loopHeadPredIG is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AlignmentDescriptorMissingLoopHeadPredecessor);
+                return default!;
+            }
             var paddingNeeded = emitCalculatePaddingForLoopAlignment(loopHead, offset, true,
                 containingIG, loopHeadPredIG);
             if (compiler.opts.compJitAlignLoopAdaptive)

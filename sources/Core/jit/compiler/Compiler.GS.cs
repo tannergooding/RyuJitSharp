@@ -406,7 +406,8 @@ public partial class Compiler
             (lclNum < info.compArgsCount) && argRequiresSpecialCopy(lclNum) && (descriptor.Type is TYP_STRUCT))
         {
             JITDUMP($"arg{lclNum:D2} requires special copy; the x86 special-copy helper is not ported.\n");
-            throw new FatalJitException(CORJIT_SKIPPED, "IJW struct-argument shadow copies require the x86 special-copy helper.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "IJW struct-argument shadow copies require the x86 special-copy helper.");
+            return;
         }
 
         var source = gtNewLclvNode(descriptor.Type, lclNum);

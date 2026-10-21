@@ -120,7 +120,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Return-trap generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return-trap generation is not ported for this target.");
+            return;
         }
     }
 }

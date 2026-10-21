@@ -25,8 +25,15 @@ public sealed partial class BasicBlock
 
         foreach (var statement in from.Statements)
         {
-            var expression = compiler.gtCloneExpr(statement.RootNode)
-                ?? throw new FatalJitException("A block statement must have a cloneable root.");
+            var expression = compiler.gtCloneExpr(statement.RootNode);
+            if (expression is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage078
+                );
+                return;
+            }
             compiler.fgInsertStmtAtEnd(to, compiler.fgNewStmtFromTree(expression, di: statement.DebugInfo));
         }
     }

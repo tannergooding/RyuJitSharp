@@ -15,10 +15,18 @@ public sealed partial class LinearScan
     {
         var sumStats = new uint[(int)LsraStat.COUNT];
         var weightedStats = new double[(int)LsraStat.COUNT];
-        var blockInfo = _blockInfo
-            ?? throw new FatalJitException("LSRA statistics require initialized block information.");
-        var blockStats = _blockStats
-            ?? throw new FatalJitException("LSRA statistics are not enabled.");
+        var blockInfo = _blockInfo;
+        if (blockInfo is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics require initialized block information.");
+            return;
+        }
+        var blockStats = _blockStats;
+        if (blockStats is null)
+        {
+            FatalJitException.ThrowFatalJitException("LSRA statistics are not enabled.");
+            return;
+        }
 
         streamWriter.Write("----------\n");
         streamWriter.Write("LSRA Stats");
@@ -90,11 +98,16 @@ public sealed partial class LinearScan
         {
             if ((uint)blockNumber >= (uint)blockInfo.Length)
             {
-                throw new FatalJitException("LSRA statistics do not cover a pre-resolution block.");
+                FatalJitException.ThrowFatalJitException("LSRA statistics do not cover a pre-resolution block.");
+                return;
             }
 
-            var stats = blockStats[blockNumber]
-                ?? throw new FatalJitException("A pre-resolution block has no LSRA statistics.");
+            var stats = blockStats[blockNumber];
+            if (stats is null)
+            {
+                FatalJitException.ThrowFatalJitException("A pre-resolution block has no LSRA statistics.");
+                return;
+            }
             var addedBlockHeader = false;
             for (var index = 0; index < (int)LsraStat.COUNT; index++)
             {

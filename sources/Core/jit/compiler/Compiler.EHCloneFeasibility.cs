@@ -44,13 +44,25 @@ public partial class Compiler
     {
         if (info.Map is null)
         {
-            throw new FatalJitException("Cloning a try region requires a block map.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage103
+            );
+            return default!;
         }
 
         var insertionPoint = (BasicBlock?)insertAfter;
         var clone = fgCloneTryRegionCore(tryEntry, info, ref insertionPoint);
-        insertAfter = insertionPoint
-            ?? throw new FatalJitException("Cloning a try region requires an insertion point.");
+        if (insertionPoint is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage104
+            );
+            return default!;
+        }
+
+        insertAfter = insertionPoint;
         return clone;
     }
 
@@ -130,8 +142,15 @@ public partial class Compiler
                     }
                     else if (block.Kind is BBJ_CALLFINALLYRET)
                     {
-                        var previous = block.Prev
-                            ?? throw new FatalJitException("A callfinally continuation requires a preceding block.");
+                        var previous = block.Prev;
+                        if (previous is null)
+                        {
+                            FatalJitException.ThrowFatalJitException(
+                                CORJIT_INTERNALERROR,
+                                FatalJitErrorCode.DirectFailureMessage105
+                            );
+                            return default!;
+                        }
                         assert(previous.Kind is BBJ_CALLFINALLY);
                         if (previous.Target == descriptor.ebdHndBeg)
                         {
@@ -250,8 +269,16 @@ public partial class Compiler
             return tryEntry;
         }
 
-        return fgCloneTryRegionMutating(tryEntry, info, ref insertAfter,
-            blocksToClone ?? throw new FatalJitException("Cloning a try region requires its blocks."),
+        if (blocksToClone is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage106
+            );
+            return default!;
+        }
+
+        return fgCloneTryRegionMutating(tryEntry, info, ref insertAfter, blocksToClone,
             tryIndex, outermostTryIndex, enclosingIndex, enclosingHandlerIndex,
             regionCount, clonedOutermostIndex);
     }

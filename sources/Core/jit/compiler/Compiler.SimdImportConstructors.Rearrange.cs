@@ -11,14 +11,37 @@ public partial class Compiler
 {
     private static var_types UnsignedSimdIndexType(var_types baseType)
     {
-        return baseType switch
+        switch (baseType)
         {
-            TYP_BYTE or TYP_UBYTE => TYP_UBYTE,
-            TYP_SHORT or TYP_USHORT => TYP_USHORT,
-            TYP_INT or TYP_UINT or TYP_FLOAT => TYP_UINT,
-            TYP_LONG or TYP_ULONG or TYP_DOUBLE => TYP_ULONG,
-            _ => throw new FatalJitException("Unsupported SIMD index type."),
-        };
+            case TYP_BYTE or TYP_UBYTE:
+            {
+                return TYP_UBYTE;
+            }
+
+            case TYP_SHORT or TYP_USHORT:
+            {
+                return TYP_USHORT;
+            }
+
+            case TYP_INT or TYP_UINT or TYP_FLOAT:
+            {
+                return TYP_UINT;
+            }
+
+            case TYP_LONG or TYP_ULONG or TYP_DOUBLE:
+            {
+                return TYP_ULONG;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage194
+                );
+                return default!;
+            }
+        }
     }
 
     public GenTree gtNewSimdConcatNode(var_types type, GenTree op1, GenTree op2,
@@ -26,7 +49,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD concatenation requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD concatenation requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -87,7 +111,8 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException("gtNewSimdConcatNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdConcatNode requires its target-specific implementation.");
+            return default!;
         }
 
         var halfSize = (byte)(simdSize / 2);
@@ -121,7 +146,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD zip requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD zip requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -164,7 +190,8 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdZipNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdZipNode requires its target-specific implementation.");
+            return default!;
         }
 
         var elementSize = simdBaseType.Size;
@@ -172,14 +199,50 @@ public partial class Compiler
             compOpportunisticallyDependsOn(elementSize == 1 ? InstructionSet_AVX512v2 :
                 InstructionSet_AVX512))
         {
-            var intrinsic = elementSize switch
+            NamedIntrinsic intrinsic;
+            switch (elementSize)
             {
-                1 => simdSize == 32 ? NI_AVX512v2_PermuteVar32x8x2 : NI_AVX512v2_PermuteVar64x8x2,
-                2 => simdSize == 32 ? NI_AVX512_PermuteVar16x16x2 : NI_AVX512_PermuteVar32x16x2,
-                4 => simdSize == 32 ? NI_AVX512_PermuteVar8x32x2 : NI_AVX512_PermuteVar16x32x2,
-                8 => simdSize == 32 ? NI_AVX512_PermuteVar4x64x2 : NI_AVX512_PermuteVar8x64x2,
-                _ => throw new FatalJitException("Unsupported SIMD zip element width."),
-            };
+                case 1:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512v2_PermuteVar32x8x2
+                                        : NI_AVX512v2_PermuteVar64x8x2;
+                    break;
+                }
+
+                case 2:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512_PermuteVar16x16x2
+                                        : NI_AVX512_PermuteVar32x16x2;
+                    break;
+                }
+
+                case 4:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512_PermuteVar8x32x2
+                                        : NI_AVX512_PermuteVar16x32x2;
+                    break;
+                }
+
+                case 8:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512_PermuteVar4x64x2
+                                        : NI_AVX512_PermuteVar8x64x2;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage195
+                    );
+                    return default!;
+                }
+            }
             var shuffle = gtNewVconNode(type);
             var indexType = UnsignedSimdIndexType(simdBaseType);
             var start = upper ? count / 2 : 0;
@@ -223,7 +286,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD unzip requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD unzip requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
@@ -279,7 +343,8 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("gtNewSimdUnzipNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException("gtNewSimdUnzipNode requires its target-specific implementation.");
+            return default!;
         }
 
         var elementSize = simdBaseType.Size;
@@ -321,14 +386,50 @@ public partial class Compiler
             compOpportunisticallyDependsOn(elementSize == 1 ? InstructionSet_AVX512v2 :
                 InstructionSet_AVX512))
         {
-            var intrinsic = elementSize switch
+            NamedIntrinsic intrinsic;
+            switch (elementSize)
             {
-                1 => simdSize == 32 ? NI_AVX512v2_PermuteVar32x8x2 : NI_AVX512v2_PermuteVar64x8x2,
-                2 => simdSize == 32 ? NI_AVX512_PermuteVar16x16x2 : NI_AVX512_PermuteVar32x16x2,
-                4 => simdSize == 32 ? NI_AVX512_PermuteVar8x32x2 : NI_AVX512_PermuteVar16x32x2,
-                8 => simdSize == 32 ? NI_AVX512_PermuteVar4x64x2 : NI_AVX512_PermuteVar8x64x2,
-                _ => throw new FatalJitException("Unsupported SIMD unzip element width."),
-            };
+                case 1:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512v2_PermuteVar32x8x2
+                                        : NI_AVX512v2_PermuteVar64x8x2;
+                    break;
+                }
+
+                case 2:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512_PermuteVar16x16x2
+                                        : NI_AVX512_PermuteVar32x16x2;
+                    break;
+                }
+
+                case 4:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512_PermuteVar8x32x2
+                                        : NI_AVX512_PermuteVar16x32x2;
+                    break;
+                }
+
+                case 8:
+                {
+                    intrinsic = simdSize == 32
+                                        ? NI_AVX512_PermuteVar4x64x2
+                                        : NI_AVX512_PermuteVar8x64x2;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage196
+                    );
+                    return default!;
+                }
+            }
             var shuffle = gtNewVconNode(type);
             var start = odd ? 1 : 0;
             for (var index = 0; index < count; index++)
@@ -361,7 +462,8 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD reverse requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD reverse requires hardware intrinsics.");
+            return default!;
         }
 
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);

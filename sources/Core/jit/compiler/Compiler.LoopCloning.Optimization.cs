@@ -34,8 +34,15 @@ public partial class Compiler
             {
                 case LcJaggedArrayOptInfo array:
                 {
-                    var block = array.ArrIndex.UseBlock
-                        ?? throw new FatalJitException("Array candidate has no use block.");
+                    var block = array.ArrIndex.UseBlock;
+                    if (block is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage144
+                        );
+                        return;
+                    }
                     compCurBB = block;
                     for (var dim = 0; dim <= array.Dim; dim++)
                     {
@@ -67,10 +74,24 @@ public partial class Compiler
                 }
                 case LcSpanOptInfo span:
                 {
-                    var block = span.SpanIndex.UseBlock
-                        ?? throw new FatalJitException("Span candidate has no use block.");
-                    var comma = span.SpanIndex.BndsChk
-                        ?? throw new FatalJitException("Span candidate has no bounds check.");
+                    var block = span.SpanIndex.UseBlock;
+                    if (block is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage148
+                        );
+                        return;
+                    }
+                    var comma = span.SpanIndex.BndsChk;
+                    if (comma is null)
+                    {
+                        FatalJitException.ThrowFatalJitException(
+                            CORJIT_INTERNALERROR,
+                            FatalJitErrorCode.DirectFailureMessage149
+                        );
+                        return;
+                    }
                     compCurBB = block;
                     if (Configuration.DEBUG && verbose)
                     {
@@ -132,7 +153,11 @@ public partial class Compiler
                 }
                 default:
                 {
-                    throw new FatalJitException("Unknown loop-cloning optimization.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage150
+                    );
+                    return;
                 }
             }
         }

@@ -38,8 +38,15 @@ public partial class Compiler
             }
 
             JITDUMP("    Strength reducing\n");
-            var stepValue = _scevContext.Materialize(iv.Step)
-                ?? throw new FatalJitException("A constant IV step must materialize.");
+            var stepValue = _scevContext.Materialize(iv.Step);
+            if (stepValue is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage135
+                );
+                return default!;
+            }
             var newLocal = _compiler.lvaGrabTemp(false, "Strength reduced derived IV");
             var initStore = _compiler.gtNewTempStore(newLocal, initValue);
             var initStmt = _compiler.fgNewStmtFromTree(initStore);
@@ -65,8 +72,17 @@ public partial class Compiler
             foreach (var cursor in cursors)
             {
                 var newUse = _compiler.gtNewLclVarNode(iv.Type, newLocal);
-                var replacement = RephraseIV(cursor.IV
-                    ?? throw new FatalJitException("A replacement cursor needs its recurrence."), iv, newUse);
+                var cursorIV = cursor.IV;
+                if (cursorIV is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage136
+                    );
+                    return false;
+                }
+
+                var replacement = RephraseIV(cursorIV, iv, newUse);
                 JITDUMP($"    Replacing use [{cursor.Tree.TreeId:D6}] with " +
                     $"[{replacement.TreeId:D6}]. Before:\n");
                 DISPSTMT(cursor.Stmt);
@@ -75,7 +91,11 @@ public partial class Compiler
                 ref var use = ref link.result;
                 if (Unsafe.IsNullRef(ref use))
                 {
-                    throw new FatalJitException("The strength-reduced use was lost from its statement.");
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage137
+                    );
+                    return default!;
                 }
 
                 GenTree? sideEffects = null;
@@ -109,8 +129,16 @@ public partial class Compiler
         private BasicBlock? FindUpdateInsertionPoint(List<CursorInfo> cursors, out Statement? afterStmt)
         {
             afterStmt = null;
-            var domTree = _compiler._domTree
-                ?? throw new FatalJitException("Strength reduction requires dominators.");
+            var domTree = _compiler._domTree;
+            if (domTree is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage130
+                );
+                afterStmt = default!;
+                return default!;
+            }
             BasicBlock? insertionPoint = null;
             foreach (var backEdge in _loop.BackEdges)
             {
@@ -126,7 +154,13 @@ public partial class Compiler
                 {
                     if (Configuration.DEBUG)
                     {
-                        var latestUse = afterStmt ?? throw new FatalJitException("Post-use placement needs a use statement.");
+                        var latestUse = afterStmt;
+                        if (latestUse is null)
+                        {
+                            FatalJitException.ThrowFatalJitException("Post-use placement needs a use statement.");
+                            afterStmt = default!;
+                            return default!;
+                        }
                         JITDUMP($"    Found a legal insertion point after a last use of the IV in {FMT_BB(postUseInsertionPoint.bbNum)} after {FMT_STMT(latestUse.Id)}\n");
                     }
                     return postUseInsertionPoint;

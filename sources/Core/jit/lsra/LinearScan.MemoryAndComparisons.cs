@@ -207,14 +207,16 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildIndir on this target");
-        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildIndir on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildIndir on this target is not implemented.");
+        return default!;
     }
 
     private void checkAndMoveRMWLastUse(GenTree? fromTree, GenTree? toTree)
     {
         if (!Configuration.TARGET_X86)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         if ((fromTree is null) || (fromTree.Oper is not GT_LCL_VAR) ||
@@ -388,6 +390,7 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildLclHeap on this target");
-        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildLclHeap on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildLclHeap on this target is not implemented.");
+        return default!;
     }
 }

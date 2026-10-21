@@ -139,8 +139,13 @@ public sealed partial class LinearScan
                 else if (Configuration.TARGET_ARM &&
                     assigned is Interval assignedDouble && assignedDouble.registerType is TYP_DOUBLE)
                 {
-                    var firstHalf = assignedDouble.assignedReg
-                        ?? throw new FatalJitException("An assigned ARM32 double must retain its first register.");
+                    var firstHalf = assignedDouble.assignedReg;
+                    if (firstHalf is null)
+                    {
+                        FatalJitException.ThrowFatalJitException("An assigned ARM32 double must retain its first register.");
+                        score = default!;
+                        return default!;
+                    }
                     assert(genIsValidDoubleReg(firstHalf.regNum));
                     unassignPhysReg(firstHalf, assignedDouble.recentRefPosition);
                 }
@@ -190,7 +195,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         assert(genIsValidDoubleReg(record.regNum));
@@ -214,8 +220,12 @@ public sealed partial class LinearScan
         }
         else
         {
-            var secondInterval = second.assignedInterval
-                ?? throw new FatalJitException("A double-register spill requires an occupied half.");
+            var secondInterval = second.assignedInterval;
+            if (secondInterval is null)
+            {
+                FatalJitException.ThrowFatalJitException("A double-register spill requires an occupied half.");
+                return;
+            }
             assert(secondInterval.registerType is TYP_FLOAT);
             unassignPhysReg(second, secondInterval.recentRefPosition);
         }
@@ -226,7 +236,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            return;
         }
 
         updatePreviousInterval(record, interval);

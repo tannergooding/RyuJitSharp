@@ -97,14 +97,22 @@ public partial class Compiler
         if (compHndBBtabCount > 0)
         {
             clauses = new EHClauseInfo[compHndBBtabCount];
-            ehToVmOrder = compEHTabOrderToVMClauseOrder
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "EH-to-VM clause order has not been initialized.");
+            var order = compEHTabOrderToVMClauseOrder;
+            if (order is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage079
+                );
+                return default!;
+            }
+
+            ehToVmOrder = order;
 
             for (ushort ehIndex = 0; ehIndex < compHndBBtabCount; ehIndex++)
             {
                 ref var descriptor = ref ehGetDsc(ehIndex);
-                var clause = new CORINFO_EH_CLAUSE
-                {
+                var clause = new CORINFO_EH_CLAUSE {
                     ClassToken = descriptor.HasFilter ? 0 : unchecked((int)descriptor.ebdTyp),
                     Flags = CodeGen.ToCORINFO_EH_CLAUSE_FLAGS(descriptor.ebdHandlerType),
                     TryOffset = 0,
@@ -179,8 +187,12 @@ public partial class Compiler
                 block.InsertAtBeginning(range);
             }
 
-            var lowering = _pLowering
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Lowering is unavailable during Wasm virtual-IP setup.");
+            var lowering = _pLowering;
+            if (lowering is null)
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Lowering is unavailable during Wasm virtual-IP setup.");
+                return;
+            }
             lowering.LowerRange(block, new LIR.ReadOnlyRange(firstNode, lastNode));
             updatesAdded = unchecked(updatesAdded + 1);
         }

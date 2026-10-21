@@ -21,8 +21,15 @@ public partial class Emitter
             }
             if (((group.igFlags & InsGroupFlags.NoGCInterrupt) != 0) && (group.igSize > 0))
             {
-                var descriptors = group.igData
-                    ?? throw new FatalJitException(CORJIT_SKIPPED, "Non-interruptible group has no instructions.");
+                var descriptors = group.igData;
+                if (descriptors is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_SKIPPED,
+                        FatalJitErrorCode.DirectFailureMessage216
+                    );
+                    return default!;
+                }
                 assert(descriptors.Length > 0);
                 var firstSize = descriptors[0].idCodeSize();
                 assert(firstSize > 0);

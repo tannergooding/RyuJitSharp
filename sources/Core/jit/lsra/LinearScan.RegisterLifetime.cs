@@ -14,12 +14,23 @@ public sealed partial class LinearScan
 
     private void unassignPhysRegNoSpill(RegRecord regRecord)
     {
-        var assignedInterval = regRecord.assignedInterval
-            ?? throw new FatalJitException("Cannot unassign a physical register without an interval.");
+        var assignedInterval = regRecord.assignedInterval;
+        if (assignedInterval is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage380
+            );
+            return;
+        }
         assert(assignedInterval.isActive);
         if (!assignedInterval.isActive)
         {
-            throw new FatalJitException("A no-spill unassignment requires an active interval.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage392
+            );
+            return;
         }
 
         assignedInterval.isActive = false;
@@ -126,7 +137,11 @@ public sealed partial class LinearScan
         assert(!_enregisterLocalVars);
         if (_enregisterLocalVars)
         {
-            throw new FatalJitException("Minimal register-state reset cannot run with enregistered locals.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage393
+            );
+            return;
         }
 
         initializeAvailableRegs();
@@ -286,8 +301,7 @@ public sealed partial class LinearScan
     private bool isInitiallyAvailable(RegRecord regRecord)
     {
         var registerMask = genSingleTypeRegMask(regRecord.regNum);
-        return regRecord.registerType switch
-        {
+        return regRecord.registerType switch {
             TYP_INT => (_availableIntRegs & registerMask) != SRBM_NONE,
             TYP_FLOAT => (_availableFloatRegs & registerMask) != SRBM_NONE,
             TYP_DOUBLE => (_availableDoubleRegs & registerMask) != SRBM_NONE,
@@ -318,10 +332,24 @@ public sealed partial class LinearScan
 
     private weight_t getSpillWeight(RegRecord regRecord)
     {
-        var interval = regRecord.assignedInterval
-            ?? throw new FatalJitException("Spill-weight calculation requires an assigned interval.");
-        var recentRefPosition = interval.recentRefPosition
-            ?? throw new FatalJitException("Spill-weight calculation requires a recent reference.");
+        var interval = regRecord.assignedInterval;
+        if (interval is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage394
+            );
+            return default!;
+        }
+        var recentRefPosition = interval.recentRefPosition;
+        if (recentRefPosition is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage395
+            );
+            return default!;
+        }
         // Native currentLoc retains the interval-building cursor during allocation;
         // it is not the traversal's currentLocation, which can still hold delayed uses.
         assert(!isRefPositionActive(recentRefPosition, _referenceBuildLocation));

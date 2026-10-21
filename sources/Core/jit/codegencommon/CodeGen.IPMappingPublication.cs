@@ -37,8 +37,15 @@ public sealed partial class CodeGen
             }
 
             assert(current != mappings.First);
-            var prev = current.Previous
-                ?? throw new FatalJitException(CORJIT_SKIPPED, "IP mapping has no predecessor at a duplicate native offset.");
+            var prev = current.Previous;
+            if (prev is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.DirectFailureMessage085
+                );
+                return;
+            }
 
             if (prev.Value.ipmdKind == IPmappingDscKind.NoMapping)
             {

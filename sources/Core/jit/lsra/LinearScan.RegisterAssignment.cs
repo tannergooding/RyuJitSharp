@@ -65,8 +65,15 @@ public sealed partial class LinearScan
 
     private void assignPhysReg(RegRecord regRecord, Interval interval)
     {
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Register assignment requires initialized codegen state.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage378
+            );
+            return;
+        }
         codeGen.RegSet.rsSetRegsModified(
             regMaskTP.CreateFromRegNum(regRecord.regNum, genSingleTypeRegMask(regRecord.regNum)), true);
 
@@ -165,8 +172,15 @@ public sealed partial class LinearScan
 
     private void checkAndClearInterval(RegRecord regRecord, RefPosition? spillRefPosition)
     {
-        var assignedInterval = regRecord.assignedInterval
-            ?? throw new FatalJitException("Cannot clear an unassigned physical register.");
+        var assignedInterval = regRecord.assignedInterval;
+        if (assignedInterval is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage379
+            );
+            return;
+        }
 
         if (spillRefPosition is null)
         {
@@ -213,8 +227,15 @@ public sealed partial class LinearScan
 
     private void unassignPhysReg(RegRecord regRecord, RefPosition? spillRefPosition)
     {
-        var assignedInterval = regRecord.assignedInterval
-            ?? throw new FatalJitException("Cannot unassign a physical register without an interval.");
+        var assignedInterval = regRecord.assignedInterval;
+        if (assignedInterval is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage380
+            );
+            return;
+        }
         assert((spillRefPosition is null) ||
             ReferenceEquals(spillRefPosition.getInterval(), assignedInterval));
 
@@ -262,10 +283,21 @@ public sealed partial class LinearScan
         var spill = assignedInterval.isActive && (nextRefPosition is not null);
         if (spill)
         {
-            var spillFrom = spillRefPosition
-                ?? throw new FatalJitException("An active interval spill requires its last reference.");
-            var spillTo = nextRefPosition
-                ?? throw new FatalJitException("A spilled interval requires a following reference.");
+            var spillFrom = spillRefPosition;
+            if (spillFrom is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage381
+                );
+                return;
+            }
+            var spillTo = nextRefPosition;
+            if (spillTo is null)
+            {
+                FatalJitException.ThrowFatalJitException("A spilled interval requires a following reference.");
+                return;
+            }
             if (Configuration.DEBUG && extendLifetimes() && assignedInterval.isLocalVar &&
                 RefTypeIsUse(spillFrom.refType) && spillFrom.treeNode is not null &&
                 spillFrom.treeNode.AsLclVar().IsLastUse(spillFrom.multiRegIdx))
@@ -297,8 +329,15 @@ public sealed partial class LinearScan
         }
         else if (canRestorePreviousInterval(regRecord, assignedInterval))
         {
-            var previousInterval = regRecord.previousInterval
-                ?? throw new FatalJitException("A restorable register has no previous interval.");
+            var previousInterval = regRecord.previousInterval;
+            if (previousInterval is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage382
+                );
+                return;
+            }
             regRecord.assignedInterval = previousInterval;
             regRecord.previousInterval = null;
             if (previousInterval.physReg != register)
@@ -392,12 +431,23 @@ public sealed partial class LinearScan
         var splitOrSpilledVars = _splitOrSpilledVars ??= VarSetOps.MakeEmpty(_compiler);
         if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && interval.isUpperVector)
         {
-            var relatedInterval = interval.relatedInterval
-                ?? throw new FatalJitException("An upper-vector interval requires its related local interval.");
+            var relatedInterval = interval.relatedInterval;
+            if (relatedInterval is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage383
+                );
+                return;
+            }
             assert(relatedInterval.isLocalVar);
             if (!relatedInterval.isLocalVar)
             {
-                throw new FatalJitException("An upper-vector interval must be related to a local interval.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage384
+                );
+                return;
             }
 
             interval.isSpilled = true;
@@ -448,8 +498,15 @@ public sealed partial class LinearScan
 
         if (interval.isSingleDef)
         {
-            var firstRefPosition = interval.firstRefPosition
-                ?? throw new FatalJitException("A single-definition interval must have a first reference.");
+            var firstRefPosition = interval.firstRefPosition;
+            if (firstRefPosition is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage385
+                );
+                return;
+            }
             if (RefTypeIsDef(firstRefPosition.refType))
             {
                 firstRefPosition.singleDefSpill = true;
@@ -474,7 +531,11 @@ public sealed partial class LinearScan
             assert(interval.isLocalVar);
             if (!interval.isLocalVar)
             {
-                throw new FatalJitException("Only local-variable intervals can be live on block entry.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage386
+                );
+                return;
             }
 
             setInVarRegForBB(_currentBlockNumber, interval.varNum, REG_STK);
@@ -484,8 +545,12 @@ public sealed partial class LinearScan
     [System.Diagnostics.Conditional("DEBUG")]
     private void dumpRegisterAssignmentSpill(Interval interval)
     {
-        var register = interval.assignedReg
-            ?? throw new FatalJitException("A spilled interval must retain its assigned register.");
+        var register = interval.assignedReg;
+        if (register is null)
+        {
+            FatalJitException.ThrowFatalJitException("A spilled interval must retain its assigned register.");
+            return;
+        }
         initializeAllocationDumpFormat();
         _allocationDumpRegisters |=
             regMaskTP.CreateFromRegNum(register.regNum, genSingleTypeRegMask(register.regNum));

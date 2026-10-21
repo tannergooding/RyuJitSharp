@@ -24,7 +24,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Register masks are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register masks are unavailable for this target.");
+            return default!;
         }
 
         assert(local.lvIsInReg);

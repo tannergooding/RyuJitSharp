@@ -22,8 +22,13 @@ public partial class Emitter
         // ARM32 local-variable immediates depend on the active frame layout.
         if (Configuration.TARGET_ARM && id.idIsLclVar())
         {
-            var compiler = _compiler ?? throw new FatalJitException(
-                "ARM32 local-variable immediate resolution requires an active compiler.");
+            var compiler = _compiler;
+            if (compiler is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    "ARM32 local-variable immediate resolution requires an active compiler.");
+                return default!;
+            }
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();
             var offs = unchecked((int)id.idAddr().iiaLclVar.lvaOffset());
 

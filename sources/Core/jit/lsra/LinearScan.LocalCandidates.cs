@@ -43,6 +43,7 @@ public sealed partial class LinearScan
         var checkDoubleAlign = false;
         if (Configuration.DOUBLE_ALIGN)
         {
+            checkDoubleAlign = true;
             var codeGen = _compiler.codeGen;
             assert(codeGen is not null);
             if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
@@ -71,7 +72,8 @@ public sealed partial class LinearScan
                     }
                     default:
                     {
-                        throw new FatalJitException("Unrecognized double-alignment policy.");
+                        FatalJitException.ThrowFatalJitException("Unrecognized double-alignment policy.");
+                        return;
                     }
                 }
             }
@@ -363,7 +365,8 @@ public sealed partial class LinearScan
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Upper-vector local intervals are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Upper-vector local intervals are unsupported on this target.");
+            return;
         }
 
         upperInterval.relatedInterval = localInterval;

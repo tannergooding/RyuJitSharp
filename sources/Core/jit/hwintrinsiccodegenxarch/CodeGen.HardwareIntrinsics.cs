@@ -11,8 +11,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Hardware-intrinsic code generation requires xarch support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

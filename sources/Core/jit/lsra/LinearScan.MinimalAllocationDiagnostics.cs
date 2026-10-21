@@ -46,10 +46,18 @@ public sealed partial class LinearScan
             ref var local = ref _compiler.lvaGetDesc(checked((int)index));
             if (local.lvIsRegCandidate)
             {
-                var localVarIntervals = this.localVarIntervals
-                    ?? throw new FatalJitException("Register-candidate locals require LSRA interval mappings.");
-                var interval = localVarIntervals[local._varIndex]
-                    ?? throw new FatalJitException("A register-candidate local has no LSRA interval.");
+                var localVarIntervals = this.localVarIntervals;
+                if (localVarIntervals is null)
+                {
+                    FatalJitException.ThrowFatalJitException("Register-candidate locals require LSRA interval mappings.");
+                    return;
+                }
+                var interval = localVarIntervals[local._varIndex];
+                if (interval is null)
+                {
+                    FatalJitException.ThrowFatalJitException("A register-candidate local has no LSRA interval.");
+                    return;
+                }
                 jitprintf($"  (Interval {interval.intervalIndex})\n");
                 for (var refPosition = interval.firstRefPosition;
                      refPosition is not null;

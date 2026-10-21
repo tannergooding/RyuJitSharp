@@ -34,7 +34,11 @@ public sealed class GenTreeVecCon : GenTree
 
         if (!Configuration.FEATURE_SIMD || !isSimd)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD constants are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_IMPLLIMITATION,
+                FatalJitErrorCode.DirectFailureMessage234
+            );
+            return;
         }
 
         assert(isSimd);
@@ -43,7 +47,11 @@ public sealed class GenTreeVecCon : GenTree
         {
             if (!Configuration.TARGET_ARM64)
             {
-                throw new FatalJitException(CORJIT_IMPLLIMITATION, "Scalable SIMD constants are only supported on ARM64.");
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_IMPLLIMITATION,
+                    FatalJitErrorCode.DirectFailureMessage235
+                );
+                return;
             }
 
             _simdScalableVal = simdscalable_t.Zero;
@@ -150,14 +158,22 @@ public sealed class GenTreeVecCon : GenTree
     {
         if (Type == TYP_SIMD_ARM64)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "This vector operation requires fixed-width constant storage.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_IMPLLIMITATION,
+                FatalJitErrorCode.DirectFailureMessage236
+            );
+            return;
         }
 
         if (!Configuration.FEATURE_SIMD ||
             ((Type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH) ||
             (Type is not (TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64)))
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected SIMD constant type.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_IMPLLIMITATION,
+                FatalJitErrorCode.DirectFailureMessage237
+            );
+            return;
         }
     }
 
@@ -165,7 +181,11 @@ public sealed class GenTreeVecCon : GenTree
     {
         if (!Configuration.TARGET_ARM64 || Type != TYP_SIMD_ARM64)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Scalable SIMD constants are only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_IMPLLIMITATION,
+                FatalJitErrorCode.DirectFailureMessage235
+            );
+            return;
         }
     }
 

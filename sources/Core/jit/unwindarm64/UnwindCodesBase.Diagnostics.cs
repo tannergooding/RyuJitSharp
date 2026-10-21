@@ -12,7 +12,7 @@ public unsafe class Arm64UnwindCodesBase
         var pCodesStart = GetCodes();
         var pCodes = pCodesStart;
         var size = 0u;
-        for (;;)
+        for (; ; )
         {
             var b1 = *pCodes;
             if (IsEndCode(b1))
@@ -30,7 +30,8 @@ public unsafe class Arm64UnwindCodesBase
 
     public virtual byte* GetCodes()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "UnwindCodesBase::GetCodes storage is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "UnwindCodesBase::GetCodes storage is not ported.");
+        return default!;
     }
 
     public bool IsEndCode(byte code)

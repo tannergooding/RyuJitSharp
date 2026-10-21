@@ -14,7 +14,12 @@ public partial class Emitter
 
     public void emitComputeCodeSizes()
     {
-        var compiler = _compiler ?? throw new FatalJitException("Code-size computation requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CodeSizeComputationMissingCompiler);
+            return;
+        }
         assert((compiler.fgFirstColdBlock is null) == (emitFirstColdIG is null));
         if (emitFirstColdIG is not null)
         {

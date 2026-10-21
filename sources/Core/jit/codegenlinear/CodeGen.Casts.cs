@@ -60,8 +60,9 @@ public sealed partial class CodeGen
             }
             else
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Floating-to-integer casts are not implemented for this target.");
+                return;
             }
         }
         else if (varTypeIsFloating(targetType))
@@ -100,8 +101,9 @@ public sealed partial class CodeGen
             }
             else
             {
-                throw new FatalJitException(CORJIT_SKIPPED,
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                     "Integral-to-integral casts are not implemented for this target.");
+                return;
             }
         }
     }
@@ -128,8 +130,7 @@ public sealed partial class CodeGen
             noway_assert(dstSize == EA_4BYTE);
 
             var isUnsigned = varTypeIsUnsigned(dstType);
-            var insVcvt = srcType switch
-            {
+            var insVcvt = srcType switch {
                 TYP_DOUBLE => isUnsigned ? INS_vcvt_d2u : INS_vcvt_d2i,
                 TYP_FLOAT => isUnsigned ? INS_vcvt_f2u : INS_vcvt_f2i,
                 _ => INS_invalid,
@@ -164,12 +165,28 @@ public sealed partial class CodeGen
             noway_assert(dstSize is EA_4BYTE or EA_8BYTE);
             var isUnsigned = varTypeIsUnsigned(dstType);
             var ins = isUnsigned ? INS_fcvtzu : INS_fcvtzs;
-            var cvtOption = srcType switch
+            insOpts cvtOption;
+            switch (srcType)
             {
-                TYP_DOUBLE => dstSize == EA_4BYTE ? INS_OPTS_D_TO_4BYTE : INS_OPTS_D_TO_8BYTE,
-                TYP_FLOAT => dstSize == EA_4BYTE ? INS_OPTS_S_TO_4BYTE : INS_OPTS_S_TO_8BYTE,
-                _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid floating-to-integral cast source."),
-            };
+                case TYP_DOUBLE:
+                {
+                    cvtOption = dstSize == EA_4BYTE ? INS_OPTS_D_TO_4BYTE : INS_OPTS_D_TO_8BYTE;
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    cvtOption = dstSize == EA_4BYTE ? INS_OPTS_S_TO_4BYTE : INS_OPTS_S_TO_8BYTE;
+                    break;
+                }
+
+                default:
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR, "Invalid floating-to-integral cast source.");
+                    return;
+                }
+            }
 
             genConsumeOperands(tree);
             Emitter.emitIns_R_R(ins, dstSize, targetReg, op1.RegNum, cvtOption);
@@ -177,8 +194,9 @@ public sealed partial class CodeGen
         }
         else
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Floating-to-integer cast generation outside ARM is not ported.");
+            return;
         }
     }
 
@@ -411,8 +429,9 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM || Configuration.TARGET_64BIT)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Split-long cast generation is only implemented for 32-bit ARM.");
+            return;
         }
 
         assert(tree.Oper is GT_CAST);

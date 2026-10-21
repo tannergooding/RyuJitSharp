@@ -15,8 +15,15 @@ public sealed partial class LinearScan
     private regMaskTP getKillSetForStoreInd(GenTreeStoreInd tree)
     {
         assert(tree.Oper is GT_STOREIND);
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Write-barrier kill-set construction requires initialized CodeGen.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage319
+            );
+            return default!;
+        }
         var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree);
         if (form is GCInfo.WriteBarrierForm.WBF_NoBarrier)
         {
@@ -30,7 +37,8 @@ public sealed partial class LinearScan
                 return new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_X86_EDX));
             }
 
-            throw new FatalJitException("Optimized write barriers are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException("Optimized write barriers are unsupported on this target.");
+            return default!;
         }
 
         var helper = codeGen.genWriteBarrierHelperForWriteBarrierForm(form);
@@ -125,8 +133,15 @@ public sealed partial class LinearScan
             }
             else
             {
-                var codeGen = _compiler.codeGen
-                    ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
+                var codeGen = _compiler.codeGen;
+                if (codeGen is null)
+                {
+                    FatalJitException.ThrowFatalJitException(
+                        CORJIT_INTERNALERROR,
+                        FatalJitErrorCode.DirectFailureMessage320
+                    );
+                    return default!;
+                }
                 if (Configuration.TARGET_XARCH)
                 {
                     killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
@@ -142,8 +157,15 @@ public sealed partial class LinearScan
 
         if (call.IsVirtualStub)
         {
-            var virtualStubParamInfo = _compiler.virtualStubParamInfo
-                ?? throw new FatalJitException("Virtual-stub calls require initialized register metadata.");
+            var virtualStubParamInfo = _compiler.virtualStubParamInfo;
+            if (virtualStubParamInfo is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage321
+                );
+                return default!;
+            }
             if (Configuration.TARGET_ARM)
             {
                 killMask |= virtualStubParamInfo.RegMask;
@@ -314,8 +336,15 @@ public sealed partial class LinearScan
             return RBM_NONE;
         }
 
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
+        var codeGen = _compiler.codeGen;
+        if (codeGen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage320
+            );
+            return default!;
+        }
         return Configuration.HAS_MORE_THAN_64_REGISTERS
             ? new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH,
                 codeGen.SRBM_MSK_CALLEE_TRASH)

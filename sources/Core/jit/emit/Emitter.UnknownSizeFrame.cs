@@ -16,7 +16,8 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Unknown-size frame recording requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown-size frame recording requires SIMD-enabled ARM64.");
+            return;
         }
     }
 
@@ -88,7 +89,8 @@ public partial class Emitter
                 }
                 else
                 {
-                    throw new FatalJitException(CORJIT_IMPLLIMITATION, "The ARM64 frame count cannot be encoded by a single move.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "The ARM64 frame count cannot be encoded by a single move.");
+                    return;
                 }
 
                 break;
@@ -116,7 +118,8 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 unknown-size-frame immediate instruction.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 unknown-size-frame immediate instruction.");
+                return;
             }
         }
 
@@ -211,7 +214,8 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 unknown-size-frame register-pair instruction.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 unknown-size-frame register-pair instruction.");
+                return;
             }
         }
 

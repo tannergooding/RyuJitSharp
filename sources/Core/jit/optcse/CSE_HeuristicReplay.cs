@@ -46,8 +46,12 @@ public unsafe class CSE_HeuristicReplay : CSE_HeuristicCommon
             }
 
             _ = m_compiler.NextCseAttempt();
-            var descriptor = m_compiler.CseCandidateTable[index]
-                ?? throw new FatalJitException("Replay CSE candidate is missing its descriptor.");
+            var descriptor = m_compiler.CseCandidateTable[index];
+            if (descriptor is null)
+            {
+                FatalJitException.ThrowFatalJitException("Replay CSE candidate is missing its descriptor.");
+                return;
+            }
             var candidate = new CSE_Candidate(this, descriptor);
 
             JITDUMP($"\nReplay attempting {FMT_CSE(candidate.CseIndex())}\n");

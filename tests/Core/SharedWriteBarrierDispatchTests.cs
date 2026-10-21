@@ -85,7 +85,10 @@ internal static class SharedWriteBarrierDispatchTests
         var error = Assert.Throws<FatalJitException>(() => codeGen.genWriteBarrierHelperForWriteBarrierForm(form));
 
         Assert.That(error!.Result, Is.EqualTo(CORJIT_INTERNALERROR));
-        Assert.That(error.Message, Is.EqualTo($"No write-barrier helper exists for {form}."));
+        var expectedMessage = Configuration.DETAILED_FATAL_ERROR_MESSAGES
+            ? $"No write-barrier helper exists for {form}."
+            : new FatalJitException().Message;
+        Assert.That(error.Message, Is.EqualTo(expectedMessage));
         if (TestConfiguration.IsDebug)
         {
             Assert.That(codeGen.genWriteBarrierUsed, Is.True);
@@ -118,7 +121,10 @@ internal static class SharedWriteBarrierDispatchTests
         var error = Assert.Throws<FatalJitException>(() => codeGen.genGCWriteBarrier(form));
 
         Assert.That(error!.Result, Is.EqualTo(CORJIT_INTERNALERROR));
-        Assert.That(error.Message, Is.EqualTo($"No write-barrier helper exists for {form}."));
+        var expectedMessage = Configuration.DETAILED_FATAL_ERROR_MESSAGES
+            ? $"No write-barrier helper exists for {form}."
+            : new FatalJitException().Message;
+        Assert.That(error.Message, Is.EqualTo(expectedMessage));
         if (TestConfiguration.IsDebug)
         {
             Assert.That(codeGen.genWriteBarrierUsed, Is.True);

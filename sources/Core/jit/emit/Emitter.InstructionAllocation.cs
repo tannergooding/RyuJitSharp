@@ -194,7 +194,8 @@ public partial class Emitter
     {
         if (!(Configuration.TARGET_ARM || Configuration.TARGET_XARCH))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Label instruction descriptors are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Label instruction descriptors are not supported for this target.");
+            return default!;
         }
 
         if (Configuration.EMITTER_STATS)

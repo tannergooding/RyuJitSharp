@@ -42,8 +42,7 @@ public sealed partial class CodeGen
 
         ensureCurrentFuncIsUnwindable();
 
-        var parameters = new EmitCallParams
-        {
+        var parameters = new EmitCallParams {
             callType = EC_INDIR_R,
         };
 
@@ -81,8 +80,13 @@ public sealed partial class CodeGen
         }
 
         assert(block.isBBCallFinallyPair);
-        var callFinallyRet = block.Next ?? throw new FatalJitException(
-            CORJIT_INTERNALERROR, "Wasm finally call is missing its return block.");
+        var callFinallyRet = block.Next;
+        if (callFinallyRet is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR, "Wasm finally call is missing its return block.");
+            return;
+        }
         assert(callFinallyRet.Kind is BBJ_CALLFINALLYRET);
 
         var continuation = callFinallyRet.Target;

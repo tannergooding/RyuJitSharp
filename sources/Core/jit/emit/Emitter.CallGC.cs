@@ -314,7 +314,11 @@ public partial class Emitter
         => MissingNoGCCallMask(nameof(RBM_INIT_PINVOKE_FRAME_TRASH));
 
     private static regMaskTP MissingNoGCCallMask(string mask)
-        => throw new FatalJitException(CORJIT_SKIPPED, $"No-GC call register mask {mask} is not ported for this target.");
+    {
+        FatalJitException.ThrowFatalJitException(
+            CORJIT_SKIPPED, $"No-GC call register mask {mask} is not ported for this target.");
+        return default!;
+    }
 
     public static unsafe bool emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
     {

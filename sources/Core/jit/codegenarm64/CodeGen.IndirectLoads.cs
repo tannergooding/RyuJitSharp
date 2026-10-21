@@ -17,7 +17,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SIMD12 indirect-load code generation requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 SIMD12 indirect-load code generation requires SIMD-enabled ARM64.");
+            return;
         }
 
         assert(treeNode.Oper is GT_IND);

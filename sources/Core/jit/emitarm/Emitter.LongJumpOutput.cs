@@ -57,8 +57,13 @@ public partial class Emitter
         }
 
         var srcOffs = emitCurCodeOffs(dst);
-        var dstOffs = id.idjTargetIG?.igOffs
-            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "An ARM32 jump requires a bound target group.");
+        var nullableDstOffs = id.idjTargetIG?.igOffs;
+        if (nullableDstOffs is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "An ARM32 jump requires a bound target group.");
+            return default!;
+        }
+        var dstOffs = nullableDstOffs.Value;
         nint distVal;
 
         if (relAddr)
@@ -233,7 +238,8 @@ public partial class Emitter
                 }
                 else
                 {
-                    throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown ARM32 branch format.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM32 branch format.");
+                    return default!;
                 }
 
                 var instructionSize = emitOutput_Thumb2Instr(dst, code);
@@ -303,7 +309,8 @@ public partial class Emitter
             }
             else
             {
-                throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown ARM32 label format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM32 label format.");
+                return default!;
             }
         }
 

@@ -41,8 +41,12 @@ public sealed partial class CodeGen
         }
 
         var jumpEpilog = block.HasFlag(BBF_HAS_JMP);
-        var lastNode = block.GetLastNode()
-            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Missing epilog node.");
+        var lastNode = block.GetLastNode();
+        if (lastNode is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Missing epilog node.");
+            return;
+        }
 
         CORINFO_METHOD_HANDLE methodHandle = null;
         CORINFO_CONST_LOOKUP addressInfo = default;
@@ -111,7 +115,8 @@ public sealed partial class CodeGen
                     default:
                     {
                         noway_assert(false);
-                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported JMP indirection.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported JMP indirection.");
+                        return;
                     }
                 }
 

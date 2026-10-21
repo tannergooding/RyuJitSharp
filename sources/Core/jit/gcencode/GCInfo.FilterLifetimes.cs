@@ -14,7 +14,8 @@ public partial struct GCInfo
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
             Configuration.JIT32_GCENCODER)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
+            return;
         }
 
         var compiler = Compiler;
@@ -25,8 +26,15 @@ public partial struct GCInfo
             {
                 continue;
             }
-            var filter = handler.ebdFilter
-                ?? throw new FatalJitException(CORJIT_SKIPPED, "Filter has no starting block.");
+            var filter = handler.ebdFilter;
+            if (filter is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_SKIPPED,
+                    FatalJitErrorCode.DirectFailureMessage219
+                );
+                return;
+            }
             var filterBeg = compiler.ehCodeOffset(filter);
             var filterEnd = compiler.ehCodeOffset(handler.ebdHndBeg);
 
@@ -50,14 +58,12 @@ public partial struct GCInfo
                             jitprintf($"Splitting lifetime for filter: [{filterBeg:X4}, {filterEnd:X4}).\nOld: ");
                             gcDumpVarPtrDsc(variable);
                         }
-                        var pinned = new varPtrDsc
-                        {
+                        var pinned = new varPtrDsc {
                             vpdVarNum = variable.vpdVarNum | PinnedOffsetFlag,
                             vpdBegOfs = filterBeg,
                             vpdEndOfs = filterEnd,
                         };
-                        var after = new varPtrDsc
-                        {
+                        var after = new varPtrDsc {
                             vpdVarNum = variable.vpdVarNum,
                             vpdBegOfs = filterEnd,
                             vpdEndOfs = end,
@@ -82,8 +88,7 @@ public partial struct GCInfo
                             jitprintf("Splitting lifetime for filter.\nOld: ");
                             gcDumpVarPtrDsc(variable);
                         }
-                        var pinned = new varPtrDsc
-                        {
+                        var pinned = new varPtrDsc {
                             vpdVarNum = variable.vpdVarNum | PinnedOffsetFlag,
                             vpdBegOfs = filterBeg,
                             vpdEndOfs = end,
@@ -106,8 +111,7 @@ public partial struct GCInfo
                         jitprintf("Splitting lifetime for filter.\nOld: ");
                         gcDumpVarPtrDsc(variable);
                     }
-                    var pinned = new varPtrDsc
-                    {
+                    var pinned = new varPtrDsc {
                         vpdVarNum = variable.vpdVarNum | PinnedOffsetFlag,
                         vpdBegOfs = begin,
                         vpdEndOfs = filterEnd,
@@ -177,8 +181,7 @@ public partial struct GCInfo
         var location = Compiler.IsFramePointerUsed
             ? TargetRuntimeMetadata.FramePointerBaseName
             : TargetRuntimeMetadata.StackPointerBaseName;
-        var displacement = offset switch
-        {
+        var displacement = offset switch {
             < 0 => $"-0x{unchecked((uint)-offset):X2}",
             > 0 => $"+0x{offset:X2}",
             _ => "",

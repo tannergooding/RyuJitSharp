@@ -26,7 +26,11 @@ public partial class Compiler
         var link = gtFindLink(stmt, check);
         if (Unsafe.IsNullRef(ref link.result))
         {
-            throw new FatalJitException("The bounds check to remove is not in its original statement.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage172
+            );
+            return;
         }
         link.result = sideEffects ?? gtNewNothingNode();
 
@@ -51,7 +55,16 @@ public partial class Compiler
         }
         else
         {
-            var before = stmt.PrevStmt ?? throw new FatalJitException("A non-first statement needs a predecessor.");
+            var before = stmt.PrevStmt;
+            if (before is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage120
+                );
+                firstNewStmt = default!;
+                return default!;
+            }
             assert(before != block.LastStmt);
             JITDUMP($"Splitting {FMT_BB(previous.bbNum)} after statement {FMT_STMT(before.Id)}\n");
             block = fgSplitBlockAfterStatement(previous, before);
@@ -86,7 +99,15 @@ public partial class Compiler
             last = fgSplitBlockAfterStatement(fast, lastStmt);
         }
 
-        var firstStmt = fast.FirstStmt ?? throw new FatalJitException("The fast path must contain a statement.");
+        var firstStmt = fast.FirstStmt;
+        if (firstStmt is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage173
+            );
+            return default!;
+        }
         var debugInfo = firstStmt.DebugInfo;
         var offset = 0;
         for (var i = checks.Count - 1; i >= 0; i--)
@@ -95,10 +116,24 @@ public partial class Compiler
         }
         assert(offset >= 0);
 
-        var idx = gtCloneExpr(first.Check.Index)
-            ?? throw new FatalJitException("The first bounds-check index cannot be cloned.");
-        var arrLen = gtCloneExpr(first.Check.ArrayLength)
-            ?? throw new FatalJitException("The first bounds-check length cannot be cloned.");
+        var idx = gtCloneExpr(first.Check.Index);
+        if (idx is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage174
+            );
+            return default!;
+        }
+        var arrLen = gtCloneExpr(first.Check.ArrayLength);
+        if (arrLen is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage175
+            );
+            return default!;
+        }
         assert((idx.Flags & GTF_ALL_EFFECT) == 0);
         assert((arrLen.Flags & GTF_ALL_EFFECT) == 0);
 
@@ -110,12 +145,31 @@ public partial class Compiler
         }
         else
         {
-            idxClone = gtCloneExpr(idx)
-                ?? throw new FatalJitException("The cloned bounds-check index cannot be cloned again.");
+            var clonedIdx = gtCloneExpr(idx);
+            if (clonedIdx is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage176
+                );
+                return default!;
+            }
+
+            idxClone = clonedIdx;
+        }
+
+        var lowerTestIdx = gtCloneExpr(idx);
+        if (lowerTestIdx is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage177
+            );
+            return default!;
         }
 
         var lowerTest = gtNewBinaryNode(GT_LT, TYP_INT,
-            gtCloneExpr(idx) ?? throw new FatalJitException("The lower-bound index cannot be cloned."),
+            lowerTestIdx,
             gtNewIconNode(TYP_INT, 0));
         lowerTest.Flags |= GTF_RELOP_JMP_USED;
         var lowerJump = gtNewUnaryNode(GT_JTRUE, TYP_VOID, lowerTest);
@@ -150,7 +204,15 @@ public partial class Compiler
         var upperToFallback = fgAddRefPred(fallback, upper);
         if (!isReturn)
         {
-            var next = last ?? throw new FatalJitException("The split fast path must have a successor.");
+            var next = last;
+            if (next is null)
+            {
+                FatalJitException.ThrowFatalJitException(
+                    CORJIT_INTERNALERROR,
+                    FatalJitErrorCode.DirectFailureMessage178
+                );
+                return default!;
+            }
             var fallbackToNext = fgAddRefPred(next, fallback);
             fallback.TargetEdge = fallbackToNext;
             fallbackToNext.Likelihood = 1.0;
@@ -192,10 +254,29 @@ public partial class Compiler
             RemoveClonedBoundsCheck(info.Check, info.Stmt);
         }
 
-        _ = fgMorphBlockStmt(lower, lower.LastStmt
-            ?? throw new FatalJitException("The lower-bound block must have a test."), message: "Morph lowerBnd");
-        _ = fgMorphBlockStmt(upper, upper.LastStmt
-            ?? throw new FatalJitException("The upper-bound block must have a test."), message: "Morph upperBnd");
+        var lowerLastStmt = lower.LastStmt;
+        if (lowerLastStmt is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage179
+            );
+            return default!;
+        }
+
+        _ = fgMorphBlockStmt(lower, lowerLastStmt, message: "Morph lowerBnd");
+
+        var upperLastStmt = upper.LastStmt;
+        if (upperLastStmt is null)
+        {
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_INTERNALERROR,
+                FatalJitErrorCode.DirectFailureMessage180
+            );
+            return default!;
+        }
+
+        _ = fgMorphBlockStmt(upper, upperLastStmt, message: "Morph upperBnd");
         if (lower.LastStmt is Statement lowerStmt)
         {
             gtUpdateStmtSideEffects(lowerStmt);

@@ -13,7 +13,8 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            return default!;
         }
 
         var cnsAlign = 8u;
@@ -36,7 +37,8 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            return default!;
         }
 
         var cnsAlign = 16u;
@@ -59,7 +61,8 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            return default!;
         }
 
         assert(_compiler is not null);
@@ -82,8 +85,9 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "Compressed SIMD constant loads require SIMD support on xarch.");
+            return;
         }
 
         assert(_compiler is not null);
@@ -164,8 +168,9 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new FatalJitException(CORJIT_SKIPPED,
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                 "SIMD mask constant emission requires masked hardware intrinsic support.");
+            return default!;
         }
 
         var cnsAlign = 8u;

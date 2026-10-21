@@ -24,23 +24,95 @@ public partial class Globals
     public static instruction INS_NOT => GetXarchOrArmInstructionAlias(INS_not, INS_mvn);
 
     // The pinned aliases select double precision; callers select single precision separately.
-    public static instruction INS_MULADD =>
-        Configuration.TARGET_ARM ? INS_mla :
-        Configuration.TARGET_ARM64 ? INS_madd :
-        Configuration.TARGET_LOONGARCH64 ? INS_fmadd_d :
-        throw new FatalJitException("INS_MULADD is not defined for this target.");
+    public static instruction INS_MULADD
+    {
+        get
+        {
+            if (Configuration.TARGET_ARM)
+            {
+                return INS_mla;
+            }
+            else
+            {
+                if (Configuration.TARGET_ARM64)
+                {
+                    return INS_madd;
+                }
+                else
+                {
+                    if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        return INS_fmadd_d;
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException("INS_MULADD is not defined for this target.");
+                        return default!;
+                    }
+                }
+            }
+        }
+    }
 
-    public static instruction INS_ABS =>
-        Configuration.TARGET_ARM ? INS_vabs :
-        Configuration.TARGET_ARM64 ? INS_fabs :
-        Configuration.TARGET_LOONGARCH64 ? INS_fabs_d :
-        throw new FatalJitException("INS_ABS is not defined for this target.");
+    public static instruction INS_ABS
+    {
+        get
+        {
+            if (Configuration.TARGET_ARM)
+            {
+                return INS_vabs;
+            }
+            else
+            {
+                if (Configuration.TARGET_ARM64)
+                {
+                    return INS_fabs;
+                }
+                else
+                {
+                    if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        return INS_fabs_d;
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException("INS_ABS is not defined for this target.");
+                        return default!;
+                    }
+                }
+            }
+        }
+    }
 
-    public static instruction INS_SQRT =>
-        Configuration.TARGET_ARM ? INS_vsqrt :
-        Configuration.TARGET_ARM64 ? INS_fsqrt :
-        Configuration.TARGET_LOONGARCH64 ? INS_fsqrt_d :
-        throw new FatalJitException("INS_SQRT is not defined for this target.");
+    public static instruction INS_SQRT
+    {
+        get
+        {
+            if (Configuration.TARGET_ARM)
+            {
+                return INS_vsqrt;
+            }
+            else
+            {
+                if (Configuration.TARGET_ARM64)
+                {
+                    return INS_fsqrt;
+                }
+                else
+                {
+                    if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        return INS_fsqrt_d;
+                    }
+                    else
+                    {
+                        FatalJitException.ThrowFatalJitException("INS_SQRT is not defined for this target.");
+                        return default!;
+                    }
+                }
+            }
+        }
+    }
 
     private static instruction GetXarchOrArmInstructionAlias(instruction xarch, instruction arm)
     {
@@ -54,6 +126,7 @@ public partial class Globals
             return arm;
         }
 
-        throw new FatalJitException("The instruction alias is not defined for this target.");
+        FatalJitException.ThrowFatalJitException("The instruction alias is not defined for this target.");
+        return default!;
     }
 }

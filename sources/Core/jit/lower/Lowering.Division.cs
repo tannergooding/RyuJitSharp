@@ -70,7 +70,8 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Division containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Division containment is not ported for this target.");
+        return;
     }
 
     private void LowerDivOrMod(GenTreeOp divMod)

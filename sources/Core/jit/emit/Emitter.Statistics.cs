@@ -29,7 +29,8 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
+            return;
         }
 
         if (totAllocdSize > 0)
@@ -272,8 +273,7 @@ public partial class Emitter
         }
         else
         {
-            var format = precision switch
-            {
+            var format = precision switch {
                 1 => "F1",
                 2 => "F2",
                 3 => "F3",

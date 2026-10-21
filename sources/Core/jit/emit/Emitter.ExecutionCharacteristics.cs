@@ -39,21 +39,22 @@ public partial class Emitter
         if (Configuration.TARGET_WASM || Configuration.TARGET_ARM)
         {
             _ = id;
-            return new insExecutionCharacteristics
-            {
+            return new insExecutionCharacteristics {
                 insThroughput = PERFSCORE_THROUGHPUT_1C,
                 insLatency = PERFSCORE_LATENCY_1C,
             };
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside supported targets are not implemented.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Execution characteristics outside supported targets are not implemented.");
+        return default!;
     }
 
     internal insExecutionCharacteristics getInsExecutionCharacteristicsXarch(instrDesc id)
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException("xarch execution characteristics are not available for this target.");
+            FatalJitException.ThrowFatalJitException("xarch execution characteristics are not available for this target.");
+            return default!;
         }
 
         var ins = id.idIns();
@@ -176,8 +177,9 @@ public partial class Emitter
                     }
                     else if (!skipAlign)
                     {
-                        throw new FatalJitException(CORJIT_SKIPPED,
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
                             "Non-debug alignment performance scoring requires late-disassembly placement metadata.");
+                        return default!;
                     }
 
                     if (skipAlign)

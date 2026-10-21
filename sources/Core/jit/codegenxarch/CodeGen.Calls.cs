@@ -277,7 +277,8 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 register clearing requires xarch SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 register clearing requires xarch SIMD support.");
+            return;
         }
 
         Emitter.RequireSupportedInstructionRecording();

@@ -93,6 +93,7 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Nonlocal jump containment is not ported for this target.");
+        return;
     }
 }

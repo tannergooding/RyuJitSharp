@@ -31,6 +31,33 @@ internal static class JitStdContainerTests
     }
 
     [Test]
+    public static void ContainerFailuresKeepTheirExceptionTypes()
+    {
+        using var scope = new JitStdAllocationScope();
+        using var vector = new JitStdVector<int>([1, 2], new JitStdAllocator<int>(scope));
+        using var emptyVector = new JitStdVector<int>(new JitStdAllocator<int>(scope));
+        using var list = new JitStdList<int>(new JitStdAllocator<int>(scope));
+
+        var listFailure = Assert.Throws<InvalidOperationException>(() => _ = list.front());
+        var vectorFailure = Assert.Throws<InvalidOperationException>(() => _ = emptyVector.back());
+        var rangeFailure = Assert.Throws<ArgumentException>(
+            () => vector.insert(vector.end(), vector.end(), vector.begin()));
+
+        if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
+        {
+            Assert.That(listFailure?.Message, Is.EqualTo("The list is empty."));
+            Assert.That(vectorFailure?.Message, Is.EqualTo("The vector is empty."));
+            Assert.That(rangeFailure?.Message, Is.EqualTo("The end iterator precedes the start iterator."));
+        }
+        else
+        {
+            Assert.That(listFailure?.Message, Is.Not.EqualTo("The list is empty."));
+            Assert.That(vectorFailure?.Message, Is.Not.EqualTo("The vector is empty."));
+            Assert.That(rangeFailure?.Message, Is.Not.EqualTo("The end iterator precedes the start iterator."));
+        }
+    }
+
+    [Test]
     public static void VectorGrowthCapacityUsesTwiceTheCurrentSize()
     {
         using var scope = new JitStdAllocationScope();

@@ -23,7 +23,12 @@ public partial class Emitter
 
     private unsafe nuint emitIssue1Instr(insGroup ig, instrDesc id, byte** dp)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Instruction issue requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InstructionIssueMissingCompiler);
+            return default!;
+        }
         var curInsAdr = *dp;
         var size = emitOutputInstr(ig, id, dp);
 
@@ -100,7 +105,12 @@ public partial class Emitter
         uint* instrCount
         )
     {
-        var compiler = _compiler ?? throw new FatalJitException("Final instruction emission requires an active compiler.");
+        var compiler = _compiler;
+        if (compiler is null)
+        {
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FinalInstructionEmissionMissingCompiler);
+            return default!;
+        }
         if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf("*************** In emitEndCodeGen()\n");
@@ -167,8 +177,7 @@ public partial class Emitter
             }
 
             emitCheckIGList();
-            var codeChunk = new AllocMemChunk
-            {
+            var codeChunk = new AllocMemChunk {
                 alignment = 1,
                 size = emitTotalHotCodeSize,
                 flags = CORJIT_ALLOCMEM_HOT_CODE,
@@ -725,7 +734,8 @@ public partial class Emitter
                             }
                             else
                             {
-                                throw new FatalJitException(CORJIT_SKIPPED, "Short jump patching is not supported for this target.");
+                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Short jump patching is not supported for this target.");
+                                return default!;
                             }
                         }
                         else
@@ -746,7 +756,8 @@ public partial class Emitter
                             }
                             else
                             {
-                                throw new FatalJitException(CORJIT_SKIPPED, "Long jump patching is not supported for this target.");
+                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long jump patching is not supported for this target.");
+                                return default!;
                             }
                         }
                     }

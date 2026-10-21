@@ -59,13 +59,34 @@ public sealed partial class CodeGen
 
     private static emitAttr WasmValueTypeToEmitAttr(WasmValueType type)
     {
-        return type switch {
-            WasmValueType.I32 or WasmValueType.F32 => EA_4BYTE,
-            WasmValueType.I64 or WasmValueType.F64 => EA_8BYTE,
-            WasmValueType.V128 => EA_16BYTE,
-            WasmValueType.ExnRef => EA_PTRSIZE,
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected Wasm value type: {type}."),
-        };
+        switch (type)
+        {
+            case WasmValueType.I32 or WasmValueType.F32:
+            {
+                return EA_4BYTE;
+            }
+
+            case WasmValueType.I64 or WasmValueType.F64:
+            {
+                return EA_8BYTE;
+            }
+
+            case WasmValueType.V128:
+            {
+                return EA_16BYTE;
+            }
+
+            case WasmValueType.ExnRef:
+            {
+                return EA_PTRSIZE;
+            }
+
+            default:
+            {
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Unexpected Wasm value type: {type}.");
+                return default!;
+            }
+        }
     }
 
     private void genEmitLocalGet(regNumber reg, WasmValueType expectedType)

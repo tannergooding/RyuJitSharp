@@ -123,7 +123,8 @@ public partial class Emitter
         }
         else
         {
-            throw new FatalJitException("Unexpected memory operand tuple type.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedMemoryOperandTupleType);
+            return default!;
         }
 
         return (emitAttr)(int)memSize;
