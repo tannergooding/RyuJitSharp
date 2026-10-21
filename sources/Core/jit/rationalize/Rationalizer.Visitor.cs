@@ -49,7 +49,7 @@ public partial class Rationalizer
             {
                 if (node.AsHWIntrinsic().IsUserCall)
                 {
-                    rationalizer.RewriteHWIntrinsicAsUserCall(ref use, _ancestors);
+                    rationalizer.RewriteHWIntrinsicAsUserCall(ref use, _ancestors, this, user);
                 }
             }
 

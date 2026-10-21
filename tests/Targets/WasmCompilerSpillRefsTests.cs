@@ -13,6 +13,7 @@ using static RyuJitSharp.FuncKind;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.Target.UnitTests;
 
@@ -125,6 +126,46 @@ internal static unsafe class WasmCompilerSpillRefsTests
             Assert.That(definition.Next, Is.SameAs(call));
             Assert.That(use.Data, Is.SameAs(definition));
             Assert.That(block.LastNode, Is.SameAs(use));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void GCRefCandidateDependsOnSafepointLiveness(bool liveAcrossSafepoint)
+    {
+        WithCompiler(TYP_REF, compiler =>
+        {
+            ref var local = ref compiler.lvaGetDesc(0);
+            local.lvTracked = true;
+            local._varIndex = 0;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedToVarNum = [0];
+
+            var liveIn = VarSetOps.MakeEmpty(compiler);
+            if (liveAcrossSafepoint)
+            {
+                VarSetOps.AddElemD(compiler, liveIn, 0);
+            }
+
+            var block = new BasicBlock(null, null)
+            {
+                Kind = BBJ_RETURN,
+                bbLiveIn = liveIn,
+            };
+            block.MakeLir(null, null);
+            block.InsertAtEnd(new GenTreeCall(TYP_VOID));
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+
+            Assert.That(compiler.fgWasmFindGCRefCandidates(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(
+                VarSetOps.IsMember(
+                    compiler,
+                    compiler.m_wasmGCRefCandidates ??
+                        throw new AssertionException("The GC-ref candidate set was not initialized."),
+                    local._varIndex),
+                Is.EqualTo(!liveAcrossSafepoint));
         });
     }
 

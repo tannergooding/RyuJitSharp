@@ -37,11 +37,18 @@ public sealed partial class WasmRegAlloc
                 isRegCandidate = false;
             }
 
-            // GC refs cannot live in Wasm locals until they can be spilled to the stack before calls.
+            // Only GC refs proven not to be live across safepoints can live in Wasm locals.
             if (varTypeIsGC(local.Type))
             {
-                _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.WasmGCVisibility);
-                isRegCandidate = false;
+                var isRefLocalCandidate = local.lvTracked &&
+                    VarSetOps.IsMember(_compiler, _compiler.m_wasmGCRefCandidates ??
+                        throw new InvalidOperationException("Wasm GC-ref candidates were not computed."),
+                        local._varIndex);
+                if (!isRefLocalCandidate)
+                {
+                    _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.WasmGCVisibility);
+                    isRegCandidate = false;
+                }
             }
 
             if (isRegCandidate)

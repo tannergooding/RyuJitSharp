@@ -646,7 +646,11 @@ public partial class Compiler
                         }
 
                         var fptr = compiler.impImportLdvirtftn(thisPtr, resolvedToken, callInfo);
-                        assert(fptr is not null);
+                        if (fptr is null)
+                        {
+                            assert(compiler.compDonotInline);
+                            return TYP_UNDEF;
+                        }
 
                         _ = indCall.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtrCopy).WithWellKnownArg(WellKnownArg.ThisPointer));
                         indCall.Flags |= thisPtrCopy.Flags & GTF_ALL_EFFECT;

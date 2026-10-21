@@ -330,8 +330,8 @@ public sealed partial class CodeGen
         0, // INS_sha256msg1
         0, // INS_sha256msg2
         0, // INS_sha256rnds2
-        2, // INS_gf2p8affineinvqb
-        2, // INS_gf2p8affineqb
+        16, // INS_gf2p8affineinvqb
+        16, // INS_gf2p8affineqb
         16, // INS_gf2p8mulb
         0, // INS_vblendvpd
         0, // INS_vblendvps
@@ -764,7 +764,7 @@ public sealed partial class CodeGen
         16, // INS_vpermb
         16, // INS_vpermi2b
         16, // INS_vpermt2b
-        2, // INS_vpmultishiftqb
+        16, // INS_vpmultishiftqb
         0, // INS_vpcompressb
         0, // INS_vpcompressw
         0, // INS_vpexpandb
@@ -1397,8 +1397,8 @@ public sealed partial class CodeGen
         0, // INS_sha256msg1
         0, // INS_sha256msg2
         0, // INS_sha256rnds2
-        2, // INS_gf2p8affineinvqb
-        2, // INS_gf2p8affineqb
+        16, // INS_gf2p8affineinvqb
+        16, // INS_gf2p8affineqb
         16, // INS_gf2p8mulb
         0, // INS_vblendvpd
         0, // INS_vblendvps
@@ -1831,7 +1831,7 @@ public sealed partial class CodeGen
         16, // INS_vpermb
         16, // INS_vpermi2b
         16, // INS_vpermt2b
-        2, // INS_vpmultishiftqb
+        16, // INS_vpmultishiftqb
         0, // INS_vpcompressb
         0, // INS_vpcompressw
         0, // INS_vpexpandb

@@ -254,12 +254,12 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_32Bit | KMask_Base2 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX), // INS_pmovzxdq
         (insInfoFlags)(Input_16Bit | KMask_Base4 | REX_WIG | Encoding_VEX | Encoding_EVEX), // INS_pmovzxwd
         (insInfoFlags)(Input_16Bit | KMask_Base2 | REX_WIG | Encoding_VEX | Encoding_EVEX), // INS_pmovzxwq
-        (insInfoFlags)(Input_32Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuldq
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuldq
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulhrsw
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulhuw
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulhw
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulld
-        (insInfoFlags)(Input_32Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuludq
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuludq
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmullw
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative | INS_FLAGS_HasPseudoName), // INS_pord
         (insInfoFlags)(Input_8Bit | REX_WIG | Encoding_REX2), // INS_prefetchnta
@@ -343,8 +343,8 @@ public sealed partial class CodeGen
         (insInfoFlags)(REX_WIG), // INS_sha256msg1
         (insInfoFlags)(REX_WIG), // INS_sha256msg2
         (insInfoFlags)(REX_WIG), // INS_sha256rnds2
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineinvqb
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineqb
+        (insInfoFlags)(Input_64Bit | KMask_Base16 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineinvqb
+        (insInfoFlags)(Input_64Bit | KMask_Base16 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineqb
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8mulb
         (insInfoFlags)(REX_WIG | Encoding_VEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vblendvpd
         (insInfoFlags)(REX_WIG | Encoding_VEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vblendvps
@@ -777,7 +777,7 @@ public sealed partial class CodeGen
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpermb
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpermi2b
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpermt2b
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpmultishiftqb
+        (insInfoFlags)(Input_64Bit | KMask_Base16 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpmultishiftqb
         (insInfoFlags)(Input_8Bit | REX_W0 | Encoding_EVEX), // INS_vpcompressb
         (insInfoFlags)(Input_16Bit | REX_W1 | Encoding_EVEX), // INS_vpcompressw
         (insInfoFlags)(Input_8Bit | REX_W0 | Encoding_EVEX), // INS_vpexpandb
@@ -786,26 +786,26 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpopcntd
         (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpopcntq
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpopcntw
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshldd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshldq
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshldvd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshldvq
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshldvw
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshldw
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshrdd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshrdq
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshrdvd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshrdvq
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshrdvw
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshrdw
-        (insInfoFlags)(Input_8Bit | KMask_Base16 | REX_W0 | Encoding_EVEX), // INS_vpshufbitqmb
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vaddph
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshldd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshldq
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshldvd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshldvq
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshldvw
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshldw
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshrdd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshrdq
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshrdvd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshrdvq
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshrdvw
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshrdw
+        (insInfoFlags)(Input_8Bit | KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_Is3OperandInstructionMask), // INS_vpshufbitqmb
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_vaddph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vaddsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcmpph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vcmpsh
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_Is3OperandInstructionMask | INS_FLAGS_HasPseudoName), // INS_vcmpph
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_Is3OperandInstructionMask | INS_FLAGS_HasPseudoName), // INS_vcmpsh
         (insInfoFlags)(Input_16Bit | REX_W0 | Encoding_EVEX), // INS_vcomish
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vcvtdq2ph
-        (insInfoFlags)(Input_32Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtne2ps2bf16
+        (insInfoFlags)(Input_32Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vcvtne2ps2bf16
         (insInfoFlags)(Input_32Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtneps2bf16
         (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vcvtpd2ph
         (insInfoFlags)(Input_16Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vcvtph2dq
@@ -844,23 +844,23 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_64Bit | KMask_Base1 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vcvtusi2sh64
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtuw2ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtw2ph
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vdivph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vdivph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vdivsh
-        (insInfoFlags)(Input_16Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vdpbf16ps
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfcmaddcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfcmaddcsh
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfcmulcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfcmulcsh
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfmulcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfmulcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vdpbf16ps
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfcmaddcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfcmaddcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfcmulcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfcmulcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfmulcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfmulcsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd132ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd213ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd231ph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd132sh
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd213sh
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd231sh
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfmaddcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfmaddcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddcsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddsub132ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddsub213ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddsub231ph
@@ -888,30 +888,30 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vfpclassph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfpclasssh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vgetexpph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vgetexpsh
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vgetexpsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vgetmantph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vgetmantsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vmaxph
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vgetmantsh
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vmaxph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vmaxsh
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vminsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vminph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vminph
         (insInfoFlags)(Input_16Bit | REX_W0 | Encoding_EVEX), // INS_vmovsh
         (insInfoFlags)(Input_16Bit | REX_WIG | Encoding_EVEX), // INS_vmovw
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vmulph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_vmulph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vmulsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vrcpph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vrcpsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vreduceph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vreducesh
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vreducesh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vrndscaleph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vrndscalesh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vrsqrtph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vrsqrtsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vscalefph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vscalefsh
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vscalefph
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vscalefsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vsqrtph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vsqrtsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vsubph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vsubph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vsubsh
         (insInfoFlags)(Input_16Bit | REX_W0 | Encoding_EVEX), // INS_vucomish
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vp2intersectd
@@ -1321,12 +1321,12 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_32Bit | KMask_Base2 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX), // INS_pmovzxdq
         (insInfoFlags)(Input_16Bit | KMask_Base4 | REX_WIG | Encoding_VEX | Encoding_EVEX), // INS_pmovzxwd
         (insInfoFlags)(Input_16Bit | KMask_Base2 | REX_WIG | Encoding_VEX | Encoding_EVEX), // INS_pmovzxwq
-        (insInfoFlags)(Input_32Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuldq
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuldq
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulhrsw
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulhuw
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulhw
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmulld
-        (insInfoFlags)(Input_32Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuludq
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmuludq
         (insInfoFlags)(KMask_Base8 | REX_WIG | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_pmullw
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative | INS_FLAGS_HasPseudoName), // INS_pord
         (insInfoFlags)(Input_8Bit | REX_WIG | Encoding_REX2), // INS_prefetchnta
@@ -1410,8 +1410,8 @@ public sealed partial class CodeGen
         (insInfoFlags)(REX_WIG), // INS_sha256msg1
         (insInfoFlags)(REX_WIG), // INS_sha256msg2
         (insInfoFlags)(REX_WIG), // INS_sha256rnds2
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineinvqb
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineqb
+        (insInfoFlags)(Input_64Bit | KMask_Base16 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineinvqb
+        (insInfoFlags)(Input_64Bit | KMask_Base16 | REX_WX | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8affineqb
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_VEX | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_gf2p8mulb
         (insInfoFlags)(REX_WIG | Encoding_VEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vblendvpd
         (insInfoFlags)(REX_WIG | Encoding_VEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vblendvps
@@ -1844,7 +1844,7 @@ public sealed partial class CodeGen
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpermb
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpermi2b
         (insInfoFlags)(KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpermt2b
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpmultishiftqb
+        (insInfoFlags)(Input_64Bit | KMask_Base16 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpmultishiftqb
         (insInfoFlags)(Input_8Bit | REX_W0 | Encoding_EVEX), // INS_vpcompressb
         (insInfoFlags)(Input_16Bit | REX_W1 | Encoding_EVEX), // INS_vpcompressw
         (insInfoFlags)(Input_8Bit | REX_W0 | Encoding_EVEX), // INS_vpexpandb
@@ -1853,26 +1853,26 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpopcntd
         (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpopcntq
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpopcntw
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshldd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshldq
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshldvd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshldvq
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshldvw
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshldw
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshrdd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshrdq
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vpshrdvd
-        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vpshrdvq
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshrdvw
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX), // INS_vpshrdw
-        (insInfoFlags)(Input_8Bit | KMask_Base16 | REX_W0 | Encoding_EVEX), // INS_vpshufbitqmb
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vaddph
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshldd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshldq
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshldvd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshldvq
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshldvw
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshldw
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshrdd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshrdq
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshrdvd
+        (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshrdvq
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vpshrdvw
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vpshrdw
+        (insInfoFlags)(Input_8Bit | KMask_Base16 | REX_W0 | Encoding_EVEX | INS_FLAGS_Is3OperandInstructionMask), // INS_vpshufbitqmb
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_vaddph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vaddsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcmpph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vcmpsh
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_Is3OperandInstructionMask | INS_FLAGS_HasPseudoName), // INS_vcmpph
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_Is3OperandInstructionMask | INS_FLAGS_HasPseudoName), // INS_vcmpsh
         (insInfoFlags)(Input_16Bit | REX_W0 | Encoding_EVEX), // INS_vcomish
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vcvtdq2ph
-        (insInfoFlags)(Input_32Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtne2ps2bf16
+        (insInfoFlags)(Input_32Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vcvtne2ps2bf16
         (insInfoFlags)(Input_32Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtneps2bf16
         (insInfoFlags)(Input_64Bit | KMask_Base2 | REX_W1 | Encoding_EVEX), // INS_vcvtpd2ph
         (insInfoFlags)(Input_16Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vcvtph2dq
@@ -1911,23 +1911,23 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_64Bit | KMask_Base1 | REX_W1 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vcvtusi2sh64
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtuw2ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vcvtw2ph
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vdivph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vdivph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vdivsh
-        (insInfoFlags)(Input_16Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vdpbf16ps
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfcmaddcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfcmaddcsh
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfcmulcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfcmulcsh
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfmulcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfmulcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vdpbf16ps
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfcmaddcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfcmaddcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfcmulcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfcmulcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfmulcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vfmulcsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd132ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd213ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd231ph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd132sh
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd213sh
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmadd231sh
-        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vfmaddcph
-        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfmaddcsh
+        (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddcph
+        (insInfoFlags)(Input_32Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddcsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddsub132ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddsub213ph
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vfmaddsub231ph
@@ -1955,30 +1955,30 @@ public sealed partial class CodeGen
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vfpclassph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vfpclasssh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vgetexpph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vgetexpsh
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vgetexpsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vgetmantph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vgetmantsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vmaxph
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vgetmantsh
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vmaxph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vmaxsh
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vminsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vminph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vminph
         (insInfoFlags)(Input_16Bit | REX_W0 | Encoding_EVEX), // INS_vmovsh
         (insInfoFlags)(Input_16Bit | REX_WIG | Encoding_EVEX), // INS_vmovw
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vmulph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative), // INS_vmulph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vmulsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vrcpph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vrcpsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vreduceph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vreducesh
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vreducesh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vrndscaleph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vrndscalesh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vrsqrtph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vrsqrtsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vscalefph
-        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX), // INS_vscalefsh
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vscalefph
+        (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vscalefsh
         (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vsqrtph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vsqrtsh
-        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX), // INS_vsubph
+        (insInfoFlags)(Input_16Bit | KMask_Base8 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstDstSrcAVXInstruction), // INS_vsubph
         (insInfoFlags)(Input_16Bit | KMask_Base1 | REX_W0 | Encoding_EVEX | INS_FLAGS_IsDstSrcSrcAVXInstruction), // INS_vsubsh
         (insInfoFlags)(Input_16Bit | REX_W0 | Encoding_EVEX), // INS_vucomish
         (insInfoFlags)(Input_32Bit | KMask_Base4 | REX_W0 | Encoding_EVEX), // INS_vp2intersectd

@@ -13,6 +13,24 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class X86EmitterAddressStackOutputTests
 {
+    [Test]
+    public static void ZeroOffsetEpilogStackAddressRetainsLea()
+    {
+        Assume.That(Configuration.TARGET_X86, "requires the x86 target");
+
+        X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_R_ARX(INS_lea, EA_4BYTE, REG_X86_ESP, REG_X86_EBP, REG_X86_NA, 1, 0);
+
+            var descriptor = LastInstruction(emitter)
+                ?? throw new AssertionException("No epilog stack-address instruction was recorded.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_lea));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X86_ESP));
+            Assert.That(descriptor.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X86_EBP));
+            Assert.That(descriptor.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X86_NA));
+        });
+    }
+
     [TestCase(REG_X86_NA, REG_X86_NA, 0u, 0x12345678, "A178563412")]
     [TestCase(REG_X86_EBX, REG_X86_ECX, 1u, 127, "8B444B7F")]
     public static void AddressLoadsRetainAccumulatorMoffsetAndScaledSib(regNumber baseReg, regNumber index,
@@ -40,4 +58,7 @@ internal static unsafe class X86EmitterAddressStackOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrAmd")]
     private static extern Emitter.instrDesc NewAddress(Emitter emitter, emitAttr attr, nint displacement);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
+    private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
 }

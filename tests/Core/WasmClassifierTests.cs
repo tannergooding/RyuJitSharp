@@ -4,8 +4,10 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.CorInfoWasmType;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -213,6 +215,30 @@ internal static unsafe class WasmClassifierTests
         });
     }
 
+    [Test]
+    public static void SingleRegisterFloatingStructCallUsesFloatingStoreType()
+    {
+        WithLowering((compiler, block, lowering) => {
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var call = new GenTreeCall(TYP_FLOAT) {
+                _callType = CT_USER_FUNC,
+                _returnType = TYP_STRUCT,
+                Flags = GTF_CALL | GTF_GLOB_REF | GTF_EXCEPT,
+            };
+            var store = new GenTreeBlk(TYP_STRUCT, address, call, new ClassLayout(4));
+            block.InsertAtEnd(address);
+            block.InsertAtEnd(call);
+            block.InsertAtEnd(store);
+
+            LowerStoreSingleRegCallStruct(lowering, store);
+
+            var loweredStore = call.Next!.AsStoreInd();
+            Assert.That(loweredStore.Type, Is.EqualTo(TYP_FLOAT));
+            Assert.That(loweredStore.Data, Is.SameAs(call));
+            Assert.That(loweredStore.Addr, Is.SameAs(address));
+        });
+    }
+
     private static void AssertSegment(
         AbiPassingInformation info, int segmentIndex, int offset, int size, uint localIndex)
     {
@@ -227,6 +253,40 @@ internal static unsafe class WasmClassifierTests
     {
         var handle = (CORINFO_CLASS_STRUCT_*)(nuint)wasmType;
         return new ClassLayout(handle, true, size, TYP_STRUCT, "WasmStruct", "WasmStruct");
+    }
+
+    private static void WithLowering(Action<Compiler, BasicBlock, Lowering> action)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getWasmLowering = &GetWasmLowering;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        JitFlags flags = default;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compCompHnd = &jitInfo;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(true);
+        compiler.lvaTable = new LclVarDsc[2];
+        compiler.lvaCount = 2;
+        compiler.lvaTable[0].Type = TYP_BYREF;
+        compiler.lvaTable[1].Type = TYP_STRUCT;
+        compiler.lvaTable[1].Layout = new ClassLayout(4);
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+        compiler.codeGen = new CodeGen(compiler);
+
+        try
+        {
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+            action(compiler, block, lowering);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
     }
 
     private static void WithCompiler(Action<Compiler> action)
@@ -249,6 +309,12 @@ internal static unsafe class WasmClassifierTests
             JitTls.Compiler = previous;
         }
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
+    private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerStoreSingleRegCallStruct")]
+    private static extern void LowerStoreSingleRegCallStruct(Lowering lowering, GenTreeBlk block);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoWasmType GetWasmLowering(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* classHandle)

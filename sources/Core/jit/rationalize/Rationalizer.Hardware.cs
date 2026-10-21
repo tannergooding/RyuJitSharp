@@ -19,7 +19,7 @@ public sealed partial class Rationalizer
         }
     }
 
-    private unsafe void RewriteHWIntrinsicAsUserCall(ref GenTree use, GenTreeStack parents)
+    private unsafe void RewriteHWIntrinsicAsUserCall(ref GenTree use, GenTreeStack parents, Visitor revisitor, GenTree? user)
     {
         var node = use.AsHWIntrinsic();
         var intrinsic = node.HWIntrinsicId;
@@ -74,6 +74,20 @@ public sealed partial class Rationalizer
                 if (CompilerInstance.IsValidForShuffle(operands[1], size, baseType, out _, native))
                 {
                     result = CompilerInstance.gtNewSimdShuffleNode(type, operands[0], operands[1], baseType, size, native);
+                    if (ReferenceEquals(result, operands[0]))
+                    {
+                        assert(operands[1].Oper.IsCnsVec);
+                        JITDUMP("Removing outer identity shuffle:\n");
+                        DISPNODE(node);
+                        DISPNODE(operands[1]);
+                        BlockRange.Remove(node);
+                        BlockRange.Remove(operands[1]);
+                        ReplaceUse(ref use, parents, node, result);
+
+                        var visitResult = revisitor.PreOrderVisit(ref use, user);
+                        assert(visitResult is Compiler.WALK_CONTINUE);
+                        return;
+                    }
                 }
                 break;
             }

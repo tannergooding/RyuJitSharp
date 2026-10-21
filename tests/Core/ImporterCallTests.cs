@@ -844,12 +844,16 @@ internal static unsafe class ImporterCallTests
         return (void*)0x4000;
     }
 
-    [TestCase(InfoAccessType.IAT_VALUE, false)]
-    [TestCase(InfoAccessType.IAT_VALUE, true)]
-    [TestCase(InfoAccessType.IAT_PVALUE, false)]
-    [TestCase(InfoAccessType.IAT_PVALUE, true)]
-    public static void NativeAotGenericVirtualLookupUsesDispatchCell(InfoAccessType accessType, bool isInterface)
+    [TestCase(InfoAccessType.IAT_VALUE, false, true)]
+    [TestCase(InfoAccessType.IAT_VALUE, true, true)]
+    [TestCase(InfoAccessType.IAT_PVALUE, false, true)]
+    [TestCase(InfoAccessType.IAT_PVALUE, true, true)]
+    [TestCase(InfoAccessType.IAT_VALUE, true, false)]
+    [TestCase(InfoAccessType.IAT_PVALUE, true, false)]
+    public static void NativeAotVirtualLookupUsesDispatchCell(InfoAccessType accessType, bool isInterface, bool isGeneric)
     {
+        Assume.That(isGeneric || Configuration.TARGET_WASM);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getEEInfo = &GetEEInfo;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
@@ -857,6 +861,7 @@ internal static unsafe class ImporterCallTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
+        flags.Set(JitFlags.JIT_FLAG_AOT);
         compiler.opts.jitFlags = &flags;
         compiler.info = new Compiler.Info { compCompHnd = &jitInfo };
         JitTls.Compiler = compiler;
@@ -864,7 +869,7 @@ internal static unsafe class ImporterCallTests
         try
         {
             CORINFO_CALL_INFO callInfo = default;
-            callInfo.sig.sigInst.methInstCount = 1;
+            callInfo.sig.sigInst.methInstCount = isGeneric ? 1 : 0;
             callInfo.hMethod = (CORINFO_METHOD_STRUCT_*)0x5678;
             callInfo.classFlags = isInterface ? CorInfoFlag.CORINFO_FLG_INTERFACE : 0;
             callInfo.codePointerLookup.constLookup.accessType = accessType;
@@ -873,12 +878,18 @@ internal static unsafe class ImporterCallTests
             var call = result?.AsCall() ?? throw new InvalidOperationException("Missing virtual lookup helper.");
             var argument = call.Args.GetArgByIndex(1) ?? throw new InvalidOperationException("Missing dispatch cell argument.");
             var handle = accessType == InfoAccessType.IAT_VALUE ? argument.Node : argument.Node.AsIndir().Addr;
+            var useInterfaceHelper = Configuration.TARGET_WASM && isInterface && !isGeneric;
 
             Assert.Multiple(() => {
+                Assert.That(call.IsHelperCall(useInterfaceHelper
+                    ? CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
+                    : CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT), Is.True);
                 Assert.That(handle.AsIntCon().IconVal, Is.EqualTo((nint)0x1234));
-                Assert.That(handle.Flags & GenTreeFlags.GTF_ICON_HDL_MASK, Is.EqualTo(Globals.GTF_ICON_FTN_ADDR));
+                Assert.That(handle.Flags & GenTreeFlags.GTF_ICON_HDL_MASK, Is.EqualTo(
+                    useInterfaceHelper ? Globals.GTF_ICON_GLOBAL_PTR : Globals.GTF_ICON_FTN_ADDR));
                 Assert.That(argument.WellKnownArg, Is.EqualTo(WellKnownArg.RuntimeMethodHandle));
                 Assert.That((call._callMoreFlags & GenTreeCallFlags.GTF_CALL_M_LDVIRTFTN_INTERFACE) != 0, Is.EqualTo(isInterface));
+                Assert.That((call.Flags & GenTreeFlags.GTF_CALL_NULLCHECK) != 0, Is.EqualTo(useInterfaceHelper));
             });
         }
         finally

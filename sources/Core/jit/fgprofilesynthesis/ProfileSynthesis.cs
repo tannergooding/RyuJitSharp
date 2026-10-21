@@ -158,11 +158,15 @@ public sealed class ProfileSynthesis
         _comp.fgPgoSynthesized = true;
         _comp.fgPgoConsistent = !_approximate;
 
-        // Single-edge methods are usually uninstrumented. Exclude methods where
-        // pretending to have PGO would give an excessive inlining boost.
+        // Single-edge methods are usually uninstrumented. For roots, require an
+        // explicit speed preference or observed hotness to avoid over-inlining.
         var preferSize = _comp.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_SIZE_OPT);
         var isCctor = (_comp.info.compFlags & FLG_CCTOR) == FLG_CCTOR;
-        _comp.fgPgoSingleEdge = !isCctor && !preferSize && (_comp.opts.callInstrCount < 10);
+        var eligibleRoot = ((_comp.info.compFlags & CORINFO_FLG_AGGRESSIVE_OPT) is not 0) ||
+            _comp.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_SPEED_OPT) ||
+            _comp.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER1);
+        _comp.fgPgoSingleEdge = !isCctor && !preferSize && (_comp.compIsForInlining || eligibleRoot) &&
+            (_comp.opts.callInstrCount < 10);
 
         if (_comp.fgPgoSingleEdge)
         {

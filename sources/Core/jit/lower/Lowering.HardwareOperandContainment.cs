@@ -159,6 +159,7 @@ public sealed partial class Lowering
                             break;
                         }
 
+                        case INS_TT_QUARTER:
                         case INS_TT_QUARTER_MEM:
                         {
                             expectedSize /= 4;

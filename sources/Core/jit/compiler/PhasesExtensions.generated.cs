@@ -119,6 +119,7 @@ public static partial class PhasesExtensions
         Phases.PHASE_WASM_REPAIR_TRY_ENTRIES => "Wasm repair try entries",
         Phases.PHASE_WASM_TRANSFORM_SCCS => "Wasm transform sccs",
         Phases.PHASE_WASM_CONTROL_FLOW => "Wasm control flow",
+        Phases.PHASE_WASM_IDENTIFY_GCSAFE_LOCALS => "Wasm identify GC safe locals",
         Phases.PHASE_WASM_SPILL_REFS => "Wasm spill refs",
         Phases.PHASE_WASM_VIRTUAL_IP => "Wasm virtual IP",
         Phases.PHASE_ASYNC => "Transform async",
@@ -251,6 +252,7 @@ public static partial class PhasesExtensions
         false, // PHASE_WASM_REPAIR_TRY_ENTRIES
         false, // PHASE_WASM_TRANSFORM_SCCS
         false, // PHASE_WASM_CONTROL_FLOW
+        false, // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         false, // PHASE_WASM_SPILL_REFS
         false, // PHASE_WASM_VIRTUAL_IP
         false, // PHASE_ASYNC
@@ -382,6 +384,7 @@ public static partial class PhasesExtensions
         (Phases)(-1), // PHASE_WASM_REPAIR_TRY_ENTRIES
         (Phases)(-1), // PHASE_WASM_TRANSFORM_SCCS
         (Phases)(-1), // PHASE_WASM_CONTROL_FLOW
+        (Phases)(-1), // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         (Phases)(-1), // PHASE_WASM_SPILL_REFS
         (Phases)(-1), // PHASE_WASM_VIRTUAL_IP
         (Phases)(-1), // PHASE_ASYNC
@@ -513,6 +516,7 @@ public static partial class PhasesExtensions
         false, // PHASE_WASM_REPAIR_TRY_ENTRIES
         false, // PHASE_WASM_TRANSFORM_SCCS
         false, // PHASE_WASM_CONTROL_FLOW
+        false, // PHASE_WASM_IDENTIFY_GCSAFE_LOCALS
         false, // PHASE_WASM_SPILL_REFS
         false, // PHASE_WASM_VIRTUAL_IP
         true, // PHASE_ASYNC

@@ -64,6 +64,22 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
             "       bextr    eax, ecx, dword ptr [V00], 7\n"));
     }
 
+    [TestCase(INS_vextractf32x4)]
+    [TestCase(INS_vextracti32x4)]
+    [TestCase(INS_vinsertf32x4)]
+    [TestCase(INS_vinserti32x4)]
+    public static void PseudoNameInstructionsRetainImmediateOperands(instruction ins)
+    {
+        var emitter = CreateEmitter();
+        var id = DescriptorView.Create();
+        id.idIns(ins);
+        id.idSmallCns(7);
+
+        var output = Capture(() => emitter.emitDispConstant(id));
+
+        Assert.That(output, Is.EqualTo(", 7"));
+    }
+
     [TestCase(INS_pmovmskb, EA_16BYTE, REG_X64_EAX, REG_X64_XMM0)]
     [TestCase(INS_cvtsi2ss32, EA_4BYTE, REG_X64_XMM0, REG_X64_EAX)]
     [TestCase(INS_cvttsd2si32, EA_4BYTE, REG_X64_EAX, REG_X64_XMM0)]
@@ -88,6 +104,26 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         _ = Capture(() => emitter.emitDispIns(id, true, false, false));
 
         Assert.That(context.Assertions, Is.EqualTo(1));
+    }
+
+    [TestCase(INS_movmskps, EA_16BYTE, REG_X64_EAX, REG_X64_XMM0, "movmskps eax, xmm0")]
+    [TestCase(INS_movzx, EA_2BYTE, REG_X64_EAX, REG_X64_ECX, "movzx    eax, cx")]
+    [TestCase(INS_vcvtpd2ph, EA_64BYTE, REG_X64_XMM0, REG_X64_XMM1, "cvtpd2ph xmm0, zmm1")]
+    public static void RegisterPairDisplaysEncodedOperandWidths(
+        instruction ins, emitAttr size, regNumber destination, regNumber source, string expected)
+    {
+        var emitter = CreateEmitter();
+        var id = DescriptorView.Create();
+        id.idIns(ins);
+        id.idInsFmt(IF_XARCH_RWR_RRD);
+        id.idOpSize(size);
+        id.idCodeSize(1);
+        id.idReg1(destination);
+        id.idReg2(source);
+
+        var output = Capture(() => emitter.emitDispIns(id, true, false, false));
+
+        Assert.That(output, Is.EqualTo($"       {expected}{Environment.NewLine}"));
     }
 
     [TestCase(INS_cvtdq2pd)]

@@ -37,6 +37,8 @@ public partial class Emitter
         {
             switch (ins)
             {
+                case INS_movmskpd:
+                case INS_movmskps:
                 case INS_pmovmskb:
                 {
                     assert(!id.idIsEvexAaaContextSet());
@@ -54,7 +56,7 @@ public partial class Emitter
                 case INS_movsx:
                 case INS_movzx:
                 {
-                    targetAttr = EA_PTRSIZE;
+                    targetAttr = ins == INS_movsx ? EA_PTRSIZE : EA_4BYTE;
                     break;
                 }
 
@@ -73,11 +75,12 @@ public partial class Emitter
         {
             case INS_TT_HALF:
             case INS_TT_HALF_MEM:
+            case INS_TT_QUARTER:
             case INS_TT_QUARTER_MEM:
             case INS_TT_EIGHTH_MEM:
             {
                 var divisor = tupleType is INS_TT_HALF or INS_TT_HALF_MEM ? 2 :
-                    tupleType == INS_TT_QUARTER_MEM ? 4 : 8;
+                    tupleType is INS_TT_QUARTER or INS_TT_QUARTER_MEM ? 4 : 8;
                 var maskElemSize = Configuration.XMM_REGSIZE_BYTES / CodeGen.instKMaskBaseSize(ins);
                 var width = (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(attr) / divisor);
                 if (inputSize < maskElemSize)
@@ -98,6 +101,7 @@ public partial class Emitter
                 {
                     assert(!id.idIsEvexAaaContextSet());
                     targetAttr = EA_16BYTE;
+                    sourceAttr = (emitAttr)GetInputSizeInBytes(id);
                 }
                 else if (ins is INS_cvttsd2si32 or INS_cvttsd2si64 or INS_cvtsd2si32 or INS_cvtsd2si64
                     or INS_cvtss2si32 or INS_cvtss2si64 or INS_cvttss2si32 or INS_cvttss2si64
@@ -117,16 +121,27 @@ public partial class Emitter
                 {
                     sourceAttr = EA_8BYTE;
                 }
-                else if (ins is INS_cvtpd2dq or INS_cvtpd2ps or INS_cvttpd2dq
-                    or INS_vcvtdq2ph or INS_vcvtneps2bf16 or INS_vcvtpd2udq or INS_vcvtps2phx
-                    or INS_vcvtqq2ps or INS_vcvttpd2dqs or INS_vcvttpd2udq
-                    or INS_vcvttpd2udqs or INS_vcvtudq2ph or INS_vcvtuqq2ps)
+                else if (ins is INS_movd32 or INS_movd64)
                 {
-                    targetAttr = (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(attr) / 2);
+                    if (isGeneralRegister(id.idReg1()))
+                    {
+                        targetAttr = (emitAttr)GetInputSizeInBytes(id);
+                        sourceAttr = EA_16BYTE;
+                    }
+                    else
+                    {
+                        targetAttr = EA_16BYTE;
+                        sourceAttr = (emitAttr)GetInputSizeInBytes(id);
+                    }
                 }
-                else if (ins is INS_vcvtpd2ph or INS_vcvtqq2ph or INS_vcvtuqq2ph)
+                else if (ins is INS_vbroadcastf32x2 or INS_vbroadcasti32x2 or INS_vbroadcastsd or
+                    INS_vbroadcastss or INS_vpbroadcastb or INS_vpbroadcastd or INS_vpbroadcastq or INS_vpbroadcastw)
                 {
-                    targetAttr = (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(attr) / 4);
+                    sourceAttr = EA_16BYTE;
+                }
+                else
+                {
+                    targetAttr = GetNarrowedDstAttr(ins, attr);
                 }
                 break;
             }

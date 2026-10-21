@@ -473,8 +473,8 @@ public partial class Emitter
         (byte)IUM_WR, // INS_vpdpbsuds
         (byte)IUM_WR, // INS_vpdpbuud
         (byte)IUM_WR, // INS_vpdpbuuds
-        (byte)IUM_WR, // INS_vbmacor16x16x16
-        (byte)IUM_WR, // INS_vbmacxor16x16x16
+        (byte)IUM_RW, // INS_vbmacor16x16x16
+        (byte)IUM_RW, // INS_vbmacxor16x16x16
         (byte)IUM_WR, // INS_vbitrev
         (byte)IUM_RW, // INS_vpmadd52huq
         (byte)IUM_RW, // INS_vpmadd52luq
@@ -778,15 +778,15 @@ public partial class Emitter
         (byte)IUM_WR, // INS_vpopcntw
         (byte)IUM_WR, // INS_vpshldd
         (byte)IUM_WR, // INS_vpshldq
-        (byte)IUM_WR, // INS_vpshldvd
-        (byte)IUM_WR, // INS_vpshldvq
-        (byte)IUM_WR, // INS_vpshldvw
+        (byte)IUM_RW, // INS_vpshldvd
+        (byte)IUM_RW, // INS_vpshldvq
+        (byte)IUM_RW, // INS_vpshldvw
         (byte)IUM_WR, // INS_vpshldw
         (byte)IUM_WR, // INS_vpshrdd
         (byte)IUM_WR, // INS_vpshrdq
-        (byte)IUM_WR, // INS_vpshrdvd
-        (byte)IUM_WR, // INS_vpshrdvq
-        (byte)IUM_WR, // INS_vpshrdvw
+        (byte)IUM_RW, // INS_vpshrdvd
+        (byte)IUM_RW, // INS_vpshrdvq
+        (byte)IUM_RW, // INS_vpshrdvw
         (byte)IUM_WR, // INS_vpshrdw
         (byte)IUM_WR, // INS_vpshufbitqmb
         (byte)IUM_WR, // INS_vaddph
@@ -836,7 +836,7 @@ public partial class Emitter
         (byte)IUM_WR, // INS_vcvtw2ph
         (byte)IUM_WR, // INS_vdivph
         (byte)IUM_WR, // INS_vdivsh
-        (byte)IUM_WR, // INS_vdpbf16ps
+        (byte)IUM_RW, // INS_vdpbf16ps
         (byte)IUM_RW, // INS_vfcmaddcph
         (byte)IUM_RW, // INS_vfcmaddcsh
         (byte)IUM_WR, // INS_vfcmulcph
@@ -1540,8 +1540,8 @@ public partial class Emitter
         (byte)IUM_WR, // INS_vpdpbsuds
         (byte)IUM_WR, // INS_vpdpbuud
         (byte)IUM_WR, // INS_vpdpbuuds
-        (byte)IUM_WR, // INS_vbmacor16x16x16
-        (byte)IUM_WR, // INS_vbmacxor16x16x16
+        (byte)IUM_RW, // INS_vbmacor16x16x16
+        (byte)IUM_RW, // INS_vbmacxor16x16x16
         (byte)IUM_WR, // INS_vbitrev
         (byte)IUM_RW, // INS_vpmadd52huq
         (byte)IUM_RW, // INS_vpmadd52luq
@@ -1845,15 +1845,15 @@ public partial class Emitter
         (byte)IUM_WR, // INS_vpopcntw
         (byte)IUM_WR, // INS_vpshldd
         (byte)IUM_WR, // INS_vpshldq
-        (byte)IUM_WR, // INS_vpshldvd
-        (byte)IUM_WR, // INS_vpshldvq
-        (byte)IUM_WR, // INS_vpshldvw
+        (byte)IUM_RW, // INS_vpshldvd
+        (byte)IUM_RW, // INS_vpshldvq
+        (byte)IUM_RW, // INS_vpshldvw
         (byte)IUM_WR, // INS_vpshldw
         (byte)IUM_WR, // INS_vpshrdd
         (byte)IUM_WR, // INS_vpshrdq
-        (byte)IUM_WR, // INS_vpshrdvd
-        (byte)IUM_WR, // INS_vpshrdvq
-        (byte)IUM_WR, // INS_vpshrdvw
+        (byte)IUM_RW, // INS_vpshrdvd
+        (byte)IUM_RW, // INS_vpshrdvq
+        (byte)IUM_RW, // INS_vpshrdvw
         (byte)IUM_WR, // INS_vpshrdw
         (byte)IUM_WR, // INS_vpshufbitqmb
         (byte)IUM_WR, // INS_vaddph
@@ -1903,7 +1903,7 @@ public partial class Emitter
         (byte)IUM_WR, // INS_vcvtw2ph
         (byte)IUM_WR, // INS_vdivph
         (byte)IUM_WR, // INS_vdivsh
-        (byte)IUM_WR, // INS_vdpbf16ps
+        (byte)IUM_RW, // INS_vdpbf16ps
         (byte)IUM_RW, // INS_vfcmaddcph
         (byte)IUM_RW, // INS_vfcmaddcsh
         (byte)IUM_WR, // INS_vfcmulcph

@@ -230,7 +230,8 @@ public partial class Emitter
     {
         var ins = id.idIns();
         if (emitInstHasPseudoName(ins) && ins is not
-            (INS_roundpd or INS_roundps or INS_roundsd or INS_roundss))
+            (INS_roundpd or INS_roundps or INS_roundsd or INS_roundss or INS_vextractf32x4 or INS_vextracti32x4 or
+                INS_vinsertf32x4 or INS_vinserti32x4))
         {
             return;
         }

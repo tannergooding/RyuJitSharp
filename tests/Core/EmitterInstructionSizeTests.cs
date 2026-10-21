@@ -100,6 +100,7 @@ internal static unsafe class EmitterInstructionSizeTests
     [TestCase(INS_vcvtps2ph, EA_64BYTE, IF_XARCH_SWR_RRD_CNS, 32)]
     [TestCase(INS_vpmovdb, EA_64BYTE, IF_XARCH_SWR_RRD, 16)]
     [TestCase(INS_vpmovqb, EA_64BYTE, IF_XARCH_SWR_RRD, 8)]
+    [TestCase(INS_vcvtph2qq, EA_64BYTE, IF_XARCH_RWR_SRD, 16)]
     [TestCase(INS_pslld, EA_64BYTE, IF_XARCH_RWR_RRD_SRD, 16)]
     [TestCase(INS_pslld, EA_64BYTE, IF_XARCH_RWR_SRD_CNS, 64)]
     [TestCase(INS_psllw, EA_64BYTE, IF_XARCH_RWR_RRD_SRD, 16)]
@@ -163,6 +164,7 @@ internal static unsafe class EmitterInstructionSizeTests
     [TestCase(INS_addps, 4)]
     [TestCase(INS_addpd, 8)]
     [TestCase(INS_cvtps2pd, 4)]
+    [TestCase(INS_vcvtph2qq, 2)]
     public static void EmbeddedBroadcastUsesInputWidthInsteadOfVectorWidth(instruction ins, int inputWidth)
     {
         var emitter = CreateEmitter(false, 0);

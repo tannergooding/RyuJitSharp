@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -25,6 +26,8 @@ public partial class Compiler
     }
 
     private List<WasmSpillSlot>? _wasmSpillSlots;
+
+    public VARSET_TP? m_wasmGCRefCandidates;
 
     public PhaseStatus fgWasmSpillRefs()
     {
@@ -176,8 +179,14 @@ public partial class Compiler
                 if (tree.OperIs(GT_LCL_VAR))
                 {
                     var local = tree.AsLclVarCommon();
-                    // Non-address-exposed locals cannot be mutated between their definition and this use.
-                    if (!lvaGetDesc(local.LclNum).IsAddressExposed)
+                    ref var varDsc = ref lvaGetDesc(local.LclNum);
+                    var isRefLocalCandidate = varDsc.lvTracked &&
+                        VarSetOps.IsMember(this, m_wasmGCRefCandidates ??
+                            throw new InvalidOperationException("Wasm GC-ref candidates were not computed."),
+                            varDsc._varIndex);
+
+                    // Non-candidate locals have a pinned stack home; candidate reads may still need spilling.
+                    if (!varDsc.IsAddressExposed && !isRefLocalCandidate)
                     {
                         continue;
                     }

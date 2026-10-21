@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6",
-    "targetObservedAt": "2026-10-20",
-    "reconciledCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6"
+    "targetCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
+    "targetObservedAt": "2026-10-21",
+    "reconciledCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "System.Private.Xml SetupEncoding is fixed: CEE_POP of a loaded struct now uses gtChangeOperToNullCheck, matching pinned native; focused ImporterEffectsTests passed 102 Debug and 95 Release tests. Managed, native, and native-repeat System.Private.Xml disassembly is byte-identical across 18,254 method headers and 3,901,136 code bytes. Next: continue the full CoreLib parity checkpoint at B526 (System.Double:Hypot FullDump assertion); keep the System.Collections value-numbering assertion, raw CoreLib comment/RWD blocks, and 144-method dynamic-TLS callback difference explicit. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested; source reconciliation is not full runtime parity.",
+    "nextAction": "Continue the active System.Xml SetupEncoding importer batch. After it closes, resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested. The oracle refresh through 5a518c3f is reconciled; the exact-pinned 21-method capture is nonexecuting and retains residual FullDump diagnostic/formatting/node-ID differences after the accepted D015 replacement, so do not claim machine-code or runtime parity.",
     "unresolvedConditionalCleanup": [],
     "activeBatch": {
       "scope": "Fix and validate the managed System.Xml.XmlTextReaderImpl:SetupEncoding(System.Text.Encoding) importer regression against pinned native behavior.",
@@ -24,7 +24,14 @@
     },
     "evidenceLinks": [
       "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json",
-      "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json"
+      "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json",
+      "artifacts\\oracle-update-eee5433a20bfda15bda74135eeb51e6a341ce2e6-5a518c3fcb295c89a73404d9f20c398dafdce845\\generator-evidence.json",
+      "artifacts\\oracle-refresh-native-corpus-5a518c3f-libs\\manifest.json",
+      "artifacts\\oracle-refresh-native-repeat-corpus-5a518c3f\\manifest.json",
+      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\manifest.json",
+      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-importation-comparison.json",
+      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-diff-summary.json",
+      "artifacts\\oracle-refresh-managed-corpus-5a518c3f-final\\d015-normalized-full-dump.diff"
     ],
 
     "validationGaps": [
@@ -1470,8 +1477,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6",
-    "reconciledCommit": "eee5433a20bfda15bda74135eeb51e6a341ce2e6",
+    "targetInputCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
+    "reconciledCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

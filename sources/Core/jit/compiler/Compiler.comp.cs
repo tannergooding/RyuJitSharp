@@ -3875,6 +3875,8 @@ public partial class Compiler
             // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
             DoPhase(this, PHASE_WASM_VIRTUAL_IP, fgWasmVirtualIP);
 
+            DoPhase(this, PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, fgWasmFindGCRefCandidates);
+
             // Spill live refs and byrefs at calls into pinned stack slots.
             DoPhase(this, PHASE_WASM_SPILL_REFS, fgWasmSpillRefs);
         }

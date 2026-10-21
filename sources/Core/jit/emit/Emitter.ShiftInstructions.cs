@@ -174,10 +174,9 @@ public partial class Emitter
 
             if (@base != REG_NA)
             {
-                if (!Configuration.TARGET_AMD64 || (reg != REG_SPBASE) || (@base != REG_FPBASE))
+                if ((reg != REG_SPBASE) || (@base != REG_FPBASE))
                 {
-                    // AMD64 epilogs require LEA to restore RSP from RBP.
-                    // A zero-offset, base-only LEA is otherwise just a register move.
+                    // The x86 GC epilog decoder also requires LEA to restore ESP from EBP.
                     _ = emitIns_Mov(INS_mov, attr, reg, @base, canSkip: true);
                     return;
                 }

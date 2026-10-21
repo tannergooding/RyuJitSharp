@@ -149,6 +149,8 @@ internal static unsafe class EmitterInstructionDisplayTests
 
     [TestCase(instruction.INS_cmppd, 1, false, "cmpltpd")]
     [TestCase(instruction.INS_cmppd, 17, true, "vcmplt_oqpd")]
+    [TestCase(instruction.INS_vcmpph, 17, true, "vcmplt_oqph")]
+    [TestCase(instruction.INS_vcmpsh, 17, false, "cmplt_oqsh")]
     [TestCase(instruction.INS_vpcmpuw, 6, true, "vpcmpgtuw")]
     [TestCase(instruction.INS_vpcmpuw, 6, false, "pcmpgtuw")]
     [TestCase(instruction.INS_pclmulqdq, 0x10, true, "vpclmullqhqdq")]

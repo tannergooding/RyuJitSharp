@@ -58,6 +58,17 @@ public partial class Emitter
                 memSize = (int)defaultSize / 2;
             }
         }
+        else if (tupleType == INS_TT_QUARTER)
+        {
+            if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+            {
+                memSize = GetInputSizeInBytes(id);
+            }
+            else
+            {
+                memSize = (int)defaultSize / 4;
+            }
+        }
         else if (tupleType == INS_TT_FULL_MEM)
         {
             memSize = (int)defaultSize;

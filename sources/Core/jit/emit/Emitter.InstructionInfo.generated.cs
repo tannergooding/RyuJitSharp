@@ -786,23 +786,23 @@ public partial class Emitter
         INS_TT_FULL_MEM, // INS_vpshrdvw
         INS_TT_FULL_MEM, // INS_vpshrdw
         INS_TT_FULL_MEM, // INS_vpshufbitqmb
-        INS_TT_FULL_MEM, // INS_vaddph
+        INS_TT_FULL, // INS_vaddph
         INS_TT_TUPLE1_SCALAR, // INS_vaddsh
-        INS_TT_FULL_MEM, // INS_vcmpph
+        INS_TT_FULL, // INS_vcmpph
         INS_TT_TUPLE1_SCALAR, // INS_vcmpsh
         INS_TT_TUPLE1_SCALAR, // INS_vcomish
         INS_TT_FULL, // INS_vcvtdq2ph
         INS_TT_FULL, // INS_vcvtne2ps2bf16
         INS_TT_FULL, // INS_vcvtneps2bf16
         INS_TT_FULL, // INS_vcvtpd2ph
-        INS_TT_HALF_MEM, // INS_vcvtph2dq
-        INS_TT_QUARTER_MEM, // INS_vcvtph2pd
-        INS_TT_HALF_MEM, // INS_vcvtph2psx
-        INS_TT_QUARTER_MEM, // INS_vcvtph2qq
-        INS_TT_HALF_MEM, // INS_vcvtph2udq
-        INS_TT_QUARTER_MEM, // INS_vcvtph2uqq
-        INS_TT_FULL_MEM, // INS_vcvtph2uw
-        INS_TT_FULL_MEM, // INS_vcvtph2w
+        INS_TT_HALF, // INS_vcvtph2dq
+        INS_TT_QUARTER, // INS_vcvtph2pd
+        INS_TT_HALF, // INS_vcvtph2psx
+        INS_TT_QUARTER, // INS_vcvtph2qq
+        INS_TT_HALF, // INS_vcvtph2udq
+        INS_TT_QUARTER, // INS_vcvtph2uqq
+        INS_TT_FULL, // INS_vcvtph2uw
+        INS_TT_FULL, // INS_vcvtph2w
         INS_TT_FULL, // INS_vcvtps2phx
         INS_TT_FULL, // INS_vcvtqq2ph
         INS_TT_TUPLE1_SCALAR, // INS_vcvtsd2sh
@@ -815,12 +815,12 @@ public partial class Emitter
         INS_TT_TUPLE1_SCALAR, // INS_vcvtsi2sh32
         INS_TT_TUPLE1_SCALAR, // INS_vcvtsi2sh64
         INS_TT_TUPLE1_SCALAR, // INS_vcvtss2sh
-        INS_TT_HALF_MEM, // INS_vcvttph2dq
-        INS_TT_QUARTER_MEM, // INS_vcvttph2qq
-        INS_TT_HALF_MEM, // INS_vcvttph2udq
-        INS_TT_QUARTER_MEM, // INS_vcvttph2uqq
-        INS_TT_FULL_MEM, // INS_vcvttph2uw
-        INS_TT_FULL_MEM, // INS_vcvttph2w
+        INS_TT_HALF, // INS_vcvttph2dq
+        INS_TT_QUARTER, // INS_vcvttph2qq
+        INS_TT_HALF, // INS_vcvttph2udq
+        INS_TT_QUARTER, // INS_vcvttph2uqq
+        INS_TT_FULL, // INS_vcvttph2uw
+        INS_TT_FULL, // INS_vcvttph2w
         INS_TT_TUPLE1_SCALAR, // INS_vcvttsh2si32
         INS_TT_TUPLE1_SCALAR, // INS_vcvttsh2si64
         INS_TT_TUPLE1_SCALAR, // INS_vcvttsh2usi32
@@ -829,9 +829,9 @@ public partial class Emitter
         INS_TT_FULL, // INS_vcvtuqq2ph
         INS_TT_TUPLE1_SCALAR, // INS_vcvtusi2sh32
         INS_TT_TUPLE1_SCALAR, // INS_vcvtusi2sh64
-        INS_TT_FULL_MEM, // INS_vcvtuw2ph
-        INS_TT_FULL_MEM, // INS_vcvtw2ph
-        INS_TT_FULL_MEM, // INS_vdivph
+        INS_TT_FULL, // INS_vcvtuw2ph
+        INS_TT_FULL, // INS_vcvtw2ph
+        INS_TT_FULL, // INS_vdivph
         INS_TT_TUPLE1_SCALAR, // INS_vdivsh
         INS_TT_FULL, // INS_vdpbf16ps
         INS_TT_FULL, // INS_vfcmaddcph
@@ -840,65 +840,65 @@ public partial class Emitter
         INS_TT_TUPLE1_SCALAR, // INS_vfcmulcsh
         INS_TT_FULL, // INS_vfmulcph
         INS_TT_TUPLE1_SCALAR, // INS_vfmulcsh
-        INS_TT_FULL_MEM, // INS_vfmadd132ph
-        INS_TT_FULL_MEM, // INS_vfmadd213ph
-        INS_TT_FULL_MEM, // INS_vfmadd231ph
+        INS_TT_FULL, // INS_vfmadd132ph
+        INS_TT_FULL, // INS_vfmadd213ph
+        INS_TT_FULL, // INS_vfmadd231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfmadd132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmadd213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmadd231sh
         INS_TT_FULL, // INS_vfmaddcph
         INS_TT_TUPLE1_SCALAR, // INS_vfmaddcsh
-        INS_TT_FULL_MEM, // INS_vfmaddsub132ph
-        INS_TT_FULL_MEM, // INS_vfmaddsub213ph
-        INS_TT_FULL_MEM, // INS_vfmaddsub231ph
-        INS_TT_FULL_MEM, // INS_vfmsub132ph
-        INS_TT_FULL_MEM, // INS_vfmsub213ph
-        INS_TT_FULL_MEM, // INS_vfmsub231ph
+        INS_TT_FULL, // INS_vfmaddsub132ph
+        INS_TT_FULL, // INS_vfmaddsub213ph
+        INS_TT_FULL, // INS_vfmaddsub231ph
+        INS_TT_FULL, // INS_vfmsub132ph
+        INS_TT_FULL, // INS_vfmsub213ph
+        INS_TT_FULL, // INS_vfmsub231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfmsub132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmsub213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmsub231sh
-        INS_TT_FULL_MEM, // INS_vfmsubadd132ph
-        INS_TT_FULL_MEM, // INS_vfmsubadd213ph
-        INS_TT_FULL_MEM, // INS_vfmsubadd231ph
-        INS_TT_FULL_MEM, // INS_vfnmadd132ph
-        INS_TT_FULL_MEM, // INS_vfnmadd213ph
-        INS_TT_FULL_MEM, // INS_vfnmadd231ph
+        INS_TT_FULL, // INS_vfmsubadd132ph
+        INS_TT_FULL, // INS_vfmsubadd213ph
+        INS_TT_FULL, // INS_vfmsubadd231ph
+        INS_TT_FULL, // INS_vfnmadd132ph
+        INS_TT_FULL, // INS_vfnmadd213ph
+        INS_TT_FULL, // INS_vfnmadd231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfnmadd132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmadd213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmadd231sh
-        INS_TT_FULL_MEM, // INS_vfnmsub132ph
-        INS_TT_FULL_MEM, // INS_vfnmsub213ph
-        INS_TT_FULL_MEM, // INS_vfnmsub231ph
+        INS_TT_FULL, // INS_vfnmsub132ph
+        INS_TT_FULL, // INS_vfnmsub213ph
+        INS_TT_FULL, // INS_vfnmsub231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfnmsub132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmsub213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmsub231sh
-        INS_TT_FULL_MEM, // INS_vfpclassph
+        INS_TT_FULL, // INS_vfpclassph
         INS_TT_TUPLE1_SCALAR, // INS_vfpclasssh
-        INS_TT_FULL_MEM, // INS_vgetexpph
+        INS_TT_FULL, // INS_vgetexpph
         INS_TT_TUPLE1_SCALAR, // INS_vgetexpsh
-        INS_TT_FULL_MEM, // INS_vgetmantph
+        INS_TT_FULL, // INS_vgetmantph
         INS_TT_TUPLE1_SCALAR, // INS_vgetmantsh
-        INS_TT_FULL_MEM, // INS_vmaxph
+        INS_TT_FULL, // INS_vmaxph
         INS_TT_TUPLE1_SCALAR, // INS_vmaxsh
         INS_TT_TUPLE1_SCALAR, // INS_vminsh
-        INS_TT_FULL_MEM, // INS_vminph
+        INS_TT_FULL, // INS_vminph
         INS_TT_TUPLE1_SCALAR, // INS_vmovsh
         INS_TT_TUPLE1_SCALAR, // INS_vmovw
-        INS_TT_FULL_MEM, // INS_vmulph
+        INS_TT_FULL, // INS_vmulph
         INS_TT_TUPLE1_SCALAR, // INS_vmulsh
-        INS_TT_FULL_MEM, // INS_vrcpph
+        INS_TT_FULL, // INS_vrcpph
         INS_TT_TUPLE1_SCALAR, // INS_vrcpsh
-        INS_TT_FULL_MEM, // INS_vreduceph
+        INS_TT_FULL, // INS_vreduceph
         INS_TT_TUPLE1_SCALAR, // INS_vreducesh
-        INS_TT_FULL_MEM, // INS_vrndscaleph
+        INS_TT_FULL, // INS_vrndscaleph
         INS_TT_TUPLE1_SCALAR, // INS_vrndscalesh
-        INS_TT_FULL_MEM, // INS_vrsqrtph
+        INS_TT_FULL, // INS_vrsqrtph
         INS_TT_TUPLE1_SCALAR, // INS_vrsqrtsh
-        INS_TT_FULL_MEM, // INS_vscalefph
+        INS_TT_FULL, // INS_vscalefph
         INS_TT_TUPLE1_SCALAR, // INS_vscalefsh
-        INS_TT_FULL_MEM, // INS_vsqrtph
+        INS_TT_FULL, // INS_vsqrtph
         INS_TT_TUPLE1_SCALAR, // INS_vsqrtsh
-        INS_TT_FULL_MEM, // INS_vsubph
+        INS_TT_FULL, // INS_vsubph
         INS_TT_TUPLE1_SCALAR, // INS_vsubsh
         INS_TT_TUPLE1_SCALAR, // INS_vucomish
         INS_TT_FULL, // INS_vp2intersectd
@@ -1853,23 +1853,23 @@ public partial class Emitter
         INS_TT_FULL_MEM, // INS_vpshrdvw
         INS_TT_FULL_MEM, // INS_vpshrdw
         INS_TT_FULL_MEM, // INS_vpshufbitqmb
-        INS_TT_FULL_MEM, // INS_vaddph
+        INS_TT_FULL, // INS_vaddph
         INS_TT_TUPLE1_SCALAR, // INS_vaddsh
-        INS_TT_FULL_MEM, // INS_vcmpph
+        INS_TT_FULL, // INS_vcmpph
         INS_TT_TUPLE1_SCALAR, // INS_vcmpsh
         INS_TT_TUPLE1_SCALAR, // INS_vcomish
         INS_TT_FULL, // INS_vcvtdq2ph
         INS_TT_FULL, // INS_vcvtne2ps2bf16
         INS_TT_FULL, // INS_vcvtneps2bf16
         INS_TT_FULL, // INS_vcvtpd2ph
-        INS_TT_HALF_MEM, // INS_vcvtph2dq
-        INS_TT_QUARTER_MEM, // INS_vcvtph2pd
-        INS_TT_HALF_MEM, // INS_vcvtph2psx
-        INS_TT_QUARTER_MEM, // INS_vcvtph2qq
-        INS_TT_HALF_MEM, // INS_vcvtph2udq
-        INS_TT_QUARTER_MEM, // INS_vcvtph2uqq
-        INS_TT_FULL_MEM, // INS_vcvtph2uw
-        INS_TT_FULL_MEM, // INS_vcvtph2w
+        INS_TT_HALF, // INS_vcvtph2dq
+        INS_TT_QUARTER, // INS_vcvtph2pd
+        INS_TT_HALF, // INS_vcvtph2psx
+        INS_TT_QUARTER, // INS_vcvtph2qq
+        INS_TT_HALF, // INS_vcvtph2udq
+        INS_TT_QUARTER, // INS_vcvtph2uqq
+        INS_TT_FULL, // INS_vcvtph2uw
+        INS_TT_FULL, // INS_vcvtph2w
         INS_TT_FULL, // INS_vcvtps2phx
         INS_TT_FULL, // INS_vcvtqq2ph
         INS_TT_TUPLE1_SCALAR, // INS_vcvtsd2sh
@@ -1882,12 +1882,12 @@ public partial class Emitter
         INS_TT_TUPLE1_SCALAR, // INS_vcvtsi2sh32
         INS_TT_TUPLE1_SCALAR, // INS_vcvtsi2sh64
         INS_TT_TUPLE1_SCALAR, // INS_vcvtss2sh
-        INS_TT_HALF_MEM, // INS_vcvttph2dq
-        INS_TT_QUARTER_MEM, // INS_vcvttph2qq
-        INS_TT_HALF_MEM, // INS_vcvttph2udq
-        INS_TT_QUARTER_MEM, // INS_vcvttph2uqq
-        INS_TT_FULL_MEM, // INS_vcvttph2uw
-        INS_TT_FULL_MEM, // INS_vcvttph2w
+        INS_TT_HALF, // INS_vcvttph2dq
+        INS_TT_QUARTER, // INS_vcvttph2qq
+        INS_TT_HALF, // INS_vcvttph2udq
+        INS_TT_QUARTER, // INS_vcvttph2uqq
+        INS_TT_FULL, // INS_vcvttph2uw
+        INS_TT_FULL, // INS_vcvttph2w
         INS_TT_TUPLE1_SCALAR, // INS_vcvttsh2si32
         INS_TT_TUPLE1_SCALAR, // INS_vcvttsh2si64
         INS_TT_TUPLE1_SCALAR, // INS_vcvttsh2usi32
@@ -1896,9 +1896,9 @@ public partial class Emitter
         INS_TT_FULL, // INS_vcvtuqq2ph
         INS_TT_TUPLE1_SCALAR, // INS_vcvtusi2sh32
         INS_TT_TUPLE1_SCALAR, // INS_vcvtusi2sh64
-        INS_TT_FULL_MEM, // INS_vcvtuw2ph
-        INS_TT_FULL_MEM, // INS_vcvtw2ph
-        INS_TT_FULL_MEM, // INS_vdivph
+        INS_TT_FULL, // INS_vcvtuw2ph
+        INS_TT_FULL, // INS_vcvtw2ph
+        INS_TT_FULL, // INS_vdivph
         INS_TT_TUPLE1_SCALAR, // INS_vdivsh
         INS_TT_FULL, // INS_vdpbf16ps
         INS_TT_FULL, // INS_vfcmaddcph
@@ -1907,65 +1907,65 @@ public partial class Emitter
         INS_TT_TUPLE1_SCALAR, // INS_vfcmulcsh
         INS_TT_FULL, // INS_vfmulcph
         INS_TT_TUPLE1_SCALAR, // INS_vfmulcsh
-        INS_TT_FULL_MEM, // INS_vfmadd132ph
-        INS_TT_FULL_MEM, // INS_vfmadd213ph
-        INS_TT_FULL_MEM, // INS_vfmadd231ph
+        INS_TT_FULL, // INS_vfmadd132ph
+        INS_TT_FULL, // INS_vfmadd213ph
+        INS_TT_FULL, // INS_vfmadd231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfmadd132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmadd213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmadd231sh
         INS_TT_FULL, // INS_vfmaddcph
         INS_TT_TUPLE1_SCALAR, // INS_vfmaddcsh
-        INS_TT_FULL_MEM, // INS_vfmaddsub132ph
-        INS_TT_FULL_MEM, // INS_vfmaddsub213ph
-        INS_TT_FULL_MEM, // INS_vfmaddsub231ph
-        INS_TT_FULL_MEM, // INS_vfmsub132ph
-        INS_TT_FULL_MEM, // INS_vfmsub213ph
-        INS_TT_FULL_MEM, // INS_vfmsub231ph
+        INS_TT_FULL, // INS_vfmaddsub132ph
+        INS_TT_FULL, // INS_vfmaddsub213ph
+        INS_TT_FULL, // INS_vfmaddsub231ph
+        INS_TT_FULL, // INS_vfmsub132ph
+        INS_TT_FULL, // INS_vfmsub213ph
+        INS_TT_FULL, // INS_vfmsub231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfmsub132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmsub213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfmsub231sh
-        INS_TT_FULL_MEM, // INS_vfmsubadd132ph
-        INS_TT_FULL_MEM, // INS_vfmsubadd213ph
-        INS_TT_FULL_MEM, // INS_vfmsubadd231ph
-        INS_TT_FULL_MEM, // INS_vfnmadd132ph
-        INS_TT_FULL_MEM, // INS_vfnmadd213ph
-        INS_TT_FULL_MEM, // INS_vfnmadd231ph
+        INS_TT_FULL, // INS_vfmsubadd132ph
+        INS_TT_FULL, // INS_vfmsubadd213ph
+        INS_TT_FULL, // INS_vfmsubadd231ph
+        INS_TT_FULL, // INS_vfnmadd132ph
+        INS_TT_FULL, // INS_vfnmadd213ph
+        INS_TT_FULL, // INS_vfnmadd231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfnmadd132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmadd213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmadd231sh
-        INS_TT_FULL_MEM, // INS_vfnmsub132ph
-        INS_TT_FULL_MEM, // INS_vfnmsub213ph
-        INS_TT_FULL_MEM, // INS_vfnmsub231ph
+        INS_TT_FULL, // INS_vfnmsub132ph
+        INS_TT_FULL, // INS_vfnmsub213ph
+        INS_TT_FULL, // INS_vfnmsub231ph
         INS_TT_TUPLE1_SCALAR, // INS_vfnmsub132sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmsub213sh
         INS_TT_TUPLE1_SCALAR, // INS_vfnmsub231sh
-        INS_TT_FULL_MEM, // INS_vfpclassph
+        INS_TT_FULL, // INS_vfpclassph
         INS_TT_TUPLE1_SCALAR, // INS_vfpclasssh
-        INS_TT_FULL_MEM, // INS_vgetexpph
+        INS_TT_FULL, // INS_vgetexpph
         INS_TT_TUPLE1_SCALAR, // INS_vgetexpsh
-        INS_TT_FULL_MEM, // INS_vgetmantph
+        INS_TT_FULL, // INS_vgetmantph
         INS_TT_TUPLE1_SCALAR, // INS_vgetmantsh
-        INS_TT_FULL_MEM, // INS_vmaxph
+        INS_TT_FULL, // INS_vmaxph
         INS_TT_TUPLE1_SCALAR, // INS_vmaxsh
         INS_TT_TUPLE1_SCALAR, // INS_vminsh
-        INS_TT_FULL_MEM, // INS_vminph
+        INS_TT_FULL, // INS_vminph
         INS_TT_TUPLE1_SCALAR, // INS_vmovsh
         INS_TT_TUPLE1_SCALAR, // INS_vmovw
-        INS_TT_FULL_MEM, // INS_vmulph
+        INS_TT_FULL, // INS_vmulph
         INS_TT_TUPLE1_SCALAR, // INS_vmulsh
-        INS_TT_FULL_MEM, // INS_vrcpph
+        INS_TT_FULL, // INS_vrcpph
         INS_TT_TUPLE1_SCALAR, // INS_vrcpsh
-        INS_TT_FULL_MEM, // INS_vreduceph
+        INS_TT_FULL, // INS_vreduceph
         INS_TT_TUPLE1_SCALAR, // INS_vreducesh
-        INS_TT_FULL_MEM, // INS_vrndscaleph
+        INS_TT_FULL, // INS_vrndscaleph
         INS_TT_TUPLE1_SCALAR, // INS_vrndscalesh
-        INS_TT_FULL_MEM, // INS_vrsqrtph
+        INS_TT_FULL, // INS_vrsqrtph
         INS_TT_TUPLE1_SCALAR, // INS_vrsqrtsh
-        INS_TT_FULL_MEM, // INS_vscalefph
+        INS_TT_FULL, // INS_vscalefph
         INS_TT_TUPLE1_SCALAR, // INS_vscalefsh
-        INS_TT_FULL_MEM, // INS_vsqrtph
+        INS_TT_FULL, // INS_vsqrtph
         INS_TT_TUPLE1_SCALAR, // INS_vsqrtsh
-        INS_TT_FULL_MEM, // INS_vsubph
+        INS_TT_FULL, // INS_vsubph
         INS_TT_TUPLE1_SCALAR, // INS_vsubsh
         INS_TT_TUPLE1_SCALAR, // INS_vucomish
         INS_TT_FULL, // INS_vp2intersectd

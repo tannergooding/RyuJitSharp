@@ -464,6 +464,7 @@ public partial class Compiler
             CORINFO_HELP_BOX_NULLABLE => VNF_BoxNullable,
             CORINFO_HELP_VIRTUAL_FUNC_PTR => VNF_VirtualFuncPtr,
             CORINFO_HELP_GVMLOOKUP_FOR_SLOT => VNF_GVMLookupForSlot,
+            CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT => VNF_InterfaceLookupForSlot,
             CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR => VNF_ReadyToRunVirtualFuncPtr,
             _ => throw new System.Diagnostics.UnreachableException($"Unmapped VN helper: {helpFunc}"),
         };
@@ -613,6 +614,7 @@ public partial class Compiler
                 }
                 case CORINFO_HELP_VIRTUAL_FUNC_PTR:
                 case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+                case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                 {
                     exceptions = fgValueNumberIndirNullCheckExceptions(call.Args.ThisArg!.Node);
                     break;

@@ -142,8 +142,14 @@ public partial class Emitter
 
             case INS_TT_HALF:
             {
-                assert(inputSize == 4);
+                assert((inputSize == 2) || (inputSize == 4));
                 disp8Compression = isEmbBroadcast ? inputSize : vectorLength / 2;
+                break;
+            }
+
+            case INS_TT_QUARTER:
+            {
+                disp8Compression = isEmbBroadcast ? inputSize : vectorLength / 4;
                 break;
             }
 

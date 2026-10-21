@@ -349,17 +349,10 @@ public sealed partial class Lowering
         var registerType = block.Layout.RegisterType;
         if (registerType is not TYP_UNDEF)
         {
-            if ((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) &&
+            if ((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM) &&
                 varTypeIsFloating(call.Type))
             {
                 registerType = call.Type;
-            }
-
-            if (Configuration.TARGET_WASM)
-            {
-                var wasmAbiType = CompilerInstance.info.compCompHnd->getWasmLowering(call.RetClsHnd);
-                assert(wasmAbiType is not CORINFO_WASM_TYPE_VOID);
-                registerType = WasmTypeMapper.ToJitType(wasmAbiType);
             }
 
             var store = new GenTreeStoreInd(registerType, block.Addr, block.Data, block, NodeThreading.LIR) {

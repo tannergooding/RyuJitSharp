@@ -3182,8 +3182,8 @@ public static partial class Globals
         unchecked((ulong)((((((0x05))) << 16) | (((0x2E)))))), // INS_vucomish
         unchecked((ulong)((((((0xF2))) << 16) | (((0x0f)) << 24) | ((0x38)) | ((((0x68))) << 8)))), // INS_vp2intersectd
         unchecked((ulong)((((((0xF2))) << 16) | (((0x0f)) << 24) | ((0x38)) | ((((0x68))) << 8)))), // INS_vp2intersectq
-        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxsd
-        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxss
+        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxsd
+        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxss
         unchecked((ulong)(((((0x66)) << 16) | ((((0x05))) << 24) | (((0x69)))))), // INS_vcvtps2ibs
         unchecked((ulong)(((((0x66)) << 16) | ((((0x05))) << 24) | (((0x6B)))))), // INS_vcvtps2iubs
         unchecked((ulong)((((((0x05))) << 16) | (((0x6D)))))), // INS_vcvttpd2dqs
@@ -3211,8 +3211,8 @@ public static partial class Globals
         unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x7E)))))), // INS_vmovd_simd
         unchecked((ulong)(((((0xf3)) << 16) | ((((0x05))) << 24) | (((0x6E)))))), // INS_vmovw_simd
         unchecked((ulong)((((((0xf3))) << 16) | (((0x0f)) << 24) | ((0x3A)) | (((((0x42)))) << 8)))), // INS_vmpsadbw
-        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vucomxsd
-        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2E)))))), // INS_vucomxss
+        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2e)))))), // INS_vucomxsd
+        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2e)))))), // INS_vucomxss
         unchecked((ulong)((((((0xF2))) << 16) | (((0x0f)) << 24) | ((0x38)) | ((((0xF0))) << 8)))), // INS_crc32
         unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0xBC)))))), // INS_tzcnt
         unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0xBD)))))), // INS_lzcnt
@@ -4165,8 +4165,8 @@ public static partial class Globals
         unchecked((ulong)((((((0x05))) << 16) | (((0x2E)))))), // INS_vucomish
         unchecked((ulong)((((((0xF2))) << 16) | (((0x0f)) << 24) | ((0x38)) | ((((0x68))) << 8)))), // INS_vp2intersectd
         unchecked((ulong)((((((0xF2))) << 16) | (((0x0f)) << 24) | ((0x38)) | ((((0x68))) << 8)))), // INS_vp2intersectq
-        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxsd
-        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxss
+        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxsd
+        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vcomxss
         unchecked((ulong)(((((0x66)) << 16) | ((((0x05))) << 24) | (((0x69)))))), // INS_vcvtps2ibs
         unchecked((ulong)(((((0x66)) << 16) | ((((0x05))) << 24) | (((0x6B)))))), // INS_vcvtps2iubs
         unchecked((ulong)((((((0x05))) << 16) | (((0x6D)))))), // INS_vcvttpd2dqs
@@ -4194,8 +4194,8 @@ public static partial class Globals
         unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x7E)))))), // INS_vmovd_simd
         unchecked((ulong)(((((0xf3)) << 16) | ((((0x05))) << 24) | (((0x6E)))))), // INS_vmovw_simd
         unchecked((ulong)((((((0xf3))) << 16) | (((0x0f)) << 24) | ((0x3A)) | (((((0x42)))) << 8)))), // INS_vmpsadbw
-        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2f)))))), // INS_vucomxsd
-        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2E)))))), // INS_vucomxss
+        unchecked((ulong)(((((0xf2)) << 16) | (((0x0f)) << 24) | (((0x2e)))))), // INS_vucomxsd
+        unchecked((ulong)(((((0xf3)) << 16) | (((0x0f)) << 24) | (((0x2e)))))), // INS_vucomxss
         unchecked((ulong)(0x00003A)), // INS_ccmpo
         unchecked((ulong)(0x00003A)), // INS_ccmpno
         unchecked((ulong)(0x00003A)), // INS_ccmpb

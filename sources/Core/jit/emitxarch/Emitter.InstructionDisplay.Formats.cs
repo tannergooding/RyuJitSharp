@@ -12,6 +12,20 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private static emitAttr GetNarrowedDstAttr(instruction ins, emitAttr srcAttr)
+    {
+        return ins switch
+        {
+            INS_cvtpd2dq or INS_cvtpd2ps or INS_cvttpd2dq or INS_vcvtdq2ph or INS_vcvtneps2bf16 or
+                INS_vcvtpd2udq or INS_vcvtps2phx or INS_vcvtqq2ps or INS_vcvttpd2dqs or INS_vcvttpd2udq or
+                INS_vcvttpd2udqs or INS_vcvtudq2ph or INS_vcvtuqq2ps =>
+                (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(srcAttr) / 2),
+            INS_vcvtpd2ph or INS_vcvtqq2ph or INS_vcvtuqq2ph =>
+                (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(srcAttr) / 4),
+            _ => srcAttr,
+        };
+    }
+
     public unsafe void emitDispInsXarch(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
@@ -82,6 +96,10 @@ public partial class Emitter
             GCT_BYREF => EA_BYREF,
             _ => id.idOpSize(),
         };
+        if (EA_SIZE(attr) != id.idOpSize())
+        {
+            attr = id.idOpSize();
+        }
         var sizeName = id.idGCref() switch
         {
             GCT_GCREF => "gword ptr ",
@@ -264,13 +282,21 @@ public partial class Emitter
                 {
                     attr = EA_8BYTE;
                 }
-                else if (ins is INS_movsx or INS_movzx)
+                else if (ins == INS_movsx)
                 {
                     attr = EA_PTRSIZE;
+                }
+                else if (ins == INS_movzx)
+                {
+                    attr = EA_4BYTE;
                 }
                 else if (ins == INS_crc32 && attr != EA_8BYTE)
                 {
                     attr = EA_4BYTE;
+                }
+                else
+                {
+                    attr = GetNarrowedDstAttr(ins, attr);
                 }
                 RegMem(1);
                 if (format is IF_XARCH_RRD_ARD or IF_XARCH_RWR_ARD or IF_XARCH_RRW_ARD && debug is not null)
@@ -518,7 +544,20 @@ public partial class Emitter
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
                 assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
-                Reg(1);
+                var attr12 = attr;
+                var attr3 = attr;
+                if ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0)
+                {
+                    attr3 = EA_16BYTE;
+                }
+                else if (ins is INS_cvtsi2sd32 or INS_cvtsi2sd64 or INS_cvtsi2ss32 or INS_cvtsi2ss64 or
+                    INS_vcvtsi2sh32 or INS_vcvtsi2sh64 or INS_vcvtusi2sd32 or INS_vcvtusi2sd64 or
+                    INS_vcvtusi2sh32 or INS_vcvtusi2sh64 or INS_vcvtusi2ss32 or INS_vcvtusi2ss64)
+                {
+                    attr12 = EA_16BYTE;
+                    attr3 = (emitAttr)GetInputSizeInBytes(id);
+                }
+                Reg(1, attr12);
                 Mask();
                 var second = id.idReg2();
                 var third = id.idReg3();
@@ -526,9 +565,8 @@ public partial class Emitter
                 {
                     (second, third) = (third, second);
                 }
-                jitprintf($", {emitRegName(second, attr)}, ");
-                var thirdAttr = (insTupleTypeInfo(ins) & INS_TT_MEM128) != 0 ? EA_16BYTE : attr;
-                jitprintf(emitRegName(third, thirdAttr));
+                jitprintf($", {emitRegName(second, attr12)}, ");
+                jitprintf(emitRegName(third, attr3));
                 emitDispEmbRounding(id);
                 break;
             }

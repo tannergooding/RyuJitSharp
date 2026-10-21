@@ -188,7 +188,7 @@ public static class CorInfoHelpFuncExtensions
         MutatesHeap,                                // CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
         IsPure,                                     // CORINFO_HELP_GVMLOOKUP_FOR_SLOT
         MutatesHeap,                                // CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT
-        MutatesHeap,                                // CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
+        IsPure,                                     // CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
         MutatesHeap | IsNoGC,                       // CORINFO_HELP_STACK_PROBE
         MutatesHeap,                                // CORINFO_HELP_PATCHPOINT
         MutatesHeap,                                // CORINFO_HELP_PATCHPOINT_FORCED
@@ -386,7 +386,7 @@ public static class CorInfoHelpFuncExtensions
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
         ExceptionSetFlags.NullReferenceException,   // CORINFO_HELP_GVMLOOKUP_FOR_SLOT
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT
-        ExceptionSetFlags.UnknownException,         // CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
+        ExceptionSetFlags.NullReferenceException,   // CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_STACK_PROBE
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PATCHPOINT
         ExceptionSetFlags.UnknownException,         // CORINFO_HELP_PATCHPOINT_FORCED

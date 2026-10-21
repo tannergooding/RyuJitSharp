@@ -21,6 +21,7 @@ internal static unsafe class EmitterMemoryOutputTests
 {
     [TestCase(INS_addps, EA_64BYTE, EA_4BYTE, EA_64BYTE)]
     [TestCase(INS_cvtps2pd, EA_64BYTE, EA_4BYTE, EA_32BYTE)]
+    [TestCase(INS_vcvtph2qq, EA_64BYTE, EA_2BYTE, EA_16BYTE)]
     public static void EmbeddedBroadcastChangesMemorySizeUnlessIgnored(
         instruction ins, emitAttr size, emitAttr broadcastSize, emitAttr fullSize)
     {
@@ -51,6 +52,7 @@ internal static unsafe class EmitterMemoryOutputTests
     [TestCase(INS_pmovsxbw, EA_16BYTE, EA_8BYTE)]
     [TestCase(INS_pmovsxbd, EA_32BYTE, EA_8BYTE)]
     [TestCase(INS_pmovsxbq, EA_64BYTE, EA_8BYTE)]
+    [TestCase(INS_vcvtph2qq, EA_64BYTE, EA_16BYTE)]
     public static void FixedAndFractionalTuplesUseTheirActualMemoryWidth(
         instruction ins, emitAttr size, emitAttr expected)
     {

@@ -1095,7 +1095,8 @@ public sealed class GenTreeCall : GenTree
                 var call = _controlExpr.AsCall();
 
                 if (call.IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                    call.IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT))
+                    call.IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
+                    call.IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
                 {
                     result = true;
                 }

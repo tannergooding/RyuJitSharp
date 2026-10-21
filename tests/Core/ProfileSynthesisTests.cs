@@ -521,6 +521,7 @@ internal static unsafe class ProfileSynthesisTests
             var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
             blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
             blocks[0].setBBProfileWeight(80);
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_SPEED_OPT);
             compiler.fgPredsComputed = true;
             compiler.fgPgoHaveWeights = hadWeights;
             compiler.fgPgoSource = ICorJitInfo.PgoSource.Dynamic;
@@ -541,15 +542,21 @@ internal static unsafe class ProfileSynthesisTests
         });
     }
 
-    [TestCase(false, false, 9, true)]
-    [TestCase(false, false, 10, false)]
-    [TestCase(true, false, 0, false)]
-    [TestCase(false, true, 0, false)]
-    public static void SingleEdgeHeuristicsExcludeLargeSizeOptimizedAndStaticConstructors(bool cctor, bool size, int calls, bool expected)
+    [TestCase(false, false, 9, false, false)]
+    [TestCase(false, false, 9, true, true)]
+    [TestCase(false, false, 10, true, false)]
+    [TestCase(true, false, 0, true, false)]
+    [TestCase(false, true, 0, true, false)]
+    public static void SingleEdgeHeuristicsExcludeLargeSizeOptimizedAndStaticConstructors(bool cctor, bool size, int calls, bool speedOpt, bool expected)
     {
         WithCompiler(compiler => {
             _ = Blocks(compiler, BBJ_RETURN);
             compiler.info.compFlags = cctor ? FLG_CCTOR : 0;
+
+            if (speedOpt)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_SPEED_OPT);
+            }
 
             if (size)
             {
@@ -557,6 +564,41 @@ internal static unsafe class ProfileSynthesisTests
             }
 
             compiler.opts.callInstrCount = calls;
+            ProfileSynthesis.Run(compiler, ProfileSynthesisOption.AssignLikelihoods);
+            Assert.That(compiler.fgPgoSingleEdge, Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(false, false, false, false, false)]
+    [TestCase(true, false, false, false, true)]
+    [TestCase(false, true, false, false, true)]
+    [TestCase(false, false, true, false, true)]
+    [TestCase(false, false, false, true, true)]
+    public static void SingleEdgeHeuristicsRequireEligibleRootOrInlinee(bool speedOpt, bool tier1, bool aggressiveOpt, bool inlinee, bool expected)
+    {
+        WithCompiler(compiler => {
+            _ = Blocks(compiler, BBJ_RETURN);
+
+            if (speedOpt)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_SPEED_OPT);
+            }
+
+            if (tier1)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_TIER1);
+            }
+
+            if (aggressiveOpt)
+            {
+                compiler.info.compFlags |= CorInfoFlag.CORINFO_FLG_AGGRESSIVE_OPT;
+            }
+
+            if (inlinee)
+            {
+                compiler.impInlineInfo = new InlineInfo();
+            }
+
             ProfileSynthesis.Run(compiler, ProfileSynthesisOption.AssignLikelihoods);
             Assert.That(compiler.fgPgoSingleEdge, Is.EqualTo(expected));
         });

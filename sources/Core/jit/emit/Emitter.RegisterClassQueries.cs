@@ -11,6 +11,11 @@ public partial class Emitter
 {
     public static bool isGeneralRegister(regNumber reg)
     {
+        if (Configuration.TARGET_XARCH)
+        {
+            return reg.IsIntReg;
+        }
+
         if (Configuration.TARGET_ARM)
         {
             return reg >= REG_ARM32_R0 && reg <= REG_ARM32_PC;

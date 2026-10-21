@@ -265,7 +265,9 @@ public sealed partial class Lowering
                             var ins = HWIntrinsicInfo.lookupIns(intrinsicId, baseType, compiler);
                             var tupleType = Emitter.insTupleTypeInfo(ins);
                             var memSize = tupleType switch {
+                                INS_TT_HALF => simdSize / 2,
                                 INS_TT_HALF_MEM => simdSize / 2,
+                                INS_TT_QUARTER => simdSize / 4,
                                 INS_TT_QUARTER_MEM => simdSize / 4,
                                 INS_TT_EIGHTH_MEM => simdSize / 8,
                                 _ => throw new InvalidOperationException("Unexpected tuple type for a narrowing conversion."),

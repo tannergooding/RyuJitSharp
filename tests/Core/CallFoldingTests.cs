@@ -145,6 +145,7 @@ internal static unsafe class CallFoldingTests
 
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)]
     public static void GenericVirtualCallsAreRejectedBeforeGuardedDevirtualization(CorInfoHelpFunc helper)
     {
@@ -166,6 +167,16 @@ internal static unsafe class CallFoldingTests
             Assert.That(output, Does.Not.Contain("Not guessing; no PGO"));
             Assert.That(call.InlineCandidatesCount, Is.Zero);
         });
+    }
+
+    [Test]
+    public static void InterfaceLookupHelperMatchesNativeProperties()
+    {
+        var helper = CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT;
+
+        Assert.That(helper.IsPure, Is.True);
+        Assert.That(helper.MutatesHeap, Is.False);
+        Assert.That(helper.ThrownExceptions, Is.EqualTo(ExceptionSetFlags.NullReferenceException));
     }
 
     [Test]

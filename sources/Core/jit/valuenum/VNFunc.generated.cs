@@ -295,6 +295,7 @@ public enum VNFunc
     VNF_GetStaticAddrTLS,
     VNF_VirtualFuncPtr,
     VNF_GVMLookupForSlot,
+    VNF_InterfaceLookupForSlot,
     VNF_ReadyToRunVirtualFuncPtr,
     VNF_JitNew,
     VNF_JitNewArr,

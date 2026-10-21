@@ -295,6 +295,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x24, // VNF_GetStaticAddrTLS
         (ValueNumStore.VNFOpAttrib)0x2C, // VNF_VirtualFuncPtr
         (ValueNumStore.VNFOpAttrib)0x28, // VNF_GVMLookupForSlot
+        (ValueNumStore.VNFOpAttrib)0x28, // VNF_InterfaceLookupForSlot
         (ValueNumStore.VNFOpAttrib)0x28, // VNF_ReadyToRunVirtualFuncPtr
         (ValueNumStore.VNFOpAttrib)0x28, // VNF_JitNew
         (ValueNumStore.VNFOpAttrib)0x2C, // VNF_JitNewArr
@@ -2419,6 +2420,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.SetValidationAttributes(attributes, VNF_GetStaticAddrTLS, 1, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_VirtualFuncPtr, 3, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_GVMLookupForSlot, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_InterfaceLookupForSlot, 2, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunVirtualFuncPtr, 2, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_JitNew, 2, false, true);
         ValueNumStore.SetValidationAttributes(attributes, VNF_JitNewArr, 3, false, true);

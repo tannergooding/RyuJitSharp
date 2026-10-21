@@ -1396,6 +1396,7 @@ public partial class Compiler
             //
             var expr = stmt.RootNode;
             var oper = expr.Oper;
+            var effectiveExpr = expr.EffectiveVal;
             var flags = expr.Flags & GTF_ALL_EFFECT;
 
             // Stores to unaliased locals require special handling. Here, we look for trees that
@@ -1404,17 +1405,18 @@ public partial class Compiler
             // 1. All locals which can be modified indirectly are marked as address-exposed or with
             //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
             //    below to spill them.
-            // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
-            //    walk down the tree here), and are a subset of what is recognized here.
+            // 2. Trees that assign to unaliased locals are always top-level, possibly under COMMA
+            //    nodes (this avoids having to walk down the tree here), and are a subset of what is
+            //    recognized here.
             //
             // If any of the above are violated (say for some temps), the relevant code must spill
             // things manually.
 
             ref var dstVarDsc = ref Unsafe.NullRef<LclVarDsc>();
 
-            if (oper.IsLocalStore)
+            if (effectiveExpr.Oper.IsLocalStore)
             {
-                dstVarDsc = ref lvaGetDesc(expr.AsLclVarCommon().LclNum);
+                dstVarDsc = ref lvaGetDesc(effectiveExpr.AsLclVarCommon().LclNum);
             }
             else if (oper is GT_CALL or GT_RET_EXPR) // The special case of calls with return buffers.
             {
@@ -1445,10 +1447,10 @@ public partial class Compiler
             {
                 impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
 
-                if (expr.Oper.IsLocalStore)
+                if (effectiveExpr.Oper.IsLocalStore)
                 {
                     // For stores, limit the checking to what the value could modify/interfere with.
-                    var value = expr.AsLclVarCommon().Data;
+                    var value = effectiveExpr.AsLclVarCommon().Data;
                     flags = value.Flags & GTF_ALL_EFFECT;
 
                     // We don't mark indirections off of "aliased" locals with GLOB_REF, but they must still be
@@ -11984,17 +11986,41 @@ public partial class Compiler
         if ((callInfo.sig.sigInst.methInstCount is not 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             var dispatchCell = impLookupToTree(callInfo.codePointerLookup, GTF_ICON_FTN_ADDR, callInfo.hMethod);
-            assert(dispatchCell is not null);
+            if (dispatchCell is null)
+            {
+                assert(compDonotInline);
+                return null;
+            }
             call = gtNewVirtualFunctionLookupHelperCallNode(TYP_I_IMPL, CORINFO_HELP_GVMLOOKUP_FOR_SLOT, thisPtr, dispatchCell);
         }
+        else if (Configuration.TARGET_WASM && IsNativeAot && isInterface)
+        {
+            var dispatchCell = impLookupToTree(callInfo.codePointerLookup, GTF_ICON_GLOBAL_PTR, null);
+            if (dispatchCell is null)
+            {
+                assert(compDonotInline);
+                return null;
+            }
 
-        // Wasm lacks the dynamic-helper thunks used by the ReadyToRun fast path;
-        // use CORINFO_HELP_VIRTUAL_FUNC_PTR instead.
-        else if (Configuration.FEATURE_READYTORUN && !Configuration.TARGET_WASM && IsAot)
+            call = gtNewVirtualFunctionLookupHelperCallNode(TYP_I_IMPL,
+                CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, thisPtr, dispatchCell);
+            call.Flags |= GTF_CALL_NULLCHECK;
+        }
+
+        else if (Configuration.FEATURE_READYTORUN && (Configuration.TARGET_WASM ? IsNativeAot : IsAot))
         {
             if (!callInfo.exactContextNeedsRuntimeLookup)
             {
-                call = gtNewHelperCallNode(TYP_I_IMPL, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, thisPtr);
+                if (Configuration.TARGET_WASM)
+                {
+                    call = gtNewHelperCallNode(TYP_I_IMPL, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR);
+                    _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(thisPtr).WithWellKnownArg(WellKnownArg.ThisPointer));
+                    call.Flags |= GTF_CALL_NULLCHECK | (thisPtr.Flags & GTF_ALL_EFFECT);
+                }
+                else
+                {
+                    call = gtNewHelperCallNode(TYP_I_IMPL, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, thisPtr);
+                }
                 call._entryPoint = callInfo.codePointerLookup.constLookup;
             }
             // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
@@ -19517,10 +19543,15 @@ public partial class Compiler
                 return call;
             }
 
-            // Preserve address evaluation before the argument name, without allocating the box.
+            // Preserve the box helper's address null check and evaluate the argument name afterward.
             var boxedAddrTmp = lvaGrabTemp(shortLifetime: true, "boxedAddr spilled");
             var boxedArgNameTmp = lvaGrabTemp(shortLifetime: true, "boxedArg spilled");
             impStoreToTemp(boxedAddrTmp, addressArg.Node, CHECK_SPILL_ALL);
+            if (fgAddrCouldBeNull(addressArg.Node))
+            {
+                var address = gtNewLclvNode(addressArg.Node.Type, boxedAddrTmp);
+                _ = impAppendTree(gtNewNullCheck(address), CHECK_SPILL_ALL, impCurStmtDI);
+            }
             impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
             return gtNewNothingNode();
         }

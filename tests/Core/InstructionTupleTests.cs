@@ -13,6 +13,7 @@ internal static class InstructionTupleTests
     [TestCase(INS_pmovsxbw, INS_TT_HALF_MEM)]
     [TestCase(INS_pmovsxbd, INS_TT_QUARTER_MEM)]
     [TestCase(INS_pmovsxbq, INS_TT_EIGHTH_MEM)]
+    [TestCase(INS_vcvtph2qq, INS_TT_QUARTER)]
     [TestCase(INS_pslld, INS_TT_FULL | INS_TT_MEM128)]
     [TestCase(INS_psllw, INS_TT_FULL_MEM | INS_TT_MEM128)]
     public static void TupleMetadataPreservesNativeInstructionIdentity(instruction ins, insTupleType expected)

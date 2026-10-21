@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -106,6 +107,39 @@ internal static unsafe class RationalizationTests
         });
     }
 
+    [Test]
+    public static void IdentityUserShuffleRemovesTheShuffleAndItsIndexVector()
+    {
+        Assume.That(Configuration.TARGET_XARCH);
+
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            compiler.lvaTable[1].Type = TYP_SIMD16;
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+
+            var source = compiler.gtNewLclvNode(TYP_SIMD16, 1);
+            var indices = new GenTreeVecCon(TYP_SIMD16);
+            for (var index = 0; index < TYP_SIMD16.Size; index++)
+            {
+                indices.SimdVal.u8[index] = (byte)index;
+            }
+
+            var shuffle = compiler.gtNewSimdHWIntrinsicNode(
+                TYP_SIMD16, NI_Vector_Shuffle, TYP_UBYTE, TYP_SIMD16.Size, source, indices);
+            shuffle.MethodHandle = (CORINFO_METHOD_STRUCT_*)1;
+            var store = compiler.gtNewStoreLclVarNode(0, shuffle);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
+            _ = compiler.fgSetBlockOrder();
+
+            Rationalize(compiler);
+
+            Assert.That(new List<GenTree>(block), Is.EqualTo(new GenTree[] { source, store }));
+            Assert.That(store.Data, Is.SameAs(source));
+            Assert.That(block.FirstStmt, Is.Null);
+        }, withMethodSignature: true);
+    }
+
     private static void EnableIsa(Compiler compiler, ManagedInstructionSet isa)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
@@ -120,7 +154,7 @@ internal static unsafe class RationalizationTests
         Assert.That(method.Invoke(new Rationalizer(compiler), null), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, bool withMethodSignature = false)
     {
         using var tls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
@@ -137,6 +171,14 @@ internal static unsafe class RationalizationTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        ICorJitInfo jitInfo = default;
+        if (withMethodSignature)
+        {
+            vtable.Base.Base.getMethodSig = &GetMethodSignature;
+            jitInfo.lpVtbl = &vtable;
+            compiler.info.compCompHnd = &jitInfo;
+        }
         JitConfig = new JitConfigValues();
         JitTls.Compiler = compiler;
         try
@@ -148,5 +190,12 @@ internal static unsafe class RationalizationTests
             JitTls.Compiler = previous;
             JitConfig = previousConfig;
         }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetMethodSignature(
+        ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* signature, CORINFO_CLASS_STRUCT_* parent)
+    {
+        *signature = new CORINFO_SIG_INFO { retType = CorInfoType.CORINFO_TYPE_VOID };
     }
 }
