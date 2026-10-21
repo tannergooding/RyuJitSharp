@@ -4818,6 +4818,8 @@ namespace RyuJitSharp;
             declarationKind: JitConfigDeclarationKind.Property);
         destroyBuilder = RewriteJitConfigConditionalCompilation(destroyBuilder, includeAllTargetBranches: false);
         initializeBuilder = RewriteJitConfigConditionalCompilation(initializeBuilder, includeAllTargetBranches: false);
+        destroyBuilder = MergeAdjacentDebugGuardBlocks(destroyBuilder);
+        initializeBuilder = MergeAdjacentDebugGuardBlocks(initializeBuilder);
 
         _ = Directory.CreateDirectory(@"Outputs\jit\jitconfig");
 
@@ -4950,6 +4952,122 @@ public partial struct JitConfigValues
                  : (kind == FLAG_STRING) ? "unsafe byte*"
                  : (kind == FLAG_METHODSET) ? "MethodSet"
                  : throw new InvalidOperationException($"Unexpected kind: '{kind}'");
+        }
+    }
+
+    private static StringBuilder MergeAdjacentDebugGuardBlocks(StringBuilder input)
+    {
+        var lines = input.ToString().Split(Environment.NewLine, StringSplitOptions.None);
+        var mergedLines = MergeAdjacentDebugGuardBlocks(lines);
+
+        return new StringBuilder(string.Join(Environment.NewLine, mergedLines));
+    }
+
+    private static List<string> MergeAdjacentDebugGuardBlocks(IReadOnlyList<string> lines)
+    {
+        var outputLines = new List<string>(lines.Count);
+
+        for (var lineIndex = 0; lineIndex < lines.Count;)
+        {
+            if (!TryGetDebugGuardBlock(lineIndex, out var indentation, out var openBraceLine, out var closeBraceLine))
+            {
+                outputLines.Add(lines[lineIndex]);
+                lineIndex++;
+                continue;
+            }
+
+            var bodyLines = new List<string>();
+            AddBodyLines(bodyLines, openBraceLine, closeBraceLine);
+
+            var groupCloseBraceLine = closeBraceLine;
+            while (true)
+            {
+                var nextGuardLine = groupCloseBraceLine + 1;
+                while ((nextGuardLine < lines.Count) && string.IsNullOrWhiteSpace(lines[nextGuardLine]))
+                {
+                    nextGuardLine++;
+                }
+
+                if (!TryGetDebugGuardBlock(nextGuardLine, out var nextIndentation, out var nextOpenBraceLine, out var nextCloseBraceLine) ||
+                    !string.Equals(indentation, nextIndentation, StringComparison.Ordinal))
+                {
+                    break;
+                }
+
+                for (var gapLine = groupCloseBraceLine + 1; gapLine < nextGuardLine; gapLine++)
+                {
+                    bodyLines.Add(lines[gapLine]);
+                }
+
+                AddBodyLines(bodyLines, nextOpenBraceLine, nextCloseBraceLine);
+                groupCloseBraceLine = nextCloseBraceLine;
+            }
+
+            outputLines.Add(lines[lineIndex]);
+            outputLines.Add(lines[openBraceLine]);
+            outputLines.AddRange(MergeAdjacentDebugGuardBlocks(bodyLines));
+            outputLines.Add(lines[groupCloseBraceLine]);
+
+            lineIndex = groupCloseBraceLine + 1;
+        }
+
+        return outputLines;
+
+        void AddBodyLines(List<string> body, int openLine, int closeLine)
+        {
+            for (var bodyLine = openLine + 1; bodyLine < closeLine; bodyLine++)
+            {
+                body.Add(lines[bodyLine]);
+            }
+        }
+
+        bool TryGetDebugGuardBlock(
+            int startLine,
+            out string indentation,
+            out int openLine,
+            out int closeLine)
+        {
+            indentation = "";
+            openLine = -1;
+            closeLine = -1;
+
+            if ((startLine >= lines.Count) ||
+                !string.Equals(lines[startLine].Trim(), "if (Configuration.DEBUG)", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            indentation = lines[startLine][..(lines[startLine].Length - lines[startLine].TrimStart().Length)];
+            openLine = startLine + 1;
+            if ((openLine >= lines.Count) ||
+                !string.Equals(lines[openLine].Trim(), "{", StringComparison.Ordinal))
+            {
+                throw new InvalidDataException("A generated JitConfigValues Debug guard must have a block body.");
+            }
+
+            var depth = 0;
+            for (var currentLine = openLine; currentLine < lines.Count; currentLine++)
+            {
+                foreach (var character in lines[currentLine])
+                {
+                    if (character == '{')
+                    {
+                        depth++;
+                    }
+                    else if (character == '}')
+                    {
+                        depth--;
+                    }
+                }
+
+                if (depth == 0)
+                {
+                    closeLine = currentLine;
+                    return true;
+                }
+            }
+
+            throw new InvalidDataException("Unclosed generated JitConfigValues Debug guard.");
         }
     }
 
