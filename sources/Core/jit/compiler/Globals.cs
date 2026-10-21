@@ -407,6 +407,11 @@ public partial class Globals
 
                     inlineInfo?.InlinerCompiler.InlineeCompiler = compiler;
 
+                    if (Configuration.MEASURE_CLRAPI_CALLS)
+                    {
+                        compiler.InitializeClrApiTimingProxy();
+                    }
+
                     // push this compiler on the stack (TLS)
                     previousCompiler = JitTls.Compiler;
                     JitTls.Compiler = compiler;
@@ -424,7 +429,11 @@ public partial class Globals
                     if (compiler is not null)
                     {
                         compiler.info.compCode = null;
-                        compiler.DisposeClrApiTimingProxy();
+
+                        if (Configuration.MEASURE_CLRAPI_CALLS)
+                        {
+                            compiler.DisposeClrApiTimingProxy();
+                        }
 
                         // pop the compiler off the TLS stack only if it was linked above
                         assert(JitTls.Compiler == compiler);

@@ -25,8 +25,8 @@ public sealed partial class LinearScan
         }
 
         _doDoubleAlign = false;
-        var checkDoubleAlign = Configuration.DOUBLE_ALIGN;
-        if (checkDoubleAlign)
+        var checkDoubleAlign = false;
+        if (Configuration.DOUBLE_ALIGN)
         {
             var codeGen = _compiler.codeGen;
             assert(codeGen is not null);

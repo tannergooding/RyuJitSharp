@@ -56,7 +56,7 @@ internal sealed class GcInfoEncoderWithLogging
     public uint GetStackSlotId(int offset, GcSlotFlags flags, GcStackSlotBase stackBase = GcStackSlotBase.GC_CALLER_SP_REL)
     {
         var id = _encoder.GetStackSlotId(offset, flags, stackBase);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Stack slot id for offset {offset} ({(offset < 0 ? "-" : "")}0x{(offset < 0 ? -(long)offset : offset):x}) " +
                 $"({GetStackBaseName(stackBase)}) {GetSlotFlagName(flags)}= {id}.\n");
@@ -67,7 +67,7 @@ internal sealed class GcInfoEncoderWithLogging
     public uint GetRegisterSlotId(uint regNum, GcSlotFlags flags)
     {
         var id = _encoder.GetRegisterSlotId(regNum, flags);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Register slot id for reg {((regNumber)regNum).Name} {GetSlotFlagName(flags)}= {id}.\n");
         }
@@ -77,7 +77,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetSlotState(uint offset, uint id, GcSlotState state)
     {
         _encoder.SetSlotState(offset, id, state);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Set state of slot {id} at instr offset 0x{offset:x} to " +
                 $"{(state == GcSlotState.GC_SLOT_LIVE ? "Live" : "Dead")}.\n");
@@ -87,7 +87,7 @@ internal sealed class GcInfoEncoderWithLogging
     public unsafe void DefineCallSites(uint* offsets, byte* sizes, uint count)
     {
         _encoder.DefineCallSites(offsets, sizes, count);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Defining {count} call sites:\n");
             for (var index = 0u; index < count; index++)
@@ -100,7 +100,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void DefineInterruptibleRange(uint start, uint length)
     {
         _encoder.DefineInterruptibleRange(start, length);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Defining interruptible range: [0x{start:x}, 0x{unchecked(start + length):x}).\n");
         }
@@ -109,7 +109,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetCodeLength(uint length)
     {
         _encoder.SetCodeLength(length);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Set code length to {length}.\n");
         }
@@ -118,7 +118,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetStackBaseRegister(uint reg)
     {
         _encoder.SetStackBaseRegister(reg);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Set stack base register to {((regNumber)reg).Name}.\n");
         }
@@ -127,7 +127,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetPrologSize(uint size)
     {
         _encoder.SetPrologSize(size);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Set prolog size 0x{size:x}.\n");
         }
@@ -136,7 +136,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetGSCookieStackSlot(int offset, uint start, uint end)
     {
         _encoder.SetGSCookieStackSlot(offset, start, end);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Set GS Cookie stack slot to {offset}, valid from 0x{start:x} to 0x{end:x}.\n");
         }
@@ -145,7 +145,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetGenericsInstContextStackSlot(int offset, GENERIC_CONTEXTPARAM_TYPE type)
     {
         _encoder.SetGenericsInstContextStackSlot(offset, type);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             var typeName = type switch
             {
@@ -161,7 +161,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetIsVarArg()
     {
         _encoder.SetIsVarArg();
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf("SetIsVarArg.\n");
         }
@@ -170,7 +170,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetWantsReportOnlyLeaf()
     {
         _encoder.SetWantsReportOnlyLeaf();
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf("Set WantsReportOnlyLeaf.\n");
         }
@@ -179,7 +179,7 @@ internal sealed class GcInfoEncoderWithLogging
     public void SetSizeOfStackOutgoingAndScratchArea(uint size)
     {
         _encoder.SetSizeOfStackOutgoingAndScratchArea(size);
-        if (_log)
+        if ((Configuration.DEBUG || Configuration.DUMP_GC_TABLES) && _log)
         {
             jitprintf($"Set Outgoing stack arg area size to {size}.\n");
         }

@@ -259,7 +259,7 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
     {
         WithStore(store => {
             var featureName = $"RyuJitSharp.{nameof(Configuration.FEATURE_SIMD)}";
-            var wasEnabled = Configuration.FEATURE_SIMD;
+            Assert.That(AppContext.TryGetSwitch(featureName, out var wasEnabled), Is.True);
             AppContext.SetSwitch(featureName, true);
 
             try

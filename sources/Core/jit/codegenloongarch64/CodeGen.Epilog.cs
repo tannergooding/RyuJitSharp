@@ -65,8 +65,7 @@ public sealed partial class CodeGen
             noway_assert(block.FirstNode is not null);
 
             var jumpNode = lastNode;
-            var supportsFastTailCall = Configuration.FEATURE_FASTTAILCALL;
-            if (supportsFastTailCall)
+            if (Configuration.FEATURE_FASTTAILCALL)
             {
                 noway_assert(!jumpNode.OperIs(GT_JMP) || (jumpNode.Next is null));
                 noway_assert(jumpNode.OperIs(GT_JMP) ||
@@ -77,7 +76,7 @@ public sealed partial class CodeGen
                 noway_assert(jumpNode.OperIs(GT_JMP));
             }
 
-            if (!supportsFastTailCall || jumpNode.OperIs(GT_JMP))
+            if (!Configuration.FEATURE_FASTTAILCALL || jumpNode.OperIs(GT_JMP))
             {
                 assert(methodHandle is not null);
                 assert(addressInfo.addr is not null);

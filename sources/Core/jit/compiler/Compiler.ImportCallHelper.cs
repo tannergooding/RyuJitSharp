@@ -758,6 +758,7 @@ public partial class Compiler
                     default:
                     {
                         NO_WAY("unknown call kind");
+
                         break;
                     }
                 }
@@ -2338,6 +2339,7 @@ public partial class Compiler
                                 default:
                                 {
                                     NO_WAY("Intrinsic not supported in this path.");
+
                                     break;
                                 }
                             }

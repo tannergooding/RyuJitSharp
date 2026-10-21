@@ -8316,11 +8316,9 @@ public partial class Compiler
         var usingReadyToRunHelper = false;
         var helper = CORINFO_HELP_UNDEF;
         var opHandle = impTokenToHandle(resolvedToken, mustRestoreHandle: true, useParent);
-
-        var hasReadyToRun = Configuration.FEATURE_READYTORUN;
         var lookup = default(CORINFO_CONST_LOOKUP);
 
-        if (hasReadyToRun && IsAot)
+        if (Configuration.FEATURE_READYTORUN && IsAot)
         {
             helper = CORINFO_HELP_READYTORUN_NEW;
 
@@ -8356,7 +8354,7 @@ public partial class Compiler
 
         var allocObj = gtNewAllocObjNode(TYP_REF, opHandle, helper, helperHasSideEffects, resolvedToken.hClass);
 
-        if (hasReadyToRun && usingReadyToRunHelper)
+        if (Configuration.FEATURE_READYTORUN && usingReadyToRunHelper)
         {
             assert(lookup.addr is not null);
             allocObj.EntryPoint = lookup;

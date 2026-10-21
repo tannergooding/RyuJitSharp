@@ -181,7 +181,9 @@ public partial class Globals
 
     public static void RecordNowayAssertGlobal(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
     {
-        if ((JitConfig.JitMeasureNowayAssert == 1) && (JitTls.Compiler is Compiler compiler))
+        if (Configuration.MEASURE_NOWAY &&
+            (JitConfig.JitMeasureNowayAssert == 1) &&
+            (JitTls.Compiler is Compiler compiler))
         {
             compiler.RecordNowayAssert(filePath, lineNumber, message);
         }
@@ -189,7 +191,10 @@ public partial class Globals
 
     public static void RECORD_NOWAY_ASSERT(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
-        RecordNowayAssertGlobal(filePath, lineNumber, message);
+        if (Configuration.MEASURE_NOWAY)
+        {
+            RecordNowayAssertGlobal(filePath, lineNumber, message);
+        }
     }
 
     [DoesNotReturn]

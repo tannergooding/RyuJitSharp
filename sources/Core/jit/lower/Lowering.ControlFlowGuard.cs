@@ -97,13 +97,11 @@ public sealed partial class Lowering
             var putArg = cellArg.Node.AsUnOp();
             var cellUse = new LIR.Use(BlockRange(), ref putArg.Op1Ref, putArg);
 
-            var cloneConsts = Configuration.TARGET_XARCH;
-
             // Native allocates this first clone before selecting the final clone below.
-            _ = CloneCFGUse(ref cellUse, cloneConsts);
+            _ = CloneCFGUse(ref cellUse, Configuration.TARGET_XARCH);
 
             GenTree? cellClone;
-            if ((cellUse.Def().Oper is GT_LCL_VAR) || (cloneConsts && cellUse.Def().Oper.IsCnsIntOrI))
+            if ((cellUse.Def().Oper is GT_LCL_VAR) || (Configuration.TARGET_XARCH && cellUse.Def().Oper.IsCnsIntOrI))
             {
                 var clone = compiler.gtClone(cellUse.Def());
                 assert(clone is not null);

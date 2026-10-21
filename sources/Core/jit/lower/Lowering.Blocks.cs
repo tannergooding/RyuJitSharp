@@ -494,16 +494,15 @@ public sealed partial class Lowering
 
         var copyGcPointers = block.Layout.HasGCPtr;
         var isNotHeap = block.IsAddressNotOnHeap(CompilerInstance);
-        var isWasm = Configuration.TARGET_WASM;
         var unrollLimit = 0;
-        if (!isWasm)
+        if (!Configuration.TARGET_WASM)
         {
             unrollLimit = CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy, !copyGcPointers || isNotHeap);
         }
 
         if (!Configuration.JIT32_GCENCODER && copyGcPointers && isNotHeap)
         {
-            if (isWasm)
+            if (Configuration.TARGET_WASM)
             {
                 copyGcPointers = false;
             }
@@ -523,7 +522,7 @@ public sealed partial class Lowering
             return;
         }
 
-        if (isWasm)
+        if (Configuration.TARGET_WASM)
         {
             block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
             if ((source.Oper is GT_IND) && ((source.Flags & GTF_IND_NONFAULTING) is 0))

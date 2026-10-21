@@ -186,10 +186,8 @@ public sealed partial class ObjectAllocator : Phase
         var helper = allocObj.NewHelper;
         var helperHasSideEffects = allocObj.NewHelperHasSideEffects;
 
-        var hasReadyToRun = Configuration.FEATURE_READYTORUN;
         var entryPoint = default(CORINFO_CONST_LOOKUP);
-
-        if (hasReadyToRun)
+        if (Configuration.FEATURE_READYTORUN)
         {
             entryPoint = allocObj.EntryPoint;
 
@@ -210,7 +208,7 @@ public sealed partial class ObjectAllocator : Phase
             helperCall._callMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
         }
 
-        if (hasReadyToRun)
+        if (Configuration.FEATURE_READYTORUN)
         {
             if (entryPoint.addr is not null)
             {

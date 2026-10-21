@@ -50,8 +50,9 @@ internal static class FeatureConfigurationTests
     public static void MachineSizedTypeTablesMatchTheRuntimeTarget()
     {
         var pointerSize = (byte)Configuration.TARGET_POINTER_SIZE;
-        var pointerSlots = (byte)(Configuration.TARGET_POINTER_SIZE / sizeof(int));
-        var pointerAttr = Configuration.TARGET_64BIT ? EA_8BYTE : EA_4BYTE;
+        var is64Bit = Configuration.TARGET_64BIT;
+        var pointerSlots = (byte)(pointerSize / sizeof(int));
+        var pointerAttr = is64Bit ? EA_8BYTE : EA_4BYTE;
         var gcRefAttr = EA_GCREF_FLG | pointerAttr;
         var byRefAttr = EA_BYREF_FLG | pointerAttr;
 
@@ -71,7 +72,6 @@ internal static class FeatureConfigurationTests
         Assert.That(TYP_ULONG.EmitActualSize, Is.EqualTo(pointerAttr));
         Assert.That(TYP_ULONG.EmitSize, Is.EqualTo(pointerAttr));
 
-        var is64Bit = Configuration.TARGET_64BIT;
         Assert.That((TYP_INT.Classification & VTF_I) != VTF_ANY, Is.EqualTo(!is64Bit));
         Assert.That((TYP_UINT.Classification & VTF_I) != VTF_ANY, Is.EqualTo(!is64Bit));
         Assert.That((TYP_LONG.Classification & VTF_I) != VTF_ANY, Is.EqualTo(is64Bit));
@@ -176,6 +176,7 @@ internal static class FeatureConfigurationTests
             Assert.That(Configuration.EMIT_BACKWARDS_NAVIGATION, Is.EqualTo(enabled));
             Assert.That(Configuration.DUMP_FLOWGRAPHS, Is.EqualTo(enabled));
             Assert.That(Configuration.DUMP_GC_TABLES, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_CLRAPI_CALLS, Is.EqualTo(enabled));
             Assert.That(Configuration.TRACK_LSRA_STATS, Is.EqualTo(enabled));
             Assert.That(Configuration.FUNC_INFO_LOGGING, Is.EqualTo(enabled));
             Assert.That(Configuration.VERIFY_GC_TABLES, Is.EqualTo(enabled));
@@ -189,6 +190,7 @@ internal static class FeatureConfigurationTests
             Assert.That(Configuration.MEASURE_NODE_SIZE, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_PTRTAB_SIZE, Is.EqualTo(enabled));
             Assert.That(Configuration.NODEBASH_STATS, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_NOWAY, Is.EqualTo(enabled));
             Assert.That(Configuration.OPTIONAL_STATISTICS, Is.EqualTo(enabled));
         }
         finally

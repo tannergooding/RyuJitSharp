@@ -31,7 +31,6 @@ public sealed class BlockReachabilitySets
         }
 
         bool change;
-        var countBasicBlockStatistics = Configuration.COUNT_BASIC_BLOCKS;
         uint changedIterCount = 1;
         do
         {
@@ -47,13 +46,13 @@ public sealed class BlockReachabilitySets
                         sets[block.bbPostorderNum], sets[predBlock.bbPostorderNum]);
                 }
             }
-            if (countBasicBlockStatistics)
+            if (Configuration.COUNT_BASIC_BLOCKS)
             {
                 changedIterCount++;
             }
         } while (change);
 
-        if (countBasicBlockStatistics)
+        if (Configuration.COUNT_BASIC_BLOCKS)
         {
             computeReachabilitySetsIterationTable!.record(changedIterCount);
         }

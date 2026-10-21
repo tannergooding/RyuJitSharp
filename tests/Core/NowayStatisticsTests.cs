@@ -173,6 +173,24 @@ internal static unsafe class NowayStatisticsTests
     }
 
     [Test]
+    public static void DisabledMeasurementNeitherRecordsNorDisplaysOccurrences()
+    {
+        var recordingOutput = Run(_ => {
+            RecordNowayAssertGlobal("a", 7, "condition");
+            Assert.That(Map(null), Is.Null);
+            Compiler.compShutdown();
+        }, measureNoway: false);
+
+        var shutdownOutput = Run(compiler => {
+            compiler.RecordNowayAssert("a", 7, "condition");
+            Compiler.compShutdown();
+        }, measureNoway: false);
+
+        Assert.That(recordingOutput, Is.Empty);
+        Assert.That(shutdownOutput, Is.Empty);
+    }
+
+    [Test]
     public static void DescendingComparisonUsesSignedHostCounts()
     {
         var text = Run(compiler => {
@@ -236,8 +254,12 @@ internal static unsafe class NowayStatisticsTests
         Assert.That(text, Is.EqualTo(record ? $"Failed to open JitMeasureNowayAssertFile \"{path}\"\n" : ""));
     }
 
-    private static string Run(Action<Compiler> action, int option = 1, bool hasCompiler = true)
+    private static string Run(Action<Compiler> action, int option = 1, bool hasCompiler = true, bool measureNoway = true)
     {
+        const string switchName = "RyuJitSharp.MEASURE_NOWAY";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, measureNoway);
+
         var savedConfig = JitConfig;
         var savedMap = Map(null);
         var savedOutput = s_jitstdout;
@@ -265,6 +287,7 @@ internal static unsafe class NowayStatisticsTests
             s_jitstdout = savedOutput;
             Map(null) = savedMap;
             JitConfig = savedConfig;
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
         }
     }
 

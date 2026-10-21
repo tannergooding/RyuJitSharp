@@ -212,6 +212,8 @@ internal static class Configuration
 
     internal static bool MEASURE_NODE_SIZE => GetOptionalFeatureSwitch(nameof(MEASURE_NODE_SIZE));
 
+    internal static bool MEASURE_NOWAY => GetOptionalFeatureSwitch(nameof(MEASURE_NOWAY));
+
     internal static bool MEASURE_PTRTAB_SIZE => GetOptionalFeatureSwitch(nameof(MEASURE_PTRTAB_SIZE));
 
     internal static bool NODEBASH_STATS => GetOptionalFeatureSwitch(nameof(NODEBASH_STATS));
@@ -227,6 +229,8 @@ internal static class Configuration
     internal static bool VARSET_COUNTOPS => GetOptionalFeatureSwitch(nameof(VARSET_COUNTOPS));
 
     internal static bool ALLVARSET_COUNTOPS => GetOptionalFeatureSwitch(nameof(ALLVARSET_COUNTOPS));
+    internal static bool MEASURE_CLRAPI_CALLS => GetOptionalFeatureSwitch(nameof(MEASURE_CLRAPI_CALLS));
+
 
     internal static bool EMIT_BACKWARDS_NAVIGATION => GetOptionalFeatureSwitch(nameof(EMIT_BACKWARDS_NAVIGATION));
 

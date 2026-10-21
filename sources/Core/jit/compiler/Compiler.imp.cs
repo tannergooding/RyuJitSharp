@@ -6198,13 +6198,12 @@ public partial class Compiler
         // Get the tree list started
         impBeginTreeList();
 
-        var featureOnStackReplacement = Configuration.FEATURE_ON_STACK_REPLACEMENT;
-        var enableOSR = featureOnStackReplacement && !opts.compDbgCode &&
+        var enableOSR = Configuration.FEATURE_ON_STACK_REPLACEMENT && !opts.compDbgCode &&
             opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement > 0);
-        var enablePartialCompilation = featureOnStackReplacement &&
+        var enablePartialCompilation = Configuration.FEATURE_ON_STACK_REPLACEMENT &&
             opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation > 0);
 
-        if (Configuration.DEBUG && featureOnStackReplacement)
+        if (Configuration.DEBUG && Configuration.FEATURE_ON_STACK_REPLACEMENT)
         {
             // Optionally suppress patchpoints by method hash
             s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
@@ -20166,7 +20165,14 @@ public partial class Compiler
             return;
         }
 
-        BADCODE("Invalid opcode for unaligned. or volatile. prefix");
+        if (Configuration.DEBUG)
+        {
+            BADCODE("Invalid opcode for unaligned. or volatile. prefix");
+        }
+        else
+        {
+            badCode();
+        }
     }
 
     public unsafe void impVerifyEHBlock(BasicBlock block)
@@ -23283,7 +23289,15 @@ public partial class Compiler
 
             default:
             {
-                unreached();
+                if (Configuration.DEBUG)
+                {
+                    unreached();
+                }
+                else
+                {
+                    noWayAssertBody();
+                }
+
                 return InstructionSet_ILLEGAL;
             }
         }

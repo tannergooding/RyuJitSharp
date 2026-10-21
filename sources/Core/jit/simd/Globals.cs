@@ -820,8 +820,7 @@ public static partial class Globals
     public static void EvaluateSimdCvtMaskToVector(var_types baseType, Span<byte> result, in simdmask_t arg0)
     {
         EnsureMaskedHardwareIntrinsicsSupported();
-        var isXarch = Configuration.TARGET_XARCH;
-        if (!isXarch && !Configuration.TARGET_ARM64)
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
         {
             throw new PlatformNotSupportedException("Mask conversions are only supported on xarch and ARM64.");
         }
@@ -833,7 +832,7 @@ public static partial class Globals
         for (var index = 0; index < count; index++)
         {
             // Xarch packs one bit per lane; ARM64 uses one bit per byte of lane storage.
-            var bit = isXarch ? index : index * elementSize;
+            var bit = Configuration.TARGET_XARCH ? index : index * elementSize;
             var isSet = ((mask >> bit) & 1) != 0;
             result.Slice(index * elementSize, elementSize).Fill(isSet ? byte.MaxValue : (byte)0);
         }

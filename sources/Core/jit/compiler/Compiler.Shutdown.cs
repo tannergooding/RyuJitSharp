@@ -17,7 +17,10 @@ public partial class Compiler
         s_pAltJitExcludeAssembliesList = null;
         s_pJitDisasmIncludeAssembliesList = null;
 
-        DisplayNowayAssertMap();
+        if (Configuration.MEASURE_NOWAY)
+        {
+            DisplayNowayAssertMap();
+        }
 
         Emitter.emitDone();
 

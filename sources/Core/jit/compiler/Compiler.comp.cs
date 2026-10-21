@@ -2628,32 +2628,30 @@ public partial class Compiler
 
         if (Configuration.TARGET_XARCH)
         {
-            var isX86 = Configuration.TARGET_X86;
-
-            if (isX86 == Configuration.TARGET_AMD64)
+            if (Configuration.TARGET_X86 == Configuration.TARGET_AMD64)
             {
                 throw new FatalJitException("xarch register metadata is not defined for the configured target.");
             }
 
-            srbmAllMask = isX86
+            srbmAllMask = Configuration.TARGET_X86
                 ? SRBM_ALLMASK_INIT_X86
                 : SRBM_ALLMASK_INIT_AMD64;
-            srbmMskCalleeTrash = isX86
+            srbmMskCalleeTrash = Configuration.TARGET_X86
                 ? SRBM_MSK_CALLEE_TRASH_INIT_X86
                 : SRBM_MSK_CALLEE_TRASH_INIT_AMD64;
-            cntCalleeTrashMask = isX86
+            cntCalleeTrashMask = Configuration.TARGET_X86
                 ? CNT_CALLEE_TRASH_MASK_INIT_X86
                 : CNT_CALLEE_TRASH_MASK_INIT_AMD64;
 
             if (canUseEvexEncoding())
             {
-                srbmAllMask |= isX86
+                srbmAllMask |= Configuration.TARGET_X86
                     ? SRBM_ALLMASK_EVEX_X86
                     : SRBM_ALLMASK_EVEX_AMD64;
-                srbmMskCalleeTrash |= isX86
+                srbmMskCalleeTrash |= Configuration.TARGET_X86
                     ? SRBM_MSK_CALLEE_TRASH_EVEX_X86
                     : SRBM_MSK_CALLEE_TRASH_EVEX_AMD64;
-                cntCalleeTrashMask += isX86
+                cntCalleeTrashMask += Configuration.TARGET_X86
                     ? CNT_CALLEE_TRASH_MASK_EVEX_X86
                     : CNT_CALLEE_TRASH_MASK_EVEX_AMD64;
             }

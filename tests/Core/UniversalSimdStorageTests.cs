@@ -17,8 +17,8 @@ internal static unsafe class UniversalSimdStorageTests
     [TestCase(false, false, 16)]
     public static void LogicalCapacityUsesConfigurationRatherThanPhysicalSize(bool xarch, bool arm64, int expectedSize)
     {
-        var previousXarch = Configuration.TARGET_XARCH;
-        var previousArm64 = Configuration.TARGET_ARM64;
+        Assert.That(AppContext.TryGetSwitch("RyuJitSharp.TARGET_XARCH", out var previousXarch), Is.True);
+        Assert.That(AppContext.TryGetSwitch("RyuJitSharp.TARGET_ARM64", out var previousArm64), Is.True);
         AppContext.SetSwitch("RyuJitSharp.TARGET_XARCH", xarch);
         AppContext.SetSwitch("RyuJitSharp.TARGET_ARM64", arm64);
 

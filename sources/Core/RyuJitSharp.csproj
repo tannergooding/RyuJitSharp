@@ -754,7 +754,7 @@
     <!--   Enable code to count and rank individual noway_assert calls by occurrence. -->
     <!--   These asserts would be dynamically executed, but not necessarily fail. -->
     <!--   The provides some insight into the dynamic prevalence of these (if not a direct measure of their cost), which exist in non-DEBUG as well as DEBUG builds. -->
-    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_NOWAY" /> -->
+    <RyuJitSubstitutionEnabled Include="MEASURE_NOWAY" Condition="'$(RyuJitMeasureNoway)' == 'true'" />
 
     <!-- MEASURE_PTRTAB_SIZE: Collect stats about GC pointer table allocations. -->
     <!-- <RyuJitSubstitutionEnabled Include="MEASURE_PTRTAB_SIZE" /> -->
@@ -906,7 +906,6 @@
     <RyuJitSubstitution Include="FEATURE_VN_TRACE_APPLY_SELECTORS" HasConfigurationGetter="false" />
     <RyuJitSubstitution Include="FUNC_INFO_LOGGING" />
     <RyuJitSubstitution Include="REARRANGE_ADDS" HasConfigurationGetter="false" />
-    <RyuJitSubstitution Include="MEASURE_CLRAPI_CALLS" HasConfigurationGetter="false" />
     <RyuJitSubstitution Include="CSE_INTO_HANDLERS" HasConfigurationGetter="false" />
     <RyuJitSubstitution Include="FEATURE_VN_DUMP_FUNC_ARGS" />
     <RyuJitSubstitution Include="VERIFY_GC_TABLES" />
@@ -918,7 +917,7 @@
     <RyuJitSubstitution Include="MEASURE_BLOCK_SIZE" />
     <RyuJitSubstitution Include="MEASURE_FATAL" />
     <RyuJitSubstitution Include="MEASURE_NODE_SIZE" />
-    <RyuJitSubstitution Include="MEASURE_NOWAY" HasConfigurationGetter="false" />
+    <RyuJitSubstitution Include="MEASURE_NOWAY" />
     <RyuJitSubstitution Include="MEASURE_PTRTAB_SIZE" />
     <RyuJitSubstitution Include="NODEBASH_STATS" />
     <RyuJitSubstitution Include="ARM_SOFTFP" FixedValue="false" />
@@ -930,6 +929,7 @@
     <RyuJitSubstitution Include="ALLVARSET_COUNTOPS" />
     <RyuJitSubstitution Include="EMIT_BACKWARDS_NAVIGATION" />
     <RyuJitSubstitution Include="OPTIONAL_STATISTICS" />
+    <RyuJitSubstitution Include="MEASURE_CLRAPI_CALLS" />
 
     <!-- Target-derived features -->
     <RyuJitSubstitution Include="FEATURE_ITINSTRUCTION" FixedValue="false" />
