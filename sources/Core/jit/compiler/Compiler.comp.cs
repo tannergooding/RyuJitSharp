@@ -1789,15 +1789,15 @@ public partial class Compiler
         if (Configuration.DEBUG)
         {
             // Setup assembly name list for disassembly and dump, if not already set up.
-            if (!s_pJitDisasmIncludeAssembliesListInitialized)
+            if (!CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized)
             {
                 var assemblyNameList = JitConfig.JitDisasmAssemblies;
 
                 if (assemblyNameList is not null)
                 {
-                    s_pJitDisasmIncludeAssembliesList = new AssemblyNamesList2(assemblyNameList);
+                    CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = new AssemblyNamesList2(assemblyNameList);
                 }
-                s_pJitDisasmIncludeAssembliesListInitialized = true;
+                CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized = true;
             }
 
             // Check for a specific set of assemblies to dump.
@@ -1805,11 +1805,12 @@ public partial class Compiler
 
             assemblyInIncludeList = true; // assume we'll dump, if there's not an include list (or it's empty).
 
-            if ((s_pJitDisasmIncludeAssembliesList is not null) && !s_pJitDisasmIncludeAssembliesList.IsEmpty)
+            if ((CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList is not null) &&
+                !CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList.IsEmpty)
             {
                 var assemblyName = eeGetClassAssemblyName(info.compClassHnd);
 
-                if (!s_pJitDisasmIncludeAssembliesList.IsInList(assemblyName))
+                if (!CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList.IsInList(assemblyName))
                 {
                     // We have a list, and the current assembly is not in it, so we won't dump.
                     assemblyInIncludeList = false;
@@ -2183,15 +2184,15 @@ public partial class Compiler
                    !((ReadOnlySpan<byte>)(debugData.CompActiveStressModes)).ContainsAnyExcept((byte)(0)));
 
             // Read function list, if not already read, and there exists such a list.
-            if (!s_pJitFunctionFileInitialized)
+            if (!CompilerDebugStaticData.s_pJitFunctionFileInitialized)
             {
                 var functionFileName = JitConfig.JitFunctionFile;
 
                 if (functionFileName is not null)
                 {
-                    s_pJitMethodSet = new MethodSet2(functionFileName);
+                    CompilerDebugStaticData.s_pJitMethodSet = new MethodSet2(functionFileName);
                 }
-                s_pJitFunctionFileInitialized = true;
+                CompilerDebugStaticData.s_pJitFunctionFileInitialized = true;
             }
         }
         else
@@ -2294,7 +2295,10 @@ public partial class Compiler
             }
         }
 
-        s_dspMemStats = JitConfig.DisplayMemStats != 0;
+        if (Configuration.MEASURE_MEM_ALLOC)
+        {
+            ManagedAllocationStatsData.s_dspMemStats = JitConfig.DisplayMemStats != 0;
+        }
 
         if (Configuration.PROFILING_SUPPORTED)
         {
@@ -2586,7 +2590,8 @@ public partial class Compiler
         }
 
         if (Configuration.DEBUG && Configuration.TARGET_ARM64 &&
-            ((s_pJitMethodSet is null) || s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash())))
+            ((CompilerDebugStaticData.s_pJitMethodSet is null) ||
+                CompilerDebugStaticData.s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash())))
         {
             opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters;
         }

@@ -210,6 +210,8 @@ internal static class Configuration
 
     internal static bool MEASURE_FATAL => GetOptionalFeatureSwitch(nameof(MEASURE_FATAL));
 
+    internal static bool MEASURE_MEM_ALLOC => GetOptionalFeatureSwitch(nameof(MEASURE_MEM_ALLOC));
+
     internal static bool MEASURE_NODE_SIZE => GetOptionalFeatureSwitch(nameof(MEASURE_NODE_SIZE));
 
     internal static bool MEASURE_NOWAY => GetOptionalFeatureSwitch(nameof(MEASURE_NOWAY));
@@ -242,6 +244,7 @@ internal static class Configuration
         COUNT_BASIC_BLOCKS ||
         COUNT_AST_OPERS ||
         CALL_ARG_STATS ||
+        MEASURE_MEM_ALLOC ||
         MEASURE_NODE_SIZE ||
         MEASURE_BLOCK_SIZE ||
         MEASURE_PTRTAB_SIZE ||

@@ -156,6 +156,7 @@ internal static class FeatureConfigurationTests
             "RyuJitSharp.EMITTER_STATS",
             "RyuJitSharp.MEASURE_BLOCK_SIZE",
             "RyuJitSharp.MEASURE_FATAL",
+            "RyuJitSharp.MEASURE_MEM_ALLOC",
             "RyuJitSharp.MEASURE_NODE_SIZE",
             "RyuJitSharp.MEASURE_NOWAY",
             "RyuJitSharp.MEASURE_PTRTAB_SIZE",
@@ -189,6 +190,7 @@ internal static class FeatureConfigurationTests
             Assert.That(Configuration.EMITTER_STATS, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_BLOCK_SIZE, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_FATAL, Is.EqualTo(enabled));
+            Assert.That(Configuration.MEASURE_MEM_ALLOC, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_NODE_SIZE, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_NOWAY, Is.EqualTo(enabled));
             Assert.That(Configuration.MEASURE_PTRTAB_SIZE, Is.EqualTo(enabled));

@@ -750,6 +750,9 @@
     <!-- MEASURE_FATAL: Count the number of calls to fatal(), including NYIs and noway_asserts. -->
     <!-- <RyuJitSubstitutionEnabled Include="MEASURE_FATAL" /> -->
 
+    <!-- MEASURE_MEM_ALLOC: Collect managed allocation statistics. -->
+    <!-- <RyuJitSubstitutionEnabled Include="MEASURE_MEM_ALLOC" /> -->
+
     <!-- MEASURE_NODE_SIZE: Collect stats about GenTree node allocations. -->
     <!-- <RyuJitSubstitutionEnabled Include="MEASURE_NODE_SIZE" /> -->
 
@@ -919,6 +922,7 @@
     <RyuJitSubstitution Include="EMITTER_STATS" />
     <RyuJitSubstitution Include="MEASURE_BLOCK_SIZE" />
     <RyuJitSubstitution Include="MEASURE_FATAL" />
+    <RyuJitSubstitution Include="MEASURE_MEM_ALLOC" />
     <RyuJitSubstitution Include="MEASURE_NODE_SIZE" />
     <RyuJitSubstitution Include="MEASURE_NOWAY" />
     <RyuJitSubstitution Include="MEASURE_PTRTAB_SIZE" />

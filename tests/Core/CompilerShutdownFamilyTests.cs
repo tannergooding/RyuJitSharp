@@ -182,7 +182,7 @@ internal static class CompilerShutdownFamilyTests
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-            Compiler.s_dspMemStats = false;
+            Compiler.ManagedAllocationStatsData.s_dspMemStats = false;
 
             Compiler.compShutdown();
             writer.Flush();
@@ -232,8 +232,8 @@ internal static class CompilerShutdownFamilyTests
             AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             if (TestConfiguration.IsDebug)
             {
-                SetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList",
-                    (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2)));
+                Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList =
+                    (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             }
             using var output = new MemoryStream();
             using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
@@ -248,7 +248,7 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(AltAssemblies(null), Is.Null);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(GetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList"), Is.Null);
+                Assert.That(Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList, Is.Null);
             }
             Assert.That(CsvFile(null), Is.SameAs(csv));
             Assert.That(csvOutput.CanWrite, Is.True);
@@ -289,7 +289,8 @@ internal static class CompilerShutdownFamilyTests
             using var csv = new StreamWriter(csvOutput, leaveOpen: true);
             s_jitstdout = writer;
             CsvFile(null) = csv;
-            Compiler.s_dspMemStats = JitConfig.DisplayMemStats != 0;
+            Compiler.ManagedAllocationStatsData.s_dspMemStats =
+                Configuration.MEASURE_MEM_ALLOC && JitConfig.DisplayMemStats != 0;
             FatalJitException? exception = null;
             if (Configuration.MEASURE_BLOCK_SIZE)
             {
@@ -499,20 +500,31 @@ internal static class CompilerShutdownFamilyTests
             Assert.Ignore("Node-size statistics terminate at the explicit unported collection dependency.");
         }
 
-        WithShutdownState(() => {
-            using var output = new MemoryStream();
-            using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
-            s_jitstdout = writer;
-            Compiler.s_dspMemStats = true;
+        const string switchName = "RyuJitSharp.MEASURE_MEM_ALLOC";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, true);
 
-            Compiler.compShutdown();
-            writer.Flush();
+        try
+        {
+            WithShutdownState(() => {
+                using var output = new MemoryStream();
+                using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+                s_jitstdout = writer;
+                Compiler.ManagedAllocationStatsData.s_dspMemStats = true;
 
-            var text = Encoding.UTF8.GetString(output.ToArray());
-            Assert.That(text, Does.Contain("\nAll allocations:\n"));
-            Assert.That(text, Does.Contain("Distribution of total managed memory allocated per method (in KB):"));
-            Assert.That(text, Does.Contain("Native arena memory used per method is unavailable for managed allocations."));
-        });
+                Compiler.compShutdown();
+                writer.Flush();
+
+                var text = Encoding.UTF8.GetString(output.ToArray());
+                Assert.That(text, Does.Contain("\nAll allocations:\n"));
+                Assert.That(text, Does.Contain("Distribution of total managed memory allocated per method (in KB):"));
+                Assert.That(text, Does.Contain("Native arena memory used per method is unavailable for managed allocations."));
+            });
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
     }
 
     public static IEnumerable<TestCaseData> StatisticsDependencyCases()
@@ -914,7 +926,7 @@ internal static class CompilerShutdownFamilyTests
         var alt = AltAssemblies(null);
         var noway = GetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap");
         SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", null);
-        var dump = GetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList");
+        var dump = Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList;
         var methods = Compiler.genMethodCnt;
         Compiler.genMethodCnt = 1;
         var grossVmSize = GetOptionalStaticField(typeof(Globals), "grossVMsize");
@@ -924,7 +936,7 @@ internal static class CompilerShutdownFamilyTests
         SetOptionalStaticField(typeof(Globals), "grossNCsize", (nuint)0);
         SetOptionalStaticField(typeof(Globals), "totalNCsize", (nuint)0);
         var blocks = (BasicBlock.s_Count, BasicBlock.s_Size);
-        var displayMemory = Compiler.s_dspMemStats;
+        var displayMemory = Compiler.ManagedAllocationStatsData.s_dspMemStats;
         JitConfig = new JitConfigValues();
         CsvFile(null) = null;
         TimeLogFile(null) = 0;
@@ -942,13 +954,13 @@ internal static class CompilerShutdownFamilyTests
             CompTimeSummaryInfo.s_compTimeSummary = summary;
             AltAssemblies(null) = alt;
             SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", noway);
-            SetOptionalStaticField(typeof(Compiler), "s_pJitDisasmIncludeAssembliesList", dump);
+            Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = dump;
             Compiler.genMethodCnt = methods;
             SetOptionalStaticField(typeof(Globals), "grossVMsize", grossVmSize);
             SetOptionalStaticField(typeof(Globals), "grossNCsize", grossNativeCodeSize);
             SetOptionalStaticField(typeof(Globals), "totalNCsize", totalNativeCodeSize);
             (BasicBlock.s_Count, BasicBlock.s_Size) = blocks;
-            Compiler.s_dspMemStats = displayMemory;
+            Compiler.ManagedAllocationStatsData.s_dspMemStats = displayMemory;
         }
     }
 

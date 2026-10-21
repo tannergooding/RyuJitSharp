@@ -290,9 +290,12 @@ public partial class Compiler
 
         public readonly void Dump(TextWriter writer)
         {
-            var nonStructVars = unchecked(s_enregisterStats._totalNumberOfVars - s_enregisterStats._totalNumberOfStructVars);
-            var nonStructEnregVars = unchecked(s_enregisterStats._totalNumberOfEnregVars - s_enregisterStats._totalNumberOfStructEnregVars);
-            var notEnreg = unchecked(s_enregisterStats._totalNumberOfVars - s_enregisterStats._totalNumberOfEnregVars);
+            var nonStructVars = unchecked(EnregisterStatsData.s_enregisterStats._totalNumberOfVars -
+                EnregisterStatsData.s_enregisterStats._totalNumberOfStructVars);
+            var nonStructEnregVars = unchecked(EnregisterStatsData.s_enregisterStats._totalNumberOfEnregVars -
+                EnregisterStatsData.s_enregisterStats._totalNumberOfStructEnregVars);
+            var notEnreg = unchecked(EnregisterStatsData.s_enregisterStats._totalNumberOfVars -
+                EnregisterStatsData.s_enregisterStats._totalNumberOfEnregVars);
 
             writer.Write("\nLocals enregistration statistics:\n");
             if (_totalNumberOfVars == 0)

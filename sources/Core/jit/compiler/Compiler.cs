@@ -268,13 +268,13 @@ public partial class Compiler
 
     public static AssemblyNamesList2? s_pAltJitExcludeAssembliesList;
 
-    public static bool s_pJitDisasmIncludeAssembliesListInitialized;
-
-    public static AssemblyNamesList2? s_pJitDisasmIncludeAssembliesList;
-
-    public static bool s_pJitFunctionFileInitialized;
-
-    public static MethodSet2? s_pJitMethodSet;
+    internal static class CompilerDebugStaticData
+    {
+        internal static bool s_pJitDisasmIncludeAssembliesListInitialized;
+        internal static AssemblyNamesList2? s_pJitDisasmIncludeAssembliesList;
+        internal static bool s_pJitFunctionFileInitialized;
+        internal static MethodSet2? s_pJitMethodSet;
+    }
 
     public Info info = new Info();
 
@@ -289,24 +289,23 @@ public partial class Compiler
     /// <summary>the currently active phase dumps</summary>
     public PhaseDumps activePhaseDumps = PhaseDumps.DUMP_ALL;
 
-    /// <summary>Display per-phase memory statistics for every function</summary>
-    public static bool s_dspMemStats;
-
-    private static class LoopHoistStatsData
+    internal static class ManagedAllocationStatsData
     {
-        internal static readonly Lock? Lock = Configuration.DEBUG ? new() : null;
+        internal static bool s_dspMemStats;
     }
 
-    /// <summary>This lock protects the aggregate loop-hoisting statistics.</summary>
-    public static Lock? s_loopHoistStatsLock => LoopHoistStatsData.Lock;
+    internal static class LoopHoistStatsData
+    {
+        internal static readonly Lock? s_loopHoistStatsLock = Configuration.DEBUG ? new() : null;
+        internal static int s_loopsConsidered;
+        internal static int s_loopsWithHoistedExpressions;
+        internal static int s_totalHoistedExpressions;
+    }
 
-    public static int s_loopsConsidered;
-
-    public static int s_loopsWithHoistedExpressions;
-
-    public static int s_totalHoistedExpressions;
-
-    public static EnregisterStats s_enregisterStats;
+    internal static class EnregisterStatsData
+    {
+        internal static EnregisterStats s_enregisterStats;
+    }
 
     public JitMetrics Metrics;
 
@@ -418,7 +417,9 @@ public partial class Compiler
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
         if (inlineInfo is null &&
-            ((JitConfig.DisplayMemStats != 0) || (JitConfig.JitReportMetrics != 0) || (JitConfig.JitTimeLogCsv is not null)))
+            (Configuration.MEASURE_MEM_ALLOC ||
+                (JitConfig.JitReportMetrics != 0) ||
+                (JitConfig.JitTimeLogCsv is not null)))
         {
             if (Configuration.DEBUG)
             {

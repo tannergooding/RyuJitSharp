@@ -350,8 +350,9 @@ internal static unsafe class CompilerShutdownTests
                 AltInitialized(null) = true;
                 if (TestConfiguration.IsDebug)
                 {
-                    DumpAssemblies(null) = new AssemblyNamesList2(name);
-                    DumpInitialized(null) = true;
+                    Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList =
+                        new AssemblyNamesList2(name);
+                    Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized = true;
                 }
             }
 
@@ -361,8 +362,8 @@ internal static unsafe class CompilerShutdownTests
             Assert.That(AltInitialized(null), Is.True);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(DumpAssemblies(null), Is.Null);
-                Assert.That(DumpInitialized(null), Is.True);
+                Assert.That(Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList, Is.Null);
+                Assert.That(Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized, Is.True);
             }
         });
     }
@@ -549,8 +550,11 @@ internal static unsafe class CompilerShutdownTests
             grossVMsize = grossNCsize = totalNCsize = gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 0;
             Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
         }
-        var dump = TestConfiguration.IsDebug ? DumpAssemblies(null) : null;
-        var dumpInitialized = TestConfiguration.IsDebug && DumpInitialized(null);
+        var dump = TestConfiguration.IsDebug
+            ? Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList
+            : null;
+        var dumpInitialized = TestConfiguration.IsDebug &&
+            Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized;
         var xmlHeader = TestConfiguration.IsDebug && XmlHeader;
         if (TestConfiguration.IsDebug)
         {
@@ -581,8 +585,8 @@ internal static unsafe class CompilerShutdownTests
             }
             if (TestConfiguration.IsDebug)
             {
-                DumpAssemblies(null) = dump;
-                DumpInitialized(null) = dumpInitialized;
+                Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = dump;
+                Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized = dumpInitialized;
                 XmlHeader = xmlHeader;
             }
         }
@@ -602,12 +606,6 @@ internal static unsafe class CompilerShutdownTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitTimeLogCsv")]
     private static extern ref byte* CsvConfig(ref JitConfigValues config);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pJitDisasmIncludeAssembliesList")]
-    private static extern ref AssemblyNamesList2? DumpAssemblies(Compiler? compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_pJitDisasmIncludeAssembliesListInitialized")]
-    private static extern ref bool DumpInitialized(Compiler? compiler);
 
     private static FieldInfo XmlHeaderField =>
         typeof(InlineStrategy).GetNestedType("XmlDumpState", BindingFlags.NonPublic)?

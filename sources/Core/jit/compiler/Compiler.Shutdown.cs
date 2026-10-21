@@ -15,7 +15,10 @@ public partial class Compiler
     public static unsafe void compShutdown()
     {
         s_pAltJitExcludeAssembliesList = null;
-        s_pJitDisasmIncludeAssembliesList = null;
+        if (Configuration.DEBUG)
+        {
+            CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = null;
+        }
 
         if (Configuration.MEASURE_NOWAY)
         {
@@ -265,7 +268,7 @@ public partial class Compiler
             }
         }
 
-        if (s_dspMemStats)
+        if (Configuration.MEASURE_MEM_ALLOC && ManagedAllocationStatsData.s_dspMemStats)
         {
             jitprintf("\nAll allocations:\n");
             JitMemStatsInfo.dumpAggregateMemStats(jitstdout());
@@ -290,7 +293,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG && (JitConfig.JitEnregStats != 0))
         {
-            s_enregisterStats.Dump(jitstdout());
+            EnregisterStatsData.s_enregisterStats.Dump(jitstdout());
         }
 
         if (Configuration.MEASURE_PTRTAB_SIZE)
@@ -347,7 +350,14 @@ public partial class Compiler
             jitprintf($"   NYI:                 {s_fatalNyiCount}\n");
         }
 
-        DumpOnShutdown.DumpAll();
+        if (Configuration.CALL_ARG_STATS ||
+            Configuration.COUNT_BASIC_BLOCKS ||
+            Configuration.EMITTER_STATS ||
+            Configuration.MEASURE_NODE_SIZE ||
+            Configuration.MEASURE_MEM_ALLOC)
+        {
+            DumpOnShutdown.DumpAll();
+        }
     }
 
     internal static FileStream? OpenJitOutputFile(string path)
