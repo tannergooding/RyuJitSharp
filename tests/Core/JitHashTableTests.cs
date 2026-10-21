@@ -100,6 +100,21 @@ internal static class JitHashTableTests
     }
 
     [Test]
+    public static void PrimeInfoEntriesRetainNativeDivisors()
+    {
+        var primeInfo = Globals.jitPrimeInfo;
+
+        Assert.That(primeInfo.Length, Is.EqualTo(27));
+        Assert.That(primeInfo[0].prime, Is.EqualTo(9));
+        Assert.That(primeInfo[^1].prime, Is.EqualTo(733045421));
+
+        foreach (var entry in primeInfo)
+        {
+            Assert.That(entry.magicNumberRem(entry.prime - 1), Is.EqualTo(entry.prime - 1));
+        }
+    }
+
+    [Test]
     public static void PointerKeyFunctionsUseIdentityAndRawAddressSemantics()
     {
         var objectKeyFuncs = new JitPtrKeyFuncs<IdentityKey>();

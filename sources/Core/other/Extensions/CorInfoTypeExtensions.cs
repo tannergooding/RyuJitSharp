@@ -3,53 +3,108 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public static class CorInfoTypeExtensions
 {
-    private static readonly var_types[] s_preciseVarTypes = [
-        TYP_UNDEF,      // CORINFO_TYPE_UNDEF     
-        TYP_VOID,       // CORINFO_TYPE_VOID      
-        TYP_UBYTE,      // CORINFO_TYPE_BOOL      
-        TYP_USHORT,     // CORINFO_TYPE_CHAR      
-        TYP_BYTE,       // CORINFO_TYPE_BYTE      
-        TYP_UBYTE,      // CORINFO_TYPE_UBYTE     
-        TYP_SHORT,      // CORINFO_TYPE_SHORT     
-        TYP_USHORT,     // CORINFO_TYPE_USHORT    
-        TYP_INT,        // CORINFO_TYPE_INT       
-        TYP_UINT,       // CORINFO_TYPE_UINT      
-        TYP_LONG,       // CORINFO_TYPE_LONG      
-        TYP_ULONG,      // CORINFO_TYPE_ULONG     
-        TYP_I_IMPL,     // CORINFO_TYPE_NATIVEINT 
-        TYP_U_IMPL,     // CORINFO_TYPE_NATIVEUINT
-        TYP_FLOAT,      // CORINFO_TYPE_FLOAT     
-        TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE    
-        TYP_U_IMPL,     // CORINFO_TYPE_PTR       
-        TYP_BYREF,      // CORINFO_TYPE_BYREF     
+    private static ReadOnlySpan<var_types> s_preciseVarTypes =>
+        Configuration.TARGET_64BIT ? s_preciseVarTypes64 : s_preciseVarTypes32;
+
+    private static ReadOnlySpan<var_types> s_preciseVarTypes32 => [
+        TYP_UNDEF,      // CORINFO_TYPE_UNDEF
+        TYP_VOID,       // CORINFO_TYPE_VOID
+        TYP_UBYTE,      // CORINFO_TYPE_BOOL
+        TYP_USHORT,     // CORINFO_TYPE_CHAR
+        TYP_BYTE,       // CORINFO_TYPE_BYTE
+        TYP_UBYTE,      // CORINFO_TYPE_UBYTE
+        TYP_SHORT,      // CORINFO_TYPE_SHORT
+        TYP_USHORT,     // CORINFO_TYPE_USHORT
+        TYP_INT,        // CORINFO_TYPE_INT
+        TYP_UINT,       // CORINFO_TYPE_UINT
+        TYP_LONG,       // CORINFO_TYPE_LONG
+        TYP_ULONG,      // CORINFO_TYPE_ULONG
+        TYP_INT,        // CORINFO_TYPE_NATIVEINT
+        TYP_UINT,       // CORINFO_TYPE_NATIVEUINT
+        TYP_FLOAT,      // CORINFO_TYPE_FLOAT
+        TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE
+        TYP_UINT,       // CORINFO_TYPE_PTR
+        TYP_BYREF,      // CORINFO_TYPE_BYREF
         TYP_STRUCT,     // CORINFO_TYPE_VALUECLASS
-        TYP_REF,        // CORINFO_TYPE_CLASS     
+        TYP_REF,        // CORINFO_TYPE_CLASS
     ];
 
-    private static readonly var_types[] s_varTypes = [
+    private static ReadOnlySpan<var_types> s_preciseVarTypes64 => [
+        TYP_UNDEF,      // CORINFO_TYPE_UNDEF
+        TYP_VOID,       // CORINFO_TYPE_VOID
+        TYP_UBYTE,      // CORINFO_TYPE_BOOL
+        TYP_USHORT,     // CORINFO_TYPE_CHAR
+        TYP_BYTE,       // CORINFO_TYPE_BYTE
+        TYP_UBYTE,      // CORINFO_TYPE_UBYTE
+        TYP_SHORT,      // CORINFO_TYPE_SHORT
+        TYP_USHORT,     // CORINFO_TYPE_USHORT
+        TYP_INT,        // CORINFO_TYPE_INT
+        TYP_UINT,       // CORINFO_TYPE_UINT
+        TYP_LONG,       // CORINFO_TYPE_LONG
+        TYP_ULONG,      // CORINFO_TYPE_ULONG
+        TYP_LONG,       // CORINFO_TYPE_NATIVEINT
+        TYP_ULONG,      // CORINFO_TYPE_NATIVEUINT
+        TYP_FLOAT,      // CORINFO_TYPE_FLOAT
+        TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE
+        TYP_ULONG,      // CORINFO_TYPE_PTR
+        TYP_BYREF,      // CORINFO_TYPE_BYREF
+        TYP_STRUCT,     // CORINFO_TYPE_VALUECLASS
+        TYP_REF,        // CORINFO_TYPE_CLASS
+    ];
+
+    private static ReadOnlySpan<var_types> s_varTypes =>
+        Configuration.TARGET_64BIT ? s_varTypes64 : s_varTypes32;
+
+    private static ReadOnlySpan<var_types> s_varTypes32 => [
         // see the definition of enum CorInfoType in file inc/corinfo.h
-        TYP_UNDEF,      // CORINFO_TYPE_UNDEF     
-        TYP_VOID,       // CORINFO_TYPE_VOID      
-        TYP_UBYTE,      // CORINFO_TYPE_BOOL      
-        TYP_USHORT,     // CORINFO_TYPE_CHAR      
-        TYP_BYTE,       // CORINFO_TYPE_BYTE      
-        TYP_UBYTE,      // CORINFO_TYPE_UBYTE     
-        TYP_SHORT,      // CORINFO_TYPE_SHORT     
-        TYP_USHORT,     // CORINFO_TYPE_USHORT    
-        TYP_INT,        // CORINFO_TYPE_INT       
-        TYP_INT,        // CORINFO_TYPE_UINT      
-        TYP_LONG,       // CORINFO_TYPE_LONG      
-        TYP_LONG,       // CORINFO_TYPE_ULONG     
-        TYP_I_IMPL,     // CORINFO_TYPE_NATIVEINT 
-        TYP_I_IMPL,     // CORINFO_TYPE_NATIVEUINT
-        TYP_FLOAT,      // CORINFO_TYPE_FLOAT     
-        TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE    
-        TYP_I_IMPL,     // CORINFO_TYPE_PTR       
-        TYP_BYREF,      // CORINFO_TYPE_BYREF     
+        TYP_UNDEF,      // CORINFO_TYPE_UNDEF
+        TYP_VOID,       // CORINFO_TYPE_VOID
+        TYP_UBYTE,      // CORINFO_TYPE_BOOL
+        TYP_USHORT,     // CORINFO_TYPE_CHAR
+        TYP_BYTE,       // CORINFO_TYPE_BYTE
+        TYP_UBYTE,      // CORINFO_TYPE_UBYTE
+        TYP_SHORT,      // CORINFO_TYPE_SHORT
+        TYP_USHORT,     // CORINFO_TYPE_USHORT
+        TYP_INT,        // CORINFO_TYPE_INT
+        TYP_INT,        // CORINFO_TYPE_UINT
+        TYP_LONG,       // CORINFO_TYPE_LONG
+        TYP_LONG,       // CORINFO_TYPE_ULONG
+        TYP_INT,        // CORINFO_TYPE_NATIVEINT
+        TYP_INT,        // CORINFO_TYPE_NATIVEUINT
+        TYP_FLOAT,      // CORINFO_TYPE_FLOAT
+        TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE
+        TYP_INT,        // CORINFO_TYPE_PTR
+        TYP_BYREF,      // CORINFO_TYPE_BYREF
+        TYP_STRUCT,     // CORINFO_TYPE_VALUECLASS
+        TYP_REF,        // CORINFO_TYPE_CLASS
+    ];
+
+    private static ReadOnlySpan<var_types> s_varTypes64 => [
+        // see the definition of enum CorInfoType in file inc/corinfo.h
+        TYP_UNDEF,      // CORINFO_TYPE_UNDEF
+        TYP_VOID,       // CORINFO_TYPE_VOID
+        TYP_UBYTE,      // CORINFO_TYPE_BOOL
+        TYP_USHORT,     // CORINFO_TYPE_CHAR
+        TYP_BYTE,       // CORINFO_TYPE_BYTE
+        TYP_UBYTE,      // CORINFO_TYPE_UBYTE
+        TYP_SHORT,      // CORINFO_TYPE_SHORT
+        TYP_USHORT,     // CORINFO_TYPE_USHORT
+        TYP_INT,        // CORINFO_TYPE_INT
+        TYP_INT,        // CORINFO_TYPE_UINT
+        TYP_LONG,       // CORINFO_TYPE_LONG
+        TYP_LONG,       // CORINFO_TYPE_ULONG
+        TYP_LONG,       // CORINFO_TYPE_NATIVEINT
+        TYP_LONG,       // CORINFO_TYPE_NATIVEUINT
+        TYP_FLOAT,      // CORINFO_TYPE_FLOAT
+        TYP_DOUBLE,     // CORINFO_TYPE_DOUBLE
+        TYP_LONG,       // CORINFO_TYPE_PTR
+        TYP_BYREF,      // CORINFO_TYPE_BYREF
         TYP_STRUCT,     // CORINFO_TYPE_VALUECLASS
         TYP_REF,        // CORINFO_TYPE_CLASS
     ];

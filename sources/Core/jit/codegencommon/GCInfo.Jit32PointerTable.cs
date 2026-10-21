@@ -23,7 +23,7 @@ public partial struct GCInfo
     private const uint CpMaxArgCount = 0x02;
     private const uint CpMaxArgMask = 0x00;
 
-    private static readonly uint[] CallPatternTable =
+    private static ReadOnlySpan<uint> CallPatternTable =>
     [
         0x0a000200, 0x0c000200, 0x0c000201, 0x0a000300, 0x0c000300, 0x0e000200, 0x10000200, 0x0b000200,
         0x0d000200, 0x08000200, 0x0c000301, 0x11000200, 0x0e000300, 0x12000200, 0x10000300, 0x11000300,
@@ -37,7 +37,7 @@ public partial struct GCInfo
         0x09000201, 0x10000600, 0x15000300, 0x0a000101, 0x0a000b00, 0x0c000601, 0x09000700, 0x07000300,
     ];
 
-    private static readonly uint[] CallCommonDelta = [6, 8, 10, 12];
+    private static ReadOnlySpan<uint> CallCommonDelta => [6, 8, 10, 12];
 
     private static int lookupCallPattern(uint argCount, uint regMask, uint argMask, uint codeDelta)
     {

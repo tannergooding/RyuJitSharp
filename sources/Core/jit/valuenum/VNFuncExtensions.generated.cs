@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public static partial class VNFuncExtensions
 {
-    private static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
+    private static ReadOnlySpan<ValueNumStore.VNFOpAttrib> s_attribs => [
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_NONE
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_PHI
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_PHI_ARG

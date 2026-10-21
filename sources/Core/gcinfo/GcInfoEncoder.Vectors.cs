@@ -155,7 +155,7 @@ public sealed unsafe partial class GcInfoEncoder
 
     private sealed class LiveStateTable
     {
-        private static readonly int[] s_Primes =
+        private static ReadOnlySpan<int> s_Primes =>
         [
             9, 23, 59, 131, 239, 433, 761, 1399, 2473, 4327, 7499, 12973, 22433,
             46559, 96581, 200341, 415517, 861719, 1787021, 3705617, 7684087,
@@ -214,7 +214,15 @@ public sealed unsafe partial class GcInfoEncoder
         private void Grow()
         {
             var size = Math.Max(7, m_Count * 3 / 2 * 4 / 3);
-            var prime = Array.Find(s_Primes, item => item >= size);
+            var prime = 0;
+            foreach (var candidate in s_Primes)
+            {
+                if (candidate >= size)
+                {
+                    prime = candidate;
+                    break;
+                }
+            }
 
             if (prime == 0)
             {

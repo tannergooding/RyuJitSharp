@@ -2514,7 +2514,9 @@ public static partial class InlineObservationExtensions
 {
     private static string GetDescription(InlineObservation observation) => observation switch
     {
-{{descriptionsBuilder}}        _ => throw new FatalJitException("Invalid inline observation."),
+{{descriptionsBuilder}}        _ => throw FatalJitException.CreateStaticFailure(
+            CORJIT_INTERNALERROR,
+            FatalJitErrorCode.DirectFailureMessage240),
     };
 
     private static ReadOnlySpan<InlineImpact> s_impacts => [
@@ -5623,7 +5625,9 @@ public static partial class PhasesExtensions
 {
     private static string GetName(Phases phase) => phase switch
     {
-{{namesBuilder}}        _ => throw new FatalJitException("Invalid compiler phase."),
+{{namesBuilder}}        _ => throw FatalJitException.CreateStaticFailure(
+            CORJIT_INTERNALERROR,
+            FatalJitErrorCode.DirectFailureMessage209),
     };
 
     private static ReadOnlySpan<bool> s_hasChildren => [
@@ -6028,7 +6032,8 @@ public static partial class Globals
             _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"    private static string GetName{identity}(regNumber regNum) => regNum switch");
             _ = namesBuilder.AppendLine("    {");
             _ = namesBuilder.Append(targetBuilder);
-            _ = namesBuilder.AppendLine("        _ => throw new FatalJitException(\"Invalid register number.\"),");
+            _ = namesBuilder.AppendLine(
+                "        _ => throw FatalJitException.CreateStaticFailure(CORJIT_INTERNALERROR, FatalJitErrorCode.DirectFailureMessage445),");
             _ = namesBuilder.AppendLine("    };");
             _ = namesBuilder.AppendLine();
         }
@@ -6846,7 +6851,7 @@ namespace RyuJitSharp;
 
 public static partial class VNFuncExtensions
 {
-    private static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
+    private static ReadOnlySpan<ValueNumStore.VNFOpAttrib> s_attribs => [
 {{builder1}}        0, // VNF_Boundary
 {{builder2}}    ];
 

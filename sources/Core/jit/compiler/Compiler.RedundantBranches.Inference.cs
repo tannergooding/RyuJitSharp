@@ -61,100 +61,6 @@ public partial class Compiler
         VNF_LT_UN,
     ];
 
-    private static System.ReadOnlySpan<bool> s_canInferFromTrue => [
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-    ];
-
-    private static System.ReadOnlySpan<bool> s_canInferFromFalse => [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-    ];
-
     private static System.ReadOnlySpan<VNFunc> s_treeRelops => [
         VNF_GE,
         VNF_LE,
@@ -202,51 +108,60 @@ public partial class Compiler
         VNF_GT_UN,
     ];
 
-    private static System.ReadOnlySpan<bool> s_reverseSense => [
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        true,
-        false,
-        true,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        true,
+    [System.Flags]
+    private enum RelopInferenceFlags : byte
+    {
+        None = 0,
+        CanInferFromTrue = 1 << 0,
+        CanInferFromFalse = 1 << 1,
+        ReverseSense = 1 << 2,
+    }
+
+    private static System.ReadOnlySpan<RelopInferenceFlags> s_relopInferenceFlags => [
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromFalse,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue,
+        RelopInferenceFlags.CanInferFromTrue | RelopInferenceFlags.ReverseSense,
     ];
 
     private enum RelopResult
@@ -418,21 +333,20 @@ public partial class Compiler
                 var swapped = treeApp.GetArg(0) == domApp.GetArg(1);
                 var firstFunc = swapped ? ValueNumStore.SwapRelop(domFunc) : domFunc;
                 var domRelops = s_domRelops;
-                var canInferFromTrue = s_canInferFromTrue;
-                var canInferFromFalse = s_canInferFromFalse;
+                var relationFlags = s_relopInferenceFlags;
                 var treeRelops = s_treeRelops;
-                var reverseSense = s_reverseSense;
                 for (var ruleIndex = 0; ruleIndex < domRelops.Length; ruleIndex++)
                 {
                     if ((domRelops[ruleIndex] == firstFunc) && (treeRelops[ruleIndex] == treeApp.Func))
                     {
                         info.CanInfer = true;
                         info.VnRelation = ValueNumStore.VN_RELATION_KIND.VRK_Inferred;
-                        info.CanInferFromTrue = canInferFromTrue[ruleIndex];
-                        info.CanInferFromFalse = canInferFromFalse[ruleIndex];
-                        info.ReverseSense = reverseSense[ruleIndex];
+                        var flags = relationFlags[ruleIndex];
+                        info.CanInferFromTrue = (flags & RelopInferenceFlags.CanInferFromTrue) != 0;
+                        info.CanInferFromFalse = (flags & RelopInferenceFlags.CanInferFromFalse) != 0;
+                        info.ReverseSense = (flags & RelopInferenceFlags.ReverseSense) != 0;
                         JITDUMP($"Can infer {ValueNumStore.VNFuncName(treeApp.Func)} from " +
-                            $"[{(canInferFromTrue[ruleIndex] ? "true" : "false")}] " +
+                            $"[{(info.CanInferFromTrue ? "true" : "false")}] " +
                             $"dominating {ValueNumStore.VNFuncName(domFunc)}\n");
                         return;
                     }

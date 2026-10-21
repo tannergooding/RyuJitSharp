@@ -36,7 +36,7 @@ public sealed partial class CodeSeqSM
     {
         assert(_compiler is not null);
 
-        if (s_smStates[_curState].term)
+        if (StateMachineTables.IsTerminalState(_curState))
         {
             TermStateMatch(_curState, Configuration.DEBUG && _compiler.verbose);
         }
@@ -62,7 +62,7 @@ public sealed partial class CodeSeqSM
 
             assert(_curState != SM_STATE_ID_START);
 
-            if (s_smStates[_curState].term)
+            if (StateMachineTables.IsTerminalState(_curState))
             {
                 TermStateMatch(_curState, Configuration.DEBUG && _compiler.verbose);
                 _curState = SM_STATE_ID_START;
@@ -74,15 +74,17 @@ public sealed partial class CodeSeqSM
         }
 
         // This is hard. We need to rollback to the longest matched term state and restart from there.
-        var rollbackState = s_smStates[_curState].longestTermState;
+        var rollbackState = StateMachineTables.s_smStateLongestTermState[_curState];
 
         TermStateMatch(rollbackState, Configuration.DEBUG && _compiler.verbose);
 
-        assert(s_smStates[_curState].length > s_smStates[rollbackState].length);
+        assert(StateMachineTables.s_smStateLength[_curState] >
+               StateMachineTables.s_smStateLength[rollbackState]);
         Unsafe.SkipInit(out InlineArrayMaxCodeSequenceLength<SM_OPCODE> opcodesToRevisit);
 
         // So it can fit in the local array opcodesToRevisit[]
-        var numOfOpcodesToRevisit = s_smStates[_curState].length - s_smStates[rollbackState].length + 1;
+        var numOfOpcodesToRevisit =
+            StateMachineTables.s_smStateLength[_curState] - StateMachineTables.s_smStateLength[rollbackState] + 1;
         assert(numOfOpcodesToRevisit is > 1 and <= MAX_CODE_SEQUENCE_LENGTH);
 
         var index = numOfOpcodesToRevisit - 1;
@@ -91,8 +93,8 @@ public sealed partial class CodeSeqSM
         // Fill in the local array:
         for (var i = 0; i < numOfOpcodesToRevisit - 1; i++)
         {
-            opcodesToRevisit[--index] = s_smStates[_curState].opc;
-            _curState = s_smStates[_curState].prevState;
+            opcodesToRevisit[--index] = StateMachineTables.s_smStateOpcode[_curState];
+            _curState = StateMachineTables.s_smStatePrevState[_curState];
         }
 
         assert(_curState == rollbackState);
@@ -110,8 +112,9 @@ public sealed partial class CodeSeqSM
     {
         assert(opcode < SM_COUNT);
 
-        ref var thisJumpTable = ref Unsafe.AddByteOffset(ref s_smJumpTableCells[0], s_smStates[srcState].jumpTableByteOffset);
-        ref var cell = ref Unsafe.Add(ref thisJumpTable, (int)(opcode));
+        var cellIndex = (StateMachineTables.s_smStateJumpTableByteOffset[srcState] /
+            Unsafe.SizeOf<JumpTableCell>()) + (int)opcode;
+        var cell = s_smJumpTableCells[cellIndex];
 
         if (cell.srcState != srcState)
         {
@@ -128,7 +131,7 @@ public sealed partial class CodeSeqSM
     // Matched a termination state
     public void TermStateMatch(SM_STATE_ID stateId, bool verbose)
     {
-        assert(s_smStates[stateId].term);
+        assert(StateMachineTables.IsTerminalState(stateId));
 
         if (Configuration.DEBUG)
         {
@@ -165,13 +168,13 @@ public sealed partial class CodeSeqSM
 
         Unsafe.SkipInit(out InlineArrayMaxCodeSequenceLength<SM_OPCODE> stateDescOpcodes);
 
-        while (s_smStates[b].prevState != 0)
+        while (StateMachineTables.s_smStatePrevState[b] != 0)
         {
-            stateDescOpcodes[i] = s_smStates[b].opc;
-            b = s_smStates[b].prevState;
+            stateDescOpcodes[i] = StateMachineTables.s_smStateOpcode[b];
+            b = StateMachineTables.s_smStatePrevState[b];
             i++;
         }
-        assert((i == s_smStates[stateId].length) && (i > 0));
+        assert((i == StateMachineTables.s_smStateLength[stateId]) && (i > 0));
 
         var stateDesc = new StringBuilder(500);
 

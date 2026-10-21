@@ -24,9 +24,29 @@ public readonly struct GenConditionDesc
 
     public static GenConditionDesc Get(GenCondition condition)
     {
-        var map = GetMap();
-        assert((uint)condition.Code < (uint)map.Length);
-        var desc = map[(int)condition.Code];
+        ReadOnlySpan<emitJumpKind> jumpKind1;
+        ReadOnlySpan<genTreeOps> oper;
+        ReadOnlySpan<emitJumpKind> jumpKind2;
+        if (Configuration.TARGET_XARCH)
+        {
+            jumpKind1 = XarchJumpKind1;
+            oper = XarchOper;
+            jumpKind2 = XarchJumpKind2;
+        }
+        else if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
+        {
+            jumpKind1 = ArmArchJumpKind1;
+            oper = ArmArchOper;
+            jumpKind2 = ArmArchJumpKind2;
+        }
+        else
+        {
+            throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
+        }
+
+        assert((uint)condition.Code < (uint)jumpKind1.Length);
+        var index = (int)condition.Code;
+        var desc = new GenConditionDesc(jumpKind1[index], oper[index], jumpKind2[index]);
         assert(desc.JumpKind1 is not EJ_NONE);
         assert(desc.Oper is GT_NONE or GT_AND or GT_OR);
         assert((desc.Oper is GT_NONE) == (desc.JumpKind2 is EJ_NONE));
@@ -34,100 +54,217 @@ public readonly struct GenConditionDesc
         return desc;
     }
 
-    private static ReadOnlySpan<GenConditionDesc> GetMap()
-    {
-        if (Configuration.TARGET_XARCH)
-        {
-            return XarchMap;
-        }
-
-        if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
-        {
-            return ArmArchMap;
-        }
-
-        throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
-    }
-
     // UCOMIS sets ZF/PF/CF to 111 for unordered, 000 for greater, 001 for
     // less, and 100 for equal. Conditions sharing the unordered ZF/CF bits
     // therefore need a parity check combined with their ordinary comparison.
     // GT_AND/GT_OR describe short-circuit combinations, not emitted ALU operations.
-    private static readonly GenConditionDesc[] XarchMap =
-    [
-        default, // NONE
-        default, // 1
-        new(EJ_XARCH_jl), // SLT
-        new(EJ_XARCH_jle), // SLE
-        new(EJ_XARCH_jge), // SGE
-        new(EJ_XARCH_jg), // SGT
-        new(EJ_XARCH_js), // S
-        new(EJ_XARCH_jns), // NS
-
-        new(EJ_XARCH_je), // EQ
-        new(EJ_XARCH_jne), // NE
-        new(EJ_XARCH_jb), // ULT
-        new(EJ_XARCH_jbe), // ULE
-        new(EJ_XARCH_jae), // UGE
-        new(EJ_XARCH_ja), // UGT
-        new(EJ_XARCH_jb), // C
-        new(EJ_XARCH_jae), // NC
-
-        new(EJ_XARCH_jnp, GT_AND, EJ_XARCH_je), // FEQ
-        new(EJ_XARCH_jne), // FNE
-        new(EJ_XARCH_jnp, GT_AND, EJ_XARCH_jb), // FLT
-        new(EJ_XARCH_jnp, GT_AND, EJ_XARCH_jbe), // FLE
-        new(EJ_XARCH_jae), // FGE
-        new(EJ_XARCH_ja), // FGT
-        new(EJ_XARCH_jo), // O
-        new(EJ_XARCH_jno), // NO
-
-        new(EJ_XARCH_je), // FEQU
-        new(EJ_XARCH_jp, GT_OR, EJ_XARCH_jne), // FNEU
-        new(EJ_XARCH_jb), // FLTU
-        new(EJ_XARCH_jbe), // FLEU
-        new(EJ_XARCH_jp, GT_OR, EJ_XARCH_jae), // FGEU
-        new(EJ_XARCH_jp, GT_OR, EJ_XARCH_ja), // FGTU
-        new(EJ_XARCH_jp), // P
-        new(EJ_XARCH_jnp), // NP
+    private static ReadOnlySpan<emitJumpKind> XarchJumpKind1 => [
+        EJ_NONE, // NONE
+        EJ_NONE, // 1
+        EJ_XARCH_jl, // SLT
+        EJ_XARCH_jle, // SLE
+        EJ_XARCH_jge, // SGE
+        EJ_XARCH_jg, // SGT
+        EJ_XARCH_js, // S
+        EJ_XARCH_jns, // NS
+        EJ_XARCH_je, // EQ
+        EJ_XARCH_jne, // NE
+        EJ_XARCH_jb, // ULT
+        EJ_XARCH_jbe, // ULE
+        EJ_XARCH_jae, // UGE
+        EJ_XARCH_ja, // UGT
+        EJ_XARCH_jb, // C
+        EJ_XARCH_jae, // NC
+        EJ_XARCH_jnp, // FEQ
+        EJ_XARCH_jne, // FNE
+        EJ_XARCH_jnp, // FLT
+        EJ_XARCH_jnp, // FLE
+        EJ_XARCH_jae, // FGE
+        EJ_XARCH_ja, // FGT
+        EJ_XARCH_jo, // O
+        EJ_XARCH_jno, // NO
+        EJ_XARCH_je, // FEQU
+        EJ_XARCH_jp, // FNEU
+        EJ_XARCH_jb, // FLTU
+        EJ_XARCH_jbe, // FLEU
+        EJ_XARCH_jp, // FGEU
+        EJ_XARCH_jp, // FGTU
+        EJ_XARCH_jp, // P
+        EJ_XARCH_jnp, // NP
     ];
 
-    private static readonly GenConditionDesc[] ArmArchMap =
-    [
-        default, // NONE
-        default, // 1
-        new(EJ_ARMARCH_lt), // SLT
-        new(EJ_ARMARCH_le), // SLE
-        new(EJ_ARMARCH_ge), // SGE
-        new(EJ_ARMARCH_gt), // SGT
-        new(EJ_ARMARCH_mi), // S
-        new(EJ_ARMARCH_pl), // NS
+    private static ReadOnlySpan<genTreeOps> XarchOper => [
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_AND,
+        GT_NONE,
+        GT_AND,
+        GT_AND,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_OR,
+        GT_NONE,
+        GT_NONE,
+        GT_OR,
+        GT_OR,
+        GT_NONE,
+        GT_NONE,
+    ];
 
-        new(EJ_ARMARCH_eq), // EQ
-        new(EJ_ARMARCH_ne), // NE
-        new(EJ_ARMARCH_lo), // ULT
-        new(EJ_ARMARCH_ls), // ULE
-        new(EJ_ARMARCH_hs), // UGE
-        new(EJ_ARMARCH_hi), // UGT
-        new(EJ_ARMARCH_hs), // C
-        new(EJ_ARMARCH_lo), // NC
+    private static ReadOnlySpan<emitJumpKind> XarchJumpKind2 => [
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_XARCH_je,
+        EJ_NONE,
+        EJ_XARCH_jb,
+        EJ_XARCH_jbe,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_XARCH_jne,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_XARCH_jae,
+        EJ_XARCH_ja,
+        EJ_NONE,
+        EJ_NONE,
+    ];
 
-        new(EJ_ARMARCH_eq), // FEQ
-        new(EJ_ARMARCH_gt, GT_AND, EJ_ARMARCH_lo), // FNE
-        new(EJ_ARMARCH_lo), // FLT
-        new(EJ_ARMARCH_ls), // FLE
-        new(EJ_ARMARCH_ge), // FGE
-        new(EJ_ARMARCH_gt), // FGT
-        new(EJ_ARMARCH_vs), // O
-        new(EJ_ARMARCH_vc), // NO
+    private static ReadOnlySpan<emitJumpKind> ArmArchJumpKind1 => [
+        EJ_NONE, // NONE
+        EJ_NONE, // 1
+        EJ_ARMARCH_lt, // SLT
+        EJ_ARMARCH_le, // SLE
+        EJ_ARMARCH_ge, // SGE
+        EJ_ARMARCH_gt, // SGT
+        EJ_ARMARCH_mi, // S
+        EJ_ARMARCH_pl, // NS
+        EJ_ARMARCH_eq, // EQ
+        EJ_ARMARCH_ne, // NE
+        EJ_ARMARCH_lo, // ULT
+        EJ_ARMARCH_ls, // ULE
+        EJ_ARMARCH_hs, // UGE
+        EJ_ARMARCH_hi, // UGT
+        EJ_ARMARCH_hs, // C
+        EJ_ARMARCH_lo, // NC
+        EJ_ARMARCH_eq, // FEQ
+        EJ_ARMARCH_gt, // FNE
+        EJ_ARMARCH_lo, // FLT
+        EJ_ARMARCH_ls, // FLE
+        EJ_ARMARCH_ge, // FGE
+        EJ_ARMARCH_gt, // FGT
+        EJ_ARMARCH_vs, // O
+        EJ_ARMARCH_vc, // NO
+        EJ_ARMARCH_eq, // FEQU
+        EJ_ARMARCH_ne, // FNEU
+        EJ_ARMARCH_lt, // FLTU
+        EJ_ARMARCH_le, // FLEU
+        EJ_ARMARCH_hs, // FGEU
+        EJ_ARMARCH_hi, // FGTU
+        EJ_NONE, // P
+        EJ_NONE, // NP
+    ];
 
-        new(EJ_ARMARCH_eq, GT_OR, EJ_ARMARCH_vs), // FEQU
-        new(EJ_ARMARCH_ne), // FNEU
-        new(EJ_ARMARCH_lt), // FLTU
-        new(EJ_ARMARCH_le), // FLEU
-        new(EJ_ARMARCH_hs), // FGEU
-        new(EJ_ARMARCH_hi), // FGTU
-        default, // P
-        default, // NP
+    private static ReadOnlySpan<genTreeOps> ArmArchOper => [
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_AND,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_OR,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+        GT_NONE,
+    ];
+
+    private static ReadOnlySpan<emitJumpKind> ArmArchJumpKind2 => [
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_ARMARCH_lo,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_ARMARCH_vs,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
+        EJ_NONE,
     ];
 }

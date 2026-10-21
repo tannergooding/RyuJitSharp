@@ -30,7 +30,7 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
     protected const int BooleanScale = 5;
     protected const int MaxSteps = 65;
 
-    private static readonly double[] s_defaultParameters =
+    private static ReadOnlySpan<double> s_defaultParameters =>
     [
         0.2425, 0.2479, 0.1089, -0.2363, 0.2472, -0.0559, -0.8418, -0.0585, -0.2773,
         0.0000, 0.0213, -0.4116, 0.0000, -0.0922, 0.2593, -0.0315, -0.0745, 0.2607,
@@ -48,7 +48,7 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
 
     public CSE_HeuristicParameterized(Compiler compiler) : base(compiler)
     {
-        m_parameters = (double[])s_defaultParameters.Clone();
+        m_parameters = s_defaultParameters.ToArray();
         m_registerPressure = unchecked((uint)(compiler.CNT_CALLEE_TRASH_INT + CNT_CALLEE_SAVED));
         m_verbose = Configuration.DEBUG && JitConfig.JitRLCSEVerbose > 0;
         m_verbose |= Configuration.DEBUG && compiler.verbose;

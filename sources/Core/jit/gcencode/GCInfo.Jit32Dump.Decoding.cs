@@ -299,7 +299,7 @@ public partial struct GCInfo
             out uint argMask, out uint codeDelta)
         {
             assert(pattern < 80);
-            var value = CallPatternTable[pattern];
+            var value = CallPatternTable[(int)pattern];
             argCount = value & 0xFF;
             regMask = (value >> 8) & 0xFF;
             argMask = (value >> 16) & 0xFF;

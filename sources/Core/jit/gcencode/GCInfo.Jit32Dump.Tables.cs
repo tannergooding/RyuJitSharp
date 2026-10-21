@@ -532,7 +532,7 @@ public partial struct GCInfo
                                 value = *table++;
                                 callPendingMask = value & 0x7;
                                 callArgCount = (value >> 3) & 0x7;
-                                lastSkip = CallCommonDelta[value >> 6];
+                                lastSkip = CallCommonDelta[(int)(value >> 6)];
                                 currentOffset = unchecked(currentOffset + lastSkip);
                                 break;
                             }

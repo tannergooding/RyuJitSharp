@@ -294,7 +294,7 @@ public partial struct GCInfo
 
     private static void GetInfoHdr(int index, out InfoHdr header)
     {
-        header = GCInfoJit32HeaderTable.InfoHdrShortcut[index].ToInfoHdr();
+        header = GCInfoJit32HeaderTable.GetInfoHdrShortcut(index).ToInfoHdr();
     }
 
     private static bool InitNeeded3(uint current, uint target, uint max, out uint hint)
@@ -1051,7 +1051,8 @@ public partial struct GCInfo
             ?? throw new InvalidOperationException("JIT32 GC encoder lookup table has not been initialized.");
         var index = cached;
 
-        if (index != NO_CACHED_HEADER && GCInfoJit32HeaderTable.InfoHdrShortcut[index].IsHeaderMatch(in header))
+        if (index != NO_CACHED_HEADER &&
+            GCInfoJit32HeaderTable.GetInfoHdrShortcut(index).IsHeaderMatch(in header))
         {
             GetInfoHdr(index, out state);
             more = 0;
@@ -1067,7 +1068,7 @@ public partial struct GCInfo
             hi = lookup[prologSize + 1];
             for (index = lo; index < hi; index++)
             {
-                var candidate = GCInfoJit32HeaderTable.InfoHdrShortcut[index];
+                var candidate = GCInfoJit32HeaderTable.GetInfoHdrShortcut(index);
                 assert(prologSize == candidate.prologSize);
                 if (candidate.IsHeaderMatch(in header))
                 {
@@ -1102,7 +1103,8 @@ public partial struct GCInfo
 
         if (cached != NO_CACHED_HEADER)
         {
-            var distance = MeasureDistance(in header, in GCInfoJit32HeaderTable.InfoHdrShortcut[cached], closeness);
+            var cachedHeader = GCInfoJit32HeaderTable.GetInfoHdrShortcut(cached);
+            var distance = MeasureDistance(in header, in cachedHeader, closeness);
             assert(distance > 0);
             if (distance <= minimumAcceptableDistance)
             {
@@ -1122,7 +1124,8 @@ public partial struct GCInfo
                 continue;
             }
 
-            var distance = MeasureDistance(in header, in GCInfoJit32HeaderTable.InfoHdrShortcut[index], closeness);
+            var candidate = GCInfoJit32HeaderTable.GetInfoHdrShortcut(index);
+            var distance = MeasureDistance(in header, in candidate, closeness);
             assert(distance > 0);
             if (distance <= minimumAcceptableDistance)
             {
@@ -1140,7 +1143,7 @@ public partial struct GCInfo
         }
 
         var last = lookup[IH_MAX_PROLOG_SIZE + 1];
-        assert(last <= GCInfoJit32HeaderTable.InfoHdrShortcut.Length);
+        assert(last <= GCInfoJit32HeaderTable.InfoHdrShortcutCount);
         for (index = 0; index < last; index++)
         {
             if ((index == cached) || ((index >= lo) && (index < hi)))
@@ -1148,7 +1151,8 @@ public partial struct GCInfo
                 continue;
             }
 
-            var distance = MeasureDistance(in header, in GCInfoJit32HeaderTable.InfoHdrShortcut[index], closeness);
+            var candidate = GCInfoJit32HeaderTable.GetInfoHdrShortcut(index);
+            var distance = MeasureDistance(in header, in candidate, closeness);
             assert(distance > 0);
             if (distance <= minimumAcceptableDistance)
             {
@@ -1179,9 +1183,9 @@ public partial struct GCInfo
         int hi;
         var n = 0;
 
-        for (; n < GCInfoJit32HeaderTable.InfoHdrShortcut.Length; n++)
+        for (; n < GCInfoJit32HeaderTable.InfoHdrShortcutCount; n++)
         {
-            var prologSize = GCInfoJit32HeaderTable.InfoHdrShortcut[n].prologSize;
+            var prologSize = GCInfoJit32HeaderTable.GetInfoHdrShortcut(n).prologSize;
             if (prologSize == lo)
             {
                 continue;
@@ -1210,10 +1214,10 @@ public partial struct GCInfo
         }
 
         assert(lo == IH_MAX_PROLOG_SIZE);
-        assert(lookup[IH_MAX_PROLOG_SIZE] < GCInfoJit32HeaderTable.InfoHdrShortcut.Length);
+        assert(lookup[IH_MAX_PROLOG_SIZE] < GCInfoJit32HeaderTable.InfoHdrShortcutCount);
 
-        while ((n < GCInfoJit32HeaderTable.InfoHdrShortcut.Length) &&
-            (GCInfoJit32HeaderTable.InfoHdrShortcut[n].prologSize == lo))
+        while ((n < GCInfoJit32HeaderTable.InfoHdrShortcutCount) &&
+            (GCInfoJit32HeaderTable.GetInfoHdrShortcut(n).prologSize == lo))
         {
             n++;
         }

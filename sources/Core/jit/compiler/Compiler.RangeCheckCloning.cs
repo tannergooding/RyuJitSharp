@@ -19,7 +19,7 @@ public partial class Compiler
     private const int MaxRangeChecksPerGroup = 64;
     private const uint RangeCheckCloningBudgetMultiplier = 40;
     // A tie within one statement depends on JitHashTable's bucket and chain order (jithashtable.cpp).
-    private static readonly int[] RangeCheckCloningHashPrimes = [
+    private static ReadOnlySpan<int> RangeCheckCloningHashPrimes => [
         9, 23, 59, 131, 239, 433, 761, 1399, 2473, 4327, 7499, 12973, 22433,
         46559, 96581, 200341, 415517, 861719, 1787021, 3705617, 7684087,
         15933877, 33040633, 68513161, 142069021, 294594427, 733045421,
