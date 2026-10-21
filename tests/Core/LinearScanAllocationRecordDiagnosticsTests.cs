@@ -585,7 +585,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     private static extern void DumpReference(LinearScan allocator, RefPosition? reference, BasicBlock? block = null);
 
     private static readonly FieldInfo s_emptyColumnWidthField =
-        typeof(LinearScan).GetNestedType("AllocationDebugDataStorage", BindingFlags.NonPublic)
+        typeof(LinearScan).GetNestedType("AllocationDebugData", BindingFlags.NonPublic)
             ?.GetField("EmptyColumnWidth", BindingFlags.Static | BindingFlags.NonPublic)
         ?? throw new AssertionException("Missing allocation dump empty-column width.");
 

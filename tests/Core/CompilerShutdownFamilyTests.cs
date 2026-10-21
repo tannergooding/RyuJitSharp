@@ -206,10 +206,13 @@ internal static class CompilerShutdownFamilyTests
             Assert.Ignore("Emitter statistics are enabled for this build.");
         }
 
-        foreach (var fieldName in new[] { "emitSmallCns", "emitIFcounts", "emitSizeTable", "GCrefsTable", "stkDepthTable" })
+        var emitterStatistics = typeof(Emitter).GetNestedType("EmitterStatistics", BindingFlags.NonPublic) ??
+            throw new InvalidOperationException("Emitter statistics storage is not available.");
+
+        foreach (var fieldName in new[] { "SizeTable", "GCReferencesTable", "StackDepthTable", "SmallConstants", "InstructionFormatCounts" })
         {
-            var field = typeof(Emitter).GetField(fieldName, StaticMemberBindingFlags) ??
-                throw new InvalidOperationException($"{typeof(Emitter).FullName}.{fieldName} is not available.");
+            var field = emitterStatistics.GetField(fieldName, StaticMemberBindingFlags) ??
+                throw new InvalidOperationException($"{emitterStatistics.FullName}.{fieldName} is not available.");
 
             Assert.That(field.GetValue(null), Is.Null, fieldName);
         }
@@ -232,7 +235,7 @@ internal static class CompilerShutdownFamilyTests
             AltAssemblies(null) = (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             if (TestConfiguration.IsDebug)
             {
-                Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList =
+                Compiler.DebugData.s_pJitDisasmIncludeAssembliesList =
                     (AssemblyNamesList2)RuntimeHelpers.GetUninitializedObject(typeof(AssemblyNamesList2));
             }
             using var output = new MemoryStream();
@@ -248,7 +251,7 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(AltAssemblies(null), Is.Null);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList, Is.Null);
+                Assert.That(Compiler.DebugData.s_pJitDisasmIncludeAssembliesList, Is.Null);
             }
             Assert.That(CsvFile(null), Is.SameAs(csv));
             Assert.That(csvOutput.CanWrite, Is.True);
@@ -926,7 +929,7 @@ internal static class CompilerShutdownFamilyTests
         var alt = AltAssemblies(null);
         var noway = GetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap");
         SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", null);
-        var dump = Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList;
+        var dump = Compiler.DebugData.s_pJitDisasmIncludeAssembliesList;
         var methods = Compiler.genMethodCnt;
         Compiler.genMethodCnt = 1;
         var grossVmSize = GetOptionalStaticField(typeof(Globals), "grossVMsize");
@@ -954,7 +957,7 @@ internal static class CompilerShutdownFamilyTests
             CompTimeSummaryInfo.s_compTimeSummary = summary;
             AltAssemblies(null) = alt;
             SetOptionalStaticField(typeof(Compiler), "s_nowayAssertMap", noway);
-            Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = dump;
+            Compiler.DebugData.s_pJitDisasmIncludeAssembliesList = dump;
             Compiler.genMethodCnt = methods;
             SetOptionalStaticField(typeof(Globals), "grossVMsize", grossVmSize);
             SetOptionalStaticField(typeof(Globals), "grossNCsize", grossNativeCodeSize);

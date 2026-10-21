@@ -13,14 +13,17 @@ public sealed partial class insGroup
 {
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<insGroup, DebugData>? s_instances;
+
         internal BasicBlock? LastGeneratedBlock;
         internal List<BasicBlock>? Blocks;
         internal nuint DataSize;
-    }
 
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<insGroup, DebugData> Table = [];
+        internal static DebugData Get(insGroup group)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(group, static _ => new DebugData());
+        }
     }
 
     public BasicBlock? lastGeneratedBlock
@@ -65,6 +68,6 @@ public sealed partial class insGroup
             throw new InvalidOperationException("Instruction-group debug data is only available in Debug builds.");
         }
 
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+        return DebugData.Get(this);
     }
 }

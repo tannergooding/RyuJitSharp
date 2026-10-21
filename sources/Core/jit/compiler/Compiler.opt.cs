@@ -100,7 +100,7 @@ public partial class Compiler
 
     protected bool optAssertionPropagatedCurrentStmt;
 
-    protected GenTree? optAssertionPropCurrentTree => GetExistingDebugData()?.AssertionPropCurrentTree;
+    protected GenTree? optAssertionPropCurrentTree => GetDebugData().AssertionPropCurrentTree;
 
     protected AssertionIndex[] optComplementaryAssertionMap = [];
 

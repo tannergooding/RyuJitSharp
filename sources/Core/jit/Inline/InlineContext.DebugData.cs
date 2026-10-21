@@ -13,20 +13,18 @@ public sealed partial class InlineContext
 {
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<InlineContext, DebugData>? s_instances;
+
         public InlinePolicy? Policy;
 
         public int TreeId;
 
         public BitArray? ILInstsSet;
-    }
 
-    private static class DebugDataStorage
-    {
-        private static readonly ConditionalWeakTable<InlineContext, DebugData> s_data = [];
-
-        public static DebugData Get(InlineContext context)
+        internal static DebugData Get(InlineContext context)
         {
-            return s_data.GetValue(context, static _ => new DebugData());
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(context, static _ => new DebugData());
         }
     }
 
@@ -37,6 +35,6 @@ public sealed partial class InlineContext
             throw new InvalidOperationException("Inline context diagnostic state is only available in Debug builds.");
         }
 
-        return DebugDataStorage.Get(this);
+        return DebugData.Get(this);
     }
 }

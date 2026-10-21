@@ -188,7 +188,7 @@ internal static unsafe class CompilerFinalizationTests
             compiler.compCompileFinish();
 
             using var stats = new StringWriter();
-            Compiler.EnregisterStatsData.s_enregisterStats.Dump(stats);
+            Compiler.DebugData.EnregisterStatsData.s_enregisterStats.Dump(stats);
             Assert.That(stats.ToString(), Is.EqualTo(
                 "\nLocals enregistration statistics:\n" +
                 "total number of locals: 2, number of enregistered: 2, notEnreg: 0, ratio: 1.00\n" +
@@ -244,15 +244,15 @@ internal static unsafe class CompilerFinalizationTests
     {
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
-            Compiler.LoopHoistStatsData.s_loopsConsidered = int.MaxValue;
-            Compiler.LoopHoistStatsData.s_loopsWithHoistedExpressions = int.MaxValue;
-            Compiler.LoopHoistStatsData.s_totalHoistedExpressions = int.MaxValue;
+            Compiler.DebugData.LoopHoistStatsData.s_loopsConsidered = int.MaxValue;
+            Compiler.DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions = int.MaxValue;
+            Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions = int.MaxValue;
             compiler.BeginLoopHoistStats();
             compiler.RecordLoopHoistedExpression();
 
             AddLoopHoistStats(compiler);
 
-            Assert.That(Compiler.LoopHoistStatsData.s_loopsConsidered, Is.EqualTo(int.MinValue));
+            Assert.That(Compiler.DebugData.LoopHoistStatsData.s_loopsConsidered, Is.EqualTo(int.MinValue));
             using var writer = new StringWriter();
             PrintAggregateLoopHoistStats(writer);
             Assert.That(writer.ToString(), Does.Contain("(100.00%)."));
@@ -316,12 +316,12 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var descriptor = new LclVarDsc { Type = TYP_INT, lvDoNotEnregister = true };
-            Compiler.EnregisterStatsData.s_enregisterStats.RecordLocal(
+            Compiler.DebugData.EnregisterStatsData.s_enregisterStats.RecordLocal(
                 in descriptor,
                 reason,
                 AddressExposedReason.NONE);
             using var writer = new StringWriter();
-            Compiler.EnregisterStatsData.s_enregisterStats.Dump(writer);
+            Compiler.DebugData.EnregisterStatsData.s_enregisterStats.Dump(writer);
             Assert.That(writer.ToString(), Does.Contain(expected + " 1, ratio: 1.00\n"));
             Assert.That(writer.ToString(), Does.EndWith("\nAddr exposed details:\n\nNo address exposed locals to report.\n"));
         });
@@ -342,12 +342,12 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             var descriptor = new LclVarDsc { Type = TYP_STRUCT, lvDoNotEnregister = true };
-            Compiler.EnregisterStatsData.s_enregisterStats.RecordLocal(
+            Compiler.DebugData.EnregisterStatsData.s_enregisterStats.RecordLocal(
                 in descriptor,
                 DoNotEnregisterReason.AddrExposed,
                 reason);
             using var writer = new StringWriter();
-            Compiler.EnregisterStatsData.s_enregisterStats.Dump(writer);
+            Compiler.DebugData.EnregisterStatsData.s_enregisterStats.Dump(writer);
             Assert.That(writer.ToString(), Does.Contain("total number of struct locals: 1, number of enregistered: 0, notEnreg: 1, ratio: 0.00\n"));
             Assert.That(writer.ToString(), Does.Contain("m_addrExposed 1, ratio: 1.00\n"));
             Assert.That(writer.ToString(), Does.EndWith(expected + " 1, ratio: 1.00\n"));
@@ -360,7 +360,7 @@ internal static unsafe class CompilerFinalizationTests
         Assume.That(TestConfiguration.IsDebug);
         WithCompiler(compiler => {
             using var locals = new StringWriter();
-            Compiler.EnregisterStatsData.s_enregisterStats.Dump(locals);
+            Compiler.DebugData.EnregisterStatsData.s_enregisterStats.Dump(locals);
             Assert.That(locals.ToString(), Is.EqualTo("\nLocals enregistration statistics:\nNo locals to report.\n"));
             using var loops = new StringWriter();
             PrintAggregateLoopHoistStats(loops);
@@ -394,14 +394,14 @@ internal static unsafe class CompilerFinalizationTests
                 ForceDepth(ref JitConfig) = 20;
                 compiler._inlineStrategy = new InlineStrategy(compiler);
                 compiler.info.compFullName = "Finalization";
-                previousEnregisterStats = Compiler.EnregisterStatsData.s_enregisterStats;
-                Compiler.EnregisterStatsData.s_enregisterStats = default;
-                previousLoopsConsidered = Compiler.LoopHoistStatsData.s_loopsConsidered;
-                Compiler.LoopHoistStatsData.s_loopsConsidered = 0;
-                previousLoopsWithHoistedExpressions = Compiler.LoopHoistStatsData.s_loopsWithHoistedExpressions;
-                Compiler.LoopHoistStatsData.s_loopsWithHoistedExpressions = 0;
-                previousTotalHoistedExpressions = Compiler.LoopHoistStatsData.s_totalHoistedExpressions;
-                Compiler.LoopHoistStatsData.s_totalHoistedExpressions = 0;
+                previousEnregisterStats = Compiler.DebugData.EnregisterStatsData.s_enregisterStats;
+                Compiler.DebugData.EnregisterStatsData.s_enregisterStats = default;
+                previousLoopsConsidered = Compiler.DebugData.LoopHoistStatsData.s_loopsConsidered;
+                Compiler.DebugData.LoopHoistStatsData.s_loopsConsidered = 0;
+                previousLoopsWithHoistedExpressions = Compiler.DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions;
+                Compiler.DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions = 0;
+                previousTotalHoistedExpressions = Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions;
+                Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions = 0;
                 headerField = typeof(Compiler).GetField("s_compOrderHeaderPrinted",
                     BindingFlags.Static | BindingFlags.NonPublic)
                     ?? throw new InvalidOperationException("The ordered-summary header state is missing.");
@@ -416,10 +416,10 @@ internal static unsafe class CompilerFinalizationTests
             {
                 if (isDebug)
                 {
-                    Compiler.EnregisterStatsData.s_enregisterStats = previousEnregisterStats;
-                    Compiler.LoopHoistStatsData.s_loopsConsidered = previousLoopsConsidered;
-                    Compiler.LoopHoistStatsData.s_loopsWithHoistedExpressions = previousLoopsWithHoistedExpressions;
-                    Compiler.LoopHoistStatsData.s_totalHoistedExpressions = previousTotalHoistedExpressions;
+                    Compiler.DebugData.EnregisterStatsData.s_enregisterStats = previousEnregisterStats;
+                    Compiler.DebugData.LoopHoistStatsData.s_loopsConsidered = previousLoopsConsidered;
+                    Compiler.DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions = previousLoopsWithHoistedExpressions;
+                    Compiler.DebugData.LoopHoistStatsData.s_totalHoistedExpressions = previousTotalHoistedExpressions;
                     headerField!.SetValue(null, previousHeader);
                 }
             }

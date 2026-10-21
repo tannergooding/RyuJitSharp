@@ -38,8 +38,28 @@ internal enum LocalDebugDataCopyFlags : byte
 
 public partial class Compiler
 {
-    private sealed class DebugData
+    internal sealed class DebugData
     {
+        private static ConditionalWeakTable<Compiler, DebugData>? s_instances;
+
+        internal static bool s_pJitDisasmIncludeAssembliesListInitialized;
+        internal static AssemblyNamesList2? s_pJitDisasmIncludeAssembliesList;
+        internal static bool s_pJitFunctionFileInitialized;
+        internal static MethodSet2? s_pJitMethodSet;
+
+        internal static class LoopHoistStatsData
+        {
+            internal static readonly Lock? s_loopHoistStatsLock = Configuration.DEBUG ? new() : null;
+            internal static int s_loopsConsidered;
+            internal static int s_loopsWithHoistedExpressions;
+            internal static int s_totalHoistedExpressions;
+        }
+
+        internal static class EnregisterStatsData
+        {
+            internal static EnregisterStats s_enregisterStats;
+        }
+
         internal bool AsciiTrees;
         internal GenTree? AssertionPropCurrentTree;
         internal long CompCyclesAtEndOfInlining;
@@ -47,6 +67,20 @@ public partial class Compiler
         internal int InlineMethodXmlFilePosition;
         internal int ExpensiveDebugCheckLevel;
         internal LocalDebugData[]? LocalVariables;
+        internal bool Verbose;
+        internal bool VerboseTrees;
+        internal bool VerboseSsa;
+        internal string? GSSecurityCheckBlocker;
+        internal int CompGenTreeID;
+        internal List<BasicBlock>? FlowGraphBlockOrder;
+        internal bool PrintInlinedMethods;
+        internal bool EHNormalizationDone;
+        internal int InlinedCodeSize;
+        internal VARSET_TP TrackedVars = [];
+        internal int LoopsConsidered;
+        internal bool CurrentLoopHasHoistedExpression;
+        internal int LoopsWithHoistedExpressions;
+        internal int TotalHoistedExpressions;
         internal InlineArrayCompilerStressCount<byte> CompActiveStressModes;
         internal GenTree? LastConsumedNode;
         internal bool TreesBeforeAfterMorph;
@@ -69,9 +103,15 @@ public partial class Compiler
         internal bool PoisoningAnyImplicitByrefs;
         internal int ReturnSpCheck = BAD_VAR_NUM;
         internal int CallSpCheck = BAD_VAR_NUM;
+
+        internal static DebugData Get(Compiler compiler)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(compiler, static _ => new DebugData());
+        }
     }
 
-    private struct LocalDebugData
+    internal struct LocalDebugData
     {
         internal LocalDebugFlags Flags;
         internal DoNotEnregisterReason DoNotEnregisterReason;
@@ -83,34 +123,6 @@ public partial class Compiler
             (DoNotEnregisterReason is DoNotEnregisterReason.None) &&
             (AddressExposedReason is AddressExposedReason.NONE) &&
             (EncodedSingleDefDisqualifyReason == 0);
-    }
-
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<Compiler, DebugData> Table = [];
-    }
-
-    private sealed class CompilerDebugSidecar
-    {
-        internal bool Verbose;
-        internal bool VerboseTrees;
-        internal bool VerboseSsa;
-        internal string? GSSecurityCheckBlocker;
-        internal int CompGenTreeID;
-        internal List<BasicBlock>? FlowGraphBlockOrder;
-        internal bool PrintInlinedMethods;
-        internal bool EHNormalizationDone;
-        internal int InlinedCodeSize;
-        internal VARSET_TP TrackedVars = [];
-        internal int LoopsConsidered;
-        internal bool CurrentLoopHasHoistedExpression;
-        internal int LoopsWithHoistedExpressions;
-        internal int TotalHoistedExpressions;
-    }
-
-    private static class CompilerDebugSidecarStorage
-    {
-        internal static readonly ConditionalWeakTable<Compiler, CompilerDebugSidecar> Table = [];
     }
 
     /// <summary>If true, dump trees using only ASCII characters.</summary>
@@ -132,7 +144,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingDebugData()?.TreesBeforeAfterMorph ?? false);
+            return Configuration.DEBUG && GetDebugData().TreesBeforeAfterMorph;
         }
 
         set
@@ -149,7 +161,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG ? (GetExistingDebugData()?.MorphNum ?? 0) : 0;
+            return Configuration.DEBUG ? GetDebugData().MorphNum : 0;
         }
 
         set
@@ -165,7 +177,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.ExpensiveDebugCheckLevel ?? 0;
+            return GetDebugData().ExpensiveDebugCheckLevel;
         }
 
         set
@@ -179,7 +191,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.CodeGenDone ?? false;
+            return GetDebugData().CodeGenDone;
         }
 
         set
@@ -192,7 +204,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingDebugData()?.CompDebugBreak ?? false);
+            return Configuration.DEBUG && GetDebugData().CompDebugBreak;
         }
 
         set
@@ -202,14 +214,7 @@ public partial class Compiler
                 throw new System.InvalidOperationException("Compiler debug-break state is only available in Debug builds.");
             }
 
-            if (value)
-            {
-                GetDebugData().CompDebugBreak = true;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.CompDebugBreak = false;
-            }
+            GetDebugData().CompDebugBreak = value;
         }
     }
 
@@ -222,7 +227,7 @@ public partial class Compiler
                 throw new System.InvalidOperationException("Deferred profile inconsistency state is only available in Debug builds.");
             }
 
-            return GetExistingDebugData()?.PgoDeferredInconsistency ?? false;
+            return GetDebugData().PgoDeferredInconsistency;
         }
 
         set
@@ -232,14 +237,7 @@ public partial class Compiler
                 throw new System.InvalidOperationException("Deferred profile inconsistency state is only available in Debug builds.");
             }
 
-            if (value)
-            {
-                GetDebugData().PgoDeferredInconsistency = true;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.PgoDeferredInconsistency = false;
-            }
+            GetDebugData().PgoDeferredInconsistency = value;
         }
     }
 
@@ -248,7 +246,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingDebugData()?.JitFallbackCompile ?? false);
+            return Configuration.DEBUG && GetDebugData().JitFallbackCompile;
         }
 
         set
@@ -264,7 +262,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.NodeTestData;
+            return GetDebugData().NodeTestData;
         }
 
         set
@@ -277,7 +275,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.LoopHoistCSEClass ?? FIRST_LOOP_HOIST_CSE_CLASS;
+            return GetDebugData().LoopHoistCSEClass;
         }
 
         set
@@ -294,7 +292,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.SizeEstimate ?? 0;
+            return GetDebugData().SizeEstimate;
         }
 
         set
@@ -308,7 +306,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.CycleEstimate ?? 0;
+            return GetDebugData().CycleEstimate;
         }
 
         set
@@ -322,7 +320,7 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.PoisoningAnyImplicitByrefs ?? false;
+            return GetDebugData().PoisoningAnyImplicitByrefs;
         }
 
         set
@@ -337,19 +335,12 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.ImplicitByRefLclFldsStale ?? false;
+            return GetDebugData().ImplicitByRefLclFldsStale;
         }
 
         set
         {
-            if (value)
-            {
-                GetDebugData().ImplicitByRefLclFldsStale = true;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.ImplicitByRefLclFldsStale = false;
-            }
+            GetDebugData().ImplicitByRefLclFldsStale = value;
         }
     }
 
@@ -553,7 +544,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
         }
 
-        var data = GetOrCreateCompilerDebugSidecar();
+        var data = GetDebugData();
         VarSetOps.AssignNoCopy(this, ref data.TrackedVars, trackedVars);
     }
 
@@ -564,7 +555,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
         }
 
-        return GetExistingCompilerDebugSidecar()?.TrackedVars ?? [];
+        return GetDebugData().TrackedVars;
     }
 
     [Conditional("DEBUG")]
@@ -575,7 +566,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
         }
 
-        var data = GetOrCreateCompilerDebugSidecar();
+        var data = GetDebugData();
         data.CurrentLoopHasHoistedExpression = false;
         data.LoopsConsidered++;
     }
@@ -588,7 +579,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
         }
 
-        var data = GetOrCreateCompilerDebugSidecar();
+        var data = GetDebugData();
         if (!data.CurrentLoopHasHoistedExpression)
         {
             data.LoopsWithHoistedExpressions++;
@@ -605,18 +596,12 @@ public partial class Compiler
             throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
         }
 
-        return GetExistingCompilerDebugSidecar()?.TotalHoistedExpressions ?? 0;
+        return GetDebugData().TotalHoistedExpressions;
     }
 
     [Conditional("DEBUG")]
     internal void ResetLocalDebugData(int localNumber)
         => SetLocalDebugData(localNumber, default);
-
-    private CompilerDebugSidecar GetOrCreateCompilerDebugSidecar()
-        => CompilerDebugSidecarStorage.Table.GetValue(this, static _ => new CompilerDebugSidecar());
-
-    private CompilerDebugSidecar? GetExistingCompilerDebugSidecar()
-        => CompilerDebugSidecarStorage.Table.TryGetValue(this, out var data) ? data : null;
 
     internal int GetCompGenTreeIDFromDebugSidecar()
     {
@@ -625,7 +610,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
         }
 
-        return GetExistingCompilerDebugSidecar()?.CompGenTreeID ?? 0;
+        return GetDebugData().CompGenTreeID;
     }
 
     internal void SetCompGenTreeIDInDebugSidecar(int value)
@@ -635,12 +620,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
         }
 
-        if ((value == 0) && (GetExistingCompilerDebugSidecar() is null))
-        {
-            return;
-        }
-
-        GetOrCreateCompilerDebugSidecar().CompGenTreeID = value;
+        GetDebugData().CompGenTreeID = value;
     }
 
     internal void IncrementCompGenTreeIDInDebugSidecar()
@@ -650,7 +630,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
         }
 
-        GetOrCreateCompilerDebugSidecar().CompGenTreeID++;
+        GetDebugData().CompGenTreeID++;
     }
 
     internal void AddInlinedCodeSize(int value)
@@ -660,7 +640,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
         }
 
-        GetOrCreateCompilerDebugSidecar().InlinedCodeSize += value;
+        GetDebugData().InlinedCodeSize += value;
     }
 
     internal int GetInlinedCodeSize()
@@ -670,7 +650,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
         }
 
-        return GetExistingCompilerDebugSidecar()?.InlinedCodeSize ?? 0;
+        return GetDebugData().InlinedCodeSize;
     }
 
     internal void SetInlinedCodeSize(int value)
@@ -680,12 +660,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
         }
 
-        if ((value == 0) && (GetExistingCompilerDebugSidecar() is null))
-        {
-            return;
-        }
-
-        GetOrCreateCompilerDebugSidecar().InlinedCodeSize = value;
+        GetDebugData().InlinedCodeSize = value;
     }
 
     internal List<BasicBlock>? GetFlowGraphBlockOrder()
@@ -695,7 +670,7 @@ public partial class Compiler
             throw new System.InvalidOperationException("Basic block dump order is only available in Debug builds.");
         }
 
-        return GetExistingCompilerDebugSidecar()?.FlowGraphBlockOrder;
+        return GetDebugData().FlowGraphBlockOrder;
     }
 
     internal void SetFlowGraphBlockOrder(List<BasicBlock>? value)
@@ -705,16 +680,11 @@ public partial class Compiler
             throw new System.InvalidOperationException("Basic block dump order is only available in Debug builds.");
         }
 
-        if ((value is null) && (GetExistingCompilerDebugSidecar() is null))
-        {
-            return;
-        }
-
-        GetOrCreateCompilerDebugSidecar().FlowGraphBlockOrder = value;
+        GetDebugData().FlowGraphBlockOrder = value;
     }
 
     internal bool GetPrintInlinedMethods()
-        => Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.PrintInlinedMethods ?? false);
+        => Configuration.DEBUG && GetDebugData().PrintInlinedMethods;
 
     internal void SetPrintInlinedMethods(bool value)
     {
@@ -723,11 +693,11 @@ public partial class Compiler
             throw new System.InvalidOperationException("Inline method diagnostics are only available in Debug builds.");
         }
 
-        GetOrCreateCompilerDebugSidecar().PrintInlinedMethods = value;
+        GetDebugData().PrintInlinedMethods = value;
     }
 
     internal bool GetEHNormalizationDone()
-        => Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.EHNormalizationDone ?? false);
+        => Configuration.DEBUG && GetDebugData().EHNormalizationDone;
 
     internal void SetEHNormalizationDone(bool value)
     {
@@ -736,13 +706,13 @@ public partial class Compiler
             throw new System.InvalidOperationException("EH normalization diagnostics are only available in Debug builds.");
         }
 
-        GetOrCreateCompilerDebugSidecar().EHNormalizationDone = value;
+        GetDebugData().EHNormalizationDone = value;
     }
 
     private LocalDebugData GetLocalDebugData(int localNumber)
     {
         var owner = GetLocalDebugDataOwner();
-        var localVariables = owner.GetExistingDebugData()?.LocalVariables;
+        var localVariables = owner.GetDebugData().LocalVariables;
         return localVariables is not null && (uint)localNumber < (uint)localVariables.Length
             ? localVariables[localNumber]
             : default;
@@ -751,8 +721,8 @@ public partial class Compiler
     private void SetLocalDebugData(int localNumber, LocalDebugData localData)
     {
         var owner = GetLocalDebugDataOwner();
-        var data = owner.GetExistingDebugData();
-        var localVariables = data?.LocalVariables;
+        var data = owner.GetDebugData();
+        var localVariables = data.LocalVariables;
 
         if (localVariables is not null && (uint)localNumber < (uint)localVariables.Length)
         {
@@ -766,8 +736,6 @@ public partial class Compiler
         }
 
         System.ArgumentOutOfRangeException.ThrowIfNegative(localNumber);
-
-        data ??= owner.GetDebugData();
 
         if (localVariables is null)
         {
@@ -794,7 +762,7 @@ public partial class Compiler
         return owner;
     }
 
-    internal GenTree? LastConsumedNode => GetExistingDebugData()?.LastConsumedNode;
+    internal GenTree? LastConsumedNode => GetDebugData().LastConsumedNode;
 
     [Conditional("DEBUG")]
     internal void SetOptAssertionPropCurrentTree(GenTree tree)
@@ -805,17 +773,7 @@ public partial class Compiler
     [Conditional("DEBUG")]
     internal void SetLastConsumedNode(GenTree? node)
     {
-        if (node is null)
-        {
-            if (GetExistingDebugData() is { } data)
-            {
-                data.LastConsumedNode = null;
-            }
-        }
-        else
-        {
-            GetDebugData().LastConsumedNode = node;
-        }
+        GetDebugData().LastConsumedNode = node;
     }
 
     /// <summary>When false, assert when creating a new basic block.</summary>
@@ -823,7 +781,7 @@ public partial class Compiler
     {
         get
         {
-            return !Configuration.DEBUG || (GetExistingDebugData()?.SafeBasicBlockCreation ?? true);
+            return !Configuration.DEBUG || GetDebugData().SafeBasicBlockCreation;
         }
 
         set
@@ -833,17 +791,7 @@ public partial class Compiler
                 throw new System.InvalidOperationException("Basic-block creation state is only available in Debug builds.");
             }
 
-            if (value)
-            {
-                if (GetExistingDebugData() is { } data)
-                {
-                    data.SafeBasicBlockCreation = true;
-                }
-            }
-            else
-            {
-                GetDebugData().SafeBasicBlockCreation = false;
-            }
+            GetDebugData().SafeBasicBlockCreation = value;
         }
     }
 
@@ -852,7 +800,7 @@ public partial class Compiler
     {
         get
         {
-            return !Configuration.DEBUG || (GetExistingDebugData()?.SafeFlowEdgeCreation ?? true);
+            return !Configuration.DEBUG || GetDebugData().SafeFlowEdgeCreation;
         }
 
         set
@@ -862,17 +810,7 @@ public partial class Compiler
                 throw new System.InvalidOperationException("Flow-edge creation state is only available in Debug builds.");
             }
 
-            if (value)
-            {
-                if (GetExistingDebugData() is { } data)
-                {
-                    data.SafeFlowEdgeCreation = true;
-                }
-            }
-            else
-            {
-                GetDebugData().SafeFlowEdgeCreation = false;
-            }
+            GetDebugData().SafeFlowEdgeCreation = value;
         }
     }
 
@@ -883,36 +821,19 @@ public partial class Compiler
             throw new System.InvalidOperationException("Compiler debug data is only available in Debug builds.");
         }
 
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
-    }
-
-    private DebugData? GetExistingDebugData()
-    {
-        if (!Configuration.DEBUG)
-        {
-            throw new System.InvalidOperationException("Compiler debug data is only available in Debug builds.");
-        }
-
-        return DebugDataStorage.Table.TryGetValue(this, out var data) ? data : null;
+        return DebugData.Get(this);
     }
 
     internal bool compStackCheckOnRet
     {
         get
         {
-            return GetExistingDebugData()?.StackCheckOnRet ?? false;
+            return GetDebugData().StackCheckOnRet;
         }
 
         set
         {
-            if (value)
-            {
-                GetDebugData().StackCheckOnRet = true;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.StackCheckOnRet = false;
-            }
+            GetDebugData().StackCheckOnRet = value;
         }
     }
 
@@ -920,19 +841,12 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.StackCheckOnCall ?? false;
+            return GetDebugData().StackCheckOnCall;
         }
 
         set
         {
-            if (value)
-            {
-                GetDebugData().StackCheckOnCall = true;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.StackCheckOnCall = false;
-            }
+            GetDebugData().StackCheckOnCall = value;
         }
     }
 
@@ -940,19 +854,12 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.ReturnSpCheck ?? BAD_VAR_NUM;
+            return GetDebugData().ReturnSpCheck;
         }
 
         set
         {
-            if (value != BAD_VAR_NUM)
-            {
-                GetDebugData().ReturnSpCheck = value;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.ReturnSpCheck = BAD_VAR_NUM;
-            }
+            GetDebugData().ReturnSpCheck = value;
         }
     }
 
@@ -960,19 +867,12 @@ public partial class Compiler
     {
         get
         {
-            return GetExistingDebugData()?.CallSpCheck ?? BAD_VAR_NUM;
+            return GetDebugData().CallSpCheck;
         }
 
         set
         {
-            if (value != BAD_VAR_NUM)
-            {
-                GetDebugData().CallSpCheck = value;
-            }
-            else if (GetExistingDebugData() is { } data)
-            {
-                data.CallSpCheck = BAD_VAR_NUM;
-            }
+            GetDebugData().CallSpCheck = value;
         }
     }
 

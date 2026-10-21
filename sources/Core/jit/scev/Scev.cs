@@ -355,12 +355,15 @@ public sealed class ScevAddRec : Scev
 {
     private sealed class DebugData
     {
-        internal FlowGraphNaturalLoop? Loop;
-    }
+        private static System.Runtime.CompilerServices.ConditionalWeakTable<ScevAddRec, DebugData>? s_instances;
 
-    private static class DebugDataStorage
-    {
-        internal static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ScevAddRec, DebugData> Table = [];
+        internal FlowGraphNaturalLoop? Loop;
+
+        internal static DebugData Get(ScevAddRec addRec)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(addRec, static _ => new DebugData());
+        }
     }
 
     public Scev Start { get; }
@@ -392,7 +395,7 @@ public sealed class ScevAddRec : Scev
         Step = step;
         if (Configuration.DEBUG)
         {
-            DebugDataStorage.Table.GetValue(this, static _ => new DebugData()).Loop = loop;
+            DebugData.Get(this).Loop = loop;
         }
     }
 
@@ -407,6 +410,6 @@ public sealed class ScevAddRec : Scev
                     : null);
         }
 
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+        return DebugData.Get(this);
     }
 }

@@ -112,7 +112,7 @@ public partial class Compiler
                 ref readonly var descriptor = ref lvaGetDesc(i);
                 if (descriptor.lvRefCnt() != 0)
                 {
-                    EnregisterStatsData.s_enregisterStats.RecordLocal(
+                    DebugData.EnregisterStatsData.s_enregisterStats.RecordLocal(
                         in descriptor,
                         GetLocalDoNotEnregisterReason(i),
                         GetLocalAddressExposedReason(i));
@@ -222,23 +222,19 @@ public partial class Compiler
             throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
         }
 
-        var data = GetExistingCompilerDebugSidecar();
-        if (data is null)
-        {
-            return;
-        }
+        var data = GetDebugData();
 
-        var gate = LoopHoistStatsData.s_loopHoistStatsLock
+        var gate = DebugData.LoopHoistStatsData.s_loopHoistStatsLock
             ?? throw new System.InvalidOperationException("The loop-hoist statistics lock is unavailable.");
 
         lock (gate)
         {
-            LoopHoistStatsData.s_loopsConsidered =
-                unchecked(LoopHoistStatsData.s_loopsConsidered + data.LoopsConsidered);
-            LoopHoistStatsData.s_loopsWithHoistedExpressions =
-                unchecked(LoopHoistStatsData.s_loopsWithHoistedExpressions + data.LoopsWithHoistedExpressions);
-            LoopHoistStatsData.s_totalHoistedExpressions =
-                unchecked(LoopHoistStatsData.s_totalHoistedExpressions + data.TotalHoistedExpressions);
+            DebugData.LoopHoistStatsData.s_loopsConsidered =
+                unchecked(DebugData.LoopHoistStatsData.s_loopsConsidered + data.LoopsConsidered);
+            DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions =
+                unchecked(DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions + data.LoopsWithHoistedExpressions);
+            DebugData.LoopHoistStatsData.s_totalHoistedExpressions =
+                unchecked(DebugData.LoopHoistStatsData.s_totalHoistedExpressions + data.TotalHoistedExpressions);
         }
     }
 
@@ -253,14 +249,14 @@ public partial class Compiler
         writer.Write("\n---------------------------------------------------\n");
         writer.Write("Loop hoisting stats\n");
         writer.Write("---------------------------------------------------\n");
-        var considered = unchecked((uint)LoopHoistStatsData.s_loopsConsidered);
-        var hoisted = unchecked((uint)LoopHoistStatsData.s_loopsWithHoistedExpressions);
-        var expressions = unchecked((uint)LoopHoistStatsData.s_totalHoistedExpressions);
+        var considered = unchecked((uint)DebugData.LoopHoistStatsData.s_loopsConsidered);
+        var hoisted = unchecked((uint)DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions);
+        var expressions = unchecked((uint)DebugData.LoopHoistStatsData.s_totalHoistedExpressions);
         var percent = considered > 0 ? 100.0 * (hoisted / (double)considered) : 0;
         var average = hoisted > 0 ? expressions / (double)hoisted : 0;
-        writer.Write($"Considered {LoopHoistStatsData.s_loopsConsidered} loops.  Of these, we hoisted expressions out of " +
-            $"{LoopHoistStatsData.s_loopsWithHoistedExpressions} ({formatFloat(percent, "F2"),6}%).\n");
-        writer.Write($"  A total of {LoopHoistStatsData.s_totalHoistedExpressions} expressions were hoisted, an average of " +
+        writer.Write($"Considered {DebugData.LoopHoistStatsData.s_loopsConsidered} loops.  Of these, we hoisted expressions out of " +
+            $"{DebugData.LoopHoistStatsData.s_loopsWithHoistedExpressions} ({formatFloat(percent, "F2"),6}%).\n");
+        writer.Write($"  A total of {DebugData.LoopHoistStatsData.s_totalHoistedExpressions} expressions were hoisted, an average of " +
             $"{formatFloat(average, "F2"),5} per loop-with-hoisted-expr.\n");
     }
 }

@@ -12,6 +12,8 @@ public partial class GenTree
 {
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<GenTree, DebugData>? s_instances;
+
         internal genTreeOps OperSave;
         internal GenTreeDebugFlags Flags;
         internal int TreeId;
@@ -21,11 +23,12 @@ public partial class GenTree
         internal genRegTag RegTag;
         internal nint TargetHandle;
         internal IL_OFFSET LocalILOffset = BAD_IL_OFFSET;
-    }
 
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<GenTree, DebugData> Table = [];
+        internal static DebugData Get(GenTree tree)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(tree, static _ => new DebugData());
+        }
     }
 
     private int _treeId
@@ -110,7 +113,7 @@ public partial class GenTree
             throw new InvalidOperationException("GenTree debug data is only available in Debug builds.");
         }
 
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+        return DebugData.Get(this);
     }
 
     private void CopyDebugDataFrom(GenTree source, bool copyDerivedDebugData = false)
@@ -120,14 +123,8 @@ public partial class GenTree
             return;
         }
 
-        var table = DebugDataStorage.Table;
-
-        if (!table.TryGetValue(source, out var sourceData))
-        {
-            throw new InvalidOperationException("The source GenTree has no Debug data.");
-        }
-
-        var targetData = table.GetValue(this, static _ => new DebugData());
+        var sourceData = DebugData.Get(source);
+        var targetData = DebugData.Get(this);
         targetData.OperSave = sourceData.OperSave;
         targetData.Flags = sourceData.Flags;
         targetData.TreeId = sourceData.TreeId;

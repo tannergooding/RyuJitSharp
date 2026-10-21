@@ -34,13 +34,16 @@ public sealed class ClassLayout
 
     internal sealed class DebugNames
     {
+        private static ConditionalWeakTable<ClassLayout, DebugNames>? s_instances;
+
         internal string ClassName = string.Empty;
         internal string ShortClassName = string.Empty;
-    }
 
-    private static class DebugNamesStorage
-    {
-        internal static readonly ConditionalWeakTable<ClassLayout, DebugNames> Table = [];
+        internal static DebugNames Get(ClassLayout classLayout)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(classLayout, static _ => new DebugNames());
+        }
     }
 
     public ClassLayout(uint size)
@@ -86,7 +89,7 @@ public sealed class ClassLayout
             throw new InvalidOperationException("Class layout names are only available in Debug builds.");
         }
 
-        var names = DebugNamesStorage.Table.GetValue(this, static _ => new DebugNames());
+        var names = DebugNames.Get(this);
         names.ClassName = className;
         names.ShortClassName = shortClassName;
     }
@@ -98,12 +101,7 @@ public sealed class ClassLayout
             throw new InvalidOperationException("Class layout names are only available in Debug builds.");
         }
 
-        if (!DebugNamesStorage.Table.TryGetValue(this, out var names))
-        {
-            throw new InvalidOperationException("Class layout names were not initialized.");
-        }
-
-        return names;
+        return DebugNames.Get(this);
     }
 
     /// <summary>The number of GC pointers in this layout.</summary>

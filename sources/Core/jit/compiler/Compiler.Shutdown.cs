@@ -17,7 +17,7 @@ public partial class Compiler
         s_pAltJitExcludeAssembliesList = null;
         if (Configuration.DEBUG)
         {
-            CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = null;
+            DebugData.s_pJitDisasmIncludeAssembliesList = null;
         }
 
         if (Configuration.MEASURE_NOWAY)
@@ -293,7 +293,7 @@ public partial class Compiler
 
         if (Configuration.DEBUG && (JitConfig.JitEnregStats != 0))
         {
-            EnregisterStatsData.s_enregisterStats.Dump(jitstdout());
+            DebugData.EnregisterStatsData.s_enregisterStats.Dump(jitstdout());
         }
 
         if (Configuration.MEASURE_PTRTAB_SIZE)

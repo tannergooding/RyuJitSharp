@@ -48,7 +48,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.Verbose ?? false);
+            return Configuration.DEBUG && GetDebugData().Verbose;
         }
 
         private set
@@ -58,7 +58,7 @@ public partial class Compiler
                 throw new InvalidOperationException("Verbose output is only available in Debug builds.");
             }
 
-            GetOrCreateCompilerDebugSidecar().Verbose = value;
+            GetDebugData().Verbose = value;
         }
     }
 
@@ -66,7 +66,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.VerboseTrees ?? false);
+            return Configuration.DEBUG && GetDebugData().VerboseTrees;
         }
 
         private set
@@ -76,7 +76,7 @@ public partial class Compiler
                 throw new InvalidOperationException("Verbose tree output is only available in Debug builds.");
             }
 
-            GetOrCreateCompilerDebugSidecar().VerboseTrees = value;
+            GetDebugData().VerboseTrees = value;
         }
     }
 
@@ -85,7 +85,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingCompilerDebugSidecar()?.VerboseSsa ?? false);
+            return Configuration.DEBUG && GetDebugData().VerboseSsa;
         }
 
         private set
@@ -95,7 +95,7 @@ public partial class Compiler
                 throw new InvalidOperationException("Verbose SSA output is only available in Debug builds.");
             }
 
-            GetOrCreateCompilerDebugSidecar().VerboseSsa = value;
+            GetDebugData().VerboseSsa = value;
         }
     }
 
@@ -268,14 +268,6 @@ public partial class Compiler
 
     public static AssemblyNamesList2? s_pAltJitExcludeAssembliesList;
 
-    internal static class CompilerDebugStaticData
-    {
-        internal static bool s_pJitDisasmIncludeAssembliesListInitialized;
-        internal static AssemblyNamesList2? s_pJitDisasmIncludeAssembliesList;
-        internal static bool s_pJitFunctionFileInitialized;
-        internal static MethodSet2? s_pJitMethodSet;
-    }
-
     public Info info = new Info();
 
     private ClassLayoutTable? _classLayoutTable;
@@ -292,19 +284,6 @@ public partial class Compiler
     internal static class ManagedAllocationStatsData
     {
         internal static bool s_dspMemStats;
-    }
-
-    internal static class LoopHoistStatsData
-    {
-        internal static readonly Lock? s_loopHoistStatsLock = Configuration.DEBUG ? new() : null;
-        internal static int s_loopsConsidered;
-        internal static int s_loopsWithHoistedExpressions;
-        internal static int s_totalHoistedExpressions;
-    }
-
-    internal static class EnregisterStatsData
-    {
-        internal static EnregisterStats s_enregisterStats;
     }
 
     public JitMetrics Metrics;
@@ -424,7 +403,7 @@ public partial class Compiler
             if (Configuration.DEBUG)
             {
                 // External Debug state is part of the compiler setup, not per-method allocation.
-                _ = GetOrCreateCompilerDebugSidecar();
+                _ = GetDebugData();
             }
 
             _allocatedBytesAtStart = GC.GetAllocatedBytesForCurrentThread();

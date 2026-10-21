@@ -350,9 +350,9 @@ internal static unsafe class CompilerShutdownTests
                 AltInitialized(null) = true;
                 if (TestConfiguration.IsDebug)
                 {
-                    Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList =
+                    Compiler.DebugData.s_pJitDisasmIncludeAssembliesList =
                         new AssemblyNamesList2(name);
-                    Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized = true;
+                    Compiler.DebugData.s_pJitDisasmIncludeAssembliesListInitialized = true;
                 }
             }
 
@@ -362,8 +362,8 @@ internal static unsafe class CompilerShutdownTests
             Assert.That(AltInitialized(null), Is.True);
             if (TestConfiguration.IsDebug)
             {
-                Assert.That(Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList, Is.Null);
-                Assert.That(Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized, Is.True);
+                Assert.That(Compiler.DebugData.s_pJitDisasmIncludeAssembliesList, Is.Null);
+                Assert.That(Compiler.DebugData.s_pJitDisasmIncludeAssembliesListInitialized, Is.True);
             }
         });
     }
@@ -551,10 +551,10 @@ internal static unsafe class CompilerShutdownTests
             Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
         }
         var dump = TestConfiguration.IsDebug
-            ? Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList
+            ? Compiler.DebugData.s_pJitDisasmIncludeAssembliesList
             : null;
         var dumpInitialized = TestConfiguration.IsDebug &&
-            Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized;
+            Compiler.DebugData.s_pJitDisasmIncludeAssembliesListInitialized;
         var xmlHeader = TestConfiguration.IsDebug && XmlHeader;
         if (TestConfiguration.IsDebug)
         {
@@ -585,8 +585,8 @@ internal static unsafe class CompilerShutdownTests
             }
             if (TestConfiguration.IsDebug)
             {
-                Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = dump;
-                Compiler.CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized = dumpInitialized;
+                Compiler.DebugData.s_pJitDisasmIncludeAssembliesList = dump;
+                Compiler.DebugData.s_pJitDisasmIncludeAssembliesListInitialized = dumpInitialized;
                 XmlHeader = xmlHeader;
             }
         }

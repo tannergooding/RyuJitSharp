@@ -91,6 +91,8 @@ public sealed partial class LinearScan
 
         private sealed class SelectorDebugData
         {
+            private static ConditionalWeakTable<RegisterSelection, SelectorDebugData>? s_instances;
+
             internal readonly RegisterScore[] RegSelectionOrder = new RegisterScore[HeuristicCount];
             internal readonly Dictionary<RegisterScore, System.Action> MappingTable;
 
@@ -116,11 +118,12 @@ public sealed partial class LinearScan
                     [RegisterScore.REG_NUM] = selector.try_REG_NUM,
                 };
             }
-        }
 
-        private static class SelectorDebugDataStorage
-        {
-            internal static readonly ConditionalWeakTable<RegisterSelection, SelectorDebugData> Table = [];
+            internal static SelectorDebugData Get(RegisterSelection selector)
+            {
+                var instances = LazyStatic.GetOrCreate(ref s_instances);
+                return instances.GetValue(selector, static value => new SelectorDebugData(value));
+            }
         }
 
         private SelectorDebugData getDebugData()
@@ -130,7 +133,7 @@ public sealed partial class LinearScan
                 throw new InvalidOperationException("Register-selection debug data is only available in Debug builds.");
             }
 
-            return SelectorDebugDataStorage.Table.GetValue(this, static selector => new SelectorDebugData(selector));
+            return SelectorDebugData.Get(this);
         }
 
         public unsafe RegisterSelection(LinearScan linearScan)

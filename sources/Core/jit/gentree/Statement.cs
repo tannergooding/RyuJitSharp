@@ -35,13 +35,16 @@ public sealed partial class Statement
 
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<Statement, DebugData>? s_instances;
+
         internal int Id;
         internal IL_OFFSET LastILOffset;
-    }
 
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<Statement, DebugData> Table = [];
+        internal static DebugData Get(Statement statement)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(statement, static _ => new DebugData());
+        }
     }
 
     public Statement(GenTree expr, int stmtId)
@@ -50,7 +53,9 @@ public sealed partial class Statement
 
         if (Configuration.DEBUG)
         {
-            DebugDataStorage.Table.Add(this, new DebugData { Id = stmtId, LastILOffset = BAD_IL_OFFSET });
+            var debugData = DebugData.Get(this);
+            debugData.Id = stmtId;
+            debugData.LastILOffset = BAD_IL_OFFSET;
         }
     }
 
@@ -82,12 +87,7 @@ public sealed partial class Statement
             throw new InvalidOperationException("Statement debug data is only available in Debug builds.");
         }
 
-        if (!DebugDataStorage.Table.TryGetValue(this, out var debugData))
-        {
-            throw new InvalidOperationException("Statement debug data was not initialized.");
-        }
-
-        return debugData;
+        return DebugData.Get(this);
     }
 
     public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;

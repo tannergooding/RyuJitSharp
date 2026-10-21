@@ -136,24 +136,27 @@ internal sealed class ArrayStack<T>
             return 0;
         }
 
-        return DebugDataStorage.Entries.TryGetValue(this, out var debugData) ? debugData.Version : 0;
+        return DebugData.Get(this).Version;
     }
 
     [Conditional("DEBUG")]
     private void IncrementVersion()
     {
-        var debugData = DebugDataStorage.Entries.GetValue(this, static _ => new DebugData());
+        var debugData = DebugData.Get(this);
         debugData.Version = unchecked(debugData.Version + 1);
-    }
-
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<ArrayStack<T>, DebugData> Entries = [];
     }
 
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<ArrayStack<T>, DebugData>? s_instances;
+
         internal uint Version;
+
+        internal static DebugData Get(ArrayStack<T> stack)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(stack, static _ => new DebugData());
+        }
     }
 
     internal readonly ref struct BottomUpView

@@ -12,14 +12,17 @@ public sealed partial class RefPosition
 {
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<RefPosition, DebugData>? s_instances;
+
         internal uint MinRegCandidateCount;
         internal uint ReferencePositionNumber;
         internal GenTree? BuildNode;
-    }
 
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<RefPosition, DebugData> Table = [];
+        internal static DebugData Get(RefPosition position)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(position, static _ => new DebugData());
+        }
     }
 
     public uint minRegCandidateCount
@@ -68,7 +71,7 @@ public sealed partial class RefPosition
             throw new InvalidOperationException("RefPosition debug data is only available in Debug builds.");
         }
 
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
+        return DebugData.Get(this);
     }
 
     public Referenceable? referent;

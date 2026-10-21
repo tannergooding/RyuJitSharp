@@ -12,6 +12,8 @@ public partial class Emitter
 {
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<Emitter, DebugData>? s_instances;
+
         internal VARSET_TP debugPrevGCrefVars = [];
 
         internal VARSET_TP debugThisGCrefVars = [];
@@ -27,11 +29,12 @@ public partial class Emitter
         internal bool EmitIssuing;
 
         internal bool CheckAlignment;
-    }
 
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<Emitter, DebugData> Table = [];
+        internal static DebugData Get(Emitter emitter)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(emitter, static _ => new DebugData());
+        }
     }
 
     private ref VARSET_TP debugPrevGCrefVars
@@ -86,12 +89,7 @@ public partial class Emitter
             throw new InvalidOperationException("Emitter GC diagnostic state is only available in Debug builds.");
         }
 
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
-    }
-
-    private DebugData? GetExistingDebugData()
-    {
-        return DebugDataStorage.Table.TryGetValue(this, out var debugData) ? debugData : null;
+        return DebugData.Get(this);
     }
 
     public void Init()

@@ -12,6 +12,11 @@ public sealed partial class LinearScan
 {
     private sealed class AllocationDebugData
     {
+        private static ConditionalWeakTable<LinearScan, AllocationDebugData>? s_instances;
+
+        internal static int EmptyColumnWidth;
+        internal static ConfigMethodRange StressRegsRange;
+
         internal uint MaxNodeLocation;
         internal uint ConsecutiveRegistersLocation;
         internal RefPosition? ActiveRefPosition;
@@ -32,13 +37,12 @@ public sealed partial class LinearScan
         internal string DumpLine = "";
         internal string DumpMiddleBox = "";
         internal string DumpRightBox = "";
-    }
 
-    private static class AllocationDebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<LinearScan, AllocationDebugData> Table = [];
-        internal static int EmptyColumnWidth;
-        internal static ConfigMethodRange StressRegsRange;
+        internal static AllocationDebugData Get(LinearScan linearScan)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(linearScan, static _ => new AllocationDebugData());
+        }
     }
 
     private uint _maxNodeLocation
@@ -305,12 +309,12 @@ public sealed partial class LinearScan
     {
         get
         {
-            return AllocationDebugDataStorage.EmptyColumnWidth;
+            return AllocationDebugData.EmptyColumnWidth;
         }
 
         set
         {
-            AllocationDebugDataStorage.EmptyColumnWidth = value;
+            AllocationDebugData.EmptyColumnWidth = value;
         }
     }
 
@@ -321,6 +325,6 @@ public sealed partial class LinearScan
             throw new InvalidOperationException("Linear-scan allocation diagnostic state is only available in Debug builds.");
         }
 
-        return AllocationDebugDataStorage.Table.GetValue(this, static _ => new AllocationDebugData());
+        return AllocationDebugData.Get(this);
     }
 }

@@ -273,8 +273,8 @@ public sealed partial class LinearScan : IRegAlloc
 
         if (_lsraStressMask != 0)
         {
-            AllocationDebugDataStorage.StressRegsRange.EnsureInit(JitConfig.JitStressRegsRange);
-            if (!AllocationDebugDataStorage.StressRegsRange.Contains(_compiler.info.compMethodHash()))
+            AllocationDebugData.StressRegsRange.EnsureInit(JitConfig.JitStressRegsRange);
+            if (!AllocationDebugData.StressRegsRange.Contains(_compiler.info.compMethodHash()))
             {
                 JITDUMP($"*** JitStressRegs = 0x{_lsraStressMask:x} -- disabled by JitStressRegsRange\n");
                 _lsraStressMask = 0;

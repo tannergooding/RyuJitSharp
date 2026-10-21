@@ -13,13 +13,16 @@ public sealed partial class UnwindInfo
 {
     private sealed class DebugData
     {
+        private static ConditionalWeakTable<UnwindInfo, DebugData>? s_instances;
+
         internal bool AddingNOP;
         internal bool Initialized;
-    }
 
-    private static class DebugDataStorage
-    {
-        internal static readonly ConditionalWeakTable<UnwindInfo, DebugData> Table = [];
+        internal static DebugData Get(UnwindInfo unwindInfo)
+        {
+            var instances = LazyStatic.GetOrCreate(ref s_instances);
+            return instances.GetValue(unwindInfo, static _ => new DebugData());
+        }
     }
 
     public bool uwiAddingNOP
@@ -31,7 +34,7 @@ public sealed partial class UnwindInfo
                 throw new InvalidOperationException("Unwind NOP diagnostics are only available in Debug builds.");
             }
 
-            return GetExistingDebugData()?.AddingNOP ?? false;
+            return DebugData.Get(this).AddingNOP;
         }
 
         set
@@ -45,9 +48,9 @@ public sealed partial class UnwindInfo
             {
                 GetDebugData().AddingNOP = true;
             }
-            else if (GetExistingDebugData() is { } debugData)
+            else
             {
-                debugData.AddingNOP = false;
+                DebugData.Get(this).AddingNOP = false;
             }
         }
     }
@@ -61,7 +64,7 @@ public sealed partial class UnwindInfo
                 throw new InvalidOperationException("Unwind initialization state is only available in Debug builds.");
             }
 
-            return GetExistingDebugData()?.Initialized ?? false;
+            return DebugData.Get(this).Initialized;
         }
 
         set
@@ -75,20 +78,12 @@ public sealed partial class UnwindInfo
             {
                 GetDebugData().Initialized = true;
             }
-            else if (GetExistingDebugData() is { } debugData)
+            else
             {
-                debugData.Initialized = false;
+                DebugData.Get(this).Initialized = false;
             }
         }
     }
 
-    private DebugData GetDebugData()
-    {
-        return DebugDataStorage.Table.GetValue(this, static _ => new DebugData());
-    }
-
-    private DebugData? GetExistingDebugData()
-    {
-        return DebugDataStorage.Table.TryGetValue(this, out var debugData) ? debugData : null;
-    }
+    private DebugData GetDebugData() => DebugData.Get(this);
 }

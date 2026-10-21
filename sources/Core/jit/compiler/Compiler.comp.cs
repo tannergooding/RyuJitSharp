@@ -130,7 +130,7 @@ public partial class Compiler
     {
         get
         {
-            return Configuration.DEBUG ? GetExistingCompilerDebugSidecar()?.GSSecurityCheckBlocker : null;
+            return Configuration.DEBUG ? GetDebugData().GSSecurityCheckBlocker : null;
         }
 
         private set
@@ -140,7 +140,7 @@ public partial class Compiler
                 throw new System.InvalidOperationException("GS security blocker diagnostics are only available in Debug builds.");
             }
 
-            GetOrCreateCompilerDebugSidecar().GSSecurityCheckBlocker = value;
+            GetDebugData().GSSecurityCheckBlocker = value;
         }
     }
 
@@ -1789,15 +1789,15 @@ public partial class Compiler
         if (Configuration.DEBUG)
         {
             // Setup assembly name list for disassembly and dump, if not already set up.
-            if (!CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized)
+            if (!DebugData.s_pJitDisasmIncludeAssembliesListInitialized)
             {
                 var assemblyNameList = JitConfig.JitDisasmAssemblies;
 
                 if (assemblyNameList is not null)
                 {
-                    CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList = new AssemblyNamesList2(assemblyNameList);
+                    DebugData.s_pJitDisasmIncludeAssembliesList = new AssemblyNamesList2(assemblyNameList);
                 }
-                CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesListInitialized = true;
+                DebugData.s_pJitDisasmIncludeAssembliesListInitialized = true;
             }
 
             // Check for a specific set of assemblies to dump.
@@ -1805,12 +1805,12 @@ public partial class Compiler
 
             assemblyInIncludeList = true; // assume we'll dump, if there's not an include list (or it's empty).
 
-            if ((CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList is not null) &&
-                !CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList.IsEmpty)
+            if ((DebugData.s_pJitDisasmIncludeAssembliesList is not null) &&
+                !DebugData.s_pJitDisasmIncludeAssembliesList.IsEmpty)
             {
                 var assemblyName = eeGetClassAssemblyName(info.compClassHnd);
 
-                if (!CompilerDebugStaticData.s_pJitDisasmIncludeAssembliesList.IsInList(assemblyName))
+                if (!DebugData.s_pJitDisasmIncludeAssembliesList.IsInList(assemblyName))
                 {
                     // We have a list, and the current assembly is not in it, so we won't dump.
                     assemblyInIncludeList = false;
@@ -2180,19 +2180,18 @@ public partial class Compiler
                 compDebugBreak = true;
             }
 
-            assert((GetExistingDebugData() is not { } debugData) ||
-                   !((ReadOnlySpan<byte>)(debugData.CompActiveStressModes)).ContainsAnyExcept((byte)(0)));
+            assert(!((ReadOnlySpan<byte>)GetDebugData().CompActiveStressModes).ContainsAnyExcept((byte)(0)));
 
             // Read function list, if not already read, and there exists such a list.
-            if (!CompilerDebugStaticData.s_pJitFunctionFileInitialized)
+            if (!DebugData.s_pJitFunctionFileInitialized)
             {
                 var functionFileName = JitConfig.JitFunctionFile;
 
                 if (functionFileName is not null)
                 {
-                    CompilerDebugStaticData.s_pJitMethodSet = new MethodSet2(functionFileName);
+                    DebugData.s_pJitMethodSet = new MethodSet2(functionFileName);
                 }
-                CompilerDebugStaticData.s_pJitFunctionFileInitialized = true;
+                DebugData.s_pJitFunctionFileInitialized = true;
             }
         }
         else
@@ -2590,8 +2589,8 @@ public partial class Compiler
         }
 
         if (Configuration.DEBUG && Configuration.TARGET_ARM64 &&
-            ((CompilerDebugStaticData.s_pJitMethodSet is null) ||
-                CompilerDebugStaticData.s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash())))
+            ((DebugData.s_pJitMethodSet is null) ||
+                DebugData.s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash())))
         {
             opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters;
         }

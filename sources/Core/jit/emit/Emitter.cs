@@ -77,7 +77,7 @@ public partial class Emitter
     {
         get
         {
-            return Configuration.DEBUG ? (GetExistingDebugData()?.VarRefOffs ?? 0) : 0;
+            return Configuration.DEBUG ? GetDebugData().VarRefOffs : 0;
         }
 
         set
@@ -117,7 +117,7 @@ public partial class Emitter
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingDebugData()?.EmitIssuing ?? false);
+            return Configuration.DEBUG && GetDebugData().EmitIssuing;
         }
 
         set
@@ -157,7 +157,7 @@ public partial class Emitter
     {
         get
         {
-            return Configuration.DEBUG && (GetExistingDebugData()?.CheckAlignment ?? false);
+            return Configuration.DEBUG && GetDebugData().CheckAlignment;
         }
 
         set
