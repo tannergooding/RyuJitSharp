@@ -405,7 +405,15 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
             else
             {
-                Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+                Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+                Assert.That(
+                    failure?.ErrorCode,
+                    Is.EqualTo(FatalJitErrorCode.AbsoluteAddressInstructionRecordingRequiresXarch));
+                Assert.That(
+                    failure?.Message,
+                    Is.EqualTo(RiscVCodeGenPortTests.ExpectedFatalMessage(
+                        FatalJitErrorCode.AbsoluteAddressInstructionRecordingRequiresXarch,
+                        expectedBoundary)));
             }
         });
     }

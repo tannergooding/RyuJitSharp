@@ -78,7 +78,11 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = Assert.Throws<PlatformNotSupportedException>(() =>
                 codeGen.genCreateAndStoreGCInfo(16, 4, 4));
 
-            Assert.That(failure?.Message, Does.Contain("Only the AMD64 GC info encoding is implemented."));
+            Assert.That(
+                failure?.Message,
+                Is.EqualTo(ExpectedFatalMessage(
+                    FatalJitErrorCode.OnlyTheAMD64GCInfoEncodingIsImplemented,
+                    "Only the AMD64 GC info encoding is implemented.")));
         });
     }
 
@@ -449,8 +453,10 @@ internal static unsafe class RiscVCodeGenPortTests
             };
             var failure = CaptureFatalJitException(() => codeGen.Emitter.emitIns_Call(in parameters));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain($"call kind {callType}"));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.RISCVCallRecordingDoesNotSupportCallKindArgument,
+                $"RISC-V call recording does not support call kind {callType}.");
             Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
         });
     }
@@ -464,9 +470,10 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = CaptureFatalJitException(() => codeGen.Emitter.emitIns_R_R(
                 INS_addi, EA_4BYTE, REG_A0, REG_A1, insFlags.INS_FLAGS_DONT_CARE));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("ARM32 register-register instruction flags are not supported for this target."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.ARM32RegisterRegisterInstructionFlagsAreNotSupportedForThisTarget,
+                "ARM32 register-register instruction flags are not supported for this target.");
             Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
         });
     }
@@ -718,9 +725,10 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = CaptureFatalJitException(
                 () => emitter.emitIns_R_R(INS_nop, EA_8BYTE, REG_A0, REG_A1));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Illegal instruction within RISC-V two-register instruction recording."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.IllegalInstructionWithinRISCVTwoRegisterInstructionRecording,
+                "Illegal instruction within RISC-V two-register instruction recording.");
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
             Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
         });
@@ -1397,8 +1405,10 @@ internal static unsafe class RiscVCodeGenPortTests
             var zeroed = true;
             var failure = CaptureFatalJitException(
                 () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Target prolog unwind padding is not ported."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.TargetPrologUnwindPaddingIsNotPorted,
+                "Target prolog unwind padding is not ported.");
         });
     }
 
@@ -1494,8 +1504,10 @@ internal static unsafe class RiscVCodeGenPortTests
             block.InsertAtEnd(new GenTreeUnOp(GT_RETURN, TYP_VOID, null));
 
             var failure = CaptureFatalJitException(() => codeGen.genFnEpilog(block));
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Target prolog unwind padding is not ported."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.TargetPrologUnwindPaddingIsNotPorted,
+                "Target prolog unwind padding is not ported.");
         });
     }
 
@@ -1711,9 +1723,10 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = Assert.Throws<FatalJitException>(
                 () => emitter.emitIns_R_AR(INS_lw, EA_4BYTE, REG_A0, REG_A1, 8));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 register-address instruction recording is not ported."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.RISCV64RegisterAddressInstructionRecordingIsNotPorted,
+                "RISC-V64 register-address instruction recording is not ported.");
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
             Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
         });
@@ -1789,9 +1802,10 @@ internal static unsafe class RiscVCodeGenPortTests
                 () => emitter.emitIns_R_R_R_I(
                     INS_add, EA_8BYTE, REG_A0, REG_A1, REG_A2, 1));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Three-register-immediate instruction recording requires xarch."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.ThreeRegisterImmediateInstructionRecordingRequiresXarch,
+                "Three-register-immediate instruction recording requires xarch.");
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
             Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
         });
@@ -1812,9 +1826,10 @@ internal static unsafe class RiscVCodeGenPortTests
                 () => emitter.emitIns_R_R_R_R(
                     INS_add, EA_8BYTE, REG_A0, REG_A1, REG_A2, REG_A3));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Four-register instruction recording requires xarch."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.FourRegisterInstructionRecordingRequiresXarch,
+                "Four-register instruction recording requires xarch.");
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
             Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
         });
@@ -2073,8 +2088,10 @@ internal static unsafe class RiscVCodeGenPortTests
             var failure = Assert.Throws<FatalJitException>(() =>
                 codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Binary operand recording is not supported for this target."));
+            AssertFatalJitFailure(
+                failure,
+                FatalJitErrorCode.BinaryOperandRecordingIsNotSupportedForThisTarget,
+                "Binary operand recording is not supported for this target.");
         });
     }
 
@@ -3073,6 +3090,25 @@ internal static unsafe class RiscVCodeGenPortTests
             return exception;
         }
     }
+
+    private static void AssertFatalJitFailure(
+        FatalJitException? failure,
+        FatalJitErrorCode errorCode,
+        string detailedMessage)
+    {
+        Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        Assert.That(failure?.ErrorCode, Is.EqualTo(errorCode));
+        Assert.That(
+            failure?.Message,
+            Is.EqualTo(ExpectedFatalMessage(errorCode, detailedMessage)));
+    }
+
+    internal static string ExpectedFatalMessage(FatalJitErrorCode errorCode, string detailedMessage)
+        => Configuration.DETAILED_FATAL_ERROR_MESSAGES
+            ? detailedMessage
+            : string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"RJS-{(int)errorCode:D4}");
 
     private static void AssertProfilerCallbackBoundary(FatalJitException? failure)
     {
