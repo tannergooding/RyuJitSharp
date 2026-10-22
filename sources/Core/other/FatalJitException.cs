@@ -1010,6 +1010,7 @@ public enum FatalJitErrorCode
     /// <summary>Stable failure identifier for a missing LSRA register bank.</summary>
     MissingRegisterBank = 447,
     /// <summary>Stable failure identifier for an unexpected LSRA reference kind.</summary>
+    UnexpectedReferenceKind = 448,
     /// <summary>The generated ICorJitInfo vtable does not match its API order.</summary>
     ICorJitInfoVTableLayoutMismatch = 449,
     /// <summary>The ICorJitInfo proxy context does not reference a wrapper.</summary>
@@ -5432,7 +5433,6 @@ public enum FatalJitErrorCode
 
     /// <summary>The value number attribute table has an unexpected length.</summary>
     ValueNumberAttributeTableHasUnexpectedLength = 2837,
-    UnexpectedReferenceKind = 448,
 }
 
 public sealed class FatalJitException : SystemException
@@ -6185,6 +6185,7 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.InvalidRegisterNumber => "Invalid register number.",
             FatalJitErrorCode.PreciseMapStoreRequiresTheCurrentBlock => "A precise map store requires the current block.",
             FatalJitErrorCode.MissingRegisterBank => "LSRA has no register bank for this register type.",
+            FatalJitErrorCode.UnexpectedReferenceKind => "Unexpected reference kind during register resolution.",
             FatalJitErrorCode.ICorJitInfoVTableLayoutMismatch => "ICorJitInfo vtable layout does not match the generated API order.",
             FatalJitErrorCode.ICorJitInfoProxyContextUnavailable => "ICorJitInfo proxy context is no longer valid.",
             FatalJitErrorCode.FailFastReturned => "Environment.FailFast returned unexpectedly.",
@@ -8386,7 +8387,6 @@ public sealed class FatalJitException : SystemException
             FatalJitErrorCode.RLCSEFeatureMetricsHaveNotBeenInitialized => "RL CSE feature metrics have not been initialized.",
             FatalJitErrorCode.RLCSEBaseLikelihoodsHaveNotBeenInitialized => "RL CSE base likelihoods have not been initialized.",
             FatalJitErrorCode.RLCSELikelihoodsHaveNotBeenInitialized => "RL CSE likelihoods have not been initialized.",
-            FatalJitErrorCode.UnexpectedReferenceKind => "Unexpected reference kind during register resolution.",
             _ => null,
         };
 
