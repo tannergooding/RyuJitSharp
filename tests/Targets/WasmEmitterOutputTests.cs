@@ -318,7 +318,15 @@ internal static unsafe class WasmEmitterOutputTests
             var failure = Assert.Throws<FatalJitException>(
                 () => codeGen.instGen_Set_Reg_To_Zero(Globals.EA_PTRSIZE, Globals.REG_NA));
 
-            Assert.That(failure?.Message, Does.Contain("requires a fixed register set"));
+            Assert.That(
+                failure?.ErrorCode,
+                Is.EqualTo(FatalJitErrorCode.RegisterZeroingRequiresAFixedRegisterSet));
+            Assert.That(
+                failure?.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Register zeroing requires a fixed register set."
+                        : "RJS-0523"));
         });
     }
 
@@ -373,8 +381,24 @@ internal static unsafe class WasmEmitterOutputTests
             var floatingRegistersFailure = Assert.Throws<FatalJitException>(
                 () => codeGen.genZeroInitFltRegs(default, default, Globals.REG_NA));
 
-            Assert.That(zeroRegisterFailure?.Message, Does.Contain("no architectural integer zero register"));
-            Assert.That(floatingRegistersFailure?.Message, Does.Contain("no architectural floating-point registers"));
+            Assert.That(
+                zeroRegisterFailure?.ErrorCode,
+                Is.EqualTo(FatalJitErrorCode.WasmHasNoArchitecturalIntegerZeroRegister));
+            Assert.That(
+                zeroRegisterFailure?.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Wasm has no architectural integer zero register."
+                        : "RJS-0685"));
+            Assert.That(
+                floatingRegistersFailure?.ErrorCode,
+                Is.EqualTo(FatalJitErrorCode.WasmHasNoArchitecturalFloatingPointRegisters));
+            Assert.That(
+                floatingRegistersFailure?.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Wasm has no architectural floating-point registers."
+                        : "RJS-0686"));
         });
     }
 
@@ -398,11 +422,23 @@ internal static unsafe class WasmEmitterOutputTests
                 () => storeMethod.Invoke(codeGen, [Globals.REG_NA, (nint)0]));
 
             Assert.That(loadFailure?.InnerException, Is.TypeOf<FatalJitException>());
-            Assert.That(loadFailure?.InnerException?.Message,
-                Does.Contain("Native generic-context loading is unavailable on Wasm."));
+            var loadException = (FatalJitException)loadFailure!.InnerException!;
+            Assert.That(loadException.ErrorCode, Is.EqualTo(FatalJitErrorCode.NativeGenericContextLoadingIsUnavailableOnWasm));
+            Assert.That(
+                loadException.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Native generic-context loading is unavailable on Wasm."
+                        : "RJS-0695"));
             Assert.That(storeFailure?.InnerException, Is.TypeOf<FatalJitException>());
-            Assert.That(storeFailure?.InnerException?.Message,
-                Does.Contain("xarch generic-context storage is unavailable."));
+            var storeException = (FatalJitException)storeFailure!.InnerException!;
+            Assert.That(storeException.ErrorCode, Is.EqualTo(FatalJitErrorCode.XarchGenericContextStorageIsUnavailable));
+            Assert.That(
+                storeException.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "xarch generic-context storage is unavailable."
+                        : "RJS-0696"));
         });
     }
 
@@ -634,7 +670,7 @@ internal static unsafe class WasmEmitterOutputTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.SetMinOpts(true);
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 1;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
