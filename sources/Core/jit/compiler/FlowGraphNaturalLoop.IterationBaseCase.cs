@@ -83,7 +83,10 @@ public sealed partial class FlowGraphNaturalLoop
 
             default:
             {
-                FatalJitException.ThrowFatalJitException($"Unexpected loop comparison: {oper}");
+                FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnexpectedLoopComparisonArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default)
+    );
                 return default!;
             }
         }
@@ -125,7 +128,10 @@ public sealed partial class FlowGraphNaturalLoop
 
             default:
             {
-                FatalJitException.ThrowFatalJitException($"Unexpected loop comparison: {oper}");
+                FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnexpectedLoopComparisonArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default)
+    );
                 return default!;
             }
         }
@@ -189,10 +195,7 @@ public sealed partial class FlowGraphNaturalLoop
         var enteringJTrue = guardBlock.LastStmt?.RootNode;
         if (enteringJTrue is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage208
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopEntryGuardRequiresACondition);
             return default!;
         }
         assert(enteringJTrue.Oper is GT_JTRUE);

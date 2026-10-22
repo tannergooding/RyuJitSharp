@@ -60,8 +60,10 @@ public sealed partial class CodeGen
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Floating-to-integer casts are not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingToIntegerCastsAreNotImplementedForThisTarget
+    );
                 return;
             }
         }
@@ -101,8 +103,10 @@ public sealed partial class CodeGen
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Integral-to-integral casts are not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IntegralToIntegralCastsAreNotImplementedForThisTarget
+    );
                 return;
             }
         }
@@ -182,8 +186,7 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR, "Invalid floating-to-integral cast source.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidFloatingToIntegralCastSource);
                     return;
                 }
             }
@@ -194,8 +197,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Floating-to-integer cast generation outside ARM is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingToIntegerCastGenerationOutsideARMIsNotPorted
+    );
             return;
         }
     }
@@ -429,8 +434,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM || Configuration.TARGET_64BIT)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Split-long cast generation is only implemented for 32-bit ARM.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SplitLongCastGenerationIsOnlyImplementedFor32BitARM
+    );
             return;
         }
 

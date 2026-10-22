@@ -21,7 +21,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target register instruction recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetRegisterInstructionRecordingIsNotImplemented
+    );
         return;
     }
 
@@ -51,7 +54,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target two-register-immediate instruction recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetTwoRegisterImmediateInstructionRecordingIsNotImplemented
+    );
         return;
     }
 
@@ -77,7 +83,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target register-immediate instruction recording is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetRegisterImmediateInstructionRecordingIsNotImplemented
+    );
         return;
     }
 
@@ -85,12 +94,17 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Address constant materialization is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AddressConstantMaterializationIsNotImplementedForThisTarget
+    );
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 address constant materialization is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64AddressConstantMaterializationIsNotPorted
+    );
         return;
     }
 }

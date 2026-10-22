@@ -287,8 +287,9 @@ public sealed partial class Lowering
             else
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED,
-                "Long negation decomposition is not ported for this target.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LongNegationDecompositionIsNotPortedForThisTarget
+    );
                 return default!;
             }
 

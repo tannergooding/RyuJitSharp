@@ -14,7 +14,7 @@ public partial class Emitter
         var group = emitCurIG;
         if (group is null)
         {
-            FatalJitException.ThrowFatalJitException("A current instruction group is required.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CurrentInstructionGroupIsRequired2);
             return;
         }
         assert(group.igStkLvl == 0);

@@ -20,7 +20,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 multioperand recording is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32MultioperandRecordingIsNotAvailableForThisTarget
+    );
             return;
         }
 

@@ -11,7 +11,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD indices require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDIndicesRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -55,7 +55,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD sequences require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDSequencesRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -169,7 +169,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Alternating SIMD sequences require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AlternatingSIMDSequencesRequireHardwareIntrinsics
+    );
             return default!;
         }
 

@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "X86 base intrinsics require xarch support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.X86BaseIntrinsicsRequireXarchSupport);
             return;
         }
 

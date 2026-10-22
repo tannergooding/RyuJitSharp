@@ -24,7 +24,7 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_X86)
             {
-                FatalJitException.ThrowFatalJitException("xarch register encoding is not available for this target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchRegisterEncodingIsNotAvailableForThisTarget);
                 return default!;
             }
 
@@ -75,7 +75,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("REX.X output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.REXXOutputRequiresAMD64);
             return default!;
         }
 
@@ -101,7 +101,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("REX.B output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.REXBOutputRequiresAMD64);
             return default!;
         }
 
@@ -127,7 +127,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("REX output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.REXOutputRequiresAMD64);
             return default!;
         }
 

@@ -46,19 +46,16 @@ public partial class Compiler
             if (current is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage109
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ForwardSubstitutionBlockHasABrokenStatementList
+    );
                 return default!;
             }
             var previous = current.PrevStmt;
             var next = current.NextStmt;
             if (next is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage110
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NonFinalStatementMustHaveASuccessor);
                 return default!;
             }
             var substituted = fgForwardSubStatement(current);

@@ -40,7 +40,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new System.PlatformNotSupportedException("Immediate bounds are only defined for xarch intrinsics.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ImmediateBoundsAreOnlyDefinedForXarchIntrinsics);
         }
 
         if ((lookupFlags(intrinsic) & HW_Flag_EmbRoundingCompatible) != 0)

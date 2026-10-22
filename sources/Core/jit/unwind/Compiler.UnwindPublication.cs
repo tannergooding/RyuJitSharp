@@ -34,7 +34,10 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch/Wasm unwind EE publication requires xarch or Wasm.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchWasmUnwindEEPublicationRequiresXarchOrWasm
+    );
             return;
         }
 
@@ -68,7 +71,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind EE publication for this target is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnwindEEPublicationForThisTargetIsNotPorted);
             return;
         }
     }

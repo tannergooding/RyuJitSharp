@@ -35,8 +35,16 @@ public sealed partial class Lowering
         var node = (GenTree)call;
         do
         {
-            node = node.Prev ??
-                throw new System.InvalidOperationException("Reached block start while searching for tail-call arguments.");
+            var __jitExceptionCoalesceLeft103 = node.Prev;
+            if (__jitExceptionCoalesceLeft103 != null)
+            {
+                node = __jitExceptionCoalesceLeft103;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReachedBlockStartWhileSearchingForTailCallArguments);
+                node = default;
+            }
             if ((node._lirFlags & LIR.Flags.Mark) != 0)
             {
                 node._lirFlags &= ~LIR.Flags.Mark;

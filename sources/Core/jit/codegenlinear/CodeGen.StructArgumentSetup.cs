@@ -14,8 +14,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Struct stack arguments are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StructStackArgumentsAreNotSupportedOnWasm);
             return;
         }
 
@@ -70,8 +69,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_X86 || Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "This struct field-list stack-argument path is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThisStructFieldListStackArgumentPathIsNotSupportedOnThisTarget
+    );
             return;
         }
 
@@ -129,8 +130,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Target SIMD12 local-stack store recording is not yet ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetSIMD12LocalStackStoreRecordingIsNotYetPorted
+    );
             return;
         }
     }
@@ -143,8 +146,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Target SIMD12 local-stack store recording is only implemented for ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetSIMD12LocalStackStoreRecordingIsOnlyImplementedForARM64
+    );
             return;
         }
 

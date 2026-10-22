@@ -19,7 +19,10 @@ internal static class LsraConfiguration
             return type is TYP_SIMD16 or TYP_SIMD12;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Partial SIMD callee saves are not supported on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PartialSIMDCalleeSavesAreNotSupportedOnThisTarget
+    );
         return default!;
     }
 }

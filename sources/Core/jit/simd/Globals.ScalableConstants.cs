@@ -16,7 +16,7 @@ public static partial class Globals
         EnsureSimdSupported();
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Scalable SIMD constants are only supported on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableSIMDConstantsAreOnlySupportedOnARM64);
         }
     }
 
@@ -66,13 +66,26 @@ public static partial class Globals
         result.BaseType = baseType;
         result.Kind = SimdScalableRepeated;
         result.Step.u64[0] = 0;
-        result.Index.u64[0] = baseType.Size switch {
-            1 => byte.MaxValue,
-            2 => ushort.MaxValue,
-            4 => uint.MaxValue,
-            8 => ulong.MaxValue,
-            _ => throw new UnreachableException(),
-        };
+        ref var __jitExceptionTarget673 = ref result.Index.u64[0];
+        switch (baseType.Size)
+        {
+            case 1:
+                __jitExceptionTarget673 = byte.MaxValue;
+                break;
+            case 2:
+                __jitExceptionTarget673 = ushort.MaxValue;
+                break;
+            case 4:
+                __jitExceptionTarget673 = uint.MaxValue;
+                break;
+            case 8:
+                __jitExceptionTarget673 = ulong.MaxValue;
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                __jitExceptionTarget673 = default;
+                break;
+        }
 
         return true;
     }
@@ -154,7 +167,7 @@ public static partial class Globals
                 default:
                 {
                     unreached();
-                    FatalJitException.ThrowFatalJitException("Unexpected scalable vector constant kind.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedScalableVectorConstantKind);
                     result = default!;
                     return default!;
                 }

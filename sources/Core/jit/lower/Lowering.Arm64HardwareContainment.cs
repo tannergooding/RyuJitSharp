@@ -56,7 +56,7 @@ public sealed partial class Lowering
             assert(operandCount is 2 or 3 or 4);
             if (operandCount is not (2 or 3 or 4))
             {
-                throw new InvalidOperationException("Unexpected ARM64 immediate intrinsic operand count.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedARM64ImmediateIntrinsicOperandCount);
             }
 
             ContainImmediate(operandCount);
@@ -364,7 +364,8 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new InvalidOperationException($"Unexpected ARM64 containment intrinsic: {id}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedARM64ContainmentIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default));
+                return;
             }
         }
     }

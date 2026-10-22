@@ -16,7 +16,7 @@ public partial class Liveness<TLiveness>
             TLiveness.ComputeMemoryLiveness || TLiveness.TrackAddressExposedLocals ||
             !TLiveness.EliminateDeadCode)
         {
-            throw new NotSupportedException("Early tree liveness requires the non-SSA early policy.");
+            JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.EarlyTreeLivenessRequiresTheNonSSAEarlyPolicy);
         }
     }
 

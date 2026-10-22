@@ -3599,10 +3599,7 @@ public partial class Compiler
                     var candidateInfo = call.SingleInlineCandidateInfo;
                     if (candidateInfo is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage125
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.MissingInlineCandidateInformation);
                         return default!;
                     }
 
@@ -11917,7 +11914,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JitTestLabel.Mark importer is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitTestLabelMarkImporterIsOnlyAvailableInDebugBuilds);
         }
 
         TestLabelAndNum tlAndN;
@@ -15517,7 +15514,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Importer IL-offset tracking is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterILOffsetTrackingIsOnlyAvailableInDebugBuilds);
         }
 
         if (impLastILoffsStmt is null)
@@ -15755,7 +15752,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Implicit-byref poisoning is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImplicitByrefPoisoningIsOnlyAvailableInDebugBuilds);
         }
 
         var spilled = false;
@@ -16554,7 +16551,7 @@ public partial class Compiler
                     }
                     else
                     {
-                        throw new PlatformNotSupportedException("Unsupported platform");
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedPlatform);
                     }
 
                     if (isLzcnt)
@@ -18180,7 +18177,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDHalfOperationsAreUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -18208,7 +18208,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDHalfOperationsAreUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -22211,11 +22214,37 @@ public partial class Compiler
 
                             if (Configuration.FEATURE_HW_INTRINSICS)
                             {
-                                var platformNamespaceName =
-                                    Configuration.TARGET_XARCH ? ".X86"u8 :
-                                    Configuration.TARGET_ARM64 ? ".Arm"u8 :
-                                    Configuration.TARGET_WASM ? ".Wasm"u8 :
-                                    throw new PlatformNotSupportedException("Unsupported hardware intrinsic platform");
+                                global::System.ReadOnlySpan<byte> __jitExceptionResult56;
+                                bool __jitExceptionCondition57;
+                                __jitExceptionCondition57 = Configuration.TARGET_XARCH;
+                                if (__jitExceptionCondition57)
+                                {
+                                    __jitExceptionResult56 = ".X86"u8;
+                                }
+                                else
+                                {
+                                    bool __jitExceptionCondition58;
+                                    __jitExceptionCondition58 = Configuration.TARGET_ARM64;
+                                    if (__jitExceptionCondition58)
+                                    {
+                                        __jitExceptionResult56 = ".Arm"u8;
+                                    }
+                                    else
+                                    {
+                                        bool __jitExceptionCondition59;
+                                        __jitExceptionCondition59 = Configuration.TARGET_WASM;
+                                        if (__jitExceptionCondition59)
+                                        {
+                                            __jitExceptionResult56 = ".Wasm"u8;
+                                        }
+                                        else
+                                        {
+                                            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHardwareIntrinsicPlatform);
+                                            __jitExceptionResult56 = default;
+                                        }
+                                    }
+                                }
+                                var platformNamespaceName = __jitExceptionResult56;
 
                                 var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
 
@@ -22624,7 +22653,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Unsupported Half hardware intrinsic platform");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHalfHardwareIntrinsicPlatform);
         }
 
         assert(compOpportunisticallyDependsOn(InstructionSet_Fp16));
@@ -23134,11 +23163,37 @@ public partial class Compiler
             }
             else
             {
-                var platformNamespaceName =
-                    Configuration.TARGET_XARCH ? "System.Runtime.Intrinsics.X86"u8 :
-                    Configuration.TARGET_ARM64 ? "System.Runtime.Intrinsics.Arm"u8 :
-                    Configuration.TARGET_WASM ? "System.Runtime.Intrinsics.Wasm"u8 :
-                    throw new PlatformNotSupportedException("Unsupported hardware intrinsic platform");
+                global::System.ReadOnlySpan<byte> __jitExceptionResult60;
+                bool __jitExceptionCondition61;
+                __jitExceptionCondition61 = Configuration.TARGET_XARCH;
+                if (__jitExceptionCondition61)
+                {
+                    __jitExceptionResult60 = "System.Runtime.Intrinsics.X86"u8;
+                }
+                else
+                {
+                    bool __jitExceptionCondition62;
+                    __jitExceptionCondition62 = Configuration.TARGET_ARM64;
+                    if (__jitExceptionCondition62)
+                    {
+                        __jitExceptionResult60 = "System.Runtime.Intrinsics.Arm"u8;
+                    }
+                    else
+                    {
+                        bool __jitExceptionCondition63;
+                        __jitExceptionCondition63 = Configuration.TARGET_WASM;
+                        if (__jitExceptionCondition63)
+                        {
+                            __jitExceptionResult60 = "System.Runtime.Intrinsics.Wasm"u8;
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnsupportedHardwareIntrinsicPlatform);
+                            __jitExceptionResult60 = default;
+                        }
+                    }
+                }
+                var platformNamespaceName = __jitExceptionResult60;
 
                 if (!isXplatIntrinsic && !NameEquals(namespaceName, platformNamespaceName))
                 {

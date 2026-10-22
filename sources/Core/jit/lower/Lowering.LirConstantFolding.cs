@@ -62,12 +62,21 @@ public sealed partial class Lowering
             return null;
         }
 
-        GenTree probe = node switch {
-            GenTreeCast cast => new GenTreeCast(cast.Type, cast.CastOp, cast.CastType, cast, NodeThreading.LIR),
-            GenTreeOp binary when binary.Oper.IsBinary =>
-                new GenTreeOp(binary.Oper, binary.Type, binary.Op1, binary.Op2, binary, NodeThreading.LIR),
-            _ => throw new InvalidOperationException("Only unary casts and binary operations can be folded in LIR."),
-        };
+        global::RyuJitSharp.GenTree __jitExceptionResult473;
+        switch (node)
+        {
+            case GenTreeCast cast:
+                __jitExceptionResult473 = new GenTreeCast(cast.Type, cast.CastOp, cast.CastType, cast, NodeThreading.LIR);
+                break;
+            case GenTreeOp binary when binary.Oper.IsBinary:
+                __jitExceptionResult473 = new GenTreeOp(binary.Oper, binary.Type, binary.Op1, binary.Op2, binary, NodeThreading.LIR);
+                break;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OnlyUnaryCastsAndBinaryOperationsCanBeFoldedInLIR);
+                __jitExceptionResult473 = default;
+                break;
+        }
+        var probe = __jitExceptionResult473;
 
         // The source-aware unary constructor deliberately resets VN and masks
         // operator-specific flags for rewrites; folding observes the original.

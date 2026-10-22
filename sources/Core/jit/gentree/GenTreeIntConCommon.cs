@@ -150,7 +150,7 @@ public abstract class GenTreeIntConCommon : GenTree
     {
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException("Address-base fit checks are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AddressBaseFitChecksAreUnsupportedOnThisTarget);
             return default!;
         }
 

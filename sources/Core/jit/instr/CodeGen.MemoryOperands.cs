@@ -14,7 +14,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionOperandClassificationRequiresXarch
+    );
             return default!;
         }
 
@@ -54,8 +57,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Hardware instruction operands require hardware intrinsics.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareInstructionOperandsRequireHardwareIntrinsics
+    );
                     return default!;
                 }
 
@@ -168,14 +173,15 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "Vector constant operands require SIMD support.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.VectorConstantOperandsRequireSIMDSupport);
                         return default!;
                     }
                     if (!Configuration.TARGET_XARCH)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "Emitter vector-constant operands are not implemented outside xarch.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EmitterVectorConstantOperandsAreNotImplementedOutsideXarch
+    );
                         return default!;
                     }
 
@@ -195,8 +201,10 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "Mask constant operands require masked hardware intrinsics.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskConstantOperandsRequireMaskedHardwareIntrinsics
+    );
                         return default!;
                     }
 
@@ -220,8 +228,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Single-operand instruction generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SingleOperandInstructionGenerationRequiresXarch
+    );
             return;
         }
 
@@ -275,8 +285,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register/operand instruction generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterOperandInstructionGenerationRequiresXarch
+    );
             return;
         }
 
@@ -337,8 +349,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register/register/immediate instruction generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterRegisterImmediateInstructionGenerationRequiresXarch
+    );
             return;
         }
 
@@ -354,8 +368,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register/memory/immediate instruction generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterMemoryImmediateInstructionGenerationRequiresXarch
+    );
             return;
         }
 
@@ -418,8 +434,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "SIMD register/operand/immediate generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDRegisterOperandImmediateGenerationRequiresXarch
+    );
             return;
         }
 
@@ -491,8 +509,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Embedded broadcast instruction options require xarch hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EmbeddedBroadcastInstructionOptionsRequireXarchHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -505,8 +525,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Three-operand register/memory instruction generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThreeOperandRegisterMemoryInstructionGenerationRequiresXarch
+    );
             return;
         }
 

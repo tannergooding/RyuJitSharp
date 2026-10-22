@@ -72,7 +72,7 @@ public partial class Compiler
         if (!Configuration.TARGET_AMD64)
         {
             NYI("lvaToInitialSPRelativeOffset");
-            FatalJitException.ThrowFatalJitException("lvaToInitialSPRelativeOffset is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LvaToInitialSPRelativeOffsetIsNotImplementedForThisTarget);
             return default!;
         }
 

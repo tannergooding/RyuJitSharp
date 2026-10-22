@@ -223,8 +223,8 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        throw new System.InvalidOperationException(
-                            $"Unhandled binary immediate hardware intrinsic: {intrinsicId}.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledBinaryImmediateHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                        return;
                     }
                 }
                 break;
@@ -256,8 +256,8 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        throw new System.InvalidOperationException(
-                            $"Unhandled binary helper hardware intrinsic: {intrinsicId}.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledBinaryHelperHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                        return;
                     }
                 }
                 break;
@@ -265,8 +265,8 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException(
-                    $"Unexpected binary hardware intrinsic category: {category}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBinaryHardwareIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
+                return;
             }
         }
     }

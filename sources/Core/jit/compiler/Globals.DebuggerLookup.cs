@@ -131,7 +131,7 @@ public static partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Debugger lookups are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DebuggerLookupsAreOnlyAvailableInDebugBuilds);
         }
     }
 }

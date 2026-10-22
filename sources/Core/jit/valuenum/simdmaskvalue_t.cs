@@ -22,8 +22,7 @@ public readonly struct simdmaskvalue_t : IEquatable<simdmaskvalue_t>
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException(
-                "Scalable mask values are only supported on ARM64 with masked intrinsics enabled.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableMaskValuesAreOnlySupportedOnARM64WithMaskedIntrinsicsEnabled);
         }
 
         return new() { IsScalable = true, Scalable = value };

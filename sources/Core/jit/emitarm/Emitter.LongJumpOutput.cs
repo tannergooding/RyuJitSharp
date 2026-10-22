@@ -60,7 +60,7 @@ public partial class Emitter
         var nullableDstOffs = id.idjTargetIG?.igOffs;
         if (nullableDstOffs is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "An ARM32 jump requires a bound target group.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ARM32JumpRequiresABoundTargetGroup);
             return default!;
         }
         var dstOffs = nullableDstOffs.Value;
@@ -238,7 +238,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM32 branch format.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownARM32BranchFormat);
                     return default!;
                 }
 
@@ -309,7 +309,7 @@ public partial class Emitter
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM32 label format.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownARM32LabelFormat);
                 return default!;
             }
         }

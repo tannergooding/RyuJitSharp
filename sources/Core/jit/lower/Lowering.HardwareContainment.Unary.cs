@@ -190,7 +190,8 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException($"Unexpected unary hardware intrinsic category: {category}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedUnaryHardwareIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
+                return;
             }
         }
     }

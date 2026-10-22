@@ -64,31 +64,45 @@ public partial class Compiler
             var firstTry = clause.ebdTryBeg;
             var lastTry = clause.ebdTryLast;
             var canThrow = false;
-            for (var block = firstTry; ; block = block.Next
-                     ?? throw new InvalidOperationException("Try region ended prematurely."))
+            for (var block = firstTry;;)
             {
-                if (block.TryIndex != xtnum)
                 {
-                    JITDUMP($"EH#{xtnum} try block {FMT_BB(block.bbNum)} " +
-                        "is nested try entry; skipping.\n");
-                    canThrow = true;
-                    break;
-                }
-
-                foreach (var stmt in block.Statements)
-                {
-                    if ((stmt.RootNode.Flags & (GTF_EXCEPT | GTF_CALL)) != 0)
                     {
-                        JITDUMP($"EH#{xtnum} {FMT_STMT(stmt.Id)} in {FMT_BB(block.bbNum)} " +
-                            "can throw; skipping.\n");
-                        canThrow = true;
-                        break;
+                        if (block.TryIndex != xtnum)
+                        {
+                            JITDUMP($"EH#{xtnum} try block {FMT_BB(block.bbNum)} " +
+                                "is nested try entry; skipping.\n");
+                            canThrow = true;
+                            break;
+                        }
+
+                        foreach (var stmt in block.Statements)
+                        {
+                            if ((stmt.RootNode.Flags & (GTF_EXCEPT | GTF_CALL)) != 0)
+                            {
+                                JITDUMP($"EH#{xtnum} {FMT_STMT(stmt.Id)} in {FMT_BB(block.bbNum)} " +
+                                    "can throw; skipping.\n");
+                                canThrow = true;
+                                break;
+                            }
+                        }
+
+                        if (canThrow || (block == lastTry))
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (canThrow || (block == lastTry))
+                var __jitExceptionCoalesceLeft146 = block.Next;
+                if (__jitExceptionCoalesceLeft146 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft146;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -104,20 +118,34 @@ public partial class Compiler
             var firstHandler = clause.ebdHndBeg;
             var lastHandler = clause.ebdHndLast;
             var handlerEnclosesTry = false;
-            for (var block = firstHandler; ; block = block.Next
-                     ?? throw new InvalidOperationException("Handler region ended prematurely."))
+            for (var block = firstHandler;;)
             {
-                if (bbIsTryBeg(block))
                 {
-                    JITDUMP($"EH#{xtnum} handler block {FMT_BB(block.bbNum)} " +
-                        "is nested try entry; skipping.\n");
-                    handlerEnclosesTry = true;
-                    break;
+                    {
+                        if (bbIsTryBeg(block))
+                        {
+                            JITDUMP($"EH#{xtnum} handler block {FMT_BB(block.bbNum)} " +
+                                "is nested try entry; skipping.\n");
+                            handlerEnclosesTry = true;
+                            break;
+                        }
+
+                        if (block == lastHandler)
+                        {
+                            break;
+                        }
+                    }
                 }
 
-                if (block == lastHandler)
+                var __jitExceptionCoalesceLeft148 = block.Next;
+                if (__jitExceptionCoalesceLeft148 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft148;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HandlerRegionEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -128,24 +156,38 @@ public partial class Compiler
             }
 
             var enclosingTry = clause.ebdEnclosingTryIndex;
-            for (var block = firstTry; ; block = block.Next
-                     ?? throw new InvalidOperationException("Try region ended prematurely."))
+            for (var block = firstTry;;)
             {
-                if (block.TryIndex == xtnum)
                 {
-                    if (enclosingTry == EHblkDsc.NO_ENCLOSING_INDEX)
                     {
-                        block.clearTryIndex();
-                    }
-                    else
-                    {
-                        block.TryIndex = enclosingTry;
+                        if (block.TryIndex == xtnum)
+                        {
+                            if (enclosingTry == EHblkDsc.NO_ENCLOSING_INDEX)
+                            {
+                                block.clearTryIndex();
+                            }
+                            else
+                            {
+                                block.TryIndex = enclosingTry;
+                            }
+                        }
+
+                        if (block == lastTry)
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (block == lastTry)
+                var __jitExceptionCoalesceLeft150 = block.Next;
+                if (__jitExceptionCoalesceLeft150 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft150;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -158,16 +200,24 @@ public partial class Compiler
                 var afterFilter = lastFilter.Next;
                 for (var block = (BasicBlock?)firstFilter; block != afterFilter; block = block.Next)
                 {
-                    var filter = block
-                        ?? throw new InvalidOperationException("Filter region ended prematurely.");
+                    if (block is not BasicBlock filter)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FilterRegionEndedPrematurely);
+                        return default;
+                    }
+
                     fgRemoveBlockAsPred(filter);
                     filter.Kind = BBJ_THROW;
                 }
 
                 for (var block = (BasicBlock?)firstFilter; block != afterFilter; block = block.Next)
                 {
-                    var filter = block
-                        ?? throw new InvalidOperationException("Filter region ended prematurely.");
+                    if (block is not BasicBlock filter)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FilterRegionEndedPrematurely);
+                        return default;
+                    }
+
                     filter.RemoveFlags(BBF_DONT_REMOVE);
                     _ = fgRemoveBlock(filter, unreachable: true);
                 }
@@ -178,13 +228,21 @@ public partial class Compiler
             var afterHandler = lastHandler.Next;
             for (var block = (BasicBlock?)firstHandler; block != afterHandler; block = block.Next)
             {
-                var handler = block
-                    ?? throw new InvalidOperationException("Handler region ended prematurely.");
+                if (block is not BasicBlock handler)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HandlerRegionEndedPrematurely);
+                    return default;
+                }
+
                 assert(!bbIsTryBeg(handler));
                 if (handler.isBBCallFinallyPair)
                 {
-                    var tail = handler.Next
-                        ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
+                    if (handler.Next is not BasicBlock tail)
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
+                        return default;
+                    }
+
                     fgPrepareCallFinallyRetForRemoval(tail);
                 }
 
@@ -194,8 +252,12 @@ public partial class Compiler
 
             for (var block = (BasicBlock?)firstHandler; block != afterHandler; block = block.Next)
             {
-                var handler = block
-                    ?? throw new InvalidOperationException("Handler region ended prematurely.");
+                if (block is not BasicBlock handler)
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HandlerRegionEndedPrematurely);
+                    return default;
+                }
+
                 assert(!bbIsTryBeg(handler));
                 handler.RemoveFlags(BBF_DONT_REMOVE);
                 _ = fgRemoveBlock(handler, unreachable: true);

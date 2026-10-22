@@ -24,9 +24,9 @@ public sealed partial class CodeGen
         if (varLiveKeeper is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage443
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.VariableLiveRangesHaveNotBeenInitialized
+    );
             return default!;
         }
 
@@ -84,9 +84,9 @@ public sealed partial class CodeGen
                     if (trackedToVarNum is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage444
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.TrackedLocalMappingHasNotBeenInitialized
+    );
                         return default!;
                     }
                     var varNum = trackedToVarNum[varIndex];
@@ -137,9 +137,9 @@ public sealed partial class CodeGen
                         if (trackedToVarNum is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage444
-                            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.TrackedLocalMappingHasNotBeenInitialized
+    );
                             return default!;
                         }
                         var varNum = trackedToVarNum[varIndex];

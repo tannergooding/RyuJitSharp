@@ -141,7 +141,7 @@ public partial class Compiler
         {
             if (field.FieldLookup.accessType is not IAT_PVALUE)
             {
-                throw new UnreachableException("unexpected accessType for R2R field access");
+                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnexpectedAccessTypeForR2RFieldAccess);
             }
             var offset = gtNewIndOfIconHandleNode(TYP_I_IMPL, (nint)field.FieldLookup.addr, GTF_ICON_CONST_PTR);
             if (Configuration.DEBUG)

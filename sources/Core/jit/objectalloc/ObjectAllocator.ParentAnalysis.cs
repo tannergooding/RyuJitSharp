@@ -342,6 +342,7 @@ public sealed partial class ObjectAllocator
             }
         }
 
-        throw new InvalidOperationException("Missing ancestor in object-allocation analysis.");
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAncestorInObjectAllocationAnalysis);
+        return default!;
     }
 }

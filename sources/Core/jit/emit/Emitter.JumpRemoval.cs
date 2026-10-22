@@ -13,8 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Jump-to-next-instruction removal is only available for xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.JumpToNextInstructionRemovalIsOnlyAvailableForXarch
+    );
             return;
         }
 
@@ -199,9 +201,9 @@ public partial class Emitter
                     if (adjOffUptoIG is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage213
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.JumpRemovalRequiresAFinalInstructionGroup
+    );
                         return;
                     }
                 }

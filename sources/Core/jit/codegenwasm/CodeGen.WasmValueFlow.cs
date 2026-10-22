@@ -83,7 +83,11 @@ public sealed partial class CodeGen
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Unexpected Wasm value type: {type}.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedWasmValueTypeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? type : default)
+    );
                 return default!;
             }
         }

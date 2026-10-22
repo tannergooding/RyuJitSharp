@@ -24,20 +24,45 @@ public sealed partial class CodeGen
             GetEmitter().emitIns(INS_i64_extend_u_i32);
         }
 
-        var ins = (treeNode.Oper, treeNode.Type) switch
+        global::RyuJitSharp.instruction __jitExceptionResult44;
+        switch (treeNode.Oper, treeNode.Type)
         {
-            (GT_LSH, TYP_INT) => INS_i32_shl,
-            (GT_LSH, TYP_LONG) => INS_i64_shl,
-            (GT_RSH, TYP_INT) => INS_i32_shr_s,
-            (GT_RSH, TYP_LONG) => INS_i64_shr_s,
-            (GT_RSZ, TYP_INT) => INS_i32_shr_u,
-            (GT_RSZ, TYP_LONG) => INS_i64_shr_u,
-            (GT_ROL, TYP_INT) => INS_i32_rotl,
-            (GT_ROL, TYP_LONG) => INS_i64_rotl,
-            (GT_ROR, TYP_INT) => INS_i32_rotr,
-            (GT_ROR, TYP_LONG) => INS_i64_rotr,
-            _ => throw new UnreachableException(),
-        };
+            case (GT_LSH, TYP_INT):
+                __jitExceptionResult44 = INS_i32_shl;
+                break;
+            case (GT_LSH, TYP_LONG):
+                __jitExceptionResult44 = INS_i64_shl;
+                break;
+            case (GT_RSH, TYP_INT):
+                __jitExceptionResult44 = INS_i32_shr_s;
+                break;
+            case (GT_RSH, TYP_LONG):
+                __jitExceptionResult44 = INS_i64_shr_s;
+                break;
+            case (GT_RSZ, TYP_INT):
+                __jitExceptionResult44 = INS_i32_shr_u;
+                break;
+            case (GT_RSZ, TYP_LONG):
+                __jitExceptionResult44 = INS_i64_shr_u;
+                break;
+            case (GT_ROL, TYP_INT):
+                __jitExceptionResult44 = INS_i32_rotl;
+                break;
+            case (GT_ROL, TYP_LONG):
+                __jitExceptionResult44 = INS_i64_rotl;
+                break;
+            case (GT_ROR, TYP_INT):
+                __jitExceptionResult44 = INS_i32_rotr;
+                break;
+            case (GT_ROR, TYP_LONG):
+                __jitExceptionResult44 = INS_i64_rotr;
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                __jitExceptionResult44 = default;
+                break;
+        }
+        var ins = __jitExceptionResult44;
 
         GetEmitter().emitIns(ins);
         WasmProduceReg(treeNode);

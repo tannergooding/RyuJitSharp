@@ -52,8 +52,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM architecture indirect loads are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMArchitectureIndirectLoadsAreNotSupportedForThisTarget
+    );
             return;
         }
 

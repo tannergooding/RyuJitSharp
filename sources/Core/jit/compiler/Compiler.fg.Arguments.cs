@@ -225,13 +225,25 @@ public partial class Compiler
                     var sizeLeft = structSize - offset;
                     if (sizeLeft < Configuration.TARGET_POINTER_SIZE)
                     {
-                        type = sizeLeft switch {
-                            1 => TYP_UBYTE,
-                            2 => TYP_USHORT,
-                            3 or 4 => TYP_INT,
-                            5 or 6 or 7 or 8 => TYP_LONG,
-                            _ => throw new UnreachableException(),
-                        };
+                        switch (sizeLeft)
+                        {
+                            case 1:
+                                type = TYP_UBYTE;
+                                break;
+                            case 2:
+                                type = TYP_USHORT;
+                                break;
+                            case 3 or 4:
+                                type = TYP_INT;
+                                break;
+                            case 5 or 6 or 7 or 8:
+                                type = TYP_LONG;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowUnreachableException();
+                                type = default;
+                                break;
+                        }
                         if (Configuration.TARGET_ARM64 && (offset > 0) && node.Oper.IsLocalRead)
                         {
                             // Native-sized local tails permit paired loads.

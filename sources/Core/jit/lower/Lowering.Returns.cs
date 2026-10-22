@@ -72,7 +72,10 @@ public sealed partial class Lowering
         {
             if (!Configuration.SWIFT_SUPPORT)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage260);
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SwiftErrorReturnsAreNotSupportedForThisTarget
+    );
 
             }
 

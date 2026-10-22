@@ -122,7 +122,8 @@ internal sealed class JitSmallPrimitiveKeyFuncs<TKey> : JitKeyFuncsDefEquals<TKe
             return unchecked((uint)Unsafe.As<TKey, nint>(ref value));
         }
 
-        throw new NotSupportedException($"Small primitive keys of type {typeof(TKey)} are not supported.");
+        JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.SmallPrimitiveKeysOfTypeArgumentAreNotSupported, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? typeof(TKey) : default));
+        return default;
     }
 }
 
@@ -149,7 +150,8 @@ internal sealed class JitLargePrimitiveKeyFuncs<TKey> : JitKeyFuncsDefEquals<TKe
         }
 
         assert(false, "Unsupported large primitive key size.");
-        throw new NotSupportedException($"Large primitive keys of size {size} are not supported.");
+        JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.LargePrimitiveKeysOfSizeArgumentAreNotSupported, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? size : default));
+        return default;
     }
 }
 
@@ -183,7 +185,8 @@ internal sealed class JitPtrKeyFuncs<TKey> : JitKeyFuncsDefEquals<TKey>
             return unchecked((uint)RuntimeHelpers.GetHashCode(key!));
         }
 
-        throw new NotSupportedException($"Pointer keys of type {typeof(TKey)} are not supported.");
+        JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.PointerKeysOfTypeArgumentAreNotSupported, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? typeof(TKey) : default));
+        return default;
     }
 }
 
@@ -247,7 +250,7 @@ internal sealed class JitHashTable<TKey, TValue>
             {
                 if (_node is null)
                 {
-                    throw new InvalidOperationException("The value reference is uninitialized.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ValueReferenceIsUninitialized);
                 }
 
                 return ref _node.GetValueRef();
@@ -384,7 +387,7 @@ internal sealed class JitHashTable<TKey, TValue>
     {
         if (_tableSizeInfo.prime == 0)
         {
-            throw new InvalidOperationException("The hash table must be allocated before removing keys.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HashTableMustBeAllocatedBeforeRemovingKeys);
         }
 
         var index = GetIndexForKey(key);
@@ -549,7 +552,8 @@ internal sealed class JitHashTable<TKey, TValue>
 
         _behavior.NoMemory();
         Globals.NOMEM();
-        throw new InvalidOperationException("The hash-table behavior returned from its no-memory handler.");
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HashTableBehaviorReturnedFromItsNoMemoryHandler);
+        return default;
     }
 
     internal ref TValue this[TKey key]
@@ -560,7 +564,8 @@ internal sealed class JitHashTable<TKey, TValue>
             assert(value is not null);
             if (value is not ValueReference valueReference)
             {
-                throw new KeyNotFoundException();
+                JitExceptionHelpers.ThrowKeyNotFoundException();
+                return ref System.Runtime.CompilerServices.Unsafe.NullRef<TValue>();
             }
 
             return ref valueReference.Value;
@@ -611,8 +616,19 @@ internal sealed class JitHashTable<TKey, TValue>
             _started = false;
         }
 
-        public Node Current => _node ?? throw new InvalidOperationException();
+        public Node Current
+        {
+            get
+            {
+                if (_node is { } node)
+                {
+                    return node;
+                }
 
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitHashTableEnumeratorHasNoCurrentNode);
+                return default!;
+            }
+        }
         object IEnumerator.Current => Current;
 
         public bool MoveNext()

@@ -46,7 +46,7 @@ public partial class Globals
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException("INS_MULADD is not defined for this target.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.INSMULADDIsNotDefinedForThisTarget);
                         return default!;
                     }
                 }
@@ -76,7 +76,7 @@ public partial class Globals
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException("INS_ABS is not defined for this target.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.INSABSIsNotDefinedForThisTarget);
                         return default!;
                     }
                 }
@@ -106,7 +106,7 @@ public partial class Globals
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException("INS_SQRT is not defined for this target.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.INSSQRTIsNotDefinedForThisTarget);
                         return default!;
                     }
                 }
@@ -126,7 +126,7 @@ public partial class Globals
             return arm;
         }
 
-        FatalJitException.ThrowFatalJitException("The instruction alias is not defined for this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionAliasIsNotDefinedForThisTarget);
         return default!;
     }
 }

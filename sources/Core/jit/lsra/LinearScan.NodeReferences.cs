@@ -171,7 +171,7 @@ public sealed partial class LinearScan
                                 var firstReference = interval.firstRefPosition;
                                 if (firstReference is null)
                                 {
-                                    FatalJitException.ThrowFatalJitException("A live interval must have a first reference.");
+                                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LiveIntervalMustHaveAFirstReference);
                                     return;
                                 }
                                 assert(firstReference.treeNode is not null);

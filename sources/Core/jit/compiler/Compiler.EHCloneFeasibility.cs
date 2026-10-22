@@ -44,10 +44,7 @@ public partial class Compiler
     {
         if (info.Map is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage103
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CloningATryRegionRequiresABlockMap);
             return default!;
         }
 
@@ -56,9 +53,9 @@ public partial class Compiler
         if (insertionPoint is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage104
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CloningATryRegionRequiresAnInsertionPoint
+    );
             return default!;
         }
 
@@ -146,9 +143,9 @@ public partial class Compiler
                         if (previous is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage105
-                            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CallfinallyContinuationRequiresAPrecedingBlock
+    );
                             return default!;
                         }
                         assert(previous.Kind is BBJ_CALLFINALLY);
@@ -271,10 +268,7 @@ public partial class Compiler
 
         if (blocksToClone is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage106
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CloningATryRegionRequiresItsBlocks);
             return default!;
         }
 

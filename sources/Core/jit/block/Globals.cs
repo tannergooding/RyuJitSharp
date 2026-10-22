@@ -47,7 +47,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Predecessor shuffling is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PredecessorShufflingIsOnlyAvailableInDebugBuilds);
         }
 
         var head = res;
@@ -76,7 +76,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("SSA stress hashing is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAStressHashingIsOnlyAvailableInDebugBuilds);
         }
 
         var hash = unchecked((uint)JitConfig.JitSsaStress);

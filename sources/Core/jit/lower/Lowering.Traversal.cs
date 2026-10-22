@@ -204,7 +204,7 @@ public sealed partial class Lowering
     {
         if (lastNode is null)
         {
-            throw new ArgumentException("The range to lower must not be empty.");
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.RangeToLowerMustNotBeEmpty);
         }
 
         // LowerNode may remove or replace the last node, so capture its successor first.
@@ -529,8 +529,10 @@ public sealed partial class Lowering
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Hardware-intrinsic lowering requires hardware intrinsics to be enabled.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicLoweringRequiresHardwareIntrinsicsToBeEnabled
+    );
                     return default!;
                 }
 

@@ -19,7 +19,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Single-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SingleRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -112,7 +115,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Base unary instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.BaseUnaryInstructionRecordingRequiresXarch);
             return;
         }
 
@@ -153,7 +156,7 @@ public partial class Emitter
 
             if (!Configuration.TARGET_AMD64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "APX EVEX.zu instruction recording requires AMD64.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.APXEVEXZuInstructionRecordingRequiresAMD64);
                 return;
             }
 

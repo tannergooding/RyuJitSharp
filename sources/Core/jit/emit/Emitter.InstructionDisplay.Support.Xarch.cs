@@ -28,17 +28,17 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException("emitDispFrameRef-----unused on LoongArch64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EmitDispFrameRefUnusedOnLoongArch64);
             return;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EmitDispFrameRefUnimplementedUnusedOnRISCV64Yet);
             return;
         }
 
-        FatalJitException.ThrowFatalJitException("Frame-reference display is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.FrameReferenceDisplayIsNotImplementedForThisTarget);
         return;
     }
 
@@ -175,7 +175,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static xarch reference display requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StaticXarchReferenceDisplayRequiresXarch);
             return;
         }
 

@@ -13,8 +13,10 @@ public partial class Emitter
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Fixed-size prolog jumps are not available for WebAssembly.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FixedSizePrologJumpsAreNotAvailableForWebAssembly
+    );
             return;
         }
 

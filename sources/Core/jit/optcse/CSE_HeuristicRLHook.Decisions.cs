@@ -32,7 +32,7 @@ public partial class CSE_HeuristicRLHook
             var descriptor = m_compiler.CseCandidateTable[index];
             if (descriptor is null)
             {
-                FatalJitException.ThrowFatalJitException("RLHook CSE candidate is missing its descriptor.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RLHookCSECandidateIsMissingItsDescriptor);
                 return;
             }
             if (!descriptor.IsViable())
@@ -59,8 +59,18 @@ public partial class CSE_HeuristicRLHook
     public override unsafe void DumpMetrics()
     {
         EnsureDebugDiagnosticsAvailable();
-        var featureNameAndType = s_featureNameAndType
-            ?? throw new System.InvalidOperationException("RLHook CSE feature names have not been initialized.");
+        string[] __jitExceptionResult539;
+        var __jitExceptionCoalesceLeft540 = s_featureNameAndType;
+        if (__jitExceptionCoalesceLeft540 != null)
+        {
+            __jitExceptionResult539 = __jitExceptionCoalesceLeft540;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RLHookCSEFeatureNamesHaveNotBeenInitialized);
+            __jitExceptionResult539 = default;
+        }
+        var featureNameAndType = __jitExceptionResult539;
         if (JitConfig.JitRLHookEmitFeatureNames > 0)
         {
             jitprintf(" featureNames ");
@@ -75,7 +85,7 @@ public partial class CSE_HeuristicRLHook
             var descriptor = m_compiler.CseCandidateTable[index];
             if (descriptor is null)
             {
-                FatalJitException.ThrowFatalJitException("RLHook CSE candidate is missing its descriptor.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RLHookCSECandidateIsMissingItsDescriptor);
                 return;
             }
             var features = new int[MaxFeatures];

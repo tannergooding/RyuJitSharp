@@ -693,24 +693,53 @@ public partial class Compiler
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return;
             }
         }
 
-        jitprintf(assertion.Kind switch {
-            OAK_EQUAL => " == ",
-            OAK_NOT_EQUAL => " != ",
-            OAK_LT => " < ",
-            OAK_LT_UN => " u< ",
-            OAK_LE => " <= ",
-            OAK_LE_UN => " u<= ",
-            OAK_GT => " > ",
-            OAK_GT_UN => " u> ",
-            OAK_GE => " >= ",
-            OAK_GE_UN => " u>= ",
-            OAK_SUBRANGE => " in ",
-            _ => throw new UnreachableException(),
-        });
+        string __jitExceptionArgument46;
+        switch (assertion.Kind)
+        {
+            case OAK_EQUAL:
+                __jitExceptionArgument46 = " == ";
+                break;
+            case OAK_NOT_EQUAL:
+                __jitExceptionArgument46 = " != ";
+                break;
+            case OAK_LT:
+                __jitExceptionArgument46 = " < ";
+                break;
+            case OAK_LT_UN:
+                __jitExceptionArgument46 = " u< ";
+                break;
+            case OAK_LE:
+                __jitExceptionArgument46 = " <= ";
+                break;
+            case OAK_LE_UN:
+                __jitExceptionArgument46 = " u<= ";
+                break;
+            case OAK_GT:
+                __jitExceptionArgument46 = " > ";
+                break;
+            case OAK_GT_UN:
+                __jitExceptionArgument46 = " u> ";
+                break;
+            case OAK_GE:
+                __jitExceptionArgument46 = " >= ";
+                break;
+            case OAK_GE_UN:
+                __jitExceptionArgument46 = " u>= ";
+                break;
+            case OAK_SUBRANGE:
+                __jitExceptionArgument46 = " in ";
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                __jitExceptionArgument46 = default;
+                break;
+        }
+        jitprintf(__jitExceptionArgument46);
 
         switch (assertion.Op2.Kind)
         {
@@ -782,7 +811,8 @@ public partial class Compiler
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return;
             }
         }
 

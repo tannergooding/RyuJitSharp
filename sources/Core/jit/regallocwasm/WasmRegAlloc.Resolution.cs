@@ -26,9 +26,17 @@ public sealed partial class WasmRegAlloc
         int GetTrackedIndex(int localNumber)
         {
             var trackedIndex = trackedIndexByLocalNumber[localNumber];
-            return trackedIndex >= 0
-                ? trackedIndex
-                : throw new InvalidOperationException($"Local V{localNumber} has no tracked-register index.");
+            bool __jitExceptionCondition660;
+            __jitExceptionCondition660 = trackedIndex >= 0;
+            if (__jitExceptionCondition660)
+            {
+                return trackedIndex;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalVArgumentHasNoTrackedRegisterIndex, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? localNumber : default));
+                return default;
+            }
         }
 
         var temporaryRegMap = new TemporaryRegBank[(int)WasmValueType.Count];
@@ -167,10 +175,18 @@ public sealed partial class WasmRegAlloc
                         }
                         else if (local.lvIsParamRegTarget)
                         {
-                            var mapping = FindParameterRegisterLocalMapping(
-                                rootLocalNumber,
-                                0)
-                                ?? throw new InvalidOperationException("A Wasm parameter register target has no register mapping.");
+                            global::RyuJitSharp.ParameterRegisterLocalMapping __jitExceptionResult661;
+                            var __jitExceptionCoalesceLeft662 = FindParameterRegisterLocalMapping(rootLocalNumber, 0);
+                            if (__jitExceptionCoalesceLeft662 != null)
+                            {
+                                __jitExceptionResult661 = __jitExceptionCoalesceLeft662.Value;
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmParameterRegisterTargetHasNoRegisterMapping);
+                                __jitExceptionResult661 = default;
+                            }
+                            var mapping = __jitExceptionResult661;
                             var abiRegister = mapping.RegisterSegment.Register;
                             if (regNumberExtensions.WasmRegToType(virtualRegister) ==
                                 regNumberExtensions.WasmRegToType(abiRegister))
@@ -251,8 +267,18 @@ public sealed partial class WasmRegAlloc
                     continue;
                 }
 
-                var registerValues = registers.Registers
-                    ?? throw new InvalidOperationException("A Wasm temporary register bank is not initialized.");
+                global::RyuJitSharp.regNumber[] __jitExceptionResult663;
+                var __jitExceptionCoalesceLeft664 = registers.Registers;
+                if (__jitExceptionCoalesceLeft664 != null)
+                {
+                    __jitExceptionResult663 = __jitExceptionCoalesceLeft664;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmTemporaryRegisterBankIsNotInitialized);
+                    __jitExceptionResult663 = default;
+                }
+                var registerValues = __jitExceptionResult663;
                 for (var index = 0; index < registers.Count; index++)
                 {
                     registerValues[index] = AllocatePhysicalRegister(registerValues[index], null);
@@ -264,8 +290,18 @@ public sealed partial class WasmRegAlloc
             {
                 for (var index = 0; index < referencesCount; index++)
                 {
-                    var node = references.Nodes[index]
-                        ?? throw new InvalidOperationException("A collected Wasm register reference is missing.");
+                    global::RyuJitSharp.GenTree __jitExceptionResult665;
+                    var __jitExceptionCoalesceLeft666 = references.Nodes[index];
+                    if (__jitExceptionCoalesceLeft666 != null)
+                    {
+                        __jitExceptionResult665 = __jitExceptionCoalesceLeft666;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CollectedWasmRegisterReferenceIsMissing);
+                        __jitExceptionResult665 = default;
+                    }
+                    var node = __jitExceptionResult665;
 
                     if (node.Oper is GT_PHYSREG)
                     {
@@ -285,8 +321,18 @@ public sealed partial class WasmRegAlloc
                     {
                         assert(!node.Oper.IsLocal || !_compiler.lvaGetDesc(node.AsLclVarCommon().LclNum).lvIsRegCandidate);
                         var virtualRegisterIndex = regNumberExtensions.UnpackWasmReg(node.RegNum, out var type);
-                        var temporaryRegisters = temporaryRegMap[(int)type].Registers
-                            ?? throw new InvalidOperationException("A Wasm temporary register bank is not initialized.");
+                        global::RyuJitSharp.regNumber[] __jitExceptionResult667;
+                        var __jitExceptionCoalesceLeft668 = temporaryRegMap[(int)type].Registers;
+                        if (__jitExceptionCoalesceLeft668 != null)
+                        {
+                            __jitExceptionResult667 = __jitExceptionCoalesceLeft668;
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmTemporaryRegisterBankIsNotInitialized);
+                            __jitExceptionResult667 = default;
+                        }
+                        var temporaryRegisters = __jitExceptionResult667;
                         physicalRegister = temporaryRegisters[checked((int)virtualRegisterIndex)];
                     }
 
@@ -304,8 +350,18 @@ public sealed partial class WasmRegAlloc
                             var virtualRegisterIndex = regNumberExtensions.UnpackWasmReg(
                                 internalRegisters.GetAt(internalRegisterIndex),
                                 out var type);
-                            var temporaryRegisters = temporaryRegMap[(int)type].Registers
-                                ?? throw new InvalidOperationException("A Wasm temporary register bank is not initialized.");
+                            global::RyuJitSharp.regNumber[] __jitExceptionResult669;
+                            var __jitExceptionCoalesceLeft670 = temporaryRegMap[(int)type].Registers;
+                            if (__jitExceptionCoalesceLeft670 != null)
+                            {
+                                __jitExceptionResult669 = __jitExceptionCoalesceLeft670;
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmTemporaryRegisterBankIsNotInitialized);
+                                __jitExceptionResult669 = default;
+                            }
+                            var temporaryRegisters = __jitExceptionResult669;
                             var internalPhysicalRegister = temporaryRegisters[checked((int)virtualRegisterIndex)];
                             internalRegisters.SetAt(internalRegisterIndex, internalPhysicalRegister);
                         }

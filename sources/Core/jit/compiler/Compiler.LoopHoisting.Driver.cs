@@ -15,10 +15,7 @@ public partial class Compiler
         var loops = _loops;
         if (loops is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage153
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopHoistingRequiresLoopDiscovery);
             return default!;
         }
         if (loops.NumLoops == 0)
@@ -77,9 +74,9 @@ public partial class Compiler
         if (sideEffects is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage154
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopHoistingRequiresLoopSideEffectAnalysis
+    );
             return default!;
         }
         if (Configuration.DEBUG && verbose)
@@ -170,19 +167,13 @@ public partial class Compiler
         var dfsTree = _dfsTree;
         if (dfsTree is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage155
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopHoistingRequiresADFSTree);
             return default!;
         }
         var domTree = _domTree;
         if (domTree is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage156
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LoopHoistingRequiresDominators);
             return default!;
         }
         var traits = dfsTree.PostOrderTraits();

@@ -212,13 +212,13 @@ public partial class Emitter
                 var startLocation = func.startLoc;
                 if (startLocation is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm function start location is missing.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmFunctionStartLocationIsMissing);
                     return default!;
                 }
                 var endLocation = func.endLoc;
                 if (endLocation is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm function end location is missing.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmFunctionEndLocationIsMissing);
                     return default!;
                 }
                 var startOffset = startLocation.Value.CodeOffset(this);
@@ -262,8 +262,11 @@ public partial class Emitter
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                    $"Unexpected Wasm instruction output format {format}.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedWasmInstructionOutputFormatArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? format : default)
+    );
                 return default!;
             }
         }

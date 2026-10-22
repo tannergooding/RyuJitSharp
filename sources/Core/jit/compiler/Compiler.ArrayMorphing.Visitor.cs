@@ -107,7 +107,7 @@ public partial class Compiler
             }
             else
             {
-                throw new PlatformNotSupportedException("MD-array morphing requires the Windows AMD64 path.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MDArrayMorphingRequiresTheWindowsAMD64Path);
             }
             var elementSize = compiler.gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)arrElem.ArrElemSize));
             var scale = compiler.gtNewBinaryNode(GT_MUL, TYP_I_IMPL, fullTree, elementSize);

@@ -194,9 +194,9 @@ public sealed partial class CodeGen
                     else
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_SKIPPED,
-                            FatalJitErrorCode.DirectFailureMessage092
-                        );
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InsertionIntoAHomedParameterRegisterIsNotSupportedOnThisTarget
+    );
                         return;
                     }
                 }

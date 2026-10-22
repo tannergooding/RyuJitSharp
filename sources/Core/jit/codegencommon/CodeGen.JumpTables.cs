@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump table emission is not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JumpTableEmissionIsNotSupportedOnWasm);
             return default!;
         }
 

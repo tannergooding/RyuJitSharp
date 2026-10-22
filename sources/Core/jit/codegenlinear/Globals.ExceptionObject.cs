@@ -41,7 +41,8 @@ public partial class Globals
             {
                 return REG_WASM_NA;
             }
-            throw new InvalidOperationException("Unsupported target for the exception-object register.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedTargetForTheExceptionObjectRegister);
+            return default;
         }
     }
 
@@ -77,7 +78,8 @@ public partial class Globals
             {
                 return SRBM_NONE;
             }
-            throw new InvalidOperationException("Unsupported target for the exception-object register mask.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedTargetForTheExceptionObjectRegisterMask);
+            return default;
         }
     }
 }

@@ -4521,7 +4521,7 @@ public sealed partial class CodeGen
             }
 
             FatalJitException.ThrowFatalJitException(
-                "No instruction-name table is defined for the configured target.");
+                FatalJitErrorCode.NoInstructionNameTableIsDefinedForTheConfiguredTarget);
             return default;
         }
     }

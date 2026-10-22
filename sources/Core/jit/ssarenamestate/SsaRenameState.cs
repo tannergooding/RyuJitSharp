@@ -48,7 +48,18 @@ public sealed class SsaRenameState
 
         public StackNode Pop()
         {
-            var top = Top ?? throw new InvalidOperationException("Cannot pop an empty SSA rename stack.");
+            global::RyuJitSharp.SsaRenameState.StackNode __jitExceptionResult703;
+            var __jitExceptionCoalesceLeft704 = Top;
+            if (__jitExceptionCoalesceLeft704 != null)
+            {
+                __jitExceptionResult703 = __jitExceptionCoalesceLeft704;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CannotPopAnEmptySSARenameStack);
+                __jitExceptionResult703 = default;
+            }
+            var top = __jitExceptionResult703;
             Top = top.StackPrev;
 
             return top;
@@ -108,7 +119,18 @@ public sealed class SsaRenameState
 
         while (_stackListTail is Stack stack)
         {
-            var top = stack.Top ?? throw new InvalidOperationException("The active SSA rename stack is empty.");
+            global::RyuJitSharp.SsaRenameState.StackNode __jitExceptionResult705;
+            var __jitExceptionCoalesceLeft706 = stack.Top;
+            if (__jitExceptionCoalesceLeft706 != null)
+            {
+                __jitExceptionResult705 = __jitExceptionCoalesceLeft706;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ActiveSSARenameStackIsEmpty);
+                __jitExceptionResult705 = default;
+            }
+            var top = __jitExceptionResult705;
             if (!ReferenceEquals(top.Block, block))
             {
                 break;
@@ -137,8 +159,18 @@ public sealed class SsaRenameState
 
     public int TopMemory(MemoryKind memoryKind)
     {
-        var top = _memoryStacks[(int)memoryKind].Top
-            ?? throw new InvalidOperationException("The memory SSA rename stack is empty.");
+        global::RyuJitSharp.SsaRenameState.StackNode __jitExceptionResult707;
+        var __jitExceptionCoalesceLeft708 = _memoryStacks[(int)memoryKind].Top;
+        if (__jitExceptionCoalesceLeft708 != null)
+        {
+            __jitExceptionResult707 = __jitExceptionCoalesceLeft708;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MemorySSARenameStackIsEmpty);
+            __jitExceptionResult707 = default;
+        }
+        var top = __jitExceptionResult707;
 
         return top.SsaNum;
     }

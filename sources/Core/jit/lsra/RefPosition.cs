@@ -68,7 +68,7 @@ public sealed partial class RefPosition
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("RefPosition debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RefPositionDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);
@@ -246,7 +246,7 @@ public sealed partial class RefPosition
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Consecutive-register diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConsecutiveRegisterDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         if (!Configuration.TARGET_ARM64)

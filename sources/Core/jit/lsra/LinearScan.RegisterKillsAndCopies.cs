@@ -16,9 +16,9 @@ public sealed partial class LinearScan
         if (codeGen is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage387
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RegisterKillsRequireInitializedCodegenState
+    );
             return default!;
         }
         codeGen.RegSet.rsSetRegsModified(registers, true);
@@ -36,10 +36,7 @@ public sealed partial class LinearScan
             var killTail = _killTail;
             if (killTail is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage388
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NonEmptyKillListMustHaveATailReference);
                 return default!;
             }
             killTail.nextRefPosition = killRefPosition;
@@ -144,9 +141,9 @@ public sealed partial class LinearScan
         if (!currentInterval.isActive)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage389
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalCopyRegisterAssignmentRequiresAnActiveInterval
+    );
             return default!;
         }
 
@@ -156,18 +153,18 @@ public sealed partial class LinearScan
         if (oldRegisterRecord is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage390
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ActiveCopyRegisterIntervalMustRetainItsAssignedRegister
+    );
             return default!;
         }
         assert(oldRegisterRecord.regNum == oldPhysicalRegister);
         if (oldRegisterRecord.regNum != oldPhysicalRegister)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage391
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.IntervalSAssignedRegisterDoesNotMatchItsPhysicalRegister
+    );
             return default!;
         }
 

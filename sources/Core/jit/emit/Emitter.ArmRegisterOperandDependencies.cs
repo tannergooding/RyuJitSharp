@@ -11,8 +11,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 register-register instruction flags are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RegisterRegisterInstructionFlagsAreNotSupportedForThisTarget
+    );
             return;
         }
 

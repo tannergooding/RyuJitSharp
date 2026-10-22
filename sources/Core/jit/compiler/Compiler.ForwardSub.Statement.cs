@@ -66,9 +66,9 @@ public partial class Compiler
         if (nextStmt is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage115
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ForwardSubstitutionCandidateNeedsAFollowingStatement
+    );
             return default!;
         }
         var isCheapAddressTree = fgIsCheapReorderableAddressTree(fwdSubNode);
@@ -317,10 +317,7 @@ public partial class Compiler
         var link = gtFindLink(nextStmt, useNode);
         if (Unsafe.IsNullRef(ref link.result))
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage116
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LastForwardSubstitutionUseLostItsOwner);
             return default!;
         }
         var useLocal = link.result.AsLclVarCommon();
@@ -330,10 +327,7 @@ public partial class Compiler
         var first = stmt.TreeListBegin;
         if (first is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage117
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ForwardedStoreMustHaveALocalsList);
             return default!;
         }
         fgForwardSubSpliceLocals(nextStmt, useLocal,

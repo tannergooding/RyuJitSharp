@@ -19,9 +19,7 @@ public sealed partial class ScalarEvolutionContext
         var vnStore = _compiler.vnStore;
         if (vnStore is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-001",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresValueNumbering);
         }
 
         switch (scev)
@@ -115,11 +113,7 @@ public sealed partial class ScalarEvolutionContext
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(
-                            "RJS-SCE-004",
-                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                ? $"Unexpected binary scalar evolution operation {binop.Oper}."
-                                : null);
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBinaryScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? binop.Oper : default));
                         oper = default;
                         break;
                     }
@@ -156,11 +150,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-003",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected scalar evolution operation {scev.Oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? scev.Oper : default));
                 return false;
             }
         }

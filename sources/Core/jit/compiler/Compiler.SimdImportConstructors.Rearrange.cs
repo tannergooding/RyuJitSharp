@@ -35,10 +35,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage194
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDIndexType);
                 return default!;
             }
         }
@@ -49,7 +46,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD concatenation requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConcatenationRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -111,7 +108,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdConcatNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdConcatNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 
@@ -146,7 +143,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD zip requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDZipRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -190,7 +187,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdZipNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdZipNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 
@@ -236,10 +233,7 @@ public partial class Compiler
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage195
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDZipElementWidth);
                     return default!;
                 }
             }
@@ -286,7 +280,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD unzip requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDUnzipRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -343,7 +337,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdUnzipNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdUnzipNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 
@@ -423,10 +417,7 @@ public partial class Compiler
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage196
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDUnzipElementWidth);
                     return default!;
                 }
             }
@@ -462,7 +453,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD reverse requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDReverseRequiresHardwareIntrinsics);
             return default!;
         }
 

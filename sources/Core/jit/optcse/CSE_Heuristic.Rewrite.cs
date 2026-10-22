@@ -29,8 +29,18 @@ public abstract partial class CSE_HeuristicCommon
                 : successfulCandidate.IsStressCSE() ? ": stress"
                 : successfulCandidate.IsRandom() ? ": random" : "";
             cseLclVarName += category;
-            (m_sequence ?? throw new InvalidOperationException(
-                "CSE heuristic metrics have not been initialized.")).Add(unchecked((uint)descriptor.csdIndex));
+            global::System.Collections.Generic.List<uint> __jitExceptionReceiver516;
+            var __jitExceptionCoalesceLeft517 = m_sequence;
+            if (__jitExceptionCoalesceLeft517 != null)
+            {
+                __jitExceptionReceiver516 = __jitExceptionCoalesceLeft517;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicMetricsHaveNotBeenInitialized);
+                __jitExceptionReceiver516 = default;
+            }
+            __jitExceptionReceiver516.Add(unchecked((uint)descriptor.csdIndex));
         }
 
         var cseLclVarNum = m_compiler.lvaGrabTemp(false, cseLclVarName);
@@ -316,7 +326,18 @@ public abstract partial class CSE_HeuristicCommon
     {
         ssaBuilder.InsertUse(use);
 
-        var local = use.Tree ?? throw new InvalidOperationException("A CSE SSA use needs a local tree.");
+        global::RyuJitSharp.GenTreeLclVar __jitExceptionResult518;
+        var __jitExceptionCoalesceLeft519 = use.Tree;
+        if (__jitExceptionCoalesceLeft519 != null)
+        {
+            __jitExceptionResult518 = __jitExceptionCoalesceLeft519;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSESSAUseNeedsALocalTree);
+            __jitExceptionResult518 = default;
+        }
+        var local = __jitExceptionResult518;
         assert(local.HasSsaName);
 
         ref var localDescriptor = ref m_compiler.lvaGetDesc(local.LclNum);

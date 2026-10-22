@@ -14,9 +14,9 @@ public sealed partial class LinearScan
         if (registerType is TYP_UNDEF or TYP_STRUCT)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage318
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRAIntervalRequiresAConcreteRegisterType
+    );
             return default!;
         }
 
@@ -45,10 +45,9 @@ public sealed partial class LinearScan
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    FatalJitErrorCode.MissingRegisterBank,
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"LSRA has no register bank for {registerType}."
-                : null);
+        FatalJitErrorCode.MissingRegisterBank,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? registerType : default)
+    );
                 return default!;
             }
         }

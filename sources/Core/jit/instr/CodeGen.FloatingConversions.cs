@@ -29,10 +29,7 @@ public sealed partial class CodeGen
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage241
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidIntegralToFloatingConversion);
                             return default!;
                         }
                     }
@@ -54,10 +51,7 @@ public sealed partial class CodeGen
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage241
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidIntegralToFloatingConversion);
                             return default!;
                         }
                     }
@@ -79,10 +73,7 @@ public sealed partial class CodeGen
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage241
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidIntegralToFloatingConversion);
                             return default!;
                         }
                     }
@@ -104,10 +95,7 @@ public sealed partial class CodeGen
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage241
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidIntegralToFloatingConversion);
                             return default!;
                         }
                     }
@@ -127,10 +115,7 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage242
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidFloatingConversionSourceType);
                     return default!;
                 }
             }
@@ -157,7 +142,7 @@ public sealed partial class CodeGen
                         default:
                         {
                             unreached();
-                            FatalJitException.ThrowFatalJitException("Invalid integer-to-floating conversion.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidIntegerToFloatingConversion);
                             return default!;
                         }
                     }
@@ -180,7 +165,7 @@ public sealed partial class CodeGen
                         default:
                         {
                             unreached();
-                            FatalJitException.ThrowFatalJitException("Invalid unsigned-to-floating conversion.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidUnsignedToFloatingConversion);
                             return default!;
                         }
                     }
@@ -193,21 +178,21 @@ public sealed partial class CodeGen
                         case TYP_FLOAT:
                         {
                             NYI("long to float");
-                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "long to float");
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LongToFloat);
                             return default!;
                         }
 
                         case TYP_DOUBLE:
                         {
                             NYI("long to double");
-                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "long to double");
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LongToDouble);
                             return default!;
                         }
 
                         default:
                         {
                             unreached();
-                            FatalJitException.ThrowFatalJitException("Invalid long-to-floating conversion.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidLongToFloatingConversion);
                             return default!;
                         }
                     }
@@ -230,7 +215,7 @@ public sealed partial class CodeGen
                         case TYP_LONG:
                         {
                             NYI("float to long");
-                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "float to long");
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FloatToLong);
                             return default!;
                         }
 
@@ -247,7 +232,7 @@ public sealed partial class CodeGen
                         default:
                         {
                             unreached();
-                            FatalJitException.ThrowFatalJitException("Invalid float conversion.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidFloatConversion);
                             return default!;
                         }
                     }
@@ -270,7 +255,7 @@ public sealed partial class CodeGen
                         case TYP_LONG:
                         {
                             NYI("double to long");
-                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "double to long");
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DoubleToLong);
                             return default!;
                         }
 
@@ -287,7 +272,7 @@ public sealed partial class CodeGen
                         default:
                         {
                             unreached();
-                            FatalJitException.ThrowFatalJitException("Invalid double conversion.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidDoubleConversion);
                             return default!;
                         }
                     }
@@ -296,16 +281,16 @@ public sealed partial class CodeGen
                 default:
                 {
                     unreached();
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage242
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidFloatingConversionSourceType);
                     return default!;
                 }
             }
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating conversion instruction selection requires xarch or ARM.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingConversionInstructionSelectionRequiresXarchOrARM
+    );
         return default!;
     }
 
@@ -344,7 +329,7 @@ public sealed partial class CodeGen
         else
         {
             NYI("inst_RV_SH - unknown target");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "inst_RV_SH - unknown target");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InstRVSHUnknownTarget);
             return;
         }
     }

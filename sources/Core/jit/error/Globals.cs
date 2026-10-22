@@ -116,7 +116,8 @@ public partial class Globals
             }
         }
 
-        FatalJitException.ThrowFatalJitException(jitResult);
+        FatalJitException.ThrowFatalJitException(
+        jitResult    );
         return;
     }
 

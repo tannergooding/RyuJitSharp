@@ -108,7 +108,8 @@ public sealed partial class ValueNumStore
 
                     default:
                     {
-                        throw new UnreachableException();
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
                     }
                 }
             }
@@ -185,7 +186,8 @@ public sealed partial class ValueNumStore
 
                     default:
                     {
-                        throw new UnreachableException();
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
                     }
                 }
             }
@@ -259,7 +261,8 @@ public sealed partial class ValueNumStore
 
                     default:
                     {
-                        throw new UnreachableException();
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
                     }
                 }
             }
@@ -333,14 +336,16 @@ public sealed partial class ValueNumStore
 
                     default:
                     {
-                        throw new UnreachableException();
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
                     }
                 }
             }
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }
@@ -407,7 +412,8 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
 
@@ -417,18 +423,31 @@ public sealed partial class ValueNumStore
             assert(FitsIn(varTypeToSigned(dstType), intValue) || FitsIn(varTypeToUnsigned(dstType), intValue));
         }
 
-        return dstType switch {
-            TYP_UBYTE => VNForIntCon(unchecked((byte)intValue)),
-            TYP_BYTE => VNForIntCon(unchecked((sbyte)intValue)),
-            TYP_USHORT => VNForIntCon(unchecked((ushort)intValue)),
-            TYP_SHORT => VNForIntCon(unchecked((short)intValue)),
-            TYP_INT => VNForIntCon(intValue),
-            TYP_LONG => VNForLongCon(MemoryMarshal.Read<long>(bytes)),
-            TYP_BYREF => VNForByrefCon(MemoryMarshal.Read<nuint>(bytes)),
-            TYP_FLOAT => VNForFloatCon(MemoryMarshal.Read<float>(bytes)),
-            TYP_DOUBLE => VNForDoubleCon(MemoryMarshal.Read<double>(bytes)),
-            TYP_SIMD8 when Configuration.FEATURE_SIMD => VNForSimd8Con(MemoryMarshal.Read<simd8_t>(bytes)),
-            _ => throw new UnreachableException(),
-        };
+        switch (dstType)
+        {
+            case TYP_UBYTE:
+                return VNForIntCon(unchecked((byte)intValue));
+            case TYP_BYTE:
+                return VNForIntCon(unchecked((sbyte)intValue));
+            case TYP_USHORT:
+                return VNForIntCon(unchecked((ushort)intValue));
+            case TYP_SHORT:
+                return VNForIntCon(unchecked((short)intValue));
+            case TYP_INT:
+                return VNForIntCon(intValue);
+            case TYP_LONG:
+                return VNForLongCon(MemoryMarshal.Read<long>(bytes));
+            case TYP_BYREF:
+                return VNForByrefCon(MemoryMarshal.Read<nuint>(bytes));
+            case TYP_FLOAT:
+                return VNForFloatCon(MemoryMarshal.Read<float>(bytes));
+            case TYP_DOUBLE:
+                return VNForDoubleCon(MemoryMarshal.Read<double>(bytes));
+            case TYP_SIMD8 when Configuration.FEATURE_SIMD:
+                return VNForSimd8Con(MemoryMarshal.Read<simd8_t>(bytes));
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 }

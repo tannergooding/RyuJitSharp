@@ -20,7 +20,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 call output requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64CallOutputRequiresAnActiveCompiler);
             return default!;
         }
         regMaskTP gcrefRegs;

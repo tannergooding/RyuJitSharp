@@ -84,7 +84,7 @@ public sealed partial class LinearScan
         var trackedToLocal = _compiler.lvaTrackedToVarNum;
         if (trackedToLocal is null)
         {
-            FatalJitException.ThrowFatalJitException("Last-use verification requires tracked local mapping.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LastUseVerificationRequiresTrackedLocalMapping);
             return;
         }
         _ = VarSetOps.VisitBits(_compiler, missing, variableIndex => {
@@ -115,7 +115,7 @@ public sealed partial class LinearScan
         var codeGen = _compiler.codeGen;
         if (codeGen is null)
         {
-            FatalJitException.ThrowFatalJitException("Parameter preference stress requires initialized codegen state.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ParameterPreferenceStressRequiresInitializedCodegenState);
             return;
         }
         var integerRegisters = codeGen.CalleeRegArgMaskLiveIn & new regMaskTP(_rbmAllInt);

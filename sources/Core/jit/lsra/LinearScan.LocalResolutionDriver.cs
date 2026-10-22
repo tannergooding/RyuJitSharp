@@ -12,9 +12,9 @@ public sealed partial class LinearScan
         if (!_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage341
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalRegisterResolutionRequiresEnregisteredLocals
+    );
             return;
         }
         // Reconstruct assignments from entry definitions rather than trusting allocation's final register state.
@@ -51,18 +51,18 @@ public sealed partial class LinearScan
         if (firstBlock is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage342
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalRegisterResolutionRequiresAnEntryBlock
+    );
             return;
         }
         var entryMap = getInVarToRegMap(checked((uint)firstBlock.bbNum));
         if (entryMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage343
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalRegisterResolutionRequiresAnEntryVariableMap
+    );
             return;
         }
         for (; referenceIndex < refPositions.Count; referenceIndex++)
@@ -94,9 +94,9 @@ public sealed partial class LinearScan
             if (referenceIndex >= refPositions.Count)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage344
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalRegisterResolutionRequiresABlockReference
+    );
                 return;
             }
             _currentBlockStartLocation = refPositions[referenceIndex].nodeLocation;
@@ -128,9 +128,9 @@ public sealed partial class LinearScan
             if (referenceIndex >= refPositions.Count || refPositions[referenceIndex].refType is not RefType.RefTypeBB)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage345
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalRegisterResolutionRequiresAnOrderedBlockReference
+    );
                 return;
             }
             referenceIndex++;
@@ -153,7 +153,10 @@ public sealed partial class LinearScan
                     {
                         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
                         {
-                            FatalJitException.ThrowFatalJitException($"Unexpected local resolution reference: {kind}.");
+                            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? kind : default)
+    );
                             return;
                         }
                         break;
@@ -188,7 +191,10 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException($"Unexpected local resolution reference: {kind}.");
+                        FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnexpectedLocalResolutionReferenceArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? kind : default)
+    );
                         return;
                     }
                 }
@@ -201,10 +207,7 @@ public sealed partial class LinearScan
                 {
                     if (tree is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage346
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UpperVectorSavesRequireAKillNode);
                         return;
                     }
                     if (interval.isUpperVector)
@@ -212,10 +215,7 @@ public sealed partial class LinearScan
                         var local = interval.relatedInterval;
                         if (local is null)
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage347
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UpperVectorIntervalRequiresItsLocal);
                             return;
                         }
                         if (local.physReg != REG_NA && !local.isPartiallySpilled)
@@ -227,10 +227,7 @@ public sealed partial class LinearScan
                                 var referent = reference.referent;
                                 if (referent is null)
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-                                        CORJIT_INTERNALERROR,
-                                        FatalJitErrorCode.DirectFailureMessage348
-                                    );
+                                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UpperVectorSaveRequiresItsInterval);
                                     return;
                                 }
                                 referent.recentRefPosition = reference;
@@ -257,10 +254,7 @@ public sealed partial class LinearScan
                     var local = interval.relatedInterval;
                     if (local is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage349
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UpperVectorRestoresRequireALocal);
                         return;
                     }
                     assert(interval.isUpperVector);
@@ -319,9 +313,9 @@ public sealed partial class LinearScan
                     if (nextReference is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage350
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SpilledOrMovedTemporaryRequiresItsNextReference
+    );
                         return;
                     }
                     if ((Configuration.DEBUG && alwaysInsertReload()) ||
@@ -335,10 +329,7 @@ public sealed partial class LinearScan
                             var nextVectorReference = nextReference.nextRefPosition;
                             if (nextVectorReference is null)
                             {
-                                FatalJitException.ThrowFatalJitException(
-                                    CORJIT_INTERNALERROR,
-                                    FatalJitErrorCode.DirectFailureMessage351
-                                );
+                                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SavedTemporaryRequiresALaterUse);
                                 return;
                             }
 

@@ -68,10 +68,7 @@ public sealed partial class LinearScan
             var branch = block.LastNode;
             if (branch is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage298
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.BranchResolutionRequiresATerminator);
                 return;
             }
             assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);
@@ -117,10 +114,7 @@ public sealed partial class LinearScan
             var branch = block.LastNode;
             if (branch is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage299
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SwapResolutionRequiresATerminator);
                 return;
             }
             assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);
@@ -177,7 +171,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 

@@ -20,7 +20,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "This local-load implementation requires LoongArch64 or RISC-V64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThisLocalLoadImplementationRequiresLoongArch64OrRISCV64
+    );
             return;
         }
 
@@ -459,7 +462,10 @@ public sealed partial class CodeGen
 
     private void genStoreLclTypeSimd12LoongArch64(GenTreeLclVarCommon tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD12 local-store recording is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64SIMD12LocalStoreRecordingIsNotPorted
+    );
         return;
     }
 }

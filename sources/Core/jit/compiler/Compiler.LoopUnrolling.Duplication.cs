@@ -150,9 +150,9 @@ public partial class Compiler
                 if (fgCloneTryRegion(block, info, ref currentInsertAfter) is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage164
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopTryRegionPassedFeasibilityButCouldNotBeCloned
+    );
                     return default!;
                 }
 

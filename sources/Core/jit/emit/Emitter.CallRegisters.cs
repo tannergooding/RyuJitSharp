@@ -11,7 +11,10 @@ public partial class Emitter
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call GC register encoding is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CallGCRegisterEncodingIsNotSupportedForThisTarget
+    );
             return;
         }
 
@@ -294,7 +297,10 @@ public partial class Emitter
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call GC register encoding is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CallGCRegisterEncodingIsNotPortedForThisTarget
+    );
             return;
         }
     }
@@ -303,7 +309,10 @@ public partial class Emitter
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call GC register encoding is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CallGCRegisterEncodingIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -559,7 +568,10 @@ public partial class Emitter
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call GC register encoding is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CallGCRegisterEncodingIsNotPortedForThisTarget
+    );
             return default!;
         }
 

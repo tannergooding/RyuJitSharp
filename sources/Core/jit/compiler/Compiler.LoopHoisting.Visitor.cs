@@ -179,9 +179,9 @@ public partial class Compiler
                     if (definition is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage157
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopHoistingRequiresAnSSADefinitionBlock
+    );
                         return default!;
                     }
                     invariant = !_loop.ContainsBlock(definition);

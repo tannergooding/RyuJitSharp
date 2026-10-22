@@ -72,7 +72,7 @@ public sealed partial class LinearScan
                     }
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException("Unrecognized double-alignment policy.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnrecognizedDoubleAlignmentPolicy);
                         return;
                     }
                 }
@@ -365,7 +365,10 @@ public sealed partial class LinearScan
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Upper-vector local intervals are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UpperVectorLocalIntervalsAreUnsupportedOnThisTarget
+    );
             return;
         }
 

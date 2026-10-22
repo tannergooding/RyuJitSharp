@@ -11,7 +11,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD ceiling requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDCeilingRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -48,7 +48,7 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdCeilNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdCeilNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 
@@ -60,7 +60,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD floor requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDFloorRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -97,7 +97,7 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdFloorNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdFloorNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 
@@ -109,7 +109,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD rounding requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDRoundingRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -148,7 +148,7 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_RoundToNearest, simdBaseType, simdSize, op1);
         }
 
-        FatalJitException.ThrowFatalJitException("gtNewSimdRoundNode requires its target-specific implementation.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdRoundNodeRequiresItsTargetSpecificImplementation);
         return default!;
     }
 
@@ -156,7 +156,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD loads require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDLoadsRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -169,7 +169,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Aligned SIMD loads require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AlignedSIMDLoadsRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -184,7 +184,9 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdLoadAlignedNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.GtNewSimdLoadAlignedNodeRequiresItsTargetSpecificImplementation
+    );
             return default!;
         }
 
@@ -203,7 +205,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Non-temporal SIMD loads require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NonTemporalSIMDLoadsRequireHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -218,7 +223,9 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdLoadNonTemporalNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.GtNewSimdLoadNonTemporalNodeRequiresItsTargetSpecificImplementation
+    );
             return default!;
         }
 
@@ -269,7 +276,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD stores require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDStoresRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -288,7 +295,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AlignedSIMDStoresRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -303,7 +310,9 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdStoreAlignedNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.GtNewSimdStoreAlignedNodeRequiresItsTargetSpecificImplementation
+    );
             return default!;
         }
 
@@ -328,7 +337,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Non-temporal SIMD stores require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NonTemporalSIMDStoresRequireHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -343,7 +355,9 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdStoreNonTemporalNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.GtNewSimdStoreNonTemporalNodeRequiresItsTargetSpecificImplementation
+    );
             return default!;
         }
 
@@ -368,7 +382,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD dot products require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDDotProductsRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -395,7 +409,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD fused multiply-add requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDFusedMultiplyAddRequiresHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -437,11 +454,11 @@ public partial class Compiler
         {
             // Wasm has no single rounding FMA, and this should be guarded against already in import.
             unreached();
-            FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable Wasm SIMD fused multiply-add.");
+            FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, FatalJitErrorCode.UnreachableWasmSIMDFusedMultiplyAdd);
             return default!;
         }
 
-        FatalJitException.ThrowFatalJitException("gtNewSimdFmaNode requires its target-specific implementation.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdFmaNodeRequiresItsTargetSpecificImplementation);
         return default!;
     }
 
@@ -450,7 +467,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD comparisons require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDComparisonsRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -502,7 +519,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD ternary logic requires xarch hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDTernaryLogicRequiresXarchHardwareIntrinsics
+    );
             return default!;
         }
 

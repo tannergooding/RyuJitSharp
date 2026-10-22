@@ -165,22 +165,48 @@ public sealed partial class Lowering
                         node.SetOp(1, node.GetOp(3));
                         node.SetOp(3, currentOp1);
 
-                        var toggleBit = simdBaseType.Size switch
+                        uint __jitExceptionResult469;
+                        switch (simdBaseType.Size)
                         {
-                            1 => simdSize,
-                            2 => simdSize / 2,
-                            4 => simdSize / 4,
-                            8 => simdSize / 8,
-                            _ => throw new System.InvalidOperationException("Invalid permutation element size."),
-                        };
-                        var repeatedToggle = simdBaseType.Size switch
+                            case 1:
+                                __jitExceptionResult469 = simdSize;
+                                break;
+                            case 2:
+                                __jitExceptionResult469 = simdSize / 2;
+                                break;
+                            case 4:
+                                __jitExceptionResult469 = simdSize / 4;
+                                break;
+                            case 8:
+                                __jitExceptionResult469 = simdSize / 8;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidPermutationElementSize);
+                                __jitExceptionResult469 = default;
+                                break;
+                        }
+                        var toggleBit = __jitExceptionResult469;
+                        ulong __jitExceptionResult470;
+                        switch (simdBaseType.Size)
                         {
-                            1 => toggleBit * 0x0101010101010101UL,
-                            2 => toggleBit * 0x0001000100010001UL,
-                            4 => toggleBit * 0x0000000100000001UL,
-                            8 => toggleBit,
-                            _ => throw new System.InvalidOperationException("Invalid permutation element size."),
-                        };
+                            case 1:
+                                __jitExceptionResult470 = toggleBit * 0x0101010101010101UL;
+                                break;
+                            case 2:
+                                __jitExceptionResult470 = toggleBit * 0x0001000100010001UL;
+                                break;
+                            case 4:
+                                __jitExceptionResult470 = toggleBit * 0x0000000100000001UL;
+                                break;
+                            case 8:
+                                __jitExceptionResult470 = toggleBit;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidPermutationElementSize);
+                                __jitExceptionResult470 = default;
+                                break;
+                        }
+                        var repeatedToggle = __jitExceptionResult470;
                         ref var indices = ref op2.AsVecCon().SimdVal;
                         for (var i = 0; i < (simdSize / 8); i++)
                         {
@@ -345,8 +371,7 @@ public sealed partial class Lowering
                                 NI_AVX512v3_MultiplyWideningAndAddSaturate) &&
                                 (intrinsicId < FIRST_NI_AVXVNNI || intrinsicId > LAST_NI_AVXVNNIINT_V512))
                             {
-                                throw new System.InvalidOperationException(
-                                    $"Unhandled ternary hardware intrinsic: {intrinsicId}.");
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledTernaryHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
                             }
                             TryMakeSrcContainedOrRegOptional(node, op3);
                             break;
@@ -448,8 +473,8 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        throw new System.InvalidOperationException(
-                            $"Unhandled ternary immediate hardware intrinsic: {intrinsicId}.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledTernaryImmediateHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                        return;
                     }
                 }
                 break;
@@ -457,8 +482,8 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException(
-                    $"Unexpected ternary hardware intrinsic category: {category}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTernaryHardwareIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
+                return;
             }
         }
     }

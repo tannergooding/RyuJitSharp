@@ -17,7 +17,7 @@ public partial class Emitter
         var group = descriptor.StorageGroup;
         if (group is null)
         {
-            FatalJitException.ThrowFatalJitException("Instruction traversal requires descriptor ownership.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionTraversalRequiresDescriptorOwnership);
             return;
         }
         IReadOnlyList<instrDesc> storage;
@@ -31,8 +31,7 @@ public partial class Emitter
             var groupStorage = group.igData;
             if (groupStorage is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    "Instruction traversal requires saved descriptor storage.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionTraversalRequiresSavedDescriptorStorage);
                 return;
             }
 
@@ -65,7 +64,7 @@ public partial class Emitter
             var storage = group.igData;
             if (storage is null)
             {
-                FatalJitException.ThrowFatalJitException("A saved instruction group requires descriptor storage.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SavedInstructionGroupRequiresDescriptorStorage);
                 descriptor = default!;
                 count = default!;
                 return;
@@ -190,7 +189,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind emitter instruction-size queries require ARM32.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindEmitterInstructionSizeQueriesRequireARM32
+    );
             return default!;
         }
 

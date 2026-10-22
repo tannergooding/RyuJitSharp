@@ -38,7 +38,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86 || !Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 SIMD12 stack arguments are unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.X86SIMD12StackArgumentsAreUnsupportedForThisTarget
+    );
             return;
         }
     }

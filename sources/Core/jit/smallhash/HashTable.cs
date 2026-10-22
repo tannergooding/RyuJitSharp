@@ -56,7 +56,8 @@ internal sealed class DefaultHashTableInfo<TKey> : IHashTableInfo<TKey>
             return unchecked((uint)RuntimeHelpers.GetHashCode(key));
         }
 
-        throw new NotSupportedException($"No default native hash is defined for {typeof(TKey)}.");
+        JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.NoDefaultNativeHashIsDefinedForArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? typeof(TKey) : default));
+        return default;
     }
 }
 
@@ -248,7 +249,7 @@ internal abstract class HashTableBase<TKey, TValue>
             assert(inserted);
             if (!inserted)
             {
-                throw new InvalidOperationException("The hash table could not reinsert an occupied bucket.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HashTableCouldNotReinsertAnOccupiedBucket);
             }
         }
 
@@ -286,7 +287,7 @@ internal abstract class HashTableBase<TKey, TValue>
         assert(inserted);
         if (!inserted)
         {
-            throw new InvalidOperationException("The hash table has no free bucket.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HashTableHasNoFreeBucket);
         }
 
         _numFullBuckets++;

@@ -30,7 +30,7 @@ public partial class Compiler
         {
             NYI("Compiler.dumpRegMask outside AMD64");
             fatal(CORJIT_IMPLLIMITATION);
-            FatalJitException.ThrowFatalJitException("Compiler.dumpRegMask outside AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CompilerDumpRegMaskOutsideAMD64);
             return;
         }
 

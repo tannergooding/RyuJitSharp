@@ -105,9 +105,9 @@ public sealed partial class LinearScan
             if (assignedRecord is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage329
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.AssignedIntervalRequiresItsRegisterRecord
+    );
                 return;
             }
             var assignedReg = assignedRecord.regNum;

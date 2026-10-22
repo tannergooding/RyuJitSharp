@@ -50,7 +50,8 @@ public partial class Emitter
                     return DescriptorSizes.Jump;
                 }
 
-                throw new System.PlatformNotSupportedException("Jump descriptor size is not yet ported for this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.JumpDescriptorSizeIsNotYetPortedForThisTarget);
+                return default;
             }
         }
     }

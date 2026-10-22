@@ -28,10 +28,7 @@ public sealed partial class BasicBlock
             var expression = compiler.gtCloneExpr(statement.RootNode);
             if (expression is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage078
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.BlockStatementMustHaveACloneableRoot);
                 return;
             }
             compiler.fgInsertStmtAtEnd(to, compiler.fgNewStmtFromTree(expression, di: statement.DebugInfo));

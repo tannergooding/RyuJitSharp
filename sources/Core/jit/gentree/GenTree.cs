@@ -159,7 +159,7 @@ public partial class GenTree
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Containment diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ContainmentDiagnosticsAreOnlyAvailableInDebugBuilds);
             }
 
             assert(Debugger.IsAttached || IsLirOp);
@@ -650,7 +650,7 @@ public partial class GenTree
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("LIR diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LIRDiagnosticsAreOnlyAvailableInDebugBuilds);
             }
 
             return (_oper.DebugKind & DBK_NOTLIR) == 0;
@@ -1073,9 +1073,9 @@ public partial class GenTree
                     if (!Configuration.TARGET_RISCV64)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage227
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.GTSLLIUWScaleIndexHandlingIsOnlySupportedOnRISCV64
+    );
                         return default!;
                     }
                     goto case GT_LSH;
@@ -1768,7 +1768,7 @@ public partial class GenTree
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree flag diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeFlagDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         // the "baseline" number of flag characters displayed
@@ -2860,7 +2860,7 @@ public partial class GenTree
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Morph stress cloning is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MorphStressCloningIsOnlyAvailableInDebugBuilds);
         }
 
         assert((_prev is null) && (_next is null));
@@ -2887,8 +2887,7 @@ public partial class GenTree
         if (Configuration.HOST_64BIT && !Configuration.TARGET_64BIT &&
             (Oper is GT_CNS_LNG) && (oper is GT_CNS_INT))
         {
-            throw new InvalidOperationException(
-                "Replace a long constant at its owning use rather than changing its managed runtime type");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplaceALongConstantAtItsOwningUseRatherThanChangingItsManagedRuntimeType);
         }
 
         assert(oper.StructType == GetType());

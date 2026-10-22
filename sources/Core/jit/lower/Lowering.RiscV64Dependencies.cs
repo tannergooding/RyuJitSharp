@@ -11,12 +11,15 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering was dispatched for another target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64SIMDLoweringWasDispatchedForAnotherTarget
+    );
             return;
         }
 
         NYI_RISCV64("LowerSIMD");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDLoweringIsNotPorted);
         return;
     }
 
@@ -24,12 +27,15 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment was dispatched for another target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64SIMDContainmentWasDispatchedForAnotherTarget
+    );
             return;
         }
 
         NYI_RISCV64("ContainCheckSIMD");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDContainmentIsNotPorted);
         return;
     }
 
@@ -37,14 +43,18 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V64 hardware-intrinsic immediate materialization was dispatched incorrectly.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicImmediateMaterializationWasDispatchedIncorrectly
+    );
             return default!;
         }
 
         NYI_RISCV64("IsValidConstForMovImm");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "RISC-V64 hardware-intrinsic immediate materialization is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicImmediateMaterializationIsNotPorted
+    );
         return default!;
     }
 
@@ -52,13 +62,18 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V64 hardware-intrinsic comparison was dispatched incorrectly.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicComparisonWasDispatchedIncorrectly
+    );
             return default!;
         }
 
         NYI_RISCV64("LowerHWIntrinsicCmpOp");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic comparisons are not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicComparisonsAreNotPorted
+    );
         return default!;
     }
 
@@ -66,13 +81,18 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V64 hardware-intrinsic containment was dispatched incorrectly.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicContainmentWasDispatchedIncorrectly
+    );
             return;
         }
 
         NYI_RISCV64("ContainCheckHWIntrinsic");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic containment is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicContainmentIsNotPorted
+    );
         return;
     }
 }

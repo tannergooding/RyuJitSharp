@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AlignedSIMDStoresRequireAMD64);
             return default!;
         }
 
@@ -25,7 +25,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Block-based prolog initialization is not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BlockBasedPrologInitializationIsNotSupportedOnWasm
+    );
             return;
         }
         else if (Configuration.TARGET_ARM)
@@ -213,7 +216,10 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires a supported target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PrologBlockInitializationRequiresASupportedTarget
+    );
             return;
         }
         else

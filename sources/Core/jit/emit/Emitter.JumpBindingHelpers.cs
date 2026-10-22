@@ -15,14 +15,14 @@ public partial class Emitter
             var targetBlock = jump.idjTarget;
             if (targetBlock is null)
             {
-                FatalJitException.ThrowFatalJitException("An unbound LoongArch64 jump requires a basic-block target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnboundLoongArch64JumpRequiresABasicBlockTarget);
                 return default!;
             }
             assert(targetBlock.HasFlag(BBF_HAS_LABEL));
             var targetGroup = emitCodeGetCookie(targetBlock);
             if (targetGroup is null)
             {
-                FatalJitException.ThrowFatalJitException("A LoongArch64 jump target has no instruction-group cookie.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64JumpTargetHasNoInstructionGroupCookie);
                 return default!;
             }
             jump.LoongArchIGlabel = targetGroup;
@@ -43,7 +43,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("Jump target binding requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.JumpTargetBindingRequiresAnActiveCompiler);
                 return default!;
             }
 
@@ -61,7 +61,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("Jump target binding requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.JumpTargetBindingRequiresAnActiveCompiler);
                 return default!;
             }
 
@@ -118,7 +118,7 @@ public partial class Emitter
             var targetIG = jump.idjTargetIG;
             if (targetIG is null)
             {
-                FatalJitException.ThrowFatalJitException("A bound branch requires an instruction-group target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.BoundBranchRequiresAnInstructionGroupTarget);
                 return;
             }
             if (targetIG.igFuncIdx == jumpIG.igFuncIdx)
@@ -129,13 +129,13 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("Funclet branch checking requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.FuncletBranchCheckingRequiresAnActiveCompiler);
                 return;
             }
             var debugInfo = jump.idDebugOnlyInfo();
             if (debugInfo is null)
             {
-                FatalJitException.ThrowFatalJitException("Funclet branch validation requires debug information.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.FuncletBranchValidationRequiresDebugInformation);
                 return;
             }
             if (debugInfo.idFinallyCall)
@@ -188,7 +188,10 @@ public partial class Emitter
             return jump.idInsFmt() is insFormat.IF_ARM32_T2_J1 or insFormat.IF_ARM32_T1_K or insFormat.IF_ARM32_LARGEJMP;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMJumpFormatClassificationIsNotSupportedForThisTarget
+    );
         return default!;
     }
 
@@ -204,7 +207,10 @@ public partial class Emitter
             return jump.idInsFmt() is insFormat.IF_ARM32_T2_M1 or insFormat.IF_ARM32_T1_J3 or insFormat.IF_ARM32_T2_N1;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMLabelLoadClassificationIsNotSupportedForThisTarget
+    );
         return default!;
     }
     private static bool emitIsUncondJump(instrDesc jump)
@@ -224,8 +230,10 @@ public partial class Emitter
             return emitIsUncondJump(jump.idIns());
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Unconditional jump classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnconditionalJumpClassificationIsNotSupportedForThisTarget
+    );
         return default!;
     }
 
@@ -233,8 +241,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V jump classification is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCVJumpClassificationIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -253,8 +263,10 @@ public partial class Emitter
             return emitIsCmpJump(jump.idIns());
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Compare-jump classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CompareJumpClassificationIsNotSupportedForThisTarget
+    );
         return default!;
     }
 
@@ -262,8 +274,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V compare-jump classification is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCVCompareJumpClassificationIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -310,8 +324,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Medium-jump selection is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MediumJumpSelectionIsNotSupportedForThisTarget
+    );
         return;
     }
 
@@ -319,8 +335,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 constant-load classification is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64ConstantLoadClassificationIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -426,7 +444,7 @@ public partial class Emitter
 
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmHasNoShortJumpInstructionForm);
             return;
         }
 
@@ -442,7 +460,7 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NonXarchShortJumpSelectionIsNotPorted);
         return;
     }
 
@@ -456,8 +474,10 @@ public partial class Emitter
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Short-jump selection is implemented by the LoongArch64 binder.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ShortJumpSelectionIsImplementedByTheLoongArch64Binder
+    );
             return;
         }
 

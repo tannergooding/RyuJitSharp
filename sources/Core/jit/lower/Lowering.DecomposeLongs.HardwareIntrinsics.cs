@@ -16,8 +16,9 @@ public sealed partial class Lowering
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED,
-                "Hardware-intrinsic long decomposition is not available.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicLongDecompositionIsNotAvailable
+    );
                 return default!;
             }
 
@@ -25,12 +26,18 @@ public sealed partial class Lowering
             assert(tree.Oper is GT_HWINTRINSIC);
             var node = tree.AsHWIntrinsic();
 
-            return node.HWIntrinsicId switch {
-                NI_Vector_GetElement => DecomposeHWIntrinsicGetElement(ref use, node),
-                NI_Vector_ToScalar => DecomposeHWIntrinsicToScalar(ref use, node),
-                NI_AVX512_MoveMask => DecomposeHWIntrinsicMoveMask(ref use, node),
-                _ => throw new InvalidOperationException("Unexpected GT_HWINTRINSIC node in long decomposition."),
-            };
+            switch (node.HWIntrinsicId)
+            {
+                case NI_Vector_GetElement:
+                    return DecomposeHWIntrinsicGetElement(ref use, node);
+                case NI_Vector_ToScalar:
+                    return DecomposeHWIntrinsicToScalar(ref use, node);
+                case NI_AVX512_MoveMask:
+                    return DecomposeHWIntrinsicMoveMask(ref use, node);
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedGTHWINTRINSICNodeInLongDecomposition);
+                    return default;
+            }
         }
 
         private GenTree? DecomposeHWIntrinsicGetElement(ref LIR.Use use, GenTreeHWIntrinsic node)

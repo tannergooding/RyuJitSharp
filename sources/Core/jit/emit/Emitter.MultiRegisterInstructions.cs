@@ -30,8 +30,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register static-field instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterStaticFieldInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -69,8 +71,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register stack instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterStackInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -111,8 +115,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register field-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterFieldImmediateRecordingRequiresXarch
+    );
             return;
         }
 
@@ -150,8 +156,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register stack-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterStackImmediateRecordingRequiresXarch
+    );
             return;
         }
 
@@ -190,8 +198,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-field-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterFieldRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -230,8 +240,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-stack-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterStackRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -289,8 +301,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -387,7 +401,9 @@ public partial class Emitter
             {
                 NYI_RISCV64("illegal ins within emitIns_R_R_I!");
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED, "Illegal instruction within RISC-V two-register-immediate instruction recording.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IllegalInstructionWithinRISCVTwoRegisterImmediateInstructionRecording
+    );
                 return;
             }
         }
@@ -421,7 +437,9 @@ public partial class Emitter
         {
             NYI_RISCV64("illegal ins within emitIns_R_I_I!");
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED, "Illegal instruction within RISC-V register-two-immediate instruction recording.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IllegalInstructionWithinRISCVRegisterTwoImmediateInstructionRecording
+    );
             return;
         }
 
@@ -448,8 +466,10 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 three-register instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32ThreeRegisterInstructionOptionsAreNotPorted
+    );
                 return;
             }
 
@@ -503,7 +523,9 @@ public partial class Emitter
             {
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED, "Illegal instruction within RISC-V three-register instruction recording.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IllegalInstructionWithinRISCVThreeRegisterInstructionRecording
+    );
                 return;
             }
 
@@ -522,8 +544,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Three-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThreeRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -642,8 +666,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Three-register-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThreeRegisterImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 

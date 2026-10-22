@@ -18,14 +18,20 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 indirect load/store recording requires LoongArch64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64IndirectLoadStoreRecordingRequiresLoongArch64
+    );
             return;
         }
 
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "LoongArch64 indirect load/store recording requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoongArch64IndirectLoadStoreRecordingRequiresAnActiveCompiler
+    );
             return;
         }
         _ = compiler;
@@ -57,13 +63,19 @@ public partial class Emitter
                 var index = indir.Index;
                 if (index is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "LoongArch64 contained address is missing its index tree.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoongArch64ContainedAddressIsMissingItsIndexTree
+    );
                     return;
                 }
                 var baseTree = memBase;
                 if (baseTree is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "LoongArch64 indexed address is missing its base tree.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoongArch64IndexedAddressIsMissingItsBaseTree
+    );
                     return;
                 }
                 var baseReg = baseTree.RegNum;
@@ -189,7 +201,10 @@ public partial class Emitter
                         default:
                         {
                             assert(false, "Unsupported LoongArch64 indirect load/store size.");
-                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported LoongArch64 indirect load/store size.");
+                            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnsupportedLoongArch64IndirectLoadStoreSize
+    );
                             return;
                         }
                     }
@@ -222,7 +237,10 @@ public partial class Emitter
                 var baseTree = memBase;
                 if (baseTree is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "LoongArch64 contained address is missing its base tree.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoongArch64ContainedAddressIsMissingItsBaseTree
+    );
                     return;
                 }
                 emitIns_R_R_I(ins, attr, dataReg, baseTree.RegNum, offset);
@@ -232,7 +250,10 @@ public partial class Emitter
                 var baseTree = memBase;
                 if (baseTree is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "LoongArch64 contained address is missing its base tree.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoongArch64ContainedAddressIsMissingItsBaseTree
+    );
                     return;
                 }
                 var tmpReg = codeGen.InternalRegisters.GetSingle(indir);

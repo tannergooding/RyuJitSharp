@@ -41,10 +41,7 @@ public partial class Compiler
             var stepValue = _scevContext.Materialize(iv.Step);
             if (stepValue is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage135
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ConstantIVStepMustMaterialize);
                 return default!;
             }
             var newLocal = _compiler.lvaGrabTemp(false, "Strength reduced derived IV");
@@ -75,10 +72,7 @@ public partial class Compiler
                 var cursorIV = cursor.IV;
                 if (cursorIV is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage136
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ReplacementCursorNeedsItsRecurrence);
                     return false;
                 }
 
@@ -92,9 +86,9 @@ public partial class Compiler
                 if (Unsafe.IsNullRef(ref use))
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage137
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.StrengthReducedUseWasLostFromItsStatement
+    );
                     return default!;
                 }
 
@@ -132,10 +126,7 @@ public partial class Compiler
             var domTree = _compiler._domTree;
             if (domTree is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage130
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.StrengthReductionRequiresDominators);
                 afterStmt = default!;
                 return default!;
             }
@@ -157,7 +148,7 @@ public partial class Compiler
                         var latestUse = afterStmt;
                         if (latestUse is null)
                         {
-                            FatalJitException.ThrowFatalJitException("Post-use placement needs a use statement.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.PostUsePlacementNeedsAUseStatement);
                             afterStmt = default!;
                             return default!;
                         }

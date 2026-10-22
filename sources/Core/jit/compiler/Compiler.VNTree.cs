@@ -159,11 +159,7 @@ public partial class Compiler
             }
             case GT_CAST:
             {
-                JitExceptionHelpers.ThrowUnreachableException(
-                    "RJS-VN-002",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "Cast nodes use fgValueNumberCastTree instead of GetVNFuncForNode."
-                        : null);
+                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.CastNodesUseFgValueNumberCastTreeInsteadOfGetVNFuncForNode);
                 return default;
             }
 
@@ -294,11 +290,7 @@ public partial class Compiler
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowUnreachableException(
-                        "RJS-VN-003",
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? $"Unhandled leaf {oper} in fgValueNumberTree."
-                            : null);
+                    JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnhandledLeafArgumentInFgValueNumberTree, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
                     return;
                 }
             }
@@ -655,11 +647,7 @@ public partial class Compiler
 
                 case GT_ARR_ELEM:
                 {
-                    JitExceptionHelpers.ThrowUnreachableException(
-                        "RJS-VN-004",
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? "ARR_ELEM must be morphed before value numbering."
-                            : null);
+                    JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.ARRELEMMustBeMorphedBeforeValueNumbering);
                     return;
                 }
 

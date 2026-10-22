@@ -16,7 +16,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 data-label address recording is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32DataLabelAddressRecordingIsNotAvailableForThisTarget
+    );
             return;
         }
 

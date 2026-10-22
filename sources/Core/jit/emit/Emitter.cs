@@ -38,8 +38,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 emitter operations are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64EmitterOperationsAreNotSupportedForThisTarget
+    );
             return;
         }
     }
@@ -48,8 +50,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 emitter operations are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32EmitterOperationsAreNotSupportedForThisTarget
+    );
             return;
         }
     }
@@ -58,8 +62,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V64 emitter operations are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64EmitterOperationsAreNotSupportedForThisTarget
+    );
             return;
         }
     }

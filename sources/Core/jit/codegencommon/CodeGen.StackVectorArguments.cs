@@ -11,7 +11,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.UNIX_AMD64_ABI || !Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack vector argument upper-bit clearing requires SysV AMD64 SIMD.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StackVectorArgumentUpperBitClearingRequiresSysVAMD64SIMD
+    );
             return;
         }
 

@@ -734,7 +734,7 @@ public partial class Emitter
                             }
                             else
                             {
-                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Short jump patching is not supported for this target.");
+                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ShortJumpPatchingIsNotSupportedForThisTarget);
                                 return default!;
                             }
                         }
@@ -756,7 +756,7 @@ public partial class Emitter
                             }
                             else
                             {
-                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long jump patching is not supported for this target.");
+                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LongJumpPatchingIsNotSupportedForThisTarget);
                                 return default!;
                             }
                         }

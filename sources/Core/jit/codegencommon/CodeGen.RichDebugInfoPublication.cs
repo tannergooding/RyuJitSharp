@@ -65,7 +65,7 @@ public sealed partial class CodeGen
             var path = Marshal.PtrToStringUTF8((nint)pathPointer);
             if (path is null)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Rich debug-info file path is invalid.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RichDebugInfoFilePathIsInvalid);
                 return;
             }
             using var file = OpenRichDebugInfoFile(path);

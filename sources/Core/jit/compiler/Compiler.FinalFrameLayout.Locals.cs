@@ -819,7 +819,10 @@ public partial class Compiler
         {
             NYI("TARGET specific lvaAlignFrame");
             fatal(CORJIT_IMPLLIMITATION);
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "lvaAlignFrame is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.LvaAlignFrameIsNotSupportedForThisTarget
+    );
             return;
         }
     }

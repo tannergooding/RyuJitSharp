@@ -292,8 +292,18 @@ public partial class Compiler
                     continue;
                 }
 
-                var phiDef = phiDefs[index] ?? throw new InvalidOperationException(
-                    "The mapped phi operand has no definition.");
+                global::RyuJitSharp.GenTreeLclVar __jitExceptionResult224;
+                var __jitExceptionCoalesceLeft225 = phiDefs[index];
+                if (__jitExceptionCoalesceLeft225 != null)
+                {
+                    __jitExceptionResult224 = __jitExceptionCoalesceLeft225;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MappedPhiOperandHasNoDefinition);
+                    __jitExceptionResult224 = default;
+                }
+                var phiDef = __jitExceptionResult224;
                 foreach (var use in phiDef.Data.AsPhi().Uses)
                 {
                     var arg = use.Node.AsPhiArg();

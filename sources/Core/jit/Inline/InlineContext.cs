@@ -91,8 +91,18 @@ public sealed partial class InlineContext
     {
         get
         {
-            return GetDebugData().ILInstsSet
-                ?? throw new InvalidOperationException("Inline instruction state has not been initialized.");
+            global::System.Collections.BitArray __jitExceptionReturnResult429;
+            var __jitExceptionCoalesceLeft430 = GetDebugData().ILInstsSet;
+            if (__jitExceptionCoalesceLeft430 != null)
+            {
+                __jitExceptionReturnResult429 = __jitExceptionCoalesceLeft430;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineInstructionStateHasNotBeenInitialized);
+                __jitExceptionReturnResult429 = default;
+            }
+            return __jitExceptionReturnResult429;
         }
 
         set
@@ -140,7 +150,7 @@ public sealed partial class InlineContext
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Async-call diagnostic state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncCallDiagnosticStateIsOnlyAvailableInDebugBuilds);
             }
 
             return (_flags & Flags.AsyncCall) is not 0;
@@ -348,7 +358,7 @@ public sealed partial class InlineContext
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Inline context diagnostic state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineContextDiagnosticStateIsOnlyAvailableInDebugBuilds);
         }
     }
 }

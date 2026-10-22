@@ -60,7 +60,7 @@ public static class InlineDecisionExtensions
     private static T UnexpectedDecision<T>()
     {
         assert(false, "Unexpected InlineDecision");
-        FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, FatalJitErrorCode.DirectFailureMessage239);
+        FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, FatalJitErrorCode.UnexpectedInlineDecision);
         return default!;
     }
 }

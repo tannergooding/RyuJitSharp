@@ -33,7 +33,7 @@ public abstract class InlinePolicy
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Inline-policy data-collection state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlinePolicyDataCollectionStateIsOnlyAvailableInDebugBuilds);
             }
 
             return false;

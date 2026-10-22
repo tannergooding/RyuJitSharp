@@ -14,8 +14,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "APX callee-saved register pops are only supported on AMD64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.APXCalleeSavedRegisterPopsAreOnlySupportedOnAMD64
+    );
             return default!;
         }
 

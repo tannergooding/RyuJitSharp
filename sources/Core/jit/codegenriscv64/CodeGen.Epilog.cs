@@ -45,7 +45,7 @@ public sealed partial class CodeGen
         var lastNode = block.GetLastNode();
         if (lastNode is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Missing epilog node.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.MissingEpilogNode);
             return;
         }
 
@@ -114,7 +114,7 @@ public sealed partial class CodeGen
                     }
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported JMP indirection.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedJMPIndirection);
                         return;
                     }
                 }

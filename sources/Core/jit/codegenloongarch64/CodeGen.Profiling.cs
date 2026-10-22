@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.PROFILING_SUPPORTED)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 profiling callbacks are unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64ProfilingCallbacksAreUnavailable);
             return;
         }
 
@@ -54,7 +54,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 || !Configuration.PROFILING_SUPPORTED)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 profiling callbacks are unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64ProfilingCallbacksAreUnavailable);
             return;
         }
 

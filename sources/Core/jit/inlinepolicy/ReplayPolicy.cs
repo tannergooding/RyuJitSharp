@@ -28,7 +28,7 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Replay inline policy is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplayInlinePolicyIsOnlyAvailableInDebugBuilds);
         }
 
         if ((s_replayFile is null) && !s_wroteReplayBanner)
@@ -306,8 +306,24 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
         return false;
     }
 
-    private static FileStream ReplayFile => s_replayFile ?? throw new InvalidOperationException("Replay file is not open.");
+    private static FileStream ReplayFile {
+    get
+    {
+        global::System.IO.FileStream __jitExceptionReturnResult431;
+        var __jitExceptionCoalesceLeft432 = s_replayFile;
+        if (__jitExceptionCoalesceLeft432 != null)
+        {
+            __jitExceptionReturnResult431 = __jitExceptionCoalesceLeft432;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReplayFileIsNotOpen);
+            __jitExceptionReturnResult431 = default;
+        }
 
+        return __jitExceptionReturnResult431;
+    }
+}
     private static void Seek(int position)
     {
         _ = ReplayFile.Seek(position, SeekOrigin.Begin);

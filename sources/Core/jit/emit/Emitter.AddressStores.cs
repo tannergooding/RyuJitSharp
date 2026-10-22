@@ -20,15 +20,19 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_R_ARR");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 indexed address/register instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64IndexedAddressRegisterInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Indexed address/register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndexedAddressRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -43,8 +47,10 @@ public partial class Emitter
             if (Configuration.TARGET_ARM)
             {
                 NYI("ARM32 address/register instruction options");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 address/register instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32AddressRegisterInstructionOptionsAreNotPorted
+    );
                 return;
             }
         }
@@ -59,15 +65,19 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_AR_R");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 address/register instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64AddressRegisterInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Address/register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AddressRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -79,8 +89,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Address/register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AddressRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 

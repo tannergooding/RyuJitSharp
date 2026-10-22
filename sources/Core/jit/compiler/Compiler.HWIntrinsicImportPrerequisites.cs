@@ -87,7 +87,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic immediate discovery requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicImmediateDiscoveryRequiresHardwareIntrinsics
+    );
             return;
         }
 
@@ -137,7 +140,7 @@ public partial class Compiler
 
         NYI("Hardware-intrinsic immediate discovery outside xarch");
         fatal(CORJIT_IMPLLIMITATION);
-        FatalJitException.ThrowFatalJitException("Hardware-intrinsic immediate discovery outside xarch.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.HardwareIntrinsicImmediateDiscoveryOutsideXarch);
         return;
     }
 

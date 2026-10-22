@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-level adjustment is not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackLevelAdjustmentIsNotSupportedOnWasm);
             return;
         }
 
@@ -41,7 +41,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-level marking is not available for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackLevelMarkingIsNotAvailableForThisTarget);
                     return;
                 }
             }

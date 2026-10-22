@@ -18,10 +18,7 @@ public partial class LinearScan
         assert(foundUse);
         if (!foundUse)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage405
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CopyOrReloadRequiresAnOwningLIRUse);
             return;
         }
 
@@ -37,9 +34,9 @@ public partial class LinearScan
             if (!tree.IsMultiRegNode)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage406
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.GroupedLSRACopyOrReloadRequiresAMultiRegisterSource
+    );
                 return;
             }
 
@@ -47,9 +44,9 @@ public partial class LinearScan
             if (copyOrReload.GetRegNumByIdx(checked((byte)multiRegIdx)) != REG_NA)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage407
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRACopyOrReloadRegisterIsAlreadyAssigned
+    );
                 return;
             }
 

@@ -17,7 +17,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDIntrinsicGenerationIsNotPorted);
         return;
     }
 
@@ -27,7 +27,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicUpperSave-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane saving is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDUpperLaneSavingIsNotPorted);
         return;
     }
 
@@ -37,7 +37,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicUpperRestore-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane restoration is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDUpperLaneRestorationIsNotPorted);
         return;
     }
 
@@ -47,7 +47,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genStoreIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect stores are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMD12IndirectStoresAreNotPorted);
         return;
     }
 
@@ -57,7 +57,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genLoadIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect loads are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMD12IndirectLoadsAreNotPorted);
         return;
     }
 
@@ -67,7 +67,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genStoreLclTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 local stores are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMD12LocalStoresAreNotPorted);
         return;
     }
 
@@ -77,7 +77,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genGetSimdInsOpt-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD instruction options are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDInstructionOptionsAreNotPorted);
         return default!;
     }
 
@@ -88,7 +88,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: getOpForSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD instruction selection is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDInstructionSelectionIsNotPorted);
         return default!;
     }
 
@@ -99,7 +99,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicInit-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD initialization is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDInitializationIsNotPorted);
         return;
     }
 
@@ -110,7 +110,10 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicInitN-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD multi-operand initialization is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64SIMDMultiOperandInitializationIsNotPorted
+    );
         return;
     }
 
@@ -121,7 +124,10 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicUnOp-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 unary SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64UnarySIMDIntrinsicGenerationIsNotPorted
+    );
         return;
     }
 
@@ -132,7 +138,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicWiden-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD widening is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDWideningIsNotPorted);
         return;
     }
 
@@ -143,7 +149,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicNarrow-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD narrowing is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDNarrowingIsNotPorted);
         return;
     }
 
@@ -154,7 +160,10 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicBinOp-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 binary SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64BinarySIMDIntrinsicGenerationIsNotPorted
+    );
         return;
     }
 
@@ -165,7 +174,10 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicGetItem-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD get-item intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64SIMDGetItemIntrinsicGenerationIsNotPorted
+    );
         return;
     }
 
@@ -176,7 +188,10 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicSetItem-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD set-item intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64SIMDSetItemIntrinsicGenerationIsNotPorted
+    );
         return;
     }
 
@@ -187,7 +202,7 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicRelOp-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD comparison is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMDComparisonIsNotPorted);
         return;
     }
 
@@ -197,7 +212,10 @@ public sealed partial class CodeGen
         {
             NYIRAW("NYI_RISCV64: genSIMDIntrinsicDotProduct-----unimplemented/unused on RISCV64 yet----");
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 dot-product SIMD intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64DotProductSIMDIntrinsicGenerationIsNotPorted
+    );
         return;
     }
 }

@@ -14,7 +14,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Two-register base-address instruction recording requires AMD64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterBaseAddressInstructionRecordingRequiresAMD64
+    );
             return;
         }
 
@@ -44,7 +47,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD register-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDRegisterImmediateRecordingRequiresXarch);
             return;
         }
 
@@ -66,7 +69,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD memory instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDMemoryInstructionRecordingRequiresXarch);
             return;
         }
 
@@ -88,7 +91,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD stack instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDStackInstructionRecordingRequiresXarch);
             return;
         }
 
@@ -110,7 +113,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD address-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDAddressImmediateRecordingRequiresXarch);
             return;
         }
 
@@ -132,7 +135,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD field-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDFieldImmediateRecordingRequiresXarch);
             return;
         }
 
@@ -154,7 +157,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD stack-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDStackImmediateRecordingRequiresXarch);
             return;
         }
 

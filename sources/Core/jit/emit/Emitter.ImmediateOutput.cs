@@ -17,7 +17,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-immediate output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterImmediateOutputRequiresXarch);
             return default!;
         }
 
@@ -189,8 +189,7 @@ public partial class Emitter
                 {
                     if (!Configuration.TARGET_AMD64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "Eight-byte immediate encoding requires AMD64.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EightByteImmediateEncodingRequiresAMD64);
                         return default!;
                     }
 
@@ -235,8 +234,7 @@ public partial class Emitter
                     {
                         if ((size == EA_8BYTE) && !Configuration.TARGET_AMD64)
                         {
-                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                                "Eight-byte immediate output requires AMD64.");
+                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EightByteImmediateOutputRequiresAMD64);
                             return default!;
                         }
 
@@ -339,7 +337,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Immediate output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ImmediateOutputRequiresXarch);
             return default!;
         }
 

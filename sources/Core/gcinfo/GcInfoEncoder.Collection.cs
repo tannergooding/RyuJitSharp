@@ -18,18 +18,18 @@ public sealed unsafe partial class GcInfoEncoder
     {
         if (Configuration.TARGET_ARM || Configuration.TARGET_ARMARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC info encoding is not implemented for ARM targets.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GCInfoEncodingIsNotImplementedForARMTargets);
             return;
         }
 
         if (!Configuration.TARGET_AMD64)
         {
-            throw new PlatformNotSupportedException("Only the AMD64 GC info encoding is implemented.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.OnlyTheAMD64GCInfoEncodingIsImplemented);
         }
 
         if (pCorJitInfo is null || pMethodInfo is null)
         {
-            throw new ArgumentNullException(pCorJitInfo is null ? nameof(pCorJitInfo) : nameof(pMethodInfo));
+            JitExceptionHelpers.ThrowArgumentNullException(pCorJitInfo is null ? FatalJitArgument.PCorJitInfo : FatalJitArgument.PMethodInfo);
         }
         m_pCorJitInfo = pCorJitInfo;
         m_pMethodInfo = pMethodInfo;
@@ -41,7 +41,7 @@ public sealed unsafe partial class GcInfoEncoder
     {
         if (numCallSites > 0 && (pCallSites is null || pCallSiteSizes is null))
         {
-            throw new ArgumentNullException(pCallSites is null ? nameof(pCallSites) : nameof(pCallSiteSizes));
+            JitExceptionHelpers.ThrowArgumentNullException(pCallSites is null ? FatalJitArgument.PCallSites : FatalJitArgument.PCallSiteSizes);
         }
 
         DefineCallSites(new ReadOnlySpan<uint>(pCallSites, checked((int)numCallSites)),
@@ -54,7 +54,7 @@ public sealed unsafe partial class GcInfoEncoder
 
         if (callSites.Length != callSiteSizes.Length)
         {
-            throw new ArgumentException("Every call site needs a corresponding instruction size.");
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.EveryCallSiteNeedsACorrespondingInstructionSize);
         }
 
         for (var i = 0; i < callSites.Length; i++)
@@ -193,8 +193,10 @@ public sealed unsafe partial class GcInfoEncoder
 
     public void SetSizeOfEditAndContinueFixedStackFrame(uint size)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "ARM64 Edit-and-Continue GC-info metadata is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64EditAndContinueGCInfoMetadataIsNotImplemented
+    );
         return;
     }
 
@@ -224,7 +226,7 @@ public sealed unsafe partial class GcInfoEncoder
 
         if (m_Built || m_Emitted)
         {
-            throw new InvalidOperationException("GC information cannot change after Build.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GCInformationCannotChangeAfterBuild);
         }
     }
 }

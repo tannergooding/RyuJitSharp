@@ -40,7 +40,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("GC call output requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GCCallOutputRequiresAnActiveCompiler);
                 return;
             }
             if (compiler.verbose)

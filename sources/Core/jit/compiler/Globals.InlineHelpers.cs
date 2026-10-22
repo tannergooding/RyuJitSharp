@@ -16,7 +16,10 @@ public partial class Globals
     {
         if (Configuration.DEBUG)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GenTreeSGtNodeSizesNativeAllocationSizesAreNotPorted
+    );
             return default!;
         }
 

@@ -151,7 +151,7 @@ public partial class Compiler
             return MapAmd64CfiRegNumToDwarfReg(reg);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetDWARFRegisterMappingIsNotPorted);
         return default!;
     }
 
@@ -347,13 +347,13 @@ public partial class Compiler
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM DWARF register.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.UnexpectedARMDWARFRegister);
                     return default!;
                 }
             }
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetDWARFRegisterMappingIsNotPorted);
         return default!;
     }
 

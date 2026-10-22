@@ -15,7 +15,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Scope diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScopeDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         jitprintf(string.Create(CultureInfo.InvariantCulture,

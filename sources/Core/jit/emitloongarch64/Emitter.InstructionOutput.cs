@@ -19,7 +19,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 instruction output requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64InstructionOutputRequiresAnActiveCompiler);
             return default!;
         }
         var dst = *dp;
@@ -134,8 +134,7 @@ public partial class Emitter
                     var temporary = codeGen.RegSet.tmpFindNum(varNum);
                     if (temporary is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            "The LoongArch64 spill temporary must exist.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64SpillTemporaryMustExist);
                         return default!;
                     }
 
@@ -168,7 +167,9 @@ public partial class Emitter
             var debugInfo = id.idDebugOnlyInfo();
             if (debugInfo is null)
             {
-                FatalJitException.ThrowFatalJitException("LoongArch64 instruction output requires debug descriptor information.");
+                FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.LoongArch64InstructionOutputRequiresDebugDescriptorInformation
+    );
                 return default!;
             }
             if (JitConfig.JitBreakEmitOutputInstr == debugInfo.idNum)
@@ -369,15 +370,14 @@ public partial class Emitter
                 var targetBlock = id.LoongArchBBlabel;
                 if (targetBlock is null)
                 {
-                    FatalJitException.ThrowFatalJitException("An unbound LoongArch64 label requires a basic-block target.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnboundLoongArch64LabelRequiresABasicBlockTarget);
                     ins = default!;
                     return default!;
                 }
                 var targetGroupCookie = emitCodeGetCookie(targetBlock);
                 if (targetGroupCookie is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        "A LoongArch64 label has no instruction-group cookie.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64LabelHasNoInstructionGroupCookie);
                     ins = default!;
                     return default!;
                 }
@@ -391,7 +391,7 @@ public partial class Emitter
         var group = id.LoongArchIGlabel;
         if (group is null)
         {
-            FatalJitException.ThrowFatalJitException("A bound LoongArch64 label requires an instruction group.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.BoundLoongArch64LabelRequiresAnInstructionGroup);
             ins = default!;
             return default!;
         }

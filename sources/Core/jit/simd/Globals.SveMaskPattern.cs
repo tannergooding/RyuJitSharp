@@ -103,7 +103,7 @@ public static partial class Globals
             default:
             {
                 unreached();
-                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unsupported ARM64 SIMD element type.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.UnsupportedARM64SIMDElementType);
                 return default!;
             }
         }
@@ -209,8 +209,7 @@ public static partial class Globals
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_IMPLLIMITATION, "Unsupported ARM64 mask element type.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.UnsupportedARM64MaskElementType);
                 return default!;
             }
         }

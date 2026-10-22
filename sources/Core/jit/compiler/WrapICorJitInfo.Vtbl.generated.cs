@@ -22,7 +22,8 @@ public sealed unsafe partial class WrapICorJitInfo
 
         if (sizeof(ICorJitInfo.Vtbl<ICorJitInfo>) != 183 * sizeof(nint))
         {
-            throw new InvalidOperationException("ICorJitInfo vtable layout does not match the generated API order.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ICorJitInfoVTableLayoutMismatch);
+            return default;
         }
 
         vtable->Base.Base.isIntrinsic = &Thunk_isIntrinsic;
@@ -216,9 +217,13 @@ public sealed unsafe partial class WrapICorJitInfo
         var proxy = (ProxyContext*)self;
         var handle = GCHandle.FromIntPtr(proxy->WrapperHandle);
 
-        return handle.Target is WrapICorJitInfo wrapper
-            ? wrapper
-            : throw new InvalidOperationException("ICorJitInfo proxy context is no longer valid.");
+        if (handle.Target is WrapICorJitInfo wrapper)
+        {
+            return wrapper;
+        }
+
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ICorJitInfoProxyContextUnavailable);
+        return default!;
     }
 
     [DoesNotReturn]
@@ -226,7 +231,7 @@ public sealed unsafe partial class WrapICorJitInfo
     {
         // The native JIT cannot continue safely with a fabricated EE result.
         Environment.FailFast("An exception escaped an ICorJitInfo timing proxy callback.", exception);
-        throw new InvalidOperationException("Environment.FailFast returned unexpectedly.", exception);
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FailFastReturned);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -2504,7 +2509,8 @@ public sealed unsafe partial class WrapICorJitInfo
         {
             if (!Globals.TryGetManagedInstructionSet((int)nativeInstructionSet, out var instructionSet))
             {
-                throw new PlatformNotSupportedException($"Native instruction-set ordinal '{(int)nativeInstructionSet}' is unavailable for this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.NativeInstructionSetUnavailable, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? (int)nativeInstructionSet : default);
+                return default;
             }
 
             return GetWrapper(self).notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency) ? (byte)1 : (byte)0;

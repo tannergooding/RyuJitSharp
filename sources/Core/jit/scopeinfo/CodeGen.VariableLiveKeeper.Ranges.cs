@@ -39,9 +39,21 @@ public sealed partial class CodeGen
                 }
             }
 
-            private LiveRangeDumper getLiveRangeDumper() => m_VariableLifeBarrier
-                ?? throw new InvalidOperationException("Live range diagnostics are only available in Debug builds.");
+            private LiveRangeDumper getLiveRangeDumper() {
+    global::RyuJitSharp.CodeGen.VariableLiveKeeper.LiveRangeDumper __jitExceptionReturnResult671;
+    var __jitExceptionCoalesceLeft672 = m_VariableLifeBarrier;
+    if (__jitExceptionCoalesceLeft672 != null)
+    {
+        __jitExceptionReturnResult671 = __jitExceptionCoalesceLeft672;
+    }
+    else
+    {
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LiveRangeDiagnosticsAreOnlyAvailableInDebugBuilds);
+        __jitExceptionReturnResult671 = default;
+    }
 
+    return __jitExceptionReturnResult671;
+}
             public bool hasVariableLiveRangeOpen()
             {
                 return (m_VariableLiveRanges.Count != 0) && !m_VariableLiveRanges[^1].m_EndEmitLocation.Valid();

@@ -13,7 +13,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86 && !Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long return generation is only supported on X86 and ARM.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LongReturnGenerationIsOnlySupportedOnX86AndARM
+    );
             return;
         }
 
@@ -141,7 +144,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return GC information requires a fixed-register target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReturnGCInformationRequiresAFixedRegisterTarget
+    );
             return;
         }
 
@@ -165,7 +171,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Simple return generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SimpleReturnGenerationIsNotPortedForThisTarget
+    );
             return;
         }
 
@@ -227,7 +236,10 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Simple return generation is not ported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SimpleReturnGenerationIsNotPortedForThisTarget
+    );
                     return;
                 }
             }
@@ -238,7 +250,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Clearing the Wasm async continuation is only supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ClearingTheWasmAsyncContinuationIsOnlySupportedOnWasm
+    );
             return;
         }
 
@@ -430,7 +445,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD || (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD split returns require SIMD support on xarch or ARM.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDSplitReturnsRequireSIMDSupportOnXarchOrARM
+    );
             return;
         }
 
@@ -481,7 +499,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD split returns are not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDSplitReturnsAreNotPortedForThisTarget);
             return;
         }
     }
@@ -490,7 +508,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.SWIFT_SUPPORT)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Swift error returns are not supported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SwiftErrorReturnsAreNotSupportedOnThisTarget);
             return;
         }
 
@@ -513,7 +531,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer checking is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackPointerCheckingIsNotPortedForThisTarget);
             return;
         }
 

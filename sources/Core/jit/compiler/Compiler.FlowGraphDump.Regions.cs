@@ -284,9 +284,31 @@ public partial class Compiler
 
             if (descriptor.HasFilter)
             {
-                regions.Insert($"EH#{index} filter",
-                    descriptor.ebdFilter ?? throw new InvalidOperationException("Filter region has no first block."),
-                    descriptor.ebdHndBeg.Prev ?? throw new InvalidOperationException("Filter region has no last block."));
+                var __jitExceptionReceiver199 = regions;
+                var __jitExceptionArgument200 = $"EH#{index} filter";
+                global::RyuJitSharp.BasicBlock __jitExceptionArgument201;
+                var __jitExceptionCoalesceLeft202 = descriptor.ebdFilter;
+                if (__jitExceptionCoalesceLeft202 != null)
+                {
+                    __jitExceptionArgument201 = __jitExceptionCoalesceLeft202;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FilterRegionHasNoFirstBlock);
+                    __jitExceptionArgument201 = default;
+                }
+                global::RyuJitSharp.BasicBlock __jitExceptionArgument203;
+                var __jitExceptionCoalesceLeft204 = descriptor.ebdHndBeg.Prev;
+                if (__jitExceptionCoalesceLeft204 != null)
+                {
+                    __jitExceptionArgument203 = __jitExceptionCoalesceLeft204;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FilterRegionHasNoLastBlock);
+                    __jitExceptionArgument203 = default;
+                }
+                __jitExceptionReceiver199.Insert(__jitExceptionArgument200, __jitExceptionArgument201, __jitExceptionArgument203);
             }
         }
 
@@ -347,7 +369,18 @@ public partial class Compiler
 
     internal void fgDumpFlowGraphLoops(TextWriter writer)
     {
-        var loops = _loops ?? throw new InvalidOperationException("Flow graph loop dumping requires natural loops.");
+        global::RyuJitSharp.FlowGraphNaturalLoops __jitExceptionResult205;
+        var __jitExceptionCoalesceLeft206 = _loops;
+        if (__jitExceptionCoalesceLeft206 != null)
+        {
+            __jitExceptionResult205 = __jitExceptionCoalesceLeft206;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FlowGraphLoopDumpingRequiresNaturalLoops);
+            __jitExceptionResult205 = default;
+        }
+        var loops = __jitExceptionResult205;
         var dumper = new FlowGraphLoopDumper(loops, writer);
 
         foreach (var loop in loops.InReversePostOrder())

@@ -45,7 +45,10 @@ public partial class Emitter
             };
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Execution characteristics outside supported targets are not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ExecutionCharacteristicsOutsideSupportedTargetsAreNotImplemented
+    );
         return default!;
     }
 
@@ -53,7 +56,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch execution characteristics are not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchExecutionCharacteristicsAreNotAvailableForThisTarget);
             return default!;
         }
 
@@ -177,8 +180,10 @@ public partial class Emitter
                     }
                     else if (!skipAlign)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "Non-debug alignment performance scoring requires late-disassembly placement metadata.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NonDebugAlignmentPerformanceScoringRequiresLateDisassemblyPlacementMetadata
+    );
                         return default!;
                     }
 

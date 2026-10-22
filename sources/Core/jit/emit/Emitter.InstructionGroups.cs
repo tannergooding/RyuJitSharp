@@ -18,7 +18,18 @@ public partial class Emitter
     {
         var ig = emitAllocIG();
 
-        var currentIG = emitCurIG ?? throw new InvalidOperationException("An instruction group must precede the new group.");
+        global::RyuJitSharp.insGroup __jitExceptionResult292;
+        var __jitExceptionCoalesceLeft293 = emitCurIG;
+        if (__jitExceptionCoalesceLeft293 != null)
+        {
+            __jitExceptionResult292 = __jitExceptionCoalesceLeft293;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionGroupMustPrecedeTheNewGroup);
+            __jitExceptionResult292 = default;
+        }
+        var currentIG = __jitExceptionResult292;
         emitInsertIGAfter(currentIG, ig);
 
         ig.igFlags |= currentIG.igFlags & IGF_PROPAGATE_MASK;
@@ -59,7 +70,18 @@ public partial class Emitter
         ig.igOffs = unchecked((uint)emitCurCodeOffset);
         assert(IsCodeAligned(ig.igOffs));
 
-        var compiler = _compiler ?? throw new InvalidOperationException("Instruction groups require an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult294;
+        var __jitExceptionCoalesceLeft295 = _compiler;
+        if (__jitExceptionCoalesceLeft295 != null)
+        {
+            __jitExceptionResult294 = __jitExceptionCoalesceLeft295;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionGroupsRequireAnActiveCompiler);
+            __jitExceptionResult294 = default;
+        }
+        var compiler = __jitExceptionResult294;
         ig.igFuncIdx = compiler.compCurrFuncIdx;
         ig.igFlags = InsGroupFlags.None;
 
@@ -118,7 +140,18 @@ public partial class Emitter
 
     private weight_t getCurrentBlockWeight()
     {
-        var compiler = _compiler ?? throw new InvalidOperationException("Instruction groups require an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult296;
+        var __jitExceptionCoalesceLeft297 = _compiler;
+        if (__jitExceptionCoalesceLeft297 != null)
+        {
+            __jitExceptionResult296 = __jitExceptionCoalesceLeft297;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionGroupsRequireAnActiveCompiler);
+            __jitExceptionResult296 = default;
+        }
+        var compiler = __jitExceptionResult296;
 
         if (compiler.compCurBB is not null)
         {

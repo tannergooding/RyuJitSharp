@@ -318,7 +318,7 @@ public partial class Emitter
             default:
             {
                 unreached();
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Invalid compressed register number.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidCompressedRegisterNumber);
                 return default!;
             }
         }
@@ -358,7 +358,7 @@ public partial class Emitter
             default:
             {
                 unreached();
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Invalid compressed arithmetic instruction.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidCompressedArithmeticInstruction);
                 return default!;
             }
         }

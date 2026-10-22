@@ -85,8 +85,18 @@ public struct SideEffectSet
         for (var current = node.Next; current != endExclusive;)
         {
             Debug.Assert(current is not null);
-            var currentNode = current ??
-                throw new InvalidOperationException("Expected first node to precede end node.");
+            global::RyuJitSharp.GenTree __jitExceptionResult141;
+            var __jitExceptionCoalesceLeft142 = current;
+            if (__jitExceptionCoalesceLeft142 != null)
+            {
+                __jitExceptionResult141 = __jitExceptionCoalesceLeft142;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ExpectedFirstNodeToPrecedeEndNode);
+                __jitExceptionResult141 = default;
+            }
+            var currentNode = __jitExceptionResult141;
             if ((currentNode != ignoreNode) && InterferesWith(compiler, currentNode, true))
             {
                 return false;

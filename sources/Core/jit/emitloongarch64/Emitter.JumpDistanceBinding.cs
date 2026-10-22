@@ -18,7 +18,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("LoongArch64 jump binding requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64JumpBindingRequiresAnActiveCompiler);
                 return;
             }
             if (compiler.verbose)
@@ -45,7 +45,7 @@ public partial class Emitter
                 var jumpGroup = jump.idjIG;
                 if (jumpGroup is null)
                 {
-                    FatalJitException.ThrowFatalJitException("A LoongArch64 jump must be associated with an instruction group.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64JumpMustBeAssociatedWithAnInstructionGroup);
                     return;
                 }
                 var sourceInstructionOffset = unchecked(jumpGroup.igOffs + jump.idjOffs + localAdjustment);
@@ -60,8 +60,7 @@ public partial class Emitter
                             var nextJumpGroup = previousJumpGroup.igNext;
                             if (nextJumpGroup is null)
                             {
-                                FatalJitException.ThrowFatalJitException(
-                                    "A LoongArch64 jump group is missing from the group list.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64JumpGroupIsMissingFromTheGroupList);
                                 return;
                             }
 
@@ -85,8 +84,7 @@ public partial class Emitter
                     var boundTargetGroup = jump.idjTargetIG;
                     if (boundTargetGroup is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            "A bound LoongArch64 jump requires a target group.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.BoundLoongArch64JumpRequiresATargetGroup);
                         return;
                     }
 

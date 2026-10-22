@@ -143,8 +143,18 @@ public partial class Compiler
             _compiler.fgInvalidateDfsTree();
             if (_compiler.opts.OptimizationDisabled)
             {
-                var trackedToVar = _compiler.lvaTrackedToVarNum ??
-                    throw new InvalidOperationException("Async liveness has no tracked-local mapping");
+                int[] __jitExceptionResult26;
+                var __jitExceptionCoalesceLeft27 = _compiler.lvaTrackedToVarNum;
+                if (__jitExceptionCoalesceLeft27 != null)
+                {
+                    __jitExceptionResult26 = __jitExceptionCoalesceLeft27;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncLivenessHasNoTrackedLocalMapping);
+                    __jitExceptionResult26 = default;
+                }
+                var trackedToVar = __jitExceptionResult26;
                 for (var i = 0; i < _compiler.lvaTrackedCount; i++)
                 {
                     _compiler.lvaGetDesc(trackedToVar[i]).lvTracked = false;
@@ -181,7 +191,7 @@ public partial class Compiler
                         if ((index < 0) || (index >= layout.ContinuationMemberOffsets.Count) ||
                             (layout.ContinuationMemberOffsets[index] < 0))
                         {
-                            throw new InvalidOperationException("Unallocated continuation member offset");
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnallocatedContinuationMemberOffset);
                         }
 
                         var offset = OFFSETOF__CORINFO_Continuation__data -
@@ -197,7 +207,7 @@ public partial class Compiler
 
             if (replacedOffsets != expectedCount)
             {
-                throw new InvalidOperationException("Continuation member offset missing from final LIR");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ContinuationMemberOffsetMissingFromFinalLIR);
             }
         }
 

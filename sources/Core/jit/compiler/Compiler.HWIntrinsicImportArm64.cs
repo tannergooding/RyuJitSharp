@@ -12,7 +12,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 immediate discovery requires ARM64 hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64ImmediateDiscoveryRequiresARM64HardwareIntrinsics
+    );
             return;
         }
 
@@ -41,7 +44,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic fallback requires ARM64 hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64HardwareIntrinsicFallbackRequiresARM64HardwareIntrinsics
+    );
             return default!;
         }
 
@@ -91,7 +97,7 @@ public partial class Compiler
     private static NamedIntrinsic unreachableArm64FallbackIntrinsic()
     {
         unreached();
-        FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable ARM64 fallback intrinsic.");
+        FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, FatalJitErrorCode.UnreachableARM64FallbackIntrinsic);
         return default!;
     }
 
@@ -102,7 +108,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic special import requires ARM64 hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64HardwareIntrinsicSpecialImportRequiresARM64HardwareIntrinsics
+    );
             return default!;
         }
 
@@ -940,7 +949,7 @@ public partial class Compiler
             default:
             {
                 unreached();
-                FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable ARM64 SIMD element size.");
+                FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, FatalJitErrorCode.UnreachableARM64SIMDElementSize);
                 return default!;
             }
         }

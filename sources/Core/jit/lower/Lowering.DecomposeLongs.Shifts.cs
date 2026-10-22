@@ -194,7 +194,8 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        throw new InvalidOperationException("Unexpected long shift operator.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedLongShiftOperator);
+                        return default;
                     }
                 }
 
@@ -212,12 +213,24 @@ public sealed partial class Lowering
             Range().Remove(gtLong);
             Range().Remove(loOp1);
             Range().Remove(hiOp1);
-            var helper = oper switch {
-                GT_LSH => CORINFO_HELP_LLSH,
-                GT_RSH => CORINFO_HELP_LRSH,
-                GT_RSZ => CORINFO_HELP_LRSZ,
-                _ => throw new InvalidOperationException("Unexpected long shift operator."),
-            };
+            global::RyuJitSharp.CorInfoHelpFunc __jitExceptionResult458;
+            switch (oper)
+            {
+                case GT_LSH:
+                    __jitExceptionResult458 = CORINFO_HELP_LLSH;
+                    break;
+                case GT_RSH:
+                    __jitExceptionResult458 = CORINFO_HELP_LRSH;
+                    break;
+                case GT_RSZ:
+                    __jitExceptionResult458 = CORINFO_HELP_LRSZ;
+                    break;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedLongShiftOperator);
+                    __jitExceptionResult458 = default;
+                    break;
+            }
+            var helper = __jitExceptionResult458;
             var call = _compiler.gtNewHelperCallNode(TYP_LONG, helper);
             var loArg = NewCallArg.CreateForPrimitive(loOp1).WithWellKnownArg(WellKnownArg.ShiftLow);
             var hiArg = NewCallArg.CreateForPrimitive(hiOp1).WithWellKnownArg(WellKnownArg.ShiftHigh);

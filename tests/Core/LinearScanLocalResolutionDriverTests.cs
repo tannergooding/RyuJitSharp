@@ -70,7 +70,7 @@ internal static class LinearScanLocalResolutionDriverTests
             EnregisterLocals(allocator) = false;
             interval.physReg = REG_X64_RCX;
             var exception = Assert.Throws<FatalJitException>(() => allocator.resolveRegistersWithLocals());
-            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.DirectFailureMessage341));
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.LocalRegisterResolutionRequiresEnregisteredLocals));
             if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
             {
                 Assert.That(exception.Message, Does.Contain("requires enregistered locals"));

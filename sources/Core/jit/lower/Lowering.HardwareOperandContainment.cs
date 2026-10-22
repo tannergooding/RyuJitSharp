@@ -199,11 +199,7 @@ public sealed partial class Lowering
 
                         default:
                         {
-                            JitExceptionHelpers.ThrowInvalidOperationException(
-                                "RJS-HW-001",
-                                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                    ? $"Unexpected tuple type: {tupleType}."
-                                    : null);
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTupleTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? tupleType : default));
                             supportsRegOptional = false;
                             return false;
                         }
@@ -257,11 +253,7 @@ public sealed partial class Lowering
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-HW-002",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected intrinsic category: {category}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
                 supportsRegOptional = false;
                 return false;
             }

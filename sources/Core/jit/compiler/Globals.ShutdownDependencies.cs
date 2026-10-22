@@ -13,7 +13,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeLclFld) is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofGenTreeLclFldIsNotPorted);
             return default!;
         }
     }
@@ -22,7 +22,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeCall) is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofGenTreeCallIsNotPorted);
             return default!;
         }
     }
@@ -31,7 +31,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genNodeSizeStats collection is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GenNodeSizeStatsCollectionIsNotPorted);
             return ref System.Runtime.CompilerServices.Unsafe.NullRef<NodeSizeStats>();
         }
     }
@@ -40,7 +40,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genNodeSizeStatsPerFunc collection is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GenNodeSizeStatsPerFuncCollectionIsNotPorted);
             return ref System.Runtime.CompilerServices.Unsafe.NullRef<NodeSizeStats>();
         }
     }
@@ -49,7 +49,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genTreeNcntHist collection is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GenTreeNcntHistCollectionIsNotPorted);
             return default!;
         }
     }
@@ -58,7 +58,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "genTreeNsizHist collection is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GenTreeNsizHistCollectionIsNotPorted);
             return default!;
         }
     }
@@ -75,7 +75,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofBasicBlockIsNotPorted);
             return default!;
         }
     }
@@ -84,7 +84,7 @@ public partial class Globals
     {
         get
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(FlowEdge) is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofFlowEdgeIsNotPorted);
             return default!;
         }
     }

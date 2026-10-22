@@ -55,7 +55,7 @@ public sealed partial class Interval : Referenceable
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("The interval index is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IntervalIndexIsOnlyAvailableInDebugBuilds);
             }
 
             return _intervalIndex;
@@ -65,7 +65,7 @@ public sealed partial class Interval : Referenceable
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("The interval index is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IntervalIndexIsOnlyAvailableInDebugBuilds);
             }
 
             _intervalIndex = value;

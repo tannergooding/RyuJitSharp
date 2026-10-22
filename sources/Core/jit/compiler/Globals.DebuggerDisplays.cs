@@ -123,7 +123,16 @@ public static partial class Globals
                 break;
             }
 
-            cur = cur.Next ?? throw new InvalidOperationException("The LIR range does not reach its last node.");
+            var __jitExceptionCoalesceLeft280 = cur.Next;
+            if (__jitExceptionCoalesceLeft280 != null)
+            {
+                cur = __jitExceptionCoalesceLeft280;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LIRRangeDoesNotReachItsLastNode);
+                cur = default;
+            }
         }
     }
 
@@ -341,7 +350,18 @@ public static partial class Globals
 
     private static Compiler GetDebuggerCompiler()
     {
-        return JitTls.Compiler ?? throw new InvalidOperationException("No compiler is active on this thread.");
+        global::RyuJitSharp.Compiler __jitExceptionReturnResult281;
+        var __jitExceptionCoalesceLeft282 = JitTls.Compiler;
+        if (__jitExceptionCoalesceLeft282 != null)
+        {
+            __jitExceptionReturnResult281 = __jitExceptionCoalesceLeft282;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NoCompilerIsActiveOnThisThread);
+            __jitExceptionReturnResult281 = default;
+        }
+        return __jitExceptionReturnResult281;
     }
 
     public static void dBlock(BasicBlock block)

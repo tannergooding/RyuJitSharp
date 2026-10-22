@@ -59,7 +59,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame pointer establishment is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FramePointerEstablishmentIsNotPortedForThisTarget
+    );
             return;
         }
     }
@@ -118,7 +121,7 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Local frame allocation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LocalFrameAllocationIsNotPortedForThisTarget);
             return;
         }
         else
@@ -197,7 +200,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Prolog AVX-state clearing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.PrologAVXStateClearingRequiresXarch);
             return;
         }
         if (Configuration.TARGET_AMD64)
@@ -216,7 +219,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Epilog AVX-state clearing requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EpilogAVXStateClearingRequiresXarch);
             return;
         }
         if (Configuration.TARGET_AMD64)

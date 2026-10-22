@@ -111,11 +111,7 @@ public class Scev
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-003",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected scalar evolution operation {Oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? Oper : default));
                 return ScevVisit.Abort;
             }
         }
@@ -190,11 +186,7 @@ public class Scev
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-003",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected scalar evolution operation {left.Oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? left.Oper : default));
                 return false;
             }
         }
@@ -248,11 +240,7 @@ public class Scev
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(
-                            "RJS-SCE-007",
-                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                ? $"Unexpected binary operation {binop.Oper}."
-                                : null);
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBinaryOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? binop.Oper : default));
                         operation = default!;
                         break;
                     }
@@ -283,11 +271,7 @@ public class Scev
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-003",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected scalar evolution operation {Oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? Oper : default));
                 return;
             }
         }
@@ -377,11 +361,7 @@ public sealed class ScevAddRec : Scev
             var loop = GetDebugData().Loop;
             if (loop is null)
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-011",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "Scalar-evolution loop data is unavailable."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionLoopDataIsUnavailable);
             }
 
             return loop;
@@ -403,11 +383,7 @@ public sealed class ScevAddRec : Scev
     {
         if (!Configuration.DEBUG)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-012",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "Scalar-evolution debug data is only available in Debug builds."
-                    : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

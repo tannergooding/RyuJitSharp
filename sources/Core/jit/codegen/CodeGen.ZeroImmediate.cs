@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register zeroing requires a fixed register set.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterZeroingRequiresAFixedRegisterSet);
             return;
         }
 
@@ -42,7 +42,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register zeroing is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterZeroingIsNotImplementedForThisTarget);
             return;
         }
 

@@ -71,10 +71,7 @@ public partial class Compiler
                 }
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage145
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownLoopCloningCandidate);
                     return default!;
                 }
             }
@@ -341,10 +338,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage146
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnrecognizedLoopCloningExitComparison);
                 return false;
             }
         }
@@ -383,10 +377,7 @@ public partial class Compiler
                 }
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage145
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownLoopCloningCandidate);
                     return default!;
                 }
             }

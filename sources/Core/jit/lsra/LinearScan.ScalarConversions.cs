@@ -92,7 +92,10 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildCast on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildCast on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LinearScanBuildCastOnThisTargetIsNotImplemented
+    );
         return default!;
     }
 
@@ -142,10 +145,7 @@ public sealed partial class LinearScan
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage408
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedScalarMathIntrinsic);
                     return default!;
                 }
             }
@@ -176,10 +176,7 @@ public sealed partial class LinearScan
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage408
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedScalarMathIntrinsic);
                         return default!;
                     }
                 }
@@ -245,7 +242,10 @@ public sealed partial class LinearScan
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException($"Unsupported ARM64 scalar intrinsic {intrinsic.IntrinsicName}.");
+                    FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnsupportedARM64ScalarIntrinsicArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic.IntrinsicName : default)
+    );
                     return default!;
                 }
             }
@@ -255,7 +255,10 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildIntrinsic on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildIntrinsic on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LinearScanBuildIntrinsicOnThisTargetIsNotImplemented
+    );
         return default!;
     }
 
@@ -378,7 +381,10 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildSelect on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildSelect on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LinearScanBuildSelectOnThisTargetIsNotImplemented
+    );
         return default!;
     }
 }

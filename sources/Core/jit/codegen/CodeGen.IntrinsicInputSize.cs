@@ -11,18 +11,25 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction input size metadata requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InstructionInputSizeMetadataRequiresXarch);
             return default!;
         }
 
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);
 
-        return (instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & Input_Mask) switch {
-            Input_8Bit => 1,
-            Input_16Bit => 2,
-            Input_32Bit => 4,
-            Input_64Bit => 8,
-            _ => throw new System.InvalidOperationException($"Instruction {ins} has no input size."),
-        };
+        switch ((instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & Input_Mask))
+        {
+            case Input_8Bit:
+                return 1;
+            case Input_16Bit:
+                return 2;
+            case Input_32Bit:
+                return 4;
+            case Input_64Bit:
+                return 8;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionArgumentHasNoInputSize, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default));
+                return default;
+        }
     }
 }

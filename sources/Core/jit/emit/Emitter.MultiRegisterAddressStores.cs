@@ -14,8 +14,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Address/two-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AddressTwoRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 

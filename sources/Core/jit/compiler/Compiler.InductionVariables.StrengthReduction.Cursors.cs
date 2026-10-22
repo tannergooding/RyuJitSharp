@@ -57,7 +57,7 @@ public partial class Compiler
                     jitprintf($"    [{i}] [{cursor.Tree.TreeId:D6}]: ");
                     if (cursor.IV is not ScevAddRec iv)
                     {
-                        FatalJitException.ThrowFatalJitException("An initialized IV cursor needs a recurrence.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InitializedIVCursorNeedsARecurrence);
                         return default!;
                     }
                     iv.Dump(_compiler);
@@ -90,10 +90,7 @@ public partial class Compiler
             var domTree = _compiler._domTree;
             if (domTree is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage130
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.StrengthReductionRequiresDominators);
                 return default!;
             }
             foreach (var edge in _loop.BackEdges)
@@ -120,10 +117,7 @@ public partial class Compiler
                 var cursorIV = cursor.IV;
                 if (cursorIV is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage131
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ActiveIVCursorNeedsARecurrence);
                     return;
                 }
                 nextCursor.Tree = cursor.Tree;
@@ -183,10 +177,7 @@ public partial class Compiler
                     var cursorIV = cursor.IV;
                     if (cursorIV is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage131
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ActiveIVCursorNeedsARecurrence);
                         return;
                     }
                     var current = cursor.Tree;
@@ -387,10 +378,7 @@ public partial class Compiler
             if (!iv.Step.GetConstantValue(_compiler, out var ivStep) ||
                 !sourceIV.Step.GetConstantValue(_compiler, out var sourceStep))
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage132
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RephrasingAnIVRequiresConstantSteps);
                 return default!;
             }
             assert(iv.Type == sourceIV.Type);
@@ -414,10 +402,7 @@ public partial class Compiler
                     : _compiler.gtNewBinaryNode(GT_MUL, TYP_LONG, sourceTree,
                         _compiler.gtNewLconNode(scale));
             }
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage133
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.Only32And64BitIVsCanBeRephrased);
             return default!;
         }
     }

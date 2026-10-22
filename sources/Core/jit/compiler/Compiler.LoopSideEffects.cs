@@ -85,7 +85,8 @@ public partial class Compiler
             var definitionBlock = lvaTable[phiDef.LclNum].GetPerSsaData(phiDef.SsaDef).Block;
             if (definitionBlock is not BasicBlock block)
             {
-                throw new InvalidOperationException("The SSA definition block must be assigned before loop-invariance analysis.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSADefinitionBlockMustBeAssignedBeforeLoopInvarianceAnalysis);
+                return false;
             }
 
             result = !loop.ContainsBlock(block);
@@ -122,7 +123,8 @@ public partial class Compiler
 
         if (_blockToLoop is not BlockToNaturalLoopMap blockToLoop)
         {
-            throw new InvalidOperationException("Loop side-effect analysis requires a block-to-loop map.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopSideEffectAnalysisRequiresABlockToLoopMap);
+            return;
         }
 
         foreach (var loop in _loops.InReversePostOrder())
@@ -249,7 +251,7 @@ public partial class Compiler
                         {
                             if (fieldSeq is null)
                             {
-                                throw new InvalidOperationException("A field address must carry a field sequence.");
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FieldAddressMustCarryAFieldSequence);
                             }
 
                             var fieldKind = baseAddr is not null

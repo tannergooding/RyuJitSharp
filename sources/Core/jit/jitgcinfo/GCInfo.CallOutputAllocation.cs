@@ -42,9 +42,9 @@ public partial struct GCInfo
         if (descriptor is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage248
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.GCCallDescriptorIsRequiredBeforeAllocatingItsArgumentTable
+    );
             return default!;
         }
         assert(descriptor.cdArgCnt == count);

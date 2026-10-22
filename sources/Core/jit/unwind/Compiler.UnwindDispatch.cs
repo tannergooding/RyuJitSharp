@@ -19,7 +19,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Push unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PushUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -32,7 +35,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Paired-push unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PairedPushUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -45,8 +51,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Pointer-authentication unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PointerAuthenticationUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -67,7 +75,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReturnUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -104,7 +115,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StackUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -137,7 +151,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame-register unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FrameRegisterUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -170,7 +187,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-save unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterSaveUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -211,7 +231,7 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind padding is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnwindPaddingIsNotImplementedForThisTarget);
             return;
         }
     }
@@ -232,7 +252,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-pair unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterPairUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -245,8 +268,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Preindexed register-pair unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PreindexedRegisterPairUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -259,8 +284,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Preindexed register unwind recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PreindexedRegisterUnwindRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
     }

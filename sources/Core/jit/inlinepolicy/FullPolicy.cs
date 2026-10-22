@@ -12,7 +12,7 @@ public sealed class FullPolicy : DiscretionaryPolicy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Full inline policy is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FullInlinePolicyIsOnlyAvailableInDebugBuilds);
         }
     }
 

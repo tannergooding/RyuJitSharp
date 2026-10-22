@@ -44,7 +44,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("Jump distance binding requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.JumpDistanceBindingRequiresAnActiveCompiler);
                 return;
             }
             if (compiler.verbose)
@@ -155,7 +155,7 @@ public partial class Emitter
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM jump instruction.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownARMJumpInstruction);
                         return;
                     }
                 }
@@ -186,7 +186,7 @@ public partial class Emitter
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown ARM64 jump instruction.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownARM64JumpInstruction);
                         return;
                     }
                 }
@@ -209,13 +209,16 @@ public partial class Emitter
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown RISC-V jump instruction.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownRISCVJumpInstruction);
                         return;
                     }
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump distance binding is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.JumpDistanceBindingIsNotSupportedForThisTarget
+    );
                     return;
                 }
 
@@ -488,8 +491,10 @@ public partial class Emitter
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Short-jump size update is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ShortJumpSizeUpdateIsNotSupportedForThisTarget
+    );
                     return;
                 }
 

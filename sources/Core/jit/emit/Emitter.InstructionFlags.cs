@@ -16,7 +16,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "xarch instruction flags are unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchInstructionFlagsAreUnavailableOnThisTarget
+    );
             return default!;
         }
 

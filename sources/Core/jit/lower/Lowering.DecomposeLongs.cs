@@ -249,8 +249,9 @@ public sealed partial class Lowering
                     if (!Configuration.FEATURE_HW_INTRINSICS)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_SKIPPED,
-                        "Hardware-intrinsic long decomposition is not available.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicLongDecompositionIsNotAvailable
+    );
                         return default!;
                     }
 
@@ -272,14 +273,15 @@ public sealed partial class Lowering
                 case GT_CMPXCHG:
                 {
                     NYI("Interlocked operations on TYP_LONG");
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Interlocked operations on TYP_LONG are not ported.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InterlockedOperationsOnTYPLONGAreNotPorted);
                     return default!;
                 }
 
                 default:
                 {
                     JITDUMP($"Illegal TYP_LONG node {tree.Oper.Name} in Decomposition.");
-                    throw new InvalidOperationException("Illegal TYP_LONG node in Decomposition.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IllegalTYPLONGNodeInDecomposition);
+                    return default;
                 }
             }
 
@@ -445,26 +447,42 @@ public sealed partial class Lowering
 
         private static genTreeOps GetHiOper(genTreeOps oper)
         {
-            return oper switch {
-                GT_ADD => GT_ADD_HI,
-                GT_SUB => GT_SUB_HI,
-                GT_OR => GT_OR,
-                GT_AND => GT_AND,
-                GT_XOR => GT_XOR,
-                _ => throw new InvalidOperationException("GetHiOper called for invalid oper"),
-            };
+            switch (oper)
+            {
+                case GT_ADD:
+                    return GT_ADD_HI;
+                case GT_SUB:
+                    return GT_SUB_HI;
+                case GT_OR:
+                    return GT_OR;
+                case GT_AND:
+                    return GT_AND;
+                case GT_XOR:
+                    return GT_XOR;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GetHiOperCalledForInvalidOper);
+                    return default;
+            }
         }
 
         private static genTreeOps GetLoOper(genTreeOps oper)
         {
-            return oper switch {
-                GT_ADD => GT_ADD_LO,
-                GT_SUB => GT_SUB_LO,
-                GT_OR => GT_OR,
-                GT_AND => GT_AND,
-                GT_XOR => GT_XOR,
-                _ => throw new InvalidOperationException("GetLoOper called for invalid oper"),
-            };
+            switch (oper)
+            {
+                case GT_ADD:
+                    return GT_ADD_LO;
+                case GT_SUB:
+                    return GT_SUB_LO;
+                case GT_OR:
+                    return GT_OR;
+                case GT_AND:
+                    return GT_AND;
+                case GT_XOR:
+                    return GT_XOR;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GetLoOperCalledForInvalidOper);
+                    return default;
+            }
         }
 
         private void PromoteLongVars()

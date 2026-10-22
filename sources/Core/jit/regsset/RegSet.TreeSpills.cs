@@ -30,7 +30,7 @@ public partial struct RegSet
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Tree spills require a fixed register set.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TreeSpillsRequireAFixedRegisterSet);
             return;
         }
 

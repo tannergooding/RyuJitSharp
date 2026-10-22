@@ -118,7 +118,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("Register display requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterDisplayRequiresAnActiveCompiler);
                 return default!;
             }
             var name = compiler.compRegVarName(reg, varName, false);
@@ -147,7 +147,11 @@ public partial class Emitter
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 stack register size {size}.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidARM64StackRegisterSizeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? size : default)
+    );
                         return default!;
                     }
                 }
@@ -171,7 +175,11 @@ public partial class Emitter
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 zero register size {size}.");
+                            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidARM64ZeroRegisterSizeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? size : default)
+    );
                             return default!;
                         }
                     }
@@ -192,7 +200,11 @@ public partial class Emitter
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 general register size {size}.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidARM64GeneralRegisterSizeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? size : default)
+    );
                         return default!;
                     }
                 }
@@ -200,7 +212,11 @@ public partial class Emitter
 
             if (!isVectorRegister(reg))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 register {reg}.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidARM64RegisterArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? reg : default)
+    );
                 return default!;
             }
 
@@ -239,7 +255,11 @@ public partial class Emitter
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 vector register size {size}.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidARM64VectorRegisterSizeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? size : default)
+    );
                     return default!;
                 }
             }
@@ -252,7 +272,10 @@ public partial class Emitter
                 return emitRegNameRiscV64(reg, attr, varName);
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EmitterRegisterNamesOutsideXarchAreNotImplemented
+    );
             return default!;
         }
 
@@ -262,7 +285,10 @@ public partial class Emitter
             return reg.Name;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EmitterRegisterNamesOutsideXarchAreNotImplemented
+    );
         return default!;
     }
 
@@ -270,7 +296,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector register names are only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.VectorRegisterNamesAreOnlySupportedOnARM64);
             return default!;
         }
 
@@ -286,7 +312,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating register names are only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FloatingRegisterNamesAreOnlySupportedOnARM32);
             return default!;
         }
 
@@ -294,7 +320,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("Floating register display requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.FloatingRegisterDisplayRequiresAnActiveCompiler);
             return default!;
         }
         var name = compiler.compRegVarName(reg, varName, true);
@@ -306,7 +332,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "XMM register names are only supported on xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.XMMRegisterNamesAreOnlySupportedOnXarch);
             return default!;
         }
 
@@ -318,7 +344,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "YMM register names are only supported on xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.YMMRegisterNamesAreOnlySupportedOnXarch);
             return default!;
         }
 
@@ -330,7 +356,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ZMM register names are only supported on xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ZMMRegisterNamesAreOnlySupportedOnXarch);
             return default!;
         }
 

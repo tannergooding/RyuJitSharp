@@ -26,7 +26,10 @@ public partial class Compiler
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Cross-platform intrinsic import requires a supported hardware-intrinsic target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CrossPlatformIntrinsicImportRequiresASupportedHardwareIntrinsicTarget
+    );
             return default!;
         }
 
@@ -451,12 +454,22 @@ public partial class Compiler
                         break;
                     }
 
-                    intrinsic = simdSize switch {
-                        64 => NI_AVX512_ConvertToVector512Double,
-                        32 => NI_AVX512_ConvertToVector256Double,
-                        16 => NI_AVX512_ConvertToVector128Double,
-                        _ => throw new System.InvalidOperationException(),
-                    };
+                    switch (simdSize)
+                    {
+                        case 64:
+                            intrinsic = NI_AVX512_ConvertToVector512Double;
+                            break;
+                        case 32:
+                            intrinsic = NI_AVX512_ConvertToVector256Double;
+                            break;
+                        case 16:
+                            intrinsic = NI_AVX512_ConvertToVector128Double;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowInvalidOperationException();
+                            intrinsic = default;
+                            break;
+                    }
                 }
                 else if (Configuration.TARGET_ARM64)
                 {
@@ -471,10 +484,7 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage124
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionTarget);
                     return default!;
                 }
 
@@ -528,21 +538,41 @@ public partial class Compiler
                 {
                     if (simdBaseType == TYP_INT)
                     {
-                        intrinsic = simdSize switch {
-                            64 => NI_AVX512_ConvertToVector512Single,
-                            32 => NI_AVX_ConvertToVector256Single,
-                            16 => NI_X86Base_ConvertToVector128Single,
-                            _ => throw new System.InvalidOperationException(),
-                        };
+                        switch (simdSize)
+                        {
+                            case 64:
+                                intrinsic = NI_AVX512_ConvertToVector512Single;
+                                break;
+                            case 32:
+                                intrinsic = NI_AVX_ConvertToVector256Single;
+                                break;
+                            case 16:
+                                intrinsic = NI_X86Base_ConvertToVector128Single;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowInvalidOperationException();
+                                intrinsic = default;
+                                break;
+                        }
                     }
                     else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                     {
-                        intrinsic = simdSize switch {
-                            64 => NI_AVX512_ConvertToVector512Single,
-                            32 => NI_AVX512_ConvertToVector256Single,
-                            16 => NI_AVX512_ConvertToVector128Single,
-                            _ => throw new System.InvalidOperationException(),
-                        };
+                        switch (simdSize)
+                        {
+                            case 64:
+                                intrinsic = NI_AVX512_ConvertToVector512Single;
+                                break;
+                            case 32:
+                                intrinsic = NI_AVX512_ConvertToVector256Single;
+                                break;
+                            case 16:
+                                intrinsic = NI_AVX512_ConvertToVector128Single;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowInvalidOperationException();
+                                intrinsic = default;
+                                break;
+                        }
                     }
                     else
                     {
@@ -560,10 +590,7 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage124
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionTarget);
                     return default!;
                 }
 
@@ -1046,19 +1073,43 @@ public partial class Compiler
                             op1 = gtNewSimdWithUpperNode(widenedType, op1, op2, simdBaseType, widenedSize);
                         }
 
-                        intrinsic = (simdSize, simdBaseType) switch {
-                            (16, TYP_USHORT) => NI_AVX512_ConvertToVector128ByteWithSaturation,
-                            (16, TYP_UINT) => NI_AVX512_ConvertToVector128UInt16WithSaturation,
-                            (16, TYP_LONG) => NI_AVX512_ConvertToVector128Int32WithSaturation,
-                            (16, TYP_ULONG) => NI_AVX512_ConvertToVector128UInt32WithSaturation,
-                            (_, TYP_SHORT) => NI_AVX512_ConvertToVector256SByteWithSaturation,
-                            (_, TYP_USHORT) => NI_AVX512_ConvertToVector256ByteWithSaturation,
-                            (_, TYP_INT) => NI_AVX512_ConvertToVector256Int16WithSaturation,
-                            (_, TYP_UINT) => NI_AVX512_ConvertToVector256UInt16WithSaturation,
-                            (_, TYP_LONG) => NI_AVX512_ConvertToVector256Int32WithSaturation,
-                            (_, TYP_ULONG) => NI_AVX512_ConvertToVector256UInt32WithSaturation,
-                            _ => throw new System.InvalidOperationException(),
-                        };
+                        switch (simdSize, simdBaseType)
+                        {
+                            case (16, TYP_USHORT):
+                                intrinsic = NI_AVX512_ConvertToVector128ByteWithSaturation;
+                                break;
+                            case (16, TYP_UINT):
+                                intrinsic = NI_AVX512_ConvertToVector128UInt16WithSaturation;
+                                break;
+                            case (16, TYP_LONG):
+                                intrinsic = NI_AVX512_ConvertToVector128Int32WithSaturation;
+                                break;
+                            case (16, TYP_ULONG):
+                                intrinsic = NI_AVX512_ConvertToVector128UInt32WithSaturation;
+                                break;
+                            case (_, TYP_SHORT):
+                                intrinsic = NI_AVX512_ConvertToVector256SByteWithSaturation;
+                                break;
+                            case (_, TYP_USHORT):
+                                intrinsic = NI_AVX512_ConvertToVector256ByteWithSaturation;
+                                break;
+                            case (_, TYP_INT):
+                                intrinsic = NI_AVX512_ConvertToVector256Int16WithSaturation;
+                                break;
+                            case (_, TYP_UINT):
+                                intrinsic = NI_AVX512_ConvertToVector256UInt16WithSaturation;
+                                break;
+                            case (_, TYP_LONG):
+                                intrinsic = NI_AVX512_ConvertToVector256Int32WithSaturation;
+                                break;
+                            case (_, TYP_ULONG):
+                                intrinsic = NI_AVX512_ConvertToVector256UInt32WithSaturation;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowInvalidOperationException();
+                                intrinsic = default;
+                                break;
+                        }
 
                         if (simdSize == 64)
                         {
@@ -1106,7 +1157,7 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    FatalJitException.ThrowFatalJitException("Unsupported SIMD narrowing target.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedSIMDNarrowingTarget);
                     return default!;
                 }
                 break;
@@ -1180,7 +1231,7 @@ public partial class Compiler
                 else
                 {
                     unreached();
-                    FatalJitException.ThrowFatalJitException("Unsupported SIMD shift target.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedSIMDShiftTarget);
                     return default!;
                 }
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2);
@@ -1583,7 +1634,10 @@ public partial class Compiler
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Saturating SIMD operations require a supported hardware-intrinsic target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SaturatingSIMDOperationsRequireASupportedHardwareIntrinsicTarget
+    );
             return default!;
         }
 
@@ -1611,12 +1665,22 @@ public partial class Compiler
             NamedIntrinsic saturatingIntrinsic;
             if (Configuration.TARGET_XARCH)
             {
-                saturatingIntrinsic = simdSize switch {
-                    64 => addition ? NI_AVX512_AddSaturate : NI_AVX512_SubtractSaturate,
-                    32 => addition ? NI_AVX2_AddSaturate : NI_AVX2_SubtractSaturate,
-                    16 => addition ? NI_X86Base_AddSaturate : NI_X86Base_SubtractSaturate,
-                    _ => throw new System.InvalidOperationException(),
-                };
+                switch (simdSize)
+                {
+                    case 64:
+                        saturatingIntrinsic = addition ? NI_AVX512_AddSaturate : NI_AVX512_SubtractSaturate;
+                        break;
+                    case 32:
+                        saturatingIntrinsic = addition ? NI_AVX2_AddSaturate : NI_AVX2_SubtractSaturate;
+                        break;
+                    case 16:
+                        saturatingIntrinsic = addition ? NI_X86Base_AddSaturate : NI_X86Base_SubtractSaturate;
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException();
+                        saturatingIntrinsic = default;
+                        break;
+                }
             }
             else if (Configuration.TARGET_WASM)
             {
@@ -1624,7 +1688,7 @@ public partial class Compiler
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported saturating SIMD target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnsupportedSaturatingSIMDTarget);
                 return default!;
             }
 

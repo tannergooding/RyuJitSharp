@@ -196,11 +196,14 @@ public sealed partial class Lowering
 
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not supported for Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackArgumentLoweringIsNotSupportedForWasm);
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StackArgumentLoweringIsNotPortedForThisTarget
+    );
         return;
     }
 

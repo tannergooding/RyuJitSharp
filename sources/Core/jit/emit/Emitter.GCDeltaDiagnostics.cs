@@ -39,15 +39,17 @@ public partial class Emitter
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "GC-delta indentation is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GCDeltaIndentationIsNotSupportedForThisTarget
+    );
             return;
         }
 
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("GC delta diagnostics require an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GCDeltaDiagnosticsRequireAnActiveCompiler);
             return;
         }
         // Native %.*s cannot print past its 29-character space literal.
@@ -91,12 +93,12 @@ public partial class Emitter
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("GC delta diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GCDeltaDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("GC delta diagnostics require an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GCDeltaDiagnosticsRequireAnActiveCompiler);
             return;
         }
         if (VarSetOps.Equal(compiler, debugPrevGCrefVars, debugThisGCrefVars))
@@ -224,12 +226,12 @@ public partial class Emitter
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("GC tracking diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GCTrackingDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("GC tracking diagnostics require an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GCTrackingDiagnosticsRequireAnActiveCompiler);
             return;
         }
         // Keep the diagnostic field addresses stable while formatting can allocate.

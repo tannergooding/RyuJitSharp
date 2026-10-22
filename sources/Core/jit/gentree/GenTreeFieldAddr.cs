@@ -31,7 +31,7 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new PlatformNotSupportedException("ReadyToRun field lookups are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunFieldLookupsAreUnsupported);
             }
 
             return _fieldLookup;
@@ -41,7 +41,7 @@ public sealed class GenTreeFieldAddr : GenTreeUnOp
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new PlatformNotSupportedException("ReadyToRun field lookups are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunFieldLookupsAreUnsupported);
             }
 
             _fieldLookup = value;

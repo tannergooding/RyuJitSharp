@@ -130,9 +130,9 @@ public partial class Compiler
         else
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage200
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.NativeAOTTLSExpansionIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -201,7 +201,7 @@ public partial class Compiler
         if ((TargetOS.IsUnix && !TargetArchitecture.Is64Bit) ||
             (TargetOS.IsWindows && TargetArchitecture.IsArm32))
         {
-            FatalJitException.ThrowFatalJitException("CoreCLR TLS expansion is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CoreCLRTLSExpansionIsUnsupportedForThisTarget);
             return default!;
         }
 
@@ -300,9 +300,9 @@ public partial class Compiler
         else
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage201
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CoreCLRTLSExpansionIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -311,10 +311,7 @@ public partial class Compiler
         var typeIndex = call.Args.GetUserArgByIndex(0)?.Node;
         if (typeIndex is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage202
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ThreadStaticHelperRequiresATypeIndex);
             return default!;
         }
         assert(typeIndex.Type.ActualType is TYP_INT);
@@ -413,10 +410,7 @@ public partial class Compiler
         var clone = gtCloneExpr(tree);
         if (clone is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage203
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneAThreadStaticExpression);
             return default!;
         }
 

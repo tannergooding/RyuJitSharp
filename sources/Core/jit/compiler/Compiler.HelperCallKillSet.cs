@@ -56,7 +56,7 @@ public partial class Compiler
             return RBM_CALLEE_TRASH;
         }
 
-        FatalJitException.ThrowFatalJitException("Unsupported or unset target architecture.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedOrUnsetTargetArchitecture);
         return default!;
     }
 

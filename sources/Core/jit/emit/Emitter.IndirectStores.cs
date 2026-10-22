@@ -14,7 +14,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indirect-store recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.IndirectStoreRecordingRequiresXarch);
             return;
         }
 
@@ -55,8 +55,10 @@ public partial class Emitter
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Contained hardware-intrinsic stores require hardware-intrinsic support.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ContainedHardwareIntrinsicStoresRequireHardwareIntrinsicSupport
+    );
                     return;
                 }
 
@@ -104,8 +106,10 @@ public partial class Emitter
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Contained hardware-intrinsic stores require hardware-intrinsic support.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ContainedHardwareIntrinsicStoresRequireHardwareIntrinsicSupport
+    );
                 return;
             }
 

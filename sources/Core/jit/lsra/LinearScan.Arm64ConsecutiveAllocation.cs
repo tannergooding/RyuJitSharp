@@ -47,7 +47,7 @@ public sealed partial class LinearScan
                 var related = upper.relatedInterval;
                 if (related is null)
                 {
-                    FatalJitException.ThrowFatalJitException("A consecutive upper-vector restore requires a related interval.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveUpperVectorRestoreRequiresARelatedInterval);
                     return;
                 }
                 if (related.isPartiallySpilled)
@@ -57,8 +57,7 @@ public sealed partial class LinearScan
                 var nextReference = getNextConsecutiveRefPosition(next);
                 if (nextReference is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        "A consecutive upper-vector restore must precede a use.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveUpperVectorRestoreMustPrecedeAUse);
                     return;
                 }
 
@@ -95,8 +94,7 @@ public sealed partial class LinearScan
             var nextReference = getNextConsecutiveRefPosition(next);
             if (nextReference is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    "A consecutive register sequence ended prematurely.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveRegisterSequenceEndedPrematurely);
                 return false;
             }
 
@@ -110,8 +108,7 @@ public sealed partial class LinearScan
                     nextReference = getNextConsecutiveRefPosition(next);
                     if (nextReference is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            "A consecutive upper-vector restore must precede a use.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveUpperVectorRestoreMustPrecedeAUse);
                         return false;
                     }
 
@@ -280,7 +277,7 @@ public sealed partial class LinearScan
                 var next = getNextConsecutiveRefPosition(first);
                 if (next is null)
                 {
-                    FatalJitException.ThrowFatalJitException("A consecutive sequence requires additional references.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveSequenceRequiresAdditionalReferences);
                     busyCandidates = default!;
                     return default!;
                 }
@@ -295,8 +292,7 @@ public sealed partial class LinearScan
                         var nextReference = getNextConsecutiveRefPosition(next);
                         if (nextReference is null)
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                "A consecutive sequence ended prematurely.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveSequenceEndedPrematurely);
                             busyCandidates = default!;
                             return default!;
                         }
@@ -312,7 +308,7 @@ public sealed partial class LinearScan
                     var nullableCurrent = interval.assignedReg?.regNum;
                     if (nullableCurrent is null)
                     {
-                        FatalJitException.ThrowFatalJitException("An active consecutive interval has no register.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ActiveConsecutiveIntervalHasNoRegister);
                         busyCandidates = default!;
                         return default!;
                     }

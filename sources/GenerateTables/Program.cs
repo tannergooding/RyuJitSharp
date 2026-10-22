@@ -344,7 +344,8 @@ public static partial class API_ICorJitInfo_NamesExtensions
             {
                 _ = thunks.AppendLine("            if (!Globals.TryGetManagedInstructionSet((int)nativeInstructionSet, out var instructionSet))");
                 _ = thunks.AppendLine("            {");
-                _ = thunks.AppendLine("                throw new PlatformNotSupportedException($\"Native instruction-set ordinal '{(int)nativeInstructionSet}' is unavailable for this target.\");");
+                _ = thunks.AppendLine("                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.NativeInstructionSetUnavailable, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? (int)nativeInstructionSet : default);");
+                _ = thunks.AppendLine("                return default;");
                 _ = thunks.AppendLine("            }");
                 _ = thunks.AppendLine();
             }
@@ -426,7 +427,8 @@ public sealed unsafe partial class WrapICorJitInfo
 
         if (sizeof(ICorJitInfo.Vtbl<ICorJitInfo>) != {{apiCount}} * sizeof(nint))
         {
-            throw new InvalidOperationException("ICorJitInfo vtable layout does not match the generated API order.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ICorJitInfoVTableLayoutMismatch);
+            return default;
         }
 
 {{vtableAssignments}}        return vtable;
@@ -437,9 +439,13 @@ public sealed unsafe partial class WrapICorJitInfo
         var proxy = (ProxyContext*)self;
         var handle = GCHandle.FromIntPtr(proxy->WrapperHandle);
 
-        return handle.Target is WrapICorJitInfo wrapper
-            ? wrapper
-            : throw new InvalidOperationException("ICorJitInfo proxy context is no longer valid.");
+        if (handle.Target is WrapICorJitInfo wrapper)
+        {
+            return wrapper;
+        }
+
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ICorJitInfoProxyContextUnavailable);
+        return default!;
     }
 
     [DoesNotReturn]
@@ -447,7 +453,7 @@ public sealed unsafe partial class WrapICorJitInfo
     {
         // The native JIT cannot continue safely with a fabricated EE result.
         Environment.FailFast("An exception escaped an ICorJitInfo timing proxy callback.", exception);
-        throw new InvalidOperationException("Environment.FailFast returned unexpectedly.", exception);
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FailFastReturned);
     }
 
 {{thunks}}}
@@ -948,7 +954,8 @@ public static partial class genTreeOpsExtensions
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Tree operation diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeOperationDiagnosticsAreOnlyAvailableInDebugBuilds);
+                return default;
             }
 
             return [
@@ -1490,7 +1497,9 @@ internal static class InstructionOrdinalMaps
             return s_wasmOrdinals;
         }
 
-        throw new PlatformNotSupportedException("Instruction ordinals are unsupported on this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(
+            FatalJitErrorCode.NativeInstructionOrdinalsAreUnsupportedOnThisTarget);
+        return default;
     }
 
     private static ReadOnlySpan<instruction> GetCurrentTargetInstructionsByNativeOrdinal()
@@ -1525,7 +1534,9 @@ internal static class InstructionOrdinalMaps
             return s_wasmInstructionsByNativeOrdinal;
         }
 
-        throw new PlatformNotSupportedException("Instruction ordinals are unsupported on this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(
+            FatalJitErrorCode.NativeInstructionOrdinalsAreUnsupportedOnThisTarget);
+        return default;
     }
 
     internal static bool TryGetNativeInstructionOrdinal(instruction ins, out int ordinal)
@@ -1572,7 +1583,10 @@ internal static class InstructionOrdinalMaps
     {
         if (!TryGetNativeInstructionOrdinal(ins, out var ordinal))
         {
-            throw new PlatformNotSupportedException($"Instruction '{ins}' is unsupported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                FatalJitErrorCode.NativeInstructionOrdinalIsUnavailableForInstruction,
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default);
+            return default;
         }
 
         return ordinal;
@@ -1617,7 +1631,10 @@ internal static class InstructionOrdinalMaps
 
         if (ordinal < 0 || ordinal >= instructions.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(ordinal));
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(
+                FatalJitErrorCode.NativeInstructionOrdinalIsOutOfRange,
+                FatalJitArgument.Ordinal);
+            return default;
         }
 
         return Globals.GetRvaSpanEntry(instructions, ordinal);
@@ -1650,7 +1667,8 @@ internal static class InstructionOrdinalMaps
         _ = builder.AppendLine("        {");
         _ = builder.AppendLine("            if (!Configuration.FEATURE_HW_INTRINSICS)");
         _ = builder.AppendLine("            {");
-        _ = builder.AppendLine("                throw new PlatformNotSupportedException(\"Hardware-intrinsic metadata is unsupported on this target.\");");
+        _ = builder.AppendLine("                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);");
+        _ = builder.AppendLine("                return default;");
         _ = builder.AppendLine("            }");
         _ = builder.AppendLine();
         _ = builder.AppendLine("            if (Configuration.TARGET_XARCH)");
@@ -1668,7 +1686,8 @@ internal static class InstructionOrdinalMaps
         _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return {wasmTable};");
         _ = builder.AppendLine("            }");
         _ = builder.AppendLine();
-        _ = builder.AppendLine("            throw new PlatformNotSupportedException(\"Hardware-intrinsic tables are unavailable for this target.\");");
+        _ = builder.AppendLine("            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);");
+        _ = builder.AppendLine("            return default;");
         _ = builder.AppendLine("        }");
         _ = builder.AppendLine("    }");
         _ = builder.AppendLine();
@@ -1682,7 +1701,8 @@ internal static class InstructionOrdinalMaps
         _ = builder.AppendLine("        {");
         _ = builder.AppendLine("            if (!Configuration.FEATURE_HW_INTRINSICS)");
         _ = builder.AppendLine("            {");
-        _ = builder.AppendLine("                throw new PlatformNotSupportedException(\"Hardware-intrinsic metadata is unsupported on this target.\");");
+        _ = builder.AppendLine("                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);");
+        _ = builder.AppendLine("                return default;");
         _ = builder.AppendLine("            }");
         _ = builder.AppendLine();
         _ = builder.AppendLine("            if (Configuration.TARGET_XARCH)");
@@ -1700,7 +1720,8 @@ internal static class InstructionOrdinalMaps
         _ = builder.AppendLine("                return s_WasmInstructions;");
         _ = builder.AppendLine("            }");
         _ = builder.AppendLine();
-        _ = builder.AppendLine("            throw new PlatformNotSupportedException(\"Hardware-intrinsic tables are unavailable for this target.\");");
+        _ = builder.AppendLine("            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);");
+        _ = builder.AppendLine("            return default;");
         _ = builder.AppendLine("        }");
         _ = builder.AppendLine("    }");
         _ = builder.AppendLine();
@@ -2522,7 +2543,7 @@ public static partial class InlineObservationExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage240
+                    FatalJitErrorCode.InvalidInlineObservation
                 );
                 return default!;
             }
@@ -2667,7 +2688,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Jump-kind instruction mapping is not supported for this target.");
+                FatalJitErrorCode.JumpKindInstructionMappingIsNotSupportedForThisTarget);
             return default;
         }
     }
@@ -2703,7 +2724,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Reverse jump-kind mapping is not supported for this target.");
+                FatalJitErrorCode.ReverseJumpKindMappingIsNotSupportedForThisTarget);
             return default;
         }
     }
@@ -3039,7 +3060,7 @@ public sealed partial class CodeGen
             }
 
             FatalJitException.ThrowFatalJitException(
-                "No instruction-name table is defined for the configured target.");
+                FatalJitErrorCode.NoInstructionNameTableIsDefinedForTheConfiguredTarget);
             return default;
         }
     }
@@ -3225,7 +3246,7 @@ public partial class Emitter
             }
 
             FatalJitException.ThrowFatalJitException(
-                "xarch instruction latency data is not available for this target.");
+                FatalJitErrorCode.XarchInstructionLatencyDataIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -3251,7 +3272,7 @@ public partial class Emitter
             }
 
             FatalJitException.ThrowFatalJitException(
-                "xarch instruction throughput data is not available for this target.");
+                FatalJitErrorCode.XarchInstructionThroughputDataIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -3291,7 +3312,7 @@ public partial class Emitter
             }
 
             FatalJitException.ThrowFatalJitException(
-                "xarch instruction tuple data is not available for this target.");
+                FatalJitErrorCode.XarchInstructionTupleDataIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -3415,7 +3436,7 @@ public sealed partial class CodeGen
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Instruction metadata is not available for the configured target.");
+                FatalJitErrorCode.InstructionMetadataIsNotAvailableForTheConfiguredTarget);
             return default;
         }
     }
@@ -3718,7 +3739,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Unsupported instruction format target.");
+                FatalJitErrorCode.UnsupportedInstructionFormatTarget);
             return default;
         }
     }
@@ -3759,7 +3780,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Unsupported instruction format target.");
+                FatalJitErrorCode.UnsupportedInstructionFormatTarget);
             return default;
         }
     }
@@ -4074,8 +4095,7 @@ public partial class Emitter
             _ = tables.AppendLine(CultureInfo.InvariantCulture, $"                return {name}X64;");
             _ = tables.AppendLine("            }");
             _ = tables.AppendLine();
-            _ = tables.AppendLine("            FatalJitException.ThrowFatalJitException(");
-            _ = tables.AppendLine("                \"xarch opcode table is not available for this target.\");");
+            _ = tables.AppendLine("            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);");
             _ = tables.AppendLine("            return default;");
             _ = tables.AppendLine("        }");
             _ = tables.AppendLine("    }");
@@ -4664,7 +4684,8 @@ namespace RyuJitSharp;
                 _ = builder.AppendLine("            if (!Configuration.DEBUG)");
                 _ = builder.AppendLine("            {");
                 _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                    $"                throw new System.InvalidOperationException(\"JIT config value '{propertyName}' is only available in Debug builds.\");");
+                    $"                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? \"{propertyName}\" : default);");
+                _ = builder.AppendLine("                return default!;");
                 _ = builder.AppendLine("            }");
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            return _{fieldName};");
                 _ = builder.AppendLine("        }");
@@ -5885,7 +5906,7 @@ public static partial class PhasesExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage209
+                    FatalJitErrorCode.InvalidCompilerPhase
                 );
                 return default!;
             }
@@ -6303,7 +6324,7 @@ public static partial class Globals
             _ = namesBuilder.AppendLine("            {");
             _ = namesBuilder.AppendLine("                FatalJitException.ThrowFatalJitException(");
             _ = namesBuilder.AppendLine("                    CORJIT_INTERNALERROR,");
-            _ = namesBuilder.AppendLine("                    FatalJitErrorCode.DirectFailureMessage445");
+            _ = namesBuilder.AppendLine("                    FatalJitErrorCode.InvalidRegisterNumber");
             _ = namesBuilder.AppendLine("                );");
             _ = namesBuilder.AppendLine("                return default!;");
             _ = namesBuilder.AppendLine("            }");
@@ -6408,8 +6429,7 @@ public static partial class regNumberExtensions
             _ = builder.AppendLine("            }");
         }
 
-        _ = builder.AppendLine("            FatalJitException.ThrowFatalJitException(");
-        _ = builder.AppendLine("                \"Invalid target architecture.\");");
+        _ = builder.AppendLine("            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);");
         _ = builder.AppendLine("            return default;");
         _ = builder.AppendLine("        }");
         _ = builder.AppendLine("    }");
@@ -6724,10 +6744,8 @@ public static partial class Globals
                 _ = builder.AppendLine("            }");
             }
 
-            _ = builder.AppendLine("            FatalJitException.ThrowFatalJitException(");
-            _ = builder.AppendLine(
-                CultureInfo.InvariantCulture,
-                $"                \"Register mask '{name}' is not available for the configured target.\");");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterMask{name}IsNotAvailableForTheConfiguredTarget);");
             _ = builder.AppendLine("            return default;");
             _ = builder.AppendLine("        }");
             _ = builder.AppendLine("    }");
@@ -6909,9 +6927,11 @@ public static partial class var_typesExtensions
                     {
 {{varTypeNameCasesBuilder}}                        default:
                         {
-                            JitExceptionHelpers.ThrowIndexOutOfRangeException();
-                            return default!;
-                        }
+    JitExceptionHelpers.ThrowIndexOutOfRangeException(
+        FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid,
+        Configuration.DETAILED_FATAL_ERROR_MESSAGES ? varType : default);
+    return default!;
+}
                     }
                 }
 
@@ -7589,7 +7609,10 @@ public partial class Globals
             return nativeOrdinal;
         }
 
-        throw new PlatformNotSupportedException($"Instruction set '{InstructionSetToString(instructionSet)}' is unavailable for this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(
+            FatalJitErrorCode.InstructionSetIsUnavailableForThisTarget,
+            Configuration.DETAILED_FATAL_ERROR_MESSAGES ? InstructionSetToString(instructionSet) : default);
+        return default;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

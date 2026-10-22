@@ -16,7 +16,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Prespilled unmapped registers are only supported on ARM.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PrespilledUnmappedRegistersAreOnlySupportedOnARM
+    );
             return default!;
         }
 
@@ -57,15 +60,19 @@ public sealed partial class CodeGen
         {
             if (inUnwindRegion)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Unwind-region immediate materialization is not implemented for ARM.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindRegionImmediateMaterializationIsNotImplementedForARM
+    );
                 return default!;
             }
             return genInstrWithConstantArm(ins, attr, reg1, reg2, imm, tmpReg, INS_FLAGS_DONT_CARE);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Immediate materialization is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ImmediateMaterializationIsNotImplementedForThisTarget
+    );
         return default!;
     }
 
@@ -74,8 +81,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Instruction flags for immediate materialization are only supported on ARM.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionFlagsForImmediateMaterializationAreOnlySupportedOnARM
+    );
             return default!;
         }
 

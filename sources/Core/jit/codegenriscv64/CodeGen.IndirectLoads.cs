@@ -39,7 +39,7 @@ public sealed partial class CodeGen
 
     private void genLoadIndTypeSimd12RiscV64(GenTreeIndir tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect loads are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMD12IndirectLoadsAreNotPorted);
         return;
     }
 }

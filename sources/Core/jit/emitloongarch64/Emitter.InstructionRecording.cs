@@ -80,13 +80,13 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 jump recording requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64JumpRecordingRequiresAnActiveCompiler);
             return;
         }
         var currentBlock = compiler.compCurBB;
         if (currentBlock is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 jump recording requires a current basic block.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64JumpRecordingRequiresACurrentBasicBlock);
             return;
         }
         assert(target.HasFlag(BBF_HAS_LABEL));
@@ -124,7 +124,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 label recording requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64LabelRecordingRequiresAnActiveCompiler);
             return;
         }
         var id = emitNewInstr(attr);
@@ -174,7 +174,9 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 instruction-group label recording requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.LoongArch64InstructionGroupLabelRecordingRequiresAnActiveCompiler
+    );
             return;
         }
         var id = emitNewInstr(attr);
@@ -209,7 +211,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 stack stores require an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64StackStoresRequireAnActiveCompiler);
             return;
         }
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);
@@ -271,7 +273,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 stack loads require an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64StackLoadsRequireAnActiveCompiler);
             return;
         }
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);

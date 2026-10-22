@@ -81,10 +81,7 @@ public partial class Compiler
 
                     if (candidate is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage111
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InsertedLocalSegmentIsNotConnected);
                         return;
                     }
                 }

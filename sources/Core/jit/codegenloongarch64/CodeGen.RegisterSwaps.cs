@@ -12,7 +12,7 @@ public sealed partial class CodeGen
     public void genCodeForSwapLoongArch64(GenTreeOp tree)
     {
         NYI("unimplemented on LOONGARCH64 yet");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 GT_SWAP generation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64GTSWAPGenerationIsNotPorted);
         return;
     }
 }

@@ -159,10 +159,9 @@ public partial class Emitter
                 if (data.dsType != dataSection.sectionType.data)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        FatalJitErrorCode.UnexpectedDataSectionType,
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? $"Unexpected data-section type {data.dsType}."
-                    : null);
+        FatalJitErrorCode.UnexpectedDataSectionType,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? data.dsType : default)
+    );
                     return;
                 }
                 var bytes = data.Data;
@@ -304,10 +303,9 @@ public partial class Emitter
                                 default:
                                 {
                                     FatalJitException.ThrowFatalJitException(
-                                        FatalJitErrorCode.UnexpectedDataSectionElementSize,
-                                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                            ? $"Unexpected data-section element size {elemSize}."
-                                    : null);
+        FatalJitErrorCode.UnexpectedDataSectionElementSize,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? elemSize : default)
+    );
                                     return;
                                 }
                             }

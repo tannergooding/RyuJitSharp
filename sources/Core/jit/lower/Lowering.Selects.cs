@@ -133,7 +133,7 @@ public sealed partial class Lowering
             assert(select.Oper is GT_SELECT);
             if (!CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zicond))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V conditional select requires Zicond.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVConditionalSelectRequiresZicond);
                 return;
             }
             assert(varTypeIsIntegralOrI(select.Type));
@@ -185,12 +185,10 @@ public sealed partial class Lowering
             return;
         }
 
-        var message = Configuration.TARGET_ARM
-            ? "GT_SELECT nodes are not supported on ARM32."
-            : Configuration.TARGET_LOONGARCH64
-                ? "GT_SELECT nodes are not supported on LoongArch64."
-                : "Select containment is not ported for this target.";
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, message);
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SelectNodeContainmentIsUnavailableForThisTarget
+    );
         return;
     }
 }

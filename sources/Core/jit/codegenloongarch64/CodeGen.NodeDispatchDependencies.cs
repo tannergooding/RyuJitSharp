@@ -126,7 +126,10 @@ public sealed partial class CodeGen
         if (targetType is TYP_STRUCT)
         {
             NYI_IF(true, "GT_LCL_FLD: struct load local field not supported");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 struct local-field loads are not supported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64StructLocalFieldLoadsAreNotSupported
+    );
             return;
         }
 
@@ -549,7 +552,7 @@ public sealed partial class CodeGen
             default:
             {
                 NO_WAY("Unknown intrinsic");
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown intrinsic reached unreachable code.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownIntrinsicReachedUnreachableCode);
                 return;
             }
         }
@@ -563,7 +566,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicsAreUnavailableForThisTarget
+    );
             return;
         }
 
@@ -581,11 +587,17 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic generation is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicGenerationIsNotPortedForThisTarget
+    );
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64HardwareIntrinsicGenerationIsNotPorted
+    );
         return;
     }
 
@@ -593,7 +605,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Zero-register null-check generation requires LoongArch64 or RISC-V64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ZeroRegisterNullCheckGenerationRequiresLoongArch64OrRISCV64
+    );
             return;
         }
 

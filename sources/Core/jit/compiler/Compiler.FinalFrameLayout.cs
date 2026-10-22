@@ -77,7 +77,10 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Reserved-register frame checks are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReservedRegisterFrameChecksAreUnavailableForThisTarget
+    );
             return default!;
         }
 
@@ -343,7 +346,9 @@ public partial class Compiler
         if (!Configuration.TARGET_ARM)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED, "Pre-spilled register arguments are unavailable for this target.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PreSpilledRegisterArgumentsAreUnavailableForThisTarget
+    );
             return default!;
         }
 

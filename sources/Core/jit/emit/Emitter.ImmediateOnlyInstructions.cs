@@ -41,8 +41,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Immediate-only instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ImmediateOnlyInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -112,8 +114,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "X86 stack-depth adjustment is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.X86StackDepthAdjustmentIsNotSupportedForThisTarget
+    );
             return;
         }
 

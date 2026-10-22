@@ -187,7 +187,10 @@ public sealed partial class CodeGen
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "OSR callee-save restoration is unsupported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.OSRCalleeSaveRestorationIsUnsupportedForThisTarget
+    );
         return;
     }
 
@@ -195,7 +198,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "OSR callee-save recording requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.OSRCalleeSaveRecordingRequiresAMD64);
             return;
         }
 

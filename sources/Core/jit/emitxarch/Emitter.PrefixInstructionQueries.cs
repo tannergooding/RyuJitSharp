@@ -61,22 +61,52 @@ public partial class Emitter
             {
                 case INS_vpdpbusd or INS_vpdpwssd or INS_vpdpbusds or INS_vpdpwssds:
                 {
-                    return (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                        .compSupportsHWIntrinsic(InstructionSet_AVXVNNI);
+                    global::RyuJitSharp.Compiler __jitExceptionReceiver397;
+                    var __jitExceptionCoalesceLeft398 = _compiler;
+                    if (__jitExceptionCoalesceLeft398 != null)
+                    {
+                        __jitExceptionReceiver397 = __jitExceptionCoalesceLeft398;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                        __jitExceptionReceiver397 = default;
+                    }
+                    return __jitExceptionReceiver397.compSupportsHWIntrinsic(InstructionSet_AVXVNNI);
                 }
 
                 case INS_vpdpwsud or INS_vpdpwsuds or INS_vpdpwusd or INS_vpdpwusds or INS_vpdpwuud or
                      INS_vpdpwuuds or INS_vpdpbssd or INS_vpdpbssds or INS_vpdpbsud or INS_vpdpbsuds or
                      INS_vpdpbuud or INS_vpdpbuuds:
                 {
-                    return (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                        .compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT);
+                    global::RyuJitSharp.Compiler __jitExceptionReceiver399;
+                    var __jitExceptionCoalesceLeft400 = _compiler;
+                    if (__jitExceptionCoalesceLeft400 != null)
+                    {
+                        __jitExceptionReceiver399 = __jitExceptionCoalesceLeft400;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                        __jitExceptionReceiver399 = default;
+                    }
+                    return __jitExceptionReceiver399.compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT);
                 }
 
                 case INS_vpmadd52huq or INS_vpmadd52luq:
                 {
-                    return (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                        .compSupportsHWIntrinsic(InstructionSet_AVXIFMA);
+                    global::RyuJitSharp.Compiler __jitExceptionReceiver401;
+                    var __jitExceptionCoalesceLeft402 = _compiler;
+                    if (__jitExceptionCoalesceLeft402 != null)
+                    {
+                        __jitExceptionReceiver401 = __jitExceptionCoalesceLeft402;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                        __jitExceptionReceiver401 = default;
+                    }
+                    return __jitExceptionReceiver401.compSupportsHWIntrinsic(InstructionSet_AVXIFMA);
                 }
             }
         }

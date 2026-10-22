@@ -286,7 +286,7 @@ public partial class Compiler
             {
                 if (!Configuration.DEBUG)
                 {
-                    throw new System.InvalidOperationException("Compiler display options are only available in Debug builds.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
                 }
 
                 _dspCode = value;
@@ -306,7 +306,7 @@ public partial class Compiler
             {
                 if (!Configuration.DEBUG)
                 {
-                    throw new System.InvalidOperationException("Compiler display options are only available in Debug builds.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
                 }
 
                 _dspEHTable = value;
@@ -374,7 +374,7 @@ public partial class Compiler
             {
                 if (!Configuration.DEBUG)
                 {
-                    throw new System.InvalidOperationException("Compiler display options are only available in Debug builds.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDisplayOptionsAreOnlyAvailableInDebugBuilds);
                 }
 
                 _dspMetrics = value;
@@ -392,7 +392,8 @@ public partial class Compiler
                     return _compJitAlignLoopForJcc;
                 }
 
-                throw new System.InvalidOperationException("Loop-alignment diagnostic options are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopAlignmentDiagnosticOptionsAreOnlyAvailableInDebugBuilds);
+                return default;
             }
 
             set
@@ -403,7 +404,7 @@ public partial class Compiler
                     return;
                 }
 
-                throw new System.InvalidOperationException("Loop-alignment diagnostic options are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopAlignmentDiagnosticOptionsAreOnlyAvailableInDebugBuilds);
             }
         }
 

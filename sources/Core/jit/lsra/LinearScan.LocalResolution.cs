@@ -12,9 +12,9 @@ public sealed partial class LinearScan
         if ((block is null) != (treeNode is null) || !_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage335
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalRegisterResolutionRequiresMatchingBlockNodeOwnershipAndEnregisteredLocals
+    );
             return;
         }
         assert((block is null) == (treeNode is null));
@@ -38,9 +38,9 @@ public sealed partial class LinearScan
                 if (inMap is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage336
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ContainedLocalResolutionRequiresAnIncomingVariableMap
+    );
                     return;
                 }
                 assert(getVarReg(inMap, local._varIndex) == REG_STK);
@@ -66,10 +66,7 @@ public sealed partial class LinearScan
             {
                 if (treeNode is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage337
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ContainedLocalUseRequiresItsTreeNode);
                     return;
                 }
                 if (!treeNode.IsMultiReg)
@@ -104,9 +101,9 @@ public sealed partial class LinearScan
             if (inMap is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage338
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ReloadResolutionRequiresAnIncomingVariableMap
+    );
                 return;
             }
             assert(getVarReg(inMap, local._varIndex) == REG_STK);
@@ -180,9 +177,9 @@ public sealed partial class LinearScan
                 if (treeNode is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage339
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CopiedOrMovedLocalReferenceRequiresItsTreeNode
+    );
                     return;
                 }
                 writeLocalReg(treeNode, interval.varNum, interval.physReg);
@@ -205,9 +202,9 @@ public sealed partial class LinearScan
                     if (owningBlock is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage340
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CopiedLocalReferenceRequiresItsOwningBlock
+    );
                         return;
                     }
                     insertCopyOrReload(owningBlock, treeNode, currentRefPosition.getMultiRegIdx(), currentRefPosition);

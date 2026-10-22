@@ -274,7 +274,7 @@ public struct BitSetUint64<TEnv, TBitSetTraits>
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Epoch validation is only available in Debug.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EpochValidationIsOnlyAvailableInDebug);
         }
 
         return _epoch == GetEpoch(env);

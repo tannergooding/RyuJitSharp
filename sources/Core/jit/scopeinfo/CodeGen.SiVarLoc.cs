@@ -356,10 +356,7 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage440
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidVariableLocationKind);
                     return default!;
                 }
             }
@@ -389,19 +386,13 @@ public sealed partial class CodeGen
                         (!Configuration.FEATURE_SIMD ||
                          ((type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH)))
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage441
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidStackVariableType);
                         return;
                     }
                     if ((type is TYP_MASK) &&
                         !Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage441
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidStackVariableType);
                         return;
                     }
                     if ((type is TYP_LONG or TYP_DOUBLE) && !Configuration.TARGET_64BIT)
@@ -437,10 +428,7 @@ public sealed partial class CodeGen
                 }
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage441
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidStackVariableType);
                     return;
                 }
             }
@@ -515,19 +503,13 @@ public sealed partial class CodeGen
                         (!Configuration.FEATURE_SIMD ||
                          ((type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH)))
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage442
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidRegisterVariableType);
                         return;
                     }
                     if ((type is TYP_MASK) &&
                         !Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage442
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidRegisterVariableType);
                         return;
                     }
 
@@ -544,10 +526,7 @@ public sealed partial class CodeGen
                 }
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage442
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidRegisterVariableType);
                     return;
                 }
             }

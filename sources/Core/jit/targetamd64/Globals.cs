@@ -168,7 +168,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ProfilerEntryRegisterIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -184,7 +184,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ProfilerEntryRegisterIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -200,7 +200,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ProfilerEntryRegisterIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -216,7 +216,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Profiler entry register is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ProfilerEntryRegisterIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -232,7 +232,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Profiler call target is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ProfilerCallTargetIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -650,7 +650,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth integer argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoFifthIntegerArgumentRegister);
                 return default!;
             }
         }
@@ -666,7 +666,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth integer argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoSixthIntegerArgumentRegister);
                 return default!;
             }
         }
@@ -694,7 +694,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth integer argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoFifthIntegerArgumentRegister);
                 return default!;
             }
         }
@@ -710,7 +710,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth integer argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoSixthIntegerArgumentRegister);
                 return default!;
             }
         }
@@ -742,7 +742,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoFifthFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -758,7 +758,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoSixthFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -774,7 +774,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no seventh floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoSeventhFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -790,7 +790,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no eighth floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoEighthFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -806,7 +806,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no fifth floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoFifthFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -822,7 +822,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no sixth floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoSixthFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -838,7 +838,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no seventh floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoSeventhFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -854,7 +854,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("The AMD64 ABI has no eighth floating-point argument register.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AMD64ABIHasNoEighthFloatingPointArgumentRegister);
                 return default!;
             }
         }
@@ -911,7 +911,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI error register is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIErrorRegisterIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -930,7 +930,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI self register is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABISelfRegisterIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -946,7 +946,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI return registers are unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIReturnRegistersAreUnavailableForThisABI);
                 return default!;
             }
         }
@@ -962,7 +962,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI return registers are unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIReturnRegistersAreUnavailableForThisABI);
                 return default!;
             }
         }
@@ -978,7 +978,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIReturnBufferIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -994,7 +994,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIReturnBufferIsUnavailableForThisABI);
                 return default!;
             }
         }
@@ -1010,7 +1010,7 @@ public partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift ABI return buffer is unavailable for this ABI.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIReturnBufferIsUnavailableForThisABI);
                 return default!;
             }
         }

@@ -118,24 +118,38 @@ public partial class Compiler
             JITDUMP($"EH#{xtnum} has empty try, removing the try region and promoting the finally.\n");
             ehGetCallFinallyBlockRange(xtnum, out var firstCallFinally, out var lastCallFinally);
             var singleCallFinally = true;
-            for (var block = firstCallFinally; ; block = block.Next
-                     ?? throw new InvalidOperationException("Call-finally range ended prematurely."))
+            for (var block = firstCallFinally;;)
             {
-                if ((block.Kind is BBJ_CALLFINALLY) && (block.Target == firstHandler))
                 {
-                    assert(block.isBBCallFinallyPair);
-                    if (block != callFinally)
                     {
-                        JITDUMP($"EH#{xtnum} found unexpected (likely unreachable) " +
-                            $"callfinally {FMT_BB(block.bbNum)}; skipping.\n");
-                        singleCallFinally = false;
-                        break;
+                        if ((block.Kind is BBJ_CALLFINALLY) && (block.Target == firstHandler))
+                        {
+                            assert(block.isBBCallFinallyPair);
+                            if (block != callFinally)
+                            {
+                                JITDUMP($"EH#{xtnum} found unexpected (likely unreachable) " +
+                                    $"callfinally {FMT_BB(block.bbNum)}; skipping.\n");
+                                singleCallFinally = false;
+                                break;
+                            }
+                        }
+
+                        if (block == lastCallFinally)
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (block == lastCallFinally)
+                var __jitExceptionCoalesceLeft130 = block.Next;
+                if (__jitExceptionCoalesceLeft130 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft130;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -146,27 +160,51 @@ public partial class Compiler
                 continue;
             }
 
-            var leave = callFinally.Next
-                ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
-            var continuation = fgGetFinallyContinuation(leave);
-            for (var block = firstTry; ; block = block.Next
-                     ?? throw new InvalidOperationException("Try region ended prematurely."))
+            global::RyuJitSharp.BasicBlock __jitExceptionResult131;
+            var __jitExceptionCoalesceLeft132 = callFinally.Next;
+            if (__jitExceptionCoalesceLeft132 != null)
             {
-                if (block.TryIndex == xtnum)
+                __jitExceptionResult131 = __jitExceptionCoalesceLeft132;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
+                __jitExceptionResult131 = default;
+            }
+            var leave = __jitExceptionResult131;
+            var continuation = fgGetFinallyContinuation(leave);
+            for (var block = firstTry;;)
+            {
                 {
-                    if (firstHandler.hasTryIndex)
                     {
-                        block.TryIndex = firstHandler.TryIndex;
-                    }
-                    else
-                    {
-                        block.clearTryIndex();
+                        if (block.TryIndex == xtnum)
+                        {
+                            if (firstHandler.hasTryIndex)
+                            {
+                                block.TryIndex = firstHandler.TryIndex;
+                            }
+                            else
+                            {
+                                block.clearTryIndex();
+                            }
+                        }
+
+                        if (block == lastTry)
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (block == lastTry)
+                var __jitExceptionCoalesceLeft134 = block.Next;
+                if (__jitExceptionCoalesceLeft134 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft134;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -176,43 +214,67 @@ public partial class Compiler
             callFinally.Kind = BBJ_ALWAYS;
             callFinally.RemoveFlags(BBF_RETLESS_CALL);
 
-            for (var block = firstHandler; ; block = block.Next
-                     ?? throw new InvalidOperationException("Handler region ended prematurely."))
+            for (var block = firstHandler;;)
             {
-                if (block == firstHandler)
                 {
-                    block.CatchType = BBCT_NONE;
-                }
-
-                if (block.HndIndex == xtnum)
-                {
-                    if (firstTry.hasHndIndex)
                     {
-                        block.HndIndex = firstTry.HndIndex;
-                    }
-                    else
-                    {
-                        block.clearHndIndex();
-                    }
-
-                    if (block.Kind is BBJ_EHFINALLYRET)
-                    {
-                        var ret = block.LastStmt
-                            ?? throw new InvalidOperationException("Finally return requires a statement.");
-                        assert(ret.RootNode.Oper is GT_RETFILT);
-                        fgRemoveStmt(block, ret);
-                        var edge = fgAddRefPred(continuation, block);
-                        block.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
-                        if (continuation.hasProfileWeight)
+                        if (block == firstHandler)
                         {
-                            continuation.increaseBBProfileWeight(block.bbWeight);
+                            block.CatchType = BBCT_NONE;
+                        }
+
+                        if (block.HndIndex == xtnum)
+                        {
+                            if (firstTry.hasHndIndex)
+                            {
+                                block.HndIndex = firstTry.HndIndex;
+                            }
+                            else
+                            {
+                                block.clearHndIndex();
+                            }
+
+                            if (block.Kind is BBJ_EHFINALLYRET)
+                            {
+                                global::RyuJitSharp.Statement __jitExceptionResult137;
+                                var __jitExceptionCoalesceLeft138 = block.LastStmt;
+                                if (__jitExceptionCoalesceLeft138 != null)
+                                {
+                                    __jitExceptionResult137 = __jitExceptionCoalesceLeft138;
+                                }
+                                else
+                                {
+                                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyReturnRequiresAStatement);
+                                    __jitExceptionResult137 = default;
+                                }
+                                var ret = __jitExceptionResult137;
+                                assert(ret.RootNode.Oper is GT_RETFILT);
+                                fgRemoveStmt(block, ret);
+                                var edge = fgAddRefPred(continuation, block);
+                                block.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
+                                if (continuation.hasProfileWeight)
+                                {
+                                    continuation.increaseBBProfileWeight(block.bbWeight);
+                                }
+                            }
+                        }
+
+                        if (block == lastHandler)
+                        {
+                            break;
                         }
                     }
                 }
 
-                if (block == lastHandler)
+                var __jitExceptionCoalesceLeft136 = block.Next;
+                if (__jitExceptionCoalesceLeft136 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft136;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.HandlerRegionEndedPrematurely);
+                    block = default;
                 }
             }
 

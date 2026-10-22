@@ -11,7 +11,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new System.PlatformNotSupportedException("ARM64 intrinsic immediates are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ARM64IntrinsicImmediatesAreUnavailableForThisTarget);
         }
 
         switch (id)

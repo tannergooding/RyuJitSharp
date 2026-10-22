@@ -14,7 +14,7 @@ public partial struct GCInfo
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
             Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GCFilterLifetimesRequireWindowsAMD64);
             return;
         }
 
@@ -29,10 +29,7 @@ public partial struct GCInfo
             var filter = handler.ebdFilter;
             if (filter is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED,
-                    FatalJitErrorCode.DirectFailureMessage219
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FilterHasNoStartingBlock);
                 return;
             }
             var filterBeg = compiler.ehCodeOffset(filter);

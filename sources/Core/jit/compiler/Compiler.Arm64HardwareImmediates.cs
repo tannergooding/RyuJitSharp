@@ -11,7 +11,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 hardware intrinsic support is not enabled.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM64HardwareIntrinsicSupportIsNotEnabled);
             return;
         }
     }

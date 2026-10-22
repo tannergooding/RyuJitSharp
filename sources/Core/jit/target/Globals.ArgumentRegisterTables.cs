@@ -54,7 +54,7 @@ public static partial class Globals
 
     private static ReadOnlySpan<regNumber> UnsupportedTargetRegisterTable()
     {
-        FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
         return default!;
     }
 

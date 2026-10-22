@@ -891,7 +891,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Unsupported instruction format target.");
+                FatalJitErrorCode.UnsupportedInstructionFormatTarget);
             return default;
         }
     }
@@ -932,7 +932,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Unsupported instruction format target.");
+                FatalJitErrorCode.UnsupportedInstructionFormatTarget);
             return default;
         }
     }

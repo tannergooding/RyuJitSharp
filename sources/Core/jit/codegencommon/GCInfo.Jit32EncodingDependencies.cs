@@ -132,8 +132,18 @@ public partial struct GCInfo
             }
             else if (variable.Type is TYP_STRUCT && variable.lvOnFrame)
             {
-                var layout = variable.Layout
-                    ?? throw new InvalidOperationException("A struct local on the frame must have a layout.");
+                global::RyuJitSharp.ClassLayout __jitExceptionResult30;
+                var __jitExceptionCoalesceLeft31 = variable.Layout;
+                if (__jitExceptionCoalesceLeft31 != null)
+                {
+                    __jitExceptionResult30 = __jitExceptionCoalesceLeft31;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalOnTheFrameMustHaveALayout);
+                    __jitExceptionResult30 = default;
+                }
+                var layout = __jitExceptionResult30;
                 untrackedCount = unchecked(untrackedCount + (uint)layout.GCPtrCount);
             }
         }

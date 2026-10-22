@@ -82,7 +82,7 @@ public partial struct GCInfo
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JIT32 GC table dumping requires the JIT32 GC encoder.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JIT32GCTableDumpingRequiresTheJIT32GCEncoder);
             return;
         }
     }
@@ -171,30 +171,48 @@ public partial struct GCInfo
         {
             assert(reg < 8);
 
-            return reg switch {
-                0 => "EAX",
-                1 => "ECX",
-                2 => "EDX",
-                3 => "EBX",
-                4 => "ESP",
-                5 => "EBP",
-                6 => "ESI",
-                7 => "EDI",
-                _ => throw new InvalidOperationException("Invalid GC dump register."),
-            };
+            switch (reg)
+            {
+                case 0:
+                    return "EAX";
+                case 1:
+                    return "ECX";
+                case 2:
+                    return "EDX";
+                case 3:
+                    return "EBX";
+                case 4:
+                    return "ESP";
+                case 5:
+                    return "EBP";
+                case 6:
+                    return "ESI";
+                case 7:
+                    return "EDI";
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidGCDumpRegister);
+                    return default;
+            }
         }
 
         private static string CalleeSavedRegName(uint reg)
         {
             assert(reg < 4);
 
-            return reg switch {
-                0 => "EDI",
-                1 => "ESI",
-                2 => "EBX",
-                3 => "EBP",
-                _ => throw new InvalidOperationException("Invalid GC dump callee-saved register."),
-            };
+            switch (reg)
+            {
+                case 0:
+                    return "EDI";
+                case 1:
+                    return "ESI";
+                case 2:
+                    return "EBX";
+                case 3:
+                    return "EBP";
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidGCDumpCalleeSavedRegister);
+                    return default;
+            }
         }
 
         // Native marker consumption is inside _ASSERTE and vanishes in free builds.

@@ -67,7 +67,7 @@ public sealed partial class CodeGen
 
     private void genStoreIndTypeSimd12RiscV64(GenTreeStoreInd tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect stores are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64SIMD12IndirectStoresAreNotPorted);
         return;
     }
 }

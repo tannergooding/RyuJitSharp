@@ -89,7 +89,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("AddCodeDsc.Dump is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AddCodeDscDumpIsOnlyAvailableInDebugBuilds);
             }
 
             jitprintf($"ACD{acdNum} {sckName(acdKind)} ");

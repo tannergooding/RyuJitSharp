@@ -62,8 +62,10 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_ARM64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM64 empty-alignment descriptors are not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64EmptyAlignmentDescriptorsAreNotSupportedForThisTarget
+    );
                 return default!;
             }
 
@@ -100,8 +102,10 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_XARCH)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Previous-instruction sizes are only supported on xarch.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarch
+    );
                 return default!;
             }
 
@@ -112,8 +116,10 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_XARCH)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Previous-instruction sizes are only supported on xarch.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PreviousInstructionSizesAreOnlySupportedOnXarch
+    );
                 return;
             }
 
@@ -259,8 +265,10 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_WASM)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "WebAssembly instruction descriptors are not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WebAssemblyInstructionDescriptorsAreNotSupportedForThisTarget
+    );
                 return;
             }
         }

@@ -49,7 +49,7 @@ public unsafe class CSE_HeuristicReplay : CSE_HeuristicCommon
             var descriptor = m_compiler.CseCandidateTable[index];
             if (descriptor is null)
             {
-                FatalJitException.ThrowFatalJitException("Replay CSE candidate is missing its descriptor.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ReplayCSECandidateIsMissingItsDescriptor);
                 return;
             }
             var candidate = new CSE_Candidate(this, descriptor);

@@ -93,8 +93,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "WebAssembly SIMD stores require SIMD support.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WebAssemblySIMDStoresRequireSIMDSupport);
                         return default!;
                     }
 
@@ -188,8 +187,10 @@ public sealed partial class CodeGen
                 return ins;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Integer store selection requires a supported target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IntegerStoreSelectionRequiresASupportedTarget
+    );
             return default!;
         }
 
@@ -197,8 +198,10 @@ public sealed partial class CodeGen
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Masked-register stores require masked hardware intrinsics.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterStoresRequireMaskedHardwareIntrinsics
+    );
                 return default!;
             }
 
@@ -212,8 +215,10 @@ public sealed partial class CodeGen
                 return INS_sve_str;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Masked-register stores are not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterStoresAreNotImplementedForThisTarget
+    );
             return default!;
         }
 
@@ -282,8 +287,10 @@ public sealed partial class CodeGen
             }
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Floating-point store selection requires a supported target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingPointStoreSelectionRequiresASupportedTarget
+    );
         return default!;
     }
 }

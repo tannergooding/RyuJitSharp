@@ -30,7 +30,8 @@ internal readonly struct GenTreeUse(GenTree? user, int operandIndex)
             index++;
         }
 
-        throw new System.InvalidOperationException("The visited operand does not belong to its user.");
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VisitedOperandDoesNotBelongToItsUser);
+        return default;
     }
 
     public ref GenTree GetUse(Statement statement)
@@ -50,6 +51,7 @@ internal readonly struct GenTreeUse(GenTree? user, int operandIndex)
             }
         }
 
-        throw new System.InvalidOperationException("The recorded operand is no longer present.");
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RecordedOperandIsNoLongerPresent);
+        return ref System.Runtime.CompilerServices.Unsafe.NullRef<GenTree>();
     }
 }

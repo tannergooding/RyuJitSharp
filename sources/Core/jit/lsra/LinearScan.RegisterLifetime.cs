@@ -18,18 +18,18 @@ public sealed partial class LinearScan
         if (assignedInterval is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage380
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CannotUnassignAPhysicalRegisterWithoutAnInterval
+    );
             return;
         }
         assert(assignedInterval.isActive);
         if (!assignedInterval.isActive)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage392
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.NoSpillUnassignmentRequiresAnActiveInterval
+    );
             return;
         }
 
@@ -138,9 +138,9 @@ public sealed partial class LinearScan
         if (_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage393
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalRegisterStateResetCannotRunWithEnregisteredLocals
+    );
             return;
         }
 
@@ -336,18 +336,18 @@ public sealed partial class LinearScan
         if (interval is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage394
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SpillWeightCalculationRequiresAnAssignedInterval
+    );
             return default!;
         }
         var recentRefPosition = interval.recentRefPosition;
         if (recentRefPosition is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage395
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SpillWeightCalculationRequiresARecentReference
+    );
             return default!;
         }
         // Native currentLoc retains the interval-building cursor during allocation;

@@ -18,7 +18,7 @@ public sealed class AsyncStressPolicy : ExtendedDefaultPolicy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
         }
     }
 

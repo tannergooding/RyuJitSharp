@@ -95,7 +95,7 @@ public partial class Compiler
             {
                 if (!block.TryGetUse(tree, out var use))
                 {
-                    throw new InvalidOperationException("An outstanding LIR edge has no use");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OutstandingLIREdgeHasNoUse);
                 }
 
                 if (tree.IsInvariant ||

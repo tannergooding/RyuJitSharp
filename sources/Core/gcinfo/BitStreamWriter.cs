@@ -25,7 +25,7 @@ internal sealed class BitStreamWriter : IDisposable
     {
         if (IntPtr.Size != sizeof(ulong) || !BitConverter.IsLittleEndian)
         {
-            throw new PlatformNotSupportedException("The GC bit stream requires a little-endian 64-bit target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.GCBitStreamRequiresALittleEndian64BitTarget);
         }
     }
 
@@ -80,7 +80,7 @@ internal sealed class BitStreamWriter : IDisposable
 
         if (byteCount > (nuint)buffer.Length)
         {
-            throw new ArgumentException("The destination is shorter than the encoded bit stream.", nameof(buffer));
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.DestinationIsShorterThanTheEncodedBitStream, FatalJitArgument.Buffer);
         }
 
         var remaining = (int)byteCount;
@@ -172,7 +172,7 @@ internal sealed class BitStreamWriter : IDisposable
     {
         if (@base == 0 || @base >= BitsPerSlot)
         {
-            throw new ArgumentOutOfRangeException(nameof(@base));
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Base);
         }
     }
 

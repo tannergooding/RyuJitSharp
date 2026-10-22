@@ -215,12 +215,24 @@ public sealed partial class Lowering
                     if (!op2.IsContained && BitOperations.IsPow2(bit) &&
                         ((op1.Type is not TYP_INT) || (BitOperations.Log2(bit) != 31)))
                     {
-                        var singleBitOper = binOp.Oper switch {
-                            GT_OR => GT_BIT_SET,
-                            GT_XOR => GT_BIT_INVERT,
-                            GT_AND => GT_BIT_CLEAR,
-                            _ => throw new System.InvalidOperationException(),
-                        };
+                        global::RyuJitSharp.genTreeOps __jitExceptionResult441;
+                        switch (binOp.Oper)
+                        {
+                            case GT_OR:
+                                __jitExceptionResult441 = GT_BIT_SET;
+                                break;
+                            case GT_XOR:
+                                __jitExceptionResult441 = GT_BIT_INVERT;
+                                break;
+                            case GT_AND:
+                                __jitExceptionResult441 = GT_BIT_CLEAR;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowInvalidOperationException();
+                                __jitExceptionResult441 = default;
+                                break;
+                        }
+                        var singleBitOper = __jitExceptionResult441;
                         binOp.SetOper(singleBitOper);
                         bit = (uint)BitOperations.Log2(bit);
                         assert(bit >= 11);
@@ -277,12 +289,24 @@ public sealed partial class Lowering
                         (binOp.Op1, binOp.Op2) = (op1, op2);
                     }
 
-                    var operNot = binOp.Oper switch {
-                        GT_AND => GT_AND_NOT,
-                        GT_OR => GT_OR_NOT,
-                        GT_XOR => GT_XOR_NOT,
-                        _ => throw new System.InvalidOperationException(),
-                    };
+                    global::RyuJitSharp.genTreeOps __jitExceptionResult442;
+                    switch (binOp.Oper)
+                    {
+                        case GT_AND:
+                            __jitExceptionResult442 = GT_AND_NOT;
+                            break;
+                        case GT_OR:
+                            __jitExceptionResult442 = GT_OR_NOT;
+                            break;
+                        case GT_XOR:
+                            __jitExceptionResult442 = GT_XOR_NOT;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowInvalidOperationException();
+                            __jitExceptionResult442 = default;
+                            break;
+                    }
+                    var operNot = __jitExceptionResult442;
                     binOp.SetOper(operNot);
                 }
                 else if (binOp.Oper is GT_AND or GT_OR)
@@ -350,7 +374,10 @@ public sealed partial class Lowering
             return binOp.Next;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Binary arithmetic lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BinaryArithmeticLoweringIsNotPortedForThisTarget
+    );
         return default!;
     }
 }

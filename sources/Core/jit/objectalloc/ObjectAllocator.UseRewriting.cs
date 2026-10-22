@@ -116,10 +116,7 @@ public sealed partial class ObjectAllocator
                         var oldLayout = store.GetLayout(compiler);
                         if (oldLayout is null)
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage430
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.StructFieldStoreMustHaveALayout);
                             return;
                         }
 
@@ -129,9 +126,9 @@ public sealed partial class ObjectAllocator
                             if (retypedLayout is null)
                             {
                                 FatalJitException.ThrowFatalJitException(
-                                    CORJIT_INTERNALERROR,
-                                    FatalJitErrorCode.DirectFailureMessage431
-                                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RetypingStructFieldsRequiresTheirNewLayout
+    );
                                 return;
                             }
 
@@ -303,9 +300,9 @@ public sealed partial class ObjectAllocator
                         JITDUMP($"UpdateAncestorTypes: unexpected op {parent.Oper} in [{TreeIdForDump(parent):D6}]\n");
                     }
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage432
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedParentWhileRetypingAStackObjectUse
+    );
                     return;
                 }
             }
@@ -329,9 +326,9 @@ public sealed partial class ObjectAllocator
         if (layout is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage431
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RetypingStructFieldsRequiresTheirNewLayout
+    );
             return default!;
         }
         block.Layout = GetRetypedLayout(oldLayout, layout);
@@ -397,10 +394,7 @@ public sealed partial class ObjectAllocator
                 var descriptorLayout = descriptor.Layout;
                 if (descriptorLayout is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage433
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RetypedStructLocalRequiresItsLayout);
                     return Compiler.WALK_CONTINUE;
                 }
 
@@ -446,10 +440,7 @@ public sealed partial class ObjectAllocator
                     var argument = call.Args.GetArgByIndex(1);
                     if (argument is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage434
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UNBOXRequiresItsObjectArgument);
                         return default!;
                     }
                     var objectNode = argument.Node;
@@ -471,10 +462,7 @@ public sealed partial class ObjectAllocator
                             var copy = compiler.gtCloneExpr(objectLocal);
                             if (copy is null)
                             {
-                                FatalJitException.ThrowFatalJitException(
-                                    CORJIT_INTERNALERROR,
-                                    FatalJitErrorCode.DirectFailureMessage435
-                                );
+                                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UNBOXRequiresACloneableLocal);
                                 return default!;
                             }
                             var payload = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, copy,
@@ -488,10 +476,7 @@ public sealed partial class ObjectAllocator
                     var argument = call.Args.ThisArg;
                     if (argument is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage436
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.DelegateInvokeRequiresAThisArgument);
                         return default!;
                     }
                     var receiver = argument.Node;
@@ -508,9 +493,9 @@ public sealed partial class ObjectAllocator
                             if (copy is null)
                             {
                                 FatalJitException.ThrowFatalJitException(
-                                    CORJIT_INTERNALERROR,
-                                    FatalJitErrorCode.DirectFailureMessage437
-                                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.DelegateInvokeRequiresACloneableReceiver
+    );
                                 return default!;
                             }
                             var instanceOffset = compiler.eeGetEEInfo().offsetOfDelegateInstance;
@@ -548,9 +533,9 @@ public sealed partial class ObjectAllocator
                         if (effects is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage438
-                            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UNBOXTypeTestMustRetainItsSideEffectCall
+    );
                             return Compiler.WALK_CONTINUE;
                         }
 
@@ -594,10 +579,7 @@ public sealed partial class ObjectAllocator
                 var layout = descriptor.Layout;
                 if (layout is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage439
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.TrackedStructRequiresItsLayout);
                     return;
                 }
                 if (!layout.HasGCPtr)
@@ -673,7 +655,7 @@ public sealed partial class ObjectAllocator
 
             default:
             {
-                FatalJitException.ThrowFatalJitException("Unexpected type for stack-pointer retyping.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedTypeForStackPointerRetyping);
                 return default!;
             }
         }

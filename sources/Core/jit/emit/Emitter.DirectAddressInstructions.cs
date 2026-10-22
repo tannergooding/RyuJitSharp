@@ -14,8 +14,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Single indirect instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SingleIndirectInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -44,8 +46,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-memory instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterMemoryInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -74,8 +78,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-memory-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterMemoryImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -117,8 +123,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-field-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterFieldImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -165,8 +173,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "AVX2 gather instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AVX2GatherInstructionRecordingRequiresXarch);
             return;
         }
 
@@ -199,15 +206,19 @@ public partial class Emitter
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_I_AR");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 immediate memory instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32ImmediateMemoryInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Immediate memory instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ImmediateMemoryInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -314,8 +325,10 @@ public partial class Emitter
                 {
                     assert(false, "emitIns_R_AI with a floating-point register.");
                     NYI("emitIns_R_AI with a floating-point register");
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "ARM32 absolute-address instruction recording requires a general register.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32AbsoluteAddressInstructionRecordingRequiresAGeneralRegister
+    );
                     return;
                 }
 
@@ -332,15 +345,19 @@ public partial class Emitter
             }
 
             NYI("emitIns_R_AI");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 relocated-address instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RelocatedAddressInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Absolute-address instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AbsoluteAddressInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -392,8 +409,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Memory-register-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MemoryRegisterImmediateRecordingRequiresXarch
+    );
             return;
         }
 

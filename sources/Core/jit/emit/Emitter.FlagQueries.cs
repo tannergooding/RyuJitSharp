@@ -11,8 +11,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Redundant comparison queries outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RedundantComparisonQueriesOutsideXarchAreNotImplemented
+    );
             return default!;
         }
 
@@ -69,8 +71,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Zero-comparison flag queries outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ZeroComparisonFlagQueriesOutsideXarchAreNotImplemented
+    );
             return default!;
         }
 
@@ -124,8 +128,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Sign-jump flag queries outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SignJumpFlagQueriesOutsideXarchAreNotImplemented
+    );
             return default!;
         }
 
@@ -234,8 +240,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Xarch instruction-flag metadata is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchInstructionFlagMetadataIsNotAvailableForThisTarget
+    );
             return;
         }
     }

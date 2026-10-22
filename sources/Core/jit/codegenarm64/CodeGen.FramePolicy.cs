@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 frame policy is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM64FramePolicyIsNotSupportedForThisTarget);
             return;
         }
 

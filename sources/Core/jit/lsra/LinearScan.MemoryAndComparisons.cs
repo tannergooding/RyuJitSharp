@@ -207,7 +207,10 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildIndir on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildIndir on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LinearScanBuildIndirOnThisTargetIsNotImplemented
+    );
         return default!;
     }
 
@@ -215,7 +218,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 
@@ -390,7 +394,10 @@ public sealed partial class LinearScan
         }
 
         NYI("LinearScan.buildLclHeap on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LinearScan.buildLclHeap on this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LinearScanBuildLclHeapOnThisTargetIsNotImplemented
+    );
         return default!;
     }
 }

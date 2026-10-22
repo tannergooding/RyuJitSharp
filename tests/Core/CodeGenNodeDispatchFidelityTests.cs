@@ -180,7 +180,7 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
             var failure = Assert.Throws<FatalJitException>(() =>
                 codeGen.genCodeForTreeNode(new GenTree(GT_SWIFT_ERROR, TYP_I_IMPL)));
             Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure?.ErrorCode, Is.EqualTo(FatalJitErrorCode.DirectFailureMessage090));
+            Assert.That(failure?.ErrorCode, Is.EqualTo(FatalJitErrorCode.SwiftErrorValuesAreUnavailableForThisTarget));
             if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
             {
                 Assert.That(failure?.Message, Is.EqualTo("Swift error values are unavailable for this target."));

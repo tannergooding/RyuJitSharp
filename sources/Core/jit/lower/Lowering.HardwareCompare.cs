@@ -74,8 +74,16 @@ public sealed partial class Lowering
                 var firstUse = new LIR.Use(BlockRange(), ref node.GetOpRef(1), node);
                 _ = ReplaceWithLclVar(firstUse);
                 first = node.GetOp(1);
-                second = CompilerInstance.gtClone(first) ??
-                    throw new System.InvalidOperationException("PTEST local could not be cloned.");
+                var __jitExceptionCoalesceLeft98 = CompilerInstance.gtClone(first);
+                if (__jitExceptionCoalesceLeft98 != null)
+                {
+                    second = __jitExceptionCoalesceLeft98;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PTESTLocalCouldNotBeCloned);
+                    second = default;
+                }
                 BlockRange().InsertAfter(first, second);
                 node.SetOp(2, second);
             }
@@ -147,7 +155,8 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException($"Unexpected vector comparison base type: {baseType}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedVectorComparisonBaseTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? baseType : default));
+                return default;
             }
         }
 
@@ -178,7 +187,10 @@ public sealed partial class Lowering
 
     private GenTree? LowerHWIntrinsicCmpOpLoongArch64(GenTreeHWIntrinsic node, genTreeOps cmpOp)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic comparisons are not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64HardwareIntrinsicComparisonsAreNotPorted
+    );
         return default!;
     }
 }

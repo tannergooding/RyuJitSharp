@@ -155,7 +155,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Jump-kind instruction mapping is not supported for this target.");
+                FatalJitErrorCode.JumpKindInstructionMappingIsNotSupportedForThisTarget);
             return default;
         }
     }
@@ -191,7 +191,7 @@ public partial class Emitter
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Reverse jump-kind mapping is not supported for this target.");
+                FatalJitErrorCode.ReverseJumpKindMappingIsNotSupportedForThisTarget);
             return default;
         }
     }

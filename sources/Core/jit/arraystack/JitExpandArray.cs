@@ -32,9 +32,24 @@ internal class JitExpandArray<[DynamicallyAccessedMembers(DynamicallyAccessedMem
         m_minSize = minSize;
     }
 
-    protected T[] Members => m_members
-        ?? throw new InvalidOperationException("The expandable array has not been allocated.");
+    protected T[] Members {
+    get
+    {
+        T[] __jitExceptionReturnResult19;
+        var __jitExceptionCoalesceLeft20 = m_members;
+        if (__jitExceptionCoalesceLeft20 != null)
+        {
+            __jitExceptionReturnResult19 = __jitExceptionCoalesceLeft20;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ExpandableArrayHasNotBeenAllocated);
+            __jitExceptionReturnResult19 = default;
+        }
 
+        return __jitExceptionReturnResult19;
+    }
+}
     private void InitializeRange(uint low, uint high)
     {
         assert(m_members is not null);

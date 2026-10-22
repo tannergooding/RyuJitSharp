@@ -98,7 +98,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AsyncResumeAddressGenerationRequiresWindowsAMD64
+    );
             return;
         }
 

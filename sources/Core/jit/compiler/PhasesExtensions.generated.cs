@@ -533,7 +533,7 @@ public static partial class PhasesExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage209
+                    FatalJitErrorCode.InvalidCompilerPhase
                 );
                 return default!;
             }

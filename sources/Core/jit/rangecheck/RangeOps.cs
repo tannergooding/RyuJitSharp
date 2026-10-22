@@ -437,7 +437,8 @@ public static class RangeOps
 
             default:
             {
-                throw new ArgumentOutOfRangeException(nameof(oper));
+                JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Oper);
+                return default;
             }
         }
 

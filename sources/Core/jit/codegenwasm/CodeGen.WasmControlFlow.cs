@@ -83,8 +83,7 @@ public sealed partial class CodeGen
         var callFinallyRet = block.Next;
         if (callFinallyRet is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR, "Wasm finally call is missing its return block.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmFinallyCallIsMissingItsReturnBlock);
             return;
         }
         assert(callFinallyRet.Kind is BBJ_CALLFINALLYRET);

@@ -111,7 +111,7 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating casts outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FloatingCastsOutsideXarchAreNotImplemented);
             return;
         }
         else
@@ -264,8 +264,7 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR, "Invalid integral-to-floating cast target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidIntegralToFloatingCastTarget);
                     return;
                 }
             }
@@ -277,7 +276,9 @@ public sealed partial class CodeGen
         else if (!Configuration.TARGET_XARCH)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED, "Integral-to-floating casts outside xarch are not implemented.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IntegralToFloatingCastsOutsideXarchAreNotImplemented
+    );
             return;
         }
         else

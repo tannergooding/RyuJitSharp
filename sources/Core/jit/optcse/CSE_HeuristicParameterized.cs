@@ -78,8 +78,20 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
 
         for (var index = 0; index < m_compiler.lvaTrackedCount; index++)
         {
-            var lclNum = (trackedToLocal ??
-                throw new InvalidOperationException("Tracked local map is not available."))[index];
+            int __jitExceptionResult524;
+            int[] __jitExceptionOperand525;
+            var __jitExceptionCoalesceLeft526 = trackedToLocal;
+            if (__jitExceptionCoalesceLeft526 != null)
+            {
+                __jitExceptionOperand525 = __jitExceptionCoalesceLeft526;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TrackedLocalMapIsNotAvailable);
+                __jitExceptionOperand525 = default;
+            }
+            __jitExceptionResult524 = __jitExceptionOperand525[index];
+            var lclNum = __jitExceptionResult524;
             ref var descriptor = ref m_compiler.lvaGetDesc(lclNum);
             if ((descriptor.lvRefCnt() == 0) || descriptor.lvDoNotEnregister ||
                 varTypeIsFloating(descriptor.Type) || varTypeIsMask(descriptor.Type))
@@ -108,8 +120,18 @@ public partial class CSE_HeuristicParameterized : CSE_HeuristicCommon
             var descriptor = choice.Descriptor;
             if (Configuration.DEBUG)
             {
-                (m_likelihoods ?? throw new InvalidOperationException(
-                    "CSE heuristic likelihoods have not been initialized.")).Add(choice.Softmax);
+                global::System.Collections.Generic.List<double> __jitExceptionReceiver527;
+                var __jitExceptionCoalesceLeft528 = m_likelihoods;
+                if (__jitExceptionCoalesceLeft528 != null)
+                {
+                    __jitExceptionReceiver527 = __jitExceptionCoalesceLeft528;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicLikelihoodsHaveNotBeenInitialized);
+                    __jitExceptionReceiver527 = default;
+                }
+                __jitExceptionReceiver527.Add(choice.Softmax);
             }
             if (descriptor is null)
             {

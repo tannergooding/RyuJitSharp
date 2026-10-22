@@ -13,7 +13,7 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConstantEmissionRequiresSIMDSupport);
             return default!;
         }
 
@@ -37,7 +37,7 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConstantEmissionRequiresSIMDSupport);
             return default!;
         }
 
@@ -61,7 +61,7 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConstantEmissionRequiresSIMDSupport);
             return default!;
         }
 
@@ -85,8 +85,10 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Compressed SIMD constant loads require SIMD support on xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CompressedSIMDConstantLoadsRequireSIMDSupportOnXarch
+    );
             return;
         }
 
@@ -168,8 +170,10 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "SIMD mask constant emission requires masked hardware intrinsic support.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDMaskConstantEmissionRequiresMaskedHardwareIntrinsicSupport
+    );
             return default!;
         }
 

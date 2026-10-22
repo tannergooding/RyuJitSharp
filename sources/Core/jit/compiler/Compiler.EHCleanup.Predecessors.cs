@@ -36,11 +36,7 @@ public partial class Compiler
                 var targets = block.EhfTargets;
                 if (targets is null)
                 {
-                    JitExceptionHelpers.ThrowInvalidOperationException(
-                        "RJS-CFG-002",
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? "Finally return targets must be initialized."
-                            : null);
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyReturnTargetsMustBeInitialized);
                 }
 
                 foreach (var edge in targets.Succs)
@@ -68,11 +64,7 @@ public partial class Compiler
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-CFG-001",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected block kind {block.Kind}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedBlockKindArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? block.Kind : default));
                 return;
             }
         }

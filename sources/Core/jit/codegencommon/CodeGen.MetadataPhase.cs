@@ -63,7 +63,7 @@ public sealed partial class CodeGen
                     var path = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint)pathPointer);
                     if (path is null)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Raw-hex output file path is invalid.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RawHexOutputFilePathIsInvalid);
                         return;
                     }
                     using var file = OpenRichDebugInfoFile(path);

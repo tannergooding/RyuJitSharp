@@ -36,7 +36,7 @@ public sealed partial class CLRRandom : Random
     {
         if (!OperatingSystem.IsWindows())
         {
-            throw new PlatformNotSupportedException("Unseeded CLRRandom.Init requires the Windows native thread ID.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.UnseededCLRRandomInitRequiresTheWindowsNativeThreadID);
         }
 
         Init(unchecked((int)Stopwatch.GetTimestamp() ^ (int)GetCurrentThreadId() ^ Environment.ProcessId));
@@ -89,7 +89,7 @@ public sealed partial class CLRRandom : Random
     {
         if (!initialized)
         {
-            throw new InvalidOperationException("CLRRandom must be initialized before drawing values.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CLRRandomMustBeInitializedBeforeDrawingValues);
         }
 
         var locINext = inext;
@@ -188,7 +188,7 @@ public sealed partial class CLRRandom : Random
     {
         if (!initialized)
         {
-            throw new InvalidOperationException("CLRRandom must be initialized before drawing values.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CLRRandomMustBeInitializedBeforeDrawingValues);
         }
 
         for (var i = 0; i < buffer.Length; i++)

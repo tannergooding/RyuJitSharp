@@ -38,7 +38,7 @@ public sealed class JitTls : IDisposable
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JitTls scopes are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitTlsScopesAreOnlyAvailableInDebugBuilds);
         }
         t_jitTls?.FlushCompGenTreeID();
         _logEnv = new LogEnv(jitInfo);
@@ -57,11 +57,15 @@ public sealed class JitTls : IDisposable
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Importer debug state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterDebugStateIsOnlyAvailableInDebugBuilds);
             }
 
-            var jitTls = t_jitTls
-                ?? throw new InvalidOperationException("Importer debug state requires an active JitTls scope.");
+            var jitTls = t_jitTls;
+            if (jitTls is null)
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterDebugStateRequiresAnActiveJitTlsScope);
+                return ref Unsafe.NullRef<ImporterDebugState>();
+            }
 
             return ref jitTls._importerDebugState;
         }
@@ -74,8 +78,12 @@ public sealed class JitTls : IDisposable
             return default;
         }
 
-        var jitTls = t_jitTls
-            ?? throw new InvalidOperationException("Importer debug state requires an active JitTls scope.");
+        var jitTls = t_jitTls;
+        if (jitTls is null)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImporterDebugStateRequiresAnActiveJitTlsScope);
+            return default;
+        }
 
         return new ImporterDebugStateScope(jitTls);
     }
@@ -151,7 +159,7 @@ public sealed class JitTls : IDisposable
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
         }
 
         var jitTls = t_jitTls;
@@ -167,7 +175,7 @@ public sealed class JitTls : IDisposable
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
         }
 
         var jitTls = t_jitTls;
@@ -185,7 +193,7 @@ public sealed class JitTls : IDisposable
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
         }
 
         var jitTls = t_jitTls;
@@ -205,7 +213,7 @@ public sealed class JitTls : IDisposable
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("JitTls.LogEnv is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitTlsLogEnvIsOnlyAvailableInDebugBuilds);
             }
 
             var jitTls = t_jitTls;

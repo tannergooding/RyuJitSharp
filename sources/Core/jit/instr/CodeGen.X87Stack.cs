@@ -11,7 +11,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch floating-point stack stores are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchFloatingPointStackStoresAreNotSupportedForThisTarget
+    );
             return;
         }
 

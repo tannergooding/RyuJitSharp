@@ -14,7 +14,7 @@ public sealed class RandomPolicy : DiscretionaryPolicy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Random inline policy is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RandomInlinePolicyIsOnlyAvailableInDebugBuilds);
         }
 
         var strategy = compiler._inlineStrategy;

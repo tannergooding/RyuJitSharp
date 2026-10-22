@@ -11,8 +11,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Embedded rounding modes are only supported on xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EmbeddedRoundingModesAreOnlySupportedOnXarch);
             return default!;
         }
 
@@ -45,8 +44,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "EVEX embedded masking is only supported on xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EVEXEmbeddedMaskingIsOnlySupportedOnXarch);
             return;
         }
 

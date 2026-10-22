@@ -97,7 +97,7 @@ public static partial class regNumberExtensions
                 return REG_WASM_NA;
             }
 
-            FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
             return default!;
         }
     }
@@ -141,7 +141,7 @@ public static partial class regNumberExtensions
                 return REG_WASM_NA;
             }
 
-            FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
             return default!;
         }
     }
@@ -185,7 +185,7 @@ public static partial class regNumberExtensions
                 return REG_WASM_NA;
             }
 
-            FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
             return default!;
         }
     }
@@ -229,7 +229,7 @@ public static partial class regNumberExtensions
                 return REG_WASM_NA;
             }
 
-            FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
             return default!;
         }
     }

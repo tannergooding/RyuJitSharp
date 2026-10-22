@@ -72,7 +72,8 @@ public partial class Compiler
 
                 if (block == lastTry)
                 {
-                    break;
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
+                    block = default;
                 }
             }
         }

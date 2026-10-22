@@ -34,9 +34,9 @@ public partial class Compiler
         if (jtrueStmt is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage127
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ConditionalLoopExitMustHaveATerminalStatement
+    );
             return default!;
         }
         var jtrue = jtrueStmt.RootNode;
@@ -101,10 +101,7 @@ public partial class Compiler
         var preheader = loop.GetPreheader();
         if (preheader is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage128
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CountedLoopMustHaveAPreheader);
             return default!;
         }
         // Adding one to the backedge count gives the trip count even if it wraps.

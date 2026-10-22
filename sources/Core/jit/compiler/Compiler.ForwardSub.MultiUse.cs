@@ -45,18 +45,18 @@ public partial class Compiler
             if (Unsafe.IsNullRef(ref link.result))
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage112
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CollectedForwardSubstitutionUseLostItsOwner
+    );
                 return default!;
             }
             var cloned = gtCloneExpr(fwdSubNode);
             if (cloned is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage113
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CheapForwardSubstitutionAddressCouldNotBeCloned
+    );
                 return false;
             }
 
@@ -67,9 +67,9 @@ public partial class Compiler
         if (Unsafe.IsNullRef(ref lastLink.result))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage114
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.FinalForwardSubstitutionUseLostItsOwner
+    );
             return default!;
         }
         lastLink.result = fwdSubNode;

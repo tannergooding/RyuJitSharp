@@ -17,19 +17,16 @@ public sealed partial class LinearScan
         if (_blockSequencingDone)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage271
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockSequencingCanOnlyBeInitializedOnce
+    );
             return;
         }
 
         assert(_blockSequence is null && _blockSequenceCount == 0);
         if (_blockSequence is not null || _blockSequenceCount != 0)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage272
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LSRABlockSequenceWasAlreadyInitialized);
             return;
         }
 
@@ -74,9 +71,9 @@ public sealed partial class LinearScan
         if (!_compiler.fgPredsComputed)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage273
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockMetadataRequiresComputedPredecessorLists
+    );
             return;
         }
 
@@ -95,9 +92,9 @@ public sealed partial class LinearScan
             if (block is null || _compiler._dfsTree is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage274
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockSequenceDoesNotCoverTheCompilerFlowGraph
+    );
                 return;
             }
 
@@ -113,9 +110,9 @@ public sealed partial class LinearScan
         if (_blockSequenceCount != blockCount)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage275
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockSequenceDoesNotCoverEveryCompilerBlock
+    );
             return;
         }
 
@@ -251,10 +248,7 @@ public sealed partial class LinearScan
         assert(currentBlock is not null);
         if (currentBlock is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage276
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LSRARequiresANonEmptyCompilerFlowGraph);
             return default!;
         }
 
@@ -283,9 +277,9 @@ public sealed partial class LinearScan
         if (!_blockSequencingDone)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage277
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockTraversalRequiresAnInitializedBlockSequence
+    );
             return default!;
         }
 
@@ -300,9 +294,9 @@ public sealed partial class LinearScan
         if (traits is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage278
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockVisitationRequiresInitializedBlockTraits
+    );
             return;
         }
 
@@ -316,9 +310,9 @@ public sealed partial class LinearScan
         if (traits is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage278
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockVisitationRequiresInitializedBlockTraits
+    );
             return;
         }
 
@@ -332,9 +326,9 @@ public sealed partial class LinearScan
         if (traits is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage278
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockVisitationRequiresInitializedBlockTraits
+    );
             return default!;
         }
 

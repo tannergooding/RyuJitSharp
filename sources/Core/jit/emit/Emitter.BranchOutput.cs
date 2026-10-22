@@ -46,7 +46,7 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LabelOutputRequiresXarch);
             return default!;
         }
 

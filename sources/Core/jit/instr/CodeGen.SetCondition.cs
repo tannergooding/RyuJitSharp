@@ -100,7 +100,10 @@ public sealed partial class CodeGen
         }
 
         NYI("inst_SET");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Set-condition generation is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SetConditionGenerationIsNotImplementedOnThisTarget
+    );
         return;
     }
 }

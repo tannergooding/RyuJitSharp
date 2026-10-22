@@ -39,8 +39,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Instruction-group address recording requires xarch, ARM64, RISC-V64, or LoongArch64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionGroupAddressRecordingRequiresXarchARM64RISCV64OrLoongArch64
+    );
             return;
         }
 

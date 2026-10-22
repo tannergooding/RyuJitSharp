@@ -71,7 +71,10 @@ public partial class Compiler
             return size == 8 ? 8 : 16;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD local alignment for this target is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDLocalAlignmentForThisTargetIsNotImplemented
+    );
         return default!;
     }
 }

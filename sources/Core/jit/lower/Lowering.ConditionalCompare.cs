@@ -14,41 +14,68 @@ public sealed partial class Lowering
     {
         if (Configuration.TARGET_ARM64)
         {
-            return condition.Code switch {
-                GenCondition.EQ => INS_FLAGS_Z,
-                GenCondition.NE => INS_FLAGS_NONE,
-                GenCondition.SGE => INS_FLAGS_Z,
-                GenCondition.SGT => INS_FLAGS_NONE,
-                GenCondition.SLE => INS_FLAGS_NZC,
-                GenCondition.SLT => INS_FLAGS_NC,
-                GenCondition.UGE => INS_FLAGS_C,
-                GenCondition.UGT => INS_FLAGS_C,
-                GenCondition.ULE => INS_FLAGS_Z,
-                GenCondition.ULT => INS_FLAGS_NONE,
-                _ => throw new InvalidOperationException("Unexpected condition type."),
-            };
+            switch (condition.Code)
+            {
+                case GenCondition.EQ:
+                    return INS_FLAGS_Z;
+                case GenCondition.NE:
+                    return INS_FLAGS_NONE;
+                case GenCondition.SGE:
+                    return INS_FLAGS_Z;
+                case GenCondition.SGT:
+                    return INS_FLAGS_NONE;
+                case GenCondition.SLE:
+                    return INS_FLAGS_NZC;
+                case GenCondition.SLT:
+                    return INS_FLAGS_NC;
+                case GenCondition.UGE:
+                    return INS_FLAGS_C;
+                case GenCondition.UGT:
+                    return INS_FLAGS_C;
+                case GenCondition.ULE:
+                    return INS_FLAGS_Z;
+                case GenCondition.ULT:
+                    return INS_FLAGS_NONE;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedConditionType);
+                    return default;
+            }
         }
 
         if (Configuration.TARGET_AMD64)
         {
-            return condition.Code switch {
-                GenCondition.EQ => INS_FLAGS_ZF,
-                GenCondition.NE => INS_FLAGS_NONE,
-                GenCondition.SGE => INS_FLAGS_NONE,
-                GenCondition.SGT => INS_FLAGS_NONE,
-                GenCondition.SLE => INS_FLAGS_ZF,
-                GenCondition.SLT => INS_FLAGS_SF,
-                GenCondition.UGE => INS_FLAGS_NONE,
-                GenCondition.UGT => INS_FLAGS_NONE,
-                GenCondition.ULE => INS_FLAGS_ZF,
-                GenCondition.ULT => INS_FLAGS_CF,
-                _ => throw new InvalidOperationException("Unexpected condition type."),
-            };
+            switch (condition.Code)
+            {
+                case GenCondition.EQ:
+                    return INS_FLAGS_ZF;
+                case GenCondition.NE:
+                    return INS_FLAGS_NONE;
+                case GenCondition.SGE:
+                    return INS_FLAGS_NONE;
+                case GenCondition.SGT:
+                    return INS_FLAGS_NONE;
+                case GenCondition.SLE:
+                    return INS_FLAGS_ZF;
+                case GenCondition.SLT:
+                    return INS_FLAGS_SF;
+                case GenCondition.UGE:
+                    return INS_FLAGS_NONE;
+                case GenCondition.UGT:
+                    return INS_FLAGS_NONE;
+                case GenCondition.ULE:
+                    return INS_FLAGS_ZF;
+                case GenCondition.ULT:
+                    return INS_FLAGS_CF;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedConditionType);
+                    return default;
+            }
         }
 
         FatalJitException.ThrowFatalJitException(
-            CORJIT_INTERNALERROR,
-        "Conditional compare lowering is only supported for x64 and ARM64.");
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ConditionalCompareLoweringIsOnlySupportedForX64AndARM64
+    );
         return default!;
     }
 
@@ -160,7 +187,10 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Conditional compare containment is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ConditionalCompareContainmentIsNotPortedForThisTarget
+    );
             return;
         }
 

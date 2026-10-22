@@ -657,7 +657,7 @@ public static partial class InlineObservationExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage240
+                    FatalJitErrorCode.InvalidInlineObservation
                 );
                 return default!;
             }

@@ -293,7 +293,18 @@ public sealed partial class CodeGen
         assert(block.Kind is BBJ_COND);
 
         var op1 = tree.Op1;
-        var op2 = tree.Op2 ?? throw new InvalidOperationException("Jump compare is missing its second operand.");
+        global::RyuJitSharp.GenTree __jitExceptionResult28;
+        var __jitExceptionCoalesceLeft29 = tree.Op2;
+        if (__jitExceptionCoalesceLeft29 != null)
+        {
+            __jitExceptionResult28 = __jitExceptionCoalesceLeft29;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JumpCompareIsMissingItsSecondOperand);
+            __jitExceptionResult28 = default;
+        }
+        var op2 = __jitExceptionResult28;
 
         assert(tree.Oper is GT_JCMP or GT_JTEST);
         assert(!varTypeIsFloating(tree.Type));

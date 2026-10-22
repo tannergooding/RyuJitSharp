@@ -94,8 +94,18 @@ public sealed partial class Lowering
                 condition = conditionUse.Def();
             }
 
-            var copy = compiler.gtClone(condition) ??
-                throw new System.InvalidOperationException("Conditional-select mask local could not be cloned.");
+            global::RyuJitSharp.GenTree __jitExceptionResult100;
+            var __jitExceptionCoalesceLeft101 = compiler.gtClone(condition);
+            if (__jitExceptionCoalesceLeft101 != null)
+            {
+                __jitExceptionResult100 = __jitExceptionCoalesceLeft101;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalSelectMaskLocalCouldNotBeCloned);
+                __jitExceptionResult100 = default;
+            }
+            var copy = __jitExceptionResult100;
             var truePart = compiler.gtNewSimdBinOpNode(GT_AND,
                 simdType, condition, selectTrue, simdBaseType, simdSize);
             var falsePart = compiler.gtNewSimdBinOpNode(GT_AND_NOT,

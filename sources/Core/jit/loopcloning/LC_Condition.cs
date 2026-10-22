@@ -49,9 +49,9 @@ public readonly struct LC_Expr
         if (Type is not ExprType.Ident)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage250
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CannotMaterializeAnInvalidLoopCloningExpression
+    );
             return default!;
         }
         return Ident.ToGenTree(compiler, block);

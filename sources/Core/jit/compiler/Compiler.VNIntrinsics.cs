@@ -73,11 +73,7 @@ public partial class Compiler
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowInvalidOperationException(
-                        "RJS-VN-005",
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? $"Unexpected saturating intrinsic: {id}"
-                            : null);
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedSaturatingIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default));
                     func = default;
                     break;
                 }
@@ -276,7 +272,7 @@ public partial class Compiler
                 {
                     if (address is null)
                     {
-                        throw new InvalidOperationException("Memory intrinsic has no address operand.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MemoryIntrinsicHasNoAddressOperand);
                     }
                     fgValueNumberAddExceptionSetForIndirection(tree, address);
                     break;

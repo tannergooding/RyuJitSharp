@@ -56,7 +56,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm globals are not available on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmGlobalsAreNotAvailableOnThisTarget);
         }
 
         if (!wasmWellKnownGlobalsInitialized)
@@ -1106,7 +1106,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Class size fallback is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassSizeFallbackIsOnlyAvailableInDebugBuilds);
         }
 
         var classSize = -1;

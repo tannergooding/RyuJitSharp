@@ -256,7 +256,7 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Funclet prologs require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FuncletPrologsRequireXarch);
             return;
         }
         else
@@ -513,7 +513,7 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Funclet epilogs require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FuncletEpilogsRequireXarch);
             return;
         }
         else
@@ -786,7 +786,7 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FuncletFrameCaptureRequiresXarch);
             return;
         }
         else if (Configuration.TARGET_AMD64)

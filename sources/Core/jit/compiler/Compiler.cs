@@ -55,7 +55,8 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Verbose output is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VerboseOutputIsOnlyAvailableInDebugBuilds);
+                return;
             }
 
             GetDebugData().Verbose = value;
@@ -73,7 +74,8 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Verbose tree output is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VerboseTreeOutputIsOnlyAvailableInDebugBuilds);
+                return;
             }
 
             GetDebugData().VerboseTrees = value;
@@ -92,7 +94,8 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Verbose SSA output is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VerboseSSAOutputIsOnlyAvailableInDebugBuilds);
+                return;
             }
 
             GetDebugData().VerboseSsa = value;
@@ -880,7 +883,7 @@ public partial class Compiler
             return SRBM_NONE;
         }
 
-        FatalJitException.ThrowFatalJitException("Mask registers are not defined for the configured target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.MaskRegistersAreNotDefinedForTheConfiguredTarget);
         return default!;
     }
 
@@ -973,7 +976,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
         }
 
         return size switch {
@@ -1057,7 +1060,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("EVEX debug support checks are unavailable in Release.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EVEXDebugSupportChecksAreUnavailableInRelease);
         }
 
         return Configuration.TARGET_XARCH && compIsaSupportedDebugOnly(InstructionSet_AVX512);
@@ -2272,7 +2275,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("SkipMethod is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SkipMethodIsOnlyAvailableInDebugBuilds);
         }
 
         fJitRange.EnsureInit(JitConfig.JitRange);
@@ -2503,10 +2506,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage102
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidGPRSize);
                 return default!;
             }
         }
@@ -2692,7 +2692,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
         }
 
         var baseType = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
@@ -3264,7 +3264,7 @@ public partial class Compiler
             var store = vnStore;
             if (store is null)
             {
-                FatalJitException.ThrowFatalJitException("VN diagnostics require a value number store.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.VNDiagnosticsRequireAValueNumberStore);
                 return;
             }
             store.vnDump(this, vn);

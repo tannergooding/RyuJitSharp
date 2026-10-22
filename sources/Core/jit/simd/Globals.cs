@@ -19,7 +19,7 @@ public static partial class Globals
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
         }
     }
 
@@ -741,7 +741,7 @@ public static partial class Globals
         EnsureSimdSupported();
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
         }
     }
 
@@ -822,7 +822,7 @@ public static partial class Globals
         EnsureMaskedHardwareIntrinsicsSupported();
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Mask conversions are only supported on xarch and ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskConversionsAreOnlySupportedOnXarchAndARM64);
         }
 
         var elementSize = GetSimdElementSize(baseType);
@@ -849,7 +849,7 @@ public static partial class Globals
 
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Mask conversions are only supported on xarch and ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskConversionsAreOnlySupportedOnXarchAndARM64);
         }
 
         var elementSize = GetSimdElementSize(baseType);
@@ -905,12 +905,15 @@ public static partial class Globals
                     return 0x0101010101010101;
                 }
             }
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskConversionsAreOnlySupportedOnXarchAndARM64);
+
 
             unreached();
             return 0;
         }
 
-        throw new PlatformNotSupportedException("Mask evaluation is only supported on xarch and ARM64.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskEvaluationIsOnlySupportedOnXarchAndARM64);
+        return default;
     }
 
     // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>

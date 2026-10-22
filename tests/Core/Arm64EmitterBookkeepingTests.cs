@@ -103,8 +103,15 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         {
             var failure = Assert.Throws<FatalJitException>(() => emitter.emitGetEpilogCnt());
             Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Is.EqualTo("The epilog recorder is only supported by the x86 GC encoder."));
+            Assert.That(
+                failure?.ErrorCode,
+                Is.EqualTo(FatalJitErrorCode.EpilogRecorderIsOnlySupportedByTheX86GCEncoder));
+            Assert.That(
+                failure?.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "The epilog recorder is only supported by the x86 GC encoder."
+                        : "RJS-1331"));
         }
     }
 

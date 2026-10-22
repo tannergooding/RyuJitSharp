@@ -13,7 +13,7 @@ public partial class Compiler
             !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_WASM)
         {
             NYI("Compiler.raMarkStkVars outside AMD64/ARM64");
-            FatalJitException.ThrowFatalJitException("Compiler.raMarkStkVars outside AMD64/ARM64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CompilerRaMarkStkVarsOutsideAMD64ARM64);
             return;
         }
 

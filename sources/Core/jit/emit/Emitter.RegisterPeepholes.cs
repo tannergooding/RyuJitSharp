@@ -131,7 +131,7 @@ public partial class Emitter
         var lastIns = emitLastIns;
         if (lastIns is null)
         {
-            FatalJitException.ThrowFatalJitException("Peephole iteration requires a last instruction.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.PeepholeIterationRequiresALastInstruction);
             return;
         }
         _ = action(lastIns);
@@ -263,7 +263,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction write classification requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InstructionWriteClassificationRequiresXarch);
             return default!;
         }
 

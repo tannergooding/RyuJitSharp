@@ -18,7 +18,7 @@ public partial class Compiler
         {
             NYI("getCompileTimeVectorTByteLength on ARM32");
             fatal(CORJIT_IMPLLIMITATION);
-            FatalJitException.ThrowFatalJitException("getCompileTimeVectorTByteLength is unsupported on ARM32.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GetCompileTimeVectorTByteLengthIsUnsupportedOnARM32);
             return default!;
         }
 
@@ -27,7 +27,10 @@ public partial class Compiler
             return unchecked((uint)GetVectorTByteLength());
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Compile-time Vector<T> length is not supported on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CompileTimeVectorTLengthIsNotSupportedOnThisTarget
+    );
         return default!;
     }
 

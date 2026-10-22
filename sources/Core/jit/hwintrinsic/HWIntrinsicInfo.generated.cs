@@ -23234,7 +23234,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23252,7 +23253,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmCategories;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23262,7 +23264,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23280,7 +23283,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmFlags;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23290,7 +23294,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23308,7 +23313,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmFltCosts;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23318,7 +23324,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23336,7 +23343,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmInstructions;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23346,7 +23354,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23364,7 +23373,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmInstructionSets;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23374,7 +23384,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23392,7 +23403,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmIntCosts;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23402,7 +23414,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23420,7 +23433,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmNameData;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23430,7 +23444,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23448,7 +23463,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmNameRanges;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23458,7 +23474,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23476,7 +23493,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmNumArgs;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 
@@ -23486,7 +23504,8 @@ public partial struct HWIntrinsicInfo
         {
             if (!Configuration.FEATURE_HW_INTRINSICS)
             {
-                throw new PlatformNotSupportedException("Hardware-intrinsic metadata is unsupported on this target.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
+                return default;
             }
 
             if (Configuration.TARGET_XARCH)
@@ -23504,7 +23523,8 @@ public partial struct HWIntrinsicInfo
                 return s_WasmSimdSizes;
             }
 
-            throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+            return default;
         }
     }
 

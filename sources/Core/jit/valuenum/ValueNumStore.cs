@@ -98,6 +98,24 @@ public sealed partial class ValueNumStore
         {
             return;
         }
+        ValidateValueNumStoreStatics(VNFuncExtensions.Attributes);
+    }
+
+    [Conditional("DEBUG")]
+    internal static void ValidateValueNumStoreStatics(ReadOnlySpan<VNFOpAttrib> expectedAttributes)
+    {
+        if (!Configuration.DEBUG)
+        {
+            return;
+        }
+
+        if (expectedAttributes.Length != (int)VNF_COUNT)
+        {
+            JitExceptionHelpers.ThrowArgumentException(
+                FatalJitErrorCode.ValueNumberAttributeTableHasUnexpectedLength,
+                FatalJitArgument.ExpectedAttributes);
+        }
+
 
         var attributes = new VNFOpAttrib[(int)VNF_COUNT];
         for (var oper = GT_NONE; oper < GT_COUNT; oper++)
@@ -133,14 +151,14 @@ public sealed partial class ValueNumStore
                 continue;
             }
 
-            assert(attributes[(int)func] == VNFuncExtensions.GetAttributes(func));
+            assert(attributes[(int)func] == expectedAttributes[(int)func]);
         }
 
         for (var tableIndex = 0; tableIndex < HWIntrinsicInfo.GetNativeTableEntryCount(); tableIndex++)
         {
             var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
             var func = VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1);
-            assert(attributes[(int)func] == VNFuncExtensions.GetAttributes(func));
+            assert(attributes[(int)func] == expectedAttributes[(int)func]);
         }
     }
 

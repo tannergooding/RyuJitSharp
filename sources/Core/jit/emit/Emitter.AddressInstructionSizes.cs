@@ -20,7 +20,7 @@ public partial class Emitter
             return reg == REG_X86_ESP;
         }
 
-        FatalJitException.ThrowFatalJitException("xarch address encoding is not available for this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchAddressEncodingIsNotAvailableForThisTarget);
         return default!;
     }
 
@@ -35,7 +35,7 @@ public partial class Emitter
             return reg == REG_X86_EBP;
         }
 
-        FatalJitException.ThrowFatalJitException("xarch address encoding is not available for this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchAddressEncodingIsNotAvailableForThisTarget);
         return default!;
     }
 
@@ -53,7 +53,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch address scale decoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchAddressScaleDecodingIsNotAvailableForThisTarget);
             return default!;
         }
 
@@ -65,7 +65,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch address instruction sizing is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchAddressInstructionSizingIsNotAvailableForThisTarget);
             return default!;
         }
 
@@ -265,7 +265,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch address instruction sizing is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchAddressInstructionSizingIsNotAvailableForThisTarget);
             return default!;
         }
 

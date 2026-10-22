@@ -12,8 +12,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 SIMD upper-lane saves are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64SIMDUpperLaneSavesAreUnavailableForThisTarget
+    );
             return;
         }
 
@@ -55,8 +57,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 SIMD upper-lane restores are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64SIMDUpperLaneRestoresAreUnavailableForThisTarget
+    );
             return;
         }
 

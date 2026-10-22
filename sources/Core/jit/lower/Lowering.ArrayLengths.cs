@@ -38,7 +38,8 @@ public sealed partial class Lowering
             default:
             {
                 unreached();
-                throw new System.InvalidOperationException("Expected an array metadata node.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ExpectedAnArrayMetadataNode);
+                return default;
             }
         }
 

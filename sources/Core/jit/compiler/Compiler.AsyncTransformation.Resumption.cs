@@ -31,9 +31,20 @@ public partial class Compiler
                 GenTree value;
                 if ((descriptor.Type is TYP_STRUCT) || descriptor.IsImplicitByRef)
                 {
-                    value = _compiler.gtNewLoadValueNode(address,
-                        descriptor.Layout ?? throw new InvalidOperationException("Struct local has no layout"),
-                        flags);
+                    var __jitExceptionReceiver104 = _compiler;
+                    var __jitExceptionArgument105 = address;
+                    global::RyuJitSharp.ClassLayout __jitExceptionArgument106;
+                    var __jitExceptionCoalesceLeft107 = descriptor.Layout;
+                    if (__jitExceptionCoalesceLeft107 != null)
+                    {
+                        __jitExceptionArgument106 = __jitExceptionCoalesceLeft107;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout);
+                        __jitExceptionArgument106 = default;
+                    }
+                    value = __jitExceptionReceiver104.gtNewLoadValueNode(__jitExceptionArgument105, __jitExceptionArgument106, flags);
                 }
                 else
                 {
@@ -44,9 +55,21 @@ public partial class Compiler
                 if (descriptor.IsImplicitByRef)
                 {
                     var baseAddress = _compiler.gtNewLclvNode(descriptor.Type, local.LclNum);
-                    store = _compiler.gtNewStoreValueNode(baseAddress, value,
-                        descriptor.Layout ?? throw new InvalidOperationException("Implicit-byref local has no layout"),
-                        GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+                    var __jitExceptionReceiver108 = _compiler;
+                    var __jitExceptionArgument109 = baseAddress;
+                    var __jitExceptionArgument110 = value;
+                    global::RyuJitSharp.ClassLayout __jitExceptionArgument111;
+                    var __jitExceptionCoalesceLeft112 = descriptor.Layout;
+                    if (__jitExceptionCoalesceLeft112 != null)
+                    {
+                        __jitExceptionArgument111 = __jitExceptionCoalesceLeft112;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImplicitByrefLocalHasNoLayout);
+                        __jitExceptionArgument111 = default;
+                    }
+                    store = __jitExceptionReceiver108.gtNewStoreValueNode(__jitExceptionArgument109, __jitExceptionArgument110, __jitExceptionArgument111, GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
                 }
                 else
                 {
@@ -72,8 +95,18 @@ public partial class Compiler
                 return;
             }
 
-            var definition = _compiler.gtCallGetDefinedAsyncResumedLclAddr(call) ??
-                throw new InvalidOperationException("Async resumed-def argument must be a local address");
+            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult34;
+            var __jitExceptionCoalesceLeft35 = _compiler.gtCallGetDefinedAsyncResumedLclAddr(call);
+            if (__jitExceptionCoalesceLeft35 != null)
+            {
+                __jitExceptionResult34 = __jitExceptionCoalesceLeft35;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncResumedDefArgumentMustBeALocalAddress);
+                __jitExceptionResult34 = default;
+            }
+            var definition = __jitExceptionResult34;
             assert(ReferenceEquals(argument.Node, definition));
             StoreResumedDef(definition, resumeBlock);
             callBlock.Remove(definition);
@@ -99,9 +132,19 @@ public partial class Compiler
 
             if (block.HasTerminator)
             {
-                block.InsertBefore(block.LastNode ??
-                    throw new InvalidOperationException("Terminator block is empty"),
-                    LIR.SeqTree(_compiler, store));
+                var __jitExceptionReceiver113 = block;
+                global::RyuJitSharp.GenTree __jitExceptionArgument114;
+                var __jitExceptionCoalesceLeft115 = block.LastNode;
+                if (__jitExceptionCoalesceLeft115 != null)
+                {
+                    __jitExceptionArgument114 = __jitExceptionCoalesceLeft115;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TerminatorBlockIsEmpty);
+                    __jitExceptionArgument114 = default;
+                }
+                __jitExceptionReceiver113.InsertBefore(__jitExceptionArgument114, LIR.SeqTree(_compiler, store));
             }
             else
             {
@@ -177,8 +220,18 @@ public partial class Compiler
             var resultInfo = layout.FindReturn(_compiler, call);
             GenTree resultBase = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);
             var offset = OFFSETOF__CORINFO_Continuation__data + resultInfo.Offset;
-            var target = definition.DefinitionNode ??
-                throw new InvalidOperationException("Async result requires a local definition");
+            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult36;
+            var __jitExceptionCoalesceLeft37 = definition.DefinitionNode;
+            if (__jitExceptionCoalesceLeft37 != null)
+            {
+                __jitExceptionResult36 = __jitExceptionCoalesceLeft37;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncResultRequiresALocalDefinition);
+                __jitExceptionResult36 = default;
+            }
+            var target = __jitExceptionResult36;
             ref var destination = ref _compiler.lvaGetDesc(target.LclNum);
             var flags = GTF_IND_NONFAULTING |
                 (resultInfo.HeapAlignment < resultInfo.Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
@@ -187,8 +240,18 @@ public partial class Compiler
             {
                 if (_compiler.lvaGetPromotionType(in destination) is not PROMOTION_TYPE_INDEPENDENT)
                 {
-                    var structLayout = resultInfo.Type.ReturnLayout ??
-                        throw new InvalidOperationException("Struct return has no layout");
+                    global::RyuJitSharp.ClassLayout __jitExceptionResult38;
+                    var __jitExceptionCoalesceLeft39 = resultInfo.Type.ReturnLayout;
+                    if (__jitExceptionCoalesceLeft39 != null)
+                    {
+                        __jitExceptionResult38 = __jitExceptionCoalesceLeft39;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructReturnHasNoLayout);
+                        __jitExceptionResult38 = default;
+                    }
+                    var structLayout = __jitExceptionResult38;
                     var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, offset);
                     var address = _compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, resultBase, offsetNode);
                     var value = _compiler.gtNewLoadValueNode(address, structLayout, flags);
@@ -261,8 +324,18 @@ public partial class Compiler
 
             if (result.Type.ReturnType is TYP_STRUCT)
             {
-                var structLayout = result.Type.ReturnLayout ??
-                    throw new InvalidOperationException("Struct return has no layout");
+                global::RyuJitSharp.ClassLayout __jitExceptionResult40;
+                var __jitExceptionCoalesceLeft41 = result.Type.ReturnLayout;
+                if (__jitExceptionCoalesceLeft41 != null)
+                {
+                    __jitExceptionResult40 = __jitExceptionCoalesceLeft41;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructReturnHasNoLayout);
+                    __jitExceptionResult40 = default;
+                }
+                var structLayout = __jitExceptionResult40;
                 if (structLayout.GCPtrCount == 0)
                 {
                     return;

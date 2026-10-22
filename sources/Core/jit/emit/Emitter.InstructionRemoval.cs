@@ -53,7 +53,7 @@ public partial class Emitter
             var currentGroup = emitCurIG;
             if (currentGroup is null)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "The current instruction group is required.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CurrentInstructionGroupIsRequired);
                 return;
             }
 

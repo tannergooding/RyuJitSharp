@@ -44,7 +44,7 @@ public partial class Emitter
             var compiler = _compiler;
             if (compiler is null)
             {
-                FatalJitException.ThrowFatalJitException("LoongArch64 disassembly requires an active compiler.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64DisassemblyRequiresAnActiveCompiler);
                 return;
             }
             if (!compiler.opts.disCodeBytes)
@@ -71,7 +71,7 @@ public partial class Emitter
     {
         if (_compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("LoongArch64 disassembly requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoongArch64DisassemblyRequiresAnActiveCompiler);
             return;
         }
         var instructionAddress = address - writeableOffset;

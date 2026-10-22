@@ -139,7 +139,11 @@ public static partial class Globals
 
     private static emitJumpKind UnsupportedJumpKind(string jumpKind)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, $"{jumpKind} is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ArgumentIsNotSupportedForThisTarget,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
+    );
         return default!;
     }
 }

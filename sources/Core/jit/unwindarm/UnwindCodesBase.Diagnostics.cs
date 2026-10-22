@@ -11,12 +11,12 @@ public abstract unsafe class ArmUnwindCodesBase
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("ARM32 unwind diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ARM32UnwindDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 unwind diagnostics require ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32UnwindDiagnosticsRequireARM32);
             return default!;
         }
 

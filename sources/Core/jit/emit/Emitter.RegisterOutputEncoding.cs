@@ -109,7 +109,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch prefix output is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchPrefixOutputIsNotAvailableForThisTarget);
             return default!;
         }
 
@@ -132,7 +132,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch prefix output is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchPrefixOutputIsNotAvailableForThisTarget);
             return default!;
         }
 
@@ -155,7 +155,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("REX2 output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.REX2OutputRequiresAMD64);
             return default!;
         }
 
@@ -176,37 +176,56 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("CCMP and CTEST output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CCMPAndCTESTOutputRequiresAMD64);
             return default!;
         }
 
         assert(IsCCMP(ins) || IsCTEST(ins));
-        return ins switch {
-            INS_ccmpo or INS_ctesto => 0,
-            INS_ccmpno or INS_ctestno => 1,
-            INS_ccmpb or INS_ctestb => 2,
-            INS_ccmpae or INS_ctestae => 3,
-            INS_ccmpe or INS_cteste => 4,
-            INS_ccmpne or INS_ctestne => 5,
-            INS_ccmpbe or INS_ctestbe => 6,
-            INS_ccmpa or INS_ctesta => 7,
-            INS_ccmps or INS_ctests => 8,
-            INS_ccmpns or INS_ctestns => 9,
-            INS_ccmpt or INS_ctestt => 10,
-            INS_ccmpf or INS_ctestf => 11,
-            INS_ccmpl or INS_ctestl => 12,
-            INS_ccmpge or INS_ctestge => 13,
-            INS_ccmple or INS_ctestle => 14,
-            INS_ccmpg or INS_ctestg => 15,
-            _ => throw new System.InvalidOperationException("Invalid CCMP or CTEST condition."),
-        };
+        switch (ins)
+        {
+            case INS_ccmpo or INS_ctesto:
+                return 0;
+            case INS_ccmpno or INS_ctestno:
+                return 1;
+            case INS_ccmpb or INS_ctestb:
+                return 2;
+            case INS_ccmpae or INS_ctestae:
+                return 3;
+            case INS_ccmpe or INS_cteste:
+                return 4;
+            case INS_ccmpne or INS_ctestne:
+                return 5;
+            case INS_ccmpbe or INS_ctestbe:
+                return 6;
+            case INS_ccmpa or INS_ctesta:
+                return 7;
+            case INS_ccmps or INS_ctests:
+                return 8;
+            case INS_ccmpns or INS_ctestns:
+                return 9;
+            case INS_ccmpt or INS_ctestt:
+                return 10;
+            case INS_ccmpf or INS_ctestf:
+                return 11;
+            case INS_ccmpl or INS_ctestl:
+                return 12;
+            case INS_ccmpge or INS_ctestge:
+                return 13;
+            case INS_ccmple or INS_ctestle:
+                return 14;
+            case INS_ccmpg or INS_ctestg:
+                return 15;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidCCMPOrCTESTCondition);
+                return default;
+        }
     }
 
     private ulong AddEvexPrefix(instrDesc id, ulong code, emitAttr size)
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("EVEX output requires xarch.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXOutputRequiresXarch);
             return default!;
         }
 
@@ -286,7 +305,8 @@ public partial class Emitter
 
                     default:
                     {
-                        throw new System.InvalidOperationException("Invalid EVEX embedded rounding mode.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidEVEXEmbeddedRoundingMode);
+                        return default;
                     }
                 }
                 code |= 0x0000001000000000UL;
@@ -366,7 +386,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("REX.R output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.REXROutputRequiresAMD64);
             return default!;
         }
 
@@ -390,7 +410,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("EVEX R-prime output requires AMD64.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXRPrimeOutputRequiresAMD64);
             return default!;
         }
 
@@ -403,7 +423,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch register encoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchRegisterEncodingIsNotAvailableForThisTarget);
             return default!;
         }
 
@@ -450,7 +470,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch register encoding is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchRegisterEncodingIsNotAvailableForThisTarget);
             return default!;
         }
 

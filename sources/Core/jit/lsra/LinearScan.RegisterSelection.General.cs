@@ -288,14 +288,14 @@ public sealed partial class LinearScan
                     {
                         if (_candidates == SRBM_NONE)
                         {
-                            FatalJitException.ThrowFatalJitException("Insufficient consecutive register candidates.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InsufficientConsecutiveRegisterCandidates);
                             selectionScore = default!;
                             return default!;
                         }
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException("Insufficient consecutive register candidates.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InsufficientConsecutiveRegisterCandidates);
                         selectionScore = default!;
                         return default!;
                     }
@@ -332,7 +332,7 @@ public sealed partial class LinearScan
                     var score = regSelectionOrder[index];
                     if (!mappingTable.TryGetValue(score, out var heuristic))
                     {
-                        FatalJitException.ThrowFatalJitException("Unexpected LSRA register-selection heuristic.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedLSRARegisterSelectionHeuristic);
                         selectionScore = default!;
                         return default!;
                     }

@@ -77,7 +77,7 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException("Instruction-group diagnostics require an active compiler.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionGroupDiagnosticsRequireAnActiveCompiler);
             return;
         }
         var label = emitLabelString(ig) + ":        ";
@@ -94,7 +94,7 @@ public partial class Emitter
             var placeholder = ig.igPhData;
             if (placeholder is null)
             {
-                FatalJitException.ThrowFatalJitException("A placeholder instruction group requires placeholder data.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.PlaceholderInstructionGroupRequiresPlaceholderData);
                 return;
             }
             var typeName = placeholder.igPhType switch {
@@ -295,7 +295,7 @@ public partial class Emitter
             var debugInfo = jump.idDebugOnlyInfo();
             if (debugInfo is null)
             {
-                FatalJitException.ThrowFatalJitException("Jump-list diagnostics require descriptor debug information.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.JumpListDiagnosticsRequireDescriptorDebugInformation);
                 return;
             }
 

@@ -63,8 +63,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "WebAssembly SIMD loads require SIMD support.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WebAssemblySIMDLoadsRequireSIMDSupport);
                         return default!;
                     }
 
@@ -75,8 +74,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_SIMD)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "WebAssembly SIMD loads require SIMD support.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WebAssemblySIMDLoadsRequireSIMDSupport);
                         return default!;
                     }
 
@@ -171,8 +169,7 @@ public sealed partial class CodeGen
                 return ins;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Integer load selection requires a supported target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.IntegerLoadSelectionRequiresASupportedTarget);
             return default!;
         }
 
@@ -180,8 +177,10 @@ public sealed partial class CodeGen
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Masked-register loads require masked hardware intrinsics.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterLoadsRequireMaskedHardwareIntrinsics
+    );
                 return default!;
             }
 
@@ -195,8 +194,10 @@ public sealed partial class CodeGen
                 return INS_sve_ldr;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Masked-register loads are not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterLoadsAreNotImplementedForThisTarget
+    );
             return default!;
         }
 
@@ -265,7 +266,10 @@ public sealed partial class CodeGen
             }
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-point load selection requires a supported target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingPointLoadSelectionRequiresASupportedTarget
+    );
         return default!;
     }
 }

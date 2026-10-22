@@ -175,8 +175,10 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_ARM)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 local-frame-pointer descriptor flags are only supported on ARM32.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32LocalFramePointerDescriptorFlagsAreOnlySupportedOnARM32
+    );
                 return;
             }
         }
@@ -186,8 +188,10 @@ public partial class Emitter
             if (!(Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
                 Configuration.TARGET_RISCV64))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Local-variable instruction descriptors are not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LocalVariableInstructionDescriptorsAreNotSupportedForThisTarget
+    );
                 return;
             }
         }

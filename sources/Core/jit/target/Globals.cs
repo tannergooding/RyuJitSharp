@@ -100,7 +100,7 @@ public static partial class Globals
             }
             else
             {
-                FatalJitException.ThrowFatalJitException("Swift calling conventions are not supported for this target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftCallingConventionsAreNotSupportedForThisTarget);
                 return default!;
             }
         }
@@ -242,7 +242,10 @@ public static partial class Globals
 
     private static T UnsupportedTargetValue<T>(string message)
     {
-        FatalJitException.ThrowFatalJitException(message);
+        FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.Argument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? message : default)
+    );
         return default!;
     }
 

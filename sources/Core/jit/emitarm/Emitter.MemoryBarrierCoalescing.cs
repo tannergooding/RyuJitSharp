@@ -14,7 +14,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 memory-barrier coalescing is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32MemoryBarrierCoalescingIsNotAvailableForThisTarget
+    );
             return default!;
         }
 

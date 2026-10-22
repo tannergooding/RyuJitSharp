@@ -13,7 +13,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("CSE diagnostic configuration is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEDiagnosticConfigurationIsOnlyAvailableInDebugBuilds);
         }
 
         var jitNoCSE2 = unchecked((uint)JitConfig.JitNoCSE2);

@@ -23,7 +23,7 @@ public partial class Globals
 
         if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException("SIMD Unimplemented yet LOONGARCH");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SIMDUnimplementedYetLOONGARCH);
             return;
         }
     }
@@ -41,7 +41,7 @@ public partial class Globals
 
         if (targetCount != 1)
         {
-            FatalJitException.ThrowFatalJitException("Exactly one target architecture must be selected.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ExactlyOneTargetArchitectureMustBeSelected);
             return;
         }
 
@@ -53,19 +53,19 @@ public partial class Globals
 
         if (Configuration.TARGET_64BIT != targetIs64Bit)
         {
-            FatalJitException.ThrowFatalJitException("Target bitness does not match the selected architecture.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.TargetBitnessDoesNotMatchTheSelectedArchitecture);
             return;
         }
 
         if (Configuration.UNIX_AMD64_ABI && !Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("When UNIX_AMD64_ABI is enabled, TARGET_AMD64 must be enabled.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.WhenUNIXAMD64ABIIsEnabledTARGETAMD64MustBeEnabled);
             return;
         }
 
         if (Configuration.UNIX_X86_ABI && !Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException("When UNIX_X86_ABI is enabled, TARGET_X86 must be enabled.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.WhenUNIXX86ABIIsEnabledTARGETX86MustBeEnabled);
             return;
         }
     }
@@ -79,19 +79,13 @@ public partial class Globals
     {
         if (debug)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage245
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NoPointInMeasuringDEBUGCode);
             return;
         }
 
         if (!hostX86 && !hostAmd64)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage246
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CycleCountersOnlyHookedUpOnX86X64);
             return;
         }
     }
@@ -305,7 +299,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("IL instruction dumping is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ILInstructionDumpingIsOnlyAvailableInDebugBuilds);
         }
 
         // assume 3 characters * (1 byte opcode + 4 bytes data + 1 prefix byte) for most things

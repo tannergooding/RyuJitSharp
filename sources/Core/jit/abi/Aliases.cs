@@ -76,7 +76,7 @@ public ref struct PlatformClassifier
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "No ABI classifier is available for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NoABIClassifierIsAvailableForThisTarget);
             return;
         }
     }
@@ -133,10 +133,7 @@ public ref struct PlatformClassifier
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage077
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidABIClassifierKind);
                     return default!;
                 }
             }
@@ -190,10 +187,7 @@ public ref struct PlatformClassifier
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage077
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidABIClassifierKind);
                 return default!;
             }
         }

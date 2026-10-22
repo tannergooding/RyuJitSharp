@@ -16,8 +16,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 hardware intrinsics are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64HardwareIntrinsicsAreUnavailableForThisTarget
+    );
             return;
         }
 

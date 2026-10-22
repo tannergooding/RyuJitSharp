@@ -92,8 +92,10 @@ public unsafe partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 register-immediate instruction recording requires ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64RegisterImmediateInstructionRecordingRequiresARM64
+    );
             return;
         }
 

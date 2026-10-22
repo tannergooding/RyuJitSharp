@@ -318,49 +318,86 @@ public partial class Compiler
         public bool IsBoundsCheckNoThrow => Op1.KindIs(optOp1Kind.O1K_VN) && KindIs(optAssertionKind.OAK_LT_UN)
             && Op2.KindIs(optOp2Kind.O2K_VN_ADD_CNS) && (Op2.Cns == 0) && Op2.IsVNNeverNegative;
 
-        public static optAssertionKind FromVNFunc(VNFunc func) => func switch {
-            VNF_EQ => optAssertionKind.OAK_EQUAL,
-            VNF_NE => optAssertionKind.OAK_NOT_EQUAL,
-            VNF_LT => optAssertionKind.OAK_LT,
-            VNF_LE => optAssertionKind.OAK_LE,
-            VNF_GT => optAssertionKind.OAK_GT,
-            VNF_GE => optAssertionKind.OAK_GE,
-            VNF_LT_UN => optAssertionKind.OAK_LT_UN,
-            VNF_LE_UN => optAssertionKind.OAK_LE_UN,
-            VNF_GT_UN => optAssertionKind.OAK_GT_UN,
-            VNF_GE_UN => optAssertionKind.OAK_GE_UN,
-            _ => throw new UnreachableException(),
-        };
-
+        public static optAssertionKind FromVNFunc(VNFunc func) {
+    switch (func)
+    {
+        case VNF_EQ:
+            return optAssertionKind.OAK_EQUAL;
+        case VNF_NE:
+            return optAssertionKind.OAK_NOT_EQUAL;
+        case VNF_LT:
+            return optAssertionKind.OAK_LT;
+        case VNF_LE:
+            return optAssertionKind.OAK_LE;
+        case VNF_GT:
+            return optAssertionKind.OAK_GT;
+        case VNF_GE:
+            return optAssertionKind.OAK_GE;
+        case VNF_LT_UN:
+            return optAssertionKind.OAK_LT_UN;
+        case VNF_LE_UN:
+            return optAssertionKind.OAK_LE_UN;
+        case VNF_GT_UN:
+            return optAssertionKind.OAK_GT_UN;
+        case VNF_GE_UN:
+            return optAssertionKind.OAK_GE_UN;
+        default:
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
+    }
+}
         public static genTreeOps ToCompareOper(optAssertionKind kind, out bool isUnsigned)
         {
             isUnsigned = kind is optAssertionKind.OAK_LT_UN or optAssertionKind.OAK_LE_UN
                 or optAssertionKind.OAK_GT_UN or optAssertionKind.OAK_GE_UN;
-            return kind switch {
-                optAssertionKind.OAK_EQUAL => GT_EQ,
-                optAssertionKind.OAK_NOT_EQUAL => GT_NE,
-                optAssertionKind.OAK_LT or optAssertionKind.OAK_LT_UN => GT_LT,
-                optAssertionKind.OAK_LE or optAssertionKind.OAK_LE_UN => GT_LE,
-                optAssertionKind.OAK_GT or optAssertionKind.OAK_GT_UN => GT_GT,
-                optAssertionKind.OAK_GE or optAssertionKind.OAK_GE_UN => GT_GE,
-                _ => throw new UnreachableException(),
-            };
+            switch (kind)
+            {
+                case optAssertionKind.OAK_EQUAL:
+                    return GT_EQ;
+                case optAssertionKind.OAK_NOT_EQUAL:
+                    return GT_NE;
+                case optAssertionKind.OAK_LT or optAssertionKind.OAK_LT_UN:
+                    return GT_LT;
+                case optAssertionKind.OAK_LE or optAssertionKind.OAK_LE_UN:
+                    return GT_LE;
+                case optAssertionKind.OAK_GT or optAssertionKind.OAK_GT_UN:
+                    return GT_GT;
+                case optAssertionKind.OAK_GE or optAssertionKind.OAK_GE_UN:
+                    return GT_GE;
+                default:
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    return default;
+            }
         }
 
-        public static optAssertionKind ReverseKind(optAssertionKind kind) => kind switch {
-            optAssertionKind.OAK_EQUAL => optAssertionKind.OAK_NOT_EQUAL,
-            optAssertionKind.OAK_NOT_EQUAL => optAssertionKind.OAK_EQUAL,
-            optAssertionKind.OAK_LT => optAssertionKind.OAK_GE,
-            optAssertionKind.OAK_LT_UN => optAssertionKind.OAK_GE_UN,
-            optAssertionKind.OAK_LE => optAssertionKind.OAK_GT,
-            optAssertionKind.OAK_LE_UN => optAssertionKind.OAK_GT_UN,
-            optAssertionKind.OAK_GT => optAssertionKind.OAK_LE,
-            optAssertionKind.OAK_GT_UN => optAssertionKind.OAK_LE_UN,
-            optAssertionKind.OAK_GE => optAssertionKind.OAK_LT,
-            optAssertionKind.OAK_GE_UN => optAssertionKind.OAK_LT_UN,
-            _ => throw new UnreachableException(),
-        };
-
+        public static optAssertionKind ReverseKind(optAssertionKind kind) {
+    switch (kind)
+    {
+        case optAssertionKind.OAK_EQUAL:
+            return optAssertionKind.OAK_NOT_EQUAL;
+        case optAssertionKind.OAK_NOT_EQUAL:
+            return optAssertionKind.OAK_EQUAL;
+        case optAssertionKind.OAK_LT:
+            return optAssertionKind.OAK_GE;
+        case optAssertionKind.OAK_LT_UN:
+            return optAssertionKind.OAK_GE_UN;
+        case optAssertionKind.OAK_LE:
+            return optAssertionKind.OAK_GT;
+        case optAssertionKind.OAK_LE_UN:
+            return optAssertionKind.OAK_GT_UN;
+        case optAssertionKind.OAK_GT:
+            return optAssertionKind.OAK_LE;
+        case optAssertionKind.OAK_GT_UN:
+            return optAssertionKind.OAK_LE_UN;
+        case optAssertionKind.OAK_GE:
+            return optAssertionKind.OAK_LT;
+        case optAssertionKind.OAK_GE_UN:
+            return optAssertionKind.OAK_LT_UN;
+        default:
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
+    }
+}
         public static bool IsReversible(optAssertionKind kind) => kind is not optAssertionKind.OAK_SUBRANGE;
 
         public AssertionDsc Reverse()
@@ -400,19 +437,28 @@ public partial class Compiler
                 return false;
             }
 
-            return Op2.Kind switch {
-                optOp2Kind.O2K_CONST_INT => (Op2.IntConstant == other.Op2.IntConstant) && (Op2.IconFlag == other.Op2.IconFlag),
+            switch (Op2.Kind)
+            {
+                case optOp2Kind.O2K_CONST_INT:
+                    return (Op2.IntConstant == other.Op2.IntConstant) && (Op2.IconFlag == other.Op2.IconFlag);
                 // Bit identity preserves signed zero and NaN payloads, unlike double equality.
-                optOp2Kind.O2K_CONST_DOUBLE => BitConverter.DoubleToInt64Bits(Op2.DoubleConstant)
-                    == BitConverter.DoubleToInt64Bits(other.Op2.DoubleConstant),
-                optOp2Kind.O2K_CONST_VEC => Op2.SimdConstant.SequenceEqual(other.Op2.SimdConstant),
-                optOp2Kind.O2K_ZEROOBJ => true,
-                optOp2Kind.O2K_VN_ADD_CNS => (Op2.VN == other.Op2.VN) && (Op2.Cns == other.Op2.Cns)
-                    && (Op2.IsVNNeverNegative == other.Op2.IsVNNeverNegative),
-                optOp2Kind.O2K_LCLVAR_COPY => Op2.LclNum == other.Op2.LclNum,
-                optOp2Kind.O2K_SUBRANGE => Op2.Range.Equals(other.Op2.Range),
-                _ => throw new UnreachableException(),
-            };
+                case // Bit identity preserves signed zero and NaN payloads, unlike double equality.
+                optOp2Kind.O2K_CONST_DOUBLE:
+                    return BitConverter.DoubleToInt64Bits(Op2.DoubleConstant) == BitConverter.DoubleToInt64Bits(other.Op2.DoubleConstant);
+                case optOp2Kind.O2K_CONST_VEC:
+                    return Op2.SimdConstant.SequenceEqual(other.Op2.SimdConstant);
+                case optOp2Kind.O2K_ZEROOBJ:
+                    return true;
+                case optOp2Kind.O2K_VN_ADD_CNS:
+                    return (Op2.VN == other.Op2.VN) && (Op2.Cns == other.Op2.Cns) && (Op2.IsVNNeverNegative == other.Op2.IsVNNeverNegative);
+                case optOp2Kind.O2K_LCLVAR_COPY:
+                    return Op2.LclNum == other.Op2.LclNum;
+                case optOp2Kind.O2K_SUBRANGE:
+                    return Op2.Range.Equals(other.Op2.Range);
+                default:
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    return default;
+            }
         }
 
         public bool Complementary(AssertionDsc other, bool vnBased)
@@ -463,7 +509,10 @@ public partial class Compiler
         {
             if (!Configuration.FEATURE_SIMD)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD assertions are unsupported on this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDAssertionsAreUnsupportedOnThisTarget
+    );
                 return default!;
             }
 

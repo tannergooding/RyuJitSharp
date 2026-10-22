@@ -68,7 +68,7 @@ public sealed partial class CodeGen
 
     private void genStoreIndTypeSimd12LoongArch64(GenTreeStoreInd tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD12 indirect stores are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64SIMD12IndirectStoresAreNotPorted);
         return;
     }
 }

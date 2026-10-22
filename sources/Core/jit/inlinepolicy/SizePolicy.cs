@@ -12,7 +12,7 @@ public sealed class SizePolicy : DiscretionaryPolicy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Size inline policy is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SizeInlinePolicyIsOnlyAvailableInDebugBuilds);
         }
     }
 

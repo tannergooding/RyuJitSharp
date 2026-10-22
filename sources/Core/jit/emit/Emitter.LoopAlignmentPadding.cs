@@ -50,7 +50,7 @@ public partial class Emitter
                     {
                         if (group.igLastIns is not instrDescAlign lastAlign)
                         {
-                            FatalJitException.ThrowFatalJitException("An aligned group requires a final alignment descriptor.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AlignedGroupRequiresAFinalAlignmentDescriptor);
                             return default!;
                         }
                         assert(ReferenceEquals(lastAlign.idaIG, group));

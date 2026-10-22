@@ -70,8 +70,10 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Bounds-check containment outside xarch, ARM64, LoongArch64 and RISC-V64 is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BoundsCheckContainmentOutsideXarchARM64LoongArch64AndRISCV64IsNotPorted
+    );
         return;
     }
 }

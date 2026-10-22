@@ -17,9 +17,9 @@ public sealed partial class LinearScan
         if (_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage358
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalRegisterAllocationRequiresLocalsToRemainUnEnregistered
+    );
             selectionScore = default!;
             return default!;
         }

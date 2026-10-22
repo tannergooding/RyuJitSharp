@@ -11,7 +11,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Varargs register mapping requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.VarargsRegisterMappingRequiresWindowsAMD64);
             return default!;
         }
 

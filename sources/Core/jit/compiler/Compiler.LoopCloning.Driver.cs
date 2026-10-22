@@ -214,9 +214,9 @@ public partial class Compiler
         if (_loops is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage147
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopCloningRequiresDiscoveredNaturalLoops
+    );
             return default!;
         }
         if (_loops.NumLoops == 0)

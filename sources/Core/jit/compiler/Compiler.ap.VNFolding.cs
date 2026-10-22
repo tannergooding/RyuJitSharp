@@ -21,9 +21,42 @@ public partial class Compiler
         assert(call.IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
         assert(vnStore is not null);
 
-        var arg1 = call.Args.GetUserArgByIndex(0) ?? throw new InvalidOperationException();
-        var arg2 = call.Args.GetUserArgByIndex(1) ?? throw new InvalidOperationException();
-        var lengthArg = call.Args.GetUserArgByIndex(2) ?? throw new InvalidOperationException();
+        global::RyuJitSharp.CallArg __jitExceptionResult50;
+        var __jitExceptionCoalesceLeft51 = call.Args.GetUserArgByIndex(0);
+        if (__jitExceptionCoalesceLeft51 != null)
+        {
+            __jitExceptionResult50 = __jitExceptionCoalesceLeft51;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult50 = default;
+        }
+        var arg1 = __jitExceptionResult50;
+        global::RyuJitSharp.CallArg __jitExceptionResult52;
+        var __jitExceptionCoalesceLeft53 = call.Args.GetUserArgByIndex(1);
+        if (__jitExceptionCoalesceLeft53 != null)
+        {
+            __jitExceptionResult52 = __jitExceptionCoalesceLeft53;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult52 = default;
+        }
+        var arg2 = __jitExceptionResult52;
+        global::RyuJitSharp.CallArg __jitExceptionResult54;
+        var __jitExceptionCoalesceLeft55 = call.Args.GetUserArgByIndex(2);
+        if (__jitExceptionCoalesceLeft55 != null)
+        {
+            __jitExceptionResult54 = __jitExceptionCoalesceLeft55;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult54 = default;
+        }
+        var lengthArg = __jitExceptionResult54;
         var lengthVN = optConservativeNormalVN(lengthArg.Node);
         var hasConstantLength = vnStore.IsVNIntegralConstant(lengthVN, out nuint length);
 
@@ -75,8 +108,30 @@ public partial class Compiler
         if (GetImmutableDataFromAddress(arg1.Node, (int)length, out var first) &&
             GetImmutableDataFromAddress(arg2.Node, (int)length, out var second))
         {
-            var firstData = first ?? throw new InvalidOperationException("Immutable source returned no data.");
-            var secondData = second ?? throw new InvalidOperationException("Immutable source returned no data.");
+            byte[] __jitExceptionResult56;
+            var __jitExceptionCoalesceLeft57 = first;
+            if (__jitExceptionCoalesceLeft57 != null)
+            {
+                __jitExceptionResult56 = __jitExceptionCoalesceLeft57;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImmutableSourceReturnedNoData);
+                __jitExceptionResult56 = default;
+            }
+            var firstData = __jitExceptionResult56;
+            byte[] __jitExceptionResult58;
+            var __jitExceptionCoalesceLeft59 = second;
+            if (__jitExceptionCoalesceLeft59 != null)
+            {
+                __jitExceptionResult58 = __jitExceptionCoalesceLeft59;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImmutableSourceReturnedNoData);
+                __jitExceptionResult58 = default;
+            }
+            var secondData = __jitExceptionResult58;
             var areEqual = firstData.AsSpan().SequenceEqual(secondData);
             JITDUMP($"...both memory regions are known at compile time -> optimize to constant {(areEqual ? "true" : "false")}.\n");
             return gtWrapWithSideEffects(gtNewIconNode(TYP_INT, areEqual ? 1 : 0), call, GTF_ALL_EFFECT, true);
@@ -92,9 +147,42 @@ public partial class Compiler
         assert(call.IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
         assert(vnStore is not null);
 
-        var dstArg = call.Args.GetUserArgByIndex(0) ?? throw new InvalidOperationException();
-        var lengthArg = call.Args.GetUserArgByIndex(1) ?? throw new InvalidOperationException();
-        var valueArg = call.Args.GetUserArgByIndex(2) ?? throw new InvalidOperationException();
+        global::RyuJitSharp.CallArg __jitExceptionResult60;
+        var __jitExceptionCoalesceLeft61 = call.Args.GetUserArgByIndex(0);
+        if (__jitExceptionCoalesceLeft61 != null)
+        {
+            __jitExceptionResult60 = __jitExceptionCoalesceLeft61;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult60 = default;
+        }
+        var dstArg = __jitExceptionResult60;
+        global::RyuJitSharp.CallArg __jitExceptionResult62;
+        var __jitExceptionCoalesceLeft63 = call.Args.GetUserArgByIndex(1);
+        if (__jitExceptionCoalesceLeft63 != null)
+        {
+            __jitExceptionResult62 = __jitExceptionCoalesceLeft63;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult62 = default;
+        }
+        var lengthArg = __jitExceptionResult62;
+        global::RyuJitSharp.CallArg __jitExceptionResult64;
+        var __jitExceptionCoalesceLeft65 = call.Args.GetUserArgByIndex(2);
+        if (__jitExceptionCoalesceLeft65 != null)
+        {
+            __jitExceptionResult64 = __jitExceptionCoalesceLeft65;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult64 = default;
+        }
+        var valueArg = __jitExceptionResult64;
         var valueType = valueArg.SignatureType;
         var lengthScale = valueType.Size;
         if (lengthScale == 1)
@@ -158,9 +246,42 @@ public partial class Compiler
         assert(call.IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call.IsHelperCall(CORINFO_HELP_MEMCPY));
         assert(vnStore is not null);
 
-        var dstArg = call.Args.GetUserArgByIndex(0) ?? throw new InvalidOperationException();
-        var srcArg = call.Args.GetUserArgByIndex(1) ?? throw new InvalidOperationException();
-        var lengthArg = call.Args.GetUserArgByIndex(2) ?? throw new InvalidOperationException();
+        global::RyuJitSharp.CallArg __jitExceptionResult66;
+        var __jitExceptionCoalesceLeft67 = call.Args.GetUserArgByIndex(0);
+        if (__jitExceptionCoalesceLeft67 != null)
+        {
+            __jitExceptionResult66 = __jitExceptionCoalesceLeft67;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult66 = default;
+        }
+        var dstArg = __jitExceptionResult66;
+        global::RyuJitSharp.CallArg __jitExceptionResult68;
+        var __jitExceptionCoalesceLeft69 = call.Args.GetUserArgByIndex(1);
+        if (__jitExceptionCoalesceLeft69 != null)
+        {
+            __jitExceptionResult68 = __jitExceptionCoalesceLeft69;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult68 = default;
+        }
+        var srcArg = __jitExceptionResult68;
+        global::RyuJitSharp.CallArg __jitExceptionResult70;
+        var __jitExceptionCoalesceLeft71 = call.Args.GetUserArgByIndex(2);
+        if (__jitExceptionCoalesceLeft71 != null)
+        {
+            __jitExceptionResult70 = __jitExceptionCoalesceLeft71;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult70 = default;
+        }
+        var lengthArg = __jitExceptionResult70;
         var lengthVN = vnStore.VNNormalValue(lengthArg.Node._vnPair.Conservative);
         if (!vnStore.IsVNConstant(lengthVN))
         {
@@ -186,7 +307,18 @@ public partial class Compiler
             JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
             return null;
         }
-        var data = buffer ?? throw new InvalidOperationException("Immutable source returned no data.");
+        byte[] __jitExceptionResult72;
+        var __jitExceptionCoalesceLeft73 = buffer;
+        if (__jitExceptionCoalesceLeft73 != null)
+        {
+            __jitExceptionResult72 = __jitExceptionCoalesceLeft73;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ImmutableSourceReturnedNoData);
+            __jitExceptionResult72 = default;
+        }
+        var data = __jitExceptionResult72;
 
         var dst = fgMakeMultiUse(ref dstArg.NodeRef);
         GenTree? result = null;
@@ -231,8 +363,30 @@ public partial class Compiler
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             {
-                var castClassArg = call.Args.GetUserArgByIndex(0) ?? throw new InvalidOperationException();
-                var castObjectArg = call.Args.GetUserArgByIndex(1) ?? throw new InvalidOperationException();
+                global::RyuJitSharp.CallArg __jitExceptionResult74;
+                var __jitExceptionCoalesceLeft75 = call.Args.GetUserArgByIndex(0);
+                if (__jitExceptionCoalesceLeft75 != null)
+                {
+                    __jitExceptionResult74 = __jitExceptionCoalesceLeft75;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException();
+                    __jitExceptionResult74 = default;
+                }
+                var castClassArg = __jitExceptionResult74;
+                global::RyuJitSharp.CallArg __jitExceptionResult76;
+                var __jitExceptionCoalesceLeft77 = call.Args.GetUserArgByIndex(1);
+                if (__jitExceptionCoalesceLeft77 != null)
+                {
+                    __jitExceptionResult76 = __jitExceptionCoalesceLeft77;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException();
+                    __jitExceptionResult76 = default;
+                }
+                var castObjectArg = __jitExceptionResult76;
                 var castClass = castClassArg.Node;
                 var castObject = castObjectArg.Node;
                 if (castObject._vnPair == call._vnPair)
@@ -391,7 +545,8 @@ public partial class Compiler
 
                         case TYP_FLOAT:
                         {
-                            throw new UnreachableException();
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            return default;
                         }
 
                         case TYP_DOUBLE:
@@ -467,7 +622,8 @@ public partial class Compiler
 
                         case TYP_DOUBLE:
                         {
-                            throw new UnreachableException();
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            return default;
                         }
                     }
                 }
@@ -496,7 +652,8 @@ public partial class Compiler
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
 

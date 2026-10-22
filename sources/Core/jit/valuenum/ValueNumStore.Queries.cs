@@ -167,12 +167,18 @@ public sealed partial class ValueNumStore
     public int GetConstantInt32(ValueNum vn)
     {
         assert(IsVNConstant(vn));
-        return TypeOfVN(vn) switch {
-            TYP_INT => ConstantValue<int>(vn),
-            TYP_REF when !Configuration.TARGET_64BIT => unchecked((int)ConstantValue<nuint>(vn)),
-            TYP_BYREF when !Configuration.TARGET_64BIT => unchecked((int)ConstantValue<nuint>(vn)),
-            _ => throw new UnreachableException(),
-        };
+        switch (TypeOfVN(vn))
+        {
+            case TYP_INT:
+                return ConstantValue<int>(vn);
+            case TYP_REF when !Configuration.TARGET_64BIT:
+                return unchecked((int)ConstantValue<nuint>(vn));
+            case TYP_BYREF when !Configuration.TARGET_64BIT:
+                return unchecked((int)ConstantValue<nuint>(vn));
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     public void PeelOffsets(ref ValueNum vn, out target_ssize_t offset)
@@ -294,12 +300,18 @@ public sealed partial class ValueNumStore
     public long GetConstantInt64(ValueNum vn)
     {
         assert(IsVNConstant(vn));
-        return TypeOfVN(vn) switch {
-            TYP_INT => ConstantValue<int>(vn),
-            TYP_LONG => ConstantValue<long>(vn),
-            TYP_REF or TYP_BYREF => unchecked((long)ConstantValue<nuint>(vn)),
-            _ => throw new UnreachableException(),
-        };
+        switch (TypeOfVN(vn))
+        {
+            case TYP_INT:
+                return ConstantValue<int>(vn);
+            case TYP_LONG:
+                return ConstantValue<long>(vn);
+            case TYP_REF or TYP_BYREF:
+                return unchecked((long)ConstantValue<nuint>(vn));
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     public bool IsVNArrLen(ValueNum vn)

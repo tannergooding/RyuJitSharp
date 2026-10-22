@@ -2394,7 +2394,7 @@ public partial class Compiler
 
                                     if (statement is null)
                                     {
-                                        throw new InvalidOperationException("Inline candidate call has no import statement.");
+                                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineCandidateCallHasNoImportStatement);
                                     }
 
                                     var nothing = compiler.gtNewNothingNode();
@@ -2902,17 +2902,39 @@ public partial class Compiler
                             break;
                         }
 
-                        var halfBits = ni switch {
-                            NI_System_Half_get_MinValue => 0xFBFF, // -65504
-                            NI_System_Half_get_MaxValue => 0x7BFF, // 65504
-                            NI_System_Half_get_Epsilon => 0x0001, // Smallest positive subnormal
-                            NI_System_Half_get_NaN => 0xFE00, // Negative NaN
-                            NI_System_Half_get_PositiveInfinity => 0x7C00,
-                            NI_System_Half_get_NegativeInfinity => 0xFC00,
-                            NI_System_Half_get_One => 0x3C00,
-                            NI_System_Half_get_Zero => 0x0000,
-                            _ => throw new System.Diagnostics.UnreachableException(),
-                        };
+                        int __jitExceptionResult220;
+                        switch (ni)
+                        {
+                            case NI_System_Half_get_MinValue:
+                                __jitExceptionResult220 = 0xFBFF;
+                                break;
+                            case NI_System_Half_get_MaxValue:
+                                __jitExceptionResult220 = 0x7BFF;
+                                break;
+                            case NI_System_Half_get_Epsilon:
+                                __jitExceptionResult220 = 0x0001;
+                                break;
+                            case NI_System_Half_get_NaN:
+                                __jitExceptionResult220 = 0xFE00;
+                                break;
+                            case NI_System_Half_get_PositiveInfinity:
+                                __jitExceptionResult220 = 0x7C00;
+                                break;
+                            case NI_System_Half_get_NegativeInfinity:
+                                __jitExceptionResult220 = 0xFC00;
+                                break;
+                            case NI_System_Half_get_One:
+                                __jitExceptionResult220 = 0x3C00;
+                                break;
+                            case NI_System_Half_get_Zero:
+                                __jitExceptionResult220 = 0x0000;
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowUnreachableException();
+                                __jitExceptionResult220 = default;
+                                break;
+                        }
+                        var halfBits = __jitExceptionResult220;
 
                         if ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
@@ -3756,7 +3778,7 @@ public partial class Compiler
                                 var op1CloneNode = op1Clone;
                                 if (op1CloneNode is null)
                                 {
-                                    FatalJitException.ThrowFatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheFirstMathMinMaxOperand);
                                     intrinsicName = default!;
                                     isSpecialIntrinsic = default!;
                                     return default!;
@@ -3773,7 +3795,7 @@ public partial class Compiler
                                     var minMaxCloneCopy = compiler.gtCloneExpr(minMaxClone);
                                     if (minMaxCloneCopy is null)
                                     {
-                                        FatalJitException.ThrowFatalJitException("Unable to clone the Math.Min/Max result.");
+                                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheMathMinMaxResult);
                                         intrinsicName = default!;
                                         isSpecialIntrinsic = default!;
                                         return default!;
@@ -3790,7 +3812,7 @@ public partial class Compiler
                                     var op2CloneNode = op2Clone;
                                     if (op2CloneNode is null)
                                     {
-                                        FatalJitException.ThrowFatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheSecondMathMinMaxOperand);
                                         intrinsicName = default!;
                                         isSpecialIntrinsic = default!;
                                         return default!;
@@ -3798,7 +3820,7 @@ public partial class Compiler
                                     var op1CloneNodeCopy = compiler.gtCloneExpr(op1CloneNode);
                                     if (op1CloneNodeCopy is null)
                                     {
-                                        FatalJitException.ThrowFatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheFirstMathMinMaxOperand);
                                         intrinsicName = default!;
                                         isSpecialIntrinsic = default!;
                                         return default!;
@@ -3808,7 +3830,7 @@ public partial class Compiler
                                     var op2CloneNodeCopy = compiler.gtCloneExpr(op2CloneNode);
                                     if (op2CloneNodeCopy is null)
                                     {
-                                        FatalJitException.ThrowFatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheSecondMathMinMaxOperand);
                                         intrinsicName = default!;
                                         isSpecialIntrinsic = default!;
                                         return default!;
@@ -3819,7 +3841,7 @@ public partial class Compiler
                                     var op2CloneNodeCopyForQmark = compiler.gtCloneExpr(op2CloneNode);
                                     if (op2CloneNodeCopyForQmark is null)
                                     {
-                                        FatalJitException.ThrowFatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheSecondMathMinMaxOperand);
                                         intrinsicName = default!;
                                         isSpecialIntrinsic = default!;
                                         return default!;
@@ -3830,7 +3852,7 @@ public partial class Compiler
                                     var op1CloneNodeCopyForQmark = compiler.gtCloneExpr(op1CloneNode);
                                     if (op1CloneNodeCopyForQmark is null)
                                     {
-                                        FatalJitException.ThrowFatalJitException("Unable to clone the first Math.Min/Max operand.");
+                                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnableToCloneTheFirstMathMinMaxOperand);
                                         intrinsicName = default!;
                                         isSpecialIntrinsic = default!;
                                         return default!;

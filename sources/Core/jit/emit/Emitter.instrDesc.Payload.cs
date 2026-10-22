@@ -73,8 +73,10 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Explicit instruction sizes are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ExplicitInstructionSizesAreNotSupportedForThisTarget
+    );
             return;
         }
 
@@ -98,8 +100,10 @@ public partial class Emitter
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Instruction encoding storage is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionEncodingStorageIsNotSupportedForThisTarget
+    );
                     return;
                 }
             }
@@ -116,8 +120,10 @@ public partial class Emitter
                     return iiaInstrEncode;
                 }
 
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Instruction encoding storage is not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionEncodingStorageIsNotSupportedForThisTarget
+    );
                 return default!;
             }
 
@@ -125,8 +131,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_LOONGARCH64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "LoongArch64 jump-offset storage is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64JumpOffsetStorageIsNotSupportedForThisTarget
+    );
                     return;
                 }
 
@@ -137,8 +145,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_LOONGARCH64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "LoongArch64 jump-offset storage is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64JumpOffsetStorageIsNotSupportedForThisTarget
+    );
                     return default!;
                 }
 
@@ -163,8 +173,10 @@ public partial class Emitter
                 return Emitter.GetWasmCodeSize(this);
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Target-specific instruction size is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetSpecificInstructionSizeIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -187,8 +199,10 @@ public partial class Emitter
             if (!(Configuration.TARGET_XARCH || Configuration.TARGET_LOONGARCH64 ||
                 Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Register-pointer call descriptors are not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterPointerCallDescriptorsAreNotSupportedForThisTarget
+    );
                 return;
             }
         }

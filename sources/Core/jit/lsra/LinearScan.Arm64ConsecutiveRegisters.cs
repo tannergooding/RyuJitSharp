@@ -15,7 +15,7 @@ public sealed partial class LinearScan
     {
         if (!_nextConsecutiveRefPositions.TryGetValue(reference, out var next))
         {
-            FatalJitException.ThrowFatalJitException("Consecutive register reference is missing its successor.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveRegisterReferenceIsMissingItsSuccessor);
             return default!;
         }
         return next;

@@ -31,7 +31,7 @@ public sealed partial class UnwindInfo
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Unwind NOP diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindNOPDiagnosticsAreOnlyAvailableInDebugBuilds);
             }
 
             return DebugData.Get(this).AddingNOP;
@@ -41,7 +41,7 @@ public sealed partial class UnwindInfo
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Unwind NOP diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindNOPDiagnosticsAreOnlyAvailableInDebugBuilds);
             }
 
             if (value)
@@ -61,7 +61,7 @@ public sealed partial class UnwindInfo
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Unwind initialization state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInitializationStateIsOnlyAvailableInDebugBuilds);
             }
 
             return DebugData.Get(this).Initialized;
@@ -71,7 +71,7 @@ public sealed partial class UnwindInfo
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Unwind initialization state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInitializationStateIsOnlyAvailableInDebugBuilds);
             }
 
             if (value)

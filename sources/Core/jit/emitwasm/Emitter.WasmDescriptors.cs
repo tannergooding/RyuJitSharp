@@ -37,7 +37,7 @@ public partial class Emitter
         {
             if (bytes.Length < _bytes.Length)
             {
-                throw new ArgumentException("A Wasm v128 immediate must contain at least 16 bytes.", nameof(bytes));
+                JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.WasmV128ImmediateMustContainAtLeast16Bytes, FatalJitArgument.Bytes);
             }
 
             bytes[.._bytes.Length].CopyTo(_bytes);
@@ -115,7 +115,7 @@ public partial class Emitter
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unexpected Wasm SIMD element size.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedWasmSIMDElementSize);
                 return default!;
             }
         }
@@ -177,7 +177,7 @@ public partial class Emitter
             return unchecked((byte)lane);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unexpected Wasm lane immediate descriptor.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedWasmLaneImmediateDescriptor);
         return default!;
     }
 

@@ -67,13 +67,13 @@ public partial class Compiler
         var startLocation = func.startLoc;
         if (startLocation is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm unwind start location is missing.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmUnwindStartLocationIsMissing);
             return;
         }
         var endLocation = func.endLoc;
         if (endLocation is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm unwind end location is missing.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmUnwindEndLocationIsMissing);
             return;
         }
         var startOffset = startLocation.Value.CodeOffset(emitter);

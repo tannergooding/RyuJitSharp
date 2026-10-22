@@ -61,10 +61,7 @@ public partial class Compiler
         var domTree = _domTree;
         if (domTree is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage126
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.IVOptimizationRequiresDominators);
             return;
         }
         foreach (var backEdge in loop.BackEdges)

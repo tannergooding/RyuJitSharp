@@ -13,7 +13,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("The compiler method hash is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerMethodHashIsOnlyAvailableInDebugBuilds);
         }
 
         if (method == info.compMethodHnd)
@@ -45,7 +45,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("JIT method halting is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITMethodHaltingIsOnlyAvailableInDebugBuilds);
         }
 
         if (JitConfig.JitHalt.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))

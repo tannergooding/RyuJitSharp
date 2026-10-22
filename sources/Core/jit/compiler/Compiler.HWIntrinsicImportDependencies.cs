@@ -20,7 +20,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicSpecialImportRequiresHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -40,7 +43,10 @@ public partial class Compiler
                 simdBaseType, retType, simdSize, mustExpand);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import outside xarch is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicSpecialImportOutsideXarchIsNotPorted
+    );
         return default!;
     }
 
@@ -49,7 +55,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicNonconstantFallbackRequiresHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -64,11 +73,17 @@ public partial class Compiler
         else if (Configuration.TARGET_WASM)
         {
             unreached();
-            FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR, "Unreachable Wasm hardware-intrinsic nonconstant fallback.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_RECOVERABLEERROR,
+        FatalJitErrorCode.UnreachableWasmHardwareIntrinsicNonconstantFallback
+    );
             return default!;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback outside xarch is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicNonconstantFallbackOutsideXarchIsNotPorted
+    );
         return default!;
     }
 }

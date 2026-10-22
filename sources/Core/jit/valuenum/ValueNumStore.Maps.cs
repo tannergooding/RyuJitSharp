@@ -80,10 +80,7 @@ public sealed partial class ValueNumStore
         var block = _compiler.compCurBB;
         if (block is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage446
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.PreciseMapStoreRequiresTheCurrentBlock);
             return default!;
         }
         assert(_compiler._blockToLoop is not null);
@@ -500,7 +497,7 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                FatalJitException.ThrowFatalJitException("Unrecognized map value type.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnrecognizedMapValueType);
                 return default!;
             }
         }

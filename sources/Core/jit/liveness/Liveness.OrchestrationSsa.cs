@@ -16,7 +16,7 @@ public partial class Liveness<TLiveness>
             TLiveness.IsEarly || TLiveness.IsLIR || !TLiveness.EliminateDeadCode ||
             TLiveness.TrackAddressExposedLocals)
         {
-            throw new NotSupportedException("SSA tree liveness requires the non-LIR SSA policy.");
+            JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.SSATreeLivenessRequiresTheNonLIRSSAPolicy);
         }
     }
 

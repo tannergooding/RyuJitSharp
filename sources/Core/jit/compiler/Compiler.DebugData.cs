@@ -211,7 +211,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Compiler debug-break state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugBreakStateIsOnlyAvailableInDebugBuilds);
             }
 
             GetDebugData().CompDebugBreak = value;
@@ -224,7 +224,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Deferred profile inconsistency state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DeferredProfileInconsistencyStateIsOnlyAvailableInDebugBuilds);
             }
 
             return GetDebugData().PgoDeferredInconsistency;
@@ -234,7 +234,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Deferred profile inconsistency state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DeferredProfileInconsistencyStateIsOnlyAvailableInDebugBuilds);
             }
 
             GetDebugData().PgoDeferredInconsistency = value;
@@ -359,7 +359,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugFlagsAreOnlyAvailableInDebugBuilds);
         }
 
         return (GetLocalDebugData(localNumber).Flags & flag) != 0;
@@ -369,7 +369,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugFlagsAreOnlyAvailableInDebugBuilds);
         }
 
         return GetLocalDebugFlag(lvaGetLclNum(in local), flag);
@@ -385,7 +385,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugFlagsAreOnlyAvailableInDebugBuilds);
         }
 
         var localData = GetLocalDebugData(localNumber);
@@ -397,7 +397,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Local debug flags are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugFlagsAreOnlyAvailableInDebugBuilds);
         }
 
         SetLocalDebugFlag(lvaGetLclNum(in local), flag, value);
@@ -413,7 +413,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("The do-not-enregister reason is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DoNotEnregisterReasonIsOnlyAvailableInDebugBuilds);
         }
 
         var localData = GetLocalDebugData(localNumber);
@@ -431,7 +431,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Address-exposed reason is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AddressExposedReasonIsOnlyAvailableInDebugBuilds);
         }
 
         var localData = GetLocalDebugData(localNumber);
@@ -455,7 +455,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SingleDefinitionDisqualificationReasonIsOnlyAvailableInDebugBuilds);
         }
 
         return (byte)(GetLocalDebugData(localNumber).EncodedSingleDefDisqualifyReason ^ 'H');
@@ -465,7 +465,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SingleDefinitionDisqualificationReasonIsOnlyAvailableInDebugBuilds);
         }
 
         return GetLocalSingleDefDisqualifyReason(lvaGetLclNum(in local));
@@ -475,7 +475,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SingleDefinitionDisqualificationReasonIsOnlyAvailableInDebugBuilds);
         }
 
         var localData = GetLocalDebugData(localNumber);
@@ -487,7 +487,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("The single-definition disqualification reason is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SingleDefinitionDisqualificationReasonIsOnlyAvailableInDebugBuilds);
         }
 
         SetLocalSingleDefDisqualifyReason(lvaGetLclNum(in local), reason);
@@ -497,7 +497,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Compiler debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         var source = GetLocalDebugData(sourceLocalNumber);
@@ -541,7 +541,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TrackedVariableSetStateIsOnlyAvailableInDebugBuilds);
         }
 
         var data = GetDebugData();
@@ -552,7 +552,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Tracked-variable set state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TrackedVariableSetStateIsOnlyAvailableInDebugBuilds);
         }
 
         return GetDebugData().TrackedVars;
@@ -563,7 +563,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsAreOnlyAvailableInDebugBuilds);
         }
 
         var data = GetDebugData();
@@ -576,7 +576,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsAreOnlyAvailableInDebugBuilds);
         }
 
         var data = GetDebugData();
@@ -593,7 +593,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsAreOnlyAvailableInDebugBuilds);
         }
 
         return GetDebugData().TotalHoistedExpressions;
@@ -607,7 +607,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
         }
 
         return GetDebugData().CompGenTreeID;
@@ -617,7 +617,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().CompGenTreeID = value;
@@ -627,7 +627,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Tree IDs are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeIDsAreOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().CompGenTreeID++;
@@ -637,7 +637,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineSizeDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().InlinedCodeSize += value;
@@ -647,7 +647,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineSizeDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         return GetDebugData().InlinedCodeSize;
@@ -657,7 +657,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline size diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineSizeDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().InlinedCodeSize = value;
@@ -667,7 +667,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Basic block dump order is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockDumpOrderIsOnlyAvailableInDebugBuilds);
         }
 
         return GetDebugData().FlowGraphBlockOrder;
@@ -677,7 +677,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Basic block dump order is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockDumpOrderIsOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().FlowGraphBlockOrder = value;
@@ -690,7 +690,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline method diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineMethodDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().PrintInlinedMethods = value;
@@ -703,7 +703,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("EH normalization diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EHNormalizationDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         GetDebugData().EHNormalizationDone = value;
@@ -788,7 +788,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Basic-block creation state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockCreationStateIsOnlyAvailableInDebugBuilds);
             }
 
             GetDebugData().SafeBasicBlockCreation = value;
@@ -807,7 +807,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Flow-edge creation state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FlowEdgeCreationStateIsOnlyAvailableInDebugBuilds);
             }
 
             GetDebugData().SafeFlowEdgeCreation = value;
@@ -818,7 +818,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Compiler debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

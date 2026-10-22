@@ -50,7 +50,7 @@ public partial class Compiler
                 var size = definition.GetStoreSize(compiler);
                 if (!size.IsExact)
                 {
-                    throw new InvalidOperationException("A promoted retbuffer definition must have an exact size.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PromotedRetbufferDefinitionMustHaveAnExactSize);
                 }
 
                 Size = checked((int)size.ExactSize);
@@ -136,8 +136,18 @@ public partial class Compiler
 
         private BlockInfo GetBlockInfo(BasicBlock block)
         {
-            return _blockInfo[block.bbNum] ??
-                throw new InvalidOperationException("Physical promotion liveness has not initialized this block.");
+            global::RyuJitSharp.Compiler.PhysicalPromotionLiveness.BlockInfo __jitExceptionReturnResult124;
+            var __jitExceptionCoalesceLeft125 = _blockInfo[block.bbNum];
+            if (__jitExceptionCoalesceLeft125 != null)
+            {
+                __jitExceptionReturnResult124 = __jitExceptionCoalesceLeft125;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionLivenessHasNotInitializedThisBlock);
+                __jitExceptionReturnResult124 = default;
+            }
+            return __jitExceptionReturnResult124;
         }
 
         private void ComputeUseDefSets()
@@ -253,8 +263,17 @@ public partial class Compiler
             var visitor = new DefinitionSizeVisitor(_compiler, local.AsLclVarCommon());
             var result = parent.VisitLogicalLocalDefs(_compiler, ref visitor);
             assert(result is GenTree.VisitResult.Abort);
-            return visitor.Size >= 0 ? visitor.Size :
-                throw new InvalidOperationException("The call must define its retbuffer local.");
+            bool __jitExceptionCondition126;
+            __jitExceptionCondition126 = visitor.Size >= 0;
+            if (__jitExceptionCondition126)
+            {
+                return visitor.Size;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallMustDefineItsRetbufferLocal);
+                return default;
+            }
         }
 
         private void MarkIndex(int index, bool isUse, bool isDef, BitVec useSet, BitVec defSet)
@@ -272,8 +291,18 @@ public partial class Compiler
 
         private void InterBlockLiveness()
         {
-            var dfs = _compiler._dfsTree ??
-                throw new InvalidOperationException("Physical promotion requires the current DFS tree.");
+            global::RyuJitSharp.FlowGraphDfsTree __jitExceptionResult127;
+            var __jitExceptionCoalesceLeft128 = _compiler._dfsTree;
+            if (__jitExceptionCoalesceLeft128 != null)
+            {
+                __jitExceptionResult127 = __jitExceptionCoalesceLeft128;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionRequiresTheCurrentDFSTree);
+                __jitExceptionResult127 = default;
+            }
+            var dfs = __jitExceptionResult127;
             bool changed;
             do
             {

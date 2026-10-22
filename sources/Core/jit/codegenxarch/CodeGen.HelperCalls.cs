@@ -50,8 +50,10 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                            "An indirect helper call requires an explicit target register on this architecture.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndirectHelperCallRequiresAnExplicitTargetRegisterOnThisArchitecture
+    );
                         return;
                     }
                 }

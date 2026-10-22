@@ -1116,7 +1116,7 @@ public sealed partial class BasicBlock : LIR.Range
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Basic block LIR membership checks are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockLIRMembershipChecksAreOnlyAvailableInDebugBuilds);
         }
 
         assert(IsLIR);
@@ -1430,7 +1430,7 @@ public sealed partial class BasicBlock : LIR.Range
     {
         Debug.Assert(Configuration.MEASURE_BLOCK_SIZE);
         s_Count += 1;
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NativeSizeofBasicBlockIsNotPorted);
         return;
     }
 
@@ -1861,7 +1861,7 @@ public sealed partial class BasicBlock : LIR.Range
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Basic block dumps are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockDumpsAreOnlyAvailableInDebugBuilds);
         }
     }
 

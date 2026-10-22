@@ -22,7 +22,7 @@ public partial class Emitter
     {
         if (!Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackDepthTrackingIsDisabledForThisTarget);
             return;
         }
 
@@ -49,7 +49,7 @@ public partial class Emitter
     {
         if (!Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackDepthTrackingIsDisabledForThisTarget);
             return;
         }
 
@@ -72,7 +72,7 @@ public partial class Emitter
     {
         if (!Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackDepthTrackingIsDisabledForThisTarget);
             return;
         }
 
@@ -113,7 +113,7 @@ public partial class Emitter
     {
         if (!Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackDepthTrackingIsDisabledForThisTarget);
             return;
         }
 
@@ -158,7 +158,7 @@ public partial class Emitter
     {
         if (!Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackDepthTrackingIsDisabledForThisTarget);
             return;
         }
 
@@ -254,7 +254,7 @@ public partial class Emitter
     {
         if (!Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackDepthTrackingIsDisabledForThisTarget);
             return;
         }
 

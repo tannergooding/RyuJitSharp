@@ -107,8 +107,18 @@ public partial class Compiler
 
             if (definition.DefinitionNode is not null)
             {
-                var priorDefinition = state.CallDefInfo.DefinitionNode ??
-                    throw new System.InvalidOperationException("Reusable state lacks its return definition");
+                global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult42;
+                var __jitExceptionCoalesceLeft43 = state.CallDefInfo.DefinitionNode;
+                if (__jitExceptionCoalesceLeft43 != null)
+                {
+                    __jitExceptionResult42 = __jitExceptionCoalesceLeft43;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ReusableStateLacksItsReturnDefinition);
+                    __jitExceptionResult42 = default;
+                }
+                var priorDefinition = __jitExceptionResult42;
                 if (!EqualLocalDefinitions(definition.DefinitionNode, priorDefinition))
                 {
                     JITDUMP($"    No; disagreement on return value destination " +

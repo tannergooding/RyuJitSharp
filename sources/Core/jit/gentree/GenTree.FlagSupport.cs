@@ -44,7 +44,9 @@ public partial class GenTree
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException("Embedded hardware-intrinsic masking requires hardware-intrinsic support.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.EmbeddedHardwareIntrinsicMaskingRequiresHardwareIntrinsicSupport
+    );
             return;
         }
 

@@ -35,7 +35,7 @@ public partial class LIR
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("LIR validation is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LIRValidationIsOnlyAvailableInDebugBuilds);
             }
 
             // This method checks the following properties:
@@ -252,7 +252,9 @@ public partial class LIR
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Tree-range flag traversal is only available in Debug builds.");
+                isClosed = false;
+                sideEffects = GTF_EMPTY;
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeRangeFlagTraversalIsOnlyAvailableInDebugBuilds);
             }
 
             root._lirFlags |= Flags.Mark;

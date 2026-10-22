@@ -16,15 +16,19 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 register-immediate instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RegisterImmediateInstructionOptionsAreNotPorted
+    );
                 return;
             }
 
             if (Configuration.DEBUG && (targetHandle != 0))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 register-immediate recording does not accept a target handle.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RegisterImmediateRecordingDoesNotAcceptATargetHandle
+    );
                 return;
             }
 
@@ -94,8 +98,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -303,8 +309,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 register-immediate instruction flags are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RegisterImmediateInstructionFlagsAreNotSupportedForThisTarget
+    );
             return;
         }
 
@@ -318,7 +326,10 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 register-register instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RegisterRegisterInstructionOptionsAreNotPorted
+    );
                 return;
             }
 
@@ -342,8 +353,10 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "RISC-V register-register instruction options are not implemented.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCVRegisterRegisterInstructionOptionsAreNotImplemented
+    );
                 return;
             }
 
@@ -353,7 +366,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 

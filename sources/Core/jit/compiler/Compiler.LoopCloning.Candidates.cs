@@ -147,9 +147,9 @@ public partial class Compiler
         if (block is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage142
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopCloningVisitorRequiresACurrentBlock
+    );
             return default!;
         }
         if (!loop.Header.hasProfileWeight || !block.hasProfileWeight)
@@ -225,9 +225,9 @@ public partial class Compiler
             if (Stmt is not Statement stmt)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage143
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopCloningVisitorRequiresACurrentStatement
+    );
                 return default!;
             }
             return _compiler.optCanOptimizeByLoopCloning(use, _loop, _context, stmt, _arrayBounds, _gdvTests);
@@ -246,9 +246,9 @@ public partial class Compiler
         if (block is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage142
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopCloningVisitorRequiresACurrentBlock
+    );
             return default!;
         }
         var arrIndex = new ArrIndex();
@@ -259,10 +259,7 @@ public partial class Compiler
                 var useBlock = arrIndex.UseBlock;
                 if (useBlock is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage144
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ArrayCandidateHasNoUseBlock);
                     return default!;
                 }
                 jitprintf($"Found ArrIndex at {FMT_BB(useBlock.bbNum)} {FMT_STMT(stmt.Id)} tree " +

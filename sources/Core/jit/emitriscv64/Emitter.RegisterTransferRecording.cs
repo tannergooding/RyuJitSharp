@@ -72,7 +72,9 @@ public partial class Emitter
         else
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED, "Illegal instruction within RISC-V two-register instruction recording.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IllegalInstructionWithinRISCVTwoRegisterInstructionRecording
+    );
             return;
         }
 

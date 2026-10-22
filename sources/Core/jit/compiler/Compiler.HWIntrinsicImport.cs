@@ -33,7 +33,9 @@ public partial class Compiler
         {
             NYI("Hardware-intrinsic import without hardware-intrinsic and SIMD support");
             fatal(CORJIT_IMPLLIMITATION);
-            FatalJitException.ThrowFatalJitException("Hardware-intrinsic import without hardware-intrinsic and SIMD support.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.HardwareIntrinsicImportWithoutHardwareIntrinsicAndSIMDSupport
+    );
             return default!;
         }
 

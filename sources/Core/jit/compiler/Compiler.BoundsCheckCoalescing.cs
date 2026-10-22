@@ -75,9 +75,9 @@ public partial class Compiler
         if (store is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage100
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BoundsCheckCoalescingRequiresValueNumbering
+    );
             return default!;
         }
         var modified = false;

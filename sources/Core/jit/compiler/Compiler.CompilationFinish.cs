@@ -219,13 +219,23 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsAreOnlyAvailableInDebugBuilds);
         }
 
         var data = GetDebugData();
 
-        var gate = DebugData.LoopHoistStatsData.s_loopHoistStatsLock
-            ?? throw new System.InvalidOperationException("The loop-hoist statistics lock is unavailable.");
+        global::System.Threading.Lock __jitExceptionResult124;
+        var __jitExceptionCoalesceLeft125 = DebugData.LoopHoistStatsData.s_loopHoistStatsLock;
+        if (__jitExceptionCoalesceLeft125 != null)
+        {
+            __jitExceptionResult124 = __jitExceptionCoalesceLeft125;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsLockIsUnavailable);
+            __jitExceptionResult124 = default;
+        }
+        var gate = __jitExceptionResult124;
 
         lock (gate)
         {
@@ -243,7 +253,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Loop-hoist statistics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopHoistStatisticsAreOnlyAvailableInDebugBuilds);
         }
 
         writer.Write("\n---------------------------------------------------\n");

@@ -14,9 +14,9 @@ public sealed partial class LinearScan
         if (!_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage330
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalIntervalConstructionRequiresEnregisteredLocals
+    );
             return;
         }
 
@@ -70,9 +70,9 @@ public sealed partial class LinearScan
         if (codeGen is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage331
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.IntervalConstructionRequiresInitializedCodegenState
+    );
             return;
         }
         ref var incomingRegisters = ref codeGen.CalleeRegArgMaskLiveIn;
@@ -294,10 +294,7 @@ public sealed partial class LinearScan
                     var lastNode = block.LastNode;
                     if (lastNode is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage332
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.TailcallBlockMustContainItsJumpOrCall);
                         return;
                     }
                     if (lastNode.Oper is GT_CALL)
@@ -414,9 +411,9 @@ public sealed partial class LinearScan
             if (blockInfo is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage333
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.WriteThroughHeuristicsRequireBlockSequencing
+    );
                 return;
             }
             _ = VarSetOps.VisitBits(_compiler, _exceptVars, variableIndex => {
@@ -539,9 +536,9 @@ public sealed partial class LinearScan
         if (trackedToLocal is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage334
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.TrackedLocalMappingIsRequiredForIntervalConstruction
+    );
 
         }
         return ref _compiler.lvaGetDesc(trackedToLocal[variableIndex]);

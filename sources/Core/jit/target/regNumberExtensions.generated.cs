@@ -117,7 +117,7 @@ public static partial class regNumberExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage445
+                    FatalJitErrorCode.InvalidRegisterNumber
                 );
                 return default!;
             }
@@ -424,7 +424,7 @@ public static partial class regNumberExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage445
+                    FatalJitErrorCode.InvalidRegisterNumber
                 );
                 return default!;
             }
@@ -635,7 +635,7 @@ public static partial class regNumberExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage445
+                    FatalJitErrorCode.InvalidRegisterNumber
                 );
                 return default!;
             }
@@ -982,7 +982,7 @@ public static partial class regNumberExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage445
+                    FatalJitErrorCode.InvalidRegisterNumber
                 );
                 return default!;
             }
@@ -1257,7 +1257,7 @@ public static partial class regNumberExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage445
+                    FatalJitErrorCode.InvalidRegisterNumber
                 );
                 return default!;
             }
@@ -1532,7 +1532,7 @@ public static partial class regNumberExtensions
             {
                 FatalJitException.ThrowFatalJitException(
                     CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage445
+                    FatalJitErrorCode.InvalidRegisterNumber
                 );
                 return default!;
             }
@@ -1956,8 +1956,7 @@ public static partial class regNumberExtensions
             {
                 return s_masks_WASM;
             }
-            FatalJitException.ThrowFatalJitException(
-                "Invalid target architecture.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
             return default;
         }
     }

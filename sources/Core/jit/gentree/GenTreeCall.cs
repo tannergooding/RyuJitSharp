@@ -274,7 +274,7 @@ public sealed class GenTreeCall : GenTree
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException(message);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.Argument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? message : default));
         }
     }
 
@@ -721,9 +721,9 @@ public sealed class GenTreeCall : GenTree
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage231
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnsupportedCallKindInVzeroupperClassification
+    );
                 return default!;
             }
         }

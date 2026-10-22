@@ -11,7 +11,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static-field instruction sizing requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StaticFieldInstructionSizingRequiresAMD64);
             return default!;
         }
 

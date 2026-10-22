@@ -31,9 +31,21 @@ internal sealed partial class FgWasm
         return number;
     }
 
-    internal FlowGraphDfsTree GetDfsTree() =>
-        _dfsTree ?? throw new InvalidOperationException("Wasm SCC analysis requires a DFS tree.");
+    internal FlowGraphDfsTree GetDfsTree() {
+    global::RyuJitSharp.FlowGraphDfsTree __jitExceptionReturnResult403;
+    var __jitExceptionCoalesceLeft404 = _dfsTree;
+    if (__jitExceptionCoalesceLeft404 != null)
+    {
+        __jitExceptionReturnResult403 = __jitExceptionCoalesceLeft404;
+    }
+    else
+    {
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSCCAnalysisRequiresADFSTree);
+        __jitExceptionReturnResult403 = default;
+    }
 
+    return __jitExceptionReturnResult403;
+}
     internal void SetDfsAndTraits(FlowGraphDfsTree dfsTree)
     {
         assert(_dfsTree is null);
@@ -41,9 +53,21 @@ internal sealed partial class FgWasm
         _traits = dfsTree.PostOrderTraits();
     }
 
-    internal BitVecTraits GetTraits() =>
-        _traits ?? throw new InvalidOperationException("Wasm SCC analysis requires postorder traits.");
+    internal BitVecTraits GetTraits() {
+    global::RyuJitSharp.BitVecTraits __jitExceptionReturnResult405;
+    var __jitExceptionCoalesceLeft406 = _traits;
+    if (__jitExceptionCoalesceLeft406 != null)
+    {
+        __jitExceptionReturnResult405 = __jitExceptionCoalesceLeft406;
+    }
+    else
+    {
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSCCAnalysisRequiresPostorderTraits);
+        __jitExceptionReturnResult405 = default;
+    }
 
+    return __jitExceptionReturnResult405;
+}
     internal void WasmFindSccs(ArrayStack<Scc> sccs)
     {
         var dfsTree = GetDfsTree();
@@ -146,8 +170,18 @@ internal sealed partial class FgWasm
 
         if (block.isBBCallFinallyPairTail)
         {
-            var callFinally = block.Prev
-                ?? throw new InvalidOperationException("A call-finally pair tail requires its call-finally block.");
+            global::RyuJitSharp.BasicBlock __jitExceptionResult407;
+            var __jitExceptionCoalesceLeft408 = block.Prev;
+            if (__jitExceptionCoalesceLeft408 != null)
+            {
+                __jitExceptionResult407 = __jitExceptionCoalesceLeft408;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairTailRequiresItsCallFinallyBlock);
+                __jitExceptionResult407 = default;
+            }
+            var callFinally = __jitExceptionResult407;
             AssignBlockToScc(callFinally, root, subset, sccs, map);
 
             return;

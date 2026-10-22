@@ -322,7 +322,7 @@ public sealed partial class LinearScan
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Linear-scan allocation diagnostic state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LinearScanAllocationDiagnosticStateIsOnlyAvailableInDebugBuilds);
         }
 
         return AllocationDebugData.Get(this);

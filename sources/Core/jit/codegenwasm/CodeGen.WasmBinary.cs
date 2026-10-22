@@ -322,13 +322,13 @@ public sealed partial class CodeGen
 
     private uint GetWasmInternalRegisterCount(GenTree tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm internal-register tracking is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmInternalRegisterTrackingIsNotPorted);
         return default!;
     }
 
     private regNumber ExtractWasmInternalRegister(GenTree tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm internal-register extraction is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmInternalRegisterExtractionIsNotPorted);
         return default!;
     }
 }

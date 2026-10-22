@@ -13,7 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction update modes outside xarch are not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionUpdateModesOutsideXarchAreNotImplemented
+    );
             return default!;
         }
 
@@ -27,7 +30,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction format selection outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionFormatSelectionOutsideXarchIsNotImplemented
+    );
             return default!;
         }
 
@@ -73,10 +79,7 @@ public partial class Emitter
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage212
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidInstructionFormatForAPXNDD);
                     return default!;
                 }
             }
@@ -89,8 +92,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Instruction scheduling metadata outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionSchedulingMetadataOutsideXarchIsNotImplemented
+    );
             return default!;
         }
 
@@ -107,8 +112,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "APX instruction classification outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.APXInstructionClassificationOutsideXarchIsNotImplemented
+    );
             return default!;
         }
 
@@ -122,7 +129,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "APX instruction classification outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.APXInstructionClassificationOutsideXarchIsNotImplemented
+    );
             return default!;
         }
 

@@ -24,7 +24,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Value number diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ValueNumberDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         jitprintf(" {");
@@ -335,7 +335,7 @@ public sealed partial class ValueNumStore
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException("Unexpected scalable SIMD constant kind.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedScalableSIMDConstantKind);
                         return;
                     }
                 }
@@ -349,7 +349,7 @@ public sealed partial class ValueNumStore
                 {
                     if (!Configuration.TARGET_ARM64)
                     {
-                        throw new PlatformNotSupportedException("Scalable mask constants are only supported on ARM64.");
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableMaskConstantsAreOnlySupportedOnARM64);
                     }
 
                     var value = storage.Scalable;
@@ -365,7 +365,7 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                FatalJitException.ThrowFatalJitException("Unexpected VN constant type.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedVNConstantType);
                 return;
             }
         }
@@ -391,7 +391,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Value number diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ValueNumberDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         if (vn == VNForEmptyExcSet())

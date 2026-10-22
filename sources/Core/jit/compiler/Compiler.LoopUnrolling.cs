@@ -23,9 +23,9 @@ public partial class Compiler
         if (_loops is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage158
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopUnrollingRequiresDiscoveredNaturalLoops
+    );
             return default!;
         }
         if (_loops.NumLoops == 0)
@@ -136,10 +136,7 @@ public partial class Compiler
         var testBlock = iterInfo.TestBlock;
         if (testBlock is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage159
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AnalyzedLoopMustHaveATestBlock);
             return default!;
         }
         assert(loop.ContainsBlock(testBlock.TrueTarget) != loop.ContainsBlock(testBlock.FalseTarget));
@@ -159,10 +156,7 @@ public partial class Compiler
         var testTree = iterInfo.TestTree;
         if (testTree is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage160
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AnalyzedLoopMustHaveATestTree);
             return default!;
         }
         var unsTest = (testTree.Flags & GTF_UNSIGNED) != 0;
@@ -204,10 +198,7 @@ public partial class Compiler
         var increment = iterInfo.IterTree;
         if (increment is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage161
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.AnalyzedLoopMustHaveAnIncrement);
             return default!;
         }
         if (increment.Oper is not GT_STORE_LCL_VAR)
@@ -225,9 +216,9 @@ public partial class Compiler
             testBlock.LastStmt?.RootNode.AsUnOp().Op1 != testTree)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage162
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BadPreconditionInCompilerOptUnrollLoops
+    );
             return default!;
         }
 
@@ -306,10 +297,7 @@ public partial class Compiler
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage163
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopIncrementOperator);
                     break;
                 }
             }

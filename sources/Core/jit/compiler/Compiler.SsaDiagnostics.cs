@@ -15,7 +15,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Node test data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NodeTestDataIsOnlyAvailableInDebugBuilds);
         }
 
         NodeToIntMap reachable = [];

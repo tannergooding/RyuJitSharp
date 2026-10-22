@@ -126,7 +126,7 @@ public sealed partial class Rationalizer
                 }
                 else
                 {
-                    throw new NotImplementedException("Target-specific hardware immediate rationalization is not ported.");
+                    JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.TargetSpecificHardwareImmediateRationalizationIsNotPorted);
                 }
                 break;
             }
@@ -340,22 +340,52 @@ public sealed partial class Rationalizer
 
         var wide = node.SimdSize == 32;
         var integral = varTypeIsIntegral(node.SimdBaseType);
-        intrinsic = intrinsic switch {
-            NI_AVX512_CompareMask => NI_AVX_Compare,
-            NI_AVX512_CompareEqualMask => wide ? (integral ? NI_AVX2_CompareEqual : NI_AVX_CompareEqual) : NI_X86Base_CompareEqual,
-            NI_AVX512_CompareGreaterThanMask => wide ? (integral ? NI_AVX2_CompareGreaterThan : NI_AVX_CompareGreaterThan) : NI_X86Base_CompareGreaterThan,
-            NI_AVX512_CompareLessThanMask => wide ? (integral ? NI_AVX2_CompareLessThan : NI_AVX_CompareLessThan) : NI_X86Base_CompareLessThan,
-            NI_AVX512_CompareGreaterThanOrEqualMask => wide ? NI_AVX_CompareGreaterThanOrEqual : NI_X86Base_CompareGreaterThanOrEqual,
-            NI_AVX512_CompareLessThanOrEqualMask => wide ? NI_AVX_CompareLessThanOrEqual : NI_X86Base_CompareLessThanOrEqual,
-            NI_AVX512_CompareNotEqualMask => wide ? NI_AVX_CompareNotEqual : NI_X86Base_CompareNotEqual,
-            NI_AVX512_CompareNotGreaterThanMask => wide ? NI_AVX_CompareNotGreaterThan : NI_X86Base_CompareNotGreaterThan,
-            NI_AVX512_CompareNotGreaterThanOrEqualMask => wide ? NI_AVX_CompareNotGreaterThanOrEqual : NI_X86Base_CompareNotGreaterThanOrEqual,
-            NI_AVX512_CompareNotLessThanMask => wide ? NI_AVX_CompareNotLessThan : NI_X86Base_CompareNotLessThan,
-            NI_AVX512_CompareNotLessThanOrEqualMask => wide ? NI_AVX_CompareNotLessThanOrEqual : NI_X86Base_CompareNotLessThanOrEqual,
-            NI_AVX512_CompareOrderedMask => wide ? NI_AVX_CompareOrdered : NI_X86Base_CompareOrdered,
-            NI_AVX512_CompareUnorderedMask => wide ? NI_AVX_CompareUnordered : NI_X86Base_CompareUnordered,
-            _ => throw new InvalidOperationException("Unexpected mask intrinsic."),
-        };
+        switch (intrinsic)
+        {
+            case NI_AVX512_CompareMask:
+                intrinsic = NI_AVX_Compare;
+                break;
+            case NI_AVX512_CompareEqualMask:
+                intrinsic = wide ? (integral ? NI_AVX2_CompareEqual : NI_AVX_CompareEqual) : NI_X86Base_CompareEqual;
+                break;
+            case NI_AVX512_CompareGreaterThanMask:
+                intrinsic = wide ? (integral ? NI_AVX2_CompareGreaterThan : NI_AVX_CompareGreaterThan) : NI_X86Base_CompareGreaterThan;
+                break;
+            case NI_AVX512_CompareLessThanMask:
+                intrinsic = wide ? (integral ? NI_AVX2_CompareLessThan : NI_AVX_CompareLessThan) : NI_X86Base_CompareLessThan;
+                break;
+            case NI_AVX512_CompareGreaterThanOrEqualMask:
+                intrinsic = wide ? NI_AVX_CompareGreaterThanOrEqual : NI_X86Base_CompareGreaterThanOrEqual;
+                break;
+            case NI_AVX512_CompareLessThanOrEqualMask:
+                intrinsic = wide ? NI_AVX_CompareLessThanOrEqual : NI_X86Base_CompareLessThanOrEqual;
+                break;
+            case NI_AVX512_CompareNotEqualMask:
+                intrinsic = wide ? NI_AVX_CompareNotEqual : NI_X86Base_CompareNotEqual;
+                break;
+            case NI_AVX512_CompareNotGreaterThanMask:
+                intrinsic = wide ? NI_AVX_CompareNotGreaterThan : NI_X86Base_CompareNotGreaterThan;
+                break;
+            case NI_AVX512_CompareNotGreaterThanOrEqualMask:
+                intrinsic = wide ? NI_AVX_CompareNotGreaterThanOrEqual : NI_X86Base_CompareNotGreaterThanOrEqual;
+                break;
+            case NI_AVX512_CompareNotLessThanMask:
+                intrinsic = wide ? NI_AVX_CompareNotLessThan : NI_X86Base_CompareNotLessThan;
+                break;
+            case NI_AVX512_CompareNotLessThanOrEqualMask:
+                intrinsic = wide ? NI_AVX_CompareNotLessThanOrEqual : NI_X86Base_CompareNotLessThanOrEqual;
+                break;
+            case NI_AVX512_CompareOrderedMask:
+                intrinsic = wide ? NI_AVX_CompareOrdered : NI_X86Base_CompareOrdered;
+                break;
+            case NI_AVX512_CompareUnorderedMask:
+                intrinsic = wide ? NI_AVX_CompareUnordered : NI_X86Base_CompareUnordered;
+                break;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedMaskIntrinsic);
+                intrinsic = default;
+                break;
+        }
         node.Type = Compiler.GetSimdTypeForSize(node.SimdSize);
         node.ChangeHWIntrinsicId(intrinsic);
     }
@@ -509,7 +539,7 @@ public sealed partial class Rationalizer
         }
         else
         {
-            throw new NotImplementedException("Target-specific most-significant-bit rationalization is not ported.");
+            JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.TargetSpecificMostSignificantBitRationalizationIsNotPorted);
         }
     }
 }

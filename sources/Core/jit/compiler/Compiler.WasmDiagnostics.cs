@@ -17,8 +17,18 @@ public partial class Compiler
             return;
         }
 
-        var intervals = fgWasmIntervals ??
-            throw new InvalidOperationException("Wasm control-flow intervals are not available for diagnostics.");
+        global::System.Collections.Generic.List<global::RyuJitSharp.WasmInterval> __jitExceptionResult72;
+        var __jitExceptionCoalesceLeft73 = fgWasmIntervals;
+        if (__jitExceptionCoalesceLeft73 != null)
+        {
+            __jitExceptionResult72 = __jitExceptionCoalesceLeft73;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmControlFlowIntervalsAreNotAvailableForDiagnostics);
+            __jitExceptionResult72 = default;
+        }
+        var intervals = __jitExceptionResult72;
         var activeIntervals = new ArrayStack<WasmInterval>();
         var wasmCursor = 0;
         JITDUMP("\ndigraph WASM {\n");
@@ -84,8 +94,18 @@ public partial class Compiler
             {
                 if (block.isBBCallFinallyPair)
                 {
-                    var next = block.Next ??
-                        throw new InvalidOperationException("A paired Wasm call-finally block has no following block.");
+                    global::RyuJitSharp.BasicBlock __jitExceptionResult74;
+                    var __jitExceptionCoalesceLeft75 = block.Next;
+                    if (__jitExceptionCoalesceLeft75 != null)
+                    {
+                        __jitExceptionResult74 = __jitExceptionCoalesceLeft75;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PairedWasmCallFinallyBlockHasNoFollowingBlock);
+                        __jitExceptionResult74 = default;
+                    }
+                    var next = __jitExceptionResult74;
                     JITDUMP($"   {FMT_BB(block.bbNum)} -> {FMT_BB(next.bbNum)} [style=dotted];\n");
                 }
             }

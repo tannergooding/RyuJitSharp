@@ -30,7 +30,10 @@ public sealed partial class Lowering
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "HFA struct-call lowering is not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HFAStructCallLoweringIsNotSupportedForThisTarget
+    );
                 return;
             }
 
@@ -93,8 +96,9 @@ public sealed partial class Lowering
                     if (!Configuration.FEATURE_HW_INTRINSICS)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_SKIPPED,
-                        "Hardware-intrinsic struct-call lowering is not available.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicStructCallLoweringIsNotAvailable
+    );
                         return;
                     }
 

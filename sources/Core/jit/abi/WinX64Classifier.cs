@@ -19,7 +19,10 @@ public ref struct WinX64Classifier
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Windows x64 ABI classification requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WindowsX64ABIClassificationRequiresWindowsAMD64
+    );
             return;
         }
 

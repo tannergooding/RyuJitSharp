@@ -209,7 +209,7 @@ public partial class Compiler
             {
                 if (!continuationEdges.TryGetValue(continuation, out var existingEdge))
                 {
-                    throw new InvalidOperationException("A Wasm resume pad has no switch edge.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmResumePadHasNoSwitchEdge);
                 }
 
                 caseEdge = existingEdge;
@@ -271,7 +271,8 @@ public partial class Compiler
             if (!resumePads.TryGetValue(continuation, out var resumePad) ||
                 !continuationEdges.TryGetValue(continuation, out var edge))
             {
-                throw new InvalidOperationException("A Wasm continuation is missing its resume pad or switch edge.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmContinuationIsMissingItsResumePadOrSwitchEdge);
+                return;
             }
 
             if (uniqueSuccessors.Add(resumePad))

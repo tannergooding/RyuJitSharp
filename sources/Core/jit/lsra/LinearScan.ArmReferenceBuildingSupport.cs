@@ -306,7 +306,7 @@ public sealed partial class LinearScan
             var baseAddress = destinationAddress.AsAddrMode().BaseAddress;
             if (baseAddress is null)
             {
-                FatalJitException.ThrowFatalJitException("Contained ARM32 block destination requires a base address.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ContainedARM32BlockDestinationRequiresABaseAddress);
                 return default!;
             }
             useCount += buildAddrUses(baseAddress);
@@ -324,7 +324,7 @@ public sealed partial class LinearScan
                 var baseAddress = sourceAddressOrFill.AsAddrMode().BaseAddress;
                 if (baseAddress is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Contained ARM32 block source requires a base address.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ContainedARM32BlockSourceRequiresABaseAddress);
                     return default!;
                 }
                 useCount += buildAddrUses(baseAddress);
@@ -475,7 +475,7 @@ public sealed partial class LinearScan
 
     private static void markArmSwiftErrorBusyForCall(GenTreeCall call)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 REG_SWIFT_ERROR is not defined.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32REGSWIFTERRORIsNotDefined);
         return;
     }
 }

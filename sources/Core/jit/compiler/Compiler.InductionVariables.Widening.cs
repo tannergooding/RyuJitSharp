@@ -21,9 +21,9 @@ public partial class Compiler
         if (Unsafe.IsNullRef(ref link.result))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage138
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InductionVariableUseIsNotOwnedByItsStatement
+    );
             return default!;
         }
         return link.parent;
@@ -35,10 +35,7 @@ public partial class Compiler
         var loops = _loops;
         if (loops is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage139
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.IVWideningRequiresNaturalLoops);
             return default!;
         }
         foreach (var otherLoop in loops.InReversePostOrder())
@@ -106,10 +103,7 @@ public partial class Compiler
         var entry = fgFirstBB;
         if (entry is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage140
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.IVWideningRequiresAnEntryBlock);
             return default!;
         }
         var cycleImprovementPerInvocation = savedCost / entry.getBBWeight(this);
@@ -344,9 +338,9 @@ public partial class Compiler
             if (narrowInitRoot is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage141
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.NonPreheaderIVInitializerNeedsItsSSADefinition
+    );
                 return default!;
             }
             for (var stmt = initBlock.FirstStmt; stmt is not null; stmt = stmt.NextStmt)

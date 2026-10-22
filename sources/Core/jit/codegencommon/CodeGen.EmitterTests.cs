@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "AMD64 emitter tests require an AMD64 target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AMD64EmitterTestsRequireAnAMD64Target);
             return;
         }
     }

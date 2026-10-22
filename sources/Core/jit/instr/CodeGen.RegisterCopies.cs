@@ -19,8 +19,10 @@ public sealed partial class CodeGen
                 return INS_mov;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Integer copy instruction selection is not implemented on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IntegerCopyInstructionSelectionIsNotImplementedOnThisTarget
+    );
             return default!;
         }
 
@@ -28,8 +30,10 @@ public sealed partial class CodeGen
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Masked-register copies require masked hardware intrinsics.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterCopiesRequireMaskedHardwareIntrinsics
+    );
                 return default!;
             }
 
@@ -43,8 +47,10 @@ public sealed partial class CodeGen
                 return INS_sve_mov;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Masked-register copies are not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterCopiesAreNotImplementedForThisTarget
+    );
             return default!;
         }
 
@@ -104,8 +110,10 @@ public sealed partial class CodeGen
             }
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Floating-point copy instruction selection is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingPointCopyInstructionSelectionIsNotImplementedOnThisTarget
+    );
         return default!;
     }
 
@@ -127,8 +135,10 @@ public sealed partial class CodeGen
                     return INS_kmovq_gpr;
                 }
 
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Masked-register to integer copies are not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterToIntegerCopiesAreNotImplementedForThisTarget
+    );
                 return default!;
             }
 
@@ -168,8 +178,10 @@ public sealed partial class CodeGen
                 return EA_SIZE(dstType.EmitActualSize) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Floating-point to integer copies are not implemented on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingPointToIntegerCopiesAreNotImplementedOnThisTarget
+    );
             return default!;
         }
 
@@ -177,8 +189,10 @@ public sealed partial class CodeGen
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Masked-register copies require masked hardware intrinsics.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterCopiesRequireMaskedHardwareIntrinsics
+    );
                 return default!;
             }
 
@@ -198,8 +212,10 @@ public sealed partial class CodeGen
                 return INS_sve_mov;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Masked-register copies are not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterCopiesAreNotImplementedForThisTarget
+    );
             return default!;
         }
 
@@ -265,8 +281,10 @@ public sealed partial class CodeGen
             }
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Integer to floating-point copies are not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IntegerToFloatingPointCopiesAreNotImplementedOnThisTarget
+    );
         return default!;
     }
 
@@ -296,7 +314,7 @@ public sealed partial class CodeGen
             {
                 NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
                 NYI_RISCV64("CodeGen::inst_Mov dstType");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register move destination type is not implemented.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterMoveDestinationTypeIsNotImplemented);
                 return;
             }
         }

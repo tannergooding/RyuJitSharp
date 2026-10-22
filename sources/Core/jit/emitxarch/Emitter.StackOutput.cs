@@ -176,7 +176,7 @@ public partial class Emitter
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack output is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackOutputIsNotImplementedForThisTarget);
                         return default!;
                     }
                     break;
@@ -395,7 +395,10 @@ public partial class Emitter
                         emitDispIns(id, false, false, false);
                     }
                     FatalJitException.ThrowFatalJitException(
-                        $"Unexpected GC reference stack instruction format {id.idInsFmt()} for {ins}.");
+        FatalJitErrorCode.UnexpectedGCReferenceStackInstructionFormatArgumentForArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id.idInsFmt() : default),
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default)
+    );
                     return default!;
                 }
             }

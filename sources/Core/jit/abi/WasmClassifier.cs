@@ -23,7 +23,18 @@ public ref struct WasmClassifier
     {
         if (varTypeIsStruct(type))
         {
-            var layout = structLayout ?? throw new ArgumentNullException(nameof(structLayout));
+            global::RyuJitSharp.ClassLayout __jitExceptionResult17;
+            var __jitExceptionCoalesceLeft18 = structLayout;
+            if (__jitExceptionCoalesceLeft18 != null)
+            {
+                __jitExceptionResult17 = __jitExceptionCoalesceLeft18;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowArgumentNullException(FatalJitArgument.StructLayout);
+                __jitExceptionResult17 = default;
+            }
+            var layout = __jitExceptionResult17;
             var classHandle = layout.ClassHandle;
             assert(classHandle != NO_CLASS_HANDLE);
             var wasmAbiType = comp.info.compCompHnd->getWasmLowering(classHandle);

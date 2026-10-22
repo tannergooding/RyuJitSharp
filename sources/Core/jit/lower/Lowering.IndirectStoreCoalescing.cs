@@ -119,7 +119,8 @@ public sealed partial class Lowering
         }
         if ((range.FirstNode is not GenTree first) || (range.LastNode is not GenTree last))
         {
-            throw new InvalidOperationException("A closed store tree range must include its root.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClosedStoreTreeRangeMustIncludeItsRoot);
+            return false;
         }
 
         data = new IndirectStoreCoalescingData(store, isStore ? store.Data : null,
@@ -302,7 +303,18 @@ public sealed partial class Lowering
                 return;
             }
 
-            var codeGen = compiler.codeGen ?? throw new InvalidOperationException("Store coalescing requires code generation state.");
+            global::RyuJitSharp.ICodeGen __jitExceptionResult471;
+            var __jitExceptionCoalesceLeft472 = compiler.codeGen;
+            if (__jitExceptionCoalesceLeft472 != null)
+            {
+                __jitExceptionResult471 = __jitExceptionCoalesceLeft472;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StoreCoalescingRequiresCodeGenerationState);
+                __jitExceptionResult471 = default;
+            }
+            var codeGen = __jitExceptionResult471;
             assert(!codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(store.AsStoreInd()));
             assert(!codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(previousStore.AsStoreInd()));
             BlockRange().Remove(previous.RangeStart, previous.RangeEnd);

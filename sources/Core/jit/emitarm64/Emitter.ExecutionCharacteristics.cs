@@ -794,7 +794,8 @@ public partial class Emitter
 
                     default:
                     {
-                        throw new UnreachableException();
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
                     }
                 }
                 break;
@@ -899,7 +900,8 @@ public partial class Emitter
 
                     default:
                     {
-                        throw new UnreachableException();
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
                     }
                 }
                 break;

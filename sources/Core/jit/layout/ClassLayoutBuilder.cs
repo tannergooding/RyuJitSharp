@@ -220,7 +220,7 @@ public struct ClassLayoutBuilder
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Class layout names are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassLayoutNamesAreOnlyAvailableInDebugBuilds);
         }
 
         _debugNames = new ClassLayout.DebugNames { ClassName = name, ShortClassName = shortName };

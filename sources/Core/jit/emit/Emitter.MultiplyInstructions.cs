@@ -13,7 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Three-operand IMUL selection requires x86 architecture support.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThreeOperandIMULSelectionRequiresX86ArchitectureSupport
+    );
             return default!;
         }
 
@@ -44,7 +47,7 @@ public partial class Emitter
 
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException("Three-operand IMUL register layout is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ThreeOperandIMULRegisterLayoutIsNotAvailableForThisTarget);
             return;
         }
 

@@ -50,8 +50,8 @@ public sealed partial class CodeGen
                 default:
                 {
                     unreached();
-                    // C# definite-assignment analysis does not treat unreached() as terminating here.
-                    throw new System.Diagnostics.UnreachableException();
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    return;
                 }
             }
 

@@ -94,10 +94,7 @@ public sealed partial class ObjectAllocator
             var reason = candidate.OnHeapReason;
             if (reason is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage421
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RejectedStackAllocationRequiresAReason);
                 return;
             }
             _ = reason;
@@ -153,9 +150,9 @@ public sealed partial class ObjectAllocator
             if (dfs is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage422
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ConditionalEscapeCloningRequiresADFSTree
+    );
                 return default!;
             }
             if (!dfs.Contains(candidate.Block))
@@ -167,18 +164,18 @@ public sealed partial class ObjectAllocator
             if (dom is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage423
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ConditionalEscapeCloningRequiresDominators
+    );
                 return default!;
             }
             var definition = clone.DefBlock;
             if (definition is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage424
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ConditionalEscapeCloningRequiresADefinitionBlock
+    );
                 return default!;
             }
             if (dom.Dominates(clone.GuardBlock, candidate.Block) &&
@@ -210,9 +207,9 @@ public sealed partial class ObjectAllocator
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage425
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedObjectAllocationCandidateKind
+    );
                 return default!;
             }
         }
@@ -233,10 +230,7 @@ public sealed partial class ObjectAllocator
         var length = call.Args.GetUserArgByIndex(1)?.Node;
         if (length is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage426
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NewArrayHelperRequiresALengthArgument);
             return default!;
         }
         var blockSize = 0;

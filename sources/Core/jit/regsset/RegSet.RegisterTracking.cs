@@ -80,7 +80,7 @@ public partial struct RegSet
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "OSR integer callee-saved masks require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.OSRIntegerCalleeSavedMasksRequireAMD64);
             return default!;
         }
 

@@ -39,7 +39,7 @@ public sealed partial class CodeGen
 
     private void genLoadIndTypeSimd12(GenTree tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD12 indirect loads are not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64SIMD12IndirectLoadsAreNotPorted);
         return;
     }
 }

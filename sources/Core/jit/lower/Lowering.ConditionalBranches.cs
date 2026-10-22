@@ -190,7 +190,7 @@ public sealed partial class Lowering
             return null;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The target-specific LowerJTrue override is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetSpecificLowerJTrueOverrideIsNotPorted);
         return default!;
     }
 }

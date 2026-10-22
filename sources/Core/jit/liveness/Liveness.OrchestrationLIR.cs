@@ -106,7 +106,7 @@ public partial class Liveness<TLiveness>
     {
         if (!TLiveness.IsLIR || TLiveness.IsEarly)
         {
-            throw new NotSupportedException("LIR liveness orchestration requires a non-early LIR policy.");
+            JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.LIRLivenessOrchestrationRequiresANonEarlyLIRPolicy);
         }
     }
 }

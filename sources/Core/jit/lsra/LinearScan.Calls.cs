@@ -110,9 +110,9 @@ public sealed partial class LinearScan
                 if (codeGen is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage279
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CallReferenceBuildingRequiresInitializedCodegenState
+    );
                     return default!;
                 }
                 codeGen.Emitter.ContainsCallNeedingVzeroupper = true;
@@ -371,8 +371,10 @@ public sealed partial class LinearScan
             return srcCount;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "LSRA call reference building is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LSRACallReferenceBuildingIsNotImplementedOnThisTarget
+    );
         return default!;
     }
 
@@ -380,7 +382,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return default!;
         }
 
@@ -409,9 +412,9 @@ public sealed partial class LinearScan
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage280
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.WindowsX64VarargsRequiresAnXMM0XMM3ArgumentRegister
+    );
                 return default!;
             }
         }
@@ -506,8 +509,10 @@ public sealed partial class LinearScan
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "The write-barrier register contract is not available on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WriteBarrierRegisterContractIsNotAvailableOnThisTarget
+    );
             return default!;
         }
 
@@ -516,7 +521,7 @@ public sealed partial class LinearScan
             var codeGen = _compiler.codeGen;
             if (codeGen is null)
             {
-                FatalJitException.ThrowFatalJitException("Optimized write barriers require initialized CodeGen.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.OptimizedWriteBarriersRequireInitializedCodeGen);
                 return default!;
             }
             var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree.AsStoreInd());
@@ -547,14 +552,14 @@ public sealed partial class LinearScan
             var use = getRegisterRecord(TargetRuntimeMetadata.SwiftErrorRegister).lastRefPosition;
             if (use is null)
             {
-                FatalJitException.ThrowFatalJitException("Swift error register needs an argument use at the call.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftErrorRegisterNeedsAnArgumentUseAtTheCall);
                 return;
             }
             assert(use.nodeLocation == _referenceBuildLocation);
             setDelayFree(use);
             return;
         }
-        FatalJitException.ThrowFatalJitException("LSRA Swift error lifetime is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRASwiftErrorLifetimeIsNotImplementedOnThisTarget);
         return;
     }
 
@@ -569,8 +574,10 @@ public sealed partial class LinearScan
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "LSRA async continuation register is not defined on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LSRAAsyncContinuationRegisterIsNotDefinedOnThisTarget
+    );
         return;
     }
 }

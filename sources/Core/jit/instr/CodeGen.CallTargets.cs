@@ -23,6 +23,7 @@ public sealed partial class CodeGen
             return true;
         }
 
-        throw new NotImplementedException("Branch target range validation is not supported for this target.");
+        JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.BranchTargetRangeValidationIsNotSupportedForThisTarget);
+        return default;
     }
 }

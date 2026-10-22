@@ -84,7 +84,7 @@ public sealed partial class Statement
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Statement debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StatementDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

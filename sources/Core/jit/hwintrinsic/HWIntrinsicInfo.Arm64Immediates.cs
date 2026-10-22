@@ -252,7 +252,8 @@ public readonly partial struct HWIntrinsicInfo
                 }
                 default:
                 {
-                    throw new InvalidOperationException($"Unexpected ARM64 immediate intrinsic {id}.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedARM64ImmediateIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default));
+                    return;
                 }
             }
         }
@@ -263,7 +264,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new System.PlatformNotSupportedException("ARM64 intrinsic immediates are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ARM64IntrinsicImmediatesAreUnavailableForThisTarget);
         }
     }
 }

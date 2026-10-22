@@ -27,8 +27,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Block memory generation is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BlockMemoryGenerationIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -45,8 +47,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Unrolled memmove is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnrolledMemmoveIsNotImplementedForThisTarget);
             return;
         }
     }
@@ -75,8 +76,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Loop block initialization is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoopBlockInitializationIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -101,8 +104,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Unrolled block initialization is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnrolledBlockInitializationIsNotImplementedForThisTarget
+    );
             return;
         }
     }
@@ -127,8 +132,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Unrolled block copy is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnrolledBlockCopyIsNotImplementedForThisTarget
+    );
             return;
         }
     }

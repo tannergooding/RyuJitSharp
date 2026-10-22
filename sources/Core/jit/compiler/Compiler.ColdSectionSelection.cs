@@ -189,9 +189,9 @@ public partial class Compiler
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage101
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedBlockKindForCodeSizeEstimation
+    );
                 return default;
             }
         }

@@ -69,14 +69,18 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException($"Unexpected hardware intrinsic operand count: {numArgs}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedHardwareIntrinsicOperandCountArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? numArgs : default));
+                return;
             }
         }
     }
 
     private void ContainCheckHWIntrinsicLoongArch64(GenTreeHWIntrinsic node)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic containment is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64HardwareIntrinsicContainmentIsNotPorted
+    );
         return;
     }
 

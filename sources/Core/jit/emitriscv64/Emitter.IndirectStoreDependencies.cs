@@ -20,7 +20,10 @@ public partial class Emitter
         var compiler = _compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Indirect load/store recording requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.IndirectLoadStoreRecordingRequiresAnActiveCompiler
+    );
             return;
         }
         var addr = indir.Addr;
@@ -90,7 +93,10 @@ public partial class Emitter
                 var nullableBaseReg = memBase?.RegNum;
                 if (nullableBaseReg is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base register.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ContainedRISCVAddressModeIsMissingItsBaseRegister
+    );
                     return;
                 }
                 var baseReg = nullableBaseReg.Value;
@@ -107,7 +113,10 @@ public partial class Emitter
                 var baseTree = memBase;
                 if (baseTree is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base tree.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ContainedRISCVAddressModeIsMissingItsBaseTree
+    );
                     return;
                 }
                 var addType = varTypeIsGC(baseTree.Type) ? EA_BYREF : EA_PTRSIZE;

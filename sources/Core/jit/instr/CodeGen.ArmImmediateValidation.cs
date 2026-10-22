@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException("ARM immediate validation is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ARMImmediateValidationIsNotAvailableForTheConfiguredTarget);
             return default!;
         }
 
@@ -101,7 +101,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException("ARM immediate validation is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ARMImmediateValidationIsNotAvailableForTheConfiguredTarget);
             return default!;
         }
 

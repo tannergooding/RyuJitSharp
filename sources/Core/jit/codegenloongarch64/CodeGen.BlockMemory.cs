@@ -13,7 +13,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "This block-store implementation requires LoongArch64 or RISC-V64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ThisBlockStoreImplementationRequiresLoongArch64OrRISCV64
+    );
             return;
         }
 
@@ -101,8 +104,18 @@ public sealed partial class CodeGen
             var addrMode = dstAddr.AsAddrMode();
             assert(!addrMode.HasIndex);
 
-            var baseAddress = addrMode.BaseAddress ??
-                throw new InvalidOperationException("A block-copy destination address mode requires a base.");
+            global::RyuJitSharp.GenTree __jitExceptionResult0;
+            var __jitExceptionCoalesceLeft1 = addrMode.BaseAddress;
+            if (__jitExceptionCoalesceLeft1 != null)
+            {
+                __jitExceptionResult0 = __jitExceptionCoalesceLeft1;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockCopyDestinationAddressModeRequiresABase);
+                __jitExceptionResult0 = default;
+            }
+            var baseAddress = __jitExceptionResult0;
             dstAddrBaseReg = genConsumeReg(baseAddress);
             dstOffset = addrMode.Offset;
         }
@@ -138,8 +151,18 @@ public sealed partial class CodeGen
             else if (srcAddr.Oper.IsAddrMode)
             {
                 var addrMode = srcAddr.AsAddrMode();
-                var baseAddress = addrMode.BaseAddress ??
-                    throw new InvalidOperationException("A block-copy source address mode requires a base.");
+                global::RyuJitSharp.GenTree __jitExceptionResult2;
+                var __jitExceptionCoalesceLeft3 = addrMode.BaseAddress;
+                if (__jitExceptionCoalesceLeft3 != null)
+                {
+                    __jitExceptionResult2 = __jitExceptionCoalesceLeft3;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockCopySourceAddressModeRequiresABase);
+                    __jitExceptionResult2 = default;
+                }
+                var baseAddress = __jitExceptionResult2;
                 srcAddrBaseReg = genConsumeReg(baseAddress);
                 srcOffset = addrMode.Offset;
             }
@@ -445,7 +468,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 memory barrier generation requires LoongArch64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64MemoryBarrierGenerationRequiresLoongArch64
+    );
             return;
         }
 

@@ -77,15 +77,46 @@ public partial class Emitter
     {
         if (id.idIsBound())
         {
-            var target = id.RiscVIGlabel
-                ?? throw new InvalidOperationException("A bound RISC-V branch requires an instruction group.");
+            global::RyuJitSharp.insGroup __jitExceptionResult337;
+            var __jitExceptionCoalesceLeft338 = id.RiscVIGlabel;
+            if (__jitExceptionCoalesceLeft338 != null)
+            {
+                __jitExceptionResult337 = __jitExceptionCoalesceLeft338;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BoundRISCVBranchRequiresAnInstructionGroup);
+                __jitExceptionResult337 = default;
+            }
+            var target = __jitExceptionResult337;
             emitPrintLabel(target);
             return;
         }
 
-        var block = id.RiscVBBlabel
-            ?? throw new InvalidOperationException("An unbound RISC-V branch requires a basic block.");
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+        global::RyuJitSharp.BasicBlock __jitExceptionResult339;
+        var __jitExceptionCoalesceLeft340 = id.RiscVBBlabel;
+        if (__jitExceptionCoalesceLeft340 != null)
+        {
+            __jitExceptionResult339 = __jitExceptionCoalesceLeft340;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnboundRISCVBranchRequiresABasicBlock);
+            __jitExceptionResult339 = default;
+        }
+        var block = __jitExceptionResult339;
+        global::RyuJitSharp.Compiler __jitExceptionResult341;
+        var __jitExceptionCoalesceLeft342 = _compiler;
+        if (__jitExceptionCoalesceLeft342 != null)
+        {
+            __jitExceptionResult341 = __jitExceptionCoalesceLeft342;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
+            __jitExceptionResult341 = default;
+        }
+        var compiler = __jitExceptionResult341;
         jitprintf($"L_M{compiler.compMethodID:D3}_{FMT_BB(block.bbNum)}");
     }
 
@@ -116,7 +147,18 @@ public partial class Emitter
 
     private void emitDispImmediateRiscV64(nint immediate, bool newLine = true, uint regBase = (uint)REG_RISCV64_ZERO)
     {
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult343;
+        var __jitExceptionCoalesceLeft344 = _compiler;
+        if (__jitExceptionCoalesceLeft344 != null)
+        {
+            __jitExceptionResult343 = __jitExceptionCoalesceLeft344;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
+            __jitExceptionResult343 = default;
+        }
+        var compiler = __jitExceptionResult343;
         if (compiler.opts.disDiffable && (regBase != (uint)REG_RISCV64_FP) && (regBase != (uint)REG_RISCV64_SP))
         {
             jitprintf("0xD1FFAB1E");
@@ -140,7 +182,18 @@ public partial class Emitter
     private unsafe void emitDispInsNameRiscV64(
         uint code, byte* addr, bool doffs, uint insOffset, instrDesc? id, insGroup? ig)
     {
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult345;
+        var __jitExceptionCoalesceLeft346 = _compiler;
+        if (__jitExceptionCoalesceLeft346 != null)
+        {
+            __jitExceptionResult345 = __jitExceptionCoalesceLeft346;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
+            __jitExceptionResult345 = default;
+        }
+        var compiler = __jitExceptionResult345;
         emitDispInsAddr(addr - writeableOffset);
         emitDispInsOffs(insOffset, doffs);
 
@@ -225,9 +278,25 @@ public partial class Emitter
                 var funct3 = (code >> 12) & 0x7;
                 var rs1 = (code >> 15) & 0x1f;
                 var rs2 = (code >> 20) & 0x1f;
-                if (!emitDispBranchRiscV64(funct3, rs1, rs2, id
-                    ?? throw new InvalidOperationException("RISC-V branch disassembly requires an instruction descriptor."),
-                    ig, addr == null))
+                bool __jitExceptionCondition347;
+                bool __jitExceptionOperand348;
+                var __jitExceptionArgument349 = funct3;
+                var __jitExceptionArgument350 = rs1;
+                var __jitExceptionArgument351 = rs2;
+                global::RyuJitSharp.Emitter.instrDesc __jitExceptionArgument352;
+                var __jitExceptionCoalesceLeft353 = id;
+                if (__jitExceptionCoalesceLeft353 != null)
+                {
+                    __jitExceptionArgument352 = __jitExceptionCoalesceLeft353;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVBranchDisassemblyRequiresAnInstructionDescriptor);
+                    __jitExceptionArgument352 = default;
+                }
+                __jitExceptionOperand348 = emitDispBranchRiscV64(__jitExceptionArgument349, __jitExceptionArgument350, __jitExceptionArgument351, __jitExceptionArgument352, ig, addr == null);
+                __jitExceptionCondition347 = !__jitExceptionOperand348;
+                if (__jitExceptionCondition347)
                 {
                     emitDispIllegalInstructionRiscV64(code);
                 }
@@ -278,7 +347,7 @@ public partial class Emitter
                     return;
                 }
 
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V system instruction disassembly.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnsupportedRISCVSystemInstructionDisassembly);
                 return;
             }
             case MajorOpcode.OpFp:
@@ -754,8 +823,18 @@ public partial class Emitter
             jitprintf($"{mnemonic,-15}");
             if (id?.idIsBound() == true)
             {
-                var target = id.RiscVIGlabel
-                    ?? throw new InvalidOperationException("A bound RISC-V jump requires an instruction group.");
+                global::RyuJitSharp.insGroup __jitExceptionResult354;
+                var __jitExceptionCoalesceLeft355 = id.RiscVIGlabel;
+                if (__jitExceptionCoalesceLeft355 != null)
+                {
+                    __jitExceptionResult354 = __jitExceptionCoalesceLeft355;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BoundRISCVJumpRequiresAnInstructionGroup);
+                    __jitExceptionResult354 = default;
+                }
+                var target = __jitExceptionResult354;
                 emitPrintLabel(target);
             }
             else if (noAddress && (immediate == 0))
@@ -794,7 +873,18 @@ public partial class Emitter
             return;
         }
 
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult356;
+        var __jitExceptionCoalesceLeft357 = _compiler;
+        if (__jitExceptionCoalesceLeft357 != null)
+        {
+            __jitExceptionResult356 = __jitExceptionCoalesceLeft357;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
+            __jitExceptionResult356 = default;
+        }
+        var compiler = __jitExceptionResult356;
         var methodName = compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debugInfo.idMemCookie);
         jitprintf($"\t\t// {methodName}");
     }
@@ -941,7 +1031,10 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point min/max instruction.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedRISCVFloatingPointMinMaxInstruction
+    );
                     return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{fd}, {fs1}, {fs2}");
@@ -968,7 +1061,10 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point conversion instruction.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedRISCVFloatingPointConversionInstruction
+    );
                     return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{xd}, {fs1}");
@@ -988,7 +1084,10 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point register operation.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedRISCVFloatingPointRegisterOperation
+    );
                     return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{xd}, {fs1}");
@@ -1004,7 +1103,10 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point compare instruction.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedRISCVFloatingPointCompareInstruction
+    );
                     return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{xd}, {fs1}, {fs2}");
@@ -1021,7 +1123,10 @@ public partial class Emitter
                 };
                 if (mnemonic.Length == 0)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point conversion instruction.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedRISCVFloatingPointConversionInstruction
+    );
                     return;
                 }
                 EmitRiscVInstruction(mnemonic, $"{fd}, {xs1}");
@@ -1039,7 +1144,10 @@ public partial class Emitter
             }
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unsupported RISC-V floating-point disassembly opcode.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedRISCVFloatingPointDisassemblyOpcode
+    );
                 return;
             }
         }
@@ -1194,14 +1302,35 @@ public partial class Emitter
     {
         if (Configuration.DEBUG)
         {
-            var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+            global::RyuJitSharp.Compiler __jitExceptionResult358;
+            var __jitExceptionCoalesceLeft359 = _compiler;
+            if (__jitExceptionCoalesceLeft359 != null)
+            {
+                __jitExceptionResult358 = __jitExceptionCoalesceLeft359;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
+                __jitExceptionResult358 = default;
+            }
+            var compiler = __jitExceptionResult358;
             if (!compiler.verbose)
             {
                 return;
             }
 
-            var debugInfo = id.idDebugOnlyInfo()
-                ?? throw new InvalidOperationException("RISC-V instruction disassembly requires debug descriptor info.");
+            global::RyuJitSharp.Emitter.instrDescDebugInfo __jitExceptionResult360;
+            var __jitExceptionCoalesceLeft361 = id.idDebugOnlyInfo();
+            if (__jitExceptionCoalesceLeft361 != null)
+            {
+                __jitExceptionResult360 = __jitExceptionCoalesceLeft361;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVInstructionDisassemblyRequiresDebugDescriptorInfo);
+                __jitExceptionResult360 = default;
+            }
+            var debugInfo = __jitExceptionResult360;
             jitprintf($"IN{debugInfo.idNum:x4}: ");
         }
     }
@@ -1292,7 +1421,18 @@ public partial class Emitter
         }
 
         emitDispInsInstrNumRiscV64(id);
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult362;
+        var __jitExceptionCoalesceLeft363 = _compiler;
+        if (__jitExceptionCoalesceLeft363 != null)
+        {
+            __jitExceptionResult362 = __jitExceptionCoalesceLeft363;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVDisassemblyRequiresAnActiveCompiler);
+            __jitExceptionResult362 = default;
+        }
+        var compiler = __jitExceptionResult362;
         var printLoadImmediate = (id.idInsOpt() == INS_OPTS_RISCV64_I) && !compiler.opts.disDiffable;
         var instructionBytes = code + writeableOffset;
         nuint instructionSize;

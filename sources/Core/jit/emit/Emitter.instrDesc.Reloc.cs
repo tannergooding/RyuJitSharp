@@ -21,8 +21,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_ARM)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "ARM relocation descriptor size is not supported for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMRelocationDescriptorSizeIsNotSupportedForThisTarget
+    );
                     return default!;
                 }
 

@@ -34,7 +34,7 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
     {
         if (!Configuration.TARGET_WASM)
         {
-            throw new PlatformNotSupportedException("Hardware intrinsic immediate operands are only available on WebAssembly.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicImmediateOperandsAreOnlyAvailableOnWebAssembly);
         }
 
         HWIntrinsicInfo.GetImmOpsPositions(HWIntrinsicId, out var imm1Pos, out var imm2Pos);

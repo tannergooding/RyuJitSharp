@@ -11,13 +11,17 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LoongArch64 jump-kind mapping is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64JumpKindMappingIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
         FatalJitException.ThrowFatalJitException(
-            CORJIT_SKIPPED, "emitInsToJumpKind-----unimplemented on LOONGARCH64 yet----");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EmitInsToJumpKindUnimplementedOnLOONGARCH64Yet
+    );
         return default!;
     }
 
@@ -25,13 +29,14 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LoongArch64 register jump recording is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64RegisterJumpRecordingIsNotSupportedForThisTarget
+    );
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(
-            CORJIT_SKIPPED, "emitIns_J_R-----unimplemented/unused on LOONGARCH64 yet----");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EmitInsJRUnimplementedUnusedOnLOONGARCH64Yet);
         return;
     }
 }

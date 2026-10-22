@@ -59,7 +59,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Address relocation hints require AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AddressRelocationHintsRequireAMD64);
             return default!;
         }
 

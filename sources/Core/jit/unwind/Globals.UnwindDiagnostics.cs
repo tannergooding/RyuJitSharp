@@ -41,7 +41,10 @@ public static partial class Globals
             return UnwindInfo.GetUnwindCodeSize(header);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind opcode-size decoding for this target is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindOpcodeSizeDecodingForThisTargetIsNotPorted
+    );
         return default!;
     }
 
@@ -67,7 +70,10 @@ public static partial class Globals
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind diagnostic decoding for this target is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindDiagnosticDecodingForThisTargetIsNotPorted
+    );
             return;
         }
     }

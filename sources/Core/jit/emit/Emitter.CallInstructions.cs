@@ -240,8 +240,11 @@ public partial class Emitter
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                        $"Unexpected Wasm call type {parameters.callType}.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedWasmCallTypeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? parameters.callType : default)
+    );
                     return;
                 }
             }
@@ -287,7 +290,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call instruction recording is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CallInstructionRecordingIsNotImplementedForThisTarget
+    );
         return;
     }
 
@@ -310,7 +316,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "REX.W prefix emission is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.REXWPrefixEmissionIsNotImplementedForThisTarget
+    );
             return default!;
         }
 

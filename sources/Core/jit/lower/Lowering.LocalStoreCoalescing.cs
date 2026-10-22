@@ -58,7 +58,8 @@ public sealed partial class Lowering
         }
         if ((range.FirstNode is not GenTree first) || (range.LastNode is not GenTree last))
         {
-            throw new InvalidOperationException("A closed store tree range must include its root.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClosedStoreTreeRangeMustIncludeItsRoot);
+            return false;
         }
 
         ref var descriptor = ref CompilerInstance.lvaGetDesc(store.LclNum);

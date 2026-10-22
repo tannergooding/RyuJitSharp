@@ -274,7 +274,7 @@ public partial class Emitter
                     }
                     else if (!Configuration.TARGET_AMD64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Address output is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AddressOutputIsNotImplementedForThisTarget);
                         return default!;
                     }
                     break;
@@ -332,7 +332,10 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_X86)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Absolute accumulator address output is unavailable on AMD64.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AbsoluteAccumulatorAddressOutputIsUnavailableOnAMD64
+    );
                 return default!;
             }
 

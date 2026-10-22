@@ -17,7 +17,8 @@ public sealed partial class CodeGen
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Write-barrier diagnostic state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WriteBarrierDiagnosticStateIsOnlyAvailableInDebugBuilds);
+                return false;
             }
 
             return _genWriteBarrierUsed;
@@ -51,10 +52,9 @@ public sealed partial class CodeGen
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    FatalJitErrorCode.UnsupportedWriteBarrierForm,
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"No write-barrier helper exists for {writeBarrierForm}."
-                : null);
+        FatalJitErrorCode.UnsupportedWriteBarrierForm,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? writeBarrierForm : default)
+    );
                 return default!;
             }
         }

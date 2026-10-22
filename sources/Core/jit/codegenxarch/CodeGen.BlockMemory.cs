@@ -163,10 +163,7 @@ public sealed partial class CodeGen
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage096
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidScalarMemmoveWidth);
                         return;
                     }
                 }

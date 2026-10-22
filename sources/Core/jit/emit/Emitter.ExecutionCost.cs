@@ -123,7 +123,10 @@ public partial class Emitter
             return otherLatency;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Execution-cost estimates are not available for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ExecutionCostEstimatesAreNotAvailableForThisTarget
+    );
         return default!;
     }
 

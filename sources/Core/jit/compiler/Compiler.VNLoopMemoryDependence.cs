@@ -13,9 +13,9 @@ public partial class Compiler
         if (store is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage207
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopMemoryDependenceRequiresAValueNumberStore
+    );
             return;
         }
         var updateLoop = store.LoopOfVN(memoryVN);

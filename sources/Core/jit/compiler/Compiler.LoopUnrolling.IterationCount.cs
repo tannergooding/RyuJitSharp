@@ -48,10 +48,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage165
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopIteratorType);
                 return false;
             }
         }
@@ -92,10 +89,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage165
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopIteratorType);
                 return false;
             }
         }
@@ -150,10 +144,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage165
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopIteratorType);
                 iterCount = default!;
                 return default!;
             }
@@ -179,10 +170,7 @@ public partial class Compiler
                 return false;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage166
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopIteratorOperator);
             iterCount = default!;
             return default!;
         }
@@ -252,10 +240,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage167
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopTestOperator);
                 iterCount = default!;
                 return default!;
             }
@@ -308,10 +293,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage167
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedLoopTestOperator);
                 return false;
             }
         }

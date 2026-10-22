@@ -13,7 +13,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction recording outside AMD64 is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InstructionRecordingOutsideAMD64IsNotPorted);
             return;
         }
 
@@ -287,7 +287,10 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EpilogRecorderIsOnlySupportedByTheX86GCEncoder
+    );
             return default!;
         }
 
@@ -318,7 +321,10 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EpilogRecorderIsOnlySupportedByTheX86GCEncoder
+    );
             return;
         }
 
@@ -330,7 +336,10 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EpilogRecorderIsOnlySupportedByTheX86GCEncoder
+    );
             return default!;
         }
 
@@ -346,7 +355,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Exit sequence recording is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ExitSequenceRecordingIsNotImplementedForThisTarget
+    );
             return;
         }
 

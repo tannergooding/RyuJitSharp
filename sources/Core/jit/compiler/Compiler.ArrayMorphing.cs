@@ -57,9 +57,9 @@ public partial class Compiler
                 default:
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage099
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MDArrayTemporaryMustBeAnIntOrObjectReference
+    );
                     return default!;
                 }
             }

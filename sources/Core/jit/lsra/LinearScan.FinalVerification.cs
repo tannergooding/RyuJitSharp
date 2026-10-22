@@ -42,7 +42,7 @@ public sealed partial class LinearScan
             assert(foundUse);
             if (!foundUse)
             {
-                FatalJitException.ThrowFatalJitException("An LSRA-added local must have an owning use.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAAddedLocalMustHaveAnOwningUse);
                 return default!;
             }
 
@@ -55,7 +55,9 @@ public sealed partial class LinearScan
     {
         if (_enregisterLocalVars)
         {
-            FatalJitException.ThrowFatalJitException("Final allocation verification with enregistered locals is not available.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.FinalAllocationVerificationWithEnregisteredLocalsIsNotAvailable
+    );
             return;
         }
         assert(!_enregisterLocalVars);
@@ -66,7 +68,7 @@ public sealed partial class LinearScan
         {
             if ((uint)block.bbNum > _bbNumMaxBeforeResolution)
             {
-                FatalJitException.ThrowFatalJitException("Resolution blocks require enregistered locals.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ResolutionBlocksRequireEnregisteredLocals);
                 return;
             }
             assert((uint)block.bbNum <= _bbNumMaxBeforeResolution);
@@ -75,7 +77,7 @@ public sealed partial class LinearScan
             {
                 if (isResolutionNode(block, node))
                 {
-                    FatalJitException.ThrowFatalJitException("Resolution moves require enregistered locals.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ResolutionMovesRequireEnregisteredLocals);
                     return;
                 }
             }
@@ -197,7 +199,7 @@ public sealed partial class LinearScan
                     assert(interval is not null);
                     if (interval is null)
                     {
-                        FatalJitException.ThrowFatalJitException("An allocation reference must refer to an interval.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AllocationReferenceMustReferToAnInterval);
                         return;
                     }
 
@@ -217,7 +219,7 @@ public sealed partial class LinearScan
                         var reloadedRegister = regRecord;
                         if (reloadedRegister is null)
                         {
-                            FatalJitException.ThrowFatalJitException("A reload requires an assigned register.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ReloadRequiresAnAssignedRegister);
                             return;
                         }
                         reloadedRegister.assignedInterval = interval;
@@ -231,7 +233,7 @@ public sealed partial class LinearScan
                             var oldRegister = interval.assignedReg;
                             if (oldRegister is null)
                             {
-                                FatalJitException.ThrowFatalJitException("An assigned interval requires a register record.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AssignedIntervalRequiresARegisterRecord);
                                 return;
                             }
                             if (ReferenceEquals(oldRegister.assignedInterval, interval))
@@ -264,7 +266,7 @@ public sealed partial class LinearScan
                         var oldRegister = interval.assignedReg;
                         if (oldRegister is null)
                         {
-                            FatalJitException.ThrowFatalJitException("A register move requires a previous assignment.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterMoveRequiresAPreviousAssignment);
                             return;
                         }
                         oldRegister.assignedInterval = null;
@@ -273,7 +275,7 @@ public sealed partial class LinearScan
                         var movedRegister = regRecord;
                         if (movedRegister is null)
                         {
-                            FatalJitException.ThrowFatalJitException("A register move requires a destination register.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterMoveRequiresADestinationRegister);
                             return;
                         }
                         movedRegister.assignedInterval = interval;
@@ -309,7 +311,7 @@ public sealed partial class LinearScan
                             var copiedRegister = regRecord;
                             if (copiedRegister is null)
                             {
-                                FatalJitException.ThrowFatalJitException("A copy requires a destination register.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CopyRequiresADestinationRegister);
                                 return;
                             }
                             copiedRegister.assignedInterval = interval;
@@ -322,7 +324,7 @@ public sealed partial class LinearScan
                                 var oldRegister = interval.assignedReg;
                                 if (oldRegister is null)
                                 {
-                                    FatalJitException.ThrowFatalJitException("An assigned interval requires a register record.");
+                                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AssignedIntervalRequiresARegisterRecord);
                                     return;
                                 }
                                 oldRegister.assignedInterval = null;
@@ -333,7 +335,7 @@ public sealed partial class LinearScan
                             var assignedRegister = regRecord;
                             if (assignedRegister is null)
                             {
-                                FatalJitException.ThrowFatalJitException("A register assignment requires a register record.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterAssignmentRequiresARegisterRecord);
                                 return;
                             }
                             assignedRegister.assignedInterval = interval;
@@ -378,7 +380,10 @@ public sealed partial class LinearScan
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException($"Unsupported final-allocation reference type: {reference.refType}.");
+                    FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnsupportedFinalAllocationReferenceTypeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? reference.refType : default)
+    );
                     return;
                 }
             }
@@ -398,14 +403,14 @@ public sealed partial class LinearScan
                         var copiedRegister = regRecord;
                         if (copiedRegister is null)
                         {
-                            FatalJitException.ThrowFatalJitException("A copy requires a destination register.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CopyRequiresADestinationRegister);
                             return;
                         }
                         copiedRegister.assignedInterval = null;
                         var homeRegister = interval.assignedReg;
                         if (homeRegister is null)
                         {
-                            FatalJitException.ThrowFatalJitException("A copy requires a home register.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CopyRequiresAHomeRegister);
                             return;
                         }
 
@@ -421,7 +426,7 @@ public sealed partial class LinearScan
                             var oldRegister = interval.assignedReg;
                             if (oldRegister is null)
                             {
-                                FatalJitException.ThrowFatalJitException("An assigned interval requires a register record.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AssignedIntervalRequiresARegisterRecord);
                                 return;
                             }
                             oldRegister.assignedInterval = null;
@@ -441,7 +446,7 @@ public sealed partial class LinearScan
                                 var local = interval.relatedInterval;
                                 if (local is null)
                                 {
-                                    FatalJitException.ThrowFatalJitException("Upper-vector references require a related interval.");
+                                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UpperVectorReferencesRequireARelatedInterval);
                                     return;
                                 }
                                 assert((local.physReg == REG_NA) || local.isPartiallySpilled ||

@@ -42,7 +42,7 @@ public partial class Emitter
             var info = debug;
             if (info is null)
             {
-                FatalJitException.ThrowFatalJitException("Instruction display requires descriptor debug information.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionDisplayRequiresDescriptorDebugInformation);
                 return;
             }
             jitprintf($"IN{info.idNum:x4}: ");

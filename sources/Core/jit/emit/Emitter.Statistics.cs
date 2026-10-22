@@ -29,7 +29,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EmitterStatsOutsideXarchArmAndArm64IsNotPorted
+    );
             return;
         }
 

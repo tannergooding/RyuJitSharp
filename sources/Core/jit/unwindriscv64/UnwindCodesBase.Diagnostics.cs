@@ -22,12 +22,12 @@ public abstract unsafe class RiscV64UnwindCodesBase
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("RISC-V unwind diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVUnwindDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V unwind diagnostics require RISC-V64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVUnwindDiagnosticsRequireRISCV64);
             return default!;
         }
 

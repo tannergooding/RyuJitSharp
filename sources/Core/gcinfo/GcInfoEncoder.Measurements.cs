@@ -73,7 +73,7 @@ public sealed unsafe partial class GcInfoEncoder
         {
             if (!Enum.TryParse(field, out GcInfoField category) || category == GcInfoField.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(field));
+                JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Field);
             }
 
             return this[category];

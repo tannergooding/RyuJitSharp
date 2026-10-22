@@ -31,7 +31,7 @@ public partial struct GCInfo
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
             Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Modern GC table encoding requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ModernGCTableEncodingRequiresWindowsAMD64);
             return;
         }
 
@@ -103,10 +103,7 @@ public partial struct GCInfo
                 var layout = variable.Layout;
                 if (layout is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage221
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GCStructLocalHasNoLayout);
                     return;
                 }
                 for (var slot = 0; slot < layout.SlotCount; slot++)
@@ -265,10 +262,7 @@ public partial struct GCInfo
         var map = _stackSlotMap;
         if (map is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                FatalJitErrorCode.DirectFailureMessage222
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackSlotMapWasNotInitialized);
             return;
         }
         var key = new StackSlotIdKey(offset, stackBase == GC_FRAMEREG_REL, (uint)flags);
@@ -284,15 +278,12 @@ public partial struct GCInfo
         var map = _stackSlotMap;
         if (map is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                FatalJitErrorCode.DirectFailureMessage222
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackSlotMapWasNotInitialized);
             return default!;
         }
         if (!map.TryGetValue(key, out var slot))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage223);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LiveStackSlotWasNotAssigned);
             return default!;
         }
         return slot;
@@ -350,10 +341,7 @@ public partial struct GCInfo
             var map = _regSlotMap;
             if (map is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED,
-                    FatalJitErrorCode.DirectFailureMessage224
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterSlotMapWasNotInitialized);
                 return;
             }
             if (mode == MakeRegPtrMode.MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
@@ -367,10 +355,7 @@ public partial struct GCInfo
             {
                 if (!map.TryGetValue(key, out var slot))
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage225
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LiveRegisterSlotWasNotAssigned);
                     return;
                 }
                 encoder.SetSlotState(offset, slot, state);
@@ -407,10 +392,7 @@ public partial struct GCInfo
                 var next = descriptor.rpdNext;
                 if (next is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage226
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.OutgoingArgumentTerminatorIsMissing);
                     return;
                 }
 
@@ -424,10 +406,7 @@ public partial struct GCInfo
             var nextDescriptor = descriptor.rpdNext;
             if (nextDescriptor is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED,
-                    FatalJitErrorCode.DirectFailureMessage226
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.OutgoingArgumentTerminatorIsMissing);
                 return;
             }
 

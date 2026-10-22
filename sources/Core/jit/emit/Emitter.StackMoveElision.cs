@@ -31,8 +31,10 @@ public partial class Emitter
             return IsLoongArch64MovInstruction(ins);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Move-instruction classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MoveInstructionClassificationIsNotSupportedForThisTarget
+    );
         return default!;
     }
 
@@ -119,8 +121,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_64BIT)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "MOVSXD side-effect classification is only supported on 64-bit xarch.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MOVSXDSideEffectClassificationIsOnlySupportedOn64BitXarch
+    );
                     return default!;
                 }
 
@@ -213,8 +217,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Xarch stack-move optimization is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchStackMoveOptimizationIsNotSupportedForThisTarget
+    );
             return;
         }
     }

@@ -18,13 +18,13 @@ public sealed partial class LinearScan
         var blockInfo = _blockInfo;
         if (blockInfo is null)
         {
-            FatalJitException.ThrowFatalJitException("LSRA statistics require initialized block information.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAStatisticsRequireInitializedBlockInformation);
             return;
         }
         var blockStats = _blockStats;
         if (blockStats is null)
         {
-            FatalJitException.ThrowFatalJitException("LSRA statistics are not enabled.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAStatisticsAreNotEnabled);
             return;
         }
 
@@ -98,14 +98,14 @@ public sealed partial class LinearScan
         {
             if ((uint)blockNumber >= (uint)blockInfo.Length)
             {
-                FatalJitException.ThrowFatalJitException("LSRA statistics do not cover a pre-resolution block.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAStatisticsDoNotCoverAPreResolutionBlock);
                 return;
             }
 
             var stats = blockStats[blockNumber];
             if (stats is null)
             {
-                FatalJitException.ThrowFatalJitException("A pre-resolution block has no LSRA statistics.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.PreResolutionBlockHasNoLSRAStatistics);
                 return;
             }
             var addedBlockHeader = false;

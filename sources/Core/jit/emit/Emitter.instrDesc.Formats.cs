@@ -30,8 +30,10 @@ public partial class Emitter
                 return _idInsFmt;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Instruction formats are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionFormatsAreNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -81,8 +83,10 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Instruction formats are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionFormatsAreNotSupportedForThisTarget
+    );
             return;
         }
 

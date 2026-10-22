@@ -316,7 +316,10 @@ public partial class Emitter
     private static regMaskTP MissingNoGCCallMask(string mask)
     {
         FatalJitException.ThrowFatalJitException(
-            CORJIT_SKIPPED, $"No-GC call register mask {mask} is not ported for this target.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NoGCCallRegisterMaskArgumentIsNotPortedForThisTarget,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? mask : default)
+    );
         return default!;
     }
 

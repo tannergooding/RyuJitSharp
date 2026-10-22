@@ -89,7 +89,11 @@ internal static class CompilerShutdownFamilyTests
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
         var exception = Assert.Throws<InvalidOperationException>(() => GenTree.ReportOperBashing(writer));
 
-        Assert.That(exception?.Message, Is.EqualTo("Node-bashing statistics are not enabled."));
+        Assert.That(
+            exception?.Message,
+            Is.EqualTo(Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                ? "Node-bashing statistics are not enabled."
+                : "RJS-1781"));
         Assert.That(output.Length, Is.Zero);
     }
 
@@ -157,8 +161,11 @@ internal static class CompilerShutdownFamilyTests
         if (!TestConfiguration.IsDebug && !Configuration.MEASURE_NODE_SIZE)
         {
             var exception = Assert.Throws<InvalidOperationException>(() => _ = genTreeOps.GT_ADD.StructName);
-            Assert.That(exception?.Message,
-                Is.EqualTo("Operator struct type metadata is only available in Debug or node-size measurement builds."));
+            Assert.That(
+                exception?.Message,
+                Is.EqualTo(Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "Operator struct type metadata is only available in Debug or node-size measurement builds."
+                    : "RJS-1817"));
             return;
         }
 
@@ -627,8 +634,11 @@ internal static class CompilerShutdownFamilyTests
             {
                 var nodeSizeException = Assert.Throws<FatalJitException>(() => AccessDependency(dependency, writer));
                 Assert.That(nodeSizeException?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-                Assert.That(nodeSizeException?.Message, Is.EqualTo(
-                    "Native sizeof(GenTreeLclFld) is not ported."));
+                Assert.That(
+                    nodeSizeException?.Message,
+                    Is.EqualTo(Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Native sizeof(GenTreeLclFld) is not ported."
+                        : "RJS-1235"));
                 writer.Flush();
                 Assert.That(output.Length, Is.Zero);
             }

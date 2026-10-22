@@ -137,7 +137,8 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("GS security blocker diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GSSecurityBlockerDiagnosticsAreOnlyAvailableInDebugBuilds);
+                return;
             }
 
             GetDebugData().GSSecurityCheckBlocker = value;
@@ -2626,7 +2627,7 @@ public partial class Compiler
         {
             if (Configuration.TARGET_X86 == Configuration.TARGET_AMD64)
             {
-                FatalJitException.ThrowFatalJitException("xarch register metadata is not defined for the configured target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchRegisterMetadataIsNotDefinedForTheConfiguredTarget);
                 return;
             }
 
@@ -2918,7 +2919,8 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("JIT stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITStressIsOnlyAvailableInDebugBuilds);
+            return false;
         }
 
         return compStressCompile(STRESS_LEGACY_INLINE, 50);
@@ -2928,7 +2930,8 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
+            return false;
         }
 
         if (JitConfig.JitStressAsyncInlining != 0)
@@ -2943,7 +2946,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
         }
 
         var seed = JitConfig.JitStressAsyncInlining;
@@ -3016,7 +3019,8 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JIT stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITStressIsOnlyAvailableInDebugBuilds);
+            return default;
         }
 
         ref var hashCode = ref CompStressData.AreaHashes[(int)area];
@@ -3990,7 +3994,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineStressIsOnlyAvailableInDebugBuilds);
         }
 
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
@@ -4687,7 +4691,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Local variable names are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalVariableNamesAreOnlyAvailableInDebugBuilds);
         }
 
         for (var index = 0; index < info.compVarScopesCount; index++)
@@ -4712,7 +4716,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Register variable names are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RegisterVariableNamesAreOnlyAvailableInDebugBuilds);
         }
 
         if (isFloatReg)

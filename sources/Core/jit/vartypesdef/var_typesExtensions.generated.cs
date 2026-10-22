@@ -496,9 +496,11 @@ public static partial class var_typesExtensions
                         }
                         default:
                         {
-                            JitExceptionHelpers.ThrowIndexOutOfRangeException();
-                            return default!;
-                        }
+    JitExceptionHelpers.ThrowIndexOutOfRangeException(
+        FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid,
+        Configuration.DETAILED_FATAL_ERROR_MESSAGES ? varType : default);
+    return default!;
+}
                     }
                 }
 

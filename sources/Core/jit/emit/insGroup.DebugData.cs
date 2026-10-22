@@ -65,7 +65,7 @@ public sealed partial class insGroup
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Instruction-group debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InstructionGroupDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

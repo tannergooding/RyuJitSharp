@@ -80,10 +80,7 @@ public partial class Compiler
             var before = stmt.PrevStmt;
             if (before is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage120
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NonFirstStatementNeedsAPredecessor);
 
             }
             assert(before != block.LastStmt);

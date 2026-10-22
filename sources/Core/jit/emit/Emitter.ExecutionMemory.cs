@@ -13,7 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchExecutionMemoryClassificationIsUnavailableOnThisTarget
+    );
             return default!;
         }
 
@@ -33,7 +36,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchExecutionMemoryClassificationIsUnavailableOnThisTarget
+    );
             return default!;
         }
 

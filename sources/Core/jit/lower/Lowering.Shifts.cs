@@ -139,7 +139,7 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Shift containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ShiftContainmentIsNotPortedForThisTarget);
         return;
     }
 }

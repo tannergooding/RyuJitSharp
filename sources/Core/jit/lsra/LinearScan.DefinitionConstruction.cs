@@ -44,7 +44,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return default!;
         }
 
@@ -61,9 +62,9 @@ public sealed partial class LinearScan
             if (definition is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage282
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRAInternalDefinitionStateContainsAnEmptyEntry
+    );
                 return;
             }
             var use = newRefPosition(definition.getInterval(), _referenceBuildLocation, RefType.RefTypeUse,
@@ -157,9 +158,9 @@ public sealed partial class LinearScan
                 if (definition is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage283
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRADefinitionListEntryMustRetainItsReference
+    );
                     return default!;
                 }
                 var interval = definition.getInterval();
@@ -226,9 +227,9 @@ public sealed partial class LinearScan
             if (block is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage284
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UpperVectorSavesRequireTheCurrentBasicBlock
+    );
                 return;
             }
             var liveDefinitions = VarSetOps.MakeEmpty(_compiler);
@@ -269,9 +270,9 @@ public sealed partial class LinearScan
             if (treeNode is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage285
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRADefinitionListEntryMustRetainItsDefiningNode
+    );
                 return;
             }
             var registerType = getUpperVectorTemporaryType(treeNode);
@@ -284,9 +285,9 @@ public sealed partial class LinearScan
             if (definition is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage283
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRADefinitionListEntryMustRetainItsReference
+    );
                 return;
             }
             var interval = definition.getInterval();
@@ -314,9 +315,9 @@ public sealed partial class LinearScan
         if (!tree.Oper.IsCall)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage286
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRAStructTemporariesMustBeLocalVariablesOrCalls
+    );
             return default!;
         }
 
@@ -348,7 +349,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 

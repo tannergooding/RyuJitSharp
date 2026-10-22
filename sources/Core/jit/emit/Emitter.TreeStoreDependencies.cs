@@ -11,8 +11,10 @@ public partial class Emitter
     {
         if (!Configuration.CPU_LOAD_STORE_ARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Target instruction store classification is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetInstructionStoreClassificationIsNotImplemented
+    );
             return default!;
         }
 
@@ -48,12 +50,18 @@ public partial class Emitter
 
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                $"Wasm store classification is unreachable for instruction {ins}.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.WasmStoreClassificationIsUnreachableForInstructionArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default)
+    );
             return default!;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TargetInstructionStoreClassificationIsNotImplemented
+    );
         return default!;
     }
 }

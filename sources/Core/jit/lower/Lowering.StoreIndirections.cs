@@ -84,8 +84,16 @@ public sealed partial class Lowering
                 var addressToReuse = node.Addr;
                 if (foldable is not null)
                 {
-                    addressToReuse = foldable.BaseAddress ??
-                        throw new InvalidOperationException("Foldable Wasm address is missing its base.");
+                    var __jitExceptionCoalesceLeft104 = foldable.BaseAddress;
+                    if (__jitExceptionCoalesceLeft104 != null)
+                    {
+                        addressToReuse = __jitExceptionCoalesceLeft104;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FoldableWasmAddressIsMissingItsBase);
+                        addressToReuse = default;
+                    }
                 }
 
                 SetMultiplyUsed(addressToReuse,
@@ -103,8 +111,10 @@ public sealed partial class Lowering
             return next;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Indirect-store lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndirectStoreLoweringIsNotPortedForThisTarget
+    );
         return default!;
     }
 
@@ -265,14 +275,30 @@ public sealed partial class Lowering
                         {
                             var ins = HWIntrinsicInfo.lookupIns(intrinsicId, baseType, compiler);
                             var tupleType = Emitter.insTupleTypeInfo(ins);
-                            var memSize = tupleType switch {
-                                INS_TT_HALF => simdSize / 2,
-                                INS_TT_HALF_MEM => simdSize / 2,
-                                INS_TT_QUARTER => simdSize / 4,
-                                INS_TT_QUARTER_MEM => simdSize / 4,
-                                INS_TT_EIGHTH_MEM => simdSize / 8,
-                                _ => throw new InvalidOperationException("Unexpected tuple type for a narrowing conversion."),
-                            };
+                            int __jitExceptionResult475;
+                            switch (tupleType)
+                            {
+                                case INS_TT_HALF:
+                                    __jitExceptionResult475 = simdSize / 2;
+                                    break;
+                                case INS_TT_HALF_MEM:
+                                    __jitExceptionResult475 = simdSize / 2;
+                                    break;
+                                case INS_TT_QUARTER:
+                                    __jitExceptionResult475 = simdSize / 4;
+                                    break;
+                                case INS_TT_QUARTER_MEM:
+                                    __jitExceptionResult475 = simdSize / 4;
+                                    break;
+                                case INS_TT_EIGHTH_MEM:
+                                    __jitExceptionResult475 = simdSize / 8;
+                                    break;
+                                default:
+                                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTupleTypeForANarrowingConversion);
+                                    __jitExceptionResult475 = default;
+                                    break;
+                            }
+                            var memSize = __jitExceptionResult475;
                             isContainable = node.Type.Size == memSize;
                             break;
                         }
@@ -347,8 +373,10 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Indirect-store containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndirectStoreContainmentIsNotPortedForThisTarget
+    );
         return;
     }
 }

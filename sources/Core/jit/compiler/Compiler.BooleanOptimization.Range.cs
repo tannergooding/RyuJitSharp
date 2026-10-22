@@ -14,28 +14,46 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private static genTreeOps SwapBooleanRelop(genTreeOps oper) => oper switch
+    private static genTreeOps SwapBooleanRelop(genTreeOps oper) {
+    switch (oper)
     {
-        GT_LE => GT_GE,
-        GT_LT => GT_GT,
-        GT_GE => GT_LE,
-        GT_GT => GT_LT,
-        GT_EQ => GT_EQ,
-        GT_NE => GT_NE,
-        _ => throw new System.ArgumentOutOfRangeException(nameof(oper)),
-    };
-
-    private static genTreeOps ReverseBooleanRelop(genTreeOps oper) => oper switch
+        case GT_LE:
+            return GT_GE;
+        case GT_LT:
+            return GT_GT;
+        case GT_GE:
+            return GT_LE;
+        case GT_GT:
+            return GT_LT;
+        case GT_EQ:
+            return GT_EQ;
+        case GT_NE:
+            return GT_NE;
+        default:
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Oper);
+            return default;
+    }
+}
+    private static genTreeOps ReverseBooleanRelop(genTreeOps oper) {
+    switch (oper)
     {
-        GT_LE => GT_GT,
-        GT_LT => GT_GE,
-        GT_GE => GT_LT,
-        GT_GT => GT_LE,
-        GT_EQ => GT_NE,
-        GT_NE => GT_EQ,
-        _ => throw new System.ArgumentOutOfRangeException(nameof(oper)),
-    };
-
+        case GT_LE:
+            return GT_GT;
+        case GT_LT:
+            return GT_GE;
+        case GT_GE:
+            return GT_LT;
+        case GT_GT:
+            return GT_LE;
+        case GT_EQ:
+            return GT_NE;
+        case GT_NE:
+            return GT_EQ;
+        default:
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Oper);
+            return default;
+    }
+}
     private static bool GetBooleanRangeIntersection(var_types type, genTreeOps firstOp, genTreeOps secondOp,
         nint firstConstant, nint secondConstant, out nint start, out nint end)
     {

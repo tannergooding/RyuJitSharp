@@ -495,8 +495,10 @@ public partial class Compiler
             {
                 if ((uint)block.Kind >= (uint)FlowGraphDumpData.Kinds.Length)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                        "Native XML flow-graph jump-kind table has no defined entry for this block kind (B350).");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.NativeXMLFlowGraphJumpKindTableHasNoDefinedEntryForThisBlockKindB350
+    );
                     return;
                 }
 

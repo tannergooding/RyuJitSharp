@@ -67,7 +67,7 @@ public partial class GenTree
     {
         if (!Configuration.NODEBASH_STATS)
         {
-            throw new System.InvalidOperationException("Node-bashing statistics are not enabled.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NodeBashingStatisticsAreNotEnabled);
         }
 
         uint total = 0;
@@ -114,7 +114,7 @@ public partial class GenTree
     {
         if (!Configuration.COUNT_AST_OPERS)
         {
-            throw new System.InvalidOperationException("GenTree operator counts are not enabled.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeOperatorCountsAreNotEnabled);
         }
 
         return ref s_gtNodeCounts[(int)op];
@@ -122,7 +122,10 @@ public partial class GenTree
 
     internal static byte GetTrueSize(uint op)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GenTree::s_gtTrueSizes native logical sizes are not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GenTreeSGtTrueSizesNativeLogicalSizesAreNotPorted
+    );
         return default!;
     }
 
@@ -134,7 +137,10 @@ public partial class GenTree
 
     private static byte GetNodeSize(uint op)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GenTreeSGtNodeSizesNativeAllocationSizesAreNotPorted
+    );
         return default!;
     }
 }

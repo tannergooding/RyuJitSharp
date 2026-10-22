@@ -11,7 +11,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 stack-allocation register selection is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StackAllocationRegisterSelectionIsNotSupportedOnThisTarget
+    );
             return default!;
         }
 

@@ -14,8 +14,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register memory instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterMemoryInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -54,8 +56,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Two-register memory-immediate recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TwoRegisterMemoryImmediateRecordingRequiresXarch
+    );
             return;
         }
 
@@ -88,8 +92,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-address-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterAddressRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -132,7 +138,10 @@ public partial class Emitter
         {
             if (!insOptsNone(instOptions))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 four-register instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32FourRegisterInstructionOptionsAreNotPorted
+    );
                 return;
             }
 
@@ -148,7 +157,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Four-register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FourRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 

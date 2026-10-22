@@ -32,8 +32,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Signed 20-bit immediates are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.Signed20BitImmediatesAreNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -45,8 +47,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "General-register-or-zero validation is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GeneralRegisterOrZeroValidationIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -66,8 +70,10 @@ public partial class Emitter
             return isValidVectorIndexLoongArch64(datasize, elemsize, index);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Vector-index validation is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.VectorIndexValidationIsNotSupportedForThisTarget
+    );
         return default!;
     }
 

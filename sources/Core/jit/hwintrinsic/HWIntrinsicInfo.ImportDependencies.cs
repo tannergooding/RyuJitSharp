@@ -13,7 +13,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Scalar-input intrinsic variants are only available on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalarInputIntrinsicVariantsAreOnlyAvailableOnARM64);
         }
 
         var flags = lookupFlags(id);
@@ -25,7 +25,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Tuple-derived intrinsic base types are only available on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.TupleDerivedIntrinsicBaseTypesAreOnlyAvailableOnARM64);
         }
 
         var flags = lookupFlags(id);
@@ -37,7 +37,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Scalar-input intrinsic variants are only available on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalarInputIntrinsicVariantsAreOnlyAvailableOnARM64);
         }
 
         assert(HasScalarInputVariant(id));
@@ -86,7 +86,7 @@ public readonly partial struct HWIntrinsicInfo
 
             default:
             {
-                FatalJitException.ThrowFatalJitException("Unexpected ARM64 scalar-input variant intrinsic.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedARM64ScalarInputVariantIntrinsic);
                 return default!;
             }
         }
@@ -96,7 +96,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
         {
-            throw new PlatformNotSupportedException("Packed SIMD immediate bounds are only available on WebAssembly.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.PackedSIMDImmediateBoundsAreOnlyAvailableOnWebAssembly);
         }
 
         switch (intrinsic)
@@ -121,7 +121,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
         {
-            throw new PlatformNotSupportedException("Packed SIMD immediate operands are only available on WebAssembly.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.PackedSIMDImmediateOperandsAreOnlyAvailableOnWebAssembly);
         }
 
         first = -1;

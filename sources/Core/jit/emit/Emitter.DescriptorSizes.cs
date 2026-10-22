@@ -71,7 +71,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 local-pair descriptors are unavailable on this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64LocalPairDescriptorsAreUnavailableOnThisTarget
+    );
                     return default!;
                 }
 
@@ -85,7 +88,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 local-pair descriptors are unavailable on this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64LocalPairDescriptorsAreUnavailableOnThisTarget
+    );
                     return default!;
                 }
 
@@ -100,7 +106,10 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_RISCV64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V load-immediate descriptors are unavailable on this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCVLoadImmediateDescriptorsAreUnavailableOnThisTarget
+    );
                     return default!;
                 }
 
@@ -120,24 +129,24 @@ public partial class Emitter
                 {
                     if (idIns() == INS_invalid)
                     {
-                        throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ThisInstructionRequiresAnInitializedDescriptorWithItsNativeLayout);
                     }
                 }
                 else if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
                 {
                     if (idIns() is INS_invalid or INS_align || (Configuration.TARGET_AMD64 && idIns() == INS_jmp))
                     {
-                        throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ThisInstructionRequiresAnInitializedDescriptorWithItsNativeLayout);
                     }
                 }
                 else
                 {
-                    throw new PlatformNotSupportedException("Base instruction descriptor size is not yet ported for this target.");
+                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.BaseInstructionDescriptorSizeIsNotYetPortedForThisTarget);
                 }
 
                 if (idIsLargeCns() || idIsLargeDsp() || idIsLargeCall())
                 {
-                    throw new NotSupportedException("Extended instruction descriptor layout is not yet ported.");
+                    JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.ExtendedInstructionDescriptorLayoutIsNotYetPorted);
                 }
 
                 return idIsSmallDsc() ? SMALL_IDSC_SIZE : INSTR_DESC_SIZE;
@@ -404,15 +413,18 @@ public partial class Emitter
             return descriptor.NativeLogicalSize;
         }
 
-        throw new PlatformNotSupportedException("Instruction descriptor sizes are not yet ported for this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.InstructionDescriptorSizesAreNotYetPortedForThisTarget);
+        return default;
     }
 
     private static int Arm64CallDescriptorSize()
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "The ARM64 call descriptor layout is only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64CallDescriptorLayoutIsOnlySupportedOnARM64
+    );
             return default!;
         }
 
@@ -422,8 +434,10 @@ public partial class Emitter
             // units at offsets 68 and 72, rounding the complete descriptor to 80.
             return 80;
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "The ARM64 call descriptor layout is not established for this ABI.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64CallDescriptorLayoutIsNotEstablishedForThisABI
+    );
         return default!;
     }
 }

@@ -155,10 +155,7 @@ public sealed partial class LinearScan : IRegAlloc
         assert(codeGen is not null);
         if (codeGen is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage281
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LSRARequiresInitializedCodegenState);
             return;
         }
 
@@ -441,12 +438,13 @@ public sealed partial class LinearScan : IRegAlloc
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED            );
             return;
         }
 
         NYI("LinearScan.allocateRegisters<true> consecutive-register allocation");
-        FatalJitException.ThrowFatalJitException("Consecutive-register allocation is not implemented.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConsecutiveRegisterAllocationIsNotImplemented);
         return;
     }
 

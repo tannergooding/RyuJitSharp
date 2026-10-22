@@ -59,7 +59,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage210);
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnknownIPMappingKind);
                 return;
             }
         }

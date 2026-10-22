@@ -47,10 +47,7 @@ public partial class Compiler
                 var targets = block.EhfTargets;
                 if (targets is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage107
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FinallyReturnRequiresItsSuccessorTable);
                     return;
                 }
                 var successors = new FlowEdge[targets.Succs.Length];

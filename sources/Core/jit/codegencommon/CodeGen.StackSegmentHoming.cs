@@ -27,7 +27,10 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_WASM ||
             (!Configuration.SWIFT_SUPPORT && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-segment homing is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StackSegmentHomingIsNotSupportedForThisTarget
+    );
             return;
         }
 

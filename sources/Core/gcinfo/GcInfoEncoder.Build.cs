@@ -419,7 +419,7 @@ public sealed unsafe partial class GcInfoEncoder : IDisposable
     {
         if (!m_Built || m_Emitted)
         {
-            throw new InvalidOperationException("Emit requires a completed Build and may only be called once.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitRequiresACompletedBuildAndMayOnlyBeCalledOnce);
         }
 
         ObjectDisposedException.ThrowIf(m_Disposed, this);

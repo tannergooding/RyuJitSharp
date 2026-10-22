@@ -300,7 +300,10 @@ public partial class Emitter
         var compiler = JitTls.Compiler;
         if (compiler is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "RISC-V64 emission requires an active compiler.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RISCV64EmissionRequiresAnActiveCompiler
+    );
             return default!;
         }
         return compiler.GetEmitter();

@@ -13,7 +13,10 @@ public sealed partial class CodeGen
         assert(genIsValidIntReg(dstReg));
         if (!Configuration.TARGET_ARMARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM condition-result generation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMConditionResultGenerationIsNotSupportedOnThisTarget
+    );
             return;
         }
 

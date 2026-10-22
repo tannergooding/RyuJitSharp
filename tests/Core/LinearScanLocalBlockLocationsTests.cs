@@ -111,7 +111,7 @@ internal static class LinearScanLocalBlockLocationsTests
 
             var exception = Assert.Throws<FatalJitException>(() => ProcessStart(allocator, block));
 
-            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.DirectFailureMessage327));
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.ResolutionOfAPredecessorSpilledRegisterRequiresANextReference));
             if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
             {
                 Assert.That(exception.Message, Does.Contain("requires a next reference"));
@@ -158,7 +158,7 @@ internal static class LinearScanLocalBlockLocationsTests
                 }
             });
 
-            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.DirectFailureMessage322));
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.LocalBlockLocationsRequireEnregisteredLocals));
             if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
             {
                 Assert.That(exception.Message, Does.Contain("require enregistered locals"));

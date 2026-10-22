@@ -377,7 +377,8 @@ public partial class Compiler
             }
             default:
             {
-                throw new System.Diagnostics.UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return;
             }
         }
         call._vnPair = vnStore.VNPairForCast(call.Args.GetUserArgByIndex(0)!.Node._vnPair,
@@ -668,9 +669,7 @@ public partial class Compiler
             }
             default:
             {
-                JitExceptionHelpers.ThrowUnreachableException(
-                    "RJS-VN-001",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unmapped VN helper: {helpFunc}" : null);
+                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnmappedVNHelperArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? helpFunc : default));
                 return default;
             }
         }

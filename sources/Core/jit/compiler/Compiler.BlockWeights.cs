@@ -42,7 +42,18 @@ public partial class Compiler
     public PhaseStatus optSetBlockWeights()
     {
         noway_assert(opts.OptimizationEnabled);
-        var dfsTree = _dfsTree ?? throw new InvalidOperationException("Block weights require a DFS tree.");
+        global::RyuJitSharp.FlowGraphDfsTree __jitExceptionResult116;
+        var __jitExceptionCoalesceLeft117 = _dfsTree;
+        if (__jitExceptionCoalesceLeft117 != null)
+        {
+            __jitExceptionResult116 = __jitExceptionCoalesceLeft117;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockWeightsRequireADFSTree);
+            __jitExceptionResult116 = default;
+        }
+        var dfsTree = __jitExceptionResult116;
 
         fgHasLoops = dfsTree.HasCycle;
         if (fgIsUsingProfileWeights)
@@ -53,7 +64,18 @@ public partial class Compiler
         var madeChanges = false;
         var domTree = _domTree ??= FlowGraphDominatorTree.Build(dfsTree);
         var reachabilitySets = _reachabilitySets ??= BlockReachabilitySets.Build(dfsTree);
-        var loops = _loops ?? throw new InvalidOperationException("Block weights require natural loops.");
+        global::RyuJitSharp.FlowGraphNaturalLoops __jitExceptionResult118;
+        var __jitExceptionCoalesceLeft119 = _loops;
+        if (__jitExceptionCoalesceLeft119 != null)
+        {
+            __jitExceptionResult118 = __jitExceptionCoalesceLeft119;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockWeightsRequireNaturalLoops);
+            __jitExceptionResult118 = default;
+        }
+        var loops = __jitExceptionResult118;
 
         foreach (var loop in loops.InReversePostOrder())
         {
@@ -84,7 +106,18 @@ public partial class Compiler
             }
         }
 
-        var firstBlock = fgFirstBB ?? throw new InvalidOperationException("Block weights require an entry block.");
+        global::RyuJitSharp.BasicBlock __jitExceptionResult120;
+        var __jitExceptionCoalesceLeft121 = fgFirstBB;
+        if (__jitExceptionCoalesceLeft121 != null)
+        {
+            __jitExceptionResult120 = __jitExceptionCoalesceLeft121;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockWeightsRequireAnEntryBlock);
+            __jitExceptionResult120 = default;
+        }
+        var firstBlock = __jitExceptionResult120;
         foreach (var block in Blocks)
         {
             if (!reachabilitySets.CanReach(firstBlock, block) && !block.isRunRarely && !block.hasProfileWeight)
@@ -124,7 +157,18 @@ public partial class Compiler
 
     private void optScaleLoopBlocks(FlowGraphNaturalLoop loop)
     {
-        var domTree = _domTree ?? throw new InvalidOperationException("Loop weights require dominators.");
+        global::RyuJitSharp.FlowGraphDominatorTree __jitExceptionResult122;
+        var __jitExceptionCoalesceLeft123 = _domTree;
+        if (__jitExceptionCoalesceLeft123 != null)
+        {
+            __jitExceptionResult122 = __jitExceptionCoalesceLeft123;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopWeightsRequireDominators);
+            __jitExceptionResult122 = default;
+        }
+        var domTree = __jitExceptionResult122;
         _ = loop.VisitLoopBlocks(curBlk => {
             void ReportBlockWeight(string message)
             {

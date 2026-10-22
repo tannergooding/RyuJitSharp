@@ -180,7 +180,8 @@ public static partial class genTreeOpsExtensions
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Tree operation diagnostics are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeOperationDiagnosticsAreOnlyAvailableInDebugBuilds);
+                return default;
             }
 
             return [

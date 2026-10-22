@@ -27,9 +27,9 @@ public partial class Compiler
             if (store is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage134
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.GCPointerStrengthReductionRequiresValueNumbering
+    );
                 return default!;
             }
             store.PeelOffsets(ref baseValue.LiberalAddr, out var liberalOffset);

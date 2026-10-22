@@ -251,8 +251,18 @@ public partial class Compiler
 
             if (funcHasColdSection)
             {
-                var coldInfo = coldUnwindInfo
-                    ?? throw new InvalidOperationException("Cold unwind information was not initialized.");
+                global::RyuJitSharp.UnwindInfo __jitExceptionResult249;
+                var __jitExceptionCoalesceLeft250 = coldUnwindInfo;
+                if (__jitExceptionCoalesceLeft250 != null)
+                {
+                    __jitExceptionResult249 = __jitExceptionCoalesceLeft250;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ColdUnwindInformationWasNotInitialized);
+                    __jitExceptionResult249 = default;
+                }
+                var coldInfo = __jitExceptionResult249;
                 coldInfo.Split();
                 coldInfo.Reserve(isFunclet, false);
             }
@@ -279,8 +289,18 @@ public partial class Compiler
 
             if (funcHasColdSection)
             {
-                var coldUnwindInfo = func.uwiCold
-                    ?? throw new InvalidOperationException("Cold unwind information was not initialized.");
+                global::RyuJitSharp.UnwindInfo __jitExceptionResult251;
+                var __jitExceptionCoalesceLeft252 = func.uwiCold;
+                if (__jitExceptionCoalesceLeft252 != null)
+                {
+                    __jitExceptionResult251 = __jitExceptionCoalesceLeft252;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ColdUnwindInformationWasNotInitialized);
+                    __jitExceptionResult251 = default;
+                }
+                var coldUnwindInfo = __jitExceptionResult251;
                 coldUnwindInfo.Split();
                 coldUnwindInfo.Reserve(isFunclet, false);
             }
@@ -288,7 +308,7 @@ public partial class Compiler
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target unwind reservation is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetUnwindReservationIsNotPorted);
         return;
     }
 
@@ -353,7 +373,7 @@ public partial class Compiler
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target unwind emission is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetUnwindEmissionIsNotPorted);
         return;
     }
 
@@ -361,7 +381,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target unwind recording is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetUnwindRecordingIsNotPorted);
             return;
         }
     }
@@ -370,7 +390,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target epilog unwind recording is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetEpilogUnwindRecordingIsNotPorted);
             return;
         }
     }

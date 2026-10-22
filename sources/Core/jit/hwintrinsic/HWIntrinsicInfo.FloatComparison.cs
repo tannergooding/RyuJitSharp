@@ -15,7 +15,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new InvalidOperationException("Floating-point comparison intrinsics require an xarch target.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FloatingPointComparisonIntrinsicsRequireAnXarchTarget);
         }
 
         assert(varTypeIsFloating(simdBaseType));

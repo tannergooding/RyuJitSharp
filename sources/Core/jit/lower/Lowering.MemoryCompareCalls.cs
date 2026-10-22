@@ -27,9 +27,9 @@ public sealed partial class Lowering
             }
 
             FatalJitException.ThrowFatalJitException(
-                CORJIT_IMPLLIMITATION,
-                FatalJitErrorCode.DirectFailureMessage259
-            );
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.UnsupportedSIMDMemoryComparisonOperation
+    );
             return default!;
         }
 
@@ -122,7 +122,7 @@ public sealed partial class Lowering
         }
         if (loadType is TYP_UNDEF)
         {
-            throw new InvalidOperationException("Unsupported memory comparison load width.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedMemoryComparisonLoadWidth);
         }
         var actualLoadType = loadType.ActualType;
 

@@ -12,7 +12,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD creation requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDCreationRequiresHardwareIntrinsics);
             return default!;
         }
 

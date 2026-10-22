@@ -39,7 +39,10 @@ public sealed partial class CodeGen
             }
 
             NYI("ins_Move_Extend");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Integer extension instruction selection is not implemented on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IntegerExtensionInstructionSelectionIsNotImplementedOnThisTarget
+    );
             return default!;
         }
 
@@ -47,8 +50,10 @@ public sealed partial class CodeGen
         {
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Masked-register extension requires masked hardware intrinsics.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterExtensionRequiresMaskedHardwareIntrinsics
+    );
                 return default!;
             }
 
@@ -62,8 +67,10 @@ public sealed partial class CodeGen
                 return INS_sve_mov;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Masked-register extension is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedRegisterExtensionIsNotImplementedForThisTarget
+    );
             return default!;
         }
 
@@ -103,7 +110,10 @@ public sealed partial class CodeGen
         }
 
         NYI("ins_Move_Extend");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-point extension instruction selection is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingPointExtensionInstructionSelectionIsNotImplementedOnThisTarget
+    );
         return default!;
     }
 

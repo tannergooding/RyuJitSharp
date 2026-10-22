@@ -32,7 +32,7 @@ public sealed partial class InlineContext
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Inline context diagnostic state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineContextDiagnosticStateIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

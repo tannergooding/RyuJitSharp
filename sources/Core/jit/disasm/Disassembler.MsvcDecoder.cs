@@ -238,8 +238,7 @@ public partial struct Disassembler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED, "MSVCDIS does not support this JIT target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MSVCDISDoesNotSupportThisJITTarget);
             return;
         }
 

@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-local stores are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterLocalStoresAreNotSupportedOnWasm);
             return;
         }
 
@@ -201,7 +201,10 @@ public sealed partial class CodeGen
         }
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Multi-register SIMD local stores require xarch SIMD support.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MultiRegisterSIMDLocalStoresRequireXarchSIMDSupport
+    );
             return;
         }
 
@@ -212,7 +215,10 @@ public sealed partial class CodeGen
 
             // The native Windows AMD64 branch asserts that this ABI case is unsupported.
             // Reject before its operand-consumption preamble rather than returning success.
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage086);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MultiRegisterReturnsIntoSIMDRegistersAreUnsupportedOnWindowsAMD64
+    );
             return;
         }
 
@@ -278,7 +284,10 @@ public sealed partial class CodeGen
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Multi-register SIMD local stores are unsupported for this xarch ABI.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MultiRegisterSIMDLocalStoresAreUnsupportedForThisXarchABI
+    );
         return;
     }
 }

@@ -15,7 +15,18 @@ public sealed partial class ObjectAllocator
         var compiler = CompilerInstance;
         assert(!info.CheckedCanClone);
         JITDUMP($"** Seeing if we can clone to guarantee non-escape under V{info.Local:D2}\n");
-        var allocBlock = info.AllocBlock ?? throw new InvalidOperationException("Missing enumerator allocation block.");
+        global::RyuJitSharp.BasicBlock __jitExceptionResult482;
+        var __jitExceptionCoalesceLeft483 = info.AllocBlock;
+        if (__jitExceptionCoalesceLeft483 != null)
+        {
+            __jitExceptionResult482 = __jitExceptionCoalesceLeft483;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAllocationBlock);
+            __jitExceptionResult482 = default;
+        }
+        var allocBlock = __jitExceptionResult482;
 
         if (info.HasConflictingRedefinition)
         {
@@ -53,7 +64,18 @@ public sealed partial class ObjectAllocator
         // T0 through Tv convey the allocation to V's sole definition; U locals copy V
         // afterward. Tv can also have an empty-static definition outside the allocation
         // path, so its final use and the allocation predecessor have special dominance rules.
-        var appearanceMap = info.AppearanceMap ?? throw new InvalidOperationException("Missing enumerator appearances.");
+        global::System.Collections.Generic.Dictionary<int, global::RyuJitSharp.ObjectAllocator.EnumeratorVar> __jitExceptionResult484;
+        var __jitExceptionCoalesceLeft485 = info.AppearanceMap;
+        if (__jitExceptionCoalesceLeft485 != null)
+        {
+            __jitExceptionResult484 = __jitExceptionCoalesceLeft485;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAppearances);
+            __jitExceptionResult484 = default;
+        }
+        var appearanceMap = __jitExceptionResult484;
         if (!appearanceMap.TryGetValue(info.Local, out var variable))
         {
             JITDUMP($"Unexpected: no appearance info for V{info.Local:D2}\n");
@@ -66,7 +88,18 @@ public sealed partial class ObjectAllocator
             return false;
         }
 
-        var def = variable.Def ?? throw new InvalidOperationException("Missing enumerator definition.");
+        global::RyuJitSharp.ObjectAllocator.EnumeratorVarAppearance __jitExceptionResult486;
+        var __jitExceptionCoalesceLeft487 = variable.Def;
+        if (__jitExceptionCoalesceLeft487 != null)
+        {
+            __jitExceptionResult486 = __jitExceptionCoalesceLeft487;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorDefinition);
+            __jitExceptionResult486 = default;
+        }
+        var def = __jitExceptionResult486;
         var defBlock = def.Block;
         var defStmt = def.Stmt;
         if (Configuration.DEBUG)
@@ -127,7 +160,18 @@ public sealed partial class ObjectAllocator
         JITDUMP($"allocation side cloning: {unchecked((nuint)(visited.Count - 1))} blocks\n");
 
         // The GDV hammock is assumed to prevent a normal path bypassing defBlock.
-        var domTree = compiler._domTree ?? throw new InvalidOperationException("Conditional escape requires dominators.");
+        global::RyuJitSharp.FlowGraphDominatorTree __jitExceptionResult488;
+        var __jitExceptionCoalesceLeft489 = compiler._domTree;
+        if (__jitExceptionCoalesceLeft489 != null)
+        {
+            __jitExceptionResult488 = __jitExceptionCoalesceLeft489;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalEscapeRequiresDominators);
+            __jitExceptionResult488 = default;
+        }
+        var domTree = __jitExceptionResult488;
         if (domTree.Dominates(allocBlock, defBlock))
         {
             JITDUMP($"Unexpected, alloc site {FMT_BB(allocBlock.bbNum)} dominates def block {FMT_BB(defBlock.bbNum)}. " +
@@ -135,8 +179,18 @@ public sealed partial class ObjectAllocator
         }
         else
         {
-            var possibleGuardBlock = defBlock.bbIDom ??
-                throw new InvalidOperationException("Conditional allocation's definition has no dominator.");
+            global::RyuJitSharp.BasicBlock __jitExceptionResult112;
+            var __jitExceptionCoalesceLeft113 = defBlock.bbIDom;
+            if (__jitExceptionCoalesceLeft113 != null)
+            {
+                __jitExceptionResult112 = __jitExceptionCoalesceLeft113;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalAllocationSDefinitionHasNoDominator);
+                __jitExceptionResult112 = default;
+            }
+            var possibleGuardBlock = __jitExceptionResult112;
             var guard = new GuardInfo();
             if (IsGuard(possibleGuardBlock, guard) is not null)
             {
@@ -151,8 +205,18 @@ public sealed partial class ObjectAllocator
 
         foreach (var (lclNum, enumeratorVar) in appearanceMap)
         {
-            var appearances = enumeratorVar.Appearances ??
-                throw new InvalidOperationException("Missing enumerator appearance list.");
+            global::System.Collections.Generic.List<global::RyuJitSharp.ObjectAllocator.EnumeratorVarAppearance> __jitExceptionResult114;
+            var __jitExceptionCoalesceLeft115 = enumeratorVar.Appearances;
+            if (__jitExceptionCoalesceLeft115 != null)
+            {
+                __jitExceptionResult114 = __jitExceptionCoalesceLeft115;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAppearanceList);
+                __jitExceptionResult114 = default;
+            }
+            var appearances = __jitExceptionResult114;
 
             foreach (var appearance in appearances)
             {
@@ -224,7 +288,18 @@ public sealed partial class ObjectAllocator
 
         var domCheckBlock = allocBlock;
         var domCheckBlockName = "alloc";
-        var allocTree = info.AllocTree ?? throw new InvalidOperationException("Missing enumerator allocation tree.");
+        global::RyuJitSharp.GenTree __jitExceptionResult490;
+        var __jitExceptionCoalesceLeft491 = info.AllocTree;
+        if (__jitExceptionCoalesceLeft491 != null)
+        {
+            __jitExceptionResult490 = __jitExceptionCoalesceLeft491;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAllocationTree);
+            __jitExceptionResult490 = default;
+        }
+        var allocTree = __jitExceptionResult490;
         if ((allocTree.Flags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
         {
             var uniquePred = domCheckBlock.GetUniquePred(compiler);
@@ -242,8 +317,18 @@ public sealed partial class ObjectAllocator
                 continue;
             }
 
-            var appearances = enumeratorVar.Appearances ??
-                throw new InvalidOperationException("Missing allocation-temp appearances.");
+            global::System.Collections.Generic.List<global::RyuJitSharp.ObjectAllocator.EnumeratorVarAppearance> __jitExceptionResult116;
+            var __jitExceptionCoalesceLeft117 = enumeratorVar.Appearances;
+            if (__jitExceptionCoalesceLeft117 != null)
+            {
+                __jitExceptionResult116 = __jitExceptionCoalesceLeft117;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAllocationTempAppearances);
+                __jitExceptionResult116 = default;
+            }
+            var appearances = __jitExceptionResult116;
             foreach (var appearance in appearances)
             {
                 if (enumeratorVar.IsFinalAllocTemp && (appearance.Block == defBlock) && !appearance.IsDef)
@@ -268,8 +353,18 @@ public sealed partial class ObjectAllocator
                 continue;
             }
 
-            var appearances = enumeratorVar.Appearances ??
-                throw new InvalidOperationException("Missing use-temp appearances.");
+            global::System.Collections.Generic.List<global::RyuJitSharp.ObjectAllocator.EnumeratorVarAppearance> __jitExceptionResult118;
+            var __jitExceptionCoalesceLeft119 = enumeratorVar.Appearances;
+            if (__jitExceptionCoalesceLeft119 != null)
+            {
+                __jitExceptionResult118 = __jitExceptionCoalesceLeft119;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingUseTempAppearances);
+                __jitExceptionResult118 = default;
+            }
+            var appearances = __jitExceptionResult118;
             foreach (var appearance in appearances)
             {
                 var appearanceBlock = appearance.Block;
@@ -289,7 +384,18 @@ public sealed partial class ObjectAllocator
         }
 
         JITDUMP("The defBlock dominates the right set of enumerator var uses\n");
-        var dfsTree = compiler._dfsTree ?? throw new InvalidOperationException("Conditional escape requires DFS.");
+        global::RyuJitSharp.FlowGraphDfsTree __jitExceptionResult492;
+        var __jitExceptionCoalesceLeft493 = compiler._dfsTree;
+        if (__jitExceptionCoalesceLeft493 != null)
+        {
+            __jitExceptionResult492 = __jitExceptionCoalesceLeft493;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalEscapeRequiresDFS);
+            __jitExceptionResult492 = default;
+        }
+        var dfsTree = __jitExceptionResult492;
 
         while (toVisit.Count > 0)
         {

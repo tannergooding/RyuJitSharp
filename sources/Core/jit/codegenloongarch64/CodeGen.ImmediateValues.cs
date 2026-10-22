@@ -52,7 +52,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Immediate materialization uses a separate target implementation.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ImmediateMaterializationUsesASeparateTargetImplementation
+    );
             return;
         }
 

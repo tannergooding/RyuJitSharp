@@ -35,7 +35,8 @@ internal static class JitStdIteratorTraits<TIterator>
             return JitStdIteratorCategory.NotAnIterator;
         }
 
-        throw new NotSupportedException($"Iterator traits are not defined for {typeof(TIterator)}.");
+        JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.IteratorTraitsAreNotDefinedForArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? typeof(TIterator) : default));
+        return default;
     }
 
     internal static JitStdIteratorCategory PointerCategory => JitStdIteratorCategory.RandomAccess;

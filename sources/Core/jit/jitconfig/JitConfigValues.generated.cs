@@ -411,7 +411,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'AltJitLimit' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "AltJitLimit" : default);
+                return default!;
             }
             return _altJitLimit;
         }
@@ -422,7 +423,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'AltJitSkipOnAssert' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "AltJitSkipOnAssert" : default);
+                return default!;
             }
             return _altJitSkipOnAssert;
         }
@@ -433,7 +435,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'BreakOnDumpToken' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "BreakOnDumpToken" : default);
+                return default!;
             }
             return _breakOnDumpToken;
         }
@@ -444,7 +447,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'DebugBreakOnVerificationFailure' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "DebugBreakOnVerificationFailure" : default);
+                return default!;
             }
             return _debugBreakOnVerificationFailure;
         }
@@ -455,7 +459,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'DisplayLoopHoistStats' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "DisplayLoopHoistStats" : default);
+                return default!;
             }
             return _displayLoopHoistStats;
         }
@@ -466,7 +471,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'DisplayLsraStats' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "DisplayLsraStats" : default);
+                return default!;
             }
             return _displayLsraStats;
         }
@@ -477,7 +483,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitLsraOrdering' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitLsraOrdering" : default);
+                return default!;
             }
             return _jitLsraOrdering;
         }
@@ -488,7 +495,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'EnablePCRelAddr' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "EnablePCRelAddr" : default);
+                return default!;
             }
             return _enablePCRelAddr;
         }
@@ -499,7 +507,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAssertOnMaxRAPasses' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAssertOnMaxRAPasses" : default);
+                return default!;
             }
             return _jitAssertOnMaxRAPasses;
         }
@@ -510,7 +519,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitBreakEmitOutputInstr' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitBreakEmitOutputInstr" : default);
+                return default!;
             }
             return _jitBreakEmitOutputInstr;
         }
@@ -521,7 +531,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitBreakMorphTree' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitBreakMorphTree" : default);
+                return default!;
             }
             return _jitBreakMorphTree;
         }
@@ -532,7 +543,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitBreakOnBadCode' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitBreakOnBadCode" : default);
+                return default!;
             }
             return _jitBreakOnBadCode;
         }
@@ -543,7 +555,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitBreakOnMinOpts' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitBreakOnMinOpts" : default);
+                return default!;
             }
             return _jitBreakOnMinOpts;
         }
@@ -554,7 +567,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitCloneLoops' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitCloneLoops" : default);
+                return default!;
             }
             return _jitCloneLoops;
         }
@@ -565,7 +579,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitCloneLoopsWithEH' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitCloneLoopsWithEH" : default);
+                return default!;
             }
             return _jitCloneLoopsWithEH;
         }
@@ -576,7 +591,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitCloneLoopsWithGdvTests' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitCloneLoopsWithGdvTests" : default);
+                return default!;
             }
             return _jitCloneLoopsWithGdvTests;
         }
@@ -589,7 +605,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDebugLogLoopCloning' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDebugLogLoopCloning" : default);
+                return default!;
             }
             return _jitDebugLogLoopCloning;
         }
@@ -600,7 +617,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAlignLoopMinBlockWeight' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAlignLoopMinBlockWeight" : default);
+                return default!;
             }
             return _jitAlignLoopMinBlockWeight;
         }
@@ -611,7 +629,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAlignLoopMaxCodeSize' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAlignLoopMaxCodeSize" : default);
+                return default!;
             }
             return _jitAlignLoopMaxCodeSize;
         }
@@ -622,7 +641,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAlignLoopBoundary' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAlignLoopBoundary" : default);
+                return default!;
             }
             return _jitAlignLoopBoundary;
         }
@@ -633,7 +653,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAlignLoopForJcc' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAlignLoopForJcc" : default);
+                return default!;
             }
             return _jitAlignLoopForJcc;
         }
@@ -644,7 +665,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAlignLoopAdaptive' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAlignLoopAdaptive" : default);
+                return default!;
             }
             return _jitAlignLoopAdaptive;
         }
@@ -655,7 +677,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitHideAlignBehindJmp' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitHideAlignBehindJmp" : default);
+                return default!;
             }
             return _jitHideAlignBehindJmp;
         }
@@ -666,7 +689,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOptimizeStructHiddenBuffer' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOptimizeStructHiddenBuffer" : default);
+                return default!;
             }
             return _jitOptimizeStructHiddenBuffer;
         }
@@ -678,7 +702,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitUnrollLoopMaxIterationCount' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitUnrollLoopMaxIterationCount" : default);
+                return default!;
             }
             return _jitUnrollLoopMaxIterationCount;
         }
@@ -689,7 +714,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitUnrollLoopsWithEH' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitUnrollLoopsWithEH" : default);
+                return default!;
             }
             return _jitUnrollLoopsWithEH;
         }
@@ -700,7 +726,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDirectAlloc' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDirectAlloc" : default);
+                return default!;
             }
             return _jitDirectAlloc;
         }
@@ -711,7 +738,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoubleAlign' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoubleAlign" : default);
+                return default!;
             }
             return _jitDoubleAlign;
         }
@@ -722,7 +750,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEmitPrintRefRegs' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEmitPrintRefRegs" : default);
+                return default!;
             }
             return _jitEmitPrintRefRegs;
         }
@@ -733,7 +762,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableDevirtualization' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableDevirtualization" : default);
+                return default!;
             }
             return _jitEnableDevirtualization;
         }
@@ -744,7 +774,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableLateDevirtualization' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableLateDevirtualization" : default);
+                return default!;
             }
             return _jitEnableLateDevirtualization;
         }
@@ -755,7 +786,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitExpensiveDebugCheckLevel' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitExpensiveDebugCheckLevel" : default);
+                return default!;
             }
             return _jitExpensiveDebugCheckLevel;
         }
@@ -766,7 +798,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitForceFallback' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitForceFallback" : default);
+                return default!;
             }
             return _jitForceFallback;
         }
@@ -777,7 +810,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitFullyInt' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitFullyInt" : default);
+                return default!;
             }
             return _jitFullyInt;
         }
@@ -788,7 +822,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitFunctionTrace' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitFunctionTrace" : default);
+                return default!;
             }
             return _jitFunctionTrace;
         }
@@ -799,7 +834,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitGCChecks' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitGCChecks" : default);
+                return default!;
             }
             return _jitGCChecks;
         }
@@ -810,7 +846,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitGCInfoLogging' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitGCInfoLogging" : default);
+                return default!;
             }
             return _jitGCInfoLogging;
         }
@@ -821,7 +858,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitHashBreak' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitHashBreak" : default);
+                return default!;
             }
             return _jitHashBreak;
         }
@@ -832,7 +870,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitHashHalt' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitHashHalt" : default);
+                return default!;
             }
             return _jitHashHalt;
         }
@@ -843,7 +882,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineAdditionalMultiplier' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineAdditionalMultiplier" : default);
+                return default!;
             }
             return _jitInlineAdditionalMultiplier;
         }
@@ -854,7 +894,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePrintStats' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePrintStats" : default);
+                return default!;
             }
             return _jitInlinePrintStats;
         }
@@ -865,7 +906,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineSize' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineSize" : default);
+                return default!;
             }
             return _jitInlineSize;
         }
@@ -876,7 +918,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineDepth' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineDepth" : default);
+                return default!;
             }
             return _jitInlineDepth;
         }
@@ -888,7 +931,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitForceInlineDepth' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitForceInlineDepth" : default);
+                return default!;
             }
             return _jitForceInlineDepth;
         }
@@ -900,7 +944,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineMethodsWithEHRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineMethodsWithEHRange" : default);
+                return default!;
             }
             return _jitInlineMethodsWithEHRange;
         }
@@ -911,7 +956,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOptimizeAwaitRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOptimizeAwaitRange" : default);
+                return default!;
             }
             return _jitOptimizeAwaitRange;
         }
@@ -922,7 +968,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAwaitHashBreak' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAwaitHashBreak" : default);
+                return default!;
             }
             return _jitAwaitHashBreak;
         }
@@ -933,7 +980,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitLongAddress' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitLongAddress" : default);
+                return default!;
             }
             return _jitLongAddress;
         }
@@ -944,7 +992,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMaxUncheckedOffset' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMaxUncheckedOffset" : default);
+                return default!;
             }
             return _jitMaxUncheckedOffset;
         }
@@ -957,7 +1006,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOpts' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOpts" : default);
+                return default!;
             }
             return _jitMinOpts;
         }
@@ -968,7 +1018,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOptsName' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOptsName" : default);
+                return default!;
             }
             return _jitMinOptsName;
         }
@@ -979,7 +1030,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOptsBbCount' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOptsBbCount" : default);
+                return default!;
             }
             return _jitMinOptsBbCount;
         }
@@ -990,7 +1042,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOptsCodeSize' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOptsCodeSize" : default);
+                return default!;
             }
             return _jitMinOptsCodeSize;
         }
@@ -1001,7 +1054,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOptsInstrCount' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOptsInstrCount" : default);
+                return default!;
             }
             return _jitMinOptsInstrCount;
         }
@@ -1012,7 +1066,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOptsLvNumCount' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOptsLvNumCount" : default);
+                return default!;
             }
             return _jitMinOptsLvNumCount;
         }
@@ -1023,7 +1078,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMinOptsLvRefCount' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMinOptsLvRefCount" : default);
+                return default!;
             }
             return _jitMinOptsLvRefCount;
         }
@@ -1034,7 +1090,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoCSE' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoCSE" : default);
+                return default!;
             }
             return _jitNoCSE;
         }
@@ -1045,7 +1102,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoCSE2' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoCSE2" : default);
+                return default!;
             }
             return _jitNoCSE2;
         }
@@ -1056,7 +1114,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoForceFallback' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoForceFallback" : default);
+                return default!;
             }
             return _jitNoForceFallback;
         }
@@ -1067,7 +1126,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoForwardSub' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoForwardSub" : default);
+                return default!;
             }
             return _jitNoForwardSub;
         }
@@ -1078,7 +1138,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoHoist' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoHoist" : default);
+                return default!;
             }
             return _jitNoHoist;
         }
@@ -1089,7 +1150,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoMemoryBarriers' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoMemoryBarriers" : default);
+                return default!;
             }
             return _jitNoMemoryBarriers;
         }
@@ -1100,7 +1162,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoStructPromotion' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoStructPromotion" : default);
+                return default!;
             }
             return _jitNoStructPromotion;
         }
@@ -1111,7 +1174,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoUnroll' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoUnroll" : default);
+                return default!;
             }
             return _jitNoUnroll;
         }
@@ -1122,7 +1186,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOrder' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOrder" : default);
+                return default!;
             }
             return _jitOrder;
         }
@@ -1133,7 +1198,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitQueryCurrentStaticFieldClass' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitQueryCurrentStaticFieldClass" : default);
+                return default!;
             }
             return _jitQueryCurrentStaticFieldClass;
         }
@@ -1144,7 +1210,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitReportFastTailCallDecisions' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitReportFastTailCallDecisions" : default);
+                return default!;
             }
             return _jitReportFastTailCallDecisions;
         }
@@ -1155,7 +1222,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitPInvokeCheckEnabled' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitPInvokeCheckEnabled" : default);
+                return default!;
             }
             return _jitPInvokeCheckEnabled;
         }
@@ -1166,7 +1234,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitPInvokeEnabled' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitPInvokeEnabled" : default);
+                return default!;
             }
             return _jitPInvokeEnabled;
         }
@@ -1177,7 +1246,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitHoistLimit' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitHoistLimit" : default);
+                return default!;
             }
             return _jitHoistLimit;
         }
@@ -1188,7 +1258,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitPrintInlinedMethodsVerbose' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitPrintInlinedMethodsVerbose" : default);
+                return default!;
             }
             return _jitPrintInlinedMethodsVerbose;
         }
@@ -1199,7 +1270,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitPrintInlinedMethods' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitPrintInlinedMethods" : default);
+                return default!;
             }
             return _jitPrintInlinedMethods;
         }
@@ -1210,7 +1282,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitPrintDevirtualizedMethods' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitPrintDevirtualizedMethods" : default);
+                return default!;
             }
             return _jitPrintDevirtualizedMethods;
         }
@@ -1221,7 +1294,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitProfileChecks' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitProfileChecks" : default);
+                return default!;
             }
             return _jitProfileChecks;
         }
@@ -1232,7 +1306,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRequired' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRequired" : default);
+                return default!;
             }
             return _jitRequired;
         }
@@ -1243,7 +1318,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStackAllocToLocalSize' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStackAllocToLocalSize" : default);
+                return default!;
             }
             return _jitStackAllocToLocalSize;
         }
@@ -1254,7 +1330,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSkipArrayBoundCheck' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSkipArrayBoundCheck" : default);
+                return default!;
             }
             return _jitSkipArrayBoundCheck;
         }
@@ -1265,7 +1342,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnablePhaseChecks' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnablePhaseChecks" : default);
+                return default!;
             }
             return _jitEnablePhaseChecks;
         }
@@ -1276,7 +1354,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSplitFunctionSize' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSplitFunctionSize" : default);
+                return default!;
             }
             return _jitSplitFunctionSize;
         }
@@ -1287,7 +1366,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSsaStress' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSsaStress" : default);
+                return default!;
             }
             return _jitSsaStress;
         }
@@ -1298,7 +1378,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStackChecks' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStackChecks" : default);
+                return default!;
             }
             return _jitStackChecks;
         }
@@ -1309,7 +1390,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStress' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStress" : default);
+                return default!;
             }
             return _jitStress;
         }
@@ -1320,7 +1402,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressBBProf' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressBBProf" : default);
+                return default!;
             }
             return _jitStressBBProf;
         }
@@ -1331,7 +1414,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressProcedureSplitting' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressProcedureSplitting" : default);
+                return default!;
             }
             return _jitStressProcedureSplitting;
         }
@@ -1342,7 +1426,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressRegs' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressRegs" : default);
+                return default!;
             }
             return _jitStressRegs;
         }
@@ -1353,7 +1438,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressRegsRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressRegsRange" : default);
+                return default!;
             }
             return _jitStressRegsRange;
         }
@@ -1364,7 +1450,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressSplitTreeLimit' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressSplitTreeLimit" : default);
+                return default!;
             }
             return _jitStressSplitTreeLimit;
         }
@@ -1375,7 +1462,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitVNMapSelLimit' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitVNMapSelLimit" : default);
+                return default!;
             }
             return _jitVNMapSelLimit;
         }
@@ -1386,7 +1474,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'RunAltJitCode' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "RunAltJitCode" : default);
+                return default!;
             }
             return _runAltJitCode;
         }
@@ -1397,7 +1486,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'RunComponentUnitTests' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "RunComponentUnitTests" : default);
+                return default!;
             }
             return _runComponentUnitTests;
         }
@@ -1408,7 +1498,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'ShouldInjectFault' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "ShouldInjectFault" : default);
+                return default!;
             }
             return _shouldInjectFault;
         }
@@ -1419,7 +1510,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'TailcallStress' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "TailcallStress" : default);
+                return default!;
             }
             return _tailcallStress;
         }
@@ -1430,7 +1522,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitBreak' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitBreak" : default);
+                return default!;
             }
             return _jitBreak;
         }
@@ -1441,7 +1534,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDebugBreak' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDebugBreak" : default);
+                return default!;
             }
             return _jitDebugBreak;
         }
@@ -1452,7 +1546,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDump' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDump" : default);
+                return default!;
             }
             return _jitDump;
         }
@@ -1463,7 +1558,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitHashDump' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitHashDump" : default);
+                return default!;
             }
             return _jitHashDump;
         }
@@ -1474,7 +1570,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpTier0' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpTier0" : default);
+                return default!;
             }
             return _jitDumpTier0;
         }
@@ -1485,7 +1582,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpOSR' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpOSR" : default);
+                return default!;
             }
             return _jitDumpOSR;
         }
@@ -1496,7 +1594,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpAtOSROffset' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpAtOSROffset" : default);
+                return default!;
             }
             return _jitDumpAtOSROffset;
         }
@@ -1507,7 +1606,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpInlinePhases' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpInlinePhases" : default);
+                return default!;
             }
             return _jitDumpInlinePhases;
         }
@@ -1518,7 +1618,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpASCII' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpASCII" : default);
+                return default!;
             }
             return _jitDumpASCII;
         }
@@ -1529,7 +1630,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpTerseLsra' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpTerseLsra" : default);
+                return default!;
             }
             return _jitDumpTerseLsra;
         }
@@ -1540,7 +1642,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpToDebugger' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpToDebugger" : default);
+                return default!;
             }
             return _jitDumpToDebugger;
         }
@@ -1551,7 +1654,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpVerboseSsa' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpVerboseSsa" : default);
+                return default!;
             }
             return _jitDumpVerboseSsa;
         }
@@ -1562,7 +1666,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpVerboseTrees' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpVerboseTrees" : default);
+                return default!;
             }
             return _jitDumpVerboseTrees;
         }
@@ -1573,7 +1678,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpTreeIDs' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpTreeIDs" : default);
+                return default!;
             }
             return _jitDumpTreeIDs;
         }
@@ -1584,7 +1690,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpBeforeAfterMorph' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpBeforeAfterMorph" : default);
+                return default!;
             }
             return _jitDumpBeforeAfterMorph;
         }
@@ -1595,7 +1702,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpTerseNextBlock' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpTerseNextBlock" : default);
+                return default!;
             }
             return _jitDumpTerseNextBlock;
         }
@@ -1606,7 +1714,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEHDump' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEHDump" : default);
+                return default!;
             }
             return _jitEHDump;
         }
@@ -1617,7 +1726,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitExclude' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitExclude" : default);
+                return default!;
             }
             return _jitExclude;
         }
@@ -1628,7 +1738,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitFakeProcedureSplitting' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitFakeProcedureSplitting" : default);
+                return default!;
             }
             return _jitFakeProcedureSplitting;
         }
@@ -1639,7 +1750,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitForceProcedureSplitting' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitForceProcedureSplitting" : default);
+                return default!;
             }
             return _jitForceProcedureSplitting;
         }
@@ -1650,7 +1762,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitGCDump' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitGCDump" : default);
+                return default!;
             }
             return _jitGCDump;
         }
@@ -1661,7 +1774,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDebugDump' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDebugDump" : default);
+                return default!;
             }
             return _jitDebugDump;
         }
@@ -1672,7 +1786,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitHalt' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitHalt" : default);
+                return default!;
             }
             return _jitHalt;
         }
@@ -1683,7 +1798,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInclude' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInclude" : default);
+                return default!;
             }
             return _jitInclude;
         }
@@ -1694,7 +1810,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitLateDisasm' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitLateDisasm" : default);
+                return default!;
             }
             return _jitLateDisasm;
         }
@@ -1705,7 +1822,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitLateDisasmTo' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitLateDisasmTo" : default);
+                return default!;
             }
             return _jitLateDisasmTo;
         }
@@ -1716,7 +1834,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoProcedureSplitting' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoProcedureSplitting" : default);
+                return default!;
             }
             return _jitNoProcedureSplitting;
         }
@@ -1727,7 +1846,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoProcedureSplittingEH' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoProcedureSplittingEH" : default);
+                return default!;
             }
             return _jitNoProcedureSplittingEH;
         }
@@ -1738,7 +1858,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressOnly' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressOnly" : default);
+                return default!;
             }
             return _jitStressOnly;
         }
@@ -1749,7 +1870,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitUnwindDump' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitUnwindDump" : default);
+                return default!;
             }
             return _jitUnwindDump;
         }
@@ -1760,7 +1882,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFg' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFg" : default);
+                return default!;
             }
             return _jitDumpFg;
         }
@@ -1771,7 +1894,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgHash' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgHash" : default);
+                return default!;
             }
             return _jitDumpFgHash;
         }
@@ -1782,7 +1906,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgTier0' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgTier0" : default);
+                return default!;
             }
             return _jitDumpFgTier0;
         }
@@ -1793,7 +1918,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgDir' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgDir" : default);
+                return default!;
             }
             return _jitDumpFgDir;
         }
@@ -1804,7 +1930,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgFile' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgFile" : default);
+                return default!;
             }
             return _jitDumpFgFile;
         }
@@ -1815,7 +1942,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgPhase' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgPhase" : default);
+                return default!;
             }
             return _jitDumpFgPhase;
         }
@@ -1826,7 +1954,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgPrePhase' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgPrePhase" : default);
+                return default!;
             }
             return _jitDumpFgPrePhase;
         }
@@ -1837,7 +1966,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgDot' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgDot" : default);
+                return default!;
             }
             return _jitDumpFgDot;
         }
@@ -1848,7 +1978,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgEH' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgEH" : default);
+                return default!;
             }
             return _jitDumpFgEH;
         }
@@ -1859,7 +1990,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgLoops' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgLoops" : default);
+                return default!;
             }
             return _jitDumpFgLoops;
         }
@@ -1870,7 +2002,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgConstrained' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgConstrained" : default);
+                return default!;
             }
             return _jitDumpFgConstrained;
         }
@@ -1881,7 +2014,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgBlockID' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgBlockID" : default);
+                return default!;
             }
             return _jitDumpFgBlockID;
         }
@@ -1892,7 +2026,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgBlockFlags' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgBlockFlags" : default);
+                return default!;
             }
             return _jitDumpFgBlockFlags;
         }
@@ -1903,7 +2038,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgLoopFlags' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgLoopFlags" : default);
+                return default!;
             }
             return _jitDumpFgLoopFlags;
         }
@@ -1914,7 +2050,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgBlockOrder' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgBlockOrder" : default);
+                return default!;
             }
             return _jitDumpFgBlockOrder;
         }
@@ -1925,7 +2062,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDumpFgMemorySsa' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDumpFgMemorySsa" : default);
+                return default!;
             }
             return _jitDumpFgMemorySsa;
         }
@@ -1936,7 +2074,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRange" : default);
+                return default!;
             }
             return _jitRange;
         }
@@ -1947,7 +2086,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressModeNames' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressModeNames" : default);
+                return default!;
             }
             return _jitStressModeNames;
         }
@@ -1958,7 +2098,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressModeNamesOnly' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressModeNamesOnly" : default);
+                return default!;
             }
             return _jitStressModeNamesOnly;
         }
@@ -1969,7 +2110,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressModeNamesAllow' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressModeNamesAllow" : default);
+                return default!;
             }
             return _jitStressModeNamesAllow;
         }
@@ -1980,7 +2122,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressModeNamesNot' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressModeNamesNot" : default);
+                return default!;
             }
             return _jitStressModeNamesNot;
         }
@@ -1991,7 +2134,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressRange" : default);
+                return default!;
             }
             return _jitStressRange;
         }
@@ -2002,7 +2146,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEmitUnitTests' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEmitUnitTests" : default);
+                return default!;
             }
             return _jitEmitUnitTests;
         }
@@ -2013,7 +2158,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEmitUnitTestsSections' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEmitUnitTestsSections" : default);
+                return default!;
             }
             return _jitEmitUnitTestsSections;
         }
@@ -2031,7 +2177,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDisasmAssemblies' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDisasmAssemblies" : default);
+                return default!;
             }
             return _jitDisasmAssemblies;
         }
@@ -2042,7 +2189,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDisasmWithGC' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDisasmWithGC" : default);
+                return default!;
             }
             return _jitDisasmWithGC;
         }
@@ -2053,7 +2201,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDisasmWithDebugInfo' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDisasmWithDebugInfo" : default);
+                return default!;
             }
             return _jitDisasmWithDebugInfo;
         }
@@ -2064,7 +2213,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDisasmSpilled' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDisasmSpilled" : default);
+                return default!;
             }
             return _jitDisasmSpilled;
         }
@@ -2075,7 +2225,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDisasmWithAddress' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDisasmWithAddress" : default);
+                return default!;
             }
             return _jitDisasmWithAddress;
         }
@@ -2088,7 +2239,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'WriteRichDebugInfoFile' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "WriteRichDebugInfoFile" : default);
+                return default!;
             }
             return _writeRichDebugInfoFile;
         }
@@ -2104,7 +2256,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressRex2Encoding' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressRex2Encoding" : default);
+                return default!;
             }
             return _jitStressRex2Encoding;
         }
@@ -2115,7 +2268,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressPromotedEvexEncoding' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressPromotedEvexEncoding" : default);
+                return default!;
             }
             return _jitStressPromotedEvexEncoding;
         }
@@ -2126,7 +2280,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressEvexEncoding' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressEvexEncoding" : default);
+                return default!;
             }
             return _jitStressEvexEncoding;
         }
@@ -2189,7 +2344,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitCSEHash' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitCSEHash" : default);
+                return default!;
             }
             return _jitCSEHash;
         }
@@ -2200,7 +2356,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitCSEMask' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitCSEMask" : default);
+                return default!;
             }
             return _jitCSEMask;
         }
@@ -2211,7 +2368,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitMetrics' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitMetrics" : default);
+                return default!;
             }
             return _jitMetrics;
         }
@@ -2222,7 +2380,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRandomCSE' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRandomCSE" : default);
+                return default!;
             }
             return _jitRandomCSE;
         }
@@ -2233,7 +2392,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitReplayCSE' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitReplayCSE" : default);
+                return default!;
             }
             return _jitReplayCSE;
         }
@@ -2244,7 +2404,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitReplayCSEReward' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitReplayCSEReward" : default);
+                return default!;
             }
             return _jitReplayCSEReward;
         }
@@ -2255,7 +2416,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRLCSE' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRLCSE" : default);
+                return default!;
             }
             return _jitRLCSE;
         }
@@ -2266,7 +2428,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRLCSEAlpha' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRLCSEAlpha" : default);
+                return default!;
             }
             return _jitRLCSEAlpha;
         }
@@ -2277,7 +2440,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRLCSECandidateFeatures' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRLCSECandidateFeatures" : default);
+                return default!;
             }
             return _jitRLCSECandidateFeatures;
         }
@@ -2288,7 +2452,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRLHook' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRLHook" : default);
+                return default!;
             }
             return _jitRLHook;
         }
@@ -2299,7 +2464,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRLHookEmitFeatureNames' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRLHookEmitFeatureNames" : default);
+                return default!;
             }
             return _jitRLHookEmitFeatureNames;
         }
@@ -2310,7 +2476,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRLHookCSEDecisions' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRLHookCSEDecisions" : default);
+                return default!;
             }
             return _jitRLHookCSEDecisions;
         }
@@ -2323,7 +2490,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnregStats' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnregStats" : default);
+                return default!;
             }
             return _jitEnregStats;
         }
@@ -2338,7 +2506,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoAssertionProp' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoAssertionProp" : default);
+                return default!;
             }
             return _jitDoAssertionProp;
         }
@@ -2349,7 +2518,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoCopyProp' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoCopyProp" : default);
+                return default!;
             }
             return _jitDoCopyProp;
         }
@@ -2360,7 +2530,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoOptimizeIVs' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoOptimizeIVs" : default);
+                return default!;
             }
             return _jitDoOptimizeIVs;
         }
@@ -2371,7 +2542,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoEarlyProp' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoEarlyProp" : default);
+                return default!;
             }
             return _jitDoEarlyProp;
         }
@@ -2382,7 +2554,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoLoopHoisting' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoLoopHoisting" : default);
+                return default!;
             }
             return _jitDoLoopHoisting;
         }
@@ -2393,7 +2566,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoLoopInversion' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoLoopInversion" : default);
+                return default!;
             }
             return _jitDoLoopInversion;
         }
@@ -2405,7 +2579,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoRangeAnalysis' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoRangeAnalysis" : default);
+                return default!;
             }
             return _jitDoRangeAnalysis;
         }
@@ -2416,7 +2591,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoVNBasedDeadStoreRemoval' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoVNBasedDeadStoreRemoval" : default);
+                return default!;
             }
             return _jitDoVNBasedDeadStoreRemoval;
         }
@@ -2427,7 +2603,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoRedundantBranchOpts' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoRedundantBranchOpts" : default);
+                return default!;
             }
             return _jitDoRedundantBranchOpts;
         }
@@ -2438,7 +2615,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableRboRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableRboRange" : default);
+                return default!;
             }
             return _jitEnableRboRange;
         }
@@ -2449,7 +2627,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableHeadTailMergeRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableHeadTailMergeRange" : default);
+                return default!;
             }
             return _jitEnableHeadTailMergeRange;
         }
@@ -2460,7 +2639,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableVNBasedDeadStoreRemovalRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableVNBasedDeadStoreRemovalRange" : default);
+                return default!;
             }
             return _jitEnableVNBasedDeadStoreRemovalRange;
         }
@@ -2471,7 +2651,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableEarlyLivenessRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableEarlyLivenessRange" : default);
+                return default!;
             }
             return _jitEnableEarlyLivenessRange;
         }
@@ -2482,7 +2663,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOnlyOptimizeRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOnlyOptimizeRange" : default);
+                return default!;
             }
             return _jitOnlyOptimizeRange;
         }
@@ -2493,7 +2675,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnablePhysicalPromotionRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnablePhysicalPromotionRange" : default);
+                return default!;
             }
             return _jitEnablePhysicalPromotionRange;
         }
@@ -2504,7 +2687,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableCrossBlockLocalAssertionPropRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableCrossBlockLocalAssertionPropRange" : default);
+                return default!;
             }
             return _jitEnableCrossBlockLocalAssertionPropRange;
         }
@@ -2515,7 +2699,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableInductionVariableOptsRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableInductionVariableOptsRange" : default);
+                return default!;
             }
             return _jitEnableInductionVariableOptsRange;
         }
@@ -2526,7 +2711,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableLocalAddrPropagationRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableLocalAddrPropagationRange" : default);
+                return default!;
             }
             return _jitEnableLocalAddrPropagationRange;
         }
@@ -2537,7 +2723,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoSsa' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoSsa" : default);
+                return default!;
             }
             return _jitDoSsa;
         }
@@ -2548,7 +2735,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoValueNumber' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoValueNumber" : default);
+                return default!;
             }
             return _jitDoValueNumber;
         }
@@ -2559,7 +2747,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOptRepeatRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOptRepeatRange" : default);
+                return default!;
             }
             return _jitOptRepeatRange;
         }
@@ -2570,7 +2759,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoIfConversion' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoIfConversion" : default);
+                return default!;
             }
             return _jitDoIfConversion;
         }
@@ -2581,7 +2771,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDoOptimizeMaskConversions' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDoOptimizeMaskConversions" : default);
+                return default!;
             }
             return _jitDoOptimizeMaskConversions;
         }
@@ -2592,7 +2783,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOptimizeAwait' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOptimizeAwait" : default);
+                return default!;
             }
             return _jitOptimizeAwait;
         }
@@ -2603,7 +2795,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAsyncDefaultValueAnalysisRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAsyncDefaultValueAnalysisRange" : default);
+                return default!;
             }
             return _jitAsyncDefaultValueAnalysisRange;
         }
@@ -2614,7 +2807,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitAsyncPreservedValueAnalysisRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitAsyncPreservedValueAnalysisRange" : default);
+                return default!;
             }
             return _jitAsyncPreservedValueAnalysisRange;
         }
@@ -2643,7 +2837,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'EnableExtraSuperPmiQueries' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "EnableExtraSuperPmiQueries" : default);
+                return default!;
             }
             return _enableExtraSuperPmiQueries;
         }
@@ -2654,7 +2849,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineDumpData' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineDumpData" : default);
+                return default!;
             }
             return _jitInlineDumpData;
         }
@@ -2665,7 +2861,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineDumpXml' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineDumpXml" : default);
+                return default!;
             }
             return _jitInlineDumpXml;
         }
@@ -2676,7 +2873,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineDumpXmlFile' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineDumpXmlFile" : default);
+                return default!;
             }
             return _jitInlineDumpXmlFile;
         }
@@ -2687,7 +2885,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyDumpXml' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePolicyDumpXml" : default);
+                return default!;
             }
             return _jitInlinePolicyDumpXml;
         }
@@ -2698,7 +2897,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineLimit' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineLimit" : default);
+                return default!;
             }
             return _jitInlineLimit;
         }
@@ -2709,7 +2909,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyDiscretionary' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePolicyDiscretionary" : default);
+                return default!;
             }
             return _jitInlinePolicyDiscretionary;
         }
@@ -2720,7 +2921,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyFull' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePolicyFull" : default);
+                return default!;
             }
             return _jitInlinePolicyFull;
         }
@@ -2731,7 +2933,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicySize' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePolicySize" : default);
+                return default!;
             }
             return _jitInlinePolicySize;
         }
@@ -2742,7 +2945,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyRandom' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePolicyRandom" : default);
+                return default!;
             }
             return _jitInlinePolicyRandom;
         }
@@ -2753,7 +2957,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlinePolicyReplay' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlinePolicyReplay" : default);
+                return default!;
             }
             return _jitInlinePolicyReplay;
         }
@@ -2764,7 +2969,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoInlineRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoInlineRange" : default);
+                return default!;
             }
             return _jitNoInlineRange;
         }
@@ -2775,7 +2981,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInlineReplayFile' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInlineReplayFile" : default);
+                return default!;
             }
             return _jitInlineReplayFile;
         }
@@ -2786,7 +2993,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressAsyncInlining' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressAsyncInlining" : default);
+                return default!;
             }
             return _jitStressAsyncInlining;
         }
@@ -2797,7 +3005,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressAsyncInliningMaxDepth' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressAsyncInliningMaxDepth" : default);
+                return default!;
             }
             return _jitStressAsyncInliningMaxDepth;
         }
@@ -2808,7 +3017,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitStressAsyncInliningPct' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitStressAsyncInliningPct" : default);
+                return default!;
             }
             return _jitStressAsyncInliningPct;
         }
@@ -2829,7 +3039,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitObjectStackAllocationRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitObjectStackAllocationRange" : default);
+                return default!;
             }
             return _jitObjectStackAllocationRange;
         }
@@ -2844,7 +3055,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitObjectStackAllocationConditionalEscapeRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitObjectStackAllocationConditionalEscapeRange" : default);
+                return default!;
             }
             return _jitObjectStackAllocationConditionalEscapeRange;
         }
@@ -2858,7 +3070,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitObjectStackAllocationTrackFieldsRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitObjectStackAllocationTrackFieldsRange" : default);
+                return default!;
             }
             return _jitObjectStackAllocationTrackFieldsRange;
         }
@@ -2869,7 +3082,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitObjectStackAllocationDumpConnGraph' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitObjectStackAllocationDumpConnGraph" : default);
+                return default!;
             }
             return _jitObjectStackAllocationDumpConnGraph;
         }
@@ -2881,7 +3095,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableFinallyCloning' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableFinallyCloning" : default);
+                return default!;
             }
             return _jitEnableFinallyCloning;
         }
@@ -2892,7 +3107,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableRemoveEmptyTry' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableRemoveEmptyTry" : default);
+                return default!;
             }
             return _jitEnableRemoveEmptyTry;
         }
@@ -2903,7 +3119,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableRemoveEmptyTryCatchOrTryFault' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableRemoveEmptyTryCatchOrTryFault" : default);
+                return default!;
             }
             return _jitEnableRemoveEmptyTryCatchOrTryFault;
         }
@@ -2914,7 +3131,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableRemoveUnreachableTry' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableRemoveUnreachableTry" : default);
+                return default!;
             }
             return _jitEnableRemoveUnreachableTry;
         }
@@ -2930,7 +3148,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitGuardedDevirtualizationRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitGuardedDevirtualizationRange" : default);
+                return default!;
             }
             return _jitGuardedDevirtualizationRange;
         }
@@ -2941,7 +3160,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRandomGuardedDevirtualization' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRandomGuardedDevirtualization" : default);
+                return default!;
             }
             return _jitRandomGuardedDevirtualization;
         }
@@ -2955,7 +3175,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRandomPartialCompilation' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRandomPartialCompilation" : default);
+                return default!;
             }
             return _jitRandomPartialCompilation;
         }
@@ -2967,7 +3188,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRandomOnStackReplacement' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRandomOnStackReplacement" : default);
+                return default!;
             }
             return _jitRandomOnStackReplacement;
         }
@@ -2978,7 +3200,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitOffsetOnStackReplacement' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitOffsetOnStackReplacement" : default);
+                return default!;
             }
             return _jitOffsetOnStackReplacement;
         }
@@ -2989,7 +3212,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnableOsrRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnableOsrRange" : default);
+                return default!;
             }
             return _jitEnableOsrRange;
         }
@@ -3000,7 +3224,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnablePatchpointRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnablePatchpointRange" : default);
+                return default!;
             }
             return _jitEnablePatchpointRange;
         }
@@ -3024,7 +3249,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInstrumentIfOptimizing' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInstrumentIfOptimizing" : default);
+                return default!;
             }
             return _jitInstrumentIfOptimizing;
         }
@@ -3035,7 +3261,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitInstrumentIfOptimizingRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitInstrumentIfOptimizingRange" : default);
+                return default!;
             }
             return _jitInstrumentIfOptimizingRange;
         }
@@ -3048,7 +3275,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitEnablePGORange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitEnablePGORange" : default);
+                return default!;
             }
             return _jitEnablePGORange;
         }
@@ -3059,7 +3287,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRandomEdgeCounts' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRandomEdgeCounts" : default);
+                return default!;
             }
             return _jitRandomEdgeCounts;
         }
@@ -3070,7 +3299,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitCrossCheckDevirtualizationAndPGO' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitCrossCheckDevirtualizationAndPGO" : default);
+                return default!;
             }
             return _jitCrossCheckDevirtualizationAndPGO;
         }
@@ -3081,7 +3311,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitNoteFailedExactDevirtualization' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitNoteFailedExactDevirtualization" : default);
+                return default!;
             }
             return _jitNoteFailedExactDevirtualization;
         }
@@ -3092,7 +3323,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRandomlyCollect64BitCounts' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRandomlyCollect64BitCounts" : default);
+                return default!;
             }
             return _jitRandomlyCollect64BitCounts;
         }
@@ -3103,7 +3335,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSynthesizeCounts' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSynthesizeCounts" : default);
+                return default!;
             }
             return _jitSynthesizeCounts;
         }
@@ -3114,7 +3347,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitPropagateSynthesizedCountsToProfileData' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitPropagateSynthesizedCountsToProfileData" : default);
+                return default!;
             }
             return _jitPropagateSynthesizedCountsToProfileData;
         }
@@ -3125,7 +3359,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSynthesisUseSolver' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSynthesisUseSolver" : default);
+                return default!;
             }
             return _jitSynthesisUseSolver;
         }
@@ -3136,7 +3371,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSynthesisExceptionWeight' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSynthesisExceptionWeight" : default);
+                return default!;
             }
             return _jitSynthesisExceptionWeight;
         }
@@ -3156,7 +3392,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitFunctionFile' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitFunctionFile" : default);
+                return default!;
             }
             return _jitFunctionFile;
         }
@@ -3167,7 +3404,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRawHexCode' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRawHexCode" : default);
+                return default!;
             }
             return _jitRawHexCode;
         }
@@ -3178,7 +3416,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitRawHexCodeFile' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitRawHexCodeFile" : default);
+                return default!;
             }
             return _jitRawHexCodeFile;
         }
@@ -3189,7 +3428,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitSaveFpLrWithCalleeSavedRegisters' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitSaveFpLrWithCalleeSavedRegisters" : default);
+                return default!;
             }
             return _jitSaveFpLrWithCalleeSavedRegisters;
         }
@@ -3200,7 +3440,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitUseScalableVectorT' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitUseScalableVectorT" : default);
+                return default!;
             }
             return _jitUseScalableVectorT;
         }
@@ -3211,7 +3452,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitDispIns' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitDispIns" : default);
+                return default!;
             }
             return _jitDispIns;
         }
@@ -3222,7 +3464,8 @@ public partial struct JitConfigValues
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT config value 'JitR2RUnsupportedRange' is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "JitR2RUnsupportedRange" : default);
+                return default!;
             }
             return _jitR2RUnsupportedRange;
         }

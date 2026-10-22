@@ -11,7 +11,7 @@ public partial struct RegSet
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-point stack spills require x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FloatingPointStackSpillsRequireX86);
             return;
         }
 

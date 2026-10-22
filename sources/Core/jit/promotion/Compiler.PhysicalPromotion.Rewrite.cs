@@ -29,12 +29,57 @@ public partial class Compiler
         private Statement? _currentStatement;
         private bool _madeChanges;
         private bool _mayHaveForwardSub;
-        private BasicBlock CurrentBlock => _currentBlock ??
-            throw new InvalidOperationException("Physical promotion has not started a block.");
-        private Statement CurrentStatement => _currentStatement ??
-            throw new InvalidOperationException("Physical promotion has not started a statement.");
-        private BitVecTraits ReadBackTraits => _readBackTraits ??
-            throw new InvalidOperationException("Physical promotion has not prepared readbacks.");
+        private BasicBlock CurrentBlock {
+    get
+    {
+        global::RyuJitSharp.BasicBlock __jitExceptionReturnResult129;
+        var __jitExceptionCoalesceLeft130 = _currentBlock;
+        if (__jitExceptionCoalesceLeft130 != null)
+        {
+            __jitExceptionReturnResult129 = __jitExceptionCoalesceLeft130;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedABlock);
+            __jitExceptionReturnResult129 = default;
+        }
+
+        return __jitExceptionReturnResult129;
+    }
+}        private Statement CurrentStatement {
+    get
+    {
+        global::RyuJitSharp.Statement __jitExceptionReturnResult131;
+        var __jitExceptionCoalesceLeft132 = _currentStatement;
+        if (__jitExceptionCoalesceLeft132 != null)
+        {
+            __jitExceptionReturnResult131 = __jitExceptionCoalesceLeft132;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotStartedAStatement);
+            __jitExceptionReturnResult131 = default;
+        }
+        return __jitExceptionReturnResult131;
+    }
+}        private BitVecTraits ReadBackTraits {
+    get
+    {
+        global::RyuJitSharp.BitVecTraits __jitExceptionReturnResult133;
+        var __jitExceptionCoalesceLeft134 = _readBackTraits;
+        if (__jitExceptionCoalesceLeft134 != null)
+        {
+            __jitExceptionReturnResult133 = __jitExceptionCoalesceLeft134;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PhysicalPromotionHasNotPreparedReadbacks);
+            __jitExceptionReturnResult133 = default;
+        }
+
+        return __jitExceptionReturnResult133;
+    }
+}
 
         public Statement? StartBlock(BasicBlock block)
         {
@@ -342,8 +387,18 @@ public partial class Compiler
                 return;
             }
 
-            var previous = CurrentStatement.PrevStmt
-                ?? throw new InvalidOperationException("A non-first statement must have a predecessor.");
+            global::RyuJitSharp.Statement __jitExceptionResult594;
+            var __jitExceptionCoalesceLeft595 = CurrentStatement.PrevStmt;
+            if (__jitExceptionCoalesceLeft595 != null)
+            {
+                __jitExceptionResult594 = __jitExceptionCoalesceLeft595;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NonFirstStatementMustHaveAPredecessor);
+                __jitExceptionResult594 = default;
+            }
+            var previous = __jitExceptionResult594;
             var previousRoot = previous.RootNode;
             if (previousRoot.Oper.IsLocalStore && (previousRoot.AsLclVarCommon().LclNum == local))
             {

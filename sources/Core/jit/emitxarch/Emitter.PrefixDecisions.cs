@@ -57,9 +57,30 @@ public partial class Emitter
                 return true;
             }
 
-            if (Configuration.DEBUG &&
-                (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                    .DoJitStressPromotedEvexEncoding())
+            bool __jitExceptionCondition383;
+            bool __jitExceptionShortCircuitLeft384;
+            __jitExceptionShortCircuitLeft384 = Configuration.DEBUG;
+            if (__jitExceptionShortCircuitLeft384)
+            {
+                global::RyuJitSharp.Compiler __jitExceptionReceiver385;
+                var __jitExceptionCoalesceLeft386 = _compiler;
+                if (__jitExceptionCoalesceLeft386 != null)
+                {
+                    __jitExceptionReceiver385 = __jitExceptionCoalesceLeft386;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                    __jitExceptionReceiver385 = default;
+                }
+
+                __jitExceptionCondition383 = __jitExceptionReceiver385.DoJitStressPromotedEvexEncoding();
+            }
+            else
+            {
+                __jitExceptionCondition383 = false;
+            }
+            if (__jitExceptionCondition383)
             {
                 if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_cmovo, INS_cmovg))
                 {
@@ -79,9 +100,30 @@ public partial class Emitter
         {
             if (IsKMOVInstruction(ins))
             {
-                if (Configuration.DEBUG &&
-                    (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                        .DoJitStressPromotedEvexEncoding())
+                bool __jitExceptionCondition387;
+                bool __jitExceptionShortCircuitLeft388;
+                __jitExceptionShortCircuitLeft388 = Configuration.DEBUG;
+                if (__jitExceptionShortCircuitLeft388)
+                {
+                    global::RyuJitSharp.Compiler __jitExceptionReceiver389;
+                    var __jitExceptionCoalesceLeft390 = _compiler;
+                    if (__jitExceptionCoalesceLeft390 != null)
+                    {
+                        __jitExceptionReceiver389 = __jitExceptionCoalesceLeft390;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                        __jitExceptionReceiver389 = default;
+                    }
+
+                    __jitExceptionCondition387 = __jitExceptionReceiver389.DoJitStressPromotedEvexEncoding();
+                }
+                else
+                {
+                    __jitExceptionCondition387 = false;
+                }
+                if (__jitExceptionCondition387)
                 {
                     return true;
                 }
@@ -107,7 +149,18 @@ public partial class Emitter
 
         if (Configuration.DEBUG)
         {
-            var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
+            global::RyuJitSharp.Compiler __jitExceptionResult391;
+            var __jitExceptionCoalesceLeft392 = _compiler;
+            if (__jitExceptionCoalesceLeft392 != null)
+            {
+                __jitExceptionResult391 = __jitExceptionCoalesceLeft392;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                __jitExceptionResult391 = default;
+            }
+            var compiler = __jitExceptionResult391;
             if (compiler.DoJitStressEvexEncoding() && !IsBMIInstruction(ins) && !IsKMOVInstruction(ins))
             {
                 return true;
@@ -157,9 +210,30 @@ public partial class Emitter
             return true;
         }
 
-        if (Configuration.DEBUG &&
-            (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
-                .DoJitStressRex2Encoding())
+        bool __jitExceptionCondition393;
+        bool __jitExceptionShortCircuitLeft394;
+        __jitExceptionShortCircuitLeft394 = Configuration.DEBUG;
+        if (__jitExceptionShortCircuitLeft394)
+        {
+            global::RyuJitSharp.Compiler __jitExceptionReceiver395;
+            var __jitExceptionCoalesceLeft396 = _compiler;
+            if (__jitExceptionCoalesceLeft396 != null)
+            {
+                __jitExceptionReceiver395 = __jitExceptionCoalesceLeft396;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                __jitExceptionReceiver395 = default;
+            }
+
+            __jitExceptionCondition393 = __jitExceptionReceiver395.DoJitStressRex2Encoding();
+        }
+        else
+        {
+            __jitExceptionCondition393 = false;
+        }
+        if (__jitExceptionCondition393)
         {
             return ins is not (INS_i_jmp or INS_tail_i_jmp);
         }

@@ -209,24 +209,34 @@ public sealed partial class ValueNumStore
 
     private ValueNum VNAllBitsForType(var_types type, int elementCount)
     {
-        return type switch {
-            TYP_INT or TYP_UINT => VNForIntCon(-1),
-            TYP_LONG or TYP_ULONG => VNForLongCon(-1),
-            TYP_SIMD8 => VNForSimd8Con(simd8_t.AllBitsSet),
-            TYP_SIMD12 => VNForSimd12Con(simd12_t.AllBitsSet),
-            TYP_SIMD16 => VNForSimd16Con(simd16_t.AllBitsSet),
-            TYP_SIMD32 => VNForSimd32Con(simd32_t.AllBitsSet),
-            TYP_SIMD64 => VNForSimd64Con(simd64_t.AllBitsSet),
-            TYP_SIMD_ARM64 => VNForSimdScalableCon(simdscalable_t.AllBitsSet),
-            TYP_MASK when !Configuration.FEATURE_MASKED_HW_INTRINSICS
-                => throw new PlatformNotSupportedException(
-                    "Masked hardware intrinsics are not enabled for this target."),
-            TYP_MASK when Configuration.DEBUG && Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
-                Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0)
-                => VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet),
-            TYP_MASK => VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount)),
-            _ => NoVN,
-        };
+        switch (type)
+        {
+            case TYP_INT or TYP_UINT:
+                return VNForIntCon(-1);
+            case TYP_LONG or TYP_ULONG:
+                return VNForLongCon(-1);
+            case TYP_SIMD8:
+                return VNForSimd8Con(simd8_t.AllBitsSet);
+            case TYP_SIMD12:
+                return VNForSimd12Con(simd12_t.AllBitsSet);
+            case TYP_SIMD16:
+                return VNForSimd16Con(simd16_t.AllBitsSet);
+            case TYP_SIMD32:
+                return VNForSimd32Con(simd32_t.AllBitsSet);
+            case TYP_SIMD64:
+                return VNForSimd64Con(simd64_t.AllBitsSet);
+            case TYP_SIMD_ARM64:
+                return VNForSimdScalableCon(simdscalable_t.AllBitsSet);
+            case TYP_MASK when !Configuration.FEATURE_MASKED_HW_INTRINSICS:
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
+                return default;
+            case TYP_MASK when Configuration.DEBUG && Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0):
+                return VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet);
+            case TYP_MASK:
+                return VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount));
+            default:
+                return NoVN;
+        }
     }
 
     public bool IsVNRelop(ValueNum vn)

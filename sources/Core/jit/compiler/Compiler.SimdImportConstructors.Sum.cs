@@ -13,7 +13,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD sums require hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDSumsRequireHardwareIntrinsics);
             return default!;
         }
 
@@ -123,7 +123,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdSumNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdSumNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 

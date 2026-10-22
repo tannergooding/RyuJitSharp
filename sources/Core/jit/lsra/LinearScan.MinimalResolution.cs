@@ -14,9 +14,9 @@ public sealed partial class LinearScan
         if (_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage365
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalRegisterResolutionCannotRunWithEnregisteredLocals
+    );
             return;
         }
 
@@ -52,10 +52,9 @@ public sealed partial class LinearScan
                         {
                             unreached();
                             FatalJitException.ThrowFatalJitException(
-                                FatalJitErrorCode.UnexpectedReferenceKind,
-                                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                    ? $"Unexpected reference kind during register resolution: {refType}."
-                            : null);
+        FatalJitErrorCode.UnexpectedReferenceKind,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? refType : default)
+    );
                             return;
                         }
                         break;
@@ -95,10 +94,9 @@ public sealed partial class LinearScan
                     {
                         unreached();
                         FatalJitException.ThrowFatalJitException(
-                            FatalJitErrorCode.UnexpectedReferenceKind,
-                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                ? $"Unexpected reference kind during register resolution: {refType}."
-                        : null);
+        FatalJitErrorCode.UnexpectedReferenceKind,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? refType : default)
+    );
                         return;
                     }
                 }
@@ -115,9 +113,9 @@ public sealed partial class LinearScan
                     if (interval.isUpperVector || interval.isLocalVar)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage366
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalResolutionCannotSaveAnEnregisteredLocalVector
+    );
                         return;
                     }
                     assert(interval.firstRefPosition is not null);
@@ -127,9 +125,9 @@ public sealed partial class LinearScan
                 else if (refType is RefType.RefTypeUpperVectorRestore)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage367
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UpperVectorRestoresRequireEnregisteredLocalResolution
+    );
                     return;
                 }
                 if (tree is null)

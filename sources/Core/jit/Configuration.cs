@@ -420,7 +420,7 @@ internal static class Configuration
                             }
                             else
                             {
-                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump kinds are not supported for this target.");
+                                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JumpKindsAreNotSupportedForThisTarget);
                                 return default!;
                             }
                         }
@@ -436,7 +436,7 @@ internal static class Configuration
     {
         if (!TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException("WebAssembly-only compiler code requires the WebAssembly target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.WebAssemblyOnlyCompilerCodeRequiresTheWebAssemblyTarget);
             return;
         }
     }
@@ -450,7 +450,10 @@ internal static class Configuration
             return;
         }
 
-        FatalJitException.ThrowFatalJitException($"Unsupported host architecture: {RuntimeInformation.ProcessArchitecture}.");
+        FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnsupportedHostArchitectureArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? RuntimeInformation.ProcessArchitecture : default)
+    );
         return;
     }
 
@@ -468,6 +471,7 @@ internal static class Configuration
             return isEnabled;
         }
 
-        throw new InvalidOperationException($"Required compiler configuration switch '{switchName}' is not set.");
+        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RequiredCompilerConfigurationSwitchArgumentIsNotSet, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? switchName : default));
+        return default;
     }
 }

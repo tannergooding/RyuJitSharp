@@ -146,10 +146,7 @@ public sealed partial class CodeGen
 
                                 default:
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-                                        CORJIT_INTERNALERROR,
-                                        FatalJitErrorCode.DirectFailureMessage238
-                                    );
+                                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedScalarBroadcastInstruction);
                                     break;
                                 }
                             }

@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Operand-use numbering is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OperandUseNumberingIsOnlyAvailableInDebugBuilds);
         }
 
         assert(operand.UseNum == -1);
@@ -75,7 +75,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register copies are not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterCopiesAreNotSupportedOnWasm);
             return;
         }
 
@@ -99,8 +99,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Indexed register consumption is not supported on Wasm.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndexedRegisterConsumptionIsNotSupportedOnWasm
+    );
             return default!;
         }
 

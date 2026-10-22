@@ -30,7 +30,7 @@ internal sealed class AddCodeDscMap
         {
             if (!_table.Lookup(key, out var value))
             {
-                throw new KeyNotFoundException();
+                JitExceptionHelpers.ThrowKeyNotFoundException();
             }
 
             return value;
@@ -45,7 +45,7 @@ internal sealed class AddCodeDscMap
     {
         if (_table.Lookup(key))
         {
-            throw new ArgumentException("An item with the same key has already been added.", nameof(key));
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.ItemWithTheSameKeyHasAlreadyBeenAdded, FatalJitArgument.Key);
         }
 
         _ = _table.Set(key, value);

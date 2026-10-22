@@ -53,7 +53,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             assert(Debugger.IsAttached || IsUserCall);
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunIntrinsicEntryPointsAreUnsupported);
             }
 
             return _entryPoint;
@@ -64,7 +64,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             assert(IsUserCall);
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunIntrinsicEntryPointsAreUnsupported);
             }
 
             _entryPoint = value;
@@ -88,7 +88,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             {
                 NYI("Hardware-intrinsic user call without hardware-intrinsic support");
                 fatal(CORJIT_IMPLLIMITATION);
-                FatalJitException.ThrowFatalJitException("Hardware-intrinsic user calls are unsupported on this target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.HardwareIntrinsicUserCallsAreUnsupportedOnThisTarget);
                 return;
             }
 
@@ -135,7 +135,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     {
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Additional intrinsic registers are unsupported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.AdditionalIntrinsicRegistersAreUnsupportedOnThisTarget);
         }
 
         _otherReg = tree._otherReg;

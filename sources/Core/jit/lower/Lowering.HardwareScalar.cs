@@ -13,7 +13,10 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector ToScalar lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.VectorToScalarLoweringIsNotPortedForThisTarget
+    );
             return default!;
         }
 

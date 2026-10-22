@@ -30,7 +30,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Copy-propagation definition nodes are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CopyPropagationDefinitionNodesAreOnlyAvailableInDebugBuilds);
             }
 
             return _defNode;

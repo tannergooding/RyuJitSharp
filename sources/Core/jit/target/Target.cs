@@ -49,10 +49,11 @@ public sealed partial class Target
                     return "wasm32";
                 }
 
-                throw new NotSupportedException("NYI: WASM64");
+                JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.NYIWASM64);
             }
 
-            throw new NotSupportedException("Unsupported or unset target architecture.");
+            JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.UnsupportedOrUnsetTargetArchitecture);
+            return default!;
         }
     }
 

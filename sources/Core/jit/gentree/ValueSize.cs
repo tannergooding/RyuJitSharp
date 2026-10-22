@@ -74,11 +74,15 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
     {
         assert(type.Size != 0);
 
-        return type switch {
-            TYP_SIMD_ARM64 when Configuration.TARGET_ARM64 => ValueSize.Vector,
-            TYP_SIMD_ARM64 => throw new PlatformNotSupportedException(
-                "Scalable vectors are only supported on ARM64."),
-            _ => new ValueSize(type.Size),
-        };
+        switch (type)
+        {
+            case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
+                return ValueSize.Vector;
+            case TYP_SIMD_ARM64:
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableVectorsAreOnlySupportedOnARM64);
+                return default;
+            default:
+                return new ValueSize(type.Size);
+        }
     }
 }

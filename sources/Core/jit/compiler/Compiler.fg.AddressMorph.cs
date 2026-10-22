@@ -24,7 +24,7 @@ public partial class Compiler
         }
         else
         {
-            throw new UnreachableException("Normal statics are expected to be handled in the importer");
+            JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.NormalStaticsAreExpectedToBeHandledInTheImporter);
         }
 
         GenTree result;

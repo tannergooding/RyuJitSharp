@@ -318,7 +318,10 @@ public sealed partial class CodeGen
     private regNumber genEmitTernaryInstruction(instruction ins, emitAttr attr, GenTree destination,
         GenTree source1, GenTree source2)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 ternary instruction recording is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64TernaryInstructionRecordingIsNotPorted
+    );
         return default!;
     }
 }

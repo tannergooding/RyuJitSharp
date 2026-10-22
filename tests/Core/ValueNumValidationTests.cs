@@ -47,6 +47,19 @@ internal static unsafe class ValueNumValidationTests
             }
         });
     }
+    [Test]
+    public static void StaticValidationReportsUnexpectedAttributeTableLength()
+    {
+        Assume.That(TestConfiguration.IsDebug);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            ValueNumStore.ValidateValueNumStoreStatics([]));
+
+        Assert.That(exception!.ParamName, Is.EqualTo("expectedAttributes"));
+        Assert.That(exception.Message, Does.Contain(
+            "Value number attribute table has an unexpected length."));
+    }
+
 
     [Test]
     public static void StaticValidationDoesNotAllocateWhenDebugIsDisabled()

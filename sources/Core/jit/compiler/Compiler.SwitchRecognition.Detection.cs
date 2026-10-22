@@ -121,7 +121,18 @@ public partial class Compiler
             return false;
         }
 
-        var testedVariable = variableNode ?? throw new System.InvalidOperationException();
+        global::RyuJitSharp.GenTree __jitExceptionResult244;
+        var __jitExceptionCoalesceLeft245 = variableNode;
+        if (__jitExceptionCoalesceLeft245 != null)
+        {
+            __jitExceptionResult244 = __jitExceptionCoalesceLeft245;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult244 = default;
+        }
+        var testedVariable = __jitExceptionResult244;
         if (BitVecOps.IsMember(traits, ccmpVec, firstBlock.bbNum))
         {
             BitVecOps.RemoveElemD(traits, ccmpVec, firstBlock.bbNum);

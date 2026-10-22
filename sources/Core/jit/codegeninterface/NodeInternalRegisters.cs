@@ -22,7 +22,10 @@ public struct InternalRegs
 
     public readonly regMask GetRegSetForType(var_types type)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register masks are not available for targets without a fixed register set.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterMasksAreNotAvailableForTargetsWithoutAFixedRegisterSet
+    );
         return default!;
     }
 
@@ -40,7 +43,10 @@ public struct InternalRegs
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Too many internal registers were added to a node.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.TooManyInternalRegistersWereAddedToANode
+    );
             return;
         }
 
@@ -63,7 +69,7 @@ public struct InternalRegs
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "The internal register index is out of range.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InternalRegisterIndexIsOutOfRange);
                 return default!;
             }
         }
@@ -87,7 +93,7 @@ public struct InternalRegs
             }
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "The internal register index is out of range.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InternalRegisterIndexIsOutOfRange);
                 return;
             }
         }
@@ -111,7 +117,7 @@ public struct InternalRegs
             return result;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "No internal register is available to extract.");
+        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NoInternalRegisterIsAvailableToExtract);
         return default!;
     }
 }
@@ -195,7 +201,7 @@ public partial struct NodeInternalRegisters
         ref var registers = ref GetAllWasm(tree);
         if (registers.Count != 1)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Exactly one internal register was expected.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ExactlyOneInternalRegisterWasExpected);
             return default!;
         }
 
@@ -251,7 +257,10 @@ public partial struct NodeInternalRegisters
         var table = GetWasmTable();
         if (!table.ContainsKey(tree))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Internal registers are missing for the specified node.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InternalRegistersAreMissingForTheSpecifiedNode
+    );
         }
 
         return ref CollectionsMarshal.GetValueRefOrAddDefault(table, tree, out _);
@@ -261,17 +270,17 @@ public partial struct NodeInternalRegisters
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-mask tracking is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterMaskTrackingIsNotAvailableForThisTarget
+    );
             return default!;
         }
 
         var table = _table;
         if (table is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage094
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FixedRegisterTableIsNotInitialized);
             return default!;
         }
 
@@ -282,7 +291,10 @@ public partial struct NodeInternalRegisters
     {
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "WebAssembly register tracking is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WebAssemblyRegisterTrackingIsNotAvailableForThisTarget
+    );
             return default!;
         }
 
@@ -290,7 +302,9 @@ public partial struct NodeInternalRegisters
         if (wasmTable is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR, "The WebAssembly register table is not initialized.");
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.WebAssemblyRegisterTableIsNotInitialized
+    );
             return default!;
         }
 

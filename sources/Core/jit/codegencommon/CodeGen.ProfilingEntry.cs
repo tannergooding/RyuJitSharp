@@ -131,7 +131,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks are unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ProfilerEnterCallbacksAreUnsupportedForThisTarget
+    );
             return;
         }
 

@@ -45,16 +45,16 @@ public class GenTreeOpCC : GenTreeOp
     {
         if ((oper is GT_CCMP) && !Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "GT_CCMP is only supported on x64 and ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.GTCCMPIsOnlySupportedOnX64AndARM64);
             return default!;
         }
 
         if ((oper is GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC) && !Configuration.TARGET_ARM64)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage232
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ARM64ConditionalSelectNodesAreOnlySupportedOnARM64
+    );
             return default!;
         }
 

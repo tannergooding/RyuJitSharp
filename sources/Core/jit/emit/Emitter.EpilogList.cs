@@ -19,7 +19,10 @@ public partial class Emitter
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.EpilogRecorderIsOnlySupportedByTheX86GCEncoder
+    );
             return default!;
         }
 

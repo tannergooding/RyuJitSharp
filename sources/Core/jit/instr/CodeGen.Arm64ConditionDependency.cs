@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException("ARM64 condition mapping is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ARM64ConditionMappingIsNotAvailableForThisTarget);
             return default!;
         }
 

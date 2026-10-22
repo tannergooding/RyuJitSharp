@@ -11,7 +11,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Target prolog unwind padding is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TargetPrologUnwindPaddingIsNotPorted);
             return;
         }
 

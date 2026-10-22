@@ -19,7 +19,10 @@ public struct Arm64SimdScalableConstInfo
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 scalable SIMD constants are not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64ScalableSIMDConstantsAreNotSupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -141,7 +144,7 @@ public struct Arm64SimdScalableConstInfo
             default:
             {
                 unreached();
-                FatalJitException.ThrowFatalJitException("Unexpected ARM64 scalable constant base type.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedARM64ScalableConstantBaseType);
                 return default!;
             }
         }

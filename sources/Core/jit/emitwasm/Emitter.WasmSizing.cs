@@ -429,8 +429,11 @@ public partial class Emitter
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                    $"Unexpected Wasm instruction descriptor format {id.idInsFmt()}.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedWasmInstructionDescriptorFormatArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id.idInsFmt() : default)
+    );
                 return default!;
             }
         }

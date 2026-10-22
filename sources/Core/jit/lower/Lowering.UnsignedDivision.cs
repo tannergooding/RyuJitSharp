@@ -29,8 +29,10 @@ public sealed partial class Lowering
         assert(divMod.Oper is GT_UDIV or GT_UMOD);
         if (Configuration.USE_HELPERS_FOR_INT_DIV)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Unsigned integer division should be lowered to helper calls for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsignedIntegerDivisionShouldBeLoweredToHelperCallsForThisTarget
+    );
             nextNode = default!;
             return default!;
         }
@@ -139,8 +141,10 @@ public sealed partial class Lowering
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Native-width division must use the 32-bit path on this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NativeWidthDivisionMustUseThe32BitPathOnThisTarget
+    );
                 nextNode = default!;
                 return default!;
             }

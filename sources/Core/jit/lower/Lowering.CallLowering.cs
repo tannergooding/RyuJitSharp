@@ -35,7 +35,16 @@ public sealed partial class Lowering
                     movingRange = new LIR.ReadOnlyRange(current, movingRange.LastNode);
                     _scratchSideEffects.AddNode(compiler, current);
                 }
-                current = previous ?? throw new InvalidOperationException("Unbalanced indirect call data flow.");
+                var __jitExceptionCoalesceLeft444 = previous;
+                if (__jitExceptionCoalesceLeft444 != null)
+                {
+                    current = __jitExceptionCoalesceLeft444;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnbalancedIndirectCallDataFlow);
+                    current = default;
+                }
                 continue;
             }
 
@@ -47,7 +56,16 @@ public sealed partial class Lowering
                 _scratchSideEffects.AddNode(compiler, current);
                 if (numMarked > 0)
                 {
-                    current = previous ?? throw new InvalidOperationException("Unbalanced indirect call data flow.");
+                    var __jitExceptionCoalesceLeft445 = previous;
+                    if (__jitExceptionCoalesceLeft445 != null)
+                    {
+                        current = __jitExceptionCoalesceLeft445;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnbalancedIndirectCallDataFlow);
+                        current = default;
+                    }
                 }
                 continue;
             }
@@ -76,7 +94,16 @@ public sealed partial class Lowering
 
             if (numMarked > 0)
             {
-                current = previous ?? throw new InvalidOperationException("Unbalanced indirect call data flow.");
+                var __jitExceptionCoalesceLeft446 = previous;
+                if (__jitExceptionCoalesceLeft446 != null)
+                {
+                    current = __jitExceptionCoalesceLeft446;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnbalancedIndirectCallDataFlow);
+                    current = default;
+                }
             }
         }
 
@@ -124,7 +151,10 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Call operand containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CallOperandContainmentIsNotPortedForThisTarget
+    );
         return;
     }
 
@@ -403,33 +433,111 @@ public sealed partial class Lowering
         newStackArgsWords -= 4;
 
         var numArgs = call.Args.CountArgs();
-        var targetArg = call.Args.GetArgByIndex(numArgs - 1) ??
-            throw new InvalidOperationException("Tail-call helper target argument is missing.");
-        var targetPutArg = (targetArg.EarlyNode ??
-            throw new InvalidOperationException("Tail-call helper target placement is missing.")).AsPutArgStk();
+        global::RyuJitSharp.CallArg __jitExceptionResult86;
+        var __jitExceptionCoalesceLeft87 = call.Args.GetArgByIndex(numArgs - 1);
+        if (__jitExceptionCoalesceLeft87 != null)
+        {
+            __jitExceptionResult86 = __jitExceptionCoalesceLeft87;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperTargetArgumentIsMissing);
+            __jitExceptionResult86 = default;
+        }
+        var targetArg = __jitExceptionResult86;
+        global::RyuJitSharp.GenTree __jitExceptionReceiver447;
+        var __jitExceptionCoalesceLeft448 = targetArg.EarlyNode;
+        if (__jitExceptionCoalesceLeft448 != null)
+        {
+            __jitExceptionReceiver447 = __jitExceptionCoalesceLeft448;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperTargetPlacementIsMissing);
+            __jitExceptionReceiver447 = default;
+        }
+        var targetPutArg = __jitExceptionReceiver447.AsPutArgStk();
         var placeholderRange = BlockRange().GetTreeRange(targetPutArg.Op1, out var isClosed);
         assert(isClosed);
         BlockRange().Remove(placeholderRange);
         targetPutArg.Op1 = callTarget;
 
-        var flagsArg = call.Args.GetArgByIndex(numArgs - 2) ??
-            throw new InvalidOperationException("Tail-call helper flags argument is missing.");
-        var flags = (flagsArg.EarlyNode ??
-            throw new InvalidOperationException("Tail-call helper flags placement is missing.")).AsPutArgStk().Op1;
+        global::RyuJitSharp.CallArg __jitExceptionResult88;
+        var __jitExceptionCoalesceLeft89 = call.Args.GetArgByIndex(numArgs - 2);
+        if (__jitExceptionCoalesceLeft89 != null)
+        {
+            __jitExceptionResult88 = __jitExceptionCoalesceLeft89;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperFlagsArgumentIsMissing);
+            __jitExceptionResult88 = default;
+        }
+        var flagsArg = __jitExceptionResult88;
+        global::RyuJitSharp.GenTree __jitExceptionResult449;
+        global::RyuJitSharp.GenTreePutArgStk __jitExceptionOperand450;
+        global::RyuJitSharp.GenTree __jitExceptionReceiver451;
+        var __jitExceptionCoalesceLeft452 = flagsArg.EarlyNode;
+        if (__jitExceptionCoalesceLeft452 != null)
+        {
+            __jitExceptionReceiver451 = __jitExceptionCoalesceLeft452;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperFlagsPlacementIsMissing);
+            __jitExceptionReceiver451 = default;
+        }
+        __jitExceptionOperand450 = __jitExceptionReceiver451.AsPutArgStk();
+        __jitExceptionResult449 = __jitExceptionOperand450.Op1;
+        var flags = __jitExceptionResult449;
         assert(flags.Oper is GT_CNS_INT);
         flags.AsIntCon().IconValue = 1 | (call.IsVirtualStub ? 2 : 0);
 
-        var sizeArg = call.Args.GetArgByIndex(numArgs - 3) ??
-            throw new InvalidOperationException("Tail-call helper size argument is missing.");
-        var size = (sizeArg.EarlyNode ??
-            throw new InvalidOperationException("Tail-call helper size placement is missing.")).AsPutArgStk().Op1;
+        global::RyuJitSharp.CallArg __jitExceptionResult90;
+        var __jitExceptionCoalesceLeft91 = call.Args.GetArgByIndex(numArgs - 3);
+        if (__jitExceptionCoalesceLeft91 != null)
+        {
+            __jitExceptionResult90 = __jitExceptionCoalesceLeft91;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperSizeArgumentIsMissing);
+            __jitExceptionResult90 = default;
+        }
+        var sizeArg = __jitExceptionResult90;
+        global::RyuJitSharp.GenTree __jitExceptionResult453;
+        global::RyuJitSharp.GenTreePutArgStk __jitExceptionOperand454;
+        global::RyuJitSharp.GenTree __jitExceptionReceiver455;
+        var __jitExceptionCoalesceLeft456 = sizeArg.EarlyNode;
+        if (__jitExceptionCoalesceLeft456 != null)
+        {
+            __jitExceptionReceiver455 = __jitExceptionCoalesceLeft456;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperSizePlacementIsMissing);
+            __jitExceptionReceiver455 = default;
+        }
+        __jitExceptionOperand454 = __jitExceptionReceiver455.AsPutArgStk();
+        __jitExceptionResult453 = __jitExceptionOperand454.Op1;
+        var size = __jitExceptionResult453;
         assert(size.Oper is GT_CNS_INT);
         size.AsIntCon().IconValue = unchecked((nint)newStackArgsWords);
 
         if (Configuration.DEBUG)
         {
-            var oldSizeArg = call.Args.GetArgByIndex(numArgs - 4) ??
-                throw new InvalidOperationException("Tail-call helper incoming size argument is missing.");
+            global::RyuJitSharp.CallArg __jitExceptionResult92;
+            var __jitExceptionCoalesceLeft93 = call.Args.GetArgByIndex(numArgs - 4);
+            if (__jitExceptionCoalesceLeft93 != null)
+            {
+                __jitExceptionResult92 = __jitExceptionCoalesceLeft93;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TailCallHelperIncomingSizeArgumentIsMissing);
+                __jitExceptionResult92 = default;
+            }
+            var oldSizeArg = __jitExceptionResult92;
             assert(oldSizeArg.EarlyNode is not null);
             assert(oldSizeArg.EarlyNode.AsPutArgStk().Op1.Oper is GT_CNS_INT);
         }

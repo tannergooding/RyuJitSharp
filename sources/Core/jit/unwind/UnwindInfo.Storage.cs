@@ -243,12 +243,25 @@ public sealed partial class UnwindInfo
 
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind storage diagnostics for this target are not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindStorageDiagnosticsForThisTargetAreNotPorted
+    );
             return;
         }
 
-        var first = uwiFragmentFirst
-            ?? throw new InvalidOperationException("Unwind information has not been initialized.");
+        global::RyuJitSharp.UnwindInfo.UnwindFragmentInfo __jitExceptionResult709;
+        var __jitExceptionCoalesceLeft710 = uwiFragmentFirst;
+        if (__jitExceptionCoalesceLeft710 != null)
+        {
+            __jitExceptionResult709 = __jitExceptionCoalesceLeft710;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInformationHasNotBeenInitialized);
+            __jitExceptionResult709 = default;
+        }
+        var first = __jitExceptionResult709;
         var fragmentCount = 0;
         for (var fragment = first; fragment is not null; fragment = fragment.ufiNext)
         {
@@ -274,7 +287,7 @@ public sealed partial class UnwindInfo
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind instruction-size queries require ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnwindInstructionSizeQueriesRequireARM32);
             return default!;
         }
 
@@ -285,14 +298,28 @@ public sealed partial class UnwindInfo
     private Compiler GetCompiler()
     {
         RequireUnwindStorageTarget();
-        return m_compiler ?? throw new InvalidOperationException("Unwind information has not been initialized.");
+        global::RyuJitSharp.Compiler __jitExceptionReturnResult711;
+        var __jitExceptionCoalesceLeft712 = m_compiler;
+        if (__jitExceptionCoalesceLeft712 != null)
+        {
+            __jitExceptionReturnResult711 = __jitExceptionCoalesceLeft712;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindInformationHasNotBeenInitialized);
+            __jitExceptionReturnResult711 = default;
+        }
+        return __jitExceptionReturnResult711;
     }
 
     private static void RequireUnwindStorageTarget()
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Fragmented unwind storage for this target is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FragmentedUnwindStorageForThisTargetIsNotPorted
+    );
             return;
         }
     }
@@ -327,8 +354,18 @@ public sealed partial class UnwindInfo
     private static unsafe void EmitSplitCallback(void* context, emitLocation location)
     {
         var handle = GCHandle.FromIntPtr((nint)context);
-        var unwindInfo = (UnwindInfo?)handle.Target
-            ?? throw new InvalidOperationException("The unwind split callback lost its owner.");
+        global::RyuJitSharp.UnwindInfo __jitExceptionResult713;
+        var __jitExceptionCoalesceLeft714 = (UnwindInfo? )handle.Target;
+        if (__jitExceptionCoalesceLeft714 != null)
+        {
+            __jitExceptionResult713 = __jitExceptionCoalesceLeft714;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnwindSplitCallbackLostItsOwner);
+            __jitExceptionResult713 = default;
+        }
+        var unwindInfo = __jitExceptionResult713;
         unwindInfo.AddFragment(location);
     }
 
@@ -666,7 +703,10 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind prolog diagnostics for this target are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindPrologDiagnosticsForThisTargetAreNotPorted
+    );
                 return;
             }
 
@@ -827,7 +867,10 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind epilog diagnostics for this target are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindEpilogDiagnosticsForThisTargetAreNotPorted
+    );
                 return;
             }
 
@@ -859,7 +902,10 @@ public sealed partial class UnwindInfo
         {
             if (!Configuration.TARGET_LOONGARCH64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Compiler-free unwind epilog diagnostics require LoongArch64.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CompilerFreeUnwindEpilogDiagnosticsRequireLoongArch64
+    );
                 return;
             }
 
@@ -977,7 +1023,10 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind epilog-scope diagnostics for this target are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindEpilogScopeDiagnosticsForThisTargetAreNotPorted
+    );
                 return;
             }
 
@@ -1363,7 +1412,10 @@ public sealed partial class UnwindInfo
 
             if (!Configuration.TARGET_RISCV64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Numbered unwind fragment diagnostics require RISC-V64.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NumberedUnwindFragmentDiagnosticsRequireRISCV64
+    );
                 return;
             }
 

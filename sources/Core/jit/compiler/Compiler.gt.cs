@@ -1000,7 +1000,7 @@ public partial class Compiler
                 {
                     if (!Configuration.FEATURE_HW_INTRINSICS)
                     {
-                        throw new PlatformNotSupportedException("Hardware intrinsic tree cloning is unsupported on this target.");
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTreeCloningIsUnsupportedOnThisTarget);
                     }
 
                     var hwintrinsic = tree.AsHWIntrinsic();
@@ -4231,7 +4231,8 @@ public partial class Compiler
 
                     default:
                     {
-                        throw new InvalidOperationException("Invalid integral constant cast destination.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidIntegralConstantCastDestination);
+                        return default;
                     }
                 }
 
@@ -4345,7 +4346,8 @@ public partial class Compiler
 
                     default:
                     {
-                        throw new InvalidOperationException("Invalid long constant cast destination.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidLongConstantCastDestination);
+                        return default;
                     }
                 }
 
@@ -4442,7 +4444,8 @@ public partial class Compiler
 
                     default:
                     {
-                        throw new InvalidOperationException("Invalid floating constant cast destination.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidFloatingConstantCastDestination);
+                        return default;
                     }
                 }
             }
@@ -9199,7 +9202,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Scalable mask constants are only supported on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableMaskConstantsAreOnlySupportedOnARM64);
         }
 
         var mask = gtNewMskConNode(default);
@@ -9606,7 +9609,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD absolute value is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDAbsoluteValueIsUnsupportedOnThisTarget
+    );
             return default!;
         }
     }
@@ -10367,7 +10373,10 @@ public partial class Compiler
 
         if (intrinsic is NI_Illegal)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD square root is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDSquareRootIsUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -10605,7 +10614,10 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD comparison reductions are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDComparisonReductionsAreUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -10695,7 +10707,10 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_Vector_ConditionalSelect, simdBaseType, simdSize, op1, op2, op3);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD conditional select is unsupported on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDConditionalSelectIsUnsupportedOnThisTarget
+    );
         return default!;
     }
 
@@ -10712,7 +10727,10 @@ public partial class Compiler
 
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Masked hardware intrinsic conversion is unsupported in this configuration.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.MaskedHardwareIntrinsicConversionIsUnsupportedInThisConfiguration
+    );
             return default!;
         }
 
@@ -10727,7 +10745,10 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_Sve_ConvertMaskToVector, simdBaseType, simdSize, op1);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Mask-to-vector conversion is unsupported on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.MaskToVectorConversionIsUnsupportedOnThisTarget
+    );
         return default!;
     }
 
@@ -10738,7 +10759,10 @@ public partial class Compiler
 
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Masked hardware intrinsic conversion is unsupported in this configuration.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.MaskedHardwareIntrinsicConversionIsUnsupportedInThisConfiguration
+    );
             return default!;
         }
 
@@ -10755,7 +10779,10 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConvertVectorToMask, simdBaseType, simdSize, trueMask, op1);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Vector-to-mask conversion is unsupported on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.VectorToMaskConversionIsUnsupportedOnThisTarget
+    );
         return default!;
     }
 
@@ -10826,7 +10853,7 @@ public partial class Compiler
         }
         else if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD get-lower is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.SIMDGetLowerIsUnsupportedOnThisTarget);
             return default!;
         }
 
@@ -10835,7 +10862,7 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetLower, simdBaseType, simdSize, op1);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm vector get-lower support is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmVectorGetLowerSupportIsNotPorted);
         return default!;
     }
 
@@ -10860,7 +10887,7 @@ public partial class Compiler
         }
         else if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD get-upper is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.SIMDGetUpperIsUnsupportedOnThisTarget);
             return default!;
         }
 
@@ -10869,7 +10896,7 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetUpper, simdBaseType, simdSize, op1);
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm vector get-upper support is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmVectorGetUpperSupportIsNotPorted);
         return default!;
     }
 
@@ -12049,7 +12076,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD native min/max is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDNativeMinMaxIsUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -12083,7 +12113,10 @@ public partial class Compiler
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             !(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM))
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD narrowing is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDNarrowingIsUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -12553,7 +12586,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
     }
@@ -12609,7 +12645,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -12896,7 +12935,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
     }
@@ -13151,7 +13193,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
     }
@@ -13205,7 +13250,10 @@ public partial class Compiler
         }
         else if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -13252,7 +13300,10 @@ public partial class Compiler
         }
         else if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -13262,12 +13313,15 @@ public partial class Compiler
         }
         else if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm vector with-lower support is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmVectorWithLowerSupportIsNotPorted);
             return default!;
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
     }
@@ -13293,7 +13347,10 @@ public partial class Compiler
         }
         else if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -13303,12 +13360,15 @@ public partial class Compiler
         }
         else if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm vector with-upper support is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmVectorWithUpperSupportIsNotPorted);
             return default!;
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD operation is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDOperationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
     }
@@ -13775,7 +13835,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException("Invalid scalable constant element size.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidScalableConstantElementSize);
                 return default!;
             }
         }
@@ -14488,8 +14548,10 @@ public partial class Compiler
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION,
-                            "String constant costs are unsupported on this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.StringConstantCostsAreUnsupportedOnThisTarget
+    );
                         return default!;
                     }
 
@@ -14560,8 +14622,10 @@ public partial class Compiler
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION,
-                            "32-bit long constant costs are unsupported on this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.Failure32BitLongConstantCostsAreUnsupportedOnThisTarget
+    );
                         return default!;
                     }
 
@@ -14718,8 +14782,10 @@ public partial class Compiler
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION,
-                            "Integer constant costs are unsupported on this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.IntegerConstantCostsAreUnsupportedOnThisTarget
+    );
                         return default!;
                     }
 
@@ -14792,8 +14858,10 @@ public partial class Compiler
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION,
-                            "Floating-point constant costs are unsupported on this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.FloatingPointConstantCostsAreUnsupportedOnThisTarget
+    );
                         return default!;
                     }
 
@@ -15392,8 +15460,10 @@ public partial class Compiler
                         }
                         else
                         {
-                            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION,
-                                "Cast cost estimation is unsupported on this target.");
+                            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.CastCostEstimationIsUnsupportedOnThisTarget
+    );
                             return default!;
                         }
 

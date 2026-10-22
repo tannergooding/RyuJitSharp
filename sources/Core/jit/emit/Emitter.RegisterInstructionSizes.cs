@@ -14,7 +14,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("Instruction encodability checks require xarch.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionEncodabilityChecksRequireXarch);
             return default!;
         }
 
@@ -61,7 +61,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("VEX output requires xarch.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.VEXOutputRequiresXarch);
             return default!;
         }
 
@@ -96,7 +96,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch register/register sizing is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchRegisterRegisterSizingIsNotAvailableForThisTarget);
             return default!;
         }
 

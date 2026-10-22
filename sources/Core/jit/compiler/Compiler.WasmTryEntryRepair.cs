@@ -178,8 +178,12 @@ public partial class Compiler
         ref var controlVarDescriptor = ref lvaGetDesc(controlVarNum);
         controlVarDescriptor.Type = TYP_INT;
 
-        var firstBlock = fgFirstBB
-            ?? throw new InvalidOperationException("Wasm try-entry repair requires an entry block.");
+        if (fgFirstBB is not BasicBlock firstBlock)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmTryEntryRepairRequiresAnEntryBlock);
+            return default;
+        }
+
         assert(!firstBlock.hasTryIndex && !firstBlock.hasHndIndex);
 
         var sentinel = gtNewIconNode(TYP_INT, numTargets);
@@ -219,7 +223,8 @@ public partial class Compiler
             if ((dispatch.Dispatcher is not BasicBlock dispatcher) ||
                 (dispatch.NormalTarget is not BasicBlock normalTarget))
             {
-                throw new InvalidOperationException("A Wasm try-entry dispatcher was not initialized.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmTryEntryDispatcherWasNotInitialized);
+                return default;
             }
 
             var header = dispatch.Header;
@@ -320,7 +325,7 @@ public partial class Compiler
         {
             if (!giveIndex.TryGetValue(sideEntry.Target, out var index))
             {
-                throw new InvalidOperationException("A Wasm side-entry target has no assigned index.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmSideEntryTargetHasNoAssignedIndex);
             }
 
             var pred = sideEntry.Pred;

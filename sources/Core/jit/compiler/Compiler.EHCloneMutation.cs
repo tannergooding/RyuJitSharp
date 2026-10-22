@@ -18,10 +18,7 @@ public partial class Compiler
         var map = info.Map;
         if (map is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage103
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CloningATryRegionRequiresABlockMap);
             return default!;
         }
         assert(ehGetDsc(outermostTryIndex).ebdTryBeg == tryEntry);
@@ -74,9 +71,9 @@ public partial class Compiler
             if (insertionPoint is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage104
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CloningATryRegionRequiresAnInsertionPoint
+    );
                 return default!;
             }
             var clone = fgNewBBafter(BBJ_ALWAYS, insertionPoint, extendRegion: false);
@@ -98,10 +95,7 @@ public partial class Compiler
         {
             if (!map.TryGetValue(block, out var clone))
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage108
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ClonedBlockRequiresItsBlockMapEntry);
                 return default!;
             }
 

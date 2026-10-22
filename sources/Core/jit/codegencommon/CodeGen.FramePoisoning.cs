@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame poisoning is not implemented for Wasm.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FramePoisoningIsNotImplementedForWasm);
             return;
         }
 
@@ -136,7 +136,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown-size frame poisoning requires ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnknownSizeFramePoisoningRequiresARM64);
             return;
         }
 

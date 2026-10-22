@@ -58,7 +58,7 @@ public partial class Globals
                                 }
                                 else
                                 {
-                                    FatalJitException.ThrowFatalJitException("Unsupported or unset target architecture.");
+                                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedOrUnsetTargetArchitecture);
                                     return default!;
                                 }
                             }
@@ -94,7 +94,7 @@ public partial class Globals
         }
         NYI("Integer argument-register indexing outside AMD64/ARM64");
         fatal(CORJIT_IMPLLIMITATION);
-        FatalJitException.ThrowFatalJitException("Integer argument-register indexing outside AMD64/ARM64.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.IntegerArgumentRegisterIndexingOutsideAMD64ARM64);
         return default!;
     }
 
@@ -247,7 +247,8 @@ public partial class Globals
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("JIT stress is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITStressIsOnlyAvailableInDebugBuilds);
+                return default;
             }
 
             return JitConfig.JitStress;
@@ -292,7 +293,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Node destruction diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NodeDestructionDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
 
         // jitprintf($"DEBUG_DESTROY_NODE for [0x{tree.TreeId:x8}]\n", tree);

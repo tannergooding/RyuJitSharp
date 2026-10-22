@@ -167,12 +167,12 @@ public sealed partial class LinearScan
             var trackedToLocal = _compiler.lvaTrackedToVarNum;
             if (trackedToLocal is null)
             {
-                FatalJitException.ThrowFatalJitException("Tracked locals require an index-to-local mapping.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.TrackedLocalsRequireAnIndexToLocalMapping);
                 return;
             }
             if (map is null)
             {
-                FatalJitException.ThrowFatalJitException("Tracked locals require a variable-to-register map.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.TrackedLocalsRequireAVariableToRegisterMap);
                 return;
             }
 
@@ -223,7 +223,10 @@ public sealed partial class LinearScan
                 }
             }
 
-            FatalJitException.ThrowFatalJitException($"No incoming register mapping exists for V{localNumber:D2}.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.NoIncomingRegisterMappingExistsForVArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? localNumber : default)
+    );
             return default!;
         }
 
@@ -359,7 +362,7 @@ public sealed partial class LinearScan
                             assert(lastFixedRegister is not null);
                             if (lastFixedRegister is null)
                             {
-                                FatalJitException.ThrowFatalJitException("A fixed use requires its preceding register reference.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.FixedUseRequiresItsPrecedingRegisterReference);
                                 return;
                             }
 
@@ -491,7 +494,7 @@ public sealed partial class LinearScan
                 var blockInfo = _blockInfo;
                 if (blockInfo is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Variable-location predecessors require LSRA block information.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.VariableLocationPredecessorsRequireLSRABlockInformation);
                     return;
                 }
                 jitprintf($"Predecessor for variable locations: {FMT_BB(checked((int)blockInfo[block.bbNum].predBBNum))}\n");
@@ -503,12 +506,15 @@ public sealed partial class LinearScan
                 var splitBlocks = _splitBBNumToTargetBBNumMap;
                 if (splitBlocks is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Resolution blocks require a split-edge mapping.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ResolutionBlocksRequireASplitEdgeMapping);
                     return;
                 }
                 if (!splitBlocks.TryGetValue((uint)block.bbNum, out var split))
                 {
-                    FatalJitException.ThrowFatalJitException($"No split-edge mapping exists for BB{block.bbNum:D2}.");
+                    FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.NoSplitEdgeMappingExistsForBBArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? block.bbNum : default)
+    );
                     return;
                 }
 

@@ -248,8 +248,11 @@ public partial class Emitter
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                    $"Unexpected Wasm instruction display format {format}.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedWasmInstructionDisplayFormatArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? format : default)
+    );
                 return;
             }
         }
@@ -274,7 +277,7 @@ public partial class Emitter
         var targetGroup = emitCodeGetCookie(targetBlock);
         if (targetGroup is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm jump target has no emitter label.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmJumpTargetHasNoEmitterLabel);
             return;
         }
         emitPrintLabel(targetGroup);

@@ -15,7 +15,7 @@ public static partial class regNumberExtensions
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Floating register names are only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FloatingRegisterNamesAreOnlyAvailableInDebugBuilds);
             }
 
             if (Configuration.TARGET_ARM)
@@ -221,7 +221,7 @@ public static partial class regNumberExtensions
             return (int)REG_WASM_COUNT;
         }
 
-        FatalJitException.ThrowFatalJitException("Invalid target architecture.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidTargetArchitecture);
         return default!;
     }
 }

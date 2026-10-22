@@ -14,10 +14,9 @@ public partial class Emitter
         if (Configuration.TARGET_WASM)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "Reverse jump-kind mapping is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReverseJumpKindMappingIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -25,9 +24,10 @@ public partial class Emitter
         if (index >= (uint)Configuration.EMIT_JUMPKIND_COUNT)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.InvalidJumpKind,
-            Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Invalid jump kind {jumpKind}." : null);
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidJumpKind,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
+    );
             return default!;
         }
 
@@ -35,11 +35,10 @@ public partial class Emitter
         if ((jumpKind != EJ_NONE) && (result == EJ_NONE))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                FatalJitErrorCode.MissingReverseJumpMapping,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? $"Jump kind {jumpKind} has no reverse mapping for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MissingReverseJumpMapping,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
+    );
             return default!;
         }
 
@@ -53,9 +52,10 @@ public partial class Emitter
         if (index >= (uint)jumpKindInstructions.Length)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.InvalidJumpKind,
-            Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Invalid jump kind {jumpKind}." : null);
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.InvalidJumpKind,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
+    );
             return default!;
         }
 
@@ -63,11 +63,10 @@ public partial class Emitter
         if ((jumpKind != EJ_NONE) && (result == INS_invalid))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                FatalJitErrorCode.UnsupportedJumpKind,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? $"Jump kind {jumpKind} is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnsupportedJumpKind,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? jumpKind : default)
+    );
             return default!;
         }
 
@@ -79,10 +78,9 @@ public partial class Emitter
         if (!Configuration.TARGET_ARM)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "ARM jump-kind mapping is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMJumpKindMappingIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -139,10 +137,9 @@ public partial class Emitter
         if (!Configuration.TARGET_XARCH)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "Basic-block label address recording is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BasicBlockLabelAddressRecordingIsNotSupportedForThisTarget
+    );
             return;
         }
 
@@ -204,10 +201,9 @@ public partial class Emitter
         }
 
         FatalJitException.ThrowFatalJitException(
-            CORJIT_SKIPPED,
-            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                ? "Data-label address recording is not supported for this target."
-        : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.DataLabelAddressRecordingIsNotSupportedForThisTarget
+    );
         return;
     }
 
@@ -226,10 +222,9 @@ public partial class Emitter
         }
 
         FatalJitException.ThrowFatalJitException(
-            CORJIT_SKIPPED,
-            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                ? "Conditional register branches are not supported for this target."
-        : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ConditionalRegisterBranchesAreNotSupportedForThisTarget
+    );
         return;
     }
 
@@ -264,10 +259,9 @@ public partial class Emitter
         if (!Configuration.TARGET_XARCH)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "Label jump instruction recording is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LabelJumpInstructionRecordingIsNotSupportedForThisTarget
+    );
             return;
         }
 
@@ -417,10 +411,9 @@ public partial class Emitter
         if (!Configuration.TARGET_RISCV64)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "RISC-V jump recording is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCVJumpRecordingIsNotSupportedForThisTarget
+    );
             return;
         }
 
@@ -428,20 +421,18 @@ public partial class Emitter
         if (compiler is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "RISC-V jump recording requires an active compiler."
-            : null);
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RISCVJumpRecordingRequiresAnActiveCompiler
+    );
             return;
         }
         var currentBlock = compiler.compCurBB;
         if (currentBlock is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "RISC-V jump recording requires a current basic block."
-            : null);
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RISCVJumpRecordingRequiresACurrentBasicBlock
+    );
             return;
         }
         assert(dst.HasFlag(BBF_HAS_LABEL));
@@ -503,10 +494,9 @@ public partial class Emitter
         if (!Configuration.TARGET_XARCH)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED,
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "Xarch short-jump selection is not supported for this target."
-            : null);
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchShortJumpSelectionIsNotSupportedForThisTarget
+    );
             return;
         }
 

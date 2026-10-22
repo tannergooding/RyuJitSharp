@@ -24,7 +24,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction byte display is not implemented for the active target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionByteDisplayIsNotImplementedForTheActiveTarget
+    );
         return;
     }
 }

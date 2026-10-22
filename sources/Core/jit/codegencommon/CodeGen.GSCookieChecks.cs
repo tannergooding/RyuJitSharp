@@ -190,7 +190,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GS-cookie checks are not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GSCookieChecksAreNotPortedForThisTarget);
             return;
         }
     }

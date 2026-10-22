@@ -55,16 +55,27 @@ public partial class Globals
             return (IntPtr.Size == 8) ? TYP_ULONG : TYP_UINT;
         }
 
-        return Type.GetTypeCode(typeof(TDestination)) switch {
-            TypeCode.SByte => TYP_BYTE,
-            TypeCode.Byte => TYP_UBYTE,
-            TypeCode.Int16 => TYP_SHORT,
-            TypeCode.UInt16 => TYP_USHORT,
-            TypeCode.Int32 => TYP_INT,
-            TypeCode.UInt32 => TYP_UINT,
-            TypeCode.Int64 => TYP_LONG,
-            TypeCode.UInt64 => TYP_ULONG,
-            _ => throw new NotSupportedException($"SafeCvt does not support destination type {typeof(TDestination)}."),
-        };
+        switch (Type.GetTypeCode(typeof(TDestination)))
+        {
+            case TypeCode.SByte:
+                return TYP_BYTE;
+            case TypeCode.Byte:
+                return TYP_UBYTE;
+            case TypeCode.Int16:
+                return TYP_SHORT;
+            case TypeCode.UInt16:
+                return TYP_USHORT;
+            case TypeCode.Int32:
+                return TYP_INT;
+            case TypeCode.UInt32:
+                return TYP_UINT;
+            case TypeCode.Int64:
+                return TYP_LONG;
+            case TypeCode.UInt64:
+                return TYP_ULONG;
+            default:
+                JitExceptionHelpers.ThrowNotSupportedException(FatalJitErrorCode.SafeCvtDoesNotSupportDestinationTypeArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? typeof(TDestination) : default));
+                return default;
+        }
     }
 }

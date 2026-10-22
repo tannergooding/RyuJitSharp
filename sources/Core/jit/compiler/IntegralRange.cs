@@ -65,26 +65,46 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
         return SymbolicToRealMap[(int)value];
     }
 
-    public static SymbolicIntegerValue LowerBoundForType(var_types type) => type switch {
-        TYP_UBYTE or TYP_USHORT => Zero,
-        TYP_BYTE => ByteMin,
-        TYP_SHORT => ShortMin,
-        TYP_INT => IntMin,
-        TYP_LONG => LongMin,
-        _ => throw new UnreachableException(),
-    };
-
-    public static SymbolicIntegerValue UpperBoundForType(var_types type) => type switch {
-        TYP_BYTE => ByteMax,
-        TYP_UBYTE => UByteMax,
-        TYP_SHORT => ShortMax,
-        TYP_USHORT => UShortMax,
-        TYP_INT => IntMax,
-        TYP_UINT => UIntMax,
-        TYP_LONG => LongMax,
-        _ => throw new UnreachableException(),
-    };
-
+    public static SymbolicIntegerValue LowerBoundForType(var_types type) {
+    switch (type)
+    {
+        case TYP_UBYTE or TYP_USHORT:
+            return Zero;
+        case TYP_BYTE:
+            return ByteMin;
+        case TYP_SHORT:
+            return ShortMin;
+        case TYP_INT:
+            return IntMin;
+        case TYP_LONG:
+            return LongMin;
+        default:
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
+    }
+}
+    public static SymbolicIntegerValue UpperBoundForType(var_types type) {
+    switch (type)
+    {
+        case TYP_BYTE:
+            return ByteMax;
+        case TYP_UBYTE:
+            return UByteMax;
+        case TYP_SHORT:
+            return ShortMax;
+        case TYP_USHORT:
+            return UShortMax;
+        case TYP_INT:
+            return IntMax;
+        case TYP_UINT:
+            return UIntMax;
+        case TYP_LONG:
+            return LongMax;
+        default:
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
+    }
+}
     public static IntegralRange ForType(var_types type) => new(LowerBoundForType(type), UpperBoundForType(type));
 
     public static IntegralRange ForNode(GenTree node, Compiler compiler)
@@ -301,7 +321,7 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
                     {
                         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
                         {
-                            FatalJitException.ThrowFatalJitException("Unsupported platform for hardware intrinsic range analysis.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedPlatformForHardwareIntrinsicRangeAnalysis);
                             return default!;
                         }
 
@@ -443,7 +463,8 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
 
                 default:
                 {
-                    throw new UnreachableException();
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    return default;
                 }
             }
         }
@@ -530,7 +551,8 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
 

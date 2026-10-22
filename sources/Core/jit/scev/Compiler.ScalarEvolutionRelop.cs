@@ -16,9 +16,7 @@ public partial class Compiler
         var store = vnStore;
         if (store is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-001",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresValueNumbering);
         }
 
         for (var idom = loop.Header.bbIDom; idom is not null; idom = idom.bbIDom)

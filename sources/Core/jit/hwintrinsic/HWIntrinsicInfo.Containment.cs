@@ -19,7 +19,8 @@ public readonly partial struct HWIntrinsicInfo
             return (lookupFlags(id) & HW_Flag_SupportsContainment) != 0;
         }
 
-        throw new System.NotImplementedException("Hardware-intrinsic containment is not ported for this target.");
+        JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.HardwareIntrinsicContainmentIsNotPortedForThisTarget);
+        return default;
     }
 
     public static bool IsVectorCreateScalar(NamedIntrinsic id) => id is NI_Vector_CreateScalar;

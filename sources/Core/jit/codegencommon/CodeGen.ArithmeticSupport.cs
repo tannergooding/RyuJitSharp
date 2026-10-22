@@ -20,7 +20,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm throw-helper generation uses a separate target path.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WasmThrowHelperGenerationUsesASeparateTargetPath
+    );
             return;
         }
 
@@ -90,7 +93,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Overflow checking uses a separate target path.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.OverflowCheckingUsesASeparateTargetPath);
             return;
         }
 
@@ -118,7 +121,10 @@ public sealed partial class CodeGen
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Overflow checking is not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.OverflowCheckingIsNotImplementedForThisTarget
+    );
                 return;
             }
         }
@@ -157,7 +163,10 @@ public sealed partial class CodeGen
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Jump instruction generation is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.JumpInstructionGenerationIsNotImplementedForThisTarget
+    );
         return;
     }
 
@@ -194,8 +203,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Helper call generation is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HelperCallGenerationIsNotImplementedForThisTarget
+    );
             return;
         }
     }

@@ -20,8 +20,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARMARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM architecture intrinsic generation is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMArchitectureIntrinsicGenerationIsUnavailableForThisTarget
+    );
             return;
         }
 
@@ -47,7 +49,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Ceiling intrinsic generation requires ARM64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.CeilingIntrinsicGenerationRequiresARM64);
                     return;
                 }
 
@@ -60,7 +62,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floor intrinsic generation requires ARM64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.FloorIntrinsicGenerationRequiresARM64);
                     return;
                 }
 
@@ -73,7 +75,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Truncate intrinsic generation requires ARM64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.TruncateIntrinsicGenerationRequiresARM64);
                     return;
                 }
 
@@ -86,7 +88,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Round intrinsic generation requires ARM64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RoundIntrinsicGenerationRequiresARM64);
                     return;
                 }
 
@@ -99,7 +101,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "PopCount intrinsic generation requires ARM64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.PopCountIntrinsicGenerationRequiresARM64);
                     return;
                 }
 
@@ -139,7 +141,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "TrailingZeroCount intrinsic generation requires ARM64.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TrailingZeroCountIntrinsicGenerationRequiresARM64
+    );
                     return;
                 }
 
@@ -175,7 +180,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SaturateToInt8 intrinsic generation requires ARM.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SaturateToInt8IntrinsicGenerationRequiresARM);
                     return;
                 }
 
@@ -189,7 +194,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SaturateToInt16 intrinsic generation requires ARM.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SaturateToInt16IntrinsicGenerationRequiresARM
+    );
                     return;
                 }
 
@@ -203,7 +211,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SaturateToUInt8 intrinsic generation requires ARM.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SaturateToUInt8IntrinsicGenerationRequiresARM
+    );
                     return;
                 }
 
@@ -217,7 +228,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_ARM)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SaturateToUInt16 intrinsic generation requires ARM.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SaturateToUInt16IntrinsicGenerationRequiresARM
+    );
                     return;
                 }
 
@@ -233,7 +247,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_SIMD)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD upper-register restoration is unsupported.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDUpperRegisterRestorationIsUnsupported);
                     return;
                 }
 
@@ -252,7 +266,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_SIMD)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD upper-register saving is unsupported.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDUpperRegisterSavingIsUnsupported);
                     return;
                 }
 

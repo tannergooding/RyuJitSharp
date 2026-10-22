@@ -11,7 +11,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Data-size prefix output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DataSizePrefixOutputRequiresXarch);
             return default!;
         }
 
@@ -30,7 +30,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "NOP output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NOPOutputRequiresXarch);
             return default!;
         }
 
@@ -161,7 +161,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Loop-alignment output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoopAlignmentOutputRequiresXarch);
             return default!;
         }
 
@@ -203,7 +203,7 @@ public partial class Emitter
             var loopHead = alignInstr.idaIG?.igNext;
             if (loopHead is null)
             {
-                FatalJitException.ThrowFatalJitException("An alignment descriptor requires a following loop group.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AlignmentDescriptorRequiresAFollowingLoopGroup);
                 return default!;
             }
             var containingIG = alignInstr.idaIG;

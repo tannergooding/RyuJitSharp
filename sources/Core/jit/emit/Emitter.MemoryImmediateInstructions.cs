@@ -15,23 +15,29 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_C_I");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 static-field immediate instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64StaticFieldImmediateInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_C_I");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 static-field immediate instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StaticFieldImmediateInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Static-field immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StaticFieldImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -79,8 +85,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Static-field register-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StaticFieldRegisterImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -113,8 +121,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Register-stack-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterStackImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 

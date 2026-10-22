@@ -13,8 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LoongArch64 instruction validation is not available for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64InstructionValidationIsNotAvailableForThisTarget
+    );
             return;
         }
     }
@@ -40,8 +42,10 @@ public partial class Emitter
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LoongArch64 vector validation is not available without SIMD support.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64VectorValidationIsNotAvailableWithoutSIMDSupport
+    );
             return;
         }
     }

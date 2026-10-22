@@ -70,7 +70,7 @@ public static partial class genTreeOpsExtensions
             {
                 if (!Configuration.DEBUG)
                 {
-                    throw new InvalidOperationException("Tree operation diagnostics are only available in Debug builds.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeOperationDiagnosticsAreOnlyAvailableInDebugBuilds);
                 }
 
                 assert(s_debugKinds.Length == (int)(GT_COUNT));
@@ -406,7 +406,7 @@ public static partial class genTreeOpsExtensions
             {
                 if (!Configuration.DEBUG && !Configuration.MEASURE_NODE_SIZE)
                 {
-                    throw new InvalidOperationException("Operator struct type metadata is only available in Debug or node-size measurement builds.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OperatorStructTypeMetadataIsOnlyAvailableInDebugOrNodeSizeMeasurementBuilds);
                 }
 
                 assert(StructTypeTable.s_structTypes.Length == (int)(GT_COUNT));

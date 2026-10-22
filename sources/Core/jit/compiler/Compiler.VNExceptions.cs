@@ -205,16 +205,33 @@ public partial class Compiler
         assert(vnStore is not null);
         var oper = tree.Oper;
         assert(oper is GT_ADD or GT_SUB or GT_MUL);
-        var vnf = (oper, tree.AsOp().IsUnsigned) switch
+        global::RyuJitSharp.VNFunc __jitExceptionResult266;
+        switch (oper, tree.AsOp().IsUnsigned)
         {
-            (GT_ADD, false) => VNF_ADD_OVF,
-            (GT_SUB, false) => VNF_SUB_OVF,
-            (GT_MUL, false) => VNF_MUL_OVF,
-            (GT_ADD, true) => VNF_ADD_UN_OVF,
-            (GT_SUB, true) => VNF_SUB_UN_OVF,
-            (GT_MUL, true) => VNF_MUL_UN_OVF,
-            _ => throw new System.Diagnostics.UnreachableException(),
-        };
+            case (GT_ADD, false):
+                __jitExceptionResult266 = VNF_ADD_OVF;
+                break;
+            case (GT_SUB, false):
+                __jitExceptionResult266 = VNF_SUB_OVF;
+                break;
+            case (GT_MUL, false):
+                __jitExceptionResult266 = VNF_MUL_OVF;
+                break;
+            case (GT_ADD, true):
+                __jitExceptionResult266 = VNF_ADD_UN_OVF;
+                break;
+            case (GT_SUB, true):
+                __jitExceptionResult266 = VNF_SUB_UN_OVF;
+                break;
+            case (GT_MUL, true):
+                __jitExceptionResult266 = VNF_MUL_UN_OVF;
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                __jitExceptionResult266 = default;
+                break;
+        }
+        var vnf = __jitExceptionResult266;
         _ = vnf;
 
         for (var kind = VNK_Liberal; kind <= VNK_Conservative; kind++)
@@ -351,8 +368,8 @@ public partial class Compiler
             }
             default:
             {
-                throw new System.Diagnostics.UnreachableException(
-                    $"Handle {tree.Oper} in fgValueNumberAddExceptionSet");
+                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.HandleArgumentInFgValueNumberAddExceptionSet, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? tree.Oper : default));
+                return;
             }
         }
     }

@@ -14,7 +14,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The JIT32 GC encoder requires X86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JIT32GCEncoderRequiresX86);
             return default!;
         }
 
@@ -138,7 +138,7 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC-info publication is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GCInfoPublicationIsUnsupportedForThisTarget);
             return;
         }
 
@@ -249,7 +249,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GC-info publication requires AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GCInfoPublicationRequiresAMD64);
             return;
         }
 

@@ -138,8 +138,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Last-instruction call tracking is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LastInstructionCallTrackingIsNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -150,8 +152,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Pre-epilog nop insertion is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PreEpilogNopInsertionIsNotSupportedForThisTarget
+    );
             return;
         }
 

@@ -57,7 +57,7 @@ public sealed partial class LinearScan
                     }
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException("Unrecognized double-alignment policy.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnrecognizedDoubleAlignmentPolicy);
                         return;
                     }
                 }

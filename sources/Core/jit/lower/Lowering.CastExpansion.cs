@@ -93,13 +93,27 @@ public sealed partial class Lowering
                 GenTree castResult;
                 if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
                 {
-                    var intrinsic = dstType switch {
-                        TYP_INT => NI_AVX10v2_ConvertToInt32WithTruncatedSaturation,
-                        TYP_UINT => NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation,
-                        TYP_LONG => NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation,
-                        TYP_ULONG => NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation,
-                        _ => throw new System.InvalidOperationException("Unexpected floating conversion destination."),
-                    };
+                    global::RyuJitSharp.NamedIntrinsic __jitExceptionResult457;
+                    switch (dstType)
+                    {
+                        case TYP_INT:
+                            __jitExceptionResult457 = NI_AVX10v2_ConvertToInt32WithTruncatedSaturation;
+                            break;
+                        case TYP_UINT:
+                            __jitExceptionResult457 = NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation;
+                            break;
+                        case TYP_LONG:
+                            __jitExceptionResult457 = NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation;
+                            break;
+                        case TYP_ULONG:
+                            __jitExceptionResult457 = NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedFloatingConversionDestination);
+                            __jitExceptionResult457 = default;
+                            break;
+                    }
+                    var intrinsic = __jitExceptionResult457;
                     castResult = compiler.gtNewSimdHWIntrinsicNode(dstType.ActualType, intrinsic, srcType, 16, castOp);
                     castRange.InsertAtEnd(castResult);
                 }
@@ -176,7 +190,8 @@ public sealed partial class Lowering
 
                             default:
                             {
-                                throw new System.InvalidOperationException("Unexpected floating conversion destination.");
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedFloatingConversionDestination);
+                                return;
                             }
                         }
 
@@ -405,7 +420,7 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Cast lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.CastLoweringIsNotPortedForThisTarget);
         return;
     }
 }

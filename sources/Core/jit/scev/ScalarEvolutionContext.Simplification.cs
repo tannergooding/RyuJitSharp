@@ -107,11 +107,7 @@ public sealed partial class ScalarEvolutionContext
 
                             default:
                             {
-                                JitExceptionHelpers.ThrowInvalidOperationException(
-                                    "RJS-SCE-007",
-                                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                        ? $"Unexpected operation {binop.Oper}."
-                                        : null);
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? binop.Oper : default));
                                 newValue = default;
                                 break;
                             }
@@ -145,11 +141,7 @@ public sealed partial class ScalarEvolutionContext
 
                             default:
                             {
-                                JitExceptionHelpers.ThrowInvalidOperationException(
-                                    "RJS-SCE-007",
-                                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                        ? $"Unexpected operation {binop.Oper}."
-                                        : null);
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? binop.Oper : default));
                                 value = default;
                                 break;
                             }
@@ -222,11 +214,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-003",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected scalar evolution operation {scev.Oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedScalarEvolutionOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? scev.Oper : default));
                 return default!;
             }
         }

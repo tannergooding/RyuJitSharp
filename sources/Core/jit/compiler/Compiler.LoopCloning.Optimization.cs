@@ -37,10 +37,7 @@ public partial class Compiler
                     var block = array.ArrIndex.UseBlock;
                     if (block is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage144
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ArrayCandidateHasNoUseBlock);
                         return;
                     }
                     compCurBB = block;
@@ -77,19 +74,13 @@ public partial class Compiler
                     var block = span.SpanIndex.UseBlock;
                     if (block is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage148
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SpanCandidateHasNoUseBlock);
                         return;
                     }
                     var comma = span.SpanIndex.BndsChk;
                     if (comma is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage149
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SpanCandidateHasNoBoundsCheck);
                         return;
                     }
                     compCurBB = block;
@@ -153,10 +144,7 @@ public partial class Compiler
                 }
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage150
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownLoopCloningOptimization);
                     return;
                 }
             }

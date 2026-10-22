@@ -19,9 +19,9 @@ public sealed partial class LinearScan
         if (codeGen is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage319
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.WriteBarrierKillSetConstructionRequiresInitializedCodeGen
+    );
             return default!;
         }
         var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree);
@@ -37,7 +37,7 @@ public sealed partial class LinearScan
                 return new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_X86_EDX));
             }
 
-            FatalJitException.ThrowFatalJitException("Optimized write barriers are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.OptimizedWriteBarriersAreUnsupportedOnThisTarget);
             return default!;
         }
 
@@ -137,9 +137,9 @@ public sealed partial class LinearScan
                 if (codeGen is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage320
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CallKillSetConstructionRequiresInitializedCodeGen
+    );
                     return default!;
                 }
                 if (Configuration.TARGET_XARCH)
@@ -161,9 +161,9 @@ public sealed partial class LinearScan
             if (virtualStubParamInfo is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage321
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.VirtualStubCallsRequireInitializedRegisterMetadata
+    );
                 return default!;
             }
             if (Configuration.TARGET_ARM)
@@ -340,9 +340,9 @@ public sealed partial class LinearScan
         if (codeGen is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage320
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CallKillSetConstructionRequiresInitializedCodeGen
+    );
             return default!;
         }
         return Configuration.HAS_MORE_THAN_64_REGISTERS

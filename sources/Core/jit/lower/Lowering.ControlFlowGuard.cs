@@ -168,8 +168,9 @@ public sealed partial class Lowering
                     !Configuration.TARGET_WASM && !Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_IMPLLIMITATION,
-                    "Lowering.LowerCFGCall dispatcher register is not ported for this target.");
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.LoweringLowerCFGCallDispatcherRegisterIsNotPortedForThisTarget
+    );
                     return;
                 }
 

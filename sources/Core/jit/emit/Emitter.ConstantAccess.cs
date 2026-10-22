@@ -26,7 +26,8 @@ public partial class Emitter
             if (compiler is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    "ARM32 local-variable immediate resolution requires an active compiler.");
+        FatalJitErrorCode.ARM32LocalVariableImmediateResolutionRequiresAnActiveCompiler
+    );
                 return default!;
             }
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();

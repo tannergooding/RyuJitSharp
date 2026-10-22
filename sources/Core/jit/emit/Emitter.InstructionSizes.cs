@@ -131,7 +131,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.XarchInstructionSizingRequiresAnXarchTarget);
             return default!;
         }
 
@@ -307,7 +307,7 @@ public partial class Emitter
 
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.XarchInstructionSizingRequiresAnXarchTarget);
             return default!;
         }
 

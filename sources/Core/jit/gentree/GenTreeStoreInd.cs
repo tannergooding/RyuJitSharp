@@ -43,7 +43,7 @@ public sealed class GenTreeStoreInd : GenTreeIndir
         {
             if (Configuration.CPU_LOAD_STORE_ARCH && (value is not STOREIND_RMW_STATUS_UNKNOWN))
             {
-                throw new InvalidOperationException("RMW status is not supported on this target.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RMWStatusIsNotSupportedOnThisTarget);
             }
 
             _rmwStatus = value;

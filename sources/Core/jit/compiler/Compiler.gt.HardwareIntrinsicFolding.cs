@@ -15,7 +15,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new InvalidOperationException("Mask conversion folding is not supported on this target.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MaskConversionFoldingIsNotSupportedOnThisTarget);
         }
 
         assert(tree.IsConvertVectorToMask);
@@ -59,7 +59,7 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new InvalidOperationException("Scalable-vector mask folding requires an ARM64 target.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalableVectorMaskFoldingRequiresAnARM64Target);
         }
 
         if (Configuration.DEBUG && (JitConfig.JitUseScalableVectorT != 0))
@@ -159,8 +159,8 @@ public partial class Compiler
                             }
                             else
                             {
-                                throw new InvalidOperationException(
-                                    "Mask conversion folding is not supported on this target.");
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MaskConversionFoldingIsNotSupportedOnThisTarget);
+                                return default;
                             }
 
                             DEBUG_DESTROY_NODE(op);
@@ -184,7 +184,16 @@ public partial class Compiler
                 else if (Configuration.TARGET_ARM64)
                 {
                     assert(op.Oper.IsHWIntrinsic && op.AsHWIntrinsic().HWIntrinsicId == NI_Sve_ConversionTrueMask);
-                    op = op2 ?? throw new InvalidOperationException();
+                    var __jitExceptionCoalesceLeft219 = op2;
+                    if (__jitExceptionCoalesceLeft219 != null)
+                    {
+                        op = __jitExceptionCoalesceLeft219;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException();
+                        op = default;
+                    }
                     tryHandle = op.Oper.IsHWIntrinsic;
                 }
 
@@ -1989,20 +1998,35 @@ public readonly partial struct HWIntrinsicInfo
     {
         assert((lookupFlags(id) & HW_Flag_HasAllMaskVariant) != 0);
 
-        return id switch {
-            NI_Sve_And => NI_Sve_And_Predicates,
-            NI_Sve_BitwiseClear => NI_Sve_BitwiseClear_Predicates,
-            NI_Sve_Xor => NI_Sve_Xor_Predicates,
-            NI_Sve_Or => NI_Sve_Or_Predicates,
-            NI_Sve_ZipHigh => NI_Sve_ZipHigh_Predicates,
-            NI_Sve_ZipLow => NI_Sve_ZipLow_Predicates,
-            NI_Sve_UnzipOdd => NI_Sve_UnzipOdd_Predicates,
-            NI_Sve_UnzipEven => NI_Sve_UnzipEven_Predicates,
-            NI_Sve_TransposeEven => NI_Sve_TransposeEven_Predicates,
-            NI_Sve_TransposeOdd => NI_Sve_TransposeOdd_Predicates,
-            NI_Sve_ReverseElement => NI_Sve_ReverseElement_Predicates,
-            NI_Sve_ConditionalSelect => NI_Sve_ConditionalSelect_Predicates,
-            _ => throw new System.Diagnostics.UnreachableException(),
-        };
+        switch (id)
+        {
+            case NI_Sve_And:
+                return NI_Sve_And_Predicates;
+            case NI_Sve_BitwiseClear:
+                return NI_Sve_BitwiseClear_Predicates;
+            case NI_Sve_Xor:
+                return NI_Sve_Xor_Predicates;
+            case NI_Sve_Or:
+                return NI_Sve_Or_Predicates;
+            case NI_Sve_ZipHigh:
+                return NI_Sve_ZipHigh_Predicates;
+            case NI_Sve_ZipLow:
+                return NI_Sve_ZipLow_Predicates;
+            case NI_Sve_UnzipOdd:
+                return NI_Sve_UnzipOdd_Predicates;
+            case NI_Sve_UnzipEven:
+                return NI_Sve_UnzipEven_Predicates;
+            case NI_Sve_TransposeEven:
+                return NI_Sve_TransposeEven_Predicates;
+            case NI_Sve_TransposeOdd:
+                return NI_Sve_TransposeOdd_Predicates;
+            case NI_Sve_ReverseElement:
+                return NI_Sve_ReverseElement_Predicates;
+            case NI_Sve_ConditionalSelect:
+                return NI_Sve_ConditionalSelect_Predicates;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 }

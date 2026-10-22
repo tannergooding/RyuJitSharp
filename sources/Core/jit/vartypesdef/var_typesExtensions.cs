@@ -20,46 +20,70 @@ public static partial class var_typesExtensions
 
         if (!Configuration.FEATURE_SIMD)
         {
-            return type switch {
-                TYP_UNKNOWN => 15,
-                TYP_COUNT => 16,
-                _ => throw new PlatformNotSupportedException("SIMD types are not enabled for this target."),
-            };
+            switch (type)
+            {
+                case TYP_UNKNOWN:
+                    return 15;
+                case TYP_COUNT:
+                    return 16;
+                default:
+                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDTypesAreNotEnabledForThisTarget);
+                    return default;
+            }
         }
 
         if (Configuration.TARGET_XARCH)
         {
-            return type switch {
-                TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64 => (int)type,
-                TYP_MASK => 20,
-                TYP_UNKNOWN => 21,
-                TYP_COUNT => 22,
-                _ => throw new PlatformNotSupportedException(
-                    "The ARM64 scalable-vector type is not supported on xarch."),
-            };
+            switch (type)
+            {
+                case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64:
+                    return (int)type;
+                case TYP_MASK:
+                    return 20;
+                case TYP_UNKNOWN:
+                    return 21;
+                case TYP_COUNT:
+                    return 22;
+                default:
+                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ARM64ScalableVectorTypeIsNotSupportedOnXarch);
+                    return default;
+            }
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return type switch {
-                TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 => (int)type,
-                TYP_SIMD_ARM64 => 18,
-                TYP_MASK => 19,
-                TYP_UNKNOWN => 20,
-                TYP_COUNT => 21,
-                _ => throw new PlatformNotSupportedException(
-                    "Fixed-width 32-byte and 64-byte vectors are not supported on ARM64."),
-            };
+            switch (type)
+            {
+                case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16:
+                    return (int)type;
+                case TYP_SIMD_ARM64:
+                    return 18;
+                case TYP_MASK:
+                    return 19;
+                case TYP_UNKNOWN:
+                    return 20;
+                case TYP_COUNT:
+                    return 21;
+                default:
+                    JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedWidth32ByteAnd64ByteVectorsAreNotSupportedOnARM64);
+                    return default;
+            }
         }
 
-        return type switch {
-            TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 => (int)type,
-            TYP_MASK => 18,
-            TYP_UNKNOWN => 19,
-            TYP_COUNT => 20,
-            _ => throw new PlatformNotSupportedException(
-                "Architecture-specific SIMD types are not supported for this target."),
-        };
+        switch (type)
+        {
+            case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16:
+                return (int)type;
+            case TYP_MASK:
+                return 18;
+            case TYP_UNKNOWN:
+                return 19;
+            case TYP_COUNT:
+                return 20;
+            default:
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ArchitectureSpecificSIMDTypesAreNotSupportedForThisTarget);
+                return default;
+        }
     }
 
     public static var_types FromNativeOrdinal(int ordinal)
@@ -71,51 +95,86 @@ public static partial class var_typesExtensions
 
         if (!Configuration.FEATURE_SIMD)
         {
-            return ordinal switch {
-                15 => TYP_UNKNOWN,
-                16 => TYP_COUNT,
-                _ => throw new InvalidOperationException($"Native variable type ordinal {ordinal} is invalid."),
-            };
+            switch (ordinal)
+            {
+                case 15:
+                    return TYP_UNKNOWN;
+                case 16:
+                    return TYP_COUNT;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                    return default;
+            }
         }
 
         if (Configuration.TARGET_XARCH)
         {
-            return ordinal switch {
-                15 => TYP_SIMD8,
-                16 => TYP_SIMD12,
-                17 => TYP_SIMD16,
-                18 => TYP_SIMD32,
-                19 => TYP_SIMD64,
-                20 => TYP_MASK,
-                21 => TYP_UNKNOWN,
-                22 => TYP_COUNT,
-                _ => throw new InvalidOperationException($"Native variable type ordinal {ordinal} is invalid."),
-            };
+            switch (ordinal)
+            {
+                case 15:
+                    return TYP_SIMD8;
+                case 16:
+                    return TYP_SIMD12;
+                case 17:
+                    return TYP_SIMD16;
+                case 18:
+                    return TYP_SIMD32;
+                case 19:
+                    return TYP_SIMD64;
+                case 20:
+                    return TYP_MASK;
+                case 21:
+                    return TYP_UNKNOWN;
+                case 22:
+                    return TYP_COUNT;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                    return default;
+            }
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return ordinal switch {
-                15 => TYP_SIMD8,
-                16 => TYP_SIMD12,
-                17 => TYP_SIMD16,
-                18 => TYP_SIMD_ARM64,
-                19 => TYP_MASK,
-                20 => TYP_UNKNOWN,
-                21 => TYP_COUNT,
-                _ => throw new InvalidOperationException($"Native variable type ordinal {ordinal} is invalid."),
-            };
+            switch (ordinal)
+            {
+                case 15:
+                    return TYP_SIMD8;
+                case 16:
+                    return TYP_SIMD12;
+                case 17:
+                    return TYP_SIMD16;
+                case 18:
+                    return TYP_SIMD_ARM64;
+                case 19:
+                    return TYP_MASK;
+                case 20:
+                    return TYP_UNKNOWN;
+                case 21:
+                    return TYP_COUNT;
+                default:
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                    return default;
+            }
         }
 
-        return ordinal switch {
-            15 => TYP_SIMD8,
-            16 => TYP_SIMD12,
-            17 => TYP_SIMD16,
-            18 => TYP_MASK,
-            19 => TYP_UNKNOWN,
-            20 => TYP_COUNT,
-            _ => throw new InvalidOperationException($"Native variable type ordinal {ordinal} is invalid."),
-        };
+        switch (ordinal)
+        {
+            case 15:
+                return TYP_SIMD8;
+            case 16:
+                return TYP_SIMD12;
+            case 17:
+                return TYP_SIMD16;
+            case 18:
+                return TYP_MASK;
+            case 19:
+                return TYP_UNKNOWN;
+            case 20:
+                return TYP_COUNT;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NativeVariableTypeOrdinalArgumentIsInvalid, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ordinal : default));
+                return default;
+        }
     }
 
     extension(var_types varType)

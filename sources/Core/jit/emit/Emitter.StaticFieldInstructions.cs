@@ -14,14 +14,16 @@ public partial class Emitter
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_C_R");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 static-field register instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StaticFieldRegisterInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StaticFieldRegisterStoresRequireXarch);
             return;
         }
 
@@ -87,8 +89,10 @@ public partial class Emitter
             if (instOptions != INS_OPTS_NONE)
             {
                 NYI("ARM32 static-field instruction options");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 static-field instruction options are not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StaticFieldInstructionOptionsAreNotPorted
+    );
                 return;
             }
 
@@ -108,15 +112,14 @@ public partial class Emitter
             if (dataOffset >= 0)
             {
                 NYI("JitDataOffset static fields");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JitDataOffset static fields are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JitDataOffsetStaticFieldsAreNotPorted);
                 return;
             }
 
             if (fldHnd == FLD_GLOBAL_FS)
             {
                 NYI("Thread-Local-Storage static fields");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Thread-Local-Storage static fields are not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ThreadLocalStorageStaticFieldsAreNotPorted);
                 return;
             }
 
@@ -128,8 +131,10 @@ public partial class Emitter
             else
             {
                 NYI("Normal statics are expected to be handled in the importer");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "Normal static-field instruction recording is not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NormalStaticFieldInstructionRecordingIsNotPorted
+    );
                 return;
             }
 
@@ -138,8 +143,10 @@ public partial class Emitter
             {
                 assert(false, "emitIns_R_C cannot be called with a floating-point target.");
                 NYI("emitIns_R_C with a floating-point target");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "ARM32 static-field instruction recording requires a general register.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StaticFieldInstructionRecordingRequiresAGeneralRegister
+    );
                 return;
             }
 
@@ -161,8 +168,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Static-field register instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StaticFieldRegisterInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -241,8 +250,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "SIMD static-field instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDStaticFieldInstructionRecordingRequiresXarch
+    );
             return;
         }
 

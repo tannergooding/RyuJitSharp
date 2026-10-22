@@ -188,15 +188,27 @@ internal partial struct LocalAddressVisitor
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("Value consumption state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ValueConsumptionStateIsOnlyAvailableInDebugBuilds);
             }
 
             assert(!_consumed);
             _consumed = true;
         }
 
-        internal readonly bool IsConsumed => Configuration.DEBUG
-            ? _consumed
-            : throw new System.InvalidOperationException("Consumption state is only available in Debug builds.");
+        internal readonly bool IsConsumed {
+    get
+    {
+        bool __jitExceptionCondition439;
+        __jitExceptionCondition439 = Configuration.DEBUG;
+        if (__jitExceptionCondition439)
+        {
+            return _consumed;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConsumptionStateIsOnlyAvailableInDebugBuilds);
+            return default;
+        }
     }
+}    }
 }

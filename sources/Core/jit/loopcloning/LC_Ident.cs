@@ -88,10 +88,7 @@ public unsafe struct LC_Ident
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage251
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownLoopCloningIdentifierType);
                 return default!;
             }
         }
@@ -245,9 +242,9 @@ public unsafe struct LC_Ident
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage252
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CannotMaterializeAnInvalidLoopCloningIdentifier
+    );
                 return default!;
             }
         }

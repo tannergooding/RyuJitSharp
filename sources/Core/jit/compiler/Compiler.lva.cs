@@ -917,7 +917,10 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "ARM frame addressing is unavailable on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.ARMFrameAddressingIsUnavailableOnThisTarget
+    );
             baseReg = default!;
             return default!;
         }
@@ -1152,7 +1155,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD12 local widening is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMD12LocalWideningIsUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -1579,7 +1585,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD initialization temps are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDInitializationTempsAreUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -2473,11 +2482,21 @@ public partial class Compiler
         {
             assert(lvaIsOSRLocal(varNum));
             var vectorLength = getRuntimeVectorTByteLength();
-            var size = varType switch {
-                TYP_SIMD_ARM64 => unchecked((int)vectorLength),
-                TYP_MASK => unchecked((int)(vectorLength / 8)),
-                _ => throw new UnreachableException(),
-            };
+            int __jitExceptionResult223;
+            switch (varType)
+            {
+                case TYP_SIMD_ARM64:
+                    __jitExceptionResult223 = unchecked((int)vectorLength);
+                    break;
+                case TYP_MASK:
+                    __jitExceptionResult223 = unchecked((int)(vectorLength / 8));
+                    break;
+                default:
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    __jitExceptionResult223 = default;
+                    break;
+            }
+            var size = __jitExceptionResult223;
             assert(size != 0);
             return size;
         }
@@ -2667,7 +2686,10 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD type classification is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDTypeClassificationIsUnsupportedOnThisTarget
+    );
             return default!;
         }
 

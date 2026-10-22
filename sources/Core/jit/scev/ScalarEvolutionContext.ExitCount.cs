@@ -19,9 +19,7 @@ public sealed partial class ScalarEvolutionContext
         var store = _compiler.vnStore;
         if (store is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-001",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresValueNumbering);
         }
 
         if (store.IsVNConstant(vn))
@@ -34,9 +32,7 @@ public sealed partial class ScalarEvolutionContext
         var loop = _loop;
         if (loop is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-002",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresALoop);
         }
 
         return _compiler.EvaluateScalarEvolutionRelop(
@@ -81,9 +77,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-005",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected exit operation {exitOp}." : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? exitOp : default));
                 return default;
             }
         }
@@ -114,9 +108,7 @@ public sealed partial class ScalarEvolutionContext
         var store = _compiler.vnStore;
         if (store is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-001",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresValueNumbering);
         }
 
         var relop = store.VNForFunc(TYP_INT, exitOp, steppedValVNP.Liberal, rhsVNP.Liberal);
@@ -185,9 +177,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-006",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected relational operation {oper}." : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedRelationalOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
                 return default;
             }
         }
@@ -219,9 +209,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-005",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected exit operation {oper}." : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
                 return default;
             }
         }
@@ -253,9 +241,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-005",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? $"Unexpected exit operation {oper}." : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
                 return default;
             }
         }
@@ -266,9 +252,7 @@ public sealed partial class ScalarEvolutionContext
         var loop = _loop;
         if (loop is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-002",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires a loop." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresALoop);
         }
 
         assert(exiting.Kind is BBJ_COND);
@@ -276,9 +260,7 @@ public sealed partial class ScalarEvolutionContext
         var jump = exiting.LastStmt?.RootNode;
         if (jump is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-009",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "An exiting block must have a condition." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ExitingBlockMustHaveACondition);
         }
 
         assert(jump.Oper is GT_JTRUE);
@@ -360,11 +342,7 @@ public sealed partial class ScalarEvolutionContext
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowInvalidOperationException(
-                        "RJS-SCE-005",
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? $"Unexpected exit operation {exitOp}."
-                            : null);
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? exitOp : default));
                     relation = default!;
                     break;
                 }
@@ -430,11 +408,7 @@ public sealed partial class ScalarEvolutionContext
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-SCE-005",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected exit operation {exitOpVNF}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedExitOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? exitOpVNF : default));
                 return null;
             }
         }
@@ -455,9 +429,7 @@ public sealed partial class ScalarEvolutionContext
         var store = _compiler.vnStore;
         if (store is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                "RJS-SCE-001",
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "Scalar evolution requires value numbering." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ScalarEvolutionRequiresValueNumbering);
         }
 
         var relopFunc = ValueNumStore.VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
@@ -499,11 +471,7 @@ public sealed partial class ScalarEvolutionContext
 
                 default:
                 {
-                    JitExceptionHelpers.ThrowInvalidOperationException(
-                        "RJS-SCE-010",
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? $"Unexpected relational result {result}."
-                            : null);
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedRelationalResultArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? result : default));
                     return null;
                 }
             }

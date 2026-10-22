@@ -385,7 +385,7 @@ internal static class LinearScanLocalResolutionTests
             var exception = Assert.Throws<FatalJitException>(() =>
                 Resolve(allocator, disableEnregistration ? block : null, tree, reference));
 
-            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.DirectFailureMessage335));
+            Assert.That(exception!.ErrorCode, Is.EqualTo(FatalJitErrorCode.LocalRegisterResolutionRequiresMatchingBlockNodeOwnershipAndEnregisteredLocals));
             if (Configuration.DETAILED_FATAL_ERROR_MESSAGES)
             {
                 Assert.That(exception.Message, Does.Contain("requires matching block/node ownership"));

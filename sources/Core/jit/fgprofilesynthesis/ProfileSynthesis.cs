@@ -869,7 +869,7 @@ public sealed class ProfileSynthesis
 
                 if (exceptionWeights.GetLength() == 0)
                 {
-                    throw new FormatException("JitSynthesisExceptionWeight requires at least one value.");
+                    JitExceptionHelpers.ThrowFormatException(FatalJitErrorCode.JitSynthesisExceptionWeightRequiresAtLeastOneValue);
                 }
 
                 var newFactor = exceptionWeights.GetData()[0];

@@ -24,7 +24,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("The debugger method hash is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DebuggerMethodHashIsOnlyAvailableInDebugBuilds);
             }
 
             return unchecked((uint)info.compMethodHash()).ToString("x8", CultureInfo.InvariantCulture);
@@ -520,8 +520,18 @@ internal sealed class RefPositionDebuggerProxy
                 return [];
             }
 
-            var referent = _reference.referent
-                ?? throw new InvalidOperationException("A non-empty register assignment requires a referent.");
+            global::RyuJitSharp.Referenceable __jitExceptionResult0;
+            var __jitExceptionCoalesceLeft1 = _reference.referent;
+            if (__jitExceptionCoalesceLeft1 != null)
+            {
+                __jitExceptionResult0 = __jitExceptionCoalesceLeft1;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NonEmptyRegisterAssignmentRequiresAReferent);
+                __jitExceptionResult0 = default;
+            }
+            var referent = __jitExceptionResult0;
 
             return DebuggerDisplayHelpers.GetRegisters(
                 DebuggerDisplayHelpers.GetRegisterMask(_reference.registerAssignment, referent.registerType));

@@ -30,7 +30,7 @@ public sealed class GenTreeAllocObj : GenTreeUnOp
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new System.PlatformNotSupportedException("ReadyToRun allocation entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunAllocationEntryPointsAreUnsupported);
             }
 
             return _entryPoint;
@@ -40,7 +40,7 @@ public sealed class GenTreeAllocObj : GenTreeUnOp
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new System.PlatformNotSupportedException("ReadyToRun allocation entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunAllocationEntryPointsAreUnsupported);
             }
 
             _entryPoint = value;

@@ -115,14 +115,15 @@ public struct ConfigDoubleArray
             return text[0] == '-' ? double.NegativeInfinity : double.PositiveInfinity;
         }
 
-        throw new FormatException("Invalid floating-point JIT configuration value.");
+        JitExceptionHelpers.ThrowFormatException(FatalJitErrorCode.InvalidFloatingPointJITConfigurationValue);
+        return default;
     }
 
     private static void EnsureDebugDiagnosticsAvailable()
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Configuration arrays are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConfigurationArraysAreOnlyAvailableInDebugBuilds);
         }
     }
 }

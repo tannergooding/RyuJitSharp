@@ -177,9 +177,9 @@ public partial class Emitter
                 if (adjOffUptoIG is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage214
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.AlignmentAdjustmentRequiresAFinalInstructionGroup
+    );
                     return;
                 }
             }

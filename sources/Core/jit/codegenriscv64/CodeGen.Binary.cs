@@ -270,7 +270,7 @@ public sealed partial class CodeGen
 
                 case GT_ROR:
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GT_ROR-----unimplemented/unused on RISCV64 yet----");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GTRORUnimplementedUnusedOnRISCV64Yet);
                     return default!;
                 }
 
@@ -404,7 +404,7 @@ public sealed partial class CodeGen
     private regNumber genEmitTernaryInstructionRiscV64(instruction ins, emitAttr attr, GenTree destination,
         GenTree source1, GenTree source2)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V ternary instruction recording is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVTernaryInstructionRecordingIsNotPorted);
         return default!;
     }
 }

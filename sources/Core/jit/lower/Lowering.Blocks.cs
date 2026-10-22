@@ -17,7 +17,10 @@ public sealed partial class Lowering
             !Configuration.TARGET_RISCV64 &&
             !Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BlockStoreAddressContainmentIsNotPortedForThisTarget
+    );
             return;
         }
 
@@ -191,7 +194,10 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BlockStoreAddressContainmentIsNotPortedForThisTarget
+    );
         return;
     }
 

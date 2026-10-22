@@ -52,7 +52,7 @@ public sealed partial class CodeGen
         var ehToVmOrder = _compiler.compEHTabOrderToVMClauseOrder;
         if (ehToVmOrder is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage079);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EHToVMClauseOrderHasNotBeenInitialized);
             return;
         }
 
@@ -71,10 +71,7 @@ public sealed partial class CodeGen
                 var tryLastNext = HBtab.ebdTryLast.Next;
                 if (tryLastNext is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage080
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EHTryEndHasNoSuccessor);
                     return;
                 }
 
@@ -91,10 +88,7 @@ public sealed partial class CodeGen
                 var hndLastNext = HBtab.ebdHndLast.Next;
                 if (hndLastNext is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage081
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EHHandlerEndHasNoSuccessor);
                     return;
                 }
 
@@ -107,10 +101,7 @@ public sealed partial class CodeGen
                 var filter = HBtab.ebdFilter;
                 if (filter is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage082
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EHFilterHasNoStartBlock);
                     return;
                 }
 
@@ -142,7 +133,7 @@ public sealed partial class CodeGen
         var vmToEhOrder = _compiler.compVMClauseOrderToEHTabOrder;
         if (vmToEhOrder is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage083);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.VMToEHClauseOrderHasNotBeenInitialized);
             return;
         }
 
@@ -208,7 +199,7 @@ public sealed partial class CodeGen
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage084);
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnknownEHHandlerType);
                 return default!;
             }
         }

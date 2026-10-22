@@ -142,7 +142,7 @@ public sealed partial class LinearScan
                     var firstHalf = assignedDouble.assignedReg;
                     if (firstHalf is null)
                     {
-                        FatalJitException.ThrowFatalJitException("An assigned ARM32 double must retain its first register.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AssignedARM32DoubleMustRetainItsFirstRegister);
                         score = default!;
                         return default!;
                     }
@@ -195,7 +195,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 
@@ -223,7 +224,7 @@ public sealed partial class LinearScan
             var secondInterval = second.assignedInterval;
             if (secondInterval is null)
             {
-                FatalJitException.ThrowFatalJitException("A double-register spill requires an occupied half.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.DoubleRegisterSpillRequiresAnOccupiedHalf);
                 return;
             }
             assert(secondInterval.registerType is TYP_FLOAT);
@@ -236,7 +237,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 

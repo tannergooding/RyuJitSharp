@@ -89,11 +89,7 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-TL-001",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected ternary-logic operation: {oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
                 return default;
             }
         }
@@ -145,11 +141,7 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-TL-001",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? $"Unexpected ternary-logic operation: {oper}."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedTernaryLogicOperationArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? oper : default));
                 return default;
             }
         }
@@ -178,11 +170,7 @@ public readonly partial struct TernaryLogicInfo
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(
-                            "RJS-TL-002",
-                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                ? "Invalid constant ternary-logic operation."
-                                : null);
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidConstantTernaryLogicOperation);
                         first = default;
                         break;
                     }
@@ -264,11 +252,7 @@ public readonly partial struct TernaryLogicInfo
 
                     default:
                     {
-                        JitExceptionHelpers.ThrowInvalidOperationException(
-                            "RJS-TL-003",
-                            Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                                ? "Invalid three-input ternary operation."
-                                : null);
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidThreeInputTernaryOperation);
                         first = default;
                         break;
                     }
@@ -278,11 +262,7 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-TL-004",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "Invalid first ternary-logic usage."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidFirstTernaryLogicUsage);
                 return default;
             }
         }
@@ -321,11 +301,7 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-TL-005",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "Invalid second ternary-logic usage."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidSecondTernaryLogicUsage);
                 return default;
             }
         }
@@ -354,11 +330,7 @@ public readonly partial struct TernaryLogicInfo
 
             default:
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    "RJS-TL-006",
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "Invalid conditional ternary-logic usage."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidConditionalTernaryLogicUsage);
                 return default;
             }
         }

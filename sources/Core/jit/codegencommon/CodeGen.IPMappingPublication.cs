@@ -41,9 +41,9 @@ public sealed partial class CodeGen
             if (prev is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_SKIPPED,
-                    FatalJitErrorCode.DirectFailureMessage085
-                );
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IPMappingHasNoPredecessorAtADuplicateNativeOffset
+    );
                 return;
             }
 

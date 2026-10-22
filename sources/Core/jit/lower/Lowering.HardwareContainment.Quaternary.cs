@@ -12,7 +12,7 @@ public sealed partial class Lowering
     {
         if (category is not HW_Category_IMM)
         {
-            throw new System.InvalidOperationException($"Unexpected quaternary hardware intrinsic category: {category}.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedQuaternaryHardwareIntrinsicCategoryArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? category : default));
         }
 
         var op1 = node.GetOp(1);
@@ -187,8 +187,8 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        throw new System.InvalidOperationException(
-                            $"Ternary logic control {control:X2} was not normalized before containment.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TernaryLogicControlArgumentWasNotNormalizedBeforeContainment, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? control : default));
+                        return;
                     }
                 }
 
@@ -230,8 +230,8 @@ public sealed partial class Lowering
 
             default:
             {
-                throw new System.InvalidOperationException(
-                    $"Unhandled quaternary immediate hardware intrinsic: {intrinsicId}.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnhandledQuaternaryImmediateHardwareIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsicId : default));
+                return;
             }
         }
     }

@@ -76,7 +76,7 @@ public partial class Compiler
             return type is TYP_SIMD16 or TYP_SIMD12;
         }
 
-        FatalJitException.ThrowFatalJitException("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnknownTargetArchitectureForFEATUREPARTIALSIMDCALLEESAVE);
         return default!;
     }
 

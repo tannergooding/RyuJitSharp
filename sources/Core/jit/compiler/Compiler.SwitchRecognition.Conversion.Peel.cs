@@ -50,7 +50,18 @@ public partial class Compiler
         fgInsertStmtAtEnd(block, jumpStatement);
 
         var toTarget = fgAddRefPred(dominantTarget, block, dominantEdge);
-        var toSwitch = newBlock.bbPreds ?? throw new System.InvalidOperationException();
+        global::RyuJitSharp.FlowEdge __jitExceptionResult242;
+        var __jitExceptionCoalesceLeft243 = newBlock.bbPreds;
+        if (__jitExceptionCoalesceLeft243 != null)
+        {
+            __jitExceptionResult242 = __jitExceptionCoalesceLeft243;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            __jitExceptionResult242 = default;
+        }
+        var toSwitch = __jitExceptionResult242;
         block.SetCond(toTarget, toSwitch);
 
         var fraction = dominantEdge.Likelihood;

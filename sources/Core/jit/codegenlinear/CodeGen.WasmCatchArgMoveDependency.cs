@@ -10,7 +10,10 @@ public sealed partial class CodeGen
     public void inst_MovWasmUnsupported(var_types dstType, regNumber dstReg, regNumber srcReg, bool canSkip,
         emitAttr size = EA_UNKNOWN, insFlags flags = INS_FLAGS_DONT_CARE)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "WebAssembly register-copy selection is not implemented.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WebAssemblyRegisterCopySelectionIsNotImplemented
+    );
         return;
     }
 }

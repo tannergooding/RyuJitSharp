@@ -11,7 +11,7 @@ public static partial class Globals
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("Absolute xarch register numbering is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.AbsoluteXarchRegisterNumberingIsNotAvailableForThisTarget);
             return default!;
         }
 

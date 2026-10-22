@@ -12,7 +12,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm has no architectural integer zero register.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmHasNoArchitecturalIntegerZeroRegister);
             return default!;
         }
 
@@ -46,7 +46,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm has no architectural floating-point registers.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmHasNoArchitecturalFloatingPointRegisters);
             return;
         }
 
@@ -104,7 +104,10 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-register zeroing is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingRegisterZeroingIsNotImplementedForThisTarget
+    );
                         return;
                     }
                     fltInitReg = reg;
@@ -148,7 +151,10 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Floating-register zeroing is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingRegisterZeroingIsNotImplementedForThisTarget
+    );
                         return;
                     }
                     dblInitReg = reg;
@@ -258,7 +264,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 floating-register zeroing is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM64FloatingRegisterZeroingIsUnavailable);
             return;
         }
 
@@ -269,7 +275,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm frame initialization is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WasmFrameInitializationIsUnavailableForThisTarget
+    );
             return;
         }
 
@@ -299,7 +308,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm generic-context reporting is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.WasmGenericContextReportingIsUnavailableForThisTarget
+    );
             return;
         }
 
@@ -330,7 +342,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32GenericContextStorageIsUnavailable);
             return;
         }
 
@@ -342,7 +354,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM64GenericContextStorageIsUnavailable);
             return;
         }
 
@@ -354,7 +366,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64GenericContextStorageIsUnavailable
+    );
             return;
         }
 
@@ -366,7 +381,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64GenericContextStorageIsUnavailable);
             return;
         }
 
@@ -378,7 +393,10 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native generic-context loading is unavailable on Wasm.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NativeGenericContextLoadingIsUnavailableOnWasm
+    );
             return;
         }
 
@@ -390,7 +408,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "xarch generic-context storage is unavailable.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.XarchGenericContextStorageIsUnavailable);
             return;
         }
 
@@ -402,7 +420,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM || !Configuration.PROFILING_SUPPORTED)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 profiling pre-spill information is unavailable.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32ProfilingPreSpillInformationIsUnavailable
+    );
             return default!;
         }
 
@@ -489,7 +510,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Generic-context reporting is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GenericContextReportingIsNotImplementedForThisTarget
+    );
             return;
         }
     }

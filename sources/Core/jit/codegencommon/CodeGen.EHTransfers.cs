@@ -127,7 +127,10 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Finally-call generation is not supported by this dispatcher.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FinallyCallGenerationIsNotSupportedByThisDispatcher
+    );
             return;
         }
         else
@@ -208,7 +211,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Catch-return generation is not supported by this dispatcher.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CatchReturnGenerationIsNotSupportedByThisDispatcher
+    );
             return;
         }
     }

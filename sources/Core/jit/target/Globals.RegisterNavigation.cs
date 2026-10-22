@@ -28,7 +28,7 @@ public static partial class Globals
             return REG_NEXT_WASM(reg);
         }
 
-        FatalJitException.ThrowFatalJitException("Register successor is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterSuccessorIsNotSupportedForThisTarget);
         return default!;
     }
 
@@ -48,7 +48,7 @@ public static partial class Globals
             return reg - 1;
         }
 
-        FatalJitException.ThrowFatalJitException("Register predecessor is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterPredecessorIsNotSupportedForThisTarget);
         return default!;
     }
 }

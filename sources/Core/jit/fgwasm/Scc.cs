@@ -497,8 +497,18 @@ internal sealed class Scc
 
             tryHeader?.setBBProfileWeight(TotalEntryWeight());
 
-            var dispatchBlock = dispatcher
-                ?? throw new InvalidOperationException("An irreducible SCC requires a dispatch block.");
+            global::RyuJitSharp.BasicBlock __jitExceptionResult423;
+            var __jitExceptionCoalesceLeft424 = dispatcher;
+            if (__jitExceptionCoalesceLeft424 != null)
+            {
+                __jitExceptionResult423 = __jitExceptionCoalesceLeft424;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IrreducibleSCCRequiresADispatchBlock);
+                __jitExceptionResult423 = default;
+            }
+            var dispatchBlock = __jitExceptionResult423;
             JITDUMP($"\nDispatch header is {FMT_BB(dispatchBlock.bbNum)}; {numHeaders} cases\n");
             var swtDesc = new BBswtDesc(succs, new int[numHeaders], hasDefault: true);
             cases.AsSpan().CopyTo(swtDesc.Cases);

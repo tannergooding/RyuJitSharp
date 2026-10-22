@@ -86,7 +86,7 @@ public sealed class ClassLayout
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Class layout names are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassLayoutNamesAreOnlyAvailableInDebugBuilds);
         }
 
         var names = DebugNames.Get(this);
@@ -98,7 +98,7 @@ public sealed class ClassLayout
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Class layout names are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ClassLayoutNamesAreOnlyAvailableInDebugBuilds);
         }
 
         return DebugNames.Get(this);

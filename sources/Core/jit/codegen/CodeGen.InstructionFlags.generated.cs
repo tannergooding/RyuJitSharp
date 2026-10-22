@@ -6020,7 +6020,7 @@ public sealed partial class CodeGen
 
             FatalJitException.ThrowFatalJitException(
                 CORJIT_SKIPPED,
-                "Instruction metadata is not available for the configured target.");
+                FatalJitErrorCode.InstructionMetadataIsNotAvailableForTheConfiguredTarget);
             return default;
         }
     }

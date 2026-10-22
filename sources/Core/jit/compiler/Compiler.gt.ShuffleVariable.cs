@@ -21,7 +21,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD variable shuffles are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDVariableShufflesAreUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -289,7 +292,10 @@ public partial class Compiler
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "SIMD variable shuffles are unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDVariableShufflesAreUnsupportedOnThisTarget
+    );
             return default!;
         }
 

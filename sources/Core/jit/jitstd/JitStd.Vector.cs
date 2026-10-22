@@ -95,8 +95,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
             var owner = _owner;
             if (owner is null)
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "The iterator is not initialized." : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IteratorIsNotInitialized);
             }
 
             return owner;
@@ -106,10 +105,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         {
             if (!ReferenceEquals(_owner, other._owner) || _generation != other._generation)
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "Vector iterators must refer to the same allocation."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VectorIteratorsMustReferToTheSameAllocation);
             }
 
             var owner = getOwner();
@@ -351,8 +347,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         throwIfUnavailable();
         if (_size == 0)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "The vector is empty." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VectorIsEmpty);
         }
 
         return ref _data[(int)(_size - 1)];
@@ -495,10 +490,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         throwIfUnavailable();
         if (_size == 0)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "Cannot remove an element from an empty vector."
-                    : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CannotRemoveAnElementFromAnEmptyVector);
         }
 
         --_size;
@@ -526,26 +518,19 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         var source = first._owner;
         if (source is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "The first iterator is not initialized." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FirstIteratorIsNotInitialized);
         }
 
         if (!ReferenceEquals(source, last._owner))
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The range iterators must refer to the same vector."
-                    : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RangeIteratorsMustReferToTheSameVector);
         }
 
         var firstIndex = source.validate(first, allowEnd: true);
         var lastIndex = source.validate(last, allowEnd: true);
         if (lastIndex < firstIndex)
         {
-            JitExceptionHelpers.ThrowArgumentException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The end iterator precedes the start iterator."
-                    : null);
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.EndIteratorPrecedesTheStartIterator);
         }
 
         var values = new T[checked((int)(lastIndex - firstIndex))];
@@ -576,10 +561,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         var lastIndex = validate(last, allowEnd: true);
         if (lastIndex < firstIndex)
         {
-            JitExceptionHelpers.ThrowArgumentException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The end iterator precedes the start iterator."
-                    : null);
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.EndIteratorPrecedesTheStartIterator);
         }
 
         var removed = (nuint)(lastIndex - firstIndex);
@@ -633,26 +615,19 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         var source = first._owner;
         if (source is null)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? "The first iterator is not initialized." : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FirstIteratorIsNotInitialized);
         }
 
         if (!ReferenceEquals(source, last._owner))
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The range iterators must refer to the same vector."
-                    : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RangeIteratorsMustReferToTheSameVector);
         }
 
         var firstIndex = source.validate(first, allowEnd: true);
         var lastIndex = source.validate(last, allowEnd: true);
         if (lastIndex < firstIndex)
         {
-            JitExceptionHelpers.ThrowArgumentException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The end iterator precedes the start iterator."
-                    : null);
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.EndIteratorPrecedesTheStartIterator);
         }
 
         var values = new T[checked((int)(lastIndex - firstIndex))];
@@ -728,10 +703,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         {
             if (generation != _generation)
             {
-                JitExceptionHelpers.ThrowInvalidOperationException(
-                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                        ? "The vector changed during enumeration."
-                        : null);
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VectorChangedDuringEnumeration);
             }
 
             yield return _data[(int)index];
@@ -892,10 +864,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
     {
         if (!ReferenceEquals(iterator._owner, this))
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The iterator does not belong to this vector."
-                    : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IteratorDoesNotBelongToThisVector);
         }
 
         validate(iterator._index, iterator._generation, allowEnd);
@@ -907,16 +876,13 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         throwIfUnavailable();
         if (generation != _generation)
         {
-            JitExceptionHelpers.ThrowInvalidOperationException(
-                Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                    ? "The vector iterator was invalidated by reallocation."
-                    : null);
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VectorIteratorWasInvalidatedByReallocation);
         }
 
         var limit = checked((nint)_size);
         if (index < 0 || index > limit || (!allowEnd && index == limit))
         {
-            throw new ArgumentOutOfRangeException(nameof(index));
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Index);
         }
     }
 

@@ -14,7 +14,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch GC register classification is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchGCRegisterClassificationIsNotAvailableForThisTarget);
             return default!;
         }
 
@@ -39,7 +39,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch GC register output is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchGCRegisterOutputIsNotAvailableForThisTarget);
             return;
         }
 
@@ -58,7 +58,18 @@ public partial class Emitter
                     emitIGisInProlog(emitCurIG) &&
                     reg2 == TargetRuntimeMetadata.FirstIntegerArgumentRegister)
                 {
-                    var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
+                    global::RyuJitSharp.Compiler __jitExceptionResult302;
+                    var __jitExceptionCoalesceLeft303 = _compiler;
+                    if (__jitExceptionCoalesceLeft303 != null)
+                    {
+                        __jitExceptionResult302 = __jitExceptionCoalesceLeft303;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsNotInitialized);
+                        __jitExceptionResult302 = default;
+                    }
+                    var compiler = __jitExceptionResult302;
                     assert(compiler.lvaIsOriginalThisArg(0));
                     assert(compiler.lvaTable[0].lvRegister);
                     assert(compiler.lvaTable[0].RegNum == reg1);
@@ -162,7 +173,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("xarch GC register output is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchGCRegisterOutputIsNotAvailableForThisTarget);
             return default!;
         }
 

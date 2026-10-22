@@ -24,7 +24,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("Instruction input sizes are not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InstructionInputSizesAreNotAvailableForThisTarget);
             return default!;
         }
 
@@ -61,10 +61,7 @@ public partial class Emitter
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage211
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidInstructionInputSize);
                 return default!;
             }
         }
@@ -74,7 +71,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("EVEX displacement compression is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXDisplacementCompressionIsNotAvailableForThisTarget);
             compressedDsp = default!;
             fitsInByte = default!;
             return default!;

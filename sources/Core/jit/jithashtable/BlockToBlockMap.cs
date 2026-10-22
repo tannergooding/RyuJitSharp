@@ -28,7 +28,8 @@ public sealed class BlockToBlockMapDictionary : IReadOnlyDictionary<BasicBlock, 
                 return value;
             }
 
-            throw new KeyNotFoundException();
+            JitExceptionHelpers.ThrowKeyNotFoundException();
+            return default!;
         }
     }
 
@@ -43,7 +44,7 @@ public sealed class BlockToBlockMapDictionary : IReadOnlyDictionary<BasicBlock, 
         ArgumentNullException.ThrowIfNull(key);
         if (_table.Lookup(key, out _))
         {
-            throw new ArgumentException("An item with the same key has already been added.", nameof(key));
+            JitExceptionHelpers.ThrowArgumentException(FatalJitErrorCode.ItemWithTheSameKeyHasAlreadyBeenAdded, FatalJitArgument.Key);
         }
 
         _ = _table.Set(key, value);
@@ -70,7 +71,8 @@ public sealed class BlockToBlockMapDictionary : IReadOnlyDictionary<BasicBlock, 
             return value;
         }
 
-        throw new KeyNotFoundException();
+        JitExceptionHelpers.ThrowKeyNotFoundException();
+        return default!;
     }
 
     public void Set(BasicBlock key, BasicBlock value)

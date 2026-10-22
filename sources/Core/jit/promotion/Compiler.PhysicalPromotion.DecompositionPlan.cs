@@ -447,9 +447,19 @@ public partial class Compiler
             var indirAccess = store.Oper is GT_STORE_BLK ? dstAccess : srcAccess;
             if (store.Oper is GT_STORE_BLK)
             {
-                dstAccess.InitializeIndir(address ??
-                    throw new InvalidOperationException("A block store requires an address."),
-                    baseOffset, baseFields, flags, addressUses);
+                var __jitExceptionReceiver545 = dstAccess;
+                global::RyuJitSharp.GenTree __jitExceptionArgument546;
+                var __jitExceptionCoalesceLeft547 = address;
+                if (__jitExceptionCoalesceLeft547 != null)
+                {
+                    __jitExceptionArgument546 = __jitExceptionCoalesceLeft547;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockStoreRequiresAnAddress);
+                    __jitExceptionArgument546 = default;
+                }
+                __jitExceptionReceiver545.InitializeIndir(__jitExceptionArgument546, baseOffset, baseFields, flags, addressUses);
             }
             else
             {
@@ -458,9 +468,19 @@ public partial class Compiler
 
             if (source.Oper is GT_BLK)
             {
-                srcAccess.InitializeIndir(address ??
-                    throw new InvalidOperationException("A block read requires an address."),
-                    baseOffset, baseFields, flags, addressUses);
+                var __jitExceptionReceiver548 = srcAccess;
+                global::RyuJitSharp.GenTree __jitExceptionArgument549;
+                var __jitExceptionCoalesceLeft550 = address;
+                if (__jitExceptionCoalesceLeft550 != null)
+                {
+                    __jitExceptionArgument549 = __jitExceptionCoalesceLeft550;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BlockReadRequiresAnAddress);
+                    __jitExceptionArgument549 = default;
+                }
+                __jitExceptionReceiver548.InitializeIndir(__jitExceptionArgument549, baseOffset, baseFields, flags, addressUses);
             }
             else
             {

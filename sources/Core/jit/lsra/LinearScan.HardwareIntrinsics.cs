@@ -17,7 +17,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             destinationCount = default!;
             return default!;
         }
@@ -422,9 +423,9 @@ public sealed partial class LinearScan
                     if (currentBlock is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage317
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.IntrinsicReferenceRequiresAnInitializedBlockSequence
+    );
                         destinationCount = default!;
                         return default!;
                     }

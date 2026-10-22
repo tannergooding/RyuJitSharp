@@ -180,9 +180,9 @@ public sealed partial class CodeGen
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage095
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedBlockKindAtTheEndOfCodeGeneration
+    );
                 return;
             }
         }

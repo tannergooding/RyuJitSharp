@@ -13,7 +13,10 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Trivial pointer-sized struct classification requires x86.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.TrivialPointerSizedStructClassificationRequiresX86
+    );
             return default!;
         }
 
@@ -56,8 +59,10 @@ public partial class Compiler
     {
         if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Floating-point struct lowering is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FloatingPointStructLoweringIsUnsupportedForThisTarget
+    );
         }
 
         var cache = _fpStructLoweringCache ??= [];

@@ -181,7 +181,7 @@ public partial class Emitter
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StaticOutputIsNotImplementedForThisTarget);
                         return default!;
                     }
                     break;
@@ -227,7 +227,7 @@ public partial class Emitter
                     var compiler = _compiler;
                     if (compiler is null)
                     {
-                        FatalJitException.ThrowFatalJitException("An initialized compiler is required for static output.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InitializedCompilerIsRequiredForStaticOutput);
                         return default!;
                     }
                     var alignment = compiler.compCodeOpt == Compiler.SMALL_CODE ? 4 : byteSize;
@@ -296,7 +296,7 @@ public partial class Emitter
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StaticOutputIsNotImplementedForThisTarget);
                 return default!;
             }
 
@@ -316,7 +316,10 @@ public partial class Emitter
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Absolute accumulator address output is unavailable on AMD64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AbsoluteAccumulatorAddressOutputIsUnavailableOnAMD64
+    );
             return default!;
         }
 
@@ -405,7 +408,10 @@ public partial class Emitter
                         emitDispIns(id, false, false, false);
                     }
                     FatalJitException.ThrowFatalJitException(
-                        $"Unexpected GC reference static instruction format {id.idInsFmt()} for {ins}.");
+        FatalJitErrorCode.UnexpectedGCReferenceStaticInstructionFormatArgumentForArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id.idInsFmt() : default),
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default)
+    );
                     return default!;
                 }
             }

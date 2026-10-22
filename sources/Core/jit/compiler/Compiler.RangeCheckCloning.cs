@@ -42,9 +42,9 @@ public partial class Compiler
             if (store is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage168
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RangeCheckCloningRequiresValueNumbering
+    );
                 return default!;
             }
             IdxVN = store.VNNormalValue(Check.Index._vnPair.Conservative);
@@ -139,9 +139,9 @@ public partial class Compiler
             if (next is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage169
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.FinalRangeCheckIsNotReachableFromTheFirst
+    );
                 return true;
             }
 
@@ -175,9 +175,9 @@ public partial class Compiler
         if (newSize == 0)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage170
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RangeCheckCloningExhaustedTheNativeHashTableSizes
+    );
             return default!;
         }
 
@@ -333,10 +333,7 @@ public partial class Compiler
             var previous = next.Prev;
             if (previous is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage171
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ClonedFastPathLostItsPredecessor);
                 return default!;
             }
 

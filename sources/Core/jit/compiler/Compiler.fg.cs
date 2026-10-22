@@ -3064,7 +3064,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Statement-link checks are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StatementLinkChecksAreOnlyAvailableInDebugBuilds);
         }
 
         const long MaxLinks = 100_000_000;
@@ -3432,7 +3432,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Profile checks are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ProfileChecksAreOnlyAvailableInDebugBuilds);
         }
 
         var configEnabled = (JitConfig.JitProfileChecks >= 0) && fgHaveProfileWeights && fgPredsComputed;
@@ -3464,7 +3464,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Profile weight checks are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ProfileWeightChecksAreOnlyAvailableInDebugBuilds);
         }
 
         var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
@@ -3654,7 +3654,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Incoming profile checks are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IncomingProfileChecksAreOnlyAvailableInDebugBuilds);
         }
 
         var verifyLikelyWeights = (checks & ProfileChecks.CHECK_LIKELY) != 0;
@@ -3713,7 +3713,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Outgoing profile checks are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OutgoingProfileChecksAreOnlyAvailableInDebugBuilds);
         }
 
         var verifyHasLikelihood = (checks & ProfileChecks.CHECK_HASLIKELIHOOD) != 0;
@@ -3790,7 +3790,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Profile edge formatting is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ProfileEdgeFormattingIsOnlyAvailableInDebugBuilds);
         }
 
         // Snapshot for diagnostics only; never dereference or retain the address across a GC.
@@ -4036,7 +4036,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeDumpsAreOnlyAvailableInDebugBuilds);
         }
 
         // The block table normally precedes this dump; do not repeat its edges.
@@ -4058,7 +4058,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeDumpsAreOnlyAvailableInDebugBuilds);
         }
 
         jitprintf("\n------------ ");
@@ -4093,7 +4093,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeDumpsAreOnlyAvailableInDebugBuilds);
         }
 
         foreach (var memoryKind in new AllMemoryKinds())
@@ -4141,7 +4141,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeDumpsAreOnlyAvailableInDebugBuilds);
         }
 
         foreach (var memoryKind in new AllMemoryKinds())
@@ -4169,7 +4169,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Tree dumps are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TreeDumpsAreOnlyAvailableInDebugBuilds);
         }
 
         jitprintf($"\n***** {block.dspToString()}\n");
@@ -5120,7 +5120,7 @@ public partial class Compiler
                 var filterEndBlk = endBlk;
                 if (filterEndBlk is null)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Filter end block is missing.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FilterEndBlockIsMissing);
                     return default!;
                 }
                 if (bestBlk == filterEndBlk.Prev)
@@ -7661,7 +7661,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Basic block lookup invalidation is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockLookupInvalidationIsOnlyAvailableInDebugBuilds);
         }
 
         fgBBs = [];
@@ -11786,7 +11786,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Basic block table display is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BasicBlockTableDisplayIsOnlyAvailableInDebugBuilds);
         }
 
         var flags = block.FlagsRaw;
@@ -13642,7 +13642,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Async inlining stress is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.AsyncInliningStressIsOnlyAvailableInDebugBuilds);
         }
 
         assert(compAsyncInliningStress());
@@ -14977,7 +14977,7 @@ public partial class Compiler
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Indirect-call verification is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IndirectCallVerificationIsOnlyAvailableInDebugBuilds);
         }
 
         assert(!MethodHasFatPointer);

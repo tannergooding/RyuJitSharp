@@ -34,8 +34,18 @@ public sealed partial class ObjectAllocator
             var node = use.AsLclVarCommon();
             if (node.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR)
             {
-                var appearances = _info.AppearanceMap
-                    ?? throw new InvalidOperationException("Missing enumerator appearance map.");
+                global::System.Collections.Generic.Dictionary<int, global::RyuJitSharp.ObjectAllocator.EnumeratorVar> __jitExceptionResult494;
+                var __jitExceptionCoalesceLeft495 = _info.AppearanceMap;
+                if (__jitExceptionCoalesceLeft495 != null)
+                {
+                    __jitExceptionResult494 = __jitExceptionCoalesceLeft495;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAppearanceMap);
+                    __jitExceptionResult494 = default;
+                }
+                var appearances = __jitExceptionResult494;
                 if (appearances.TryGetValue(node.LclNum, out var variable) && !variable.IsInitialAllocTemp)
                 {
                     node.LclNum = _newLclNum;
@@ -59,9 +69,42 @@ public sealed partial class ObjectAllocator
     {
         var compiler = CompilerInstance;
         assert(info.CanClone && info.WillClone);
-        var allocBlock = info.AllocBlock ?? throw new InvalidOperationException("Missing allocation block.");
-        var blocksToClone = info.BlocksToClone ?? throw new InvalidOperationException("Missing blocks to clone.");
-        var appearanceMap = info.AppearanceMap ?? throw new InvalidOperationException("Missing enumerator appearances.");
+        global::RyuJitSharp.BasicBlock __jitExceptionResult496;
+        var __jitExceptionCoalesceLeft497 = info.AllocBlock;
+        if (__jitExceptionCoalesceLeft497 != null)
+        {
+            __jitExceptionResult496 = __jitExceptionCoalesceLeft497;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAllocationBlock);
+            __jitExceptionResult496 = default;
+        }
+        var allocBlock = __jitExceptionResult496;
+        global::System.Collections.Generic.List<global::RyuJitSharp.BasicBlock> __jitExceptionResult498;
+        var __jitExceptionCoalesceLeft499 = info.BlocksToClone;
+        if (__jitExceptionCoalesceLeft499 != null)
+        {
+            __jitExceptionResult498 = __jitExceptionCoalesceLeft499;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingBlocksToClone);
+            __jitExceptionResult498 = default;
+        }
+        var blocksToClone = __jitExceptionResult498;
+        global::System.Collections.Generic.Dictionary<int, global::RyuJitSharp.ObjectAllocator.EnumeratorVar> __jitExceptionResult500;
+        var __jitExceptionCoalesceLeft501 = info.AppearanceMap;
+        if (__jitExceptionCoalesceLeft501 != null)
+        {
+            __jitExceptionResult500 = __jitExceptionCoalesceLeft501;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAppearances);
+            __jitExceptionResult500 = default;
+        }
+        var appearanceMap = __jitExceptionResult500;
         JITDUMP($"\nCloning to ensure allocation at {FMT_BB(allocBlock.bbNum)} does not escape\n");
 
         var map = new BlockToBlockMap();
@@ -99,10 +142,7 @@ public sealed partial class ObjectAllocator
                 };
                 if (compiler.fgCloneTryRegion(block, cloneTryInfo, ref insertionPoint) is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage427
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SelectedTryRegionCouldNotBeCloned);
                     return;
                 }
                 continue;
@@ -124,7 +164,7 @@ public sealed partial class ObjectAllocator
         {
             if (!map.TryGetValue(block, out var newBlock))
             {
-                throw new InvalidOperationException("Missing cloned block.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingClonedBlock);
             }
 
             assert(!newBlock.HasInitializedTarget);
@@ -157,12 +197,32 @@ public sealed partial class ObjectAllocator
         compiler.lvaSetClass(newEnumeratorLocal, info.Type, true);
         enumeratorDsc.lvTracked = true;
         enumeratorDsc._varIndex = unchecked((ushort)_nextLocalIndex);
-        var trackedToLocal = compiler.lvaTrackedToVarNum
-            ?? throw new InvalidOperationException("Missing tracked-local map.");
+        int[] __jitExceptionResult502;
+        var __jitExceptionCoalesceLeft503 = compiler.lvaTrackedToVarNum;
+        if (__jitExceptionCoalesceLeft503 != null)
+        {
+            __jitExceptionResult502 = __jitExceptionCoalesceLeft503;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingTrackedLocalMap);
+            __jitExceptionResult502 = default;
+        }
+        var trackedToLocal = __jitExceptionResult502;
         assert(enumeratorDsc._varIndex < trackedToLocal.Length);
         trackedToLocal[enumeratorDsc._varIndex] = newEnumeratorLocal;
-        var adjacencyMatrix = _connGraphAdjacencyMatrix
-            ?? throw new InvalidOperationException("Missing connection graph.");
+        nint[][] __jitExceptionResult504;
+        var __jitExceptionCoalesceLeft505 = _connGraphAdjacencyMatrix;
+        if (__jitExceptionCoalesceLeft505 != null)
+        {
+            __jitExceptionResult504 = __jitExceptionCoalesceLeft505;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingConnectionGraph);
+            __jitExceptionResult504 = default;
+        }
+        var adjacencyMatrix = __jitExceptionResult504;
         adjacencyMatrix[enumeratorDsc._varIndex] = BitVecOps.MakeEmpty(_bitVecTraits);
         _nextLocalIndex++;
         assert(_maxPseudos > 0 && enumeratorDsc._varIndex < _firstPseudoIndex);
@@ -174,8 +234,18 @@ public sealed partial class ObjectAllocator
         foreach (var (lclNum, variable) in appearanceMap)
         {
             assert(variable is not null);
-            var appearances = variable.Appearances
-                ?? throw new InvalidOperationException("Missing enumerator appearance list.");
+            global::System.Collections.Generic.List<global::RyuJitSharp.ObjectAllocator.EnumeratorVarAppearance> __jitExceptionResult506;
+            var __jitExceptionCoalesceLeft507 = variable.Appearances;
+            if (__jitExceptionCoalesceLeft507 != null)
+            {
+                __jitExceptionResult506 = __jitExceptionCoalesceLeft507;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingEnumeratorAppearanceList);
+                __jitExceptionResult506 = default;
+            }
+            var appearances = __jitExceptionResult506;
             foreach (var appearance in appearances)
             {
                 if (variable.IsInitialAllocTemp)
@@ -193,7 +263,7 @@ public sealed partial class ObjectAllocator
                 {
                     if (!map.TryGetValue(appearance.Block, out var clonedBlock))
                     {
-                        throw new InvalidOperationException("Missing clone for enumerator appearance.");
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingCloneForEnumeratorAppearance);
                     }
                     newBlock = clonedBlock;
                     JITDUMP($"Updating V{lclNum:D2} {(appearance.IsDef ? "def" : "use")} in " +
@@ -208,7 +278,7 @@ public sealed partial class ObjectAllocator
                     {
                         if (clonedStmt is null)
                         {
-                            throw new InvalidOperationException("Missing cloned statement.");
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingClonedStatement);
                         }
                         JITDUMP("Before\n");
                         visitor.MadeChanges = false;
@@ -249,11 +319,22 @@ public sealed partial class ObjectAllocator
         var firstBlock = blocksToClone[0];
         if (!map.TryGetValue(firstBlock, out var firstClonedBlock))
         {
-            throw new InvalidOperationException("Missing first cloned block.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingFirstClonedBlock);
         }
         compiler.fgRedirectEdge(ref allocBlock.TargetEdgeRef, firstClonedBlock);
 
-        var allocTree = info.AllocTree ?? throw new InvalidOperationException("Missing allocation tree.");
+        global::RyuJitSharp.GenTree __jitExceptionResult508;
+        var __jitExceptionCoalesceLeft509 = info.AllocTree;
+        if (__jitExceptionCoalesceLeft509 != null)
+        {
+            __jitExceptionResult508 = __jitExceptionCoalesceLeft509;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingAllocationTree);
+            __jitExceptionResult508 = default;
+        }
+        var allocTree = __jitExceptionResult508;
         if ((allocTree.Flags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
         {
             JITDUMP($"Anticipating the empty-collection static enumerator opt for " +
@@ -273,8 +354,18 @@ public sealed partial class ObjectAllocator
     {
         var compiler = CompilerInstance;
         var guard = new GuardInfo();
-        var relop = IsGuard(block, guard)
-            ?? throw new InvalidOperationException("Missing guard in cloned enumerator region.");
+        global::RyuJitSharp.GenTree __jitExceptionResult510;
+        var __jitExceptionCoalesceLeft511 = IsGuard(block, guard);
+        if (__jitExceptionCoalesceLeft511 != null)
+        {
+            __jitExceptionResult510 = __jitExceptionCoalesceLeft511;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingGuardInClonedEnumeratorRegion);
+            __jitExceptionResult510 = default;
+        }
+        var relop = __jitExceptionResult510;
         var keepTrueEdge = keepFastPath ? relop.Oper is GT_EQ : relop.Oper is GT_NE;
         var retainedEdge = keepTrueEdge ? block.TrueEdge : block.FalseEdge;
         var removedEdge = keepTrueEdge ? block.FalseEdge : block.TrueEdge;
@@ -283,7 +374,18 @@ public sealed partial class ObjectAllocator
             $"{FMT_BB(block.bbNum)} to always branch to {FMT_BB(retainedEdge.DestinationBlock.bbNum)}\n");
         compiler.fgRemoveRefPred(removedEdge);
         block.SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
-        var stmt = block.LastStmt ?? throw new InvalidOperationException("Missing guard statement.");
+        global::RyuJitSharp.Statement __jitExceptionResult512;
+        var __jitExceptionCoalesceLeft513 = block.LastStmt;
+        if (__jitExceptionCoalesceLeft513 != null)
+        {
+            __jitExceptionResult512 = __jitExceptionCoalesceLeft513;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.MissingGuardStatement);
+            __jitExceptionResult512 = default;
+        }
+        var stmt = __jitExceptionResult512;
         stmt.RootNode = relop;
         compiler.fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
     }

@@ -35,8 +35,18 @@ public abstract partial class CSE_HeuristicCommon
     {
         if (Configuration.DEBUG)
         {
-            (m_sequence ?? throw new System.InvalidOperationException(
-                "CSE heuristic metrics are only available in Debug builds.")).Add(0);
+            global::System.Collections.Generic.List<uint> __jitExceptionReceiver520;
+            var __jitExceptionCoalesceLeft521 = m_sequence;
+            if (__jitExceptionCoalesceLeft521 != null)
+            {
+                __jitExceptionReceiver520 = __jitExceptionCoalesceLeft521;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicMetricsAreOnlyAvailableInDebugBuilds);
+                __jitExceptionReceiver520 = default;
+            }
+            __jitExceptionReceiver520.Add(0);
         }
     }
 
@@ -46,7 +56,7 @@ public abstract partial class CSE_HeuristicCommon
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("CSE heuristic diagnostics are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicDiagnosticsAreOnlyAvailableInDebugBuilds);
         }
     }
 
@@ -59,8 +69,18 @@ public abstract partial class CSE_HeuristicCommon
     public virtual void DumpMetrics()
     {
         EnsureDebugDiagnosticsAvailable();
-        var sequence = m_sequence
-            ?? throw new System.InvalidOperationException("CSE heuristic metrics have not been initialized.");
+        global::System.Collections.Generic.List<uint> __jitExceptionResult522;
+        var __jitExceptionCoalesceLeft523 = m_sequence;
+        if (__jitExceptionCoalesceLeft523 != null)
+        {
+            __jitExceptionResult522 = __jitExceptionCoalesceLeft523;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CSEHeuristicMetricsHaveNotBeenInitialized);
+            __jitExceptionResult522 = default;
+        }
+        var sequence = __jitExceptionResult522;
         Globals.jitprintf($" {Name()} seq ");
         for (var index = 0; index < sequence.Count; index++)
         {

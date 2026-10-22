@@ -220,9 +220,9 @@ public sealed partial class LinearScan
         if (addr is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage368
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ContainedAddressUseRequiresAnAddressMode
+    );
             return 0;
         }
 
@@ -254,10 +254,7 @@ public sealed partial class LinearScan
             var argNode = arg.LateNode;
             if (argNode is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage369
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LateCallArgumentMustHaveALoweredNode);
                 return default!;
             }
 

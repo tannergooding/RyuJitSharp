@@ -100,10 +100,7 @@ public partial class Compiler
             var order = compEHTabOrderToVMClauseOrder;
             if (order is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage079
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.EHToVMClauseOrderHasNotBeenInitialized);
                 return default!;
             }
 
@@ -190,7 +187,10 @@ public partial class Compiler
             var lowering = _pLowering;
             if (lowering is null)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Lowering is unavailable during Wasm virtual-IP setup.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoweringIsUnavailableDuringWasmVirtualIPSetup
+    );
                 return;
             }
             lowering.LowerRange(block, new LIR.ReadOnlyRange(firstNode, lastNode));

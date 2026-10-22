@@ -472,14 +472,23 @@ public sealed partial class RangeCheck
         range = current;
     }
 
-    private static genTreeOps SwapRelop(genTreeOps op) => op switch
+    private static genTreeOps SwapRelop(genTreeOps op) {
+    switch (op)
     {
-        GT_LT => GT_GT,
-        GT_LE => GT_GE,
-        GT_GT => GT_LT,
-        GT_GE => GT_LE,
-        GT_EQ => GT_EQ,
-        GT_NE => GT_NE,
-        _ => throw new InvalidOperationException(),
-    };
-}
+        case GT_LT:
+            return GT_GT;
+        case GT_LE:
+            return GT_GE;
+        case GT_GT:
+            return GT_LT;
+        case GT_GE:
+            return GT_LE;
+        case GT_EQ:
+            return GT_EQ;
+        case GT_NE:
+            return GT_NE;
+        default:
+            JitExceptionHelpers.ThrowInvalidOperationException();
+            return default;
+    }
+}}

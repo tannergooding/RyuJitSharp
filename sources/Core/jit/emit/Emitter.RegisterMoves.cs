@@ -14,8 +14,7 @@ public partial class Emitter
     {
         if (useApxNdd && !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "APX NDD move recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.APXNDDMoveRecordingRequiresXarch);
             return default!;
         }
 
@@ -43,7 +42,7 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterMoveRecordingRequiresXarch);
             return default!;
         }
 
@@ -153,8 +152,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 register move flags are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32RegisterMoveFlagsAreNotSupportedForThisTarget
+    );
             return default!;
         }
 
@@ -165,7 +166,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Move sign-extension optimization requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MoveSignExtensionOptimizationRequiresXarch);
             return default!;
         }
 
@@ -193,7 +194,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Move elision is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MoveElisionIsNotImplementedForThisTarget);
             return default!;
         }
 

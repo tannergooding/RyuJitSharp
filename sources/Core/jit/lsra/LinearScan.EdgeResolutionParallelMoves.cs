@@ -35,9 +35,9 @@ public sealed partial class LinearScan
         if (fromMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage300
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ResolutionRequiresAPredecessorOutgoingMap
+    );
             return;
         }
         regNumberSmall[]? toMap;
@@ -50,10 +50,7 @@ public sealed partial class LinearScan
             var targetBlock = toBlock;
             if (targetBlock is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage301
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ResolutionRequiresASuccessorBlock);
                 return;
             }
 
@@ -63,9 +60,9 @@ public sealed partial class LinearScan
         if (toMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage302
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ResolutionRequiresASuccessorRegisterMap
+    );
             return;
         }
 
@@ -82,10 +79,7 @@ public sealed partial class LinearScan
             {
                 if (toBlock is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage303
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SplitResolutionRequiresASuccessor);
                     return;
                 }
 
@@ -96,10 +90,7 @@ public sealed partial class LinearScan
             {
                 if (toBlock is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage304
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CriticalResolutionRequiresASuccessor);
                     return;
                 }
 
@@ -112,10 +103,7 @@ public sealed partial class LinearScan
             }
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage305
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownLSRAEdgeResolutionType);
                 return;
             }
         }
@@ -164,7 +152,8 @@ public sealed partial class LinearScan
         {
             if (!Configuration.TARGET_ARM)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
                 return;
             }
 
@@ -255,7 +244,7 @@ public sealed partial class LinearScan
                     var interval = sourceIntervals[(int)original];
                     if (interval is null)
                     {
-                        FatalJitException.ThrowFatalJitException("Ready resolution target requires a source interval.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ReadyResolutionTargetRequiresASourceInterval);
                         return;
                     }
                     var otherTarget = REG_NA;
@@ -312,9 +301,9 @@ public sealed partial class LinearScan
                 if (interval is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage306
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ReadyResolutionTargetRequiresAnInterval
+    );
                     return;
                 }
                 addResolution(block, insertionPoint, interval, target, from,
@@ -332,7 +321,7 @@ public sealed partial class LinearScan
                             var nextInterval = sourceIntervals[(int)source[(int)from]];
                             if (nextInterval is null)
                             {
-                                FatalJitException.ThrowFatalJitException("Double resolution requires a pending source.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.DoubleResolutionRequiresAPendingSource);
                                 return;
                             }
                             var upper = from + 1;
@@ -374,7 +363,7 @@ public sealed partial class LinearScan
                 var sourceAtLocation = sourceIntervals[(int)fromReg];
                 if (sourceAtLocation is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Floating resolution requires a source interval.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.FloatingResolutionRequiresASourceInterval);
                     return;
                 }
                 if (sourceAtLocation.registerType is TYP_DOUBLE)
@@ -413,18 +402,18 @@ public sealed partial class LinearScan
                     if (swapped is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage307
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SwapResolutionRequiresTheDisplacedInterval
+    );
                         return;
                     }
                     var moved = sourceIntervals[(int)sourceReg];
                     if (moved is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage308
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SwapResolutionRequiresTheSourceInterval
+    );
                         return;
                     }
                     insertSwap(block, insertionPoint, swapped.varNum, targetReg, moved.varNum, fromReg);
@@ -440,10 +429,7 @@ public sealed partial class LinearScan
                     var displaced = sourceIntervals[(int)source[(int)otherTargetReg]];
                     if (displaced is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage309
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CycleSpillRequiresADisplacedInterval);
                         return;
                     }
                     setIntervalAsSpilled(displaced);
@@ -457,10 +443,7 @@ public sealed partial class LinearScan
                     var moved = sourceIntervals[(int)sourceReg];
                     if (moved is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage310
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CycleResolutionRequiresASourceInterval);
                         return;
                     }
                     addResolution(block, insertionPoint, moved, targetReg, fromReg,
@@ -474,7 +457,7 @@ public sealed partial class LinearScan
                             var nextInterval = sourceIntervals[(int)source[(int)fromReg]];
                             if (nextInterval is null)
                             {
-                                FatalJitException.ThrowFatalJitException("Double resolution requires a pending source.");
+                                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.DoubleResolutionRequiresAPendingSource);
                                 return;
                             }
                             if (nextInterval.registerType is TYP_DOUBLE && location[(int)(fromReg + 1)] != REG_NA)
@@ -502,7 +485,7 @@ public sealed partial class LinearScan
                     var sourceAtLocation = sourceIntervals[(int)fromReg];
                     if (sourceAtLocation is null)
                     {
-                        FatalJitException.ThrowFatalJitException("Double resolution requires a source interval.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.DoubleResolutionRequiresASourceInterval);
                         return;
                     }
                     if (sourceAtLocation.registerType is TYP_DOUBLE)
@@ -523,9 +506,9 @@ public sealed partial class LinearScan
                         if (displaced is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage311
-                            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CycleScratchMoveRequiresADisplacedInterval
+    );
                             return;
                         }
                         addResolution(block, insertionPoint, displaced, tempReg, targetReg,
@@ -544,9 +527,9 @@ public sealed partial class LinearScan
                     if (displaced is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage311
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CycleScratchMoveRequiresADisplacedInterval
+    );
                         return;
                     }
                     addResolution(block, insertionPoint, displaced, tempReg, targetReg,
@@ -564,9 +547,9 @@ public sealed partial class LinearScan
             if (interval is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage312
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.StackResolutionRequiresAPendingInterval
+    );
                 return;
             }
             addResolution(block, insertionPoint, interval, target, REG_STK,

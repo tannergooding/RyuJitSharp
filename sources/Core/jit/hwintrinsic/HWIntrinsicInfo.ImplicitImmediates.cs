@@ -13,7 +13,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new System.PlatformNotSupportedException("Xarch intrinsic immediates are unavailable for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.XarchIntrinsicImmediatesAreUnavailableForThisTarget);
         }
 
         switch (intrinsic)

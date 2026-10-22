@@ -284,7 +284,7 @@ public sealed partial class InlineStrategy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline stress random state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineStressRandomStateIsOnlyAvailableInDebugBuilds);
         }
 
         var random = _random;
@@ -567,7 +567,7 @@ public sealed partial class InlineStrategy
     {
         if (!Configuration.DEBUG)
         {
-            throw new System.InvalidOperationException("Inline stress random state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InlineStressRandomStateIsOnlyAvailableInDebugBuilds);
         }
 
         var externalSeed = optionalSeed;

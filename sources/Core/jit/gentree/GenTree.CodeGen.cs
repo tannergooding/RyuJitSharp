@@ -35,7 +35,7 @@ public partial class GenTree
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("Dont-extend state is only supported on xarch targets.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.DontExtendStateIsOnlySupportedOnXarchTargets);
             return;
         }
     }

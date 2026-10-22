@@ -2204,7 +2204,7 @@ public partial class Emitter
             }
 
             FatalJitException.ThrowFatalJitException(
-                "xarch instruction latency data is not available for this target.");
+                FatalJitErrorCode.XarchInstructionLatencyDataIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -4404,7 +4404,7 @@ public partial class Emitter
             }
 
             FatalJitException.ThrowFatalJitException(
-                "xarch instruction throughput data is not available for this target.");
+                FatalJitErrorCode.XarchInstructionThroughputDataIsNotAvailableForThisTarget);
             return default;
         }
     }

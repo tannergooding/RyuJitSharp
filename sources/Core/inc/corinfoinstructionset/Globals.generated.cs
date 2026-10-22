@@ -200,7 +200,10 @@ public partial class Globals
             return nativeOrdinal;
         }
 
-        throw new PlatformNotSupportedException($"Instruction set '{InstructionSetToString(instructionSet)}' is unavailable for this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(
+            FatalJitErrorCode.InstructionSetIsUnavailableForThisTarget,
+            Configuration.DETAILED_FATAL_ERROR_MESSAGES ? InstructionSetToString(instructionSet) : default);
+        return default;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

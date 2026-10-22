@@ -43,10 +43,7 @@ public sealed partial class LinearScan
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage287
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidLSRAEdgeResolutionType);
                 return default!;
             }
         }
@@ -59,9 +56,9 @@ public sealed partial class LinearScan
             (_splitOrSpilledVars is null))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage288
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRAEdgeResolutionRequiresAllocatedLocalMapsAndBlockSequence
+    );
             return;
         }
     }
@@ -109,9 +106,9 @@ public sealed partial class LinearScan
                     if (uniquePredecessor is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage289
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SplitEdgeRequiresAUniqueOriginalPredecessor
+    );
                         return;
                     }
 
@@ -153,10 +150,7 @@ public sealed partial class LinearScan
                     var uniqueSuccessor = successor.UniqueSucc;
                     if (uniqueSuccessor is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage290
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SplitEdgeRequiresASingleSuccessor);
                         return;
                     }
 
@@ -169,10 +163,7 @@ public sealed partial class LinearScan
                     var uniquePredecessor = predecessor.GetUniquePred(_compiler);
                     if (uniquePredecessor is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage291
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SplitEdgeRequiresASinglePredecessor);
                         return;
                     }
 
@@ -219,7 +210,7 @@ public sealed partial class LinearScan
                 var incomingMap = getInVarToRegMap(checked((uint)block.bbNum));
                 if (incomingMap is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Resolution validation requires an incoming map.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ResolutionValidationRequiresAnIncomingMap);
                     return;
                 }
                 foreach (var predBlock in block.PredBlocks)
@@ -227,7 +218,7 @@ public sealed partial class LinearScan
                     var outgoingMap = getOutVarToRegMap(checked((uint)predBlock.bbNum));
                     if (outgoingMap is null)
                     {
-                        FatalJitException.ThrowFatalJitException("Resolution validation requires an outgoing map.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ResolutionValidationRequiresAnOutgoingMap);
                         return;
                     }
                     _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, index => {
@@ -268,9 +259,9 @@ public sealed partial class LinearScan
         if (outgoingMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage292
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CriticalEdgeRequiresAnOutgoingRegisterMap
+    );
             return;
         }
         assert(block.NumSucc > 1);
@@ -292,10 +283,7 @@ public sealed partial class LinearScan
             var terminator = block.LastNode;
             if (terminator is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage293
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SwitchEdgeRequiresItsSwitchTable);
                 return;
             }
             assert(terminator.Oper is GT_SWITCH_TABLE);
@@ -303,9 +291,9 @@ public sealed partial class LinearScan
             if (codeGen is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage294
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SwitchEdgeResolutionRequiresCodegenState
+    );
                 return;
             }
             consumed = new regMaskTP(codeGen.InternalRegisters.GetAll(terminator).GetRegSetForType(TYP_INT));
@@ -324,10 +312,7 @@ public sealed partial class LinearScan
             var terminator = block.LastNode;
             if (terminator is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage295
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ConditionalEdgeRequiresItsBranch);
                 return;
             }
             if (terminator.Oper is GT_JTRUE or GT_JCMP or GT_JTEST)
@@ -366,9 +351,9 @@ public sealed partial class LinearScan
         if (sharedMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage296
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CriticalEdgeResolutionRequiresTheSharedMap
+    );
             return;
         }
         var sameWrites = RBM_NONE;
@@ -395,9 +380,9 @@ public sealed partial class LinearScan
                 if (targetMap is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage297
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CriticalEdgeRequiresASuccessorRegisterMap
+    );
                     return default!;
                 }
                 var target = getVarReg(targetMap, trackedIndex);
@@ -470,9 +455,9 @@ public sealed partial class LinearScan
                 if (targetMap is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage297
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CriticalEdgeRequiresASuccessorRegisterMap
+    );
                     return;
                 }
                 var edgeSet = VarSetOps.Intersection(_compiler, different, successor.bbLiveIn);

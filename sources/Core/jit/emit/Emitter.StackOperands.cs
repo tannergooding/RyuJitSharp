@@ -20,22 +20,20 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_S");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 stack instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM64StackInstructionRecordingIsNotPorted);
             return;
         }
 
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_S");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 stack instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32StackInstructionRecordingIsNotPorted);
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackInstructionRecordingRequiresXarch);
             return;
         }
 
@@ -72,23 +70,29 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_S_I");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 stack-immediate instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64StackImmediateInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_S_I");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 stack-immediate instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StackImmediateInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Stack-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.StackImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
 

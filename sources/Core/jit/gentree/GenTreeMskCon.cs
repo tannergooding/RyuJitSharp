@@ -17,7 +17,7 @@ public sealed class GenTreeMskCon : GenTree
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
         }
 
         _simdMaskVal = simdMaskVal;

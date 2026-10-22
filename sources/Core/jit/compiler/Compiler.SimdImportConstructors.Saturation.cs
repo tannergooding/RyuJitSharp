@@ -12,7 +12,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Saturating SIMD narrowing requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SaturatingSIMDNarrowingRequiresHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -69,10 +72,7 @@ public partial class Compiler
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage197
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSaturatingNarrowingType);
                 return default!;
             }
         }

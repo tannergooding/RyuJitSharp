@@ -105,7 +105,8 @@ public partial class Compiler
             }
 
             default:
-                throw new InvalidOperationException($"Unexpected store operator {store.Oper}");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnexpectedStoreOperatorArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? store.Oper : default));
+                return;
         }
 
         var storeExcSet = store.Oper.IsIndir

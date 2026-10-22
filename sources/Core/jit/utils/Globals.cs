@@ -60,17 +60,28 @@ public partial class Globals
     public static bool AreContiguous<TEnum>(TEnum value1, TEnum value2)
         where TEnum : unmanaged, Enum
     {
-        return Type.GetTypeCode(typeof(TEnum)) switch {
-            TypeCode.SByte => (Unsafe.BitCast<TEnum, sbyte>(value1) + 1) == Unsafe.BitCast<TEnum, sbyte>(value2),
-            TypeCode.Byte => (Unsafe.BitCast<TEnum, byte>(value1) + 1) == Unsafe.BitCast<TEnum, byte>(value2),
-            TypeCode.Int16 => (Unsafe.BitCast<TEnum, short>(value1) + 1) == Unsafe.BitCast<TEnum, short>(value2),
-            TypeCode.UInt16 => (Unsafe.BitCast<TEnum, ushort>(value1) + 1) == Unsafe.BitCast<TEnum, ushort>(value2),
-            TypeCode.Int32 => (Unsafe.BitCast<TEnum, int>(value1) + 1) == Unsafe.BitCast<TEnum, int>(value2),
-            TypeCode.UInt32 => unchecked(Unsafe.BitCast<TEnum, uint>(value1) + 1) == Unsafe.BitCast<TEnum, uint>(value2),
-            TypeCode.Int64 => (Unsafe.BitCast<TEnum, long>(value1) + 1) == Unsafe.BitCast<TEnum, long>(value2),
-            TypeCode.UInt64 => unchecked(Unsafe.BitCast<TEnum, ulong>(value1) + 1) == Unsafe.BitCast<TEnum, ulong>(value2),
-            _ => throw new UnreachableException(),
-        };
+        switch (Type.GetTypeCode(typeof(TEnum)))
+        {
+            case TypeCode.SByte:
+                return (Unsafe.BitCast<TEnum, sbyte>(value1) + 1) == Unsafe.BitCast<TEnum, sbyte>(value2);
+            case TypeCode.Byte:
+                return (Unsafe.BitCast<TEnum, byte>(value1) + 1) == Unsafe.BitCast<TEnum, byte>(value2);
+            case TypeCode.Int16:
+                return (Unsafe.BitCast<TEnum, short>(value1) + 1) == Unsafe.BitCast<TEnum, short>(value2);
+            case TypeCode.UInt16:
+                return (Unsafe.BitCast<TEnum, ushort>(value1) + 1) == Unsafe.BitCast<TEnum, ushort>(value2);
+            case TypeCode.Int32:
+                return (Unsafe.BitCast<TEnum, int>(value1) + 1) == Unsafe.BitCast<TEnum, int>(value2);
+            case TypeCode.UInt32:
+                return unchecked(Unsafe.BitCast<TEnum, uint>(value1) + 1) == Unsafe.BitCast<TEnum, uint>(value2);
+            case TypeCode.Int64:
+                return (Unsafe.BitCast<TEnum, long>(value1) + 1) == Unsafe.BitCast<TEnum, long>(value2);
+            case TypeCode.UInt64:
+                return unchecked(Unsafe.BitCast<TEnum, ulong>(value1) + 1) == Unsafe.BitCast<TEnum, ulong>(value2);
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     public static bool AreContiguous<TEnum>(params ReadOnlySpan<TEnum> values)
@@ -255,7 +266,7 @@ public partial class Globals
                         }
                         else if (!Configuration.TARGET_X86)
                         {
-                            FatalJitException.ThrowFatalJitException("Register range formatting is not supported for this target.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterRangeFormattingIsNotSupportedForThisTarget);
                             return default!;
                         }
                     }
@@ -312,17 +323,28 @@ public partial class Globals
                (typeof(T) == typeof(uint)) || (typeof(T) == typeof(ulong)));
 
         // Saturating the destination bounds to T intersects the two types' ranges.
-        return type switch {
-            TYP_BYTE => (value >= T.CreateSaturating(sbyte.MinValue)) && (value <= T.CreateSaturating(sbyte.MaxValue)),
-            TYP_UBYTE => (value >= T.Zero) && (value <= T.CreateSaturating(byte.MaxValue)),
-            TYP_SHORT => (value >= T.CreateSaturating(short.MinValue)) && (value <= T.CreateSaturating(short.MaxValue)),
-            TYP_USHORT => (value >= T.Zero) && (value <= T.CreateSaturating(ushort.MaxValue)),
-            TYP_INT => (value >= T.CreateSaturating(int.MinValue)) && (value <= T.CreateSaturating(int.MaxValue)),
-            TYP_UINT => (value >= T.Zero) && (value <= T.CreateSaturating(uint.MaxValue)),
-            TYP_LONG => (value >= T.CreateSaturating(long.MinValue)) && (value <= T.CreateSaturating(long.MaxValue)),
-            TYP_ULONG => (value >= T.Zero) && (value <= T.CreateSaturating(ulong.MaxValue)),
-            _ => throw new UnreachableException(),
-        };
+        switch (type)
+        {
+            case TYP_BYTE:
+                return (value >= T.CreateSaturating(sbyte.MinValue)) && (value <= T.CreateSaturating(sbyte.MaxValue));
+            case TYP_UBYTE:
+                return (value >= T.Zero) && (value <= T.CreateSaturating(byte.MaxValue));
+            case TYP_SHORT:
+                return (value >= T.CreateSaturating(short.MinValue)) && (value <= T.CreateSaturating(short.MaxValue));
+            case TYP_USHORT:
+                return (value >= T.Zero) && (value <= T.CreateSaturating(ushort.MaxValue));
+            case TYP_INT:
+                return (value >= T.CreateSaturating(int.MinValue)) && (value <= T.CreateSaturating(int.MaxValue));
+            case TYP_UINT:
+                return (value >= T.Zero) && (value <= T.CreateSaturating(uint.MaxValue));
+            case TYP_LONG:
+                return (value >= T.CreateSaturating(long.MinValue)) && (value <= T.CreateSaturating(long.MaxValue));
+            case TYP_ULONG:
+                return (value >= T.Zero) && (value <= T.CreateSaturating(ulong.MaxValue));
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     public static bool FitsInI8(long value) => unchecked((sbyte)(value)) == value;

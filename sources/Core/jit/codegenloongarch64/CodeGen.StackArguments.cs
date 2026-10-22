@@ -41,7 +41,7 @@ public sealed partial class CodeGen
         {
             if (varTypeIsSimd(targetType))
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnimplementedOnLOONGARCH64Yet);
                 return;
             }
 

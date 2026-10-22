@@ -11,8 +11,10 @@ public sealed partial class Lowering
 {
     private bool IsValidConstForMovImmLoongArch64(GenTreeHWIntrinsic node)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "LoongArch64 hardware-intrinsic immediate materialization is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64HardwareIntrinsicImmediateMaterializationIsNotPorted
+    );
         return default!;
     }
 
@@ -20,7 +22,7 @@ public sealed partial class Lowering
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not available.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.HardwareIntrinsicLoweringIsNotAvailable);
             return default!;
         }
 
@@ -41,18 +43,24 @@ public sealed partial class Lowering
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64HardwareIntrinsicLoweringIsNotPorted
+    );
             return default!;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
             NYI_RISCV64("LowerHWIntrinsic");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic lowering is not ported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCV64HardwareIntrinsicLoweringIsNotPorted);
             return default!;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicLoweringIsNotPortedForThisTarget
+    );
         return default!;
     }
 
@@ -653,10 +661,7 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage256
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedFloatingComparisonIntrinsic);
                         return null;
                     }
                 }
@@ -690,10 +695,7 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage257
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedIntegerComparisonIntrinsic);
                         return null;
                     }
                 }
@@ -901,10 +903,7 @@ public sealed partial class Lowering
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage258
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedScalarComparisonIntrinsic);
                         return null;
                     }
                 }

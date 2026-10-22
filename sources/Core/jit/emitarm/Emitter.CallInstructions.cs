@@ -17,7 +17,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 call recording is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32CallRecordingIsOnlySupportedOnARM32);
             return;
         }
 

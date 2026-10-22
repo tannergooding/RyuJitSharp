@@ -56,8 +56,10 @@ public partial struct GCInfo
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Non-pointer GC register marking without a fixed register set is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NonPointerGCRegisterMarkingWithoutAFixedRegisterSetIsNotImplemented
+    );
             return;
         }
     }

@@ -47,7 +47,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITLoggingIsOnlyAvailableInDebugBuilds);
         }
 
         // TODO: This can't be implemented without varargs support
@@ -60,7 +60,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITLoggingIsOnlyAvailableInDebugBuilds);
         }
 
         ArgumentNullException.ThrowIfNull(stream);
@@ -89,7 +89,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITLoggingIsOnlyAvailableInDebugBuilds);
         }
 
         // We remember when the EE failed to log, because vlogf()
@@ -118,7 +118,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITLoggingIsOnlyAvailableInDebugBuilds);
         }
 
         vflogf(stream, message);
@@ -128,7 +128,7 @@ public partial class Globals
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("JIT logging is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JITLoggingIsOnlyAvailableInDebugBuilds);
         }
 
         logf(message);

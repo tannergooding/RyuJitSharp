@@ -176,7 +176,7 @@ public sealed partial class Lowering
             }
             if (Configuration.FEATURE_SIMD)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V SIMD indirection containment is not ported.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVSIMDIndirectionContainmentIsNotPorted);
                 return;
             }
 
@@ -207,7 +207,10 @@ public sealed partial class Lowering
 
             if (Configuration.FEATURE_SIMD)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch SIMD indirection containment is not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArchSIMDIndirectionContainmentIsNotPorted
+    );
                 return;
             }
 
@@ -238,8 +241,16 @@ public sealed partial class Lowering
                 var addressToReuse = node.Addr;
                 if (foldable is not null)
                 {
-                    addressToReuse = foldable.BaseAddress ??
-                        throw new InvalidOperationException("Foldable Wasm address is missing its base.");
+                    var __jitExceptionCoalesceLeft102 = foldable.BaseAddress;
+                    if (__jitExceptionCoalesceLeft102 != null)
+                    {
+                        addressToReuse = __jitExceptionCoalesceLeft102;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FoldableWasmAddressIsMissingItsBase);
+                        addressToReuse = default;
+                    }
                 }
 
                 SetMultiplyUsed(
@@ -271,7 +282,10 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indirection containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndirectionContainmentIsNotPortedForThisTarget
+    );
         return;
     }
 
@@ -361,8 +375,10 @@ public sealed partial class Lowering
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Unused indirection lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnusedIndirectionLoweringIsNotPortedForThisTarget
+    );
             return default!;
         }
         if (useNullCheck && (ind.Oper is not GT_NULLCHECK))

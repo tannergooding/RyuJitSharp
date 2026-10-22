@@ -15,7 +15,7 @@ public partial struct GCInfo
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
             Configuration.JIT32_GCENCODER)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Modern GC encoding requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ModernGCEncodingRequiresWindowsAMD64);
             return;
         }
 
@@ -56,10 +56,7 @@ public partial struct GCInfo
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage220
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnknownGenericContextParameterType);
                     return;
                 }
             }

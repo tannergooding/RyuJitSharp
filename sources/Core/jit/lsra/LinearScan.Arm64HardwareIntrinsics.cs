@@ -11,7 +11,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             destinationCount = default!;
             return default!;
         }
@@ -105,7 +106,7 @@ public sealed partial class LinearScan
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException("ARM64 RMW operand position exceeds three.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ARM64RMWOperandPositionExceedsThree);
                             destinationCount = default!;
                             return default!;
                         }
@@ -186,7 +187,7 @@ public sealed partial class LinearScan
             var blockSequence = _blockSequence;
             if (blockSequence is null)
             {
-                FatalJitException.ThrowFatalJitException("Embedded FMA allocation requires block sequence.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EmbeddedFMAAllocationRequiresBlockSequence);
                 return default!;
             }
             GenTree? user = null;
@@ -404,7 +405,10 @@ public sealed partial class LinearScan
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException($"ARM64 intrinsic {id} has unhandled immediate requirements.");
+                    FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.ARM64IntrinsicArgumentHasUnhandledImmediateRequirements,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default)
+    );
                     return;
                 }
             }
@@ -591,7 +595,9 @@ public sealed partial class LinearScan
                 default:
                 {
                     FatalJitException.ThrowFatalJitException(
-                        $"Unhandled ARM64 low-vector intrinsic {id}.");
+        FatalJitErrorCode.UnhandledARM64LowVectorIntrinsicArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default)
+    );
                     return SRBM_NONE;
                 }
             }
@@ -719,7 +725,9 @@ public sealed partial class LinearScan
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    $"ARM64 intrinsic {intrinsic.HWIntrinsicId} has unhandled consecutive register requirements.");
+        FatalJitErrorCode.ARM64IntrinsicArgumentHasUnhandledConsecutiveRegisterRequirements,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic.HWIntrinsicId : default)
+    );
                 consecutiveDestination = default!;
                 return default!;
             }

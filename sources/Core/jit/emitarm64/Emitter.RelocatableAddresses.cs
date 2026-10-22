@@ -14,8 +14,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 relocatable-address recording is only supported on ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64RelocatableAddressRecordingIsOnlySupportedOnARM64
+    );
             return;
         }
 

@@ -93,9 +93,9 @@ public sealed partial class ObjectAllocator
             if (predecessor is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage428
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.EmptyStaticAllocationRequiresOnePredecessor
+    );
                 return default!;
             }
             assert(predecessor.Kind is BBJ_COND);
@@ -105,9 +105,9 @@ public sealed partial class ObjectAllocator
             if (controllingStmt is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage429
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.EmptyStaticPredecessorRequiresItsBranchStatement
+    );
                 return default!;
             }
             var branch = controllingStmt.RootNode;

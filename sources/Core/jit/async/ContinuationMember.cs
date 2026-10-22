@@ -47,12 +47,18 @@ public readonly struct ContinuationMember
     {
         layout = Type is ContinuationMemberType.CustomAwaiterOfLayout ? _customAwaiterLayout : null;
 
-        return Type switch {
-            ContinuationMemberType.CustomAwaiterOfLayout => TYP_STRUCT,
-            ContinuationMemberType.InlineFrameExecutionContext or ContinuationMemberType.InlineFrameContinuationContext => TYP_REF,
-            ContinuationMemberType.InlineFrameFlags => TYP_INT,
-            _ => throw new UnreachableException(),
-        };
+        switch (Type)
+        {
+            case ContinuationMemberType.CustomAwaiterOfLayout:
+                return TYP_STRUCT;
+            case ContinuationMemberType.InlineFrameExecutionContext or ContinuationMemberType.InlineFrameContinuationContext:
+                return TYP_REF;
+            case ContinuationMemberType.InlineFrameFlags:
+                return TYP_INT;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     public static ContinuationMember CustomAwaiterOfLayout(ClassLayout layout)
@@ -76,24 +82,42 @@ public readonly struct ContinuationMember
 
         // Frames at one depth cannot overlap: a frame's first suspension writes
         // the value that its own post-inline IR consumes before another can enter.
-        return a.Type switch {
-            ContinuationMemberType.CustomAwaiterOfLayout => ClassLayout.AreCompatible(a._customAwaiterLayout, b._customAwaiterLayout),
-            ContinuationMemberType.InlineFrameExecutionContext or ContinuationMemberType.InlineFrameContinuationContext
-                or ContinuationMemberType.InlineFrameFlags => a._inlineDepth == b._inlineDepth,
-            _ => throw new UnreachableException(),
-        };
+        switch (a.Type)
+        {
+            case ContinuationMemberType.CustomAwaiterOfLayout:
+                return ClassLayout.AreCompatible(a._customAwaiterLayout, b._customAwaiterLayout);
+            case ContinuationMemberType.InlineFrameExecutionContext or ContinuationMemberType.InlineFrameContinuationContext or ContinuationMemberType.InlineFrameFlags:
+                return a._inlineDepth == b._inlineDepth;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     [Conditional("DEBUG")]
     public void Print()
     {
-        var description = Type switch {
-            ContinuationMemberType.CustomAwaiterOfLayout => $"CustomAwaiter<{CustomAwaiterLayout.ClassName}>",
-            ContinuationMemberType.InlineFrameExecutionContext => $"ExecutionContext for inline depth {_inlineDepth}",
-            ContinuationMemberType.InlineFrameContinuationContext => $"Continuation context for inline depth {_inlineDepth}",
-            ContinuationMemberType.InlineFrameFlags => $"Continuation flags for inline depth {_inlineDepth}",
-            _ => throw new UnreachableException(),
-        };
+        string __jitExceptionResult27;
+        switch (Type)
+        {
+            case ContinuationMemberType.CustomAwaiterOfLayout:
+                __jitExceptionResult27 = $"CustomAwaiter<{CustomAwaiterLayout.ClassName}>";
+                break;
+            case ContinuationMemberType.InlineFrameExecutionContext:
+                __jitExceptionResult27 = $"ExecutionContext for inline depth {_inlineDepth}";
+                break;
+            case ContinuationMemberType.InlineFrameContinuationContext:
+                __jitExceptionResult27 = $"Continuation context for inline depth {_inlineDepth}";
+                break;
+            case ContinuationMemberType.InlineFrameFlags:
+                __jitExceptionResult27 = $"Continuation flags for inline depth {_inlineDepth}";
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                __jitExceptionResult27 = default;
+                break;
+        }
+        var description = __jitExceptionResult27;
         jitprintf(description);
     }
 }

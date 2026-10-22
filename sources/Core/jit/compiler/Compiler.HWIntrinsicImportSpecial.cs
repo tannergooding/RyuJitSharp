@@ -27,7 +27,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic special import requires xarch hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchHardwareIntrinsicSpecialImportRequiresXarchHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -218,10 +221,7 @@ public partial class Compiler
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage121
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedScalarComparison);
                             break;
                         }
                     }
@@ -544,10 +544,7 @@ public partial class Compiler
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage122
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedSpecialComparison);
                             break;
                         }
                     }
@@ -626,10 +623,7 @@ public partial class Compiler
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage123
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedMaskedMemoryIntrinsic);
                         break;
                     }
                 }

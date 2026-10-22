@@ -14,7 +14,10 @@ public sealed partial class Lowering
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector Dot multiply/sum lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.VectorDotMultiplySumLoweringIsNotPortedForThisTarget
+    );
             return default!;
         }
 
@@ -161,17 +164,23 @@ public sealed partial class Lowering
             if (Configuration.TARGET_RISCV64)
             {
                 NYI_RISCV64("LowerHWIntrinsicDot");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Dot lowering is not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64HardwareIntrinsicDotLoweringIsNotPorted
+    );
                 return default!;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArch64HardwareIntrinsicDotLoweringIsNotPorted
+    );
                 return default!;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Vector Dot lowering is not ported for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.VectorDotLoweringIsNotPortedForThisTarget);
             return default!;
         }
 

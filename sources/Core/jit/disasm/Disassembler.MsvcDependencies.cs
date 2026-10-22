@@ -81,7 +81,10 @@ public partial struct Disassembler
 
     private static MsDisassembler? NewMsDisassembler(MsArchitecture architecture)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Late disassembly requires DIS::PdisNew and the MSVCDIS C++ callback ABI.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LateDisassemblyRequiresDISPdisNewAndTheMSVCDISCCallbackABI
+    );
         return default!;
     }
 }

@@ -25,7 +25,7 @@ public readonly partial struct HWIntrinsicInfo
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
             Globals.NYI("Hardware-intrinsic metadata without hardware-intrinsic support");
-            FatalJitException.ThrowFatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.HardwareIntrinsicMetadataIsUnsupportedOnThisTarget);
             return;
         }
     }
@@ -49,7 +49,8 @@ public readonly partial struct HWIntrinsicInfo
             return s_wasmIsaRangeBounds;
         }
 
-        throw new PlatformNotSupportedException("Hardware intrinsic lookup ranges are unavailable for this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicLookupRangesAreUnavailableForThisTarget);
+        return default;
     }
 
     public static unsafe NamedIntrinsic LookupId(CORINFO_SIG_INFO* sig, ManagedInstructionSet isa, ReadOnlySpan<byte> methodName)
@@ -155,15 +156,14 @@ public readonly partial struct HWIntrinsicInfo
 
         if ((uint)unionIndex >= (uint)GetTableIndexByUnionIndex().Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(id), id, "The value is not a hardware intrinsic identity.");
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitErrorCode.ValueIsNotAHardwareIntrinsicIdentity, FatalJitArgument.Id);
         }
 
         var tableIndex = GetRvaSpanEntry(GetTableIndexByUnionIndex(), unionIndex);
 
         if (tableIndex is ushort.MaxValue)
         {
-            throw new PlatformNotSupportedException(
-                $"Hardware intrinsic '{id}' is not present in the configured target's native metadata table.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicArgumentIsNotPresentInTheConfiguredTargetSNativeMetadataTable, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? id : default));
         }
 
         return tableIndex;
@@ -200,7 +200,7 @@ public readonly partial struct HWIntrinsicInfo
 
         if ((uint)tableIndex >= (uint)unionIndexes.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(tableIndex));
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.TableIndex);
         }
 
         var unionIndex = GetRvaSpanEntry(unionIndexes, tableIndex);
@@ -224,7 +224,8 @@ public readonly partial struct HWIntrinsicInfo
             return s_WasmTableIndexByUnionIndex;
         }
 
-        throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+        return default;
     }
 
     private static ReadOnlySpan<ushort> GetUnionIndexByNativeTableIndex()
@@ -244,7 +245,8 @@ public readonly partial struct HWIntrinsicInfo
             return s_WasmUnionIndexByTableIndex;
         }
 
-        throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicTablesAreUnavailableForThisTarget);
+        return default;
     }
 
     public static bool IsCrossPlatformVectorIntrinsic(NamedIntrinsic id) =>
@@ -417,7 +419,7 @@ public readonly partial struct HWIntrinsicInfo
         if (!Configuration.FEATURE_SIMD)
         {
             Globals.NYI("Hardware-intrinsic SIMD size lookup without SIMD support");
-            FatalJitException.ThrowFatalJitException("Hardware-intrinsic SIMD size lookup is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.HardwareIntrinsicSIMDSizeLookupIsUnsupportedOnThisTarget);
             return default!;
         }
 
@@ -452,7 +454,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new PlatformNotSupportedException("Floating-point intrinsic costs are only defined for xarch.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FloatingPointIntrinsicCostsAreOnlyDefinedForXarch);
         }
 
         return GetRvaSpanEntry(s_fltCosts, GetTableIndex(id));
@@ -462,7 +464,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new PlatformNotSupportedException("Integer intrinsic costs are only defined for xarch.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.IntegerIntrinsicCostsAreOnlyDefinedForXarch);
         }
 
         return GetRvaSpanEntry(s_intCosts, GetTableIndex(id));

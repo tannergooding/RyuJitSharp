@@ -164,8 +164,18 @@ public partial struct GCInfo
             }
             else
             {
-                var topArray = _topArray
-                    ?? throw new InvalidOperationException("The pending-argument stack is missing its overflow storage.");
+                byte[] __jitExceptionResult34;
+                var __jitExceptionCoalesceLeft35 = _topArray;
+                if (__jitExceptionCoalesceLeft35 != null)
+                {
+                    __jitExceptionResult34 = __jitExceptionCoalesceLeft35;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
+                    __jitExceptionResult34 = default;
+                }
+                var topArray = __jitExceptionResult34;
                 topArray[checked((int)(_depth - PasMaskBits))] = (byte)gcType;
                 if (gcType != GCT_NONE)
                 {
@@ -181,8 +191,18 @@ public partial struct GCInfo
             assert(_depth >= count);
             while ((_depth > PasMaskBits) && (count != 0))
             {
-                var topArray = _topArray
-                    ?? throw new InvalidOperationException("The pending-argument stack is missing its overflow storage.");
+                byte[] __jitExceptionResult36;
+                var __jitExceptionCoalesceLeft37 = _topArray;
+                if (__jitExceptionCoalesceLeft37 != null)
+                {
+                    __jitExceptionResult36 = __jitExceptionCoalesceLeft37;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
+                    __jitExceptionResult36 = default;
+                }
+                var topArray = __jitExceptionResult36;
                 var topIndex = _depth - PasMaskBits - 1;
                 if ((GCtype)topArray[checked((int)topIndex)] != GCT_NONE)
                 {
@@ -218,8 +238,18 @@ public partial struct GCInfo
             for (var currentPosition = _depth; (currentPosition > PasMaskBits) && (gcCount != 0);
                 currentPosition--)
             {
-                var topArray = _topArray
-                    ?? throw new InvalidOperationException("The pending-argument stack is missing its overflow storage.");
+                byte[] __jitExceptionResult38;
+                var __jitExceptionCoalesceLeft39 = _topArray;
+                if (__jitExceptionCoalesceLeft39 != null)
+                {
+                    __jitExceptionResult38 = __jitExceptionCoalesceLeft39;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
+                    __jitExceptionResult38 = default;
+                }
+                var topArray = __jitExceptionResult38;
                 var currentIndex = currentPosition - PasMaskBits - 1;
                 if ((GCtype)topArray[checked((int)currentIndex)] != GCT_NONE)
                 {
@@ -283,8 +313,18 @@ public partial struct GCInfo
             var index = iterator == PasEnumStart ? _depth : iterator;
             for (; index > PasMaskBits; index--)
             {
-                var topArray = _topArray
-                    ?? throw new InvalidOperationException("The pending-argument stack is missing its overflow storage.");
+                byte[] __jitExceptionResult40;
+                var __jitExceptionCoalesceLeft41 = _topArray;
+                if (__jitExceptionCoalesceLeft41 != null)
+                {
+                    __jitExceptionResult40 = __jitExceptionCoalesceLeft41;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PendingArgumentStackIsMissingItsOverflowStorage);
+                    __jitExceptionResult40 = default;
+                }
+                var topArray = __jitExceptionResult40;
                 var argument = (GCtype)topArray[checked((int)(index - PasMaskBits - 1))];
                 if (argument != GCT_NONE)
                 {
@@ -442,8 +482,18 @@ public partial struct GCInfo
                 }
                 else if ((variable.Type == TYP_STRUCT) && variable.lvOnFrame && variable.HasGCPtr)
                 {
-                    var layout = variable.Layout
-                        ?? throw new InvalidOperationException("A struct local on the frame must have a layout.");
+                    global::RyuJitSharp.ClassLayout __jitExceptionResult42;
+                    var __jitExceptionCoalesceLeft43 = variable.Layout;
+                    if (__jitExceptionCoalesceLeft43 != null)
+                    {
+                        __jitExceptionResult42 = __jitExceptionCoalesceLeft43;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalOnTheFrameMustHaveALayout);
+                        __jitExceptionResult42 = default;
+                    }
+                    var layout = __jitExceptionResult42;
                     for (var slot = 0; slot < layout.SlotCount; slot++)
                     {
                         if (!layout.IsGCPtr(slot))
@@ -724,7 +774,7 @@ public partial struct GCInfo
                     var argumentTable = call.cdArgTable;
                     if (argumentTable is null)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JIT32 GC call argument table is missing.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JIT32GCCallArgumentTableIsMissing);
                         return default!;
                     }
 

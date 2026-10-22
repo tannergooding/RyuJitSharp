@@ -18,7 +18,7 @@ public sealed partial class CodeGen
             }
             if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
+                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NodeInstructionGenerationRequiresXarch);
                 return;
             }
 
@@ -150,7 +150,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V-only node reached non-RISC-V code generation.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVOnlyNodeReachedNonRISCVCodeGeneration);
                         return;
                     }
                     assert(varTypeIsIntegralOrI(tree.Type));
@@ -181,7 +181,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V rotate node reached non-RISC-V code generation.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVRotateNodeReachedNonRISCVCodeGeneration);
                         return;
                     }
                     genCodeForShiftRiscV64(tree);
@@ -365,7 +365,10 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.FEATURE_HW_INTRINSICS)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are unavailable for this target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicsAreUnavailableForThisTarget
+    );
                         return;
                     }
                     genHWIntrinsic(tree.AsHWIntrinsic());
@@ -395,7 +398,10 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_LOONGARCH64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch conditional branch reached another target.");
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoongArchConditionalBranchReachedAnotherTarget
+    );
                         return;
                     }
                     var currentBlock = _compiler.compCurBB;
@@ -429,7 +435,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V select node reached another target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVSelectNodeReachedAnotherTarget);
                         return;
                     }
                     genCodeForSelectRiscV64(tree.AsConditional());
@@ -515,7 +521,7 @@ public sealed partial class CodeGen
                 {
                     if ((tree.Oper is GT_XORR or GT_XAND) && !Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V atomic node reached another target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVAtomicNodeReachedAnotherTarget);
                         return;
                     }
                     genLockedInstructions(tree.AsOp());
@@ -686,7 +692,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V arithmetic node reached another target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVArithmeticNodeReachedAnotherTarget);
                         return;
                     }
                     genCodeForShxadd(tree.AsOp());
@@ -697,7 +703,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V arithmetic node reached another target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVArithmeticNodeReachedAnotherTarget);
                         return;
                     }
                     genCodeForAddUw(tree.AsOp());
@@ -708,7 +714,7 @@ public sealed partial class CodeGen
                 {
                     if (!Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "RISC-V arithmetic node reached another target.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RISCVArithmeticNodeReachedAnotherTarget);
                         return;
                     }
                     genCodeForSlliUw(tree.AsOp());
@@ -737,7 +743,7 @@ public sealed partial class CodeGen
                     }
                     if (Configuration.TARGET_RISCV64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unimplemented node type in code generation.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnimplementedNodeTypeInCodeGeneration);
                         return;
                     }
                     break;
@@ -807,13 +813,13 @@ public sealed partial class CodeGen
             {
                 if ((tree.Oper is GT_CNS_VEC) && !Configuration.FEATURE_SIMD)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constants are unavailable for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConstantsAreUnavailableForThisTarget);
                     return;
                 }
                 if ((tree.Oper is GT_CNS_MSK) &&
                     (!Configuration.FEATURE_SIMD || !Configuration.FEATURE_MASKED_HW_INTRINSICS))
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Masked constants are unavailable for this target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MaskedConstantsAreUnavailableForThisTarget);
                     return;
                 }
                 genSetRegToConstXarch(targetReg, targetType, tree);
@@ -906,10 +912,7 @@ public sealed partial class CodeGen
             {
                 if (Configuration.TARGET_64BIT)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage087
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.Failure32BitLongShiftReachedA64BitTarget);
                     return;
                 }
                 genCodeForShiftLongXarch(tree);
@@ -969,10 +972,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.SWIFT_SUPPORT)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage088
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SwiftErrorReturnsAreUnavailableForThisTarget);
                     return;
                 }
                 genSwiftErrorReturn(tree);
@@ -1015,10 +1015,7 @@ public sealed partial class CodeGen
             {
                 if ((tree.Oper is GT_MUL_LONG) && !Configuration.TARGET_X86)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage089
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.X86LongMultiplyNodeReachedAnotherTarget);
                     return;
                 }
                 genCodeForMulHiXarch(tree.AsOp());
@@ -1035,7 +1032,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are unavailable for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicsAreUnavailableForThisTarget
+    );
                     return;
                 }
                 genHWIntrinsic(tree.AsHWIntrinsic());
@@ -1193,10 +1193,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.SWIFT_SUPPORT)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage090
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SwiftErrorValuesAreUnavailableForThisTarget);
                     return;
                 }
                 genCodeForSwiftErrorReg(tree);
@@ -1304,10 +1301,7 @@ public sealed partial class CodeGen
             {
                 if (Configuration.TARGET_64BIT)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage091
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.Failure32BitLongNodeReachedA64BitTarget);
                     return;
                 }
                 assert(tree.IsUsedFromReg);
@@ -1319,7 +1313,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_AMD64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "AMD64 conditional compare reached another target.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.AMD64ConditionalCompareReachedAnotherTarget);
                     return;
                 }
                 genCodeForCCMP(tree.AsCCMP());
@@ -1343,7 +1337,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.SWIFT_SUPPORT || Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Swift error registers are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SwiftErrorRegistersAreUnavailableForThisTarget
+    );
             return;
         }
 

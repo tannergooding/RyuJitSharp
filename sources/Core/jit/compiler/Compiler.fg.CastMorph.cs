@@ -131,29 +131,43 @@ public partial class Compiler
                 {
                     if (!tree.HasOverflowCheck)
                     {
-                        (double Minimum, double Maximum) limits = destinationType switch {
-                            TYP_BYTE => (sbyte.MinValue, sbyte.MaxValue),
-                            TYP_UBYTE => (0, byte.MaxValue),
-                            TYP_SHORT => (short.MinValue, short.MaxValue),
-                            TYP_USHORT => (0, ushort.MaxValue),
-                            _ => throw new System.Diagnostics.UnreachableException(),
-                        };
+                        (double Minimum, double Maximum) __jitExceptionResult161;
+                        switch (destinationType)
+                        {
+                            case TYP_BYTE:
+                                __jitExceptionResult161 = (sbyte.MinValue, sbyte.MaxValue);
+                                break;
+                            case TYP_UBYTE:
+                                __jitExceptionResult161 = (0, byte.MaxValue);
+                                break;
+                            case TYP_SHORT:
+                                __jitExceptionResult161 = (short.MinValue, short.MaxValue);
+                                break;
+                            case TYP_USHORT:
+                                __jitExceptionResult161 = (0, ushort.MaxValue);
+                                break;
+                            default:
+                                JitExceptionHelpers.ThrowUnreachableException();
+                                __jitExceptionResult161 = default;
+                                break;
+                        }
+                        var(minimum, maximum) = __jitExceptionResult161;
 
                         // Native min/max on these targets preserves NaN through
                         // the clamp; the subsequent floating-to-int cast yields zero.
                         if (Configuration.FEATURE_HW_INTRINSICS && !Configuration.TARGET_WASM)
                         {
                             operand = gtNewSimdMinMaxNativeNode(sourceType,
-                                gtNewDconNode(sourceType, limits.Minimum), operand, sourceType, 0, isMax: true);
+                                gtNewDconNode(sourceType, minimum), operand, sourceType, 0, isMax: true);
                             operand = gtNewSimdMinMaxNativeNode(sourceType,
-                                gtNewDconNode(sourceType, limits.Maximum), operand, sourceType, 0, isMax: false);
+                                gtNewDconNode(sourceType, maximum), operand, sourceType, 0, isMax: false);
                         }
                         else
                         {
                             operand = new GenTreeIntrinsic(sourceType,
-                                gtNewDconNode(sourceType, limits.Minimum), operand, NI_System_Math_MaxNative, null);
+                                gtNewDconNode(sourceType, minimum), operand, NI_System_Math_MaxNative, null);
                             operand = new GenTreeIntrinsic(sourceType,
-                                gtNewDconNode(sourceType, limits.Maximum), operand, NI_System_Math_MinNative, null);
+                                gtNewDconNode(sourceType, maximum), operand, NI_System_Math_MinNative, null);
                         }
                     }
                 }
@@ -164,7 +178,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException("New target requires floating-to-small-integer saturation support.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.NewTargetRequiresFloatingToSmallIntegerSaturationSupport);
                     return default!;
                 }
 
@@ -175,13 +189,27 @@ public partial class Compiler
                      Configuration.TARGET_LOONGARCH64) &&
                     !tree.HasOverflowCheck)
                 {
-                    var intrinsic = destinationType switch {
-                        TYP_BYTE => NI_PRIMITIVE_SaturateToInt8,
-                        TYP_UBYTE => NI_PRIMITIVE_SaturateToUInt8,
-                        TYP_SHORT => NI_PRIMITIVE_SaturateToInt16,
-                        TYP_USHORT => NI_PRIMITIVE_SaturateToUInt16,
-                        _ => throw new System.Diagnostics.UnreachableException(),
-                    };
+                    global::RyuJitSharp.NamedIntrinsic __jitExceptionResult162;
+                    switch (destinationType)
+                    {
+                        case TYP_BYTE:
+                            __jitExceptionResult162 = NI_PRIMITIVE_SaturateToInt8;
+                            break;
+                        case TYP_UBYTE:
+                            __jitExceptionResult162 = NI_PRIMITIVE_SaturateToUInt8;
+                            break;
+                        case TYP_SHORT:
+                            __jitExceptionResult162 = NI_PRIMITIVE_SaturateToInt16;
+                            break;
+                        case TYP_USHORT:
+                            __jitExceptionResult162 = NI_PRIMITIVE_SaturateToUInt16;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            __jitExceptionResult162 = default;
+                            break;
+                    }
+                    var intrinsic = __jitExceptionResult162;
                     operand = new GenTreeIntrinsic(TYP_INT, operand, intrinsic, null);
                 }
 
@@ -196,19 +224,48 @@ public partial class Compiler
                     operand = gtNewCastNode(TYP_DOUBLE, operand, false, TYP_DOUBLE);
                 }
 
-                var helper = tree.HasOverflowCheck
-                    ? destinationType switch {
-                        TYP_INT => CORINFO_HELP_DBL2INT_OVF,
-                        TYP_UINT => CORINFO_HELP_DBL2UINT_OVF,
-                        TYP_LONG => CORINFO_HELP_DBL2LNG_OVF,
-                        TYP_ULONG => CORINFO_HELP_DBL2ULNG_OVF,
-                        _ => throw new System.Diagnostics.UnreachableException(),
+                global::RyuJitSharp.CorInfoHelpFunc __jitExceptionResult163;
+                bool __jitExceptionCondition164;
+                __jitExceptionCondition164 = tree.HasOverflowCheck;
+                if (__jitExceptionCondition164)
+                {
+                    switch (destinationType)
+                    {
+                        case TYP_INT:
+                            __jitExceptionResult163 = CORINFO_HELP_DBL2INT_OVF;
+                            break;
+                        case TYP_UINT:
+                            __jitExceptionResult163 = CORINFO_HELP_DBL2UINT_OVF;
+                            break;
+                        case TYP_LONG:
+                            __jitExceptionResult163 = CORINFO_HELP_DBL2LNG_OVF;
+                            break;
+                        case TYP_ULONG:
+                            __jitExceptionResult163 = CORINFO_HELP_DBL2ULNG_OVF;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            __jitExceptionResult163 = default;
+                            break;
                     }
-                    : destinationType switch {
-                        TYP_LONG => CORINFO_HELP_DBL2LNG,
-                        TYP_ULONG => CORINFO_HELP_DBL2ULNG,
-                        _ => throw new System.Diagnostics.UnreachableException(),
-                    };
+                }
+                else
+                {
+                    switch (destinationType)
+                    {
+                        case TYP_LONG:
+                            __jitExceptionResult163 = CORINFO_HELP_DBL2LNG;
+                            break;
+                        case TYP_ULONG:
+                            __jitExceptionResult163 = CORINFO_HELP_DBL2ULNG;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            __jitExceptionResult163 = default;
+                            break;
+                    }
+                }
+                var helper = __jitExceptionResult163;
                 return fgMorphCastIntoHelper(tree, helper, operand);
             }
         }

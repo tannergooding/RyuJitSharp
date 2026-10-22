@@ -74,13 +74,13 @@ public partial class Emitter
                 var savedInstructions = instructions;
                 if (savedInstructions is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Backward instruction validation requires descriptor storage.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.BackwardInstructionValidationRequiresDescriptorStorage);
                     return;
                 }
                 var descriptors = current.igData;
                 if (descriptors is null)
                 {
-                    FatalJitException.ThrowFatalJitException("A saved instruction group requires descriptor storage.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SavedInstructionGroupRequiresDescriptorStorage);
                     return;
                 }
                 assert(descriptors.Length == current.igInsCnt);
@@ -115,7 +115,7 @@ public partial class Emitter
             var savedInstructions = instructions;
             if (savedInstructions is null)
             {
-                FatalJitException.ThrowFatalJitException("Backward instruction validation requires descriptor storage.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.BackwardInstructionValidationRequiresDescriptorStorage);
                 return;
             }
             var index = savedInstructions.Count - 1;

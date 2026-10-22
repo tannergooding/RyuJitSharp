@@ -180,7 +180,9 @@ public static partial class Globals
             return unchecked((uint)BAD_VAR_NUM);
         }
 
-        FatalJitException.ThrowFatalJitException("Floating-point argument register mapping is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.FloatingPointArgumentRegisterMappingIsNotSupportedForThisTarget
+    );
         return default!;
     }
 

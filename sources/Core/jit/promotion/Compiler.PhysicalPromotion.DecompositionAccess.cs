@@ -77,7 +77,18 @@ public partial class Compiler
                 return compiler.gtNewIndir(type, GrabAddress(offset, compiler), GetIndirFlags(type));
             }
 
-            var local = _local ?? throw new InvalidOperationException("Location was not initialized.");
+            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult541;
+            var __jitExceptionCoalesceLeft542 = _local;
+            if (__jitExceptionCoalesceLeft542 != null)
+            {
+                __jitExceptionResult541 = __jitExceptionCoalesceLeft542;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocationWasNotInitialized);
+                __jitExceptionResult541 = default;
+            }
+            var local = __jitExceptionResult541;
             var fieldLocal = FindRegularlyPromotedField(offset, compiler);
             if ((fieldLocal != BAD_VAR_NUM) && (compiler.lvaGetDesc(fieldLocal).Type == type))
             {
@@ -98,7 +109,18 @@ public partial class Compiler
                     source, GetIndirFlags(type));
             }
 
-            var local = _local ?? throw new InvalidOperationException("Location was not initialized.");
+            global::RyuJitSharp.GenTreeLclVarCommon __jitExceptionResult543;
+            var __jitExceptionCoalesceLeft544 = _local;
+            if (__jitExceptionCoalesceLeft544 != null)
+            {
+                __jitExceptionResult543 = __jitExceptionCoalesceLeft544;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocationWasNotInitialized);
+                __jitExceptionResult543 = default;
+            }
+            var local = __jitExceptionResult543;
             var fieldLocal = FindRegularlyPromotedField(offset, compiler);
             if ((fieldLocal != BAD_VAR_NUM) && (compiler.lvaGetDesc(fieldLocal).Type == type))
             {
@@ -131,7 +153,7 @@ public partial class Compiler
         {
             if ((_address is null) || (_usesLeft <= 0))
             {
-                throw new InvalidOperationException("Decomposed address was used more times than planned.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DecomposedAddressWasUsedMoreTimesThanPlanned);
             }
 
             _usesLeft--;

@@ -27,9 +27,9 @@ public partial class Compiler
         if (Unsafe.IsNullRef(ref link.result))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage172
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BoundsCheckToRemoveIsNotInItsOriginalStatement
+    );
             return;
         }
         link.result = sideEffects ?? gtNewNothingNode();
@@ -58,10 +58,7 @@ public partial class Compiler
             var before = stmt.PrevStmt;
             if (before is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage120
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.NonFirstStatementNeedsAPredecessor);
                 firstNewStmt = default!;
                 return default!;
             }
@@ -102,10 +99,7 @@ public partial class Compiler
         var firstStmt = fast.FirstStmt;
         if (firstStmt is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage173
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FastPathMustContainAStatement);
             return default!;
         }
         var debugInfo = firstStmt.DebugInfo;
@@ -119,19 +113,13 @@ public partial class Compiler
         var idx = gtCloneExpr(first.Check.Index);
         if (idx is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage174
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FirstBoundsCheckIndexCannotBeCloned);
             return default!;
         }
         var arrLen = gtCloneExpr(first.Check.ArrayLength);
         if (arrLen is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage175
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.FirstBoundsCheckLengthCannotBeCloned);
             return default!;
         }
         assert((idx.Flags & GTF_ALL_EFFECT) == 0);
@@ -149,9 +137,9 @@ public partial class Compiler
             if (clonedIdx is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage176
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ClonedBoundsCheckIndexCannotBeClonedAgain
+    );
                 return default!;
             }
 
@@ -161,10 +149,7 @@ public partial class Compiler
         var lowerTestIdx = gtCloneExpr(idx);
         if (lowerTestIdx is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage177
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LowerBoundIndexCannotBeCloned);
             return default!;
         }
 
@@ -207,10 +192,7 @@ public partial class Compiler
             var next = last;
             if (next is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage178
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SplitFastPathMustHaveASuccessor);
                 return default!;
             }
             var fallbackToNext = fgAddRefPred(next, fallback);
@@ -257,10 +239,7 @@ public partial class Compiler
         var lowerLastStmt = lower.LastStmt;
         if (lowerLastStmt is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage179
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LowerBoundBlockMustHaveATest);
             return default!;
         }
 
@@ -269,10 +248,7 @@ public partial class Compiler
         var upperLastStmt = upper.LastStmt;
         if (upperLastStmt is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage180
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UpperBoundBlockMustHaveATest);
             return default!;
         }
 

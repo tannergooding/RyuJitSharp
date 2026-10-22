@@ -41,7 +41,8 @@ public partial class Compiler
         if (tryRegions.HasSideEntry())
         {
             NYI_WASM("Try region side entry");
-            FatalJitException.ThrowFatalJitException(CorJitResult.CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CorJitResult.CORJIT_SKIPPED    );
             return default!;
         }
 
@@ -424,8 +425,18 @@ public partial class Compiler
             }
             else
             {
-                var previousBlock = lastBlock
-                    ?? throw new InvalidOperationException("Wasm block reordering requires a preceding block.");
+                global::RyuJitSharp.BasicBlock __jitExceptionResult267;
+                var __jitExceptionCoalesceLeft268 = lastBlock;
+                if (__jitExceptionCoalesceLeft268 != null)
+                {
+                    __jitExceptionResult267 = __jitExceptionCoalesceLeft268;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmBlockReorderingRequiresAPrecedingBlock);
+                    __jitExceptionResult267 = default;
+                }
+                var previousBlock = __jitExceptionResult267;
                 fgUnlinkBlock(block);
                 fgInsertBBafter(previousBlock, block);
 
@@ -455,8 +466,18 @@ public partial class Compiler
                         $"Reversing condition in {FMT_BB(block.bbNum)} to allow fall through to " +
                         $"{FMT_BB(block.TrueTarget.bbNum)}\n");
 
-                    var test = block.LastLIRNode
-                        ?? throw new InvalidOperationException("A conditional Wasm block requires a final LIR node.");
+                    global::RyuJitSharp.GenTree __jitExceptionResult269;
+                    var __jitExceptionCoalesceLeft270 = block.LastLIRNode;
+                    if (__jitExceptionCoalesceLeft270 != null)
+                    {
+                        __jitExceptionResult269 = __jitExceptionCoalesceLeft270;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConditionalWasmBlockRequiresAFinalLIRNode);
+                        __jitExceptionResult269 = default;
+                    }
+                    var test = __jitExceptionResult269;
                     assert(test.Oper is GT_JTRUE);
                     var conditional = test.AsUnOp();
                     var condition = gtReverseCond(conditional.Op1);

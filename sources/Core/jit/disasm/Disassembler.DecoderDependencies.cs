@@ -159,7 +159,7 @@ public partial struct Disassembler
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Late disassembly output is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LateDisassemblyOutputIsOnlyAvailableInDebugBuilds);
         }
 
         var path = Marshal.PtrToStringUTF8((nint)fileName);
@@ -198,7 +198,10 @@ public partial struct Disassembler
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native decoder and symbol callbacks.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LateDisassemblyRequiresTheNativeDecoderAndSymbolCallbacks
+    );
         return;
     }
 #pragma warning restore IDE0251

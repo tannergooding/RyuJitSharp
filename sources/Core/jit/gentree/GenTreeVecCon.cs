@@ -35,9 +35,9 @@ public sealed class GenTreeVecCon : GenTree
         if (!Configuration.FEATURE_SIMD || !isSimd)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_IMPLLIMITATION,
-                FatalJitErrorCode.DirectFailureMessage234
-            );
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SIMDConstantsAreUnsupportedOnThisTarget
+    );
             return;
         }
 
@@ -48,9 +48,9 @@ public sealed class GenTreeVecCon : GenTree
             if (!Configuration.TARGET_ARM64)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_IMPLLIMITATION,
-                    FatalJitErrorCode.DirectFailureMessage235
-                );
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.ScalableSIMDConstantsAreOnlySupportedOnARM64
+    );
                 return;
             }
 
@@ -159,9 +159,9 @@ public sealed class GenTreeVecCon : GenTree
         if (Type == TYP_SIMD_ARM64)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_IMPLLIMITATION,
-                FatalJitErrorCode.DirectFailureMessage236
-            );
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.ThisVectorOperationRequiresFixedWidthConstantStorage
+    );
             return;
         }
 
@@ -169,10 +169,7 @@ public sealed class GenTreeVecCon : GenTree
             ((Type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH) ||
             (Type is not (TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64)))
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_IMPLLIMITATION,
-                FatalJitErrorCode.DirectFailureMessage237
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.UnexpectedSIMDConstantType);
             return;
         }
     }
@@ -182,9 +179,9 @@ public sealed class GenTreeVecCon : GenTree
         if (!Configuration.TARGET_ARM64 || Type != TYP_SIMD_ARM64)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_IMPLLIMITATION,
-                FatalJitErrorCode.DirectFailureMessage235
-            );
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.ScalableSIMDConstantsAreOnlySupportedOnARM64
+    );
             return;
         }
     }
@@ -205,7 +202,7 @@ public sealed class GenTreeVecCon : GenTree
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Hardware intrinsic constant evaluation is unsupported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicConstantEvaluationIsUnsupportedOnThisTarget);
         }
 
         var argCount = operands.Length;
@@ -257,7 +254,7 @@ public sealed class GenTreeVecCon : GenTree
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Hardware intrinsic constant evaluation is unsupported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicConstantEvaluationIsUnsupportedOnThisTarget);
         }
 
         switch (baseType)

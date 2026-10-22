@@ -12,7 +12,18 @@ public partial class Compiler
 {
     public void unwindReserveAmd64()
     {
-        var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to reserve unwind information.");
+        global::RyuJitSharp.Emitter __jitExceptionResult715;
+        var __jitExceptionCoalesceLeft716 = codeGen?.Emitter;
+        if (__jitExceptionCoalesceLeft716 != null)
+        {
+            __jitExceptionResult715 = __jitExceptionCoalesceLeft716;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsRequiredToReserveUnwindInformation);
+            __jitExceptionResult715 = default;
+        }
+        var emitter = __jitExceptionResult715;
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
         assert(!emitter.emitGeneratingEpilogOrFuncletEpilog());
 
@@ -60,7 +71,18 @@ public partial class Compiler
             }
             else
             {
-                var codes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been recorded.");
+                byte[] __jitExceptionResult717;
+                var __jitExceptionCoalesceLeft718 = func.unwindCodes;
+                if (__jitExceptionCoalesceLeft718 != null)
+                {
+                    __jitExceptionResult717 = __jitExceptionCoalesceLeft718;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PrologUnwindCodesHaveNotBeenRecorded);
+                    __jitExceptionResult717 = default;
+                }
+                var codes = __jitExceptionResult717;
                 noway_assert(func.unwindHeader.Version == 1);
                 noway_assert(func.unwindHeader.CountOfUnwindCodes == 0);
 
@@ -89,7 +111,18 @@ public partial class Compiler
 
     public unsafe void unwindEmitAmd64(void* pHotCode, void* pColdCode)
     {
-        var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to publish unwind information.");
+        global::RyuJitSharp.Emitter __jitExceptionResult719;
+        var __jitExceptionCoalesceLeft720 = codeGen?.Emitter;
+        if (__jitExceptionCoalesceLeft720 != null)
+        {
+            __jitExceptionResult719 = __jitExceptionCoalesceLeft720;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsRequiredToPublishUnwindInformation);
+            __jitExceptionResult719 = default;
+        }
+        var emitter = __jitExceptionResult719;
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
         assert(!emitter.emitGeneratingEpilogOrFuncletEpilog());
 
@@ -124,7 +157,18 @@ public partial class Compiler
 
     private unsafe void unwindEmitFuncHelperAmd64(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
     {
-        var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to resolve unwind locations.");
+        global::RyuJitSharp.Emitter __jitExceptionResult721;
+        var __jitExceptionCoalesceLeft722 = codeGen?.Emitter;
+        if (__jitExceptionCoalesceLeft722 != null)
+        {
+            __jitExceptionResult721 = __jitExceptionCoalesceLeft722;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterIsRequiredToResolveUnwindLocations);
+            __jitExceptionResult721 = default;
+        }
+        var emitter = __jitExceptionResult721;
         if (!isHotCode)
         {
             assert(fgFirstColdBlock is not null);
@@ -182,7 +226,16 @@ public partial class Compiler
 
             if (isHotCode || (func.funKind != FuncKind.FUNC_ROOT))
             {
-                unwindCodes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been reserved.");
+                var __jitExceptionCoalesceLeft723 = func.unwindCodes;
+                if (__jitExceptionCoalesceLeft723 != null)
+                {
+                    unwindCodes = __jitExceptionCoalesceLeft723;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.PrologUnwindCodesHaveNotBeenReserved);
+                    unwindCodes = default;
+                }
                 noway_assert(func.unwindCodeSlot <= unwindCodes.Length - 4);
                 unwindCodeBytes = unwindCodes.Length - (int)func.unwindCodeSlot;
                 noway_assert(unwindCodeBytes == 4 + (unwindCodes[func.unwindCodeSlot + 2] * 2));

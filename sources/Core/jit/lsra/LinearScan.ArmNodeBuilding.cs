@@ -498,7 +498,7 @@ public sealed partial class LinearScan
                 var codeGen = _compiler.codeGen;
                 if (codeGen is null)
                 {
-                    FatalJitException.ThrowFatalJitException("ARM32 store reference building requires initialized CodeGen.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ARM32StoreReferenceBuildingRequiresInitializedCodeGen);
                     return default!;
                 }
                 if (codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(tree.AsStoreInd()))
@@ -615,7 +615,8 @@ public sealed partial class LinearScan
             case GT_PATCHPOINT_FORCED:
             {
                 NYI_ARM("GT_PATCHPOINT");
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
                 return default!;
             }
 
@@ -644,7 +645,8 @@ public sealed partial class LinearScan
                     NYIRAW($"NYI: Unimplemented node type {tree.Oper.Name}");
                 }
                 unreached();
-                FatalJitException.ThrowFatalJitException(CORJIT_RECOVERABLEERROR);
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_RECOVERABLEERROR    );
                 return default!;
             }
         }

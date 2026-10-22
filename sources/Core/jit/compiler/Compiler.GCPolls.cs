@@ -268,18 +268,18 @@ public partial class Compiler
             case BBJ_SWITCH:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage118
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SWITCHShouldBeACallRatherThanAnInlinedPoll
+    );
                 return default!;
             }
 
             default:
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage119
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnknownBlockTypeForUpdatingPredecessorLists
+    );
                 return default!;
             }
         }

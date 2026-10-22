@@ -69,10 +69,7 @@ public sealed partial class LinearScan
             }
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage316
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LSRAFrameTypeWasNotSelected);
                 return;
             }
         }
@@ -144,21 +141,30 @@ public sealed partial class LinearScan
     private regMask getFramePointerBaseMask()
     {
         NYI("RBM_FPBASE on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Frame-pointer base register mask is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.FramePointerBaseRegisterMaskIsNotPorted
+    );
         return default!;
     }
 
     private regNumber getOptionalFrameReserveRegister()
     {
         NYI("REG_OPT_RSVD on this target");
-        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Reserved frame-offset register is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.ReservedFrameOffsetRegisterIsNotPorted
+    );
         return default!;
     }
 
     private regNumber getSavedLocallocStackPointerRegister()
     {
         NYI("REG_SAVED_LOCALLOC_SP on ARM");
-        FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Saved localloc stack-pointer register is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.SavedLocallocStackPointerRegisterIsNotPorted
+    );
         return default!;
     }
 }

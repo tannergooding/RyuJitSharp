@@ -129,7 +129,12 @@ internal static class DebuggerProxyTests
 
         var exception = Assert.Throws<InvalidOperationException>(() => Globals.dFindTree(0));
 
-        Assert.That(exception!.Message, Is.EqualTo("Debugger lookups are only available in Debug builds."));
+        Assert.That(
+            exception!.Message,
+            Is.EqualTo(
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                    ? "Debugger lookups are only available in Debug builds."
+                    : "RJS-1229"));
     }
 
     [Test]

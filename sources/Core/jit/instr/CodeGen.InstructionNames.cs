@@ -91,10 +91,7 @@ public sealed partial class CodeGen
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage243
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidSignExtensionSize);
                             return default!;
                         }
                     }
@@ -155,10 +152,7 @@ public sealed partial class CodeGen
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage243
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidSignExtensionSize);
                             return default!;
                         }
                     }
@@ -296,10 +290,7 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage244
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnexpectedInstructionWithPseudoName);
                     return default!;
                 }
             }

@@ -11,7 +11,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Constant-data chunk lookup requires AMD64 or WebAssembly.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ConstantDataChunkLookupRequiresAMD64OrWebAssembly
+    );
             return default!;
         }
 

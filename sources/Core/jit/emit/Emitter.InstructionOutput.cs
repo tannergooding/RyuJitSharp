@@ -39,7 +39,10 @@ public partial class Emitter
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction output is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionOutputIsNotImplementedForThisTarget
+    );
             return default!;
         }
 
@@ -420,8 +423,10 @@ public partial class Emitter
                         {
                             if (!Configuration.TARGET_AMD64)
                             {
-                                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                                    "8-byte APX immediate operands require AMD64.");
+                                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.Failure8ByteAPXImmediateOperandsRequireAMD64
+    );
                                 return default!;
                             }
 

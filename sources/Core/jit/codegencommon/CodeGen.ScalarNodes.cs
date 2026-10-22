@@ -35,8 +35,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Saturating increment generation is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SaturatingIncrementGenerationIsNotImplementedForThisTarget
+    );
             return;
         }
 
@@ -60,7 +62,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.BitModificationGenerationRequiresXarch);
             return;
         }
 
@@ -120,8 +122,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Physical register generation is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.PhysicalRegisterGenerationIsNotImplementedForThisTarget
+    );
             return;
         }
 

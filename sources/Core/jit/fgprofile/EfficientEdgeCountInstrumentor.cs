@@ -393,7 +393,8 @@ public sealed unsafe class EfficientEdgeCountInstrumentor : Instrumentor
 
                 default:
                     assert(false);
-                    throw new System.InvalidOperationException("Critical edge probe was not split");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CriticalEdgeProbeWasNotSplit);
+                    return;
             }
 
             var countType = entry.InstrumentationKind is ICorJitInfo.PgoInstrumentationKind.EdgeIntCount

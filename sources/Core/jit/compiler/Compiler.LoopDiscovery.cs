@@ -42,7 +42,12 @@ public partial class Compiler
 
     public void optFindLoops()
     {
-        var dfsTree = _dfsTree ?? throw new InvalidOperationException("Loop discovery requires a DFS tree.");
+        if (_dfsTree is not FlowGraphDfsTree dfsTree)
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LoopDiscoveryRequiresADFSTree);
+            return;
+        }
+
         _loops = FlowGraphNaturalLoops.Find(dfsTree);
 
         optCompactLoops();

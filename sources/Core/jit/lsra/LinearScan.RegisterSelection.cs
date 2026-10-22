@@ -49,7 +49,8 @@ public sealed partial class LinearScan
         {
             if (!Configuration.TARGET_ARM)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
                 return default!;
             }
 
@@ -130,7 +131,7 @@ public sealed partial class LinearScan
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Register-selection debug data is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RegisterSelectionDebugDataIsOnlyAvailableInDebugBuilds);
             }
 
             return SelectorDebugData.Get(this);
@@ -149,7 +150,7 @@ public sealed partial class LinearScan
                 assert(mappingTable.Count == HeuristicCount);
                 if (mappingTable.Count != HeuristicCount)
                 {
-                    FatalJitException.ThrowFatalJitException("LSRA selector heuristic mapping is incomplete.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRASelectorHeuristicMappingIsIncomplete);
                     return;
                 }
 
@@ -175,7 +176,7 @@ public sealed partial class LinearScan
                 if (ordering.Length < HeuristicCount)
                 {
                     assert(false, "Invalid lsraOrdering value.");
-                    FatalJitException.ThrowFatalJitException("Invalid lsraOrdering value.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidLsraOrderingValue);
                     return;
                 }
 
@@ -212,10 +213,7 @@ public sealed partial class LinearScan
             {
                 if (_currentInterval is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage396
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RegisterSelectionHasNotBeenReset);
                     return default!;
                 }
 
@@ -229,10 +227,7 @@ public sealed partial class LinearScan
             {
                 if (_refPosition is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage396
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RegisterSelectionHasNotBeenReset);
                     return default!;
                 }
 
@@ -292,9 +287,9 @@ public sealed partial class LinearScan
             if (_linearScan._enregisterLocalVars)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage397
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalLSRASelectionRequiresLocalVariablesToRemainUnEnregistered
+    );
                 selectionScore = default!;
                 return default!;
             }
@@ -333,9 +328,9 @@ public sealed partial class LinearScan
             if (_candidates == SRBM_NONE)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage398
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalLSRASelectionHasNoCandidateRegisters
+    );
                 selectionScore = default!;
                 return default!;
             }
@@ -395,9 +390,9 @@ public sealed partial class LinearScan
                 if (!refPosition.RegOptional())
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage399
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RequiredReferenceLostAllCandidateRegisters
+    );
                     selectionScore = default!;
                     return default!;
                 }
@@ -445,9 +440,9 @@ public sealed partial class LinearScan
             if (!_found || !isSingleRegister(_candidates))
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage400
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalLSRASelectionDidNotChooseExactlyOneRegister
+    );
                 selectionScore = default!;
                 return default!;
             }
@@ -511,9 +506,9 @@ public sealed partial class LinearScan
             if (!isSingleRegister(selectionCandidate))
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage401
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SingleRegisterHeuristicMustSelectExactlyOneRegister
+    );
                 return default!;
             }
 
@@ -572,9 +567,9 @@ public sealed partial class LinearScan
                     if (rangeEndRefPosition is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage402
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RegisterSelectionIsMissingItsRangeEndReference
+    );
                         return;
                     }
                     if ((coversCandidateLocation == _rangeEndLocation) &&
@@ -776,9 +771,9 @@ public sealed partial class LinearScan
                 if (rangeEndRefPosition is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage402
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RegisterSelectionIsMissingItsRangeEndReference
+    );
                     return;
                 }
                 if ((nextPhysRefLocation == _rangeEndLocation) && rangeEndRefPosition.isFixedRefOfReg(regNum))
@@ -866,9 +861,9 @@ public sealed partial class LinearScan
                 if (!Configuration.TARGET_ARM64 && assignedInterval is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage403
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SpillCostSelectionRequiresEachBusyCandidateToHaveAnAssignedInterval
+    );
                     return;
                 }
                 var currentSpillWeight = 0.0;
@@ -889,9 +884,9 @@ public sealed partial class LinearScan
                         if (nextIntervalRef is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage404
-                            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CurrentNextIntervalLocationMustHaveAReference
+    );
                             return;
                         }
 
@@ -1075,7 +1070,7 @@ public sealed partial class LinearScan
         private static RegisterScore InvalidOrderingCharacter()
         {
             assert(false, "Invalid lsraOrdering value.");
-            FatalJitException.ThrowFatalJitException("Invalid lsraOrdering value.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.InvalidLsraOrderingValue);
             return default!;
         }
     }

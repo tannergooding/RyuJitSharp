@@ -56,7 +56,7 @@ public partial class Compiler
             assert(bucket is not null);
             if (!bucket.Remove(local))
             {
-                throw new InvalidOperationException("Copy propagation lost a live definition.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CopyPropagationLostALiveDefinition);
             }
             _count--;
         }
@@ -65,7 +65,7 @@ public partial class Compiler
         {
             if (_count != names.Count)
             {
-                throw new InvalidOperationException("Copy propagation requires definitions pushed through its stack helper.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CopyPropagationRequiresDefinitionsPushedThroughItsStackHelper);
             }
 
             foreach (var bucket in _buckets)
@@ -403,7 +403,19 @@ public partial class Compiler
 
         VarSetOps.AssignNoCopy(this, ref compCurLife, VarSetOps.MakeEmpty(this));
         var visitor = new CopyPropDomTreeVisitor(this);
-        visitor.WalkTree(_domTree ?? throw new InvalidOperationException("Copy propagation requires dominators."));
+        ref var __jitExceptionReceiver126 = ref visitor;
+        global::RyuJitSharp.FlowGraphDominatorTree __jitExceptionArgument127;
+        var __jitExceptionCoalesceLeft128 = _domTree;
+        if (__jitExceptionCoalesceLeft128 != null)
+        {
+            __jitExceptionArgument127 = __jitExceptionCoalesceLeft128;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CopyPropagationRequiresDominators);
+            __jitExceptionArgument127 = default;
+        }
+        __jitExceptionReceiver126.WalkTree(__jitExceptionArgument127);
 
         // Tracked variable count increases after copy propagation; do not retain a shorter array.
         VarSetOps.AssignNoCopy(this, ref compCurLife, VarSetOps.UninitVal());

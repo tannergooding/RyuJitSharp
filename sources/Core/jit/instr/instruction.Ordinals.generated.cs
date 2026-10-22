@@ -7349,7 +7349,9 @@ internal static class InstructionOrdinalMaps
             return s_wasmOrdinals;
         }
 
-        throw new PlatformNotSupportedException("Instruction ordinals are unsupported on this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(
+            FatalJitErrorCode.NativeInstructionOrdinalsAreUnsupportedOnThisTarget);
+        return default;
     }
 
     private static ReadOnlySpan<instruction> GetCurrentTargetInstructionsByNativeOrdinal()
@@ -7384,7 +7386,9 @@ internal static class InstructionOrdinalMaps
             return s_wasmInstructionsByNativeOrdinal;
         }
 
-        throw new PlatformNotSupportedException("Instruction ordinals are unsupported on this target.");
+        JitExceptionHelpers.ThrowPlatformNotSupportedException(
+            FatalJitErrorCode.NativeInstructionOrdinalsAreUnsupportedOnThisTarget);
+        return default;
     }
 
     internal static bool TryGetNativeInstructionOrdinal(instruction ins, out int ordinal)
@@ -7431,7 +7435,10 @@ internal static class InstructionOrdinalMaps
     {
         if (!TryGetNativeInstructionOrdinal(ins, out var ordinal))
         {
-            throw new PlatformNotSupportedException($"Instruction '{ins}' is unsupported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(
+                FatalJitErrorCode.NativeInstructionOrdinalIsUnavailableForInstruction,
+                Configuration.DETAILED_FATAL_ERROR_MESSAGES ? ins : default);
+            return default;
         }
 
         return ordinal;
@@ -7476,7 +7483,10 @@ internal static class InstructionOrdinalMaps
 
         if (ordinal < 0 || ordinal >= instructions.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(ordinal));
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(
+                FatalJitErrorCode.NativeInstructionOrdinalIsOutOfRange,
+                FatalJitArgument.Ordinal);
+            return default;
         }
 
         return Globals.GetRvaSpanEntry(instructions, ordinal);

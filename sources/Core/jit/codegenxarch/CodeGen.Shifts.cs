@@ -101,10 +101,7 @@ public sealed partial class CodeGen
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage098
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidShiftOperator);
                     break;
                 }
             }
@@ -126,7 +123,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long shift generation requires x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LongShiftGenerationRequiresX86);
             return;
         }
 

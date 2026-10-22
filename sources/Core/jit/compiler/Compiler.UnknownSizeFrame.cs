@@ -113,7 +113,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size frame initialization requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.UnknownSizeFrameInitializationRequiresSIMDEnabledARM64
+    );
             return;
         }
 
@@ -130,17 +133,28 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size local allocation requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.UnknownSizeLocalAllocationRequiresSIMDEnabledARM64
+    );
             return;
         }
 
         ref var local = ref lvaGetDesc(varNum);
         assert(varTypeHasUnknownSize(local.Type));
-        local.UnknownSizeFrameIndex = local.Type switch {
-            TYP_SIMD_ARM64 => unchecked((int)unkSizeFrame.AllocVector()),
-            TYP_MASK => unchecked((int)unkSizeFrame.AllocMask()),
-            _ => throw new UnreachableException(),
-        };
+        switch (local.Type)
+        {
+            case TYP_SIMD_ARM64:
+                local.UnknownSizeFrameIndex = unchecked((int)unkSizeFrame.AllocVector());
+                break;
+            case TYP_MASK:
+                local.UnknownSizeFrameIndex = unchecked((int)unkSizeFrame.AllocMask());
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                local.UnknownSizeFrameIndex = default;
+                break;
+        }
 
         compUsesUnknownSizeFrame = true;
         // The scalable area precedes ordinary localloc space and needs its frame-pointer policy.
@@ -151,16 +165,29 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size temporary allocation requires SIMD-enabled ARM64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.UnknownSizeTemporaryAllocationRequiresSIMDEnabledARM64
+    );
             return;
         }
 
         assert(varTypeHasUnknownSize(temp.tdTempType));
-        var offset = temp.tdTempType switch {
-            TYP_SIMD_ARM64 => unchecked((int)unkSizeFrame.AllocVector()),
-            TYP_MASK => unchecked((int)unkSizeFrame.AllocMask()),
-            _ => throw new UnreachableException(),
-        };
+        int __jitExceptionResult248;
+        switch (temp.tdTempType)
+        {
+            case TYP_SIMD_ARM64:
+                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocVector());
+                break;
+            case TYP_MASK:
+                __jitExceptionResult248 = unchecked((int)unkSizeFrame.AllocMask());
+                break;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                __jitExceptionResult248 = default;
+                break;
+        }
+        var offset = __jitExceptionResult248;
         assert(offset >= 0);
         temp.tdTempOffs = offset;
     }

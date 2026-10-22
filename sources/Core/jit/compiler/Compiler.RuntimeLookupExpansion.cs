@@ -46,9 +46,9 @@ public partial class Compiler
         if (signatureNode is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage181
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RuntimeLookupHelperRequiresASignatureArgument
+    );
             return default!;
         }
         if (!signatureNode.Oper.IsCnsIntOrI)
@@ -63,10 +63,7 @@ public partial class Compiler
         JITDUMP("\n");
         if (!SignatureToLookupInfoMap.TryGetValue(signature, out var runtimeLookup))
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage182
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.RuntimeLookupSignatureIsNotRegistered);
             return default!;
         }
 
@@ -80,9 +77,9 @@ public partial class Compiler
         if ((runtimeLookup.indirections is 0 or > CORINFO_MAXINDIRECTIONS) || !runtimeLookup.testForNull)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage183
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ExpandableRuntimeLookupRequiresIndirectionsAndANullCheck
+    );
             return default!;
         }
 
@@ -108,10 +105,7 @@ public partial class Compiler
             var clonedLookup = gtCloneExpr(rtLookupLcl);
             if (clonedLookup is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage184
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneRuntimeLookupResultLocal);
                 return default!;
             }
 
@@ -124,18 +118,15 @@ public partial class Compiler
         if (ctxTree is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage185
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RuntimeLookupHelperRequiresAContextArgument
+    );
             return default!;
         }
         var slotPtrTree = gtCloneExpr(ctxTree);
         if (slotPtrTree is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage186
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneRuntimeLookupContext);
             return default!;
         }
         GenTree? indOffTree = null;
@@ -151,10 +142,7 @@ public partial class Compiler
                 var clonedIndOff = gtCloneExpr(indOffTree);
                 if (clonedIndOff is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage187
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneIndirectRuntimeLookupOffset);
                     return default!;
                 }
 
@@ -177,10 +165,7 @@ public partial class Compiler
             {
                 if (indOffTree is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage188
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.MissingIndirectRuntimeLookupOffset);
                     return default!;
                 }
 
@@ -197,10 +182,7 @@ public partial class Compiler
                     var clonedLastInd = gtCloneExpr(lastIndOfTree);
                     if (clonedLastInd is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage189
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneDictionarySizeCheckBase);
                         return default!;
                     }
 
@@ -215,10 +197,7 @@ public partial class Compiler
         var clonedSlotPtr = gtCloneExpr(slotPtrTree);
         if (clonedSlotPtr is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage190
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneRuntimeLookupSlot);
             return default!;
         }
 
@@ -240,9 +219,9 @@ public partial class Compiler
             if (lastIndOfTree is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage191
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.DynamicRuntimeLookupRequiresANonzeroFinalOffset
+    );
                 return default!;
             }
 

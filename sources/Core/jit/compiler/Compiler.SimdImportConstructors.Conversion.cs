@@ -12,7 +12,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD conversion requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConversionRequiresHardwareIntrinsics);
             return default!;
         }
 
@@ -27,7 +27,7 @@ public partial class Compiler
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("gtNewSimdCvtNode requires its target-specific implementation.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GtNewSimdCvtNodeRequiresItsTargetSpecificImplementation);
             return default!;
         }
 
@@ -63,10 +63,7 @@ public partial class Compiler
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage124
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionTarget);
                     return default!;
                 }
             }
@@ -125,7 +122,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native SIMD conversion requires hardware intrinsics.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NativeSIMDConversionRequiresHardwareIntrinsics
+    );
             return default!;
         }
 
@@ -167,10 +167,7 @@ public partial class Compiler
 
                                 default:
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-                                        CORJIT_INTERNALERROR,
-                                        FatalJitErrorCode.DirectFailureMessage192
-                                    );
+                                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionWidth);
                                     return default!;
                                 }
                             }
@@ -202,10 +199,7 @@ public partial class Compiler
 
                                 default:
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-                                        CORJIT_INTERNALERROR,
-                                        FatalJitErrorCode.DirectFailureMessage192
-                                    );
+                                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionWidth);
                                     return default!;
                                 }
                             }
@@ -215,10 +209,7 @@ public partial class Compiler
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage124
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionTarget);
                             return default!;
                         }
                     }
@@ -253,10 +244,7 @@ public partial class Compiler
 
                                 default:
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-                                        CORJIT_INTERNALERROR,
-                                        FatalJitErrorCode.DirectFailureMessage192
-                                    );
+                                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionWidth);
                                     return default!;
                                 }
                             }
@@ -288,10 +276,7 @@ public partial class Compiler
 
                                 default:
                                 {
-                                    FatalJitException.ThrowFatalJitException(
-                                        CORJIT_INTERNALERROR,
-                                        FatalJitErrorCode.DirectFailureMessage192
-                                    );
+                                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionWidth);
                                     return default!;
                                 }
                             }
@@ -301,10 +286,7 @@ public partial class Compiler
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage124
-                            );
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionTarget);
                             return default!;
                         }
                     }
@@ -313,10 +295,7 @@ public partial class Compiler
 
                 default:
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage193
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedSIMDConversionSource);
                     return default!;
                 }
             }
@@ -424,7 +403,9 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, intrinsic, simdSourceBaseType, simdSize, op1);
         }
 
-        FatalJitException.ThrowFatalJitException("gtNewSimdCvtNativeNode requires its target-specific implementation.");
+        FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.GtNewSimdCvtNativeNodeRequiresItsTargetSpecificImplementation
+    );
         return default!;
     }
 }

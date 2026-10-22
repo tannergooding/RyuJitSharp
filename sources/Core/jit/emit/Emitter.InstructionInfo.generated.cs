@@ -2204,7 +2204,7 @@ public partial class Emitter
             }
 
             FatalJitException.ThrowFatalJitException(
-                "xarch instruction tuple data is not available for this target.");
+                FatalJitErrorCode.XarchInstructionTupleDataIsNotAvailableForThisTarget);
             return default;
         }
     }

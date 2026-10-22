@@ -111,7 +111,16 @@ public sealed partial class WasmRegAlloc : IRegAlloc
     {
         Configuration.EnsureWasmTarget();
         _compiler = compiler;
-        _codeGen = compiler.codeGen ?? throw new InvalidOperationException("Wasm register allocation requires code generation.");
+        var __jitExceptionCoalesceLeft641 = compiler.codeGen;
+        if (__jitExceptionCoalesceLeft641 != null)
+        {
+            _codeGen = __jitExceptionCoalesceLeft641;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmRegisterAllocationRequiresCodeGeneration);
+            _codeGen = default;
+        }
         _perFuncletData = new PerFuncletData?[compiler.compFuncCount()];
     }
 
@@ -380,6 +389,17 @@ public sealed partial class WasmRegAlloc : IRegAlloc
     private PerFuncletData GetFuncletData(int index)
     {
         assert((uint)index < (uint)_perFuncletData.Length);
-        return _perFuncletData[index] ?? throw new InvalidOperationException("Wasm funclet allocation state is not initialized.");
+        global::RyuJitSharp.WasmRegAlloc.PerFuncletData __jitExceptionReturnResult642;
+        var __jitExceptionCoalesceLeft643 = _perFuncletData[index];
+        if (__jitExceptionCoalesceLeft643 != null)
+        {
+            __jitExceptionReturnResult642 = __jitExceptionCoalesceLeft643;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.WasmFuncletAllocationStateIsNotInitialized);
+            __jitExceptionReturnResult642 = default;
+        }
+        return __jitExceptionReturnResult642;
     }
 }

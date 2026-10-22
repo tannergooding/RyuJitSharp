@@ -700,17 +700,45 @@ public partial class Emitter
             var targetInsGroup = id.RiscVIGlabel;
             if (targetInsGroup is null)
             {
-                var targetBlock = id.RiscVBBlabel
-                    ?? throw new InvalidOperationException("An unbound RISC-V label requires a basic block.");
-                targetInsGroup = emitCodeGetCookie(targetBlock)
-                    ?? throw new InvalidOperationException("The RISC-V basic block has no instruction-group cookie.");
+                global::RyuJitSharp.BasicBlock __jitExceptionResult364;
+                var __jitExceptionCoalesceLeft365 = id.RiscVBBlabel;
+                if (__jitExceptionCoalesceLeft365 != null)
+                {
+                    __jitExceptionResult364 = __jitExceptionCoalesceLeft365;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnboundRISCVLabelRequiresABasicBlock);
+                    __jitExceptionResult364 = default;
+                }
+                var targetBlock = __jitExceptionResult364;
+                var __jitExceptionCoalesceLeft366 = emitCodeGetCookie(targetBlock);
+                if (__jitExceptionCoalesceLeft366 != null)
+                {
+                    targetInsGroup = __jitExceptionCoalesceLeft366;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVBasicBlockHasNoInstructionGroupCookie);
+                    targetInsGroup = default;
+                }
                 id.RiscVIGlabel = targetInsGroup;
             }
             id.idSetIsBound();
         }
 
-        var targetGroup = id.RiscVIGlabel
-            ?? throw new InvalidOperationException("A bound RISC-V label requires an instruction group.");
+        global::RyuJitSharp.insGroup __jitExceptionResult367;
+        var __jitExceptionCoalesceLeft368 = id.RiscVIGlabel;
+        if (__jitExceptionCoalesceLeft368 != null)
+        {
+            __jitExceptionResult367 = __jitExceptionCoalesceLeft368;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.BoundRISCVLabelRequiresAnInstructionGroup);
+            __jitExceptionResult367 = default;
+        }
+        var targetGroup = __jitExceptionResult367;
         var immediate = (nint)((emitCodeBlock - dst) + targetGroup.igOffs);
         ins = INS_auipc;
         assert((immediate & 1) == 0);
@@ -762,8 +790,18 @@ public partial class Emitter
     {
         var srcOffs = emitCurCodeOffs(src);
         var srcAddr = emitOffsetToPtr(srcOffs);
-        var dstOffs = jmp.idjTargetIG?.igOffs
-            ?? throw new InvalidOperationException("A RISC-V jump requires a target instruction group.");
+        uint __jitExceptionResult369;
+        var __jitExceptionCoalesceLeft370 = jmp.idjTargetIG?.igOffs;
+        if (__jitExceptionCoalesceLeft370 != null)
+        {
+            __jitExceptionResult369 = __jitExceptionCoalesceLeft370.Value;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVJumpRequiresATargetInstructionGroup);
+            __jitExceptionResult369 = default;
+        }
+        var dstOffs = __jitExceptionResult369;
         var dstAddr = emitOffsetToPtr(dstOffs);
         var distance = unchecked((nint)(dstAddr - srcAddr));
 
@@ -779,7 +817,7 @@ public partial class Emitter
             jmp.idjOffs = dstOffs;
             if (jmp.idjOffs != dstOffs)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, "Method is too large.");
+                FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION, FatalJitErrorCode.MethodIsTooLarge);
                 return default!;
             }
         }
@@ -791,7 +829,18 @@ public partial class Emitter
     {
         regMaskTP gcrefRegs;
         regMaskTP byrefRegs;
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V call output requires an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult371;
+        var __jitExceptionCoalesceLeft372 = _compiler;
+        if (__jitExceptionCoalesceLeft372 != null)
+        {
+            __jitExceptionResult371 = __jitExceptionCoalesceLeft372;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVCallOutputRequiresAnActiveCompiler);
+            __jitExceptionResult371 = default;
+        }
+        var compiler = __jitExceptionResult371;
         VARSET_TP gcVars = [];
 
         if (id.idIsLargeCall())
@@ -874,7 +923,18 @@ public partial class Emitter
 
     private unsafe nuint emitOutputInstrRiscV64(insGroup ig, instrDesc id, byte** dp)
     {
-        var compiler = _compiler ?? throw new InvalidOperationException("RISC-V instruction output requires an active compiler.");
+        global::RyuJitSharp.Compiler __jitExceptionResult373;
+        var __jitExceptionCoalesceLeft374 = _compiler;
+        if (__jitExceptionCoalesceLeft374 != null)
+        {
+            __jitExceptionResult373 = __jitExceptionCoalesceLeft374;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVInstructionOutputRequiresAnActiveCompiler);
+            __jitExceptionResult373 = default;
+        }
+        var compiler = __jitExceptionResult373;
         assert(emitCurIG is not null);
         var dst = *dp;
         var dstAfterOne = dst + sizeof(uint);
@@ -953,10 +1013,30 @@ public partial class Emitter
             }
             else
             {
-                var type = varNum >= 0
-                    ? compiler.lvaGetDesc(varNum).Type
-                    : (codeGen.RegSet.tmpFindNum(varNum)
-                        ?? throw new InvalidOperationException("The RISC-V spill temporary must exist.")).tdTempType;
+                global::RyuJitSharp.var_types __jitExceptionResult375;
+                bool __jitExceptionCondition376;
+                __jitExceptionCondition376 = varNum >= 0;
+                if (__jitExceptionCondition376)
+                {
+                    __jitExceptionResult375 = compiler.lvaGetDesc(varNum).Type;
+                }
+                else
+                {
+                    global::RyuJitSharp.TempDsc __jitExceptionOperand377;
+                    var __jitExceptionCoalesceLeft378 = codeGen.RegSet.tmpFindNum(varNum);
+                    if (__jitExceptionCoalesceLeft378 != null)
+                    {
+                        __jitExceptionOperand377 = __jitExceptionCoalesceLeft378;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVSpillTemporaryMustExist);
+                        __jitExceptionOperand377 = default;
+                    }
+
+                    __jitExceptionResult375 = __jitExceptionOperand377.tdTempType;
+                }
+                var type = __jitExceptionResult375;
                 if (type is TYP_REF or TYP_BYREF)
                 {
                     emitGCvarDeadUpd(unchecked(address + (int)offset), dstAfterOne,
@@ -976,8 +1056,18 @@ public partial class Emitter
                     (nuint)(dst - originalDst), ig);
             }
 
-            var debugInfo = id.idDebugOnlyInfo()
-                ?? throw new InvalidOperationException("RISC-V instruction output requires debug descriptor info.");
+            global::RyuJitSharp.Emitter.instrDescDebugInfo __jitExceptionResult379;
+            var __jitExceptionCoalesceLeft380 = id.idDebugOnlyInfo();
+            if (__jitExceptionCoalesceLeft380 != null)
+            {
+                __jitExceptionResult379 = __jitExceptionCoalesceLeft380;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVInstructionOutputRequiresDebugDescriptorInfo);
+                __jitExceptionResult379 = default;
+            }
+            var debugInfo = __jitExceptionResult379;
             if (compiler.compDebugBreak && (JitConfig.JitBreakEmitOutputInstr == debugInfo.idNum))
             {
                 assert(false, "JitBreakEmitOutputInstr reached");

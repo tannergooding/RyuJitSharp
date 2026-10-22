@@ -70,30 +70,74 @@ public sealed partial class ValueNumStore
             BaseVN = nextBaseVN;
             Type = type;
             Attribs = attribs;
-            Defs = attribs switch {
-                ChunkExtraAttribs.CEA_Const => type switch {
-                    TYP_INT => new int[ChunkSize],
-                    TYP_LONG => new long[ChunkSize],
-                    TYP_FLOAT => new float[ChunkSize],
-                    TYP_DOUBLE => new double[ChunkSize],
-                    TYP_BYREF => new nuint[ChunkSize],
-                    TYP_REF => new nuint[3],
-                    TYP_SIMD8 => new simd8_t[ChunkSize],
-                    TYP_SIMD12 => new simd12_t[ChunkSize],
-                    TYP_SIMD16 => new simd16_t[ChunkSize],
-                    TYP_SIMD32 => new simd32_t[ChunkSize],
-                    TYP_SIMD64 => new simd64_t[ChunkSize],
-                    TYP_SIMD_ARM64 => new simdscalable_t[ChunkSize],
-                    TYP_MASK => new simdmaskvalue_t[ChunkSize],
-                    _ => throw new UnreachableException(),
-                },
-                ChunkExtraAttribs.CEA_Handle => new VNHandle[ChunkSize],
-                ChunkExtraAttribs.CEA_PhiDef => new VNPhiDef[ChunkSize],
-                ChunkExtraAttribs.CEA_MemoryPhiDef => new VNMemoryPhiDef[ChunkSize],
-                >= ChunkExtraAttribs.CEA_Func0 and <= ChunkExtraAttribs.CEA_Func4
-                    => new int[ChunkSize * ((int)attribs - (int)ChunkExtraAttribs.CEA_Func0 + 1)],
-                _ => throw new UnreachableException(),
-            };
+            switch (attribs)
+            {
+                case ChunkExtraAttribs.CEA_Const:
+                    switch (type)
+                    {
+                        case TYP_INT:
+                            Defs = new int[ChunkSize];
+                            break;
+                        case TYP_LONG:
+                            Defs = new long[ChunkSize];
+                            break;
+                        case TYP_FLOAT:
+                            Defs = new float[ChunkSize];
+                            break;
+                        case TYP_DOUBLE:
+                            Defs = new double[ChunkSize];
+                            break;
+                        case TYP_BYREF:
+                            Defs = new nuint[ChunkSize];
+                            break;
+                        case TYP_REF:
+                            Defs = new nuint[3];
+                            break;
+                        case TYP_SIMD8:
+                            Defs = new simd8_t[ChunkSize];
+                            break;
+                        case TYP_SIMD12:
+                            Defs = new simd12_t[ChunkSize];
+                            break;
+                        case TYP_SIMD16:
+                            Defs = new simd16_t[ChunkSize];
+                            break;
+                        case TYP_SIMD32:
+                            Defs = new simd32_t[ChunkSize];
+                            break;
+                        case TYP_SIMD64:
+                            Defs = new simd64_t[ChunkSize];
+                            break;
+                        case TYP_SIMD_ARM64:
+                            Defs = new simdscalable_t[ChunkSize];
+                            break;
+                        case TYP_MASK:
+                            Defs = new simdmaskvalue_t[ChunkSize];
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowUnreachableException();
+                            Defs = default;
+                            break;
+                    }
+
+                    break;
+                case ChunkExtraAttribs.CEA_Handle:
+                    Defs = new VNHandle[ChunkSize];
+                    break;
+                case ChunkExtraAttribs.CEA_PhiDef:
+                    Defs = new VNPhiDef[ChunkSize];
+                    break;
+                case ChunkExtraAttribs.CEA_MemoryPhiDef:
+                    Defs = new VNMemoryPhiDef[ChunkSize];
+                    break;
+                case >= ChunkExtraAttribs.CEA_Func0 and <= ChunkExtraAttribs.CEA_Func4:
+                    Defs = new int[ChunkSize * ((int)attribs - (int)ChunkExtraAttribs.CEA_Func0 + 1)];
+                    break;
+                default:
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    Defs = default;
+                    break;
+            }
             nextBaseVN = unchecked(nextBaseVN + ChunkSize);
         }
 
@@ -329,14 +373,29 @@ public sealed partial class ValueNumStore
                 {
                     // Reference storage uses the host pointer width, even for a cross-target JIT.
                     // Keep the width preflight rather than reading beyond an element on an invalid call.
-                    ReadOnlySpan<byte> storage = chunk.Type switch {
-                        TYP_REF or TYP_BYREF => MemoryMarshal.AsBytes(((nuint[])chunk.Defs).AsSpan(offset, 1)),
-                        TYP_INT => MemoryMarshal.AsBytes(((int[])chunk.Defs).AsSpan(offset, 1)),
-                        TYP_LONG => MemoryMarshal.AsBytes(((long[])chunk.Defs).AsSpan(offset, 1)),
-                        TYP_FLOAT => MemoryMarshal.AsBytes(((float[])chunk.Defs).AsSpan(offset, 1)),
-                        TYP_DOUBLE => MemoryMarshal.AsBytes(((double[])chunk.Defs).AsSpan(offset, 1)),
-                        _ => throw new UnreachableException(),
-                    };
+                    ReadOnlySpan<byte> __jitExceptionResult732;
+                    switch (chunk.Type)
+                    {
+                        case TYP_REF or TYP_BYREF:
+                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((nuint[])chunk.Defs).AsSpan(offset, 1));
+                            break;
+                        case TYP_INT:
+                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((int[])chunk.Defs).AsSpan(offset, 1));
+                            break;
+                        case TYP_LONG:
+                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((long[])chunk.Defs).AsSpan(offset, 1));
+                            break;
+                        case TYP_FLOAT:
+                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((float[])chunk.Defs).AsSpan(offset, 1));
+                            break;
+                        case TYP_DOUBLE:
+                            __jitExceptionResult732 = MemoryMarshal.AsBytes(((double[])chunk.Defs).AsSpan(offset, 1));
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnsupportedValueNumberScalarStorageType);
+                            return default;
+                    }
+                    var storage = __jitExceptionResult732;
                     assert(Unsafe.SizeOf<T>() == storage.Length);
                     if (Unsafe.SizeOf<T>() == storage.Length)
                     {
@@ -356,22 +415,32 @@ public sealed partial class ValueNumStore
             default:
             {
                 assert(false);
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }
 
     private static T SafeGetConstantValue<T>(Chunk chunk, int offset) where T : unmanaged, INumberBase<T>
     {
-        return chunk.Type switch {
-            TYP_REF => CoerceTypRefToT<T>(chunk, offset),
-            TYP_BYREF => T.CreateTruncating(((nuint[])chunk.Defs)[offset]),
-            TYP_INT => T.CreateTruncating(((int[])chunk.Defs)[offset]),
-            TYP_LONG => T.CreateTruncating(((long[])chunk.Defs)[offset]),
-            TYP_FLOAT => T.CreateTruncating(((float[])chunk.Defs)[offset]),
-            TYP_DOUBLE => T.CreateTruncating(((double[])chunk.Defs)[offset]),
-            _ => throw new UnreachableException(),
-        };
+        switch (chunk.Type)
+        {
+            case TYP_REF:
+                return CoerceTypRefToT<T>(chunk, offset);
+            case TYP_BYREF:
+                return T.CreateTruncating(((nuint[])chunk.Defs)[offset]);
+            case TYP_INT:
+                return T.CreateTruncating(((int[])chunk.Defs)[offset]);
+            case TYP_LONG:
+                return T.CreateTruncating(((long[])chunk.Defs)[offset]);
+            case TYP_FLOAT:
+                return T.CreateTruncating(((float[])chunk.Defs)[offset]);
+            case TYP_DOUBLE:
+                return T.CreateTruncating(((double[])chunk.Defs)[offset]);
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     private static T CoerceTypRefToT<T>(Chunk chunk, int offset) where T : unmanaged, INumberBase<T>
@@ -385,7 +454,8 @@ public sealed partial class ValueNumStore
 
         noway_assert(Unsafe.SizeOf<T>() >= nuint.Size);
         unreached();
-        throw new UnreachableException();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     public bool IsVNIntegralConstant<T>(ValueNum vn, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>

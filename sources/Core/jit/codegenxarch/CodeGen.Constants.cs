@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD constants require SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMDConstantsRequireSIMDSupport);
             return;
         }
 
@@ -154,7 +154,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Mask constants require masked hardware-intrinsic support.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskConstantsRequireMaskedHardwareIntrinsicSupport
+    );
             return;
         }
 

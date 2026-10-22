@@ -92,7 +92,10 @@ public partial class Emitter
             var memBase = indir.Base;
             if (memBase is null)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Contained ARM32 indirect has no base register.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ContainedARM32IndirectHasNoBaseRegister
+    );
                 return;
             }
 

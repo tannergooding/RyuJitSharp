@@ -20,7 +20,10 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native local-address generation is unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NativeLocalAddressGenerationIsUnavailableForThisTarget
+    );
             return;
         }
 

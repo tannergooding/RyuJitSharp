@@ -421,7 +421,7 @@ public partial struct CallArgs
         assert(_lateHead is null);
         if (TargetOS.IsUnix && IsVarArgs)
         {
-            throw new NotImplementedException("Morphing Vararg call not yet implemented on non Windows targets.");
+            JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.MorphingVarargCallNotYetImplementedOnNonWindowsTargets);
         }
 
         // Keep the non-standard argument insertion rules in sync with fast tail-call mapping.

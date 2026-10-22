@@ -66,12 +66,18 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "AVX-512 blend classification is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AVX512BlendClassificationIsNotImplementedForThisTarget
+    );
             return default!;
         }
         if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 AVX-512 blend classification without hardware intrinsics is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.X86AVX512BlendClassificationWithoutHardwareIntrinsicsIsNotPorted
+    );
             return default!;
         }
 
@@ -82,12 +88,18 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "AVX blend classification is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.AVXBlendClassificationIsNotImplementedForThisTarget
+    );
             return default!;
         }
         if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 AVX blend classification without hardware intrinsics is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.X86AVXBlendClassificationWithoutHardwareIntrinsicsIsNotPorted
+    );
             return default!;
         }
 
@@ -98,12 +110,18 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification is not implemented for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SSE41BlendClassificationIsNotImplementedForThisTarget
+    );
             return default!;
         }
         if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification without hardware intrinsics is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SSE41BlendClassificationWithoutHardwareIntrinsicsIsNotPorted
+    );
             return default!;
         }
 

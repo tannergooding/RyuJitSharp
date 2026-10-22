@@ -16,8 +16,10 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_IMPLLIMITATION,
-                "Two-source SIMD shuffles require WebAssembly hardware-intrinsic support.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_IMPLLIMITATION,
+        FatalJitErrorCode.TwoSourceSIMDShufflesRequireWebAssemblyHardwareIntrinsicSupport
+    );
             return default!;
         }
 

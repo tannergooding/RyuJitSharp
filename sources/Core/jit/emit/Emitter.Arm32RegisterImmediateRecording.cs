@@ -150,14 +150,25 @@ public partial class Emitter
                     format = IF_ARM32_T2_L0;
                     recordedFlags = insMustSetFlagsArm32(flags);
                     imm = ~imm;
-                    ins = ins switch
+                    switch (ins)
                     {
-                        INS_and => INS_bic,
-                        INS_bic => INS_and,
-                        INS_orr => INS_orn,
-                        INS_orn => INS_orr,
-                        _ => throw new InvalidOperationException(),
-                    };
+                        case INS_and:
+                            ins = INS_bic;
+                            break;
+                        case INS_bic:
+                            ins = INS_and;
+                            break;
+                        case INS_orr:
+                            ins = INS_orn;
+                            break;
+                        case INS_orn:
+                            ins = INS_orr;
+                            break;
+                        default:
+                            JitExceptionHelpers.ThrowInvalidOperationException();
+                            ins = default;
+                            break;
+                    }
                 }
                 else
                 {

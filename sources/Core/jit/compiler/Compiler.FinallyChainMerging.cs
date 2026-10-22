@@ -75,22 +75,46 @@ public partial class Compiler
             var callFinallyCount = 0;
             var beginHandler = clause.ebdHndBeg;
 
-            for (var block = firstCallFinally; ; block = block.Next
-                     ?? throw new InvalidOperationException("Call-finally range ended prematurely."))
+            for (var block = firstCallFinally;;)
             {
-                if (block.isBBCallFinallyPair && (block.Target == beginHandler))
                 {
-                    assert(block.isEmpty());
-                    callFinallyCount++;
-                    var leave = block.Next
-                        ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
-                    var continuation = fgGetFinallyContinuation(leave);
-                    _ = continuationMap.TryAdd(continuation, block);
+                    {
+                        if (block.isBBCallFinallyPair && (block.Target == beginHandler))
+                        {
+                            assert(block.isEmpty());
+                            callFinallyCount++;
+                            global::RyuJitSharp.BasicBlock __jitExceptionResult167;
+                            var __jitExceptionCoalesceLeft168 = block.Next;
+                            if (__jitExceptionCoalesceLeft168 != null)
+                            {
+                                __jitExceptionResult167 = __jitExceptionCoalesceLeft168;
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
+                                __jitExceptionResult167 = default;
+                            }
+                            var leave = __jitExceptionResult167;
+                            var continuation = fgGetFinallyContinuation(leave);
+                            _ = continuationMap.TryAdd(continuation, block);
+                        }
+
+                        if (block == lastCallFinally)
+                        {
+                            break;
+                        }
+                    }
                 }
 
-                if (block == lastCallFinally)
+                var __jitExceptionCoalesceLeft166 = block.Next;
+                if (__jitExceptionCoalesceLeft166 != null)
                 {
-                    break;
+                    block = __jitExceptionCoalesceLeft166;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -102,15 +126,28 @@ public partial class Compiler
             }
 
             canMerge = true;
-            for (var block = firstCallFinally; ; block = block.Next
-                     ?? throw new InvalidOperationException("Call-finally range ended prematurely."))
+            for (var block = firstCallFinally;;)
             {
-                var merged = fgRetargetBranchesToCanonicalCallFinallyCore(block, beginHandler, continuationMap);
-                didMerge = didMerge || merged;
-
-                if (block == lastCallFinally)
                 {
-                    break;
+                    {
+                        var merged = fgRetargetBranchesToCanonicalCallFinallyCore(block, beginHandler, continuationMap);
+                        didMerge = didMerge || merged;
+                        if (block == lastCallFinally)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                var __jitExceptionCoalesceLeft170 = block.Next;
+                if (__jitExceptionCoalesceLeft170 != null)
+                {
+                    block = __jitExceptionCoalesceLeft170;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
+                    block = default;
                 }
             }
         }
@@ -153,8 +190,18 @@ public partial class Compiler
             return false;
         }
 
-        var leave = callFinally.Next
-            ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
+        global::RyuJitSharp.BasicBlock __jitExceptionResult171;
+        var __jitExceptionCoalesceLeft172 = callFinally.Next;
+        if (__jitExceptionCoalesceLeft172 != null)
+        {
+            __jitExceptionResult171 = __jitExceptionCoalesceLeft172;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
+            __jitExceptionResult171 = default;
+        }
+        var leave = __jitExceptionResult171;
         var continuation = fgGetFinallyContinuation(leave);
         var canonical = continuationMap.GetValue(continuation);
         assert(canonical is not null);

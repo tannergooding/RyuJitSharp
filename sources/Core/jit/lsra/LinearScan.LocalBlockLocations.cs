@@ -12,9 +12,9 @@ public sealed partial class LinearScan
         if (!_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage322
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalBlockLocationsRequireEnregisteredLocals
+    );
             return;
         }
     }
@@ -41,9 +41,9 @@ public sealed partial class LinearScan
         if (outMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage323
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BlockLocationsRequireAnOutgoingVariableMap
+    );
             return;
         }
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVars,
@@ -80,9 +80,9 @@ public sealed partial class LinearScan
         if (blockInfo is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage324
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BlockLocationsRequireInitializedLSRABlockInformation
+    );
             return;
         }
         var predecessorNumber = blockInfo[currentBlock.bbNum].predBBNum;
@@ -90,9 +90,9 @@ public sealed partial class LinearScan
         if (inMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage325
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BlockLocationsRequireAnIncomingVariableMap
+    );
             return;
         }
         var predecessorMap = inMap;
@@ -102,9 +102,9 @@ public sealed partial class LinearScan
             if (predecessorMap is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage326
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.BlockLocationsRequireAPredecessorOutgoingMap
+    );
                 return;
             }
         }
@@ -184,9 +184,9 @@ public sealed partial class LinearScan
                         if (incomingReference is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR,
-                                FatalJitErrorCode.DirectFailureMessage327
-                            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ResolutionOfAPredecessorSpilledRegisterRequiresANextReference
+    );
                             return default!;
                         }
                         if (!incomingReference.copyReg)
@@ -286,9 +286,9 @@ public sealed partial class LinearScan
                     if (next is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage328
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.OutOfOrderIntervalRequiresANextReference
+    );
                         return default!;
                     }
                     next.outOfOrder = true;

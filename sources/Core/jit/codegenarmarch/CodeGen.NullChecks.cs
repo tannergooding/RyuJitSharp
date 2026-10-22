@@ -14,7 +14,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "GT_NULLCHECK is not supported for ARM32; use GT_IND.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.GTNULLCHECKIsNotSupportedForARM32UseGTIND);
             return;
         }
 

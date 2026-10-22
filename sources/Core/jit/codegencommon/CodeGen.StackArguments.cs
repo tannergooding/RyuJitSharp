@@ -138,7 +138,7 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 cannot place this contained stack argument.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32CannotPlaceThisContainedStackArgument);
                         return;
                     }
                 }
@@ -184,8 +184,7 @@ public sealed partial class CodeGen
                         var sourceLayout = srcLclNode.GetLayout(_compiler);
                         if (sourceLayout is null)
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR, "ARM struct stack argument local has no layout.");
+                            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.ARMStructStackArgumentLocalHasNoLayout);
                             return;
                         }
 
@@ -380,7 +379,9 @@ public sealed partial class CodeGen
                 if (varTypeIsSimd(source.Type))
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED, "SIMD in genPutArgStk-----unimplemented/unused on RISCV64 yet----");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDInGenPutArgStkUnimplementedUnusedOnRISCV64Yet
+    );
                     return;
                 }
 
@@ -434,7 +435,9 @@ public sealed partial class CodeGen
                         if (sourceLayout is null)
                         {
                             FatalJitException.ThrowFatalJitException(
-                                CORJIT_INTERNALERROR, "RISC-V struct stack argument local has no layout.");
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RISCVStructStackArgumentLocalHasNoLayout
+    );
                             return;
                         }
 
@@ -518,7 +521,7 @@ public sealed partial class CodeGen
         }
         else if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackArgumentGenerationRequiresXarch);
             return;
         }
         else
@@ -571,7 +574,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StructStackArgumentGenerationRequiresXarch);
             return;
         }
         if (Configuration.TARGET_AMD64)
@@ -608,7 +611,7 @@ public sealed partial class CodeGen
             {
                 if (Configuration.TARGET_X86)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.PartialREPStructCopiesAreUnavailableOnX86);
                     return;
                 }
                 genStructPutArgPartialRepMovs(putArgStk);
@@ -625,10 +628,7 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.TARGET_X86)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage093
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.PushStructArgumentsAreOnlySupportedOnX86);
                     return;
                 }
                 genStructPutArgPush(putArgStk);
@@ -662,7 +662,10 @@ public sealed partial class CodeGen
         }
         if (Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "The first incoming stack argument is not implemented for x86.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.FirstIncomingStackArgumentIsNotImplementedForX86
+    );
             return default!;
         }
         if (Configuration.TARGET_AMD64)
@@ -670,7 +673,10 @@ public sealed partial class CodeGen
             return 0;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Incoming stack argument selection is not yet ported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IncomingStackArgumentSelectionIsNotYetPortedForThisTarget
+    );
         return default!;
     }
 
@@ -689,12 +695,15 @@ public sealed partial class CodeGen
                 return _compiler.lvaOutgoingArgSpaceVar;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "x86 stack argument bases require fixed outgoing arguments.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.X86StackArgumentBasesRequireFixedOutgoingArguments
+    );
             return default!;
         }
         if (!Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.StackArgumentBaseSelectionRequiresXarch);
             return default!;
         }
 
@@ -920,8 +929,10 @@ public sealed partial class CodeGen
                     {
                         if (!Configuration.TARGET_X86)
                         {
-                            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                                "x86 stack-argument constant materialization is unavailable.");
+                            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.X86StackArgumentConstantMaterializationIsUnavailable
+    );
                             return;
                         }
 
@@ -939,7 +950,10 @@ public sealed partial class CodeGen
 
                 if (fieldType == TYP_SIMD12 && !Configuration.FEATURE_SIMD)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 stack arguments are unavailable for this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMD12StackArgumentsAreUnavailableForThisTarget
+    );
                     return;
                 }
                 if (Configuration.FEATURE_SIMD && fieldType == TYP_SIMD12)
@@ -1173,7 +1187,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.PartialREPStructCopiesAreUnavailableOnX86);
             return;
         }
 

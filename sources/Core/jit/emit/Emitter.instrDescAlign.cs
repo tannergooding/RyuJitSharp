@@ -14,17 +14,30 @@ public partial class Emitter
         public insGroup? idaLoopHeadPredIG;
         public bool isPlacedAfterJmp;
 
-        public override int NativeLogicalSize =>
-            Configuration.TARGET_XARCH || Configuration.TARGET_ARM64
-                ? DescriptorSizes.Align
-                : throw new System.PlatformNotSupportedException("Align descriptor size is not yet ported for this target.");
-
+        public override int NativeLogicalSize {
+    get
+    {
+        bool __jitExceptionCondition291;
+        __jitExceptionCondition291 = Configuration.TARGET_XARCH || Configuration.TARGET_ARM64;
+        if (__jitExceptionCondition291)
+        {
+            return DescriptorSizes.Align;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.AlignDescriptorSizeIsNotYetPortedForThisTarget);
+            return default;
+        }
+    }
+}
         public void idSetXarchCodeSize(uint size)
         {
             if (!Configuration.TARGET_XARCH)
             {
-                FatalJitException.ThrowFatalJitException(CorJitResult.CORJIT_SKIPPED,
-                    "Xarch alignment padding is unsupported on this target.");
+                FatalJitException.ThrowFatalJitException(
+        CorJitResult.CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchAlignmentPaddingIsUnsupportedOnThisTarget
+    );
                 return;
             }
             idCodeSize(size);

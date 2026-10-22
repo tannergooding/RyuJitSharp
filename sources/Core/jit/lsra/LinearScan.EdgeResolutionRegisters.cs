@@ -17,9 +17,9 @@ public sealed partial class LinearScan
         if (fromMap is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage313
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.EdgeResolutionRequiresThePredecessorSRegisterMap
+    );
             return default!;
         }
         regNumberSmall[]? toMap = null;
@@ -29,9 +29,9 @@ public sealed partial class LinearScan
             if (toMap is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage314
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.EdgeResolutionRequiresTheSuccessorSRegisterMap
+    );
                 return default;
             }
         }
@@ -75,9 +75,9 @@ public sealed partial class LinearScan
             if (sharedMap is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage315
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.SharedCriticalResolutionRequiresARegisterMap
+    );
                 return default!;
             }
             _ = VarSetOps.VisitBits(_compiler, sharedCriticalLiveSet, index => {

@@ -83,9 +83,9 @@ public struct LC_Array
         if (Type is not ArrType.Jagged)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage249
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LCArrayToGenTreeDoesNotSupportMDArraysInThePinnedNativeImplementation
+    );
             return default!;
         }
 

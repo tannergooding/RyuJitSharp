@@ -36,7 +36,7 @@ public partial class GenTree
 
                     default:
                     {
-                        FatalJitException.ThrowFatalJitException("Unexpected scalable vector constant kind.");
+                        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnexpectedScalableVectorConstantKind);
                         return default!;
                     }
                 }

@@ -151,7 +151,7 @@ public partial struct ConfigMethodRange
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("ConfigMethodRange is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConfigMethodRangeIsOnlyAvailableInDebugBuilds);
         }
     }
 

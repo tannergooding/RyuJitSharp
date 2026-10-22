@@ -22,7 +22,17 @@ public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>, IBitSetOpCounter
             return null;
         }
 
-        return Compiler._varsetOpCounter
-            ?? throw new System.InvalidOperationException("The varset operation counter is not initialized.");
+        global::RyuJitSharp.BitSetSupport.BitSetOpCounter __jitExceptionReturnResult285;
+        var __jitExceptionCoalesceLeft286 = Compiler._varsetOpCounter;
+        if (__jitExceptionCoalesceLeft286 != null)
+        {
+            __jitExceptionReturnResult285 = __jitExceptionCoalesceLeft286;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VarsetOperationCounterIsNotInitialized);
+            __jitExceptionReturnResult285 = default;
+        }
+        return __jitExceptionReturnResult285;
     }
 }

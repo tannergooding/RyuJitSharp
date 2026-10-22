@@ -66,7 +66,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
         }
     }
 
@@ -75,8 +75,7 @@ public sealed partial class ValueNumStore
         EnsureSimdSupported();
         if (!Configuration.TARGET_XARCH)
         {
-            throw new PlatformNotSupportedException(
-                "Fixed-width 32-byte and 64-byte vectors are only supported on xarch.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedWidth32ByteAnd64ByteVectorsAreOnlySupportedOnXarch);
         }
     }
 
@@ -85,7 +84,7 @@ public sealed partial class ValueNumStore
         EnsureSimdSupported();
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Scalable vectors are only supported on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableVectorsAreOnlySupportedOnARM64);
         }
     }
 
@@ -130,7 +129,7 @@ public sealed partial class ValueNumStore
         EnsureSimdSupported();
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
         }
 
         var storage = simdmaskvalue_t.FromFixed(value);
@@ -182,7 +181,7 @@ public sealed partial class ValueNumStore
         EnsureSimdSupported();
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
         }
 
         return GetVectorConstant<simdmaskvalue_t>(vn, TYP_MASK);
@@ -203,7 +202,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.TARGET_ARM64)
         {
-            throw new PlatformNotSupportedException("Scalable mask constants are only supported on ARM64.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ScalableMaskConstantsAreOnlySupportedOnARM64);
         }
 
         var storage = GetConstantSimdMaskValue(vn);
@@ -218,22 +217,35 @@ public sealed partial class ValueNumStore
         assert(IsVNConstant(vn));
         var chunk = _chunks[GetChunkNum(vn)];
         var offset = ChunkOffset(vn);
-        ReadOnlySpan<byte> bytes = chunk.Type switch {
-            TYP_SIMD8 => MemoryMarshal.AsBytes(((simd8_t[])chunk.Defs).AsSpan(offset, 1)),
-            TYP_SIMD12 => MemoryMarshal.AsBytes(((simd12_t[])chunk.Defs).AsSpan(offset, 1)),
-            TYP_SIMD16 => MemoryMarshal.AsBytes(((simd16_t[])chunk.Defs).AsSpan(offset, 1)),
-            TYP_SIMD32 when Configuration.TARGET_XARCH
-                => MemoryMarshal.AsBytes(((simd32_t[])chunk.Defs).AsSpan(offset, 1)),
-            TYP_SIMD32
-                => throw new PlatformNotSupportedException(
-                    "Fixed-width 32-byte vectors are only supported on xarch."),
-            TYP_SIMD64 when Configuration.TARGET_XARCH
-                => MemoryMarshal.AsBytes(((simd64_t[])chunk.Defs).AsSpan(offset, 1)),
-            TYP_SIMD64
-                => throw new PlatformNotSupportedException(
-                    "Fixed-width 64-byte vectors are only supported on xarch."),
-            _ => throw new UnreachableException(),
-        };
+        ReadOnlySpan<byte> bytes;
+        switch (chunk.Type)
+        {
+            case TYP_SIMD8:
+                bytes = MemoryMarshal.AsBytes(((simd8_t[])chunk.Defs).AsSpan(offset, 1));
+                break;
+            case TYP_SIMD12:
+                bytes = MemoryMarshal.AsBytes(((simd12_t[])chunk.Defs).AsSpan(offset, 1));
+                break;
+            case TYP_SIMD16:
+                bytes = MemoryMarshal.AsBytes(((simd16_t[])chunk.Defs).AsSpan(offset, 1));
+                break;
+            case TYP_SIMD32 when Configuration.TARGET_XARCH:
+                bytes = MemoryMarshal.AsBytes(((simd32_t[])chunk.Defs).AsSpan(offset, 1));
+                break;
+            case TYP_SIMD32:
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedWidth32ByteVectorsAreOnlySupportedOnXarch);
+                return default;
+            case TYP_SIMD64 when Configuration.TARGET_XARCH:
+                bytes = MemoryMarshal.AsBytes(((simd64_t[])chunk.Defs).AsSpan(offset, 1));
+                break;
+            case TYP_SIMD64:
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedWidth64ByteVectorsAreOnlySupportedOnXarch);
+                return default;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException(FatalJitErrorCode.UnsupportedValueNumberVectorStorageType);
+                return default;
+        }
+
         simd_t vector = default;
         bytes.CopyTo(vector.AsSpan<byte>());
         return vector;
@@ -251,23 +263,40 @@ public sealed partial class ValueNumStore
         return ConstantValue<float>(vn);
     }
 
-    public ValueNum VNZeroForType(var_types type) => type switch {
-        TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT => VNForIntCon(0),
-        TYP_LONG or TYP_ULONG => VNForLongCon(0),
-        TYP_FLOAT => VNForFloatCon(0),
-        TYP_DOUBLE => VNForDoubleCon(0),
-        TYP_REF => VNForNull(),
-        TYP_BYREF => VNForByrefCon(0),
-        TYP_SIMD8 => VNForSimd8Con(simd8_t.Zero),
-        TYP_SIMD12 => VNForSimd12Con(simd12_t.Zero),
-        TYP_SIMD16 => VNForSimd16Con(simd16_t.Zero),
-        TYP_SIMD32 => VNForSimd32Con(simd32_t.Zero),
-        TYP_SIMD64 => VNForSimd64Con(simd64_t.Zero),
-        TYP_SIMD_ARM64 => VNForSimdScalableCon(simdscalable_t.Zero),
-        TYP_MASK => VNForSimdMaskCon(simdmask_t.Zero),
-        _ => throw new UnreachableException(),
-    };
-
+    public ValueNum VNZeroForType(var_types type) {
+    switch (type)
+    {
+        case TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT:
+            return VNForIntCon(0);
+        case TYP_LONG or TYP_ULONG:
+            return VNForLongCon(0);
+        case TYP_FLOAT:
+            return VNForFloatCon(0);
+        case TYP_DOUBLE:
+            return VNForDoubleCon(0);
+        case TYP_REF:
+            return VNForNull();
+        case TYP_BYREF:
+            return VNForByrefCon(0);
+        case TYP_SIMD8:
+            return VNForSimd8Con(simd8_t.Zero);
+        case TYP_SIMD12:
+            return VNForSimd12Con(simd12_t.Zero);
+        case TYP_SIMD16:
+            return VNForSimd16Con(simd16_t.Zero);
+        case TYP_SIMD32:
+            return VNForSimd32Con(simd32_t.Zero);
+        case TYP_SIMD64:
+            return VNForSimd64Con(simd64_t.Zero);
+        case TYP_SIMD_ARM64:
+            return VNForSimdScalableCon(simdscalable_t.Zero);
+        case TYP_MASK:
+            return VNForSimdMaskCon(simdmask_t.Zero);
+        default:
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
+    }
+}
     public ValueNum VNForGenericCon(var_types type, ReadOnlySpan<byte> value)
     {
         switch (type)
@@ -280,50 +309,67 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                return type switch {
-                    TYP_BYTE => VNForIntCon(MemoryMarshal.Read<sbyte>(value)),
-                    TYP_UBYTE => VNForIntCon(MemoryMarshal.Read<byte>(value)),
-                    TYP_SHORT => VNForIntCon(MemoryMarshal.Read<short>(value)),
-                    TYP_USHORT => VNForIntCon(MemoryMarshal.Read<ushort>(value)),
-                    TYP_INT or TYP_UINT => VNForIntCon(MemoryMarshal.Read<int>(value)),
-                    TYP_LONG or TYP_ULONG => VNForLongCon(MemoryMarshal.Read<long>(value)),
-                    TYP_FLOAT => VNForFloatCon(MemoryMarshal.Read<float>(value)),
-                    TYP_DOUBLE => VNForDoubleCon(MemoryMarshal.Read<double>(value)),
-                    TYP_SIMD8 when Configuration.FEATURE_SIMD
-                        => VNForSimd8Con(MemoryMarshal.Read<simd8_t>(value)),
-                    TYP_SIMD8
-                        => throw new PlatformNotSupportedException("SIMD is not enabled for this target."),
-                    TYP_SIMD12 when Configuration.FEATURE_SIMD
-                        => VNForSimd12Con(MemoryMarshal.Read<simd12_t>(value)),
-                    TYP_SIMD12
-                        => throw new PlatformNotSupportedException("SIMD is not enabled for this target."),
-                    TYP_SIMD16 when Configuration.FEATURE_SIMD
-                        => VNForSimd16Con(MemoryMarshal.Read<simd16_t>(value)),
-                    TYP_SIMD16
-                        => throw new PlatformNotSupportedException("SIMD is not enabled for this target."),
-                    TYP_SIMD32 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH
-                        => VNForSimd32Con(MemoryMarshal.Read<simd32_t>(value)),
-                    TYP_SIMD32 when !Configuration.FEATURE_SIMD
-                        => throw new PlatformNotSupportedException("SIMD is not enabled for this target."),
-                    TYP_SIMD32
-                        => throw new PlatformNotSupportedException(
-                            "Fixed-width 32-byte vectors are only supported on xarch."),
-                    TYP_SIMD64 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH
-                        => VNForSimd64Con(MemoryMarshal.Read<simd64_t>(value)),
-                    TYP_SIMD64 when !Configuration.FEATURE_SIMD
-                        => throw new PlatformNotSupportedException("SIMD is not enabled for this target."),
-                    TYP_SIMD64
-                        => throw new PlatformNotSupportedException(
-                            "Fixed-width 64-byte vectors are only supported on xarch."),
-                    TYP_MASK when Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS
-                        => VNForSimdMaskCon(MemoryMarshal.Read<simdmask_t>(value)),
-                    TYP_MASK when !Configuration.FEATURE_SIMD
-                        => throw new PlatformNotSupportedException("SIMD is not enabled for this target."),
-                    TYP_MASK
-                        => throw new PlatformNotSupportedException(
-                            "Masked hardware intrinsics are not enabled for this target."),
-                    _ => throw new UnreachableException(),
-                };
+                switch (type)
+                {
+                    case TYP_BYTE:
+                        return VNForIntCon(MemoryMarshal.Read<sbyte>(value));
+                    case TYP_UBYTE:
+                        return VNForIntCon(MemoryMarshal.Read<byte>(value));
+                    case TYP_SHORT:
+                        return VNForIntCon(MemoryMarshal.Read<short>(value));
+                    case TYP_USHORT:
+                        return VNForIntCon(MemoryMarshal.Read<ushort>(value));
+                    case TYP_INT or TYP_UINT:
+                        return VNForIntCon(MemoryMarshal.Read<int>(value));
+                    case TYP_LONG or TYP_ULONG:
+                        return VNForLongCon(MemoryMarshal.Read<long>(value));
+                    case TYP_FLOAT:
+                        return VNForFloatCon(MemoryMarshal.Read<float>(value));
+                    case TYP_DOUBLE:
+                        return VNForDoubleCon(MemoryMarshal.Read<double>(value));
+                    case TYP_SIMD8 when Configuration.FEATURE_SIMD:
+                        return VNForSimd8Con(MemoryMarshal.Read<simd8_t>(value));
+                    case TYP_SIMD8:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
+                        return default;
+                    case TYP_SIMD12 when Configuration.FEATURE_SIMD:
+                        return VNForSimd12Con(MemoryMarshal.Read<simd12_t>(value));
+                    case TYP_SIMD12:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
+                        return default;
+                    case TYP_SIMD16 when Configuration.FEATURE_SIMD:
+                        return VNForSimd16Con(MemoryMarshal.Read<simd16_t>(value));
+                    case TYP_SIMD16:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
+                        return default;
+                    case TYP_SIMD32 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH:
+                        return VNForSimd32Con(MemoryMarshal.Read<simd32_t>(value));
+                    case TYP_SIMD32 when !Configuration.FEATURE_SIMD:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
+                        return default;
+                    case TYP_SIMD32:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedWidth32ByteVectorsAreOnlySupportedOnXarch);
+                        return default;
+                    case TYP_SIMD64 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH:
+                        return VNForSimd64Con(MemoryMarshal.Read<simd64_t>(value));
+                    case TYP_SIMD64 when !Configuration.FEATURE_SIMD:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
+                        return default;
+                    case TYP_SIMD64:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedWidth64ByteVectorsAreOnlySupportedOnXarch);
+                        return default;
+                    case TYP_MASK when Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS:
+                        return VNForSimdMaskCon(MemoryMarshal.Read<simdmask_t>(value));
+                    case TYP_MASK when !Configuration.FEATURE_SIMD:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.SIMDIsNotEnabledForThisTarget);
+                        return default;
+                    case TYP_MASK:
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
+                        return default;
+                    default:
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
+                }
             }
         }
     }

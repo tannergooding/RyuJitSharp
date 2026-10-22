@@ -80,8 +80,10 @@ public partial class CodeGen
             {
                 if (!Configuration.FEATURE_SIMD)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "SIMD constants are not supported by this ARM64 configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDConstantsAreNotSupportedByThisARM64Configuration
+    );
                     return;
                 }
 
@@ -285,8 +287,10 @@ public partial class CodeGen
             {
                 if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Masked SIMD constants are not supported by this ARM64 configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedSIMDConstantsAreNotSupportedByThisARM64Configuration
+    );
                     return;
                 }
 

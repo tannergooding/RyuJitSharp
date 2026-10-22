@@ -18,7 +18,7 @@ public abstract class GenTreeMultiOp : GenTree
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Hardware intrinsic nodes are unsupported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicNodesAreUnsupportedOnThisTarget);
         }
 
         assert(oper.IsHWIntrinsic);

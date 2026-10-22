@@ -39,9 +39,48 @@ public partial class Compiler
                 continue;
             }
 
-            if (compIsAsync && ((varDsc.Type is TYP_BYREF) ||
-                ((varDsc.Type is TYP_STRUCT) &&
-                    (varDsc.Layout ?? throw new InvalidOperationException("Struct local has no layout.")).HasGCByRef())))
+            bool __jitExceptionCondition253;
+            bool __jitExceptionShortCircuitLeft254;
+            __jitExceptionShortCircuitLeft254 = compIsAsync;
+            if (__jitExceptionShortCircuitLeft254)
+            {
+                bool __jitExceptionShortCircuitLeft255;
+                __jitExceptionShortCircuitLeft255 = varDsc.Type is TYP_BYREF;
+                if (__jitExceptionShortCircuitLeft255)
+                {
+                    __jitExceptionCondition253 = true;
+                }
+                else
+                {
+                    bool __jitExceptionShortCircuitLeft256;
+                    __jitExceptionShortCircuitLeft256 = varDsc.Type is TYP_STRUCT;
+                    if (__jitExceptionShortCircuitLeft256)
+                    {
+                        global::RyuJitSharp.ClassLayout __jitExceptionReceiver257;
+                        var __jitExceptionCoalesceLeft258 = varDsc.Layout;
+                        if (__jitExceptionCoalesceLeft258 != null)
+                        {
+                            __jitExceptionReceiver257 = __jitExceptionCoalesceLeft258;
+                        }
+                        else
+                        {
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalHasNoLayout2);
+                            __jitExceptionReceiver257 = default;
+                        }
+
+                        __jitExceptionCondition253 = __jitExceptionReceiver257.HasGCByRef();
+                    }
+                    else
+                    {
+                        __jitExceptionCondition253 = false;
+                    }
+                }
+            }
+            else
+            {
+                __jitExceptionCondition253 = false;
+            }
+            if (__jitExceptionCondition253)
             {
                 // A byref store may not be dead if it crosses a suspension point.
                 continue;
@@ -103,10 +142,31 @@ public partial class Compiler
 
                 assert(vnStore is not null);
                 var data = store.Data;
-                var storeValue = (store.Type is TYP_STRUCT) && data.IsIntegralConst(0)
-                    ? vnStore.VNForZeroObj(store.GetLayout(this) ??
-                        throw new InvalidOperationException("Struct store has no layout."))
-                    : data._vnPair.Conservative;
+                int __jitExceptionResult259;
+                bool __jitExceptionCondition260;
+                __jitExceptionCondition260 = (store.Type is TYP_STRUCT) && data.IsIntegralConst(0);
+                if (__jitExceptionCondition260)
+                {
+                    var __jitExceptionReceiver261 = vnStore;
+                    global::RyuJitSharp.ClassLayout __jitExceptionArgument262;
+                    var __jitExceptionCoalesceLeft263 = store.GetLayout(this);
+                    if (__jitExceptionCoalesceLeft263 != null)
+                    {
+                        __jitExceptionArgument262 = __jitExceptionCoalesceLeft263;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructStoreHasNoLayout);
+                        __jitExceptionArgument262 = default;
+                    }
+
+                    __jitExceptionResult259 = __jitExceptionReceiver261.VNForZeroObj(__jitExceptionArgument262);
+                }
+                else
+                {
+                    __jitExceptionResult259 = data._vnPair.Conservative;
+                }
+                var storeValue = __jitExceptionResult259;
 
                 if (oldStoreValue != storeValue)
                 {
@@ -117,7 +177,18 @@ public partial class Compiler
                 JITDUMP("Removed dead store:\n");
                 DISPTREE(store);
 
-                var block = defDsc.Block ?? throw new InvalidOperationException("An SSA store has no defining block.");
+                global::RyuJitSharp.BasicBlock __jitExceptionResult264;
+                var __jitExceptionCoalesceLeft265 = defDsc.Block;
+                if (__jitExceptionCoalesceLeft265 != null)
+                {
+                    __jitExceptionResult264 = __jitExceptionCoalesceLeft265;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SSAStoreHasNoDefiningBlock);
+                    __jitExceptionResult264 = default;
+                }
+                var block = __jitExceptionResult264;
                 optVNReplaceDeadStore(block, store);
                 // Native retags the def node as GT_COMMA; the managed descriptor cannot refer to that node type.
                 // This phase invalidates SSA, so clear the detached store while retaining its VN descriptor.

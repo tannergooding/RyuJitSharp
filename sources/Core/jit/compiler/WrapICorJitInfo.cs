@@ -30,7 +30,7 @@ public sealed unsafe partial class WrapICorJitInfo : ICorJitInfo.Interface, IDis
         var proxyContext = (ProxyContext*)NativeMemory.Alloc((nuint)sizeof(ProxyContext));
         if (proxyContext == null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_OUTOFMEM, "Unable to allocate the ICorJitInfo timing proxy.");
+            FatalJitException.ThrowFatalJitException(CORJIT_OUTOFMEM, FatalJitErrorCode.UnableToAllocateTheICorJitInfoTimingProxy);
             return;
         }
 
@@ -70,7 +70,10 @@ public sealed unsafe partial class WrapICorJitInfo : ICorJitInfo.Interface, IDis
 
         if (wrapComp.info.compCompHnd != wrapHnd)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "The compiler EE handle changed before timing proxy installation.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CompilerEEHandleChangedBeforeTimingProxyInstallation
+    );
             return;
         }
 

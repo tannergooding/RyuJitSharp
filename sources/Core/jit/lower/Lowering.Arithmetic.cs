@@ -306,15 +306,24 @@ public sealed partial class Lowering
 
     private static genTreeOps GetShxaddOp(uint shiftAmount, bool isUnsigned)
     {
-        return (shiftAmount, isUnsigned) switch {
-            (1, false) => GT_SH1ADD,
-            (2, false) => GT_SH2ADD,
-            (3, false) => GT_SH3ADD,
-            (1, true) => GT_SH1ADD_UW,
-            (2, true) => GT_SH2ADD_UW,
-            (3, true) => GT_SH3ADD_UW,
-            _ => throw new System.InvalidOperationException(),
-        };
+        switch (shiftAmount, isUnsigned)
+        {
+            case (1, false):
+                return GT_SH1ADD;
+            case (2, false):
+                return GT_SH2ADD;
+            case (3, false):
+                return GT_SH3ADD;
+            case (1, true):
+                return GT_SH1ADD_UW;
+            case (2, true):
+                return GT_SH2ADD_UW;
+            case (3, true):
+                return GT_SH3ADD_UW;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException();
+                return default;
+        }
     }
 
     private GenTreeOp? TryLowerMulWithConstant(GenTreeOp node)
@@ -515,7 +524,7 @@ public sealed partial class Lowering
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Multiply containment is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MultiplyContainmentIsNotPortedForThisTarget);
         return;
     }
 
@@ -591,7 +600,7 @@ public sealed partial class Lowering
             return mul.Next;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Multiply lowering is not ported for this target.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MultiplyLoweringIsNotPortedForThisTarget);
         return default!;
     }
 }

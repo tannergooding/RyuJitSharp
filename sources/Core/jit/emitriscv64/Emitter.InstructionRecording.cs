@@ -73,8 +73,18 @@ public partial class Emitter
 
         if (Configuration.DEBUG && (_compiler?.compCurBB?.Kind == BBJ_EHCATCHRET))
         {
-            var debugInfo = id.idDebugOnlyInfo()
-                ?? throw new InvalidOperationException("RISC-V label instructions require debug descriptor info.");
+            global::RyuJitSharp.Emitter.instrDescDebugInfo __jitExceptionResult381;
+            var __jitExceptionCoalesceLeft382 = id.idDebugOnlyInfo();
+            if (__jitExceptionCoalesceLeft382 != null)
+            {
+                __jitExceptionResult381 = __jitExceptionCoalesceLeft382;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RISCVLabelInstructionsRequireDebugDescriptorInfo);
+                __jitExceptionResult381 = default;
+            }
+            var debugInfo = __jitExceptionResult381;
             debugInfo.idCatchRet = true;
         }
 

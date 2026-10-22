@@ -80,7 +80,7 @@ public readonly partial struct HWIntrinsicInfo
     {
         if (!Configuration.TARGET_XARCH)
         {
-            throw new System.PlatformNotSupportedException("Table-driven hardware intrinsics are only supported on xarch.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.TableDrivenHardwareIntrinsicsAreOnlySupportedOnXarch);
         }
 
         return (category is not HW_Category_Special and not HW_Category_Scalar and not HW_Category_Helper) &&

@@ -230,7 +230,10 @@ public partial class Emitter
                 return (8, 16, 8, 8);
             }
         }
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Native emitter layout reporting requires the target-specific pointer, register-mask and descriptor layouts.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NativeEmitterLayoutReportingRequiresTheTargetSpecificPointerRegisterMaskAndDescriptorLayouts
+    );
         return default!;
     }
 

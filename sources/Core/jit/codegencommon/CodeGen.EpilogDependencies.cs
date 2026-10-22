@@ -27,7 +27,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Callee-save restoration is not supported by this dispatcher.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CalleeSaveRestorationIsNotSupportedByThisDispatcher
+    );
             return;
         }
     }
@@ -36,7 +39,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch callee-save restoration is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchCalleeSaveRestorationIsNotSupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -67,7 +73,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Root epilog generation is not supported by this dispatcher.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RootEpilogGenerationIsNotSupportedByThisDispatcher
+    );
             return;
         }
     }
@@ -82,7 +91,7 @@ public sealed partial class CodeGen
         if (Configuration.TARGET_ARM64)
         {
             unreached();
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InstGenReturnIsNotUsedOnARM64);
             return;
         }
         if (Configuration.TARGET_XARCH)
@@ -92,7 +101,10 @@ public sealed partial class CodeGen
         }
 
         NYI("instGen_Return");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Return instruction generation is not implemented on this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReturnInstructionGenerationIsNotImplementedOnThisTarget
+    );
         return;
     }
 }

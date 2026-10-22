@@ -11,7 +11,7 @@ public static partial class Globals
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            throw new System.PlatformNotSupportedException("Fixed register masks are not supported on this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.FixedRegisterMasksAreNotSupportedOnThisTarget);
         }
     }
 

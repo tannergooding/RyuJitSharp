@@ -82,12 +82,22 @@ public sealed partial class Lowering
                 selectCC.Condition = GenCondition.Reverse(selectCC.Condition);
             }
 
-            resultingOper = resultingOper switch {
-                GT_SELECT_NEG => GT_SELECT_NEGCC,
-                GT_SELECT_INV => GT_SELECT_INVCC,
-                GT_SELECT_INC => GT_SELECT_INCCC,
-                _ => throw new System.Diagnostics.UnreachableException(),
-            };
+            switch (resultingOper)
+            {
+                case GT_SELECT_NEG:
+                    resultingOper = GT_SELECT_NEGCC;
+                    break;
+                case GT_SELECT_INV:
+                    resultingOper = GT_SELECT_INVCC;
+                    break;
+                case GT_SELECT_INC:
+                    resultingOper = GT_SELECT_INCCC;
+                    break;
+                default:
+                    JitExceptionHelpers.ThrowUnreachableException();
+                    resultingOper = default;
+                    break;
+            }
             selectCC.SetOper(resultingOper);
         }
 

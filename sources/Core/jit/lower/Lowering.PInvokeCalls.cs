@@ -65,7 +65,16 @@ public sealed partial class Lowering
             assert(control is not null);
             var range = BlockRange().GetTreeRange(control, out var isClosed);
             assert(isClosed);
-            insertionPoint = range.FirstNode ?? throw new InvalidOperationException("Indirect P/Invoke target is not in LIR.");
+            var __jitExceptionCoalesceLeft474 = range.FirstNode;
+            if (__jitExceptionCoalesceLeft474 != null)
+            {
+                insertionPoint = __jitExceptionCoalesceLeft474;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.IndirectPInvokeTargetIsNotInLIR);
+                insertionPoint = default;
+            }
         }
 
         ref var frameInfo = ref compiler.eeGetEEInfo().inlinedCallFrameInfo;
@@ -252,12 +261,14 @@ public sealed partial class Lowering
 
                 case IAT_RELPVALUE:
                 {
-                    throw new InvalidOperationException("Relative P/Invoke target lookup is unsupported by the native contract.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RelativePInvokeTargetLookupIsUnsupportedByTheNativeContract);
+                    return default;
                 }
 
                 default:
                 {
-                    throw new InvalidOperationException("Invalid P/Invoke target access type.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.InvalidPInvokeTargetAccessType);
+                    return default;
                 }
             }
         }
@@ -271,7 +282,10 @@ public sealed partial class Lowering
         {
             if (!Configuration.SWIFT_SUPPORT)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Swift error handling is not supported for this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SwiftErrorHandlingIsNotSupportedForThisTarget
+    );
                 return default!;
             }
 
@@ -283,7 +297,7 @@ public sealed partial class Lowering
             assert(swiftError is not null);
             if (swiftError is null)
             {
-                throw new InvalidOperationException("Swift call has no error-register consumer.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SwiftCallHasNoErrorRegisterConsumer);
             }
 
             BlockRange().Remove(swiftError);

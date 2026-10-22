@@ -63,7 +63,7 @@ public partial class Compiler
                 else if (!Configuration.TARGET_ARM)
                 {
                     Globals.NYI("unknown target");
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unknown target for multi-register arguments.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnknownTargetForMultiRegisterArguments);
                     return default!;
                 }
             }

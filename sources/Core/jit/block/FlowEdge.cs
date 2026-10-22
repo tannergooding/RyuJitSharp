@@ -77,7 +77,7 @@ public sealed partial class FlowEdge
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Edge likelihood tracking is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EdgeLikelihoodTrackingIsOnlyAvailableInDebugBuilds);
             }
 
             return _likelihoodSet;

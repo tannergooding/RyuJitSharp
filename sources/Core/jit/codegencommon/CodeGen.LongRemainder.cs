@@ -11,7 +11,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Long unsigned remainder generation requires X86.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LongUnsignedRemainderGenerationRequiresX86);
             return;
         }
 

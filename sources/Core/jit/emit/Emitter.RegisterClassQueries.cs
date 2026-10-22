@@ -31,8 +31,10 @@ public partial class Emitter
             return reg.IsIntReg;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "General-register classification is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.GeneralRegisterClassificationIsNotSupportedForThisTarget
+    );
         return default!;
     }
 }

@@ -26,9 +26,9 @@ public sealed partial class LinearScan
                 if (parameterReference is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage352
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.RegisterParameterRequiresAnInitialReference
+    );
                     return;
                 }
                 var initialMask = parameterReference.registerAssignment;
@@ -37,7 +37,7 @@ public sealed partial class LinearScan
                 if (Configuration.TARGET_ARM && varTypeIsMultiReg(local.Type))
                 {
                     assert(false, "Multi-reg types not yet supported");
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 multi-reg parameter assignment is not ported.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM32MultiRegParameterAssignmentIsNotPorted);
                     return;
                 }
                 else

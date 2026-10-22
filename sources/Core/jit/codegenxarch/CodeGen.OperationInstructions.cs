@@ -11,7 +11,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Scalar operation instruction selection requires xarch or ARM.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ScalarOperationInstructionSelectionRequiresXarchOrARM
+    );
             return default!;
         }
 

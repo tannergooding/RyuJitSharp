@@ -13,8 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Implicit register-pair destinations are only defined for xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ImplicitRegisterPairDestinationsAreOnlyDefinedForXarch
+    );
             return default!;
         }
 
@@ -26,7 +28,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Binary operand recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.BinaryOperandRecordingRequiresXarch);
             return default!;
         }
 

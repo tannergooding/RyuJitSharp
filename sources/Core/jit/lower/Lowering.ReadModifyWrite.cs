@@ -76,17 +76,28 @@ public sealed partial class Lowering
         return true;
     }
 
-    private static string RMWStatusDescription(RmwStatus status) => status switch {
-        STOREIND_RMW_STATUS_UNKNOWN => "RMW status unknown",
-        STOREIND_RMW_DST_IS_OP1 => "dst candidate is op1",
-        STOREIND_RMW_DST_IS_OP2 => "dst candidate is op2",
-        STOREIND_RMW_UNSUPPORTED_ADDR => "address mode is not supported",
-        STOREIND_RMW_UNSUPPORTED_OPER => "oper is not supported",
-        STOREIND_RMW_UNSUPPORTED_TYPE => "type is not supported",
-        STOREIND_RMW_INDIR_UNEQUAL => "read indir is not equivalent to write indir",
-        _ => throw new System.ArgumentOutOfRangeException(nameof(status)),
-    };
-
+    private static string RMWStatusDescription(RmwStatus status) {
+    switch (status)
+    {
+        case STOREIND_RMW_STATUS_UNKNOWN:
+            return "RMW status unknown";
+        case STOREIND_RMW_DST_IS_OP1:
+            return "dst candidate is op1";
+        case STOREIND_RMW_DST_IS_OP2:
+            return "dst candidate is op2";
+        case STOREIND_RMW_UNSUPPORTED_ADDR:
+            return "address mode is not supported";
+        case STOREIND_RMW_UNSUPPORTED_OPER:
+            return "oper is not supported";
+        case STOREIND_RMW_UNSUPPORTED_TYPE:
+            return "type is not supported";
+        case STOREIND_RMW_INDIR_UNEQUAL:
+            return "read indir is not equivalent to write indir";
+        default:
+            JitExceptionHelpers.ThrowArgumentOutOfRangeException(FatalJitArgument.Status);
+            return default;
+    }
+}
     private bool IsBinOpInRMWStoreInd(GenTreeOp tree)
     {
         if (!Configuration.TARGET_XARCH)

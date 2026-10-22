@@ -37,7 +37,7 @@ public sealed class GenTreeIntrinsic : GenTreeOp
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new System.PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunIntrinsicEntryPointsAreUnsupported);
             }
 
             return _entryPoint;
@@ -47,7 +47,7 @@ public sealed class GenTreeIntrinsic : GenTreeOp
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new System.PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunIntrinsicEntryPointsAreUnsupported);
             }
 
             _entryPoint = value;

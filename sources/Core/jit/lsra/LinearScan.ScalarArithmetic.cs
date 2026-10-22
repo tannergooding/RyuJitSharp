@@ -11,8 +11,10 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LSRA shift/rotate reference building is not implemented outside xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LSRAShiftRotateReferenceBuildingIsNotImplementedOutsideXarch
+    );
             return default!;
         }
 
@@ -121,8 +123,10 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LSRA division reference building is not implemented outside xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LSRADivisionReferenceBuildingIsNotImplementedOutsideXarch
+    );
             return default!;
         }
 
@@ -177,8 +181,10 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "LSRA multiplication reference building is not implemented outside xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LSRAMultiplicationReferenceBuildingIsNotImplementedOutsideXarch
+    );
             return default!;
         }
 

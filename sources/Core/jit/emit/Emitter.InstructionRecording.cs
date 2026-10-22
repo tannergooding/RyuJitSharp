@@ -13,7 +13,7 @@ public partial class Emitter
     {
         if (Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction display is not used on LoongArch64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.InstructionDisplayIsNotUsedOnLoongArch64);
             return;
         }
 
@@ -91,8 +91,10 @@ public partial class Emitter
                 s_arm64InstructionLoadStoreFlags[nativeOrdinal] != 0;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Load/store classification is only supported on ARM32 and ARM64.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LoadStoreClassificationIsOnlySupportedOnARM32AndARM64
+    );
         return default!;
     }
 
@@ -133,8 +135,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Instruction sanity checking is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionSanityCheckingIsNotImplementedForThisTarget
+    );
         return;
     }
 
@@ -177,7 +181,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Instruction display is not implemented for this target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.InstructionDisplayIsNotImplementedForThisTarget
+    );
         return;
     }
 
@@ -185,8 +192,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 instruction classification is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32InstructionClassificationIsOnlySupportedOnARM32
+    );
             return default!;
         }
 
@@ -199,8 +208,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 instruction classification is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32InstructionClassificationIsOnlySupportedOnARM32
+    );
             return default!;
         }
 
@@ -213,8 +224,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 instruction classification is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32InstructionClassificationIsOnlySupportedOnARM32
+    );
             return default!;
         }
 
@@ -231,8 +244,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 instruction classification is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32InstructionClassificationIsOnlySupportedOnARM32
+    );
             return default!;
         }
 
@@ -246,8 +261,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 instruction classification is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32InstructionClassificationIsOnlySupportedOnARM32
+    );
             return default!;
         }
 

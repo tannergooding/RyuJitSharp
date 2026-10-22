@@ -226,8 +226,17 @@ internal static unsafe class FlowGraphDumpTests
             assert(compiler.fgFirstBB is not null);
             compiler.fgFirstBB.Kind = BBJ_SWITCH;
             using var writer = new StringWriter();
-            Assert.That(() => compiler.fgWriteFlowGraph(writer, PHASE_IMPORTATION, PhasePosition.PostPhase, false),
-                Throws.TypeOf<FatalJitException>().With.Message.Contains("B350"));
+            var exception = Assert.Throws<FatalJitException>(
+                () => compiler.fgWriteFlowGraph(writer, PHASE_IMPORTATION, PhasePosition.PostPhase, false));
+            Assert.That(
+                exception!.ErrorCode,
+                Is.EqualTo(FatalJitErrorCode.NativeXMLFlowGraphJumpKindTableHasNoDefinedEntryForThisBlockKindB350));
+            Assert.That(
+                exception.Message,
+                Is.EqualTo(
+                    Configuration.DETAILED_FATAL_ERROR_MESSAGES
+                        ? "Native XML flow-graph jump-kind table has no defined entry for this block kind (B350)."
+                        : "RJS-0956"));
         });
     }
 

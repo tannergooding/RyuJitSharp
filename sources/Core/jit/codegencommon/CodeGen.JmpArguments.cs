@@ -13,7 +13,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JMP argument placement requires a native target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.JMPArgumentPlacementRequiresANativeTarget);
             return;
         }
 
@@ -194,7 +194,7 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_AMD64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SysV AMD64 JMP varargs are not supported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SysVAMD64JMPVarargsAreNotSupported);
             return;
         }
         else if (Configuration.TARGET_RISCV64)
@@ -203,7 +203,10 @@ public sealed partial class CodeGen
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "JMP varargs placement is not yet ported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.JMPVarargsPlacementIsNotYetPortedForThisTarget
+    );
             return;
         }
     }

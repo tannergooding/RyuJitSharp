@@ -221,7 +221,7 @@ internal static class TargetRuntimeMetadata
                 return REG_ARM32_LR;
             }
 
-            FatalJitException.ThrowFatalJitException("A link register is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LinkRegisterIsNotAvailableForThisTarget);
             return default!;
         }
     }
@@ -340,7 +340,7 @@ internal static class TargetRuntimeMetadata
         {
             if (Configuration.TARGET_WASM)
             {
-                FatalJitException.ThrowFatalJitException("Long return registers are not available for this target.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LongReturnRegistersAreNotAvailableForThisTarget);
                 return default!;
             }
 
@@ -420,7 +420,7 @@ internal static class TargetRuntimeMetadata
                 return SRBM_NONE;
             }
 
-            FatalJitException.ThrowFatalJitException("Encoded callee-saved registers are not defined for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EncodedCalleeSavedRegistersAreNotDefinedForThisTarget);
             return default!;
         }
     }
@@ -439,7 +439,7 @@ internal static class TargetRuntimeMetadata
                 return [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3];
             }
 
-            FatalJitException.ThrowFatalJitException("Swift return registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftReturnRegistersAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -458,7 +458,7 @@ internal static class TargetRuntimeMetadata
                 return [REG_X64_RAX, REG_X64_RDX, REG_X64_RCX, REG_X64_R8];
             }
 
-            FatalJitException.ThrowFatalJitException("Swift return registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftReturnRegistersAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -482,7 +482,7 @@ internal static class TargetRuntimeMetadata
                 return REG_STACK_PROBE_HELPER_ARG_ARM;
             }
 
-            FatalJitException.ThrowFatalJitException("Stack-probe helper arguments are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.StackProbeHelperArgumentsAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -506,7 +506,7 @@ internal static class TargetRuntimeMetadata
                 return REG_RISCV64_ZERO;
             }
 
-            FatalJitException.ThrowFatalJitException("A zero register is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ZeroRegisterIsNotAvailableForThisTarget);
             return default!;
         }
     }
@@ -530,7 +530,7 @@ internal static class TargetRuntimeMetadata
                 return REG_MASK_FIRST_ARM64;
             }
 
-            FatalJitException.ThrowFatalJitException("Masked registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.MaskedRegistersAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -554,7 +554,7 @@ internal static class TargetRuntimeMetadata
                 return REG_MASK_LAST_ARM64;
             }
 
-            FatalJitException.ThrowFatalJitException("Masked registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.MaskedRegistersAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -636,7 +636,7 @@ internal static class TargetRuntimeMetadata
                 return REG_SWIFT_SELF_AMD64;
             }
 
-            FatalJitException.ThrowFatalJitException("Swift ABI registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIRegistersAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -655,7 +655,7 @@ internal static class TargetRuntimeMetadata
                 return REG_SWIFT_ERROR_AMD64;
             }
 
-            FatalJitException.ThrowFatalJitException("Swift ABI registers are not supported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.SwiftABIRegistersAreNotSupportedForThisTarget);
             return default!;
         }
     }
@@ -672,7 +672,7 @@ internal static class TargetRuntimeMetadata
             return amd64;
         }
 
-        FatalJitException.ThrowFatalJitException("xarch metadata is unavailable for this architecture.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchMetadataIsUnavailableForThisArchitecture);
         return default!;
     }
 
@@ -713,7 +713,7 @@ internal static class TargetRuntimeMetadata
             return wasm;
         }
 
-        FatalJitException.ThrowFatalJitException("Target metadata is unavailable for this architecture.");
+        FatalJitException.ThrowFatalJitException(FatalJitErrorCode.TargetMetadataIsUnavailableForThisArchitecture);
         return default!;
     }
 }

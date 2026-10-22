@@ -49,7 +49,8 @@ public sealed partial class ValueNumStore
             return Unsafe.As<nuint, T>(ref result);
         }
 
-        throw new UnreachableException();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private static T EvalFloatingOp<T>(VNFunc func, T value0, T value1)
@@ -57,7 +58,8 @@ public sealed partial class ValueNumStore
     {
         if (func >= VNF_Boundary)
         {
-            throw new UnreachableException();
+            JitExceptionHelpers.ThrowUnreachableException();
+            return default;
         }
 
         if (!Configuration.TARGET_XARCH)
@@ -128,7 +130,8 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }
@@ -153,7 +156,8 @@ public sealed partial class ValueNumStore
             return Unsafe.As<double, T>(ref result);
         }
 
-        throw new UnreachableException();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private static T EvalIntegralBinaryOp<T>(VNFunc func, T value0, T value1)
@@ -262,33 +266,66 @@ public sealed partial class ValueNumStore
             {
                 var left = Unsafe.As<T, int>(ref value0);
                 var right = Unsafe.As<T, int>(ref value1);
-                valid = func switch {
-                    VNF_ADD_OVF => CheckedOps.TryAdd(left, right, out _),
-                    VNF_ADD_UN_OVF => CheckedOps.TryAddUns(left, right, out _),
-                    VNF_SUB_OVF => CheckedOps.TrySub(left, right, out _),
-                    VNF_SUB_UN_OVF => CheckedOps.TrySubUns(left, right, out _),
-                    VNF_MUL_OVF => CheckedOps.TryMul(left, right, out _),
-                    VNF_MUL_UN_OVF => CheckedOps.TryMulUns(left, right, out _),
-                    _ => throw new UnreachableException(),
-                };
+                switch (func)
+                {
+                    case VNF_ADD_OVF:
+                        valid = CheckedOps.TryAdd(left, right, out _);
+                        break;
+                    case VNF_ADD_UN_OVF:
+                        valid = CheckedOps.TryAddUns(left, right, out _);
+                        break;
+                    case VNF_SUB_OVF:
+                        valid = CheckedOps.TrySub(left, right, out _);
+                        break;
+                    case VNF_SUB_UN_OVF:
+                        valid = CheckedOps.TrySubUns(left, right, out _);
+                        break;
+                    case VNF_MUL_OVF:
+                        valid = CheckedOps.TryMul(left, right, out _);
+                        break;
+                    case VNF_MUL_UN_OVF:
+                        valid = CheckedOps.TryMulUns(left, right, out _);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        valid = default;
+                        break;
+                }
             }
             else if (typeof(T) == typeof(long))
             {
                 var left = Unsafe.As<T, long>(ref value0);
                 var right = Unsafe.As<T, long>(ref value1);
-                valid = func switch {
-                    VNF_ADD_OVF => CheckedOps.TryAdd(left, right, out _),
-                    VNF_ADD_UN_OVF => CheckedOps.TryAddUns(left, right, out _),
-                    VNF_SUB_OVF => CheckedOps.TrySub(left, right, out _),
-                    VNF_SUB_UN_OVF => CheckedOps.TrySubUns(left, right, out _),
-                    VNF_MUL_OVF => CheckedOps.TryMul(left, right, out _),
-                    VNF_MUL_UN_OVF => CheckedOps.TryMulUns(left, right, out _),
-                    _ => throw new UnreachableException(),
-                };
+                switch (func)
+                {
+                    case VNF_ADD_OVF:
+                        valid = CheckedOps.TryAdd(left, right, out _);
+                        break;
+                    case VNF_ADD_UN_OVF:
+                        valid = CheckedOps.TryAddUns(left, right, out _);
+                        break;
+                    case VNF_SUB_OVF:
+                        valid = CheckedOps.TrySub(left, right, out _);
+                        break;
+                    case VNF_SUB_UN_OVF:
+                        valid = CheckedOps.TrySubUns(left, right, out _);
+                        break;
+                    case VNF_MUL_OVF:
+                        valid = CheckedOps.TryMul(left, right, out _);
+                        break;
+                    case VNF_MUL_UN_OVF:
+                        valid = CheckedOps.TryMulUns(left, right, out _);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        valid = default;
+                        break;
+                }
             }
             else
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
 
             assert(valid);
@@ -314,7 +351,8 @@ public sealed partial class ValueNumStore
             }
         }
 
-        throw new UnreachableException();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private static int EvalComparison<T>(VNFunc func, T value0, T value1) where T : unmanaged, INumber<T>
@@ -344,7 +382,8 @@ public sealed partial class ValueNumStore
             return EvalIntegralComparison(func, Unsafe.As<T, nuint>(ref value0), Unsafe.As<T, nuint>(ref value1));
         }
 
-        throw new UnreachableException();
+        JitExceptionHelpers.ThrowUnreachableException();
+        return default;
     }
 
     private static int EvalFloatingComparison<T>(VNFunc func, T value0, T value1)
@@ -377,25 +416,41 @@ public sealed partial class ValueNumStore
 
     private static int EvalUnsignedComparison<T>(VNFunc func, T value0, T value1) where T : INumber<T>
     {
-        return func switch {
-            VNF_GT_UN => value0 > value1 ? 1 : 0,
-            VNF_GE_UN => value0 >= value1 ? 1 : 0,
-            VNF_LT_UN => value0 < value1 ? 1 : 0,
-            VNF_LE_UN => value0 <= value1 ? 1 : 0,
-            _ => throw new UnreachableException(),
-        };
+        switch (func)
+        {
+            case VNF_GT_UN:
+                return value0 > value1 ? 1 : 0;
+            case VNF_GE_UN:
+                return value0 >= value1 ? 1 : 0;
+            case VNF_LT_UN:
+                return value0 < value1 ? 1 : 0;
+            case VNF_LE_UN:
+                return value0 <= value1 ? 1 : 0;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     private static int EvalOrderedComparison<T>(VNFunc func, T value0, T value1) where T : INumber<T>
     {
-        return func switch {
-            VNF_EQ => value0 == value1 ? 1 : 0,
-            VNF_NE => value0 != value1 ? 1 : 0,
-            VNF_GT or VNF_GT_UN => value0 > value1 ? 1 : 0,
-            VNF_GE or VNF_GE_UN => value0 >= value1 ? 1 : 0,
-            VNF_LT or VNF_LT_UN => value0 < value1 ? 1 : 0,
-            VNF_LE or VNF_LE_UN => value0 <= value1 ? 1 : 0,
-            _ => throw new UnreachableException(),
-        };
+        switch (func)
+        {
+            case VNF_EQ:
+                return value0 == value1 ? 1 : 0;
+            case VNF_NE:
+                return value0 != value1 ? 1 : 0;
+            case VNF_GT or VNF_GT_UN:
+                return value0 > value1 ? 1 : 0;
+            case VNF_GE or VNF_GE_UN:
+                return value0 >= value1 ? 1 : 0;
+            case VNF_LT or VNF_LT_UN:
+                return value0 < value1 ? 1 : 0;
+            case VNF_LE or VNF_LE_UN:
+                return value0 <= value1 ? 1 : 0;
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 }

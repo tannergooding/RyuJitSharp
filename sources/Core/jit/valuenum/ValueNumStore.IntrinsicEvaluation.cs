@@ -63,32 +63,84 @@ public sealed partial class ValueNumStore
             {
                 assert(TypeOfVN(argument) == type);
                 var value = GetConstantDouble(argument);
-                var doubleResult = intrinsic switch {
-                    NI_System_Math_Abs => Math.Abs(value),
-                    NI_System_Math_Acos => Math.Acos(value),
-                    NI_System_Math_Acosh => Math.Acosh(value),
-                    NI_System_Math_Asin => Math.Asin(value),
-                    NI_System_Math_Asinh => Math.Asinh(value),
-                    NI_System_Math_Atan => Math.Atan(value),
-                    NI_System_Math_Atanh => Math.Atanh(value),
-                    NI_System_Math_Cbrt => Math.Cbrt(value),
-                    NI_System_Math_Ceiling => Math.Ceiling(value),
-                    NI_System_Math_Cos => Math.Cos(value),
-                    NI_System_Math_Cosh => Math.Cosh(value),
-                    NI_System_Math_Exp => Math.Exp(value),
-                    NI_System_Math_Floor => Math.Floor(value),
-                    NI_System_Math_Log => Math.Log(value),
-                    NI_System_Math_Log2 => Math.Log2(value),
-                    NI_System_Math_Log10 => Math.Log10(value),
-                    NI_System_Math_Sin => Math.Sin(value),
-                    NI_System_Math_Sinh => Math.Sinh(value),
-                    NI_System_Math_Round => Math.Round(value),
-                    NI_System_Math_Sqrt => Math.Sqrt(value),
-                    NI_System_Math_Tan => Math.Tan(value),
-                    NI_System_Math_Tanh => Math.Tanh(value),
-                    NI_System_Math_Truncate => Math.Truncate(value),
-                    _ => throw new InvalidOperationException($"Unsupported double math intrinsic: {intrinsic}"),
-                };
+                double __jitExceptionResult725;
+                switch (intrinsic)
+                {
+                    case NI_System_Math_Abs:
+                        __jitExceptionResult725 = Math.Abs(value);
+                        break;
+                    case NI_System_Math_Acos:
+                        __jitExceptionResult725 = Math.Acos(value);
+                        break;
+                    case NI_System_Math_Acosh:
+                        __jitExceptionResult725 = Math.Acosh(value);
+                        break;
+                    case NI_System_Math_Asin:
+                        __jitExceptionResult725 = Math.Asin(value);
+                        break;
+                    case NI_System_Math_Asinh:
+                        __jitExceptionResult725 = Math.Asinh(value);
+                        break;
+                    case NI_System_Math_Atan:
+                        __jitExceptionResult725 = Math.Atan(value);
+                        break;
+                    case NI_System_Math_Atanh:
+                        __jitExceptionResult725 = Math.Atanh(value);
+                        break;
+                    case NI_System_Math_Cbrt:
+                        __jitExceptionResult725 = Math.Cbrt(value);
+                        break;
+                    case NI_System_Math_Ceiling:
+                        __jitExceptionResult725 = Math.Ceiling(value);
+                        break;
+                    case NI_System_Math_Cos:
+                        __jitExceptionResult725 = Math.Cos(value);
+                        break;
+                    case NI_System_Math_Cosh:
+                        __jitExceptionResult725 = Math.Cosh(value);
+                        break;
+                    case NI_System_Math_Exp:
+                        __jitExceptionResult725 = Math.Exp(value);
+                        break;
+                    case NI_System_Math_Floor:
+                        __jitExceptionResult725 = Math.Floor(value);
+                        break;
+                    case NI_System_Math_Log:
+                        __jitExceptionResult725 = Math.Log(value);
+                        break;
+                    case NI_System_Math_Log2:
+                        __jitExceptionResult725 = Math.Log2(value);
+                        break;
+                    case NI_System_Math_Log10:
+                        __jitExceptionResult725 = Math.Log10(value);
+                        break;
+                    case NI_System_Math_Sin:
+                        __jitExceptionResult725 = Math.Sin(value);
+                        break;
+                    case NI_System_Math_Sinh:
+                        __jitExceptionResult725 = Math.Sinh(value);
+                        break;
+                    case NI_System_Math_Round:
+                        __jitExceptionResult725 = Math.Round(value);
+                        break;
+                    case NI_System_Math_Sqrt:
+                        __jitExceptionResult725 = Math.Sqrt(value);
+                        break;
+                    case NI_System_Math_Tan:
+                        __jitExceptionResult725 = Math.Tan(value);
+                        break;
+                    case NI_System_Math_Tanh:
+                        __jitExceptionResult725 = Math.Tanh(value);
+                        break;
+                    case NI_System_Math_Truncate:
+                        __jitExceptionResult725 = Math.Truncate(value);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedDoubleMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        __jitExceptionResult725 = default;
+                        break;
+                }
+                var doubleResult = __jitExceptionResult725;
                 return VNForDoubleCon(doubleResult);
             }
 
@@ -96,32 +148,84 @@ public sealed partial class ValueNumStore
             {
                 assert(TypeOfVN(argument) == type);
                 var value = GetConstantSingle(argument);
-                var floatResult = intrinsic switch {
-                    NI_System_Math_Abs => MathF.Abs(value),
-                    NI_System_Math_Acos => MathF.Acos(value),
-                    NI_System_Math_Acosh => MathF.Acosh(value),
-                    NI_System_Math_Asin => MathF.Asin(value),
-                    NI_System_Math_Asinh => MathF.Asinh(value),
-                    NI_System_Math_Atan => MathF.Atan(value),
-                    NI_System_Math_Atanh => MathF.Atanh(value),
-                    NI_System_Math_Cbrt => MathF.Cbrt(value),
-                    NI_System_Math_Ceiling => MathF.Ceiling(value),
-                    NI_System_Math_Cos => MathF.Cos(value),
-                    NI_System_Math_Cosh => MathF.Cosh(value),
-                    NI_System_Math_Exp => MathF.Exp(value),
-                    NI_System_Math_Floor => MathF.Floor(value),
-                    NI_System_Math_Log => MathF.Log(value),
-                    NI_System_Math_Log2 => MathF.Log2(value),
-                    NI_System_Math_Log10 => MathF.Log10(value),
-                    NI_System_Math_Sin => MathF.Sin(value),
-                    NI_System_Math_Sinh => MathF.Sinh(value),
-                    NI_System_Math_Round => MathF.Round(value),
-                    NI_System_Math_Sqrt => MathF.Sqrt(value),
-                    NI_System_Math_Tan => MathF.Tan(value),
-                    NI_System_Math_Tanh => MathF.Tanh(value),
-                    NI_System_Math_Truncate => MathF.Truncate(value),
-                    _ => throw new InvalidOperationException($"Unsupported float math intrinsic: {intrinsic}"),
-                };
+                float __jitExceptionResult726;
+                switch (intrinsic)
+                {
+                    case NI_System_Math_Abs:
+                        __jitExceptionResult726 = MathF.Abs(value);
+                        break;
+                    case NI_System_Math_Acos:
+                        __jitExceptionResult726 = MathF.Acos(value);
+                        break;
+                    case NI_System_Math_Acosh:
+                        __jitExceptionResult726 = MathF.Acosh(value);
+                        break;
+                    case NI_System_Math_Asin:
+                        __jitExceptionResult726 = MathF.Asin(value);
+                        break;
+                    case NI_System_Math_Asinh:
+                        __jitExceptionResult726 = MathF.Asinh(value);
+                        break;
+                    case NI_System_Math_Atan:
+                        __jitExceptionResult726 = MathF.Atan(value);
+                        break;
+                    case NI_System_Math_Atanh:
+                        __jitExceptionResult726 = MathF.Atanh(value);
+                        break;
+                    case NI_System_Math_Cbrt:
+                        __jitExceptionResult726 = MathF.Cbrt(value);
+                        break;
+                    case NI_System_Math_Ceiling:
+                        __jitExceptionResult726 = MathF.Ceiling(value);
+                        break;
+                    case NI_System_Math_Cos:
+                        __jitExceptionResult726 = MathF.Cos(value);
+                        break;
+                    case NI_System_Math_Cosh:
+                        __jitExceptionResult726 = MathF.Cosh(value);
+                        break;
+                    case NI_System_Math_Exp:
+                        __jitExceptionResult726 = MathF.Exp(value);
+                        break;
+                    case NI_System_Math_Floor:
+                        __jitExceptionResult726 = MathF.Floor(value);
+                        break;
+                    case NI_System_Math_Log:
+                        __jitExceptionResult726 = MathF.Log(value);
+                        break;
+                    case NI_System_Math_Log2:
+                        __jitExceptionResult726 = MathF.Log2(value);
+                        break;
+                    case NI_System_Math_Log10:
+                        __jitExceptionResult726 = MathF.Log10(value);
+                        break;
+                    case NI_System_Math_Sin:
+                        __jitExceptionResult726 = MathF.Sin(value);
+                        break;
+                    case NI_System_Math_Sinh:
+                        __jitExceptionResult726 = MathF.Sinh(value);
+                        break;
+                    case NI_System_Math_Round:
+                        __jitExceptionResult726 = MathF.Round(value);
+                        break;
+                    case NI_System_Math_Sqrt:
+                        __jitExceptionResult726 = MathF.Sqrt(value);
+                        break;
+                    case NI_System_Math_Tan:
+                        __jitExceptionResult726 = MathF.Tan(value);
+                        break;
+                    case NI_System_Math_Tanh:
+                        __jitExceptionResult726 = MathF.Tanh(value);
+                        break;
+                    case NI_System_Math_Truncate:
+                        __jitExceptionResult726 = MathF.Truncate(value);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedFloatMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        __jitExceptionResult726 = default;
+                        break;
+                }
+                var floatResult = __jitExceptionResult726;
                 return VNForFloatCon(floatResult);
             }
 
@@ -130,25 +234,53 @@ public sealed partial class ValueNumStore
             int result;
             if (intrinsic is NI_System_Math_ILogB or NI_System_Math_Round)
             {
-                result = (intrinsic, TypeOfVN(argument)) switch {
-                    (NI_System_Math_ILogB, TYP_DOUBLE) => Math.ILogB(GetConstantDouble(argument)),
-                    (NI_System_Math_ILogB, TYP_FLOAT) => MathF.ILogB(GetConstantSingle(argument)),
-                    (NI_System_Math_Round, TYP_DOUBLE) => unchecked((int)Math.Round(GetConstantDouble(argument))),
-                    (NI_System_Math_Round, TYP_FLOAT) => unchecked((int)MathF.Round(GetConstantSingle(argument))),
-                    _ => throw new InvalidOperationException($"Unsupported integral math source: {intrinsic}"),
-                };
+                switch (intrinsic, TypeOfVN(argument))
+                {
+                    case (NI_System_Math_ILogB, TYP_DOUBLE):
+                        result = Math.ILogB(GetConstantDouble(argument));
+                        break;
+                    case (NI_System_Math_ILogB, TYP_FLOAT):
+                        result = MathF.ILogB(GetConstantSingle(argument));
+                        break;
+                    case (NI_System_Math_Round, TYP_DOUBLE):
+                        result = unchecked((int)Math.Round(GetConstantDouble(argument)));
+                        break;
+                    case (NI_System_Math_Round, TYP_FLOAT):
+                        result = unchecked((int)MathF.Round(GetConstantSingle(argument)));
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedIntegralMathSourceArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        result = default;
+                        break;
+                }
             }
             else
             {
-                result = (intrinsic, TypeOfVN(argument)) switch {
-                    (NI_PRIMITIVE_LeadingZeroCount, TYP_LONG) => BitOperations.LeadingZeroCount(unchecked((ulong)GetConstantInt64(argument))),
-                    (NI_PRIMITIVE_LeadingZeroCount, TYP_INT) => BitOperations.LeadingZeroCount(unchecked((uint)GetConstantInt32(argument))),
-                    (NI_PRIMITIVE_TrailingZeroCount, TYP_LONG) => BitOperations.TrailingZeroCount(unchecked((ulong)GetConstantInt64(argument))),
-                    (NI_PRIMITIVE_TrailingZeroCount, TYP_INT) => BitOperations.TrailingZeroCount(unchecked((uint)GetConstantInt32(argument))),
-                    (NI_PRIMITIVE_PopCount, TYP_LONG) => BitOperations.PopCount(unchecked((ulong)GetConstantInt64(argument))),
-                    (NI_PRIMITIVE_PopCount, TYP_INT) => BitOperations.PopCount(unchecked((uint)GetConstantInt32(argument))),
-                    _ => throw new InvalidOperationException($"Unsupported bit-counting intrinsic: {intrinsic}"),
-                };
+                switch (intrinsic, TypeOfVN(argument))
+                {
+                    case (NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+                        result = BitOperations.LeadingZeroCount(unchecked((ulong)GetConstantInt64(argument)));
+                        break;
+                    case (NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+                        result = BitOperations.LeadingZeroCount(unchecked((uint)GetConstantInt32(argument)));
+                        break;
+                    case (NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+                        result = BitOperations.TrailingZeroCount(unchecked((ulong)GetConstantInt64(argument)));
+                        break;
+                    case (NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+                        result = BitOperations.TrailingZeroCount(unchecked((uint)GetConstantInt32(argument)));
+                        break;
+                    case (NI_PRIMITIVE_PopCount, TYP_LONG):
+                        result = BitOperations.PopCount(unchecked((ulong)GetConstantInt64(argument)));
+                        break;
+                    case (NI_PRIMITIVE_PopCount, TYP_INT):
+                        result = BitOperations.PopCount(unchecked((uint)GetConstantInt32(argument)));
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBitCountingIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        result = default;
+                        break;
+                }
             }
 
             return type is TYP_LONG ? VNForLongCon(result) : VNForIntCon(result);
@@ -159,38 +291,102 @@ public sealed partial class ValueNumStore
             ((type is TYP_INT or TYP_LONG) && (intrinsic is
                 NI_PRIMITIVE_LeadingZeroCount or NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_PopCount)));
 
-        var func = intrinsic switch {
-            NI_System_Math_Abs => VNF_Abs,
-            NI_System_Math_Acos => VNF_Acos,
-            NI_System_Math_Acosh => VNF_Acosh,
-            NI_System_Math_Asin => VNF_Asin,
-            NI_System_Math_Asinh => VNF_Asinh,
-            NI_System_Math_Atan => VNF_Atan,
-            NI_System_Math_Atanh => VNF_Atanh,
-            NI_System_Math_Cbrt => VNF_Cbrt,
-            NI_System_Math_Ceiling => VNF_Ceiling,
-            NI_System_Math_Cos => VNF_Cos,
-            NI_System_Math_Cosh => VNF_Cosh,
-            NI_System_Math_Exp => VNF_Exp,
-            NI_System_Math_Floor => VNF_Floor,
-            NI_System_Math_ILogB => VNF_ILogB,
-            NI_System_Math_Log => VNF_Log,
-            NI_System_Math_Log2 => VNF_Log2,
-            NI_System_Math_Log10 => VNF_Log10,
-            NI_System_Math_Round when type is TYP_DOUBLE => VNF_RoundDouble,
-            NI_System_Math_Round when type is TYP_INT => VNF_RoundInt32,
-            NI_System_Math_Round when type is TYP_FLOAT => VNF_RoundSingle,
-            NI_System_Math_Sin => VNF_Sin,
-            NI_System_Math_Sinh => VNF_Sinh,
-            NI_System_Math_Sqrt => VNF_Sqrt,
-            NI_System_Math_Tan => VNF_Tan,
-            NI_System_Math_Tanh => VNF_Tanh,
-            NI_System_Math_Truncate => VNF_Truncate,
-            NI_PRIMITIVE_LeadingZeroCount => VNF_LeadingZeroCount,
-            NI_PRIMITIVE_TrailingZeroCount => VNF_TrailingZeroCount,
-            NI_PRIMITIVE_PopCount => VNF_PopCount,
-            _ => throw new InvalidOperationException($"Unsupported unary math intrinsic: {intrinsic}"),
-        };
+        global::RyuJitSharp.VNFunc __jitExceptionResult727;
+        switch (intrinsic)
+        {
+            case NI_System_Math_Abs:
+                __jitExceptionResult727 = VNF_Abs;
+                break;
+            case NI_System_Math_Acos:
+                __jitExceptionResult727 = VNF_Acos;
+                break;
+            case NI_System_Math_Acosh:
+                __jitExceptionResult727 = VNF_Acosh;
+                break;
+            case NI_System_Math_Asin:
+                __jitExceptionResult727 = VNF_Asin;
+                break;
+            case NI_System_Math_Asinh:
+                __jitExceptionResult727 = VNF_Asinh;
+                break;
+            case NI_System_Math_Atan:
+                __jitExceptionResult727 = VNF_Atan;
+                break;
+            case NI_System_Math_Atanh:
+                __jitExceptionResult727 = VNF_Atanh;
+                break;
+            case NI_System_Math_Cbrt:
+                __jitExceptionResult727 = VNF_Cbrt;
+                break;
+            case NI_System_Math_Ceiling:
+                __jitExceptionResult727 = VNF_Ceiling;
+                break;
+            case NI_System_Math_Cos:
+                __jitExceptionResult727 = VNF_Cos;
+                break;
+            case NI_System_Math_Cosh:
+                __jitExceptionResult727 = VNF_Cosh;
+                break;
+            case NI_System_Math_Exp:
+                __jitExceptionResult727 = VNF_Exp;
+                break;
+            case NI_System_Math_Floor:
+                __jitExceptionResult727 = VNF_Floor;
+                break;
+            case NI_System_Math_ILogB:
+                __jitExceptionResult727 = VNF_ILogB;
+                break;
+            case NI_System_Math_Log:
+                __jitExceptionResult727 = VNF_Log;
+                break;
+            case NI_System_Math_Log2:
+                __jitExceptionResult727 = VNF_Log2;
+                break;
+            case NI_System_Math_Log10:
+                __jitExceptionResult727 = VNF_Log10;
+                break;
+            case NI_System_Math_Round when type is TYP_DOUBLE:
+                __jitExceptionResult727 = VNF_RoundDouble;
+                break;
+            case NI_System_Math_Round when type is TYP_INT:
+                __jitExceptionResult727 = VNF_RoundInt32;
+                break;
+            case NI_System_Math_Round when type is TYP_FLOAT:
+                __jitExceptionResult727 = VNF_RoundSingle;
+                break;
+            case NI_System_Math_Sin:
+                __jitExceptionResult727 = VNF_Sin;
+                break;
+            case NI_System_Math_Sinh:
+                __jitExceptionResult727 = VNF_Sinh;
+                break;
+            case NI_System_Math_Sqrt:
+                __jitExceptionResult727 = VNF_Sqrt;
+                break;
+            case NI_System_Math_Tan:
+                __jitExceptionResult727 = VNF_Tan;
+                break;
+            case NI_System_Math_Tanh:
+                __jitExceptionResult727 = VNF_Tanh;
+                break;
+            case NI_System_Math_Truncate:
+                __jitExceptionResult727 = VNF_Truncate;
+                break;
+            case NI_PRIMITIVE_LeadingZeroCount:
+                __jitExceptionResult727 = VNF_LeadingZeroCount;
+                break;
+            case NI_PRIMITIVE_TrailingZeroCount:
+                __jitExceptionResult727 = VNF_TrailingZeroCount;
+                break;
+            case NI_PRIMITIVE_PopCount:
+                __jitExceptionResult727 = VNF_PopCount;
+                break;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedUnaryMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                __jitExceptionResult727 = default;
+                break;
+        }
+        var func = __jitExceptionResult727;
 
         return VNForFunc(type, func, argument);
     }
@@ -209,19 +405,29 @@ public sealed partial class ValueNumStore
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
                 var leftDouble = GetConstantDouble(left);
                 var rightDouble = GetConstantDouble(right);
-                var result = intrinsic switch {
-                    NI_System_Math_Atan2 => Math.Atan2(leftDouble, rightDouble),
+                double __jitExceptionResult728;
+                switch (intrinsic)
+                {
+                    case NI_System_Math_Atan2:
+                        __jitExceptionResult728 = Math.Atan2(leftDouble, rightDouble);
+                        break;
                     // Match the ARM CRT subnormal fixup: https://github.com/dotnet/runtime/issues/12139.
-                    NI_System_Math_Pow => (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) &&
-                        (rightDouble == 1.0)
-                            ? leftDouble
-                            : Math.Pow(leftDouble, rightDouble),
-                    NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
-                        => EvaluateMathMinMaxNative(leftDouble, rightDouble, true),
-                    NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
-                        => EvaluateMathMinMaxNative(leftDouble, rightDouble, false),
-                    _ => throw new InvalidOperationException($"Unsupported binary double intrinsic: {intrinsic}"),
-                };
+                    case // Match the ARM CRT subnormal fixup: https://github.com/dotnet/runtime/issues/12139.
+                    NI_System_Math_Pow:
+                        __jitExceptionResult728 = (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) && (rightDouble == 1.0) ? leftDouble : Math.Pow(leftDouble, rightDouble);
+                        break;
+                    case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
+                        __jitExceptionResult728 = EvaluateMathMinMaxNative(leftDouble, rightDouble, true);
+                        break;
+                    case NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
+                        __jitExceptionResult728 = EvaluateMathMinMaxNative(leftDouble, rightDouble, false);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBinaryDoubleIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        __jitExceptionResult728 = default;
+                        break;
+                }
+                var result = __jitExceptionResult728;
                 return VNForDoubleCon(result);
             }
 
@@ -230,18 +436,27 @@ public sealed partial class ValueNumStore
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
                 var leftSingle = GetConstantSingle(left);
                 var rightSingle = GetConstantSingle(right);
-                var result = intrinsic switch {
-                    NI_System_Math_Atan2 => MathF.Atan2(leftSingle, rightSingle),
-                    NI_System_Math_Pow => (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) &&
-                        (rightSingle == 1.0f)
-                            ? leftSingle
-                            : MathF.Pow(leftSingle, rightSingle),
-                    NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
-                        => EvaluateMathMinMaxNative(leftSingle, rightSingle, true),
-                    NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
-                        => EvaluateMathMinMaxNative(leftSingle, rightSingle, false),
-                    _ => throw new InvalidOperationException($"Unsupported binary float intrinsic: {intrinsic}"),
-                };
+                float __jitExceptionResult729;
+                switch (intrinsic)
+                {
+                    case NI_System_Math_Atan2:
+                        __jitExceptionResult729 = MathF.Atan2(leftSingle, rightSingle);
+                        break;
+                    case NI_System_Math_Pow:
+                        __jitExceptionResult729 = (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) && (rightSingle == 1.0f) ? leftSingle : MathF.Pow(leftSingle, rightSingle);
+                        break;
+                    case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
+                        __jitExceptionResult729 = EvaluateMathMinMaxNative(leftSingle, rightSingle, true);
+                        break;
+                    case NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
+                        __jitExceptionResult729 = EvaluateMathMinMaxNative(leftSingle, rightSingle, false);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBinaryFloatIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                        __jitExceptionResult729 = default;
+                        break;
+                }
+                var result = __jitExceptionResult729;
                 return VNForFloatCon(result);
             }
 
@@ -250,38 +465,75 @@ public sealed partial class ValueNumStore
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
                 var leftValue = GetConstantInt64(left);
                 var rightValue = GetConstantInt64(right);
-                var integerResult = intrinsic switch
+                long __jitExceptionResult730;
+                switch (intrinsic)
                 {
-                    NI_System_Math_Min => leftValue < rightValue ? leftValue : rightValue,
-                    NI_System_Math_Max => leftValue > rightValue ? leftValue : rightValue,
-                    NI_System_Math_MinUnsigned => unchecked((ulong)leftValue) < unchecked((ulong)rightValue)
-                        ? leftValue : rightValue,
-                    NI_System_Math_MaxUnsigned => unchecked((ulong)leftValue) > unchecked((ulong)rightValue)
-                        ? leftValue : rightValue,
-                    _ => throw new UnreachableException(),
-                };
+                    case NI_System_Math_Min:
+                        __jitExceptionResult730 = leftValue < rightValue ? leftValue : rightValue;
+                        break;
+                    case NI_System_Math_Max:
+                        __jitExceptionResult730 = leftValue > rightValue ? leftValue : rightValue;
+                        break;
+                    case NI_System_Math_MinUnsigned:
+                        __jitExceptionResult730 = unchecked((ulong)leftValue) < unchecked((ulong)rightValue) ? leftValue : rightValue;
+                        break;
+                    case NI_System_Math_MaxUnsigned:
+                        __jitExceptionResult730 = unchecked((ulong)leftValue) > unchecked((ulong)rightValue) ? leftValue : rightValue;
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        __jitExceptionResult730 = default;
+                        break;
+                }
+                var integerResult = __jitExceptionResult730;
 
                 return type is TYP_LONG or TYP_ULONG
                     ? VNForLongCon(integerResult)
                     : VNForIntCon(unchecked((int)integerResult));
             }
 
-            throw new UnreachableException();
+            JitExceptionHelpers.ThrowUnreachableException();
         }
 
-        var func = intrinsic switch {
-            NI_System_Math_Atan2 => VNF_Atan2,
-            NI_System_Math_Max when Configuration.TARGET_RISCV64 => VNF_MaxInt,
-            NI_System_Math_MaxUnsigned when Configuration.TARGET_RISCV64 => VNF_MaxInt_UN,
-            NI_System_Math_Min when Configuration.TARGET_RISCV64 => VNF_MinInt,
-            NI_System_Math_MinUnsigned when Configuration.TARGET_RISCV64 => VNF_MinInt_UN,
-            NI_System_Math_MaxNative when Configuration.TARGET_WASM => VNF_Max,
-            NI_System_Math_MinNative when Configuration.TARGET_WASM => VNF_Min,
-            NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 => VNF_MaxNumber,
-            NI_System_Math_MinNative when Configuration.TARGET_RISCV64 => VNF_MinNumber,
-            NI_System_Math_Pow => VNF_Pow,
-            _ => throw new InvalidOperationException($"Unsupported binary math intrinsic: {intrinsic}"),
-        };
+        global::RyuJitSharp.VNFunc __jitExceptionResult731;
+        switch (intrinsic)
+        {
+            case NI_System_Math_Atan2:
+                __jitExceptionResult731 = VNF_Atan2;
+                break;
+            case NI_System_Math_Max when Configuration.TARGET_RISCV64:
+                __jitExceptionResult731 = VNF_MaxInt;
+                break;
+            case NI_System_Math_MaxUnsigned when Configuration.TARGET_RISCV64:
+                __jitExceptionResult731 = VNF_MaxInt_UN;
+                break;
+            case NI_System_Math_Min when Configuration.TARGET_RISCV64:
+                __jitExceptionResult731 = VNF_MinInt;
+                break;
+            case NI_System_Math_MinUnsigned when Configuration.TARGET_RISCV64:
+                __jitExceptionResult731 = VNF_MinInt_UN;
+                break;
+            case NI_System_Math_MaxNative when Configuration.TARGET_WASM:
+                __jitExceptionResult731 = VNF_Max;
+                break;
+            case NI_System_Math_MinNative when Configuration.TARGET_WASM:
+                __jitExceptionResult731 = VNF_Min;
+                break;
+            case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64:
+                __jitExceptionResult731 = VNF_MaxNumber;
+                break;
+            case NI_System_Math_MinNative when Configuration.TARGET_RISCV64:
+                __jitExceptionResult731 = VNF_MinNumber;
+                break;
+            case NI_System_Math_Pow:
+                __jitExceptionResult731 = VNF_Pow;
+                break;
+            default:
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.UnsupportedBinaryMathIntrinsicArgument, (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? intrinsic : default));
+                __jitExceptionResult731 = default;
+                break;
+        }
+        var func = __jitExceptionResult731;
         return VNForFunc(type, func, left, right);
     }
 
@@ -290,7 +542,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_WASM)
         {
-            throw new PlatformNotSupportedException("Native min/max evaluation is only supported on RISC-V and Wasm.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.NativeMinMaxEvaluationIsOnlySupportedOnRISCVAndWasm);
         }
 
         if (left != right)
@@ -430,8 +682,7 @@ public sealed partial class ValueNumStore
                 {
                     if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        throw new PlatformNotSupportedException(
-                            "Masked hardware intrinsics are not enabled for this target.");
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
                     }
 
                     var argument = GetConstantSimdMaskValue(arg0VN);
@@ -470,8 +721,7 @@ public sealed partial class ValueNumStore
                 {
                     if (!Configuration.FEATURE_MASKED_HW_INTRINSICS && !Configuration.TARGET_WASM)
                     {
-                        throw new PlatformNotSupportedException(
-                            "Most-significant-bit extraction is not supported for this target.");
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MostSignificantBitExtractionIsNotSupportedForThisTarget);
                     }
 
                     assert((simdSize is 8 or 16) || (Configuration.TARGET_XARCH && (simdSize == 32)));
@@ -677,8 +927,7 @@ public sealed partial class ValueNumStore
                 {
                     if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                     {
-                        throw new PlatformNotSupportedException(
-                            "Masked hardware intrinsics are not enabled for this target.");
+                        JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
                     }
 
                     if (TypeOfVN(arg0VN) is TYP_MASK)
@@ -1217,7 +1466,8 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }

@@ -99,7 +99,7 @@ public partial class Globals
     {
         if (!Configuration.TARGET_X86)
         {
-            FatalJitException.ThrowFatalJitException("Caller-pop conventions are only defined for x86.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.CallerPopConventionsAreOnlyDefinedForX86);
             return default!;
         }
 

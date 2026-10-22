@@ -167,7 +167,7 @@ public abstract partial class CSE_HeuristicCommon
                 }
                 else
                 {
-                    throw new System.NotImplementedException("CSE_HeuristicCommon.CanConsiderTree target intrinsic categories");
+                    JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.CSEHeuristicCommonCanConsiderTreeTargetIntrinsicCategories);
                 }
                 if (intrinsic.IsMemoryStore(out _) || intrinsic.IsMemoryLoad())
                 {

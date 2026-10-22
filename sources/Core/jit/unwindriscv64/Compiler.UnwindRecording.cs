@@ -10,7 +10,9 @@ public partial class Compiler
     public void unwindPushRiscV64(regNumber reg)
     {
         FatalJitException.ThrowFatalJitException(
-            CORJIT_SKIPPED, "unwindPush is unreachable; use one of the unwindSaveReg* functions instead.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindPushIsUnreachableUseOneOfTheUnwindSaveRegFunctionsInstead
+    );
         return;
     }
 
@@ -124,7 +126,7 @@ public partial class Compiler
 
     public void unwindSaveRegPairRiscV64(regNumber reg1, regNumber reg2, int offset)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unwindSaveRegPair-----unused on RISCV64 yet----");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnwindSaveRegPairUnusedOnRISCV64Yet);
         return;
     }
 

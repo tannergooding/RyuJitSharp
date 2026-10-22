@@ -99,25 +99,39 @@ public partial class Compiler
             var hasFinallyRet = false;
             var hasSwitch = false;
 
-            for (var block = firstBlock; ; block = block.Next
-                     ?? throw new InvalidOperationException("Finally handler range ended prematurely."))
+            for (var block = firstBlock;;)
             {
-                if (block.Kind is BBJ_SWITCH)
                 {
-                    hasSwitch = true;
-                    break;
+                    {
+                        if (block.Kind is BBJ_SWITCH)
+                        {
+                            hasSwitch = true;
+                            break;
+                        }
+
+                        regionBBCount++;
+                        foreach (var _ in block.Statements)
+                        {
+                            regionStmtCount++;
+                        }
+
+                        hasFinallyRet |= block.Kind is BBJ_EHFINALLYRET;
+                        if (block == lastBlock)
+                        {
+                            break;
+                        }
+                    }
                 }
 
-                regionBBCount++;
-                foreach (var _ in block.Statements)
+                var __jitExceptionCoalesceLeft174 = block.Next;
+                if (__jitExceptionCoalesceLeft174 != null)
                 {
-                    regionStmtCount++;
+                    block = __jitExceptionCoalesceLeft174;
                 }
-
-                hasFinallyRet |= block.Kind is BBJ_EHFINALLYRET;
-                if (block == lastBlock)
+                else
                 {
-                    break;
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -154,87 +168,113 @@ public partial class Compiler
             var usingProfileWeights = fgIsUsingProfileWeights;
             var currentWeight = BB_ZERO_WEIGHT;
 
-            for (var block = lastTry; ; block = block.Prev
-                     ?? throw new InvalidOperationException("Try region ended prematurely."))
+            for (var block = lastTry;;)
             {
-                var jumpDest = block.Kind is BBJ_ALWAYS or BBJ_CALLFINALLYRET ? block.Target : null;
-                if ((jumpDest is null) || !jumpDest.isBBCallFinallyPair || (jumpDest.Target != firstBlock))
                 {
-                    if (block == firstTry)
                     {
-                        break;
-                    }
-                    continue;
-                }
-
-                var leave = jumpDest.Next
-                    ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
-                var continuation = fgGetFinallyContinuation(leave);
-                var isUpdate = false;
-                if (normalCallFinally is null)
-                {
-                    normalCallFinally = jumpDest;
-                    normalContinuation = continuation;
-                    if (usingProfileWeights)
-                    {
-                        if (block.hasProfileWeight)
+                        var jumpDest = block.Kind is BBJ_ALWAYS or BBJ_CALLFINALLYRET ? block.Target : null;
+                        if ((jumpDest is null) || !jumpDest.isBBCallFinallyPair || (jumpDest.Target != firstBlock))
                         {
-                            JITDUMP($"Found profiled {FMT_BB(block.bbNum)} " +
-                                $"with weight {FMT_WT(block.bbWeight)}\n");
-                            currentWeight = block.bbWeight;
+                            if (block == firstTry)
+                            {
+                                break;
+                            }
+
+                            goto __jitExceptionForIncrement175;
+                        }
+
+                        global::RyuJitSharp.BasicBlock __jitExceptionResult177;
+                        var __jitExceptionCoalesceLeft178 = jumpDest.Next;
+                        if (__jitExceptionCoalesceLeft178 != null)
+                        {
+                            __jitExceptionResult177 = __jitExceptionCoalesceLeft178;
                         }
                         else
                         {
-                            JITDUMP($"Found unprofiled {FMT_BB(block.bbNum)}\n");
+                            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
+                            __jitExceptionResult177 = default;
+                        }
+                        var leave = __jitExceptionResult177;
+                        var continuation = fgGetFinallyContinuation(leave);
+                        var isUpdate = false;
+                        if (normalCallFinally is null)
+                        {
+                            normalCallFinally = jumpDest;
+                            normalContinuation = continuation;
+                            if (usingProfileWeights)
+                            {
+                                if (block.hasProfileWeight)
+                                {
+                                    JITDUMP($"Found profiled {FMT_BB(block.bbNum)} " +
+                                        $"with weight {FMT_WT(block.bbWeight)}\n");
+                                    currentWeight = block.bbWeight;
+                                }
+                                else
+                                {
+                                    JITDUMP($"Found unprofiled {FMT_BB(block.bbNum)}\n");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            assert(usingProfileWeights);
+                            if (!block.hasProfileWeight)
+                            {
+                                JITDUMP($"Skipping past unprofiled {FMT_BB(block.bbNum)}\n");
+                                if (block == firstTry)
+                                {
+                                    break;
+                                }
+
+                                goto __jitExceptionForIncrement175;
+                            }
+
+                            if (block.bbWeight <= currentWeight)
+                            {
+                                JITDUMP($"Skipping past {FMT_BB(block.bbNum)} " +
+                                    $"with weight {FMT_WT(block.bbWeight)}\n");
+                                if (block == firstTry)
+                                {
+                                    break;
+                                }
+
+                                goto __jitExceptionForIncrement175;
+                            }
+
+                            JITDUMP($"Preferring {FMT_BB(block.bbNum)} since " +
+                                $"{FMT_WT(block.bbWeight)} >  {FMT_WT(currentWeight)}\n");
+                            normalCallFinally = jumpDest;
+                            normalContinuation = continuation;
+                            currentWeight = block.bbWeight;
+                            isUpdate = true;
+                        }
+
+                        assert(!jumpDest.hasHndIndex);
+                        cloneInsertAfter = leave;
+                        JITDUMP($"{(isUpdate ? "Updating" : "Choosing")} path to clone: " + $"try block {FMT_BB(block.bbNum)} jumps to callfinally at {FMT_BB(jumpDest.bbNum)}; " + $"the call returns to {FMT_BB(leave.bbNum)} which jumps to " + $"{FMT_BB(continuation.bbNum)}\n");
+                        if (!usingProfileWeights)
+                        {
+                            break;
+                        }
+
+                        if (block == firstTry)
+                        {
+                            break;
                         }
                     }
+                }
+
+                __jitExceptionForIncrement175:
+                    ;
+                var __jitExceptionCoalesceLeft176 = block.Prev;
+                if (__jitExceptionCoalesceLeft176 != null)
+                {
+                    block = __jitExceptionCoalesceLeft176;
                 }
                 else
                 {
-                    assert(usingProfileWeights);
-                    if (!block.hasProfileWeight)
-                    {
-                        JITDUMP($"Skipping past unprofiled {FMT_BB(block.bbNum)}\n");
-                        if (block == firstTry)
-                        {
-                            break;
-                        }
-                        continue;
-                    }
-
-                    if (block.bbWeight <= currentWeight)
-                    {
-                        JITDUMP($"Skipping past {FMT_BB(block.bbNum)} " +
-                            $"with weight {FMT_WT(block.bbWeight)}\n");
-                        if (block == firstTry)
-                        {
-                            break;
-                        }
-                        continue;
-                    }
-
-                    JITDUMP($"Preferring {FMT_BB(block.bbNum)} since " +
-                        $"{FMT_WT(block.bbWeight)} >  {FMT_WT(currentWeight)}\n");
-                    normalCallFinally = jumpDest;
-                    normalContinuation = continuation;
-                    currentWeight = block.bbWeight;
-                    isUpdate = true;
-                }
-
-                assert(!jumpDest.hasHndIndex);
-                cloneInsertAfter = leave;
-                JITDUMP($"{(isUpdate ? "Updating" : "Choosing")} path to clone: " +
-                    $"try block {FMT_BB(block.bbNum)} jumps to callfinally at {FMT_BB(jumpDest.bbNum)}; " +
-                    $"the call returns to {FMT_BB(leave.bbNum)} which jumps to " +
-                    $"{FMT_BB(continuation.bbNum)}\n");
-                if (!usingProfileWeights)
-                {
-                    break;
-                }
-
-                if (block == firstTry)
-                {
-                    break;
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.TryRegionEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -265,50 +305,72 @@ public partial class Compiler
                 }
             }
 
-            for (var block = firstBlock; ; block = block.Next
-                     ?? throw new InvalidOperationException("Finally handler range ended prematurely."))
+            for (var block = firstBlock;;)
             {
-                BasicBlock newBlock;
-                if (block == firstBlock)
                 {
-                    newBlock = fgNewBBinRegion(BBJ_ALWAYS, finallyTryIndex, 0, cloneInsertAfter);
-                    if (newBlock.Next == nextBlock)
                     {
-                        assert(newBlock.Prev == lastBlock);
+                        BasicBlock newBlock;
+                        if (block == firstBlock)
+                        {
+                            newBlock = fgNewBBinRegion(BBJ_ALWAYS, finallyTryIndex, 0, cloneInsertAfter);
+                            if (newBlock.Next == nextBlock)
+                            {
+                                assert(newBlock.Prev == lastBlock);
+                            }
+                        }
+                        else
+                        {
+                            var __jitExceptionArgument181 = BBJ_ALWAYS;
+                            global::RyuJitSharp.BasicBlock __jitExceptionArgument182;
+                            var __jitExceptionCoalesceLeft183 = insertAfter;
+                            if (__jitExceptionCoalesceLeft183 != null)
+                            {
+                                __jitExceptionArgument182 = __jitExceptionCoalesceLeft183;
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.SubsequentCloneNeedsItsPredecessor);
+                                __jitExceptionArgument182 = default;
+                            }
+                            newBlock = fgNewBBafter(__jitExceptionArgument181, __jitExceptionArgument182, extendRegion: true);
+                        }
+
+                        cloneBBCount++;
+                        assert(cloneBBCount <= regionBBCount);
+                        insertAfter = newBlock;
+                        blockMap.Add(block, newBlock);
+                        BasicBlock.CloneBlockState(this, newBlock, block);
+                        if (block == firstBlock)
+                        {
+                            newBlock.SetFlags(BBF_CLONED_FINALLY_BEGIN);
+                        }
+
+                        if (block == lastBlock)
+                        {
+                            newBlock.SetFlags(BBF_CLONED_FINALLY_END);
+                        }
+
+                        newBlock.RemoveFlags(BBF_DONT_REMOVE);
+                        assert(newBlock.bbTryIndex == finallyTryIndex);
+                        newBlock.clearHndIndex();
+                        assert(newBlock.Kind is BBJ_ALWAYS);
+                        assert(!newBlock.HasInitializedTarget);
+                        if (block == lastBlock)
+                        {
+                            break;
+                        }
                     }
+                }
+
+                var __jitExceptionCoalesceLeft180 = block.Next;
+                if (__jitExceptionCoalesceLeft180 != null)
+                {
+                    block = __jitExceptionCoalesceLeft180;
                 }
                 else
                 {
-                    newBlock = fgNewBBafter(BBJ_ALWAYS, insertAfter
-                        ?? throw new InvalidOperationException("A subsequent clone needs its predecessor."),
-                        extendRegion: true);
-                }
-
-                cloneBBCount++;
-                assert(cloneBBCount <= regionBBCount);
-                insertAfter = newBlock;
-                blockMap.Add(block, newBlock);
-                BasicBlock.CloneBlockState(this, newBlock, block);
-
-                if (block == firstBlock)
-                {
-                    newBlock.SetFlags(BBF_CLONED_FINALLY_BEGIN);
-                }
-
-                if (block == lastBlock)
-                {
-                    newBlock.SetFlags(BBF_CLONED_FINALLY_END);
-                }
-
-                newBlock.RemoveFlags(BBF_DONT_REMOVE);
-                assert(newBlock.bbTryIndex == finallyTryIndex);
-                newBlock.clearHndIndex();
-                assert(newBlock.Kind is BBJ_ALWAYS);
-                assert(!newBlock.HasInitializedTarget);
-
-                if (block == lastBlock)
-                {
-                    break;
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -316,29 +378,53 @@ public partial class Compiler
             JITDUMP($"Cloned finally blocks are: {FMT_BB(blockMap.GetValue(firstBlock).bbNum)} " +
                 $"... {FMT_BB(blockMap.GetValue(lastBlock).bbNum)}\n");
 
-            for (var block = firstBlock; ; block = block.Next
-                     ?? throw new InvalidOperationException("Finally handler range ended prematurely."))
+            for (var block = firstBlock;;)
             {
-                var clone = blockMap.GetValue(block);
-                assert(clone.Kind is BBJ_ALWAYS);
-                assert(!clone.HasInitializedTarget);
-                if (block.Kind is BBJ_EHFINALLYRET)
                 {
-                    var ret = clone.LastStmt
-                        ?? throw new InvalidOperationException("A finally return requires a statement.");
-                    assert(ret.RootNode.Oper is GT_RETFILT);
-                    fgRemoveStmt(clone, ret);
-                    var edge = fgAddRefPred(normalContinuation, clone);
-                    clone.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
+                    {
+                        var clone = blockMap.GetValue(block);
+                        assert(clone.Kind is BBJ_ALWAYS);
+                        assert(!clone.HasInitializedTarget);
+                        if (block.Kind is BBJ_EHFINALLYRET)
+                        {
+                            global::RyuJitSharp.Statement __jitExceptionResult186;
+                            var __jitExceptionCoalesceLeft187 = clone.LastStmt;
+                            if (__jitExceptionCoalesceLeft187 != null)
+                            {
+                                __jitExceptionResult186 = __jitExceptionCoalesceLeft187;
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyReturnRequiresAStatement2);
+                                __jitExceptionResult186 = default;
+                            }
+                            var ret = __jitExceptionResult186;
+                            assert(ret.RootNode.Oper is GT_RETFILT);
+                            fgRemoveStmt(clone, ret);
+                            var edge = fgAddRefPred(normalContinuation, clone);
+                            clone.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
+                        }
+                        else
+                        {
+                            optSetMappedBlockTargets(block, clone, blockMap);
+                        }
+
+                        if (block == lastBlock)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                var __jitExceptionCoalesceLeft185 = block.Next;
+                if (__jitExceptionCoalesceLeft185 != null)
+                {
+                    block = __jitExceptionCoalesceLeft185;
                 }
                 else
                 {
-                    optSetMappedBlockTargets(block, clone, blockMap);
-                }
-
-                if (block == lastBlock)
-                {
-                    break;
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
+                    block = default;
                 }
             }
 
@@ -352,8 +438,18 @@ public partial class Compiler
                 var next = call.Next;
                 if (call.isBBCallFinallyPair && (call.Target == firstBlock))
                 {
-                    var leave = call.Next
-                        ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
+                    global::RyuJitSharp.BasicBlock __jitExceptionResult188;
+                    var __jitExceptionCoalesceLeft189 = call.Next;
+                    if (__jitExceptionCoalesceLeft189 != null)
+                    {
+                        __jitExceptionResult188 = __jitExceptionCoalesceLeft189;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyPairRequiresItsLeaveBlock);
+                        __jitExceptionResult188 = default;
+                    }
+                    var leave = __jitExceptionResult188;
                     var continuation = fgGetFinallyContinuation(leave);
                     if (continuation == normalContinuation)
                     {
@@ -384,7 +480,16 @@ public partial class Compiler
                 {
                     break;
                 }
-                call = next ?? throw new InvalidOperationException("Call-finally range ended prematurely.");
+                var __jitExceptionCoalesceLeft190 = next;
+                if (__jitExceptionCoalesceLeft190 != null)
+                {
+                    call = __jitExceptionCoalesceLeft190;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CallFinallyRangeEndedPrematurely);
+                    call = default;
+                }
             }
 
             if (retargetedAllCalls)
@@ -392,18 +497,32 @@ public partial class Compiler
                 JITDUMP("All callfinallys retargeted; changing finally to fault.\n");
                 clause.ebdHandlerType = EH_HANDLER_FAULT_WAS_FINALLY;
                 firstBlock.CatchType = bbCatchType.BBCT_FAULT;
-                for (var block = firstBlock; ; block = block.Next
-                         ?? throw new InvalidOperationException("Finally handler range ended prematurely."))
+                for (var block = firstBlock;;)
                 {
-                    if (block.Kind is BBJ_EHFINALLYRET)
                     {
-                        assert(block.EhfTargets?.Succs.Length == 0);
-                        block.Kind = BBJ_EHFAULTRET;
+                        {
+                            if (block.Kind is BBJ_EHFINALLYRET)
+                            {
+                                assert(block.EhfTargets?.Succs.Length == 0);
+                                block.Kind = BBJ_EHFAULTRET;
+                            }
+
+                            if (block == lastBlock)
+                            {
+                                break;
+                            }
+                        }
                     }
 
-                    if (block == lastBlock)
+                    var __jitExceptionCoalesceLeft192 = block.Next;
+                    if (__jitExceptionCoalesceLeft192 != null)
                     {
-                        break;
+                        block = __jitExceptionCoalesceLeft192;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
+                        block = default;
                     }
                 }
             }
@@ -420,19 +539,32 @@ public partial class Compiler
                 var originalScale = 1.0 - clonedScale;
                 JITDUMP($"Profile scale factor ({FMT_WT(retargetedWeight)}/{FMT_WT(originalWeight)}) " +
                     $"=> clone {FMT_WT(clonedScale)} / original {FMT_WT(originalScale)}\n");
-                for (var block = firstBlock; ; block = block.Next
-                         ?? throw new InvalidOperationException("Finally handler range ended prematurely."))
+                for (var block = firstBlock;;)
                 {
-                    var weight = block.bbWeight;
-                    block.setBBProfileWeight(weight * originalScale);
-                    JITDUMP($"Set weight of {FMT_BB(block.bbNum)} to {FMT_WT(block.bbWeight)}\n");
-                    var clone = blockMap.GetValue(block);
-                    clone.setBBProfileWeight(weight * clonedScale);
-                    JITDUMP($"Set weight of {FMT_BB(clone.bbNum)} to {FMT_WT(clone.bbWeight)}\n");
-
-                    if (block == lastBlock)
                     {
-                        break;
+                        {
+                            var weight = block.bbWeight;
+                            block.setBBProfileWeight(weight * originalScale);
+                            JITDUMP($"Set weight of {FMT_BB(block.bbNum)} to {FMT_WT(block.bbWeight)}\n");
+                            var clone = blockMap.GetValue(block);
+                            clone.setBBProfileWeight(weight * clonedScale);
+                            JITDUMP($"Set weight of {FMT_BB(clone.bbNum)} to {FMT_WT(clone.bbWeight)}\n");
+                            if (block == lastBlock)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    var __jitExceptionCoalesceLeft194 = block.Next;
+                    if (__jitExceptionCoalesceLeft194 != null)
+                    {
+                        block = __jitExceptionCoalesceLeft194;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FinallyHandlerRangeEndedPrematurely);
+                        block = default;
                     }
                 }
 

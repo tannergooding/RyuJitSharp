@@ -24,7 +24,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register masks are unavailable for this target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterMasksAreUnavailableForThisTarget);
             return default!;
         }
 

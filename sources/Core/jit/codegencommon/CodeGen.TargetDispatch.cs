@@ -809,7 +809,11 @@ public sealed partial class CodeGen
 
     private static void throwUnsupportedTargetCodeGenMethod(string methodName)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, $"{methodName} is not implemented for the active target.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ArgumentIsNotImplementedForTheActiveTarget,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? methodName : default)
+    );
         return;
     }
 }

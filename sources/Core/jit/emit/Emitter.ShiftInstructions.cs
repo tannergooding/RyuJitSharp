@@ -13,7 +13,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReadModifyWriteInstructionRecordingRequiresXarch
+    );
             return;
         }
         if (Configuration.TARGET_AMD64)
@@ -92,7 +95,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnaryReadModifyWriteInstructionRecordingRequiresXarch
+    );
             return;
         }
         if (Configuration.TARGET_AMD64)
@@ -157,7 +163,10 @@ public partial class Emitter
         }
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.IndexedAddressInstructionRecordingRequiresXarch
+    );
             return;
         }
         if (Configuration.TARGET_AMD64)
@@ -207,7 +216,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.BaseRegisterImmediateInstructionRecordingRequiresXarch
+    );
             return;
         }
         if (Configuration.TARGET_AMD64)
@@ -244,7 +256,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Xarch shift instruction classification is not supported for this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.XarchShiftInstructionClassificationIsNotSupportedForThisTarget
+    );
             return default!;
         }
 

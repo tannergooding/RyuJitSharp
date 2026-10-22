@@ -109,10 +109,7 @@ public partial class Compiler
         var clonedDstLen = gtCloneExpr(dstLen);
         if (clonedDstLen is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage204
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneReadUtf8DestinationLength);
             return default!;
         }
 
@@ -144,10 +141,7 @@ public partial class Compiler
             var clonedDstPtr = gtCloneExpr(dstPtr);
             if (clonedDstPtr is null)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage205
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneReadUtf8DestinationPointer);
                 return default!;
             }
 
@@ -159,10 +153,7 @@ public partial class Compiler
         var clonedSrcLen = gtCloneExpr(srcLenU8Node);
         if (clonedSrcLen is null)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage206
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.CannotCloneReadUtf8ByteLength);
             return default!;
         }
 

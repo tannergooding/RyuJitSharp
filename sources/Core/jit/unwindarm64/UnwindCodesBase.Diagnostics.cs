@@ -30,7 +30,7 @@ public unsafe class Arm64UnwindCodesBase
 
     public virtual byte* GetCodes()
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "UnwindCodesBase::GetCodes storage is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnwindCodesBaseGetCodesStorageIsNotPorted);
         return default!;
     }
 

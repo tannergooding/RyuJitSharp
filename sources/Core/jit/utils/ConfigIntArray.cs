@@ -20,7 +20,7 @@ public struct ConfigIntArray
         {
             if (str is null)
             {
-                FatalJitException.ThrowFatalJitException("ConfigIntArray requires a configuration string.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ConfigIntArrayRequiresAConfigurationString);
                 return;
             }
 
@@ -125,7 +125,7 @@ public struct ConfigIntArray
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Configuration arrays are only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.ConfigurationArraysAreOnlyAvailableInDebugBuilds);
         }
     }
 }

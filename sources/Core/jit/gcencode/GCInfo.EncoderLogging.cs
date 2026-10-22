@@ -53,10 +53,7 @@ internal sealed class GcInfoEncoderWithLogging
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage217
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidStackSlotBase);
                 return default!;
             }
         }
@@ -108,10 +105,7 @@ internal sealed class GcInfoEncoderWithLogging
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage218
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.InvalidGCSlotFlags);
                 return default!;
             }
         }

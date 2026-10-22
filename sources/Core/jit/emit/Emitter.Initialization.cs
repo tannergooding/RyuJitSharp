@@ -86,7 +86,7 @@ public partial class Emitter
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("Emitter GC diagnostic state is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.EmitterGCDiagnosticStateIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

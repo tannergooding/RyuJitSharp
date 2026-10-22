@@ -173,7 +173,10 @@ public sealed partial class CodeGen : ICodeGen
         }
 
         NYI("CodeGen.genGetGSCookieTempRegs outside xarch");
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "CodeGen.genGetGSCookieTempRegs is not supported for this target.");
+        FatalJitException.ThrowFatalJitException(
+            CORJIT_SKIPPED,
+            FatalJitErrorCode.CodeGenGenGetGSCookieTempRegsIsNotSupportedForThisTarget
+        );
         return default!;
     }
 
@@ -524,7 +527,8 @@ public sealed partial class CodeGen : ICodeGen
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Code-generation diagnostic state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CodeGenerationDiagnosticStateIsOnlyAvailableInDebugBuilds);
+                return false;
             }
 
             return _genInterruptibleUsed;
@@ -537,7 +541,8 @@ public sealed partial class CodeGen : ICodeGen
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Code-generation diagnostic state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CodeGenerationDiagnosticStateIsOnlyAvailableInDebugBuilds);
+                return false;
             }
 
             return _verbose;
@@ -547,7 +552,8 @@ public sealed partial class CodeGen : ICodeGen
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("Code-generation diagnostic state is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CodeGenerationDiagnosticStateIsOnlyAvailableInDebugBuilds);
+                return;
             }
 
             _verbose = value;
@@ -1121,7 +1127,7 @@ public sealed partial class CodeGen : ICodeGen
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.MachineCodeGenerationRequiresWindowsAMD64);
             return;
         }
 
@@ -1132,7 +1138,7 @@ public sealed partial class CodeGen : ICodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm funclet validation requires the Wasm target.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.WasmFuncletValidationRequiresTheWasmTarget);
             return;
         }
 
@@ -1154,7 +1160,10 @@ public sealed partial class CodeGen : ICodeGen
     {
         if (!Configuration.TARGET_WASM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Wasm ReadyToRun range validation requires the Wasm target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                FatalJitErrorCode.WasmReadyToRunRangeValidationRequiresTheWasmTarget
+            );
             return;
         }
 
@@ -1208,7 +1217,10 @@ public sealed partial class CodeGen : ICodeGen
                 return REG_RISCV64_FP;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Frame-pointer register is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                FatalJitErrorCode.FramePointerRegisterIsNotAvailableForTheConfiguredTarget
+            );
             return default!;
         }
 
@@ -1250,7 +1262,10 @@ public sealed partial class CodeGen : ICodeGen
                 return REG_RISCV64_SP;
             }
 
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Stack-pointer register is not available for the configured target.");
+            FatalJitException.ThrowFatalJitException(
+                CORJIT_SKIPPED,
+                FatalJitErrorCode.StackPointerRegisterIsNotAvailableForTheConfiguredTarget
+            );
             return default!;
         }
 

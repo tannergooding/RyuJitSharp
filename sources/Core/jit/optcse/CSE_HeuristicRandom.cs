@@ -54,7 +54,7 @@ public class CSE_HeuristicRandom : CSE_HeuristicCommon
             var descriptor = sortTab[index];
             if (descriptor is null)
             {
-                FatalJitException.ThrowFatalJitException("Random CSE permutation is missing a descriptor.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RandomCSEPermutationIsMissingADescriptor);
                 return;
             }
             var candidate = new CSE_Candidate(this, descriptor);

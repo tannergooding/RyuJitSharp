@@ -42,7 +42,7 @@ public partial class Compiler
         {
             if (!Configuration.DEBUG)
             {
-                throw new InvalidOperationException("The compiler method hash is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CompilerMethodHashIsOnlyAvailableInDebugBuilds);
             }
 
             if (compMethodHashPrivate == 0)

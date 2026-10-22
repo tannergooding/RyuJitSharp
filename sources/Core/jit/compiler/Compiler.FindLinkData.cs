@@ -53,7 +53,8 @@ public partial class Compiler
                 }
             }
 
-            throw new System.InvalidOperationException("The recorded operand is no longer present.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.RecordedOperandIsNoLongerPresent);
+            return default;
         }
 
         public fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
@@ -77,7 +78,7 @@ public partial class Compiler
                         _edgeIndex++;
                     }
 
-                    throw new System.InvalidOperationException("The visited operand is not owned by its parent.");
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.VisitedOperandIsNotOwnedByItsParent);
                 }
 
                 return WALK_ABORT;

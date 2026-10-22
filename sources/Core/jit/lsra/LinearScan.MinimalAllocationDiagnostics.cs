@@ -49,13 +49,13 @@ public sealed partial class LinearScan
                 var localVarIntervals = this.localVarIntervals;
                 if (localVarIntervals is null)
                 {
-                    FatalJitException.ThrowFatalJitException("Register-candidate locals require LSRA interval mappings.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterCandidateLocalsRequireLSRAIntervalMappings);
                     return;
                 }
                 var interval = localVarIntervals[local._varIndex];
                 if (interval is null)
                 {
-                    FatalJitException.ThrowFatalJitException("A register-candidate local has no LSRA interval.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.RegisterCandidateLocalHasNoLSRAInterval);
                     return;
                 }
                 jitprintf($"  (Interval {interval.intervalIndex})\n");

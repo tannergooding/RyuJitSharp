@@ -14,7 +14,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterOutputRequiresXarch);
             return default!;
         }
 
@@ -160,7 +160,7 @@ public partial class Emitter
             {
                 if (!Configuration.TARGET_AMD64)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "APX register output requires AMD64.");
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.APXRegisterOutputRequiresAMD64);
                     return default!;
                 }
 
@@ -255,7 +255,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Register-pair output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.RegisterPairOutputRequiresXarch);
             return default!;
         }
 
@@ -414,7 +414,7 @@ public partial class Emitter
                 {
                     if (!Configuration.TARGET_AMD64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Eight-byte register-pair output requires AMD64.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EightByteRegisterPairOutputRequiresAMD64);
                         return default!;
                     }
 
@@ -548,7 +548,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Three-register output requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ThreeRegisterOutputRequiresXarch);
             return default!;
         }
 
@@ -589,7 +589,7 @@ public partial class Emitter
                 {
                     if (!Configuration.TARGET_AMD64)
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Eight-byte three-register output requires AMD64.");
+                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EightByteThreeRegisterOutputRequiresAMD64);
                         return default!;
                     }
 

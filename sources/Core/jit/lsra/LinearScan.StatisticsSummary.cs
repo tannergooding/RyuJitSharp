@@ -17,13 +17,13 @@ public sealed partial class LinearScan
         var blockInfo = _blockInfo;
         if (blockInfo is null)
         {
-            FatalJitException.ThrowFatalJitException("LSRA statistics require initialized block information.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAStatisticsRequireInitializedBlockInformation);
             return;
         }
         var blockStats = _blockStats;
         if (blockStats is null)
         {
-            FatalJitException.ThrowFatalJitException("LSRA statistics are not enabled.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAStatisticsAreNotEnabled);
             return;
         }
 
@@ -32,7 +32,7 @@ public sealed partial class LinearScan
             var nullableStat = blockStats[0]?[index];
             if (nullableStat is null)
             {
-                FatalJitException.ThrowFatalJitException("The entry block has no LSRA statistics.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EntryBlockHasNoLSRAStatistics);
                 return;
             }
             var stat = nullableStat.Value;
@@ -50,7 +50,7 @@ public sealed partial class LinearScan
             var stats = blockStats[block.bbNum];
             if (stats is null)
             {
-                FatalJitException.ThrowFatalJitException("A pre-resolution block has no LSRA statistics.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.PreResolutionBlockHasNoLSRAStatistics);
                 return;
             }
             for (var index = 0; index < sumStats.Length; index++)

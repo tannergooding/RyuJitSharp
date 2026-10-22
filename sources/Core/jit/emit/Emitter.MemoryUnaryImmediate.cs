@@ -14,23 +14,29 @@ public partial class Emitter
         if (Configuration.TARGET_ARM64)
         {
             NYI("emitIns_C");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM64 static-field instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64StaticFieldInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (Configuration.TARGET_ARM)
         {
             NYI("emitIns_C");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "ARM32 static-field instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32StaticFieldInstructionRecordingIsNotPorted
+    );
             return;
         }
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Single static-field instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SingleStaticFieldInstructionRecordingRequiresXarch
+    );
             return;
         }
 
@@ -81,8 +87,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Unary memory instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnaryMemoryInstructionRecordingRequiresXarch);
             return;
         }
 

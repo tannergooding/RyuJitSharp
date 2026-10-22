@@ -110,7 +110,7 @@ public partial class GenTree
     {
         if (!Configuration.DEBUG)
         {
-            throw new InvalidOperationException("GenTree debug data is only available in Debug builds.");
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.GenTreeDebugDataIsOnlyAvailableInDebugBuilds);
         }
 
         return DebugData.Get(this);

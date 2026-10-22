@@ -31,10 +31,7 @@ public sealed partial class LinearScan
                     var sourceTree = sourceUse.treeNode;
                     if (sourceTree is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage357
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.LocalSourceUseRequiresItsTree);
                         return;
                     }
 
@@ -236,8 +233,10 @@ public sealed partial class LinearScan
             }
             else
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                    "The 32-bit long return-register contract is not available on this target.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.Failure32BitLongReturnRegisterContractIsNotAvailableOnThisTarget
+    );
                 return default!;
             }
             return 2;
@@ -365,8 +364,10 @@ public sealed partial class LinearScan
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "The return-register contract is not available on this target.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ReturnRegisterContractIsNotAvailableOnThisTarget
+    );
                     return default!;
                 }
                 _ = buildUse(value, candidates);

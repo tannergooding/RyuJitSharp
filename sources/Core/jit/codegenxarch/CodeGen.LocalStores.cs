@@ -168,7 +168,9 @@ public sealed partial class CodeGen
         else
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_SKIPPED, "Local-store lifetime updates use a separate target implementation.");
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LocalStoreLifetimeUpdatesUseASeparateTargetImplementation
+    );
             return;
         }
 
@@ -190,7 +192,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMD12LocalStoresRequireSIMDSupport);
             return;
         }
 
@@ -222,7 +224,7 @@ public sealed partial class CodeGen
     {
         if (!Configuration.FEATURE_SIMD)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.SIMD12LocalStoresRequireSIMDSupport);
             return;
         }
 

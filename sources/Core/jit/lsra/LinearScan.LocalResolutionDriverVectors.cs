@@ -11,7 +11,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 
@@ -23,9 +24,9 @@ public sealed partial class LinearScan
         if (localInterval is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage353
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UpperVectorSaveRequiresItsLocalInterval
+    );
             return;
         }
         assert(localInterval.isLocalVar && ReferenceEquals(reference.getInterval(), upper));
@@ -83,7 +84,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return;
         }
 
@@ -95,9 +97,9 @@ public sealed partial class LinearScan
         if (localInterval is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage354
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UpperVectorRestoreRequiresItsLocalInterval
+    );
             return;
         }
         assert(localInterval.isLocalVar && localInterval.physReg != REG_NA);
@@ -145,10 +147,7 @@ public sealed partial class LinearScan
             {
                 if (!block.TryGetUse(useNode, out var use))
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage355
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UpperVectorRestoreRequiresAnOwningUse);
                     return;
                 }
                 useNode = use.User();
@@ -170,9 +169,9 @@ public sealed partial class LinearScan
                 if (branch is null)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR,
-                        FatalJitErrorCode.DirectFailureMessage356
-                    );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.VectorRestoreBeforeABranchRequiresATerminator
+    );
                     return;
                 }
                 assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);

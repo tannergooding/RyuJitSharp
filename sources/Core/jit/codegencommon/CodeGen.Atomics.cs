@@ -13,7 +13,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Locked addition generation outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LockedAdditionGenerationOutsideXarchIsNotImplemented
+    );
             return;
         }
 
@@ -230,7 +233,7 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnimplementedOnLOONGARCH64Yet);
             return;
         }
 
@@ -283,7 +286,9 @@ public sealed partial class CodeGen
                 default:
                 {
                     FatalJitException.ThrowFatalJitException(
-                        CORJIT_INTERNALERROR, "Unexpected operation in locked instruction generation.");
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.UnexpectedOperationInLockedInstructionGeneration
+    );
                     return;
                 }
             }
@@ -299,7 +304,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Locked instruction generation outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.LockedInstructionGenerationOutsideXarchIsNotImplemented
+    );
             return;
         }
 
@@ -367,7 +375,7 @@ public sealed partial class CodeGen
     {
         if (Configuration.TARGET_LOONGARCH64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.UnimplementedOnLOONGARCH64Yet);
             return;
         }
 
@@ -554,7 +562,10 @@ public sealed partial class CodeGen
 
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Compare-exchange generation outside xarch is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.CompareExchangeGenerationOutsideXarchIsNotImplemented
+    );
             return;
         }
 
@@ -647,7 +658,10 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_LOONGARCH64 || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Memory barrier generation outside supported targets is not implemented.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MemoryBarrierGenerationOutsideSupportedTargetsIsNotImplemented
+    );
             return;
         }
 

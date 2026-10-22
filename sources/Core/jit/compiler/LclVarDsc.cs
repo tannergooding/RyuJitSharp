@@ -38,7 +38,7 @@ public partial struct LclVarDsc
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("The local debug reason is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugReasonIsOnlyAvailableInDebugBuilds);
             }
 
             return _lvReason;
@@ -48,7 +48,7 @@ public partial struct LclVarDsc
         {
             if (!Configuration.DEBUG)
             {
-                throw new System.InvalidOperationException("The local debug reason is only available in Debug builds.");
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.LocalDebugReasonIsOnlyAvailableInDebugBuilds);
             }
 
             _lvReason = value;
@@ -1043,7 +1043,8 @@ public partial struct LclVarDsc
             default:
             {
                 unreached();
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }
@@ -1088,7 +1089,7 @@ public partial struct LclVarDsc
         {
             if (!Configuration.HAS_FIXED_REGISTER_SET)
             {
-                FatalJitException.ThrowFatalJitException("Local register masks require a fixed register set.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LocalRegisterMasksRequireAFixedRegisterSet);
                 return default!;
             }
 

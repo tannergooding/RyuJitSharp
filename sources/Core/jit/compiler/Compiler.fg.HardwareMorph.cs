@@ -13,7 +13,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.HardwareIntrinsicMorphingIsUnsupportedForThisTarget);
             return default!;
         }
 
@@ -687,7 +687,7 @@ public partial class Compiler
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            FatalJitException.ThrowFatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.HardwareIntrinsicMorphingIsUnsupportedForThisTarget);
             return default!;
         }
 
@@ -733,7 +733,7 @@ public partial class Compiler
                         }
                         else
                         {
-                            FatalJitException.ThrowFatalJitException("Unsupported masked intrinsic conversion target.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedMaskedIntrinsicConversionTarget);
                             return default!;
                         }
 
@@ -839,7 +839,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    FatalJitException.ThrowFatalJitException("Geometric-sequence intrinsic is unsupported for this target.");
+                    FatalJitException.ThrowFatalJitException(FatalJitErrorCode.GeometricSequenceIntrinsicIsUnsupportedForThisTarget);
                     return default!;
                 }
 

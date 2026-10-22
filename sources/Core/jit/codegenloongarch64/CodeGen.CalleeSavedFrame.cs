@@ -102,7 +102,7 @@ public sealed partial class CodeGen
         {
             JITDUMP("    compIsVarArgs=true\n");
             NYI("genPushCalleeSavedRegisters unsupports compIsVarArgs");
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "LoongArch64 varargs are not supported.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LoongArch64VarargsAreNotSupported);
             return;
         }
 

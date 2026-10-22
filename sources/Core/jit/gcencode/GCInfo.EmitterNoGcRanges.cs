@@ -24,10 +24,7 @@ public partial class Emitter
                 var descriptors = group.igData;
                 if (descriptors is null)
                 {
-                    FatalJitException.ThrowFatalJitException(
-                        CORJIT_SKIPPED,
-                        FatalJitErrorCode.DirectFailureMessage216
-                    );
+                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.NonInterruptibleGroupHasNoInstructions);
                     return default!;
                 }
                 assert(descriptors.Length > 0);

@@ -22,7 +22,9 @@ public sealed partial class GenTreeHWIntrinsic
         if (!Configuration.FEATURE_HW_INTRINSICS ||
             (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64))
         {
-            FatalJitException.ThrowFatalJitException("RMW hardware-intrinsic operand selection is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.RMWHardwareIntrinsicOperandSelectionIsUnsupportedOnThisTarget
+    );
             return default!;
         }
 
@@ -68,13 +70,24 @@ public sealed partial class GenTreeHWIntrinsic
     {
         if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException("Embedded-broadcast compatibility is only supported on xarch targets.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EmbeddedBroadcastCompatibilityIsOnlySupportedOnXarchTargets);
             return default!;
         }
 
         var id = HWIntrinsicId;
         var ins = HWIntrinsicInfo.lookupIns(id, SimdBaseType, compiler);
-        var codeGen = compiler.codeGen ?? throw new System.InvalidOperationException("Code generation is not initialized.");
+        global::RyuJitSharp.ICodeGen __jitExceptionResult425;
+        var __jitExceptionCoalesceLeft426 = compiler.codeGen;
+        if (__jitExceptionCoalesceLeft426 != null)
+        {
+            __jitExceptionResult425 = __jitExceptionCoalesceLeft426;
+        }
+        else
+        {
+            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CodeGenerationIsNotInitialized);
+            __jitExceptionResult425 = default;
+        }
+        var codeGen = __jitExceptionResult425;
         if (!codeGen.Emitter.IsEvexEncodableInstruction(ins))
         {
             return false;

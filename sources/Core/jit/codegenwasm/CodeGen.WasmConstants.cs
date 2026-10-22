@@ -68,7 +68,8 @@ public sealed partial class CodeGen
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return;
             }
         }
 

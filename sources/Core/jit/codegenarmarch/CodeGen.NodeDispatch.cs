@@ -13,7 +13,10 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARMARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM code generation was requested for a non-ARM target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARMCodeGenerationWasRequestedForANonARMTarget
+    );
             return;
         }
 
@@ -85,8 +88,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_SIMD)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "SIMD constants are not supported by this ARM configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SIMDConstantsAreNotSupportedByThisARMConfiguration
+    );
                     return;
                 }
 
@@ -100,8 +105,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Masked SIMD constants are not supported by this ARM configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.MaskedSIMDConstantsAreNotSupportedByThisARMConfiguration
+    );
                     return;
                 }
 
@@ -279,8 +286,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.SWIFT_SUPPORT)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Swift error returns are not supported by this ARM configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SwiftErrorReturnsAreNotSupportedByThisARMConfiguration
+    );
                     return;
                 }
 
@@ -383,8 +392,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Hardware intrinsics are not supported by this ARM configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.HardwareIntrinsicsAreNotSupportedByThisARMConfiguration
+    );
                     return;
                 }
 
@@ -567,8 +578,10 @@ public sealed partial class CodeGen
             {
                 if (!Configuration.SWIFT_SUPPORT)
                 {
-                    FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                        "Swift error values are not supported by this ARM configuration.");
+                    FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.SwiftErrorValuesAreNotSupportedByThisARMConfiguration
+    );
                     return;
                 }
 
@@ -733,8 +746,11 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                $"ARM64 code generation for {treeNode.Oper} is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM64CodeGenerationForArgumentIsNotSupportedOnThisTarget,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? treeNode.Oper : default)
+    );
             return;
         }
     }
@@ -743,8 +759,11 @@ public sealed partial class CodeGen
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                $"ARM32 code generation for {treeNode.Oper} is not supported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32CodeGenerationForArgumentIsNotSupportedOnThisTarget,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? treeNode.Oper : default)
+    );
             return;
         }
     }

@@ -22,13 +22,24 @@ public partial class Compiler
             var op2Range = RangeCheck.GetRange(this, tree.Op2, block, assertions, fast: true);
             if (op1Range.IsConstantRange() && op2Range.IsConstantRange())
             {
-                var result = tree.Oper switch
+                global::RyuJitSharp.Range __jitExceptionResult45;
+                switch (tree.Oper)
                 {
-                    GT_MUL => RangeOps.Multiply(op1Range, op2Range, tree.IsUnsigned),
-                    GT_ADD => RangeOps.Add(op1Range, op2Range, tree.IsUnsigned),
-                    GT_SUB => RangeOps.Subtract(op1Range, op2Range, tree.IsUnsigned),
-                    _ => throw new InvalidOperationException(),
-                };
+                    case GT_MUL:
+                        __jitExceptionResult45 = RangeOps.Multiply(op1Range, op2Range, tree.IsUnsigned);
+                        break;
+                    case GT_ADD:
+                        __jitExceptionResult45 = RangeOps.Add(op1Range, op2Range, tree.IsUnsigned);
+                        break;
+                    case GT_SUB:
+                        __jitExceptionResult45 = RangeOps.Subtract(op1Range, op2Range, tree.IsUnsigned);
+                        break;
+                    default:
+                        JitExceptionHelpers.ThrowInvalidOperationException();
+                        __jitExceptionResult45 = default;
+                        break;
+                }
+                var result = __jitExceptionResult45;
                 if (result.IsConstantRange())
                 {
                     tree.Flags &= ~GTF_OVERFLOW;

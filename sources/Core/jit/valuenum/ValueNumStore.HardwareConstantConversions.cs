@@ -27,11 +27,14 @@ public sealed partial class ValueNumStore
             EnsureXarchSimdSupported();
         }
 
-        return type switch {
-            TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64
-                => VNForGenericCon(type, GetSimdArgumentBytes(type, baseType, operand)),
-            _ => throw new UnreachableException(),
-        };
+        switch (type)
+        {
+            case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64:
+                return VNForGenericCon(type, GetSimdArgumentBytes(type, baseType, operand));
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     public simdscalable_t GetConstantSimdScalable(var_types baseType, ValueNum operand)
@@ -114,7 +117,8 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }
@@ -159,7 +163,8 @@ public sealed partial class ValueNumStore
 
             default:
             {
-                throw new UnreachableException();
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
             }
         }
     }
@@ -168,7 +173,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Hardware intrinsics are not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.HardwareIntrinsicsAreNotEnabledForThisTarget);
         }
     }
 
@@ -176,7 +181,7 @@ public sealed partial class ValueNumStore
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+            JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.MaskedHardwareIntrinsicsAreNotEnabledForThisTarget);
         }
     }
 }

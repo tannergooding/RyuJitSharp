@@ -218,7 +218,7 @@ public sealed partial class CodeGen
     private static void Arm64IntrinsicEmitRegisterLabel(instruction ins, emitAttr attr,
         BasicBlock dst, regNumber reg)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_R_L recording is not ported.");
+        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ARM64EmitInsRLRecordingIsNotPorted);
         return;
     }
 

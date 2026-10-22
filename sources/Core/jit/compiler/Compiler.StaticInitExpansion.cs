@@ -152,10 +152,7 @@ public partial class Compiler
         {
             if (callUse is not GenTree use)
             {
-                FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage199
-                );
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.StaticInitializationCallHasNoOwningUse);
                 return default!;
             }
 

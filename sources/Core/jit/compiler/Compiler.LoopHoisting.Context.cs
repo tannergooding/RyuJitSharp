@@ -86,9 +86,9 @@ public partial class Compiler
             if (!toOperands.MoveNext())
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage151
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ClonedHoistExpressionHasFewerOperandsThanItsSource
+    );
                 return;
             }
             optCopyLoopMemoryDependence(fromOperands.Current, toOperands.Current);
@@ -113,9 +113,9 @@ public partial class Compiler
         if (hoistExpr is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage152
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopHoistingRequiresACloneOfItsInvariantExpression
+    );
             return;
         }
         hoistExpr.ClearRegNum();
@@ -144,7 +144,7 @@ public partial class Compiler
                 jitprintf("Node ");
                 printTreeId(origExpr);
                 jitprintf(" was declared 'do not hoist', but is being hoisted.\n");
-                FatalJitException.ThrowFatalJitException("A forbidden test expression was hoisted.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.ForbiddenTestExpressionWasHoisted);
                 return;
             }
             if (annotation._num != depth)
@@ -153,7 +153,7 @@ public partial class Compiler
                 printTreeId(origExpr);
                 jitprintf($" was declared as hoistable from loop at nesting depth {annotation._num}; " +
                     $"actually hoisted from loop at depth {depth}.\n");
-                FatalJitException.ThrowFatalJitException("Loop hoist violated a node test annotation.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LoopHoistViolatedANodeTestAnnotation);
                 return;
             }
 

@@ -79,7 +79,7 @@ public sealed partial class CodeGen
         var localDeclarations = func.funWasmLocalDecls;
         if (localDeclarations is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm local declarations are missing.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmLocalDeclarationsAreMissing);
             return;
         }
         assert(_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX);
@@ -230,7 +230,7 @@ public sealed partial class CodeGen
 
             default:
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm bitcast.");
+                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnsupportedWasmBitcast);
                 return default!;
             }
         }
@@ -448,7 +448,7 @@ public sealed partial class CodeGen
         var localDeclarations = func.funWasmLocalDecls;
         if (localDeclarations is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Wasm funclet local declarations are missing.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.WasmFuncletLocalDeclarationsAreMissing);
             return;
         }
         Emitter.emitIns_I(INS_local_cnt, EA_8BYTE, localDeclarations.Count);

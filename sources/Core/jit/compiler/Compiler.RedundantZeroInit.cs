@@ -29,8 +29,18 @@ public partial class Compiler
         {
             if (block != fgFirstBB)
             {
-                var firstPred = BlockPredsWithEH(block)
-                    ?? throw new InvalidOperationException("A non-entry block in the unique-successor scan has no predecessor.");
+                global::RyuJitSharp.FlowEdge __jitExceptionResult226;
+                var __jitExceptionCoalesceLeft227 = BlockPredsWithEH(block);
+                if (__jitExceptionCoalesceLeft227 != null)
+                {
+                    __jitExceptionResult226 = __jitExceptionCoalesceLeft227;
+                }
+                else
+                {
+                    JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.NonEntryBlockInTheUniqueSuccessorScanHasNoPredecessor);
+                    __jitExceptionResult226 = default;
+                }
+                var firstPred = __jitExceptionResult226;
                 if (firstPred.NextPredEdge is not null)
                 {
                     JITDUMP($"{FMT_BB(block.bbNum)} has multiple predecessors, stopping the block scan\n");
@@ -38,7 +48,18 @@ public partial class Compiler
                 }
             }
 
-            var dfsTree = _dfsTree ?? throw new InvalidOperationException("The flow graph DFS tree is required.");
+            global::RyuJitSharp.FlowGraphDfsTree __jitExceptionResult228;
+            var __jitExceptionCoalesceLeft229 = _dfsTree;
+            if (__jitExceptionCoalesceLeft229 != null)
+            {
+                __jitExceptionResult228 = __jitExceptionCoalesceLeft229;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.FlowGraphDFSTreeIsRequired);
+                __jitExceptionResult228 = default;
+            }
+            var dfsTree = __jitExceptionResult228;
             if (dfsTree.HasCycle)
             {
                 var stop = false;
@@ -181,9 +202,41 @@ public partial class Compiler
                         (!hasImplicitControlFlow || (lclDsc.lvTracked && !lclDsc.IsLiveInOutOfHandler)))
                     {
                         assert(CORINFO_HELP_INIT_PINVOKE_FRAME.IsNoGC);
-                        if (!lclDsc.HasGCPtr || (!(codeGen
-                            ?? throw new InvalidOperationException("Code generation state is required.")).Interruptible &&
-                            !hasGCSafePoint))
+                        bool __jitExceptionCondition230;
+                        bool __jitExceptionShortCircuitLeft231;
+                        __jitExceptionShortCircuitLeft231 = !lclDsc.HasGCPtr;
+                        if (__jitExceptionShortCircuitLeft231)
+                        {
+                            __jitExceptionCondition230 = true;
+                        }
+                        else
+                        {
+                            bool __jitExceptionShortCircuitLeft232;
+                            bool __jitExceptionOperand233;
+                            global::RyuJitSharp.ICodeGen __jitExceptionOperand234;
+                            var __jitExceptionCoalesceLeft235 = codeGen;
+                            if (__jitExceptionCoalesceLeft235 != null)
+                            {
+                                __jitExceptionOperand234 = __jitExceptionCoalesceLeft235;
+                            }
+                            else
+                            {
+                                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.CodeGenerationStateIsRequired);
+                                __jitExceptionOperand234 = default;
+                            }
+
+                            __jitExceptionOperand233 = __jitExceptionOperand234.Interruptible;
+                            __jitExceptionShortCircuitLeft232 = !__jitExceptionOperand233;
+                            if (__jitExceptionShortCircuitLeft232)
+                            {
+                                __jitExceptionCondition230 = !hasGCSafePoint;
+                            }
+                            else
+                            {
+                                __jitExceptionCondition230 = false;
+                            }
+                        }
+                        if (__jitExceptionCondition230)
                         {
                             // No use or GC reporting can occur before this explicit store.
                             lclDsc.lvHasExplicitInit = true;

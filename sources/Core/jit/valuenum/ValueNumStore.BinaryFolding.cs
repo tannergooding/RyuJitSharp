@@ -177,30 +177,48 @@ public sealed partial class ValueNumStore
             {
                 var left = ConstantValue<int>(arg0VN);
                 var right = ConstantValue<int>(arg1VN);
-                return func switch {
-                    VNF_ADD_OVF => CheckedOps.TryAdd(left, right, out _),
-                    VNF_SUB_OVF => CheckedOps.TrySub(left, right, out _),
-                    VNF_MUL_OVF => CheckedOps.TryMul(left, right, out _),
-                    VNF_ADD_UN_OVF => CheckedOps.TryAddUns(left, right, out _),
-                    VNF_SUB_UN_OVF => CheckedOps.TrySubUns(left, right, out _),
-                    VNF_MUL_UN_OVF => CheckedOps.TryMulUns(left, right, out _),
-                    _ => throw new UnreachableException(),
-                };
+                switch (func)
+                {
+                    case VNF_ADD_OVF:
+                        return CheckedOps.TryAdd(left, right, out _);
+                    case VNF_SUB_OVF:
+                        return CheckedOps.TrySub(left, right, out _);
+                    case VNF_MUL_OVF:
+                        return CheckedOps.TryMul(left, right, out _);
+                    case VNF_ADD_UN_OVF:
+                        return CheckedOps.TryAddUns(left, right, out _);
+                    case VNF_SUB_UN_OVF:
+                        return CheckedOps.TrySubUns(left, right, out _);
+                    case VNF_MUL_UN_OVF:
+                        return CheckedOps.TryMulUns(left, right, out _);
+                    default:
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
+                }
             }
 
             if (type == TYP_LONG)
             {
                 var left = ConstantValue<long>(arg0VN);
                 var right = ConstantValue<long>(arg1VN);
-                return func switch {
-                    VNF_ADD_OVF => CheckedOps.TryAdd(left, right, out _),
-                    VNF_SUB_OVF => CheckedOps.TrySub(left, right, out _),
-                    VNF_MUL_OVF => CheckedOps.TryMul(left, right, out _),
-                    VNF_ADD_UN_OVF => CheckedOps.TryAddUns(left, right, out _),
-                    VNF_SUB_UN_OVF => CheckedOps.TrySubUns(left, right, out _),
-                    VNF_MUL_UN_OVF => CheckedOps.TryMulUns(left, right, out _),
-                    _ => throw new UnreachableException(),
-                };
+                switch (func)
+                {
+                    case VNF_ADD_OVF:
+                        return CheckedOps.TryAdd(left, right, out _);
+                    case VNF_SUB_OVF:
+                        return CheckedOps.TrySub(left, right, out _);
+                    case VNF_MUL_OVF:
+                        return CheckedOps.TryMul(left, right, out _);
+                    case VNF_ADD_UN_OVF:
+                        return CheckedOps.TryAddUns(left, right, out _);
+                    case VNF_SUB_UN_OVF:
+                        return CheckedOps.TrySubUns(left, right, out _);
+                    case VNF_MUL_UN_OVF:
+                        return CheckedOps.TryMulUns(left, right, out _);
+                    default:
+                        JitExceptionHelpers.ThrowUnreachableException();
+                        return default;
+                }
             }
 
             assert(false);
@@ -312,12 +330,18 @@ public sealed partial class ValueNumStore
             return VNForIntCon(unchecked((int)result64));
         }
 
-        return type switch {
-            TYP_LONG => VNForLongCon(result64),
-            TYP_BYREF => VNForByrefCon(unchecked((nuint)result64)),
-            TYP_REF when result64 == 0 => VNForNull(),
-            _ => throw new UnreachableException(),
-        };
+        switch (type)
+        {
+            case TYP_LONG:
+                return VNForLongCon(result64);
+            case TYP_BYREF:
+                return VNForByrefCon(unchecked((nuint)result64));
+            case TYP_REF when result64 == 0:
+                return VNForNull();
+            default:
+                JitExceptionHelpers.ThrowUnreachableException();
+                return default;
+        }
     }
 
     private ValueNum EvalFuncForConstantFPArgs(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)

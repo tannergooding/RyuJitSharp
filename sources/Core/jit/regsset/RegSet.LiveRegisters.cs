@@ -13,7 +13,7 @@ public partial struct RegSet
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Live register masks require a fixed register set.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LiveRegisterMasksRequireAFixedRegisterSet);
             return default!;
         }
 
@@ -24,7 +24,7 @@ public partial struct RegSet
     {
         if (!Configuration.HAS_FIXED_REGISTER_SET)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Live register masks require a fixed register set.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.LiveRegisterMasksRequireAFixedRegisterSet);
             return;
         }
 

@@ -16,7 +16,7 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Thumb branch output is only supported on ARM32.");
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.ThumbBranchOutputIsOnlySupportedOnARM32);
             return default!;
         }
 
@@ -51,8 +51,10 @@ public partial class Emitter
             var jumpNode = jump;
             if (jumpNode is null)
             {
-                FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR,
-                    "Thumb CBZ/CBNZ output requires a jump descriptor.");
+                FatalJitException.ThrowFatalJitException(
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ThumbCBZCBNZOutputRequiresAJumpDescriptor
+    );
                 return default!;
             }
             assert(ins is INS_cbz or INS_cbnz);
@@ -66,7 +68,7 @@ public partial class Emitter
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, "Unknown Thumb short-branch format.");
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.UnknownThumbShortBranchFormat);
             return default!;
         }
 

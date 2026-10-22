@@ -34,7 +34,7 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException("EVEX broadcast options are not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXBroadcastOptionsAreNotAvailableForThisTarget);
             return;
         }
 
@@ -56,7 +56,7 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException("EVEX embedded rounding is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXEmbeddedRoundingIsNotAvailableForThisTarget);
             return;
         }
 
@@ -78,7 +78,7 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException("EVEX NDD options are not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXNDDOptionsAreNotAvailableForThisTarget);
             return;
         }
 
@@ -103,7 +103,7 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException("EVEX NF options are not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXNFOptionsAreNotAvailableForThisTarget);
             return;
         }
 
@@ -128,7 +128,7 @@ public partial class Emitter
                 return;
             }
 
-            FatalJitException.ThrowFatalJitException("APX PPX options are not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.APXPPXOptionsAreNotAvailableForThisTarget);
             return;
         }
 
@@ -145,7 +145,7 @@ public partial class Emitter
         {
             if (!Configuration.TARGET_AMD64)
             {
-                FatalJitException.ThrowFatalJitException("EVEX DFV options require AMD64.");
+                FatalJitException.ThrowFatalJitException(FatalJitErrorCode.EVEXDFVOptionsRequireAMD64);
                 return;
             }
 

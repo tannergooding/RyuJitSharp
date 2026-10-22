@@ -62,9 +62,27 @@ public partial class Compiler
                         continue;
                     }
 
-                    replacer.WriteBackBeforeCurrentStatement(local.LclNum, local.LclOffs,
-                        checked((int)(local.GetLayout(replacer._compiler) ??
-                            throw new InvalidOperationException("A struct argument needs a layout.")).Size));
+                    var __jitExceptionReceiver596 = replacer;
+                    var __jitExceptionArgument597 = local.LclNum;
+                    var __jitExceptionArgument598 = local.LclOffs;
+                    int __jitExceptionArgument599;
+                    int __jitExceptionOperand600;
+                    uint __jitExceptionOperand601;
+                    global::RyuJitSharp.ClassLayout __jitExceptionOperand602;
+                    var __jitExceptionCoalesceLeft603 = local.GetLayout(replacer._compiler);
+                    if (__jitExceptionCoalesceLeft603 != null)
+                    {
+                        __jitExceptionOperand602 = __jitExceptionCoalesceLeft603;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructArgumentNeedsALayout);
+                        __jitExceptionOperand602 = default;
+                    }
+                    __jitExceptionOperand601 = __jitExceptionOperand602.Size;
+                    __jitExceptionOperand600 = (int)__jitExceptionOperand601;
+                    __jitExceptionArgument599 = checked(__jitExceptionOperand600);
+                    __jitExceptionReceiver596.WriteBackBeforeCurrentStatement(__jitExceptionArgument597, __jitExceptionArgument598, __jitExceptionArgument599);
                 }
             }
 
@@ -180,8 +198,18 @@ public partial class Compiler
                 return;
             }
 
-            var argument = call.Args.RetBufferArg ??
-                throw new InvalidOperationException("An optimized retbuffer call needs a retbuffer argument.");
+            global::RyuJitSharp.CallArg __jitExceptionResult135;
+            var __jitExceptionCoalesceLeft136 = call.Args.RetBufferArg;
+            if (__jitExceptionCoalesceLeft136 != null)
+            {
+                __jitExceptionResult135 = __jitExceptionCoalesceLeft136;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.OptimizedRetbufferCallNeedsARetbufferArgument);
+                __jitExceptionResult135 = default;
+            }
+            var argument = __jitExceptionResult135;
             var retBuffer = argument.Node.AsLclVarCommon();
             var size = checked((int)_compiler.typGetObjLayout(call.RetClsHnd).Size);
             MarkForReadBack(retBuffer, size, "used as retbuf");
@@ -195,8 +223,24 @@ public partial class Compiler
                 return null;
             }
 
-            var size = checked((int)(local.GetLayout(_compiler) ??
-                throw new InvalidOperationException("A struct local needs a layout.")).Size);
+            int __jitExceptionResult604;
+            int __jitExceptionOperand605;
+            uint __jitExceptionOperand606;
+            global::RyuJitSharp.ClassLayout __jitExceptionOperand607;
+            var __jitExceptionCoalesceLeft608 = local.GetLayout(_compiler);
+            if (__jitExceptionCoalesceLeft608 != null)
+            {
+                __jitExceptionOperand607 = __jitExceptionCoalesceLeft608;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructLocalNeedsALayout);
+                __jitExceptionOperand607 = default;
+            }
+            __jitExceptionOperand606 = __jitExceptionOperand607.Size;
+            __jitExceptionOperand605 = (int)__jitExceptionOperand606;
+            __jitExceptionResult604 = checked(__jitExceptionOperand605);
+            var size = __jitExceptionResult604;
             var start = local.LclOffs;
             if (aggregate.Unpromoted.Intersects(new SegmentList.Segment(start, start + size)) ||
                 !aggregate.OverlappingReplacements(start, size, out var first, out var end))
@@ -317,13 +361,53 @@ public partial class Compiler
                     return;
                 }
 
-                JITDUMP($"Processing struct use [{local.TreeId:D6}] of V{local.LclNum:D2}." +
-                    $"[{local.LclOffs:D3}..{local.LclOffs + (local.GetLayout(_compiler) ??
-                        throw new InvalidOperationException("A struct use needs a layout.")).Size:D3})\n");
+                if (Configuration.DEBUG)
+                {
+                    string __jitExceptionArgument609;
+                    var __jitExceptionOperand610 = $"Processing struct use [{local.TreeId:D6}] of V{local.LclNum:D2}.";
+                    string __jitExceptionOperand611;
+                    var __jitExceptionOperand612 = local.LclOffs;
+                    uint __jitExceptionOperand613;
+                    var __jitExceptionOperand614 = local.LclOffs;
+                    uint __jitExceptionOperand615;
+                    global::RyuJitSharp.ClassLayout __jitExceptionOperand616;
+                    var __jitExceptionCoalesceLeft617 = local.GetLayout(_compiler);
+                    if (__jitExceptionCoalesceLeft617 != null)
+                    {
+                        __jitExceptionOperand616 = __jitExceptionCoalesceLeft617;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructUseNeedsALayout);
+                        __jitExceptionOperand616 = default;
+                    }
+
+                    __jitExceptionOperand615 = __jitExceptionOperand616.Size;
+                    __jitExceptionOperand613 = __jitExceptionOperand614 + __jitExceptionOperand615;
+                    __jitExceptionOperand611 = $"[{__jitExceptionOperand612:D3}..{__jitExceptionOperand613:D3})\n";
+                    __jitExceptionArgument609 = __jitExceptionOperand610 + __jitExceptionOperand611;
+                    JITDUMP(__jitExceptionArgument609);
+                }
                 if (!ReplaceStructLocal(ref use, effectiveUser, local))
                 {
-                    var size = checked((int)(local.GetLayout(_compiler) ??
-                        throw new InvalidOperationException("A struct use needs a layout.")).Size);
+                    int __jitExceptionResult618;
+                    int __jitExceptionOperand619;
+                    uint __jitExceptionOperand620;
+                    global::RyuJitSharp.ClassLayout __jitExceptionOperand621;
+                    var __jitExceptionCoalesceLeft622 = local.GetLayout(_compiler);
+                    if (__jitExceptionCoalesceLeft622 != null)
+                    {
+                        __jitExceptionOperand621 = __jitExceptionCoalesceLeft622;
+                    }
+                    else
+                    {
+                        JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.StructUseNeedsALayout);
+                        __jitExceptionOperand621 = default;
+                    }
+                    __jitExceptionOperand620 = __jitExceptionOperand621.Size;
+                    __jitExceptionOperand619 = (int)__jitExceptionOperand620;
+                    __jitExceptionResult618 = checked(__jitExceptionOperand619);
+                    var size = __jitExceptionResult618;
                     WriteBackBeforeUse(ref use, local.LclNum, local.LclOffs, size);
                     if (IsPromotedStructLocalDying(local))
                     {
@@ -385,8 +469,18 @@ public partial class Compiler
                 return false;
             }
 
-            var aggregate = _aggregates.Lookup(local.LclNum) ??
-                throw new InvalidOperationException("A dying promoted local needs aggregate information.");
+            global::RyuJitSharp.Compiler.PhysicalPromotionAggregateInfo __jitExceptionResult137;
+            var __jitExceptionCoalesceLeft138 = _aggregates.Lookup(local.LclNum);
+            if (__jitExceptionCoalesceLeft138 != null)
+            {
+                __jitExceptionResult137 = __jitExceptionCoalesceLeft138;
+            }
+            else
+            {
+                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.DyingPromotedLocalNeedsAggregateInformation);
+                __jitExceptionResult137 = default;
+            }
+            var aggregate = __jitExceptionResult137;
             foreach (var replacement in aggregate.Replacements)
             {
                 if (replacement.NeedsReadBack)

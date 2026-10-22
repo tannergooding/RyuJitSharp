@@ -14,9 +14,9 @@ public sealed partial class LinearScan
         if (_enregisterLocalVars)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage364
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.MinimalIntervalConstructionCannotRunWithEnregisteredLocals
+    );
             return;
         }
 
@@ -70,9 +70,9 @@ public sealed partial class LinearScan
         if (codeGen is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage331
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.IntervalConstructionRequiresInitializedCodegenState
+    );
             return;
         }
         ref var incomingRegisters = ref codeGen.CalleeRegArgMaskLiveIn;
@@ -198,10 +198,7 @@ public sealed partial class LinearScan
                     var lastNode = block.LastNode;
                     if (lastNode is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage332
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.TailcallBlockMustContainItsJumpOrCall);
                         return;
                     }
                     if (lastNode.Oper is GT_CALL)

@@ -178,7 +178,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "Unwind emitter fragmentation requires ARM, LoongArch64, or RISC-V64.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.UnwindEmitterFragmentationRequiresARMLoongArch64OrRISCV64
+    );
             return;
         }
     }

@@ -107,9 +107,9 @@ internal sealed class PerLoopInfo
             if (occurrences is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage129
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopOccurrencesMustBeInitializedBeforeVisiting
+    );
                 return default!;
             }
             if (!occurrences.TryGetValue(lclNum, out var occurrence))
@@ -141,9 +141,9 @@ internal sealed class PerLoopInfo
             if (occurrences is null)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage129
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LoopOccurrencesMustBeInitializedBeforeVisiting
+    );
                 return default!;
             }
             if (!occurrences.TryGetValue(lclNum, out var occurrence))

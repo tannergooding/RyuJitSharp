@@ -176,10 +176,9 @@ public partial class Emitter
                 if (dsc.dsType != dataSection.sectionType.data)
                 {
                     FatalJitException.ThrowFatalJitException(
-                        FatalJitErrorCode.UnexpectedDataSectionType,
-                        Configuration.DETAILED_FATAL_ERROR_MESSAGES
-                            ? $"Unexpected data-section type {dsc.dsType}."
-                    : null);
+        FatalJitErrorCode.UnexpectedDataSectionType,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? dsc.dsType : default)
+    );
                     return;
                 }
                 var size = checked((int)dscSize);

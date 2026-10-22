@@ -23,8 +23,10 @@ public partial class Emitter
 
         if (Configuration.TARGET_RISCV64)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "RISC-V64 register-address instruction recording is not ported.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RISCV64RegisterAddressInstructionRecordingIsNotPorted
+    );
             return;
         }
 
@@ -34,8 +36,10 @@ public partial class Emitter
             return;
         }
 
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-            "Register/address instruction recording requires xarch.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.RegisterAddressInstructionRecordingRequiresXarch
+    );
         return;
     }
 
@@ -44,8 +48,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED,
-                "Non-destructive binary instruction recording requires xarch.");
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.NonDestructiveBinaryInstructionRecordingRequiresXarch
+    );
             return default!;
         }
 

@@ -41,7 +41,8 @@ public readonly struct GenConditionDesc
         }
         else
         {
-            throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
+            JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.ConditionInstructionMappingIsNotPortedForThisTarget);
+            return default;
         }
 
         assert((uint)condition.Code < (uint)jumpKind1.Length);
@@ -67,7 +68,8 @@ public readonly struct GenConditionDesc
         }
         else
         {
-            throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
+            JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.ConditionInstructionMappingIsNotPortedForThisTarget);
+            return default;
         }
 
         assert((uint)condition.Code < (uint)jumpKind1.Length);
@@ -90,7 +92,8 @@ public readonly struct GenConditionDesc
         }
         else
         {
-            throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
+            JitExceptionHelpers.ThrowNotImplementedException(FatalJitErrorCode.ConditionInstructionMappingIsNotPortedForThisTarget);
+            return default;
         }
 
         assert((uint)condition.Code < (uint)oper.Length);

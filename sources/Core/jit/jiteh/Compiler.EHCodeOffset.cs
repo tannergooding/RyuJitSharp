@@ -21,7 +21,7 @@ public partial class Compiler
         var emitter = codeGen?.Emitter;
         if (emitter is null)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.DirectFailureMessage247);
+            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, FatalJitErrorCode.EHCodeOffsetRequiresAnEmitter);
             return default!;
         }
         return emitter.emitCodeOffset(ehEmitCookie(block), 0);

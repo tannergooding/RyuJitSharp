@@ -69,7 +69,10 @@ public partial class Emitter
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CorJitResult.CORJIT_SKIPPED, "Loop alignment is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CorJitResult.CORJIT_SKIPPED,
+        FatalJitErrorCode.LoopAlignmentIsUnsupportedOnThisTarget
+    );
             return;
         }
 
@@ -297,7 +300,10 @@ public partial class Emitter
     {
         if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
         {
-            FatalJitException.ThrowFatalJitException(CorJitResult.CORJIT_SKIPPED, "Loop alignment is unsupported on this target.");
+            FatalJitException.ThrowFatalJitException(
+        CorJitResult.CORJIT_SKIPPED,
+        FatalJitErrorCode.LoopAlignmentIsUnsupportedOnThisTarget
+    );
             return;
         }
     }

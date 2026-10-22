@@ -40,7 +40,7 @@ public sealed class GenTreeFptrVal : GenTree
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new System.PlatformNotSupportedException("ReadyToRun function-pointer entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunFunctionPointerEntryPointsAreUnsupported);
             }
 
             return _entryPoint;
@@ -50,7 +50,7 @@ public sealed class GenTreeFptrVal : GenTree
         {
             if (!Configuration.FEATURE_READYTORUN)
             {
-                throw new System.PlatformNotSupportedException("ReadyToRun function-pointer entry points are unsupported.");
+                JitExceptionHelpers.ThrowPlatformNotSupportedException(FatalJitErrorCode.ReadyToRunFunctionPointerEntryPointsAreUnsupported);
             }
 
             _entryPoint = value;

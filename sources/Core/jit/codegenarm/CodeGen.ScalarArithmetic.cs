@@ -12,7 +12,10 @@ public sealed partial class CodeGen
 {
     public void genCodeForIncSaturateArm(GenTree tree)
     {
-        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED, "ARM32 saturating increment code generation is not ported.");
+        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED,
+        FatalJitErrorCode.ARM32SaturatingIncrementCodeGenerationIsNotPorted
+    );
         return;
     }
 

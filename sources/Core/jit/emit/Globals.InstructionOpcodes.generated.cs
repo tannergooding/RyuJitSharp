@@ -2203,8 +2203,7 @@ public static partial class Globals
                 return insCodesX64;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                "xarch opcode table is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -2277,8 +2276,7 @@ public static partial class Globals
                 return insCodesACCX64;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                "xarch opcode table is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -2327,8 +2325,7 @@ public static partial class Globals
                 return insCodesRRX64;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                "xarch opcode table is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -4357,8 +4354,7 @@ public static partial class Globals
                 return insCodesRMX64;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                "xarch opcode table is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -6393,8 +6389,7 @@ public static partial class Globals
                 return insCodesMIX64;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                "xarch opcode table is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);
             return default;
         }
     }
@@ -8521,8 +8516,7 @@ public static partial class Globals
                 return insCodesMRX64;
             }
 
-            FatalJitException.ThrowFatalJitException(
-                "xarch opcode table is not available for this target.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.XarchOpcodeTableIsNotAvailableForThisTarget);
             return default;
         }
     }

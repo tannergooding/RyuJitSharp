@@ -110,7 +110,9 @@ public sealed partial class LinearScan
                 default:
                 {
                     FatalJitException.ThrowFatalJitException(
-                        $"Unsupported LSRA register stress limit: 0x{limit:X}.");
+        FatalJitErrorCode.UnsupportedLSRARegisterStressLimit0xArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? limit : default)
+    );
                     return default!;
                 }
             }
@@ -181,8 +183,7 @@ public sealed partial class LinearScan
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                "Unsupported ARM64 LSRA stress register type.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedARM64LSRAStressRegisterType);
                             return default!;
                         }
                     }
@@ -219,8 +220,7 @@ public sealed partial class LinearScan
 
                         default:
                         {
-                            FatalJitException.ThrowFatalJitException(
-                                "Unsupported ARM64 LSRA stress register type.");
+                            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.UnsupportedARM64LSRAStressRegisterType);
                             return default!;
                         }
                     }
@@ -299,7 +299,8 @@ public sealed partial class LinearScan
                     }
                     else
                     {
-                        FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+                        FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
                         return default!;
                     }
                     if ((mask & smallInt) != SRBM_NONE)
@@ -325,7 +326,7 @@ public sealed partial class LinearScan
         {
             NYI("LSRA stress register limiting on this target");
             fatal(CORJIT_IMPLLIMITATION);
-            FatalJitException.ThrowFatalJitException("LSRA stress register limiting on this target is not ported.");
+            FatalJitException.ThrowFatalJitException(FatalJitErrorCode.LSRAStressRegisterLimitingOnThisTargetIsNotPorted);
             return default!;
         }
     }
@@ -402,7 +403,8 @@ public sealed partial class LinearScan
         }
         else
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return default!;
         }
 
@@ -441,7 +443,10 @@ public sealed partial class LinearScan
 
             default:
             {
-                FatalJitException.ThrowFatalJitException($"Unsupported LSRA register type: {registerType}.");
+                FatalJitException.ThrowFatalJitException(
+        FatalJitErrorCode.UnsupportedLSRARegisterTypeArgument,
+        (Configuration.DETAILED_FATAL_ERROR_MESSAGES ? registerType : default)
+    );
                 return default!;
             }
         }
@@ -453,9 +458,9 @@ public sealed partial class LinearScan
         if (interval.isLocalVar)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage409
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.DefUseConflictResolutionIsOnlyValidForTemporaryIntervals
+    );
             return;
         }
 
@@ -463,9 +468,9 @@ public sealed partial class LinearScan
         if (useRefPosition is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage410
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.ConflictingDefinitionMustBeFollowedByItsUse
+    );
             return;
         }
         assert(ReferenceEquals(defRefPosition.referent, interval));
@@ -476,9 +481,9 @@ public sealed partial class LinearScan
             !RefTypeIsUse(useRefPosition.refType))
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage411
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.DefUseConflictReferencesMustBeOrderedReferencesOfOneInterval
+    );
             return;
         }
 
@@ -493,9 +498,9 @@ public sealed partial class LinearScan
         if (defTree is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage412
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.TemporaryDefinitionMustRetainItsSourceTreeNode
+    );
             return;
         }
         var canChangeDef = !defTree.IsMultiRegNode;
@@ -520,9 +525,9 @@ public sealed partial class LinearScan
             if (nextRegLocation > useRefPosition.nodeLocation)
             {
                 FatalJitException.ThrowFatalJitException(
-                    CORJIT_INTERNALERROR,
-                    FatalJitErrorCode.DirectFailureMessage413
-                );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.FixedUseMustBePresentInTheNextFixedReferenceMap
+    );
                 return;
             }
 
@@ -535,9 +540,9 @@ public sealed partial class LinearScan
                     if (possiblyConflictingRef is null)
                     {
                         FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage414
-                        );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.AssignedIntervalMustRetainItsRecentReference
+    );
                         return;
                     }
                     if (possiblyConflictingRef.getRefEndLocation() >= defRefPosition.nodeLocation)
@@ -790,9 +795,9 @@ public sealed partial class LinearScan
         if (assignedInterval is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage415
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.CannotSpillAnUnassignedPhysicalRegister
+    );
             return default!;
         }
 
@@ -807,9 +812,9 @@ public sealed partial class LinearScan
         if (!assignedInterval.isLocalVar)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage416
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.PhysicalRegisterWithoutARecentReferenceMustBelongToALocal
+    );
             return default!;
         }
 
@@ -818,9 +823,9 @@ public sealed partial class LinearScan
         if (!isParameter)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage417
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LocalWithoutARecentReferenceMustBeAParameter
+    );
             return default!;
         }
 
@@ -831,7 +836,8 @@ public sealed partial class LinearScan
     {
         if (!Configuration.TARGET_ARM)
         {
-            FatalJitException.ThrowFatalJitException(CORJIT_SKIPPED);
+            FatalJitException.ThrowFatalJitException(
+        CORJIT_SKIPPED    );
             return default!;
         }
 
@@ -870,10 +876,7 @@ public sealed partial class LinearScan
         assert(refPosition.refType is not RefType.RefTypeKill);
         if (refPosition.refType is RefType.RefTypeKill)
         {
-            FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage418
-            );
+            FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.KillReferencesDoNotHaveASpillWeight);
             return default!;
         }
 
@@ -895,10 +898,7 @@ public sealed partial class LinearScan
                     var firstRefPosition = interval.firstRefPosition;
                     if (firstRefPosition is null)
                     {
-                        FatalJitException.ThrowFatalJitException(
-                            CORJIT_INTERNALERROR,
-                            FatalJitErrorCode.DirectFailureMessage419
-                        );
+                        FatalJitException.ThrowFatalJitException(CORJIT_INTERNALERROR, FatalJitErrorCode.SpilledIntervalMustHaveAFirstReference);
                         return default!;
                     }
 
@@ -925,9 +925,9 @@ public sealed partial class LinearScan
         if (blockInfo is null)
         {
             FatalJitException.ThrowFatalJitException(
-                CORJIT_INTERNALERROR,
-                FatalJitErrorCode.DirectFailureMessage420
-            );
+        CORJIT_INTERNALERROR,
+        FatalJitErrorCode.LSRABlockWeightsAreUnavailableBeforeIntervalConstruction
+    );
             return default!;
         }
 
