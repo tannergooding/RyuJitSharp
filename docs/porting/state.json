@@ -3,25 +3,16 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
-    "targetObservedAt": "2026-10-21",
-    "reconciledCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845"
+    "targetCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa",
+    "targetObservedAt": "2026-10-22",
+    "reconciledCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "full-runtime-parity-verification",
-    "nextAction": "Continue the active System.Xml SetupEncoding importer batch. After it closes, resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary; keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested. The oracle refresh through 5a518c3f is reconciled; the exact-pinned 21-method capture is nonexecuting and retains residual FullDump diagnostic/formatting/node-ID differences after the accepted D015 replacement, so do not claim machine-code or runtime parity.",
+    "nextAction": "Resume full-runtime parity at the unresolved dynamic TLS input-ownership boundary. Keep D015 accepted and preserve the residual exact-pinned FullDump diagnostic, formatting, and node-ID differences. Keep genAsyncResumeInfo deferred until the B209 target-width table/emitter dependency closure is ported and tested. The source refresh through bc980bc9 is reconciled, but source synchronization and focused tests do not establish full machine-code or runtime parity.",
     "unresolvedConditionalCleanup": [],
-    "activeBatch": {
-      "scope": "Fix and validate the managed System.Xml.XmlTextReaderImpl:SetupEncoding(System.Text.Encoding) importer regression against pinned native behavior.",
-      "completionCondition": "CEE_POP of a loaded struct uses gtChangeOperToNullCheck for the native-equivalent GT_NULLCHECK tree; the focused regression test passes in Debug and Release, and the complete System.Private.Xml disassembly matches native and native-repeat byte-for-byte.",
-      "validation": "ImporterEffectsTests passed 102/102 in Debug and 95/95 in Release. Matched Windows x64 PMI captures covered 18,188 methods (1,435 types; one skipped type and six skipped methods); all 18,254 disassembly headers and 3,901,136 code bytes match across native, native-repeat, and managed. Raw Importation differences remain the same 25 process-specific handle lines in managed and native-repeat; do not canonicalize them.",
-      "deferrals": [
-        "The full-CoreLib FullDump gate remains blocked by B526 at System.Double:Hypot.",
-        "The System.Collections value-numbering assertion and CoreLib comment/RWD-only blocks remain unresolved; preserve raw differences and do not apply a comparison allowance.",
-        "The 144-method dynamic-TLS extra callback count remains unexplained; do not change TLS constants."
-      ]
-    },
+    "activeBatch": null,
     "evidenceLinks": [
       "artifacts\\jit-analysis\\conditional-cleanup\\CCB-1205-acceptance.json",
       "artifacts\\conditional-cleanup\\INV-A6698B8BBC3D\\acceptance.json",
@@ -1320,6 +1311,22 @@
       "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
     },
     {
+      "area": "partial-constant-vector-create-lowering",
+      "native": [
+        "src\\coreclr\\jit\\gentree.h",
+        "src\\coreclr\\jit\\lower.cpp",
+        "src\\coreclr\\jit\\lower.h",
+        "src\\coreclr\\jit\\lowerarmarch.cpp",
+        "src\\coreclr\\jit\\lowerxarch.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Arm64HardwareVectors.cs",
+        "sources\\Core\\jit\\lower\\Lowering.HardwareCreate.cs"
+      ],
+      "sourceCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
+    },
+    {
       "area": "symbolic-checked-bound-ranges",
       "native": [
         "src\\coreclr\\jit\\assertionprop.cpp",
@@ -1397,12 +1404,24 @@
     {
       "area": "importercalls-managed-importer-partial",
       "native": [
+        "src\\coreclr\\jit\\compiler.h",
         "src\\coreclr\\jit\\importercalls.cpp"
       ],
       "csharp": [
-        "sources\\Core\\jit\\compiler\\Compiler.imp.cs"
+        "sources\\Core\\jit\\compiler\\Compiler.imp.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.ImportCallHelper.cs"
       ],
-      "sourceCommit": "24543ddd2ef1009f07462883cc299d43e19c2e8e"
+      "sourceCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
+    },
+    {
+      "area": "exception-flag-gc-safe-point",
+      "native": [
+        "src\\coreclr\\jit\\compiler.hpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.RedundantZeroInit.cs"
+      ],
+      "sourceCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa"
     },
     {
       "area": "assertion-propagation",
@@ -1478,7 +1497,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
-    "reconciledCommit": "5a518c3fcb295c89a73404d9f20c398dafdce845",
+    "reconciledCommit": "bc980bc92e8093ca338810351b3db05dc073f1fa",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "compphases.h": "PHASE_CLR_API is unconditional in the managed generator input so the always-compiled phase metadata supports runtime JitEECallTimingInfo gating; native MEASURE_CLRAPI_CALLS remains a build-time condition.",

@@ -46,6 +46,9 @@ internal static unsafe class RedundantZeroInitTests
         SsaLivenessTests.WithCompiler(1, compiler => {
             var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_INDIRECT, null);
             var aggregate = new GenTreeOp(GT_ADD, TYP_INT, call, compiler.gtNewIconNode(TYP_INT, 1));
+            var throwing = new GenTreeOp(GT_ADD, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 2), compiler.gtNewIconNode(TYP_INT, 3));
+            throwing.Flags |= GTF_EXCEPT;
             var blockStore = new GenTreeBlk(TYP_STRUCT,
                 compiler.gtNewIconNode(TYP_I_IMPL, 1),
                 compiler.gtNewIconNode(TYP_INT, 0), new ClassLayout(8));
@@ -54,6 +57,7 @@ internal static unsafe class RedundantZeroInitTests
             Assert.That(compiler.IsPotentialGCSafePoint(call), Is.True);
             Assert.That((aggregate.Flags & GTF_CALL) != 0, Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(aggregate), Is.True);
+            Assert.That(compiler.IsPotentialGCSafePoint(throwing), Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(blockStore), Is.True);
             Assert.That(compiler.IsPotentialGCSafePoint(scalar), Is.False);
         });

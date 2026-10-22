@@ -203,6 +203,17 @@ public sealed class GenTreeVecCon : GenTree
         ReadOnlySpan<GenTree> operands,
         ref simd_t simdVal)
     {
+        return IsHWIntrinsicCreateConstant(intrinsic, simdBaseType, simdSize, operands, ref simdVal, out _);
+    }
+
+    public static bool IsHWIntrinsicCreateConstant(
+        NamedIntrinsic intrinsic,
+        var_types simdBaseType,
+        byte simdSize,
+        ReadOnlySpan<GenTree> operands,
+        ref simd_t simdVal,
+        out simdmask_t constantMask)
+    {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
             throw new PlatformNotSupportedException("Hardware intrinsic constant evaluation is unsupported on this target.");
@@ -210,6 +221,7 @@ public sealed class GenTreeVecCon : GenTree
 
         var argCount = operands.Length;
         var constantCount = 0;
+        constantMask = default;
 
         switch (intrinsic)
         {
@@ -220,12 +232,15 @@ public sealed class GenTreeVecCon : GenTree
                 simdVal = default;
                 if ((argCount == 1) && HandleArgForHWIntrinsicCreate(operands[0], 0, ref simdVal, simdBaseType))
                 {
+                    constantMask.u64[0] |= 1;
+
                     // Native chooses a broadcast for CreateScalarUnsafe; CreateScalar leaves upper lanes zero.
                     if (intrinsic != NI_Vector_CreateScalar)
                     {
                         for (var index = 1; index < ElementCount(simdSize, simdBaseType); index++)
                         {
                             _ = HandleArgForHWIntrinsicCreate(operands[0], index, ref simdVal, simdBaseType);
+                            constantMask.u64[0] |= 1UL << index;
                         }
                     }
 
@@ -237,6 +252,7 @@ public sealed class GenTreeVecCon : GenTree
                     {
                         if (HandleArgForHWIntrinsicCreate(operands[index], index, ref simdVal, simdBaseType))
                         {
+                            constantMask.u64[0] |= 1UL << index;
                             constantCount++;
                         }
                     }

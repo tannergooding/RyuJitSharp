@@ -96,6 +96,48 @@ internal static unsafe class Arm64HardwareLoweringTests
     }
 
     [Test]
+    public static void PartiallyConstantVectorCreatePreservesNegativeZeroAndInsertsDynamicLanes()
+    {
+        WithLowering((compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_FLOAT;
+            var negativeZero = new GenTreeDblCon(TYP_FLOAT, -0.0);
+            var one = new GenTreeDblCon(TYP_FLOAT, 1.0);
+            var dynamic = compiler.gtNewLclvNode(TYP_FLOAT, 0);
+            var positiveZero = new GenTreeDblCon(TYP_FLOAT, 0.0);
+            GenTree[] args = [negativeZero, one, dynamic, positiveZero];
+            Append(block, args);
+            var create = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_Create, TYP_FLOAT, 16, args);
+            var user = new GenTreeUnOp(GT_NEG, TYP_SIMD16, create) { IsUnusedValue = true };
+            Append(block, create, user);
+
+            Assert.That(LowerNode(lowering, create), Is.SameAs(user));
+
+            var insertCount = 0;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node.Oper.IsHWIntrinsic && node.AsHWIntrinsic().HWIntrinsicId is NI_AdvSimd_Insert)
+                {
+                    insertCount++;
+                }
+            }
+
+            Assert.That(insertCount, Is.EqualTo(1));
+            var insert = user.Op1.AsHWIntrinsic();
+            var vector = insert.GetOp(1).AsVecCon();
+            Assert.That(vector.SimdVal.u32[0], Is.EqualTo(0x80000000U));
+            Assert.That(vector.SimdVal.u32[1], Is.EqualTo(0x3F800000U));
+            Assert.That(vector.SimdVal.u32[2], Is.Zero);
+            Assert.That(vector.SimdVal.u32[3], Is.Zero);
+            Assert.That(block.TryGetUse(dynamic, out var use), Is.True);
+            Assert.That(use.Def(), Is.SameAs(dynamic));
+            if (TestConfiguration.IsDebug)
+            {
+                Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+            }
+        });
+    }
+
+    [Test]
     public static void NonEncodableMaskBecomesVectorAndPredicateConversion()
     {
         WithLowering((compiler, lowering, block) => {

@@ -452,6 +452,59 @@ internal static unsafe class HardwareConstructionLoweringTests
     }
 
     [Category("HardwareRecursiveDispatch")]
+    [Test]
+    public static void PartiallyConstantCreatePreservesNegativeZeroAndInsertsOnlyDynamicLanes()
+    {
+        WithCompiler(compiler => {
+            EnableIsa(compiler, InstructionSet_X86Base);
+            EnableIsa(compiler, InstructionSet_X86Base_X64);
+            EnableIsa(compiler, InstructionSet_AVX);
+            EnableIsa(compiler, InstructionSet_AVX2);
+            EnableIsa(compiler, InstructionSet_AVX512);
+            compiler.lvaTable[0].Type = TYP_FLOAT;
+
+            var negativeZero = new GenTreeDblCon(TYP_FLOAT, -0.0);
+            var one = new GenTreeDblCon(TYP_FLOAT, 1.0);
+            var dynamic = compiler.gtNewLclvNode(TYP_FLOAT, 0);
+            var positiveZero = new GenTreeDblCon(TYP_FLOAT, 0.0);
+            GenTree[] args = [negativeZero, one, dynamic, positiveZero];
+            var create = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_Create, TYP_FLOAT, 16, args);
+            var user = new GenTreeUnOp(GT_NEG, TYP_SIMD16, create) { IsUnusedValue = true };
+            var block = NewBlock(args);
+            block.InsertAtEnd(create);
+            block.InsertAtEnd(user);
+            simd64_t constantValue = default;
+            Assert.That(GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                NI_Vector_Create, TYP_FLOAT, 16, args, ref constantValue, out var constantMask), Is.False);
+            Assert.That(constantMask.RawBits, Is.EqualTo(0b1011));
+            Assert.That(constantValue.u32[0], Is.EqualTo(0x80000000U));
+            Assert.That(constantValue.u32[1], Is.EqualTo(0x3F800000U));
+
+            Assert.That(LowerCreate(NewLowering(compiler, block), create), Is.SameAs(user));
+
+            var insertCount = 0;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node.Oper.IsHWIntrinsic && node.AsHWIntrinsic().HWIntrinsicId is NI_X86Base_Insert)
+                {
+                    insertCount++;
+                }
+            }
+
+            Assert.That(insertCount, Is.EqualTo(1));
+            var insert = user.Op1.AsHWIntrinsic();
+            var vector = insert.GetOp(1).AsVecCon();
+            Assert.That(vector.SimdVal.u32[0], Is.EqualTo(0x80000000U));
+            Assert.That(vector.SimdVal.u32[1], Is.EqualTo(0x3F800000U));
+            Assert.That(vector.SimdVal.u32[2], Is.Zero);
+            Assert.That(vector.SimdVal.u32[3], Is.Zero);
+            Assert.That(block.TryGetUse(dynamic, out var use), Is.True);
+            Assert.That(use.Def(), Is.SameAs(dynamic));
+            CheckLir(compiler, block);
+        });
+    }
+
+    [Category("HardwareRecursiveDispatch")]
     [TestCase(TYP_FLOAT, (byte)32, false, NI_AVX_InsertVector128)]
     [TestCase(TYP_INT, (byte)32, true, NI_AVX2_BroadcastScalarToVector256)]
     [TestCase(TYP_FLOAT, (byte)64, true, NI_AVX512_BroadcastScalarToVector512)]

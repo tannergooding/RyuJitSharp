@@ -20,6 +20,8 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ProfileInstrumentationTests
 {
+    private static int s_exactClassQueryCount;
+
     [TestCase(NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync)]
     [TestCase(NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation)]
     [TestCase(NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend)]
@@ -414,6 +416,42 @@ internal static unsafe class ProfileInstrumentationTests
         }
     }
 
+    [Test]
+    public static void ProbedVirtualCallExcludesGuardedDevirtualizationCandidates()
+    {
+        var previous = JitConfig;
+        JitConfig = default;
+        ClassProfiling(ref JitConfig) = 1;
+        ExactDevirtualization(ref JitConfig) = 1;
+        try
+        {
+            FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.Base.Base.getExactClasses = &RecordExactClassQuery;
+                ICorJitInfo runtime = new() { lpVtbl = &vtable };
+                compiler.info.compCompHnd = &runtime;
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+
+                var call = compiler.gtNewCallNode(TYP_REF, CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x10);
+                call.Flags |= GTF_CALL_VIRT_VTABLE;
+                Assert.That(compiler.compClassifyGDVProbeType(call),
+                    Is.EqualTo(Compiler.GDVProbeType.ClassProfile));
+
+                s_exactClassQueryCount = 0;
+                CORINFO_CONTEXT_STRUCT_* context = null;
+                compiler.considerGuardedDevirtualization(call, 0, isInterface: false,
+                    (CORINFO_METHOD_STRUCT_*)0x20, (CORINFO_CLASS_STRUCT_*)0x30, ref context);
+
+                Assert.That(s_exactClassQueryCount, Is.Zero);
+                Assert.That(call.InlineCandidatesCount, Is.Zero);
+            });
+        }
+        finally
+        {
+            JitConfig = previous;
+        }
+    }
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_METHOD_STRUCT_* EmbedProfileMethodHandle(
         ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method, void** indirection)
@@ -593,4 +631,16 @@ internal static unsafe class ProfileInstrumentationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitProfileValues")]
     private static extern ref int ProfileValues(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEnableExactDevirtualization")]
+    private static extern ref int ExactDevirtualization(ref JitConfigValues config);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordExactClassQuery(
+        ICorJitInfo* self, CORINFO_CLASS_STRUCT_* baseClass, int maxExactClasses,
+        CORINFO_CLASS_STRUCT_** exactClasses)
+    {
+        s_exactClassQueryCount++;
+        return 0;
+    }
 }

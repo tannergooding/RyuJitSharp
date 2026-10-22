@@ -217,6 +217,11 @@ public partial class Compiler
             return true;
         }
 
+        if ((tree.Flags & GTF_EXCEPT) != 0)
+        {
+            return true;
+        }
+
         // Struct-typed local stores may become calls with GC safe points in Lower.
         if (tree.Oper.IsLocalStore)
         {
