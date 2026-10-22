@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -31,7 +32,7 @@ internal static class Program
         var executableDirectory = AppContext.BaseDirectory;
         if (!Directory.Exists(Path.Combine(executableDirectory, "Inputs")))
         {
-            throw new InvalidOperationException(
+            ThrowInvalidOperationException(
                 "GenerateTables requires its Inputs directory beside the executable.");
         }
 
@@ -122,7 +123,7 @@ internal static class Program
                 var nameEnd = line.IndexOf(',');
                 if (nameEnd is -1)
                 {
-                    throw new InvalidDataException($"Invalid variable type entry: '{sourceLine}'");
+                    ThrowInvalidDataException($"Invalid variable type entry: '{sourceLine}'");
                 }
 
                 var name = line["DEF_TP(".Length..nameEnd].Trim().ToString();
@@ -130,7 +131,7 @@ internal static class Program
                 {
                     if (conditionalDepth != 0)
                     {
-                        throw new InvalidDataException(
+                        ThrowInvalidDataException(
                             $"Universal SIMD type '{name}' must not be guarded by a target or feature condition.");
                     }
 
@@ -149,7 +150,7 @@ internal static class Program
 
         if (requiredTypes.Count != 0)
         {
-            throw new InvalidDataException(
+            ThrowInvalidDataException(
                 $"The universal variable type list is missing: {string.Join(", ", requiredTypes)}.");
         }
     }
@@ -159,7 +160,7 @@ internal static class Program
         var builder = ProcessMacroBasedFile(@"Inputs\ICorJitInfo_names_generated.h", "DEF_CLR_API(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 1)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -190,7 +191,7 @@ public enum API_ICorJitInfo_Names
         var builder = ProcessMacroBasedFile(@"Inputs\ICorJitInfo_names_generated.h", "DEF_CLR_API(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 1)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -276,14 +277,19 @@ public static partial class API_ICorJitInfo_NamesExtensions
         var builder = ProcessMacroBasedFile(@"Inputs\ICorJitInfo_names_generated.h", "DEF_CLR_API(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 1)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].Trim();
 
-            if (!signatures.Remove(name, out var signature) || !vtablePaths.TryGetValue(name, out var vtablePath))
+            if (!signatures.Remove(name, out var signature))
             {
-                throw new InvalidDataException($"Missing or duplicate ICorJitInfo signature or vtable slot: '{name}'");
+                ThrowInvalidDataException($"Missing or duplicate ICorJitInfo signature or vtable slot: '{name}'");
+            }
+
+            if (!vtablePaths.TryGetValue(name, out var vtablePath))
+            {
+                ThrowInvalidDataException($"Missing or duplicate ICorJitInfo signature or vtable slot: '{name}'");
             }
 
             var openParen = signature.IndexOf('(', StringComparison.Ordinal);
@@ -370,7 +376,9 @@ public static partial class API_ICorJitInfo_NamesExtensions
             _ = thunks.AppendLine("        catch (Exception exception)");
             _ = thunks.AppendLine("        {");
             _ = thunks.AppendLine("            FailFastCallback(exception);");
-            _ = thunks.AppendLine("            throw;");
+            _ = thunks.AppendLine(returnType == "void"
+                ? "            return;"
+                : "            return default;");
             _ = thunks.AppendLine("        }");
             _ = thunks.AppendLine("    }");
             _ = thunks.AppendLine();
@@ -382,7 +390,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
 
         if (signatures.Count != 0)
         {
-            throw new InvalidDataException($"ICorJitInfo APIs missing timing indices: {string.Join(", ", signatures.Keys)}");
+            ThrowInvalidDataException($"ICorJitInfo APIs missing timing indices: {string.Join(", ", signatures.Keys)}");
         }
 
         _ = Directory.CreateDirectory(@"Outputs\jit\compiler");
@@ -465,7 +473,7 @@ public sealed unsafe partial class WrapICorJitInfo
         var builder = ProcessMacroBasedFile(@"Inputs\smopcodemap.def", "OPCODEMAP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var opcode = parts[0].AsSpan().Trim();
@@ -499,7 +507,7 @@ public partial class CodeSeqSM
         var gtDispIconHandleFlagBuilder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -518,7 +526,7 @@ public partial class CodeSeqSM
         var compInitVarTypeCalleeTrashRegMasksBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -567,7 +575,7 @@ public partial class Compiler
         var handleKindFlagsBuilder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -590,7 +598,7 @@ public partial class Compiler
         var asNodeBuilder = ProcessMacroBasedFileUnion(@"Inputs\gtstructs.h", prefixes, (builder, inputFile, line, prefix, parts) => {
             if (parts.Length is < 2)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -660,7 +668,7 @@ public partial class GenTree
         var builder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -688,7 +696,7 @@ public static partial class Globals
         var builder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -720,7 +728,7 @@ public enum genTreeOps : byte
         return ProcessMacroBasedFileUnion(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].Trim();
@@ -740,7 +748,7 @@ public enum genTreeOps : byte
                          (currentPart is "GenTreeOp" && previousPart is "GenTreeMultiRegOp"));
                     if (!isMulLongStructVariant)
                     {
-                        throw new InvalidDataException($"Conflicting GTNODE definitions for '{name}'.");
+                        ThrowInvalidDataException($"Conflicting GTNODE definitions for '{name}'.");
                     }
                 }
                 return;
@@ -756,7 +764,7 @@ public enum genTreeOps : byte
         var kindsBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -801,7 +809,7 @@ public enum genTreeOps : byte
         var debugKindsBuilder = ProcessGenTreeOpDefinitions((Action<StringBuilder, string, string, string, string[]>)((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].Trim();
@@ -844,7 +852,7 @@ public enum genTreeOps : byte
         var namesBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].Trim();
@@ -854,7 +862,7 @@ public enum genTreeOps : byte
         var structTypesBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].Trim();
@@ -866,7 +874,7 @@ public enum genTreeOps : byte
             if ((name is "LOCKADD" or "XAND" or "XORR" or "XADD" or "XCHG") &&
                 !structType.Equals("GenTreeIndir", StringComparison.Ordinal))
             {
-                throw new InvalidDataException($"GT_{name} must use the concrete GenTreeIndir type.");
+                ThrowInvalidDataException($"GT_{name} must use the concrete GenTreeIndir type.");
             }
 
             if ((flags[0] == '(') && (flags[^1] == ')'))
@@ -908,7 +916,7 @@ public enum genTreeOps : byte
                              !flag.Equals("NOVALUE", StringComparison.Ordinal) &&
                              !flag.Equals("STORE", StringComparison.Ordinal))
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
                 }
                 else
@@ -983,7 +991,7 @@ public static partial class genTreeOpsExtensions
         var builder = ProcessMacroBasedFile(@"Inputs\handlekinds.h", "HANDLE_KIND(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -1256,13 +1264,13 @@ public partial struct HWIntrinsicInfo
         return ProcessTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
             if (parts.Length is not 16 and not 18)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var identity = GetHardwareIntrinsicIdentity(parts);
             if (!seen.Add(identity))
             {
-                throw new InvalidDataException($"Duplicate hardware intrinsic table row '{identity}' for {target}.");
+                ThrowInvalidDataException($"Duplicate hardware intrinsic table row '{identity}' for {target}.");
             }
 
             callback(builder, inputFile, line, prefix, parts);
@@ -1288,7 +1296,7 @@ public partial struct HWIntrinsicInfo
 
             if (hasOpeningBrace != hasClosingBrace)
             {
-                throw new InvalidDataException($"Invalid instruction mapping format: '{line}'");
+                ThrowInvalidDataException($"Invalid instruction mapping format: '{line}'");
             }
 
             if (hasOpeningBrace)
@@ -1301,7 +1309,7 @@ public partial struct HWIntrinsicInfo
             {
                 if (!instructionOrdinals.TryGetValue(instructionNames[instructionIndex], out ordinals[instructionIndex]))
                 {
-                    throw new InvalidDataException(
+                    ThrowInvalidDataException(
                         $"Instruction '{instructionNames[instructionIndex]}' for NI_{isa}_{intrinsicName} is not present in the {target} instruction enum.");
                 }
             }
@@ -1367,7 +1375,7 @@ public partial struct HWIntrinsicInfo
             {
                 if (!ordinals.TryAdd(instructionName, checked((ushort)ordinal)))
                 {
-                    throw new InvalidDataException($"Duplicate instruction '{instructionName}' for {name}.");
+                    ThrowInvalidDataException($"Duplicate instruction '{instructionName}' for {name}.");
                 }
 
                 ordinal++;
@@ -1764,7 +1772,7 @@ public partial struct HWIntrinsicInfo
         {
             if (!targetIndexes.TryAdd(targetNames[tableIndex], tableIndex))
             {
-                throw new InvalidDataException($"Duplicate hardware intrinsic table row '{targetNames[tableIndex]}' for {target}.");
+                ThrowInvalidDataException($"Duplicate hardware intrinsic table row '{targetNames[tableIndex]}' for {target}.");
             }
         }
 
@@ -1774,13 +1782,13 @@ public partial struct HWIntrinsicInfo
         {
             if (!unionIndexes.TryAdd(unionNames[unionIndex], unionIndex))
             {
-                throw new InvalidDataException($"Duplicate hardware intrinsic identity '{unionNames[unionIndex]}'.");
+                ThrowInvalidDataException($"Duplicate hardware intrinsic identity '{unionNames[unionIndex]}'.");
             }
         }
 
         if (targetNames.Count >= ushort.MaxValue || unionNames.Count >= ushort.MaxValue)
         {
-            throw new InvalidDataException("Hardware intrinsic index maps exceed their ushort encoding.");
+            ThrowInvalidDataException("Hardware intrinsic index maps exceed their ushort encoding.");
         }
 
         _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<ushort> s_{target}TableIndexByUnionIndex => [");
@@ -1853,8 +1861,15 @@ public partial struct HWIntrinsicInfo
             "XARCH" => @"Inputs\hwintrinsiclistxarch.h",
             "ARM64" => @"Inputs\hwintrinsiclistarm64.h",
             "WASM" => @"Inputs\hwintrinsiclistwasm.h",
-            _ => throw new InvalidDataException($"Unsupported target hardware intrinsic table: {target}."),
+            _ => null,
         };
+
+        if (targetInput is null)
+        {
+            ThrowInvalidDataException($"Unsupported target hardware intrinsic table: {target}.");
+            return default!;
+        }
+
         _ = builder.Append(ProcessTargetIntrinsicRows(targetInput, target, "HARDWARE_INTRINSIC(", callback));
 
         if (target is "ARM64")
@@ -1870,7 +1885,7 @@ public partial struct HWIntrinsicInfo
     {
         if (parts.Length is not 16 and not 18)
         {
-            throw new InvalidDataException("Invalid hardware intrinsic row.");
+            ThrowInvalidDataException("Invalid hardware intrinsic row.");
         }
 
         return $"{parts[0].Trim()}_{parts[1].Trim()}";
@@ -1885,6 +1900,12 @@ public partial struct HWIntrinsicInfo
             "FEATURE_HW_INTRINSICS",
             "HARDWARE_INTRINSIC",
         };
+
+        if (target is not "XARCH" and not "ARM64" and not "WASM")
+        {
+            ThrowInvalidDataException($"Unsupported target hardware intrinsic table: {target}.");
+            return default!;
+        }
 
         switch (target)
         {
@@ -1906,11 +1927,6 @@ public partial struct HWIntrinsicInfo
             {
                 _ = definedSymbols.Add("TARGET_WASM");
                 break;
-            }
-
-            default:
-            {
-                throw new InvalidDataException($"Unsupported target hardware intrinsic table: {target}.");
             }
         }
 
@@ -1978,7 +1994,7 @@ public partial struct HWIntrinsicInfo
 
         if (branches.Count is not 0)
         {
-            throw new InvalidDataException($"Unbalanced preprocessor conditionals in '{inputFile}'.");
+            ThrowInvalidDataException($"Unbalanced preprocessor conditionals in '{inputFile}'.");
         }
 
         return builder;
@@ -2000,7 +2016,7 @@ public partial struct HWIntrinsicInfo
 
         if (tokenIndex != tokens.Count)
         {
-            throw new InvalidDataException($"Unsupported intrinsic-list condition: '{condition}'.");
+            ThrowInvalidDataException($"Unsupported intrinsic-list condition: '{condition}'.");
         }
 
         return result;
@@ -2037,7 +2053,8 @@ public partial struct HWIntrinsicInfo
         {
             if (tokenIndex >= tokens.Count)
             {
-                throw new InvalidDataException($"Incomplete intrinsic-list condition: '{condition}'.");
+                ThrowInvalidDataException($"Incomplete intrinsic-list condition: '{condition}'.");
+                return false;
             }
 
             var token = tokens[tokenIndex++];
@@ -2053,7 +2070,8 @@ public partial struct HWIntrinsicInfo
 
                 if (tokenIndex >= tokens.Count || tokens[tokenIndex++] is not ")")
                 {
-                    throw new InvalidDataException($"Unbalanced intrinsic-list condition: '{condition}'.");
+                    ThrowInvalidDataException($"Unbalanced intrinsic-list condition: '{condition}'.");
+                    return false;
                 }
 
                 return value;
@@ -2064,7 +2082,8 @@ public partial struct HWIntrinsicInfo
                 return token is "1";
             }
 
-            throw new InvalidDataException($"Unsupported intrinsic-list condition token '{token}'.");
+            ThrowInvalidDataException($"Unsupported intrinsic-list condition token '{token}'.");
+            return false;
         }
     }
 
@@ -2120,13 +2139,13 @@ public partial struct HWIntrinsicInfo
             // Keep ushort.MaxValue available as the sentinel for an ISA without a lookup range.
             if ((uint)index >= ushort.MaxValue)
             {
-                throw new InvalidDataException($"The intrinsic table index exceeds the ISA range encoding: {index}.");
+                ThrowInvalidDataException($"The intrinsic table index exceeds the ISA range encoding: {index}.");
             }
 
             if (!instructionSetValues.TryGetValue(instructionSets[index], out var instructionSetValue) ||
                 (instructionSetValue == noneInstructionSetValue))
             {
-                throw new InvalidDataException($"Intrinsic ISA '{instructionSets[index]}' is not present in the target instruction-set enum.");
+                ThrowInvalidDataException($"Intrinsic ISA '{instructionSets[index]}' is not present in the target instruction-set enum.");
             }
 
             var isVectorInstructionSet = instructionSetValue == vectorInstructionSetValue;
@@ -2185,21 +2204,21 @@ public partial struct HWIntrinsicInfo
 
         if (declarationIndex < 0)
         {
-            throw new InvalidDataException("The generated instruction-set source does not define ManagedInstructionSet.");
+            ThrowInvalidDataException("The generated instruction-set source does not define ManagedInstructionSet.");
         }
 
         var bodyStart = instructionSetSource.IndexOf('{', declarationIndex, StringComparison.Ordinal);
 
         if (bodyStart < 0)
         {
-            throw new InvalidDataException("The generated ManagedInstructionSet enum is malformed.");
+            ThrowInvalidDataException("The generated ManagedInstructionSet enum is malformed.");
         }
 
         var bodyEnd = instructionSetSource.IndexOf('}', bodyStart, StringComparison.Ordinal);
 
         if (bodyEnd < 0)
         {
-            throw new InvalidDataException("The generated ManagedInstructionSet enum is malformed.");
+            ThrowInvalidDataException("The generated ManagedInstructionSet enum is malformed.");
         }
 
         var managedInstructionSetSource = instructionSetSource[bodyStart..(bodyEnd + 1)];
@@ -2221,7 +2240,7 @@ public partial struct HWIntrinsicInfo
 
             if (!instructionSetValues.TryAdd(name, value))
             {
-                throw new InvalidDataException($"Instruction set is defined more than once for the target: '{name}'.");
+                ThrowInvalidDataException($"Instruction set is defined more than once for the target: '{name}'.");
             }
 
             nextValue = checked(value + 1);
@@ -2229,7 +2248,7 @@ public partial struct HWIntrinsicInfo
 
         if (!instructionSetValues.ContainsKey("InstructionSet_NONE"))
         {
-            throw new InvalidDataException("The generated instruction-set enum does not define InstructionSet_NONE.");
+            ThrowInvalidDataException("The generated instruction-set enum does not define InstructionSet_NONE.");
         }
 
         return instructionSetValues;
@@ -2275,7 +2294,7 @@ public partial struct HWIntrinsicInfo
             {
                 if (conditionalStack.Count is 0)
                 {
-                    throw new InvalidDataException($"Unexpected preprocessor #elif: '{line}'.");
+                    ThrowInvalidDataException($"Unexpected preprocessor #elif: '{line}'.");
                 }
 
                 var (parentIncluded, branchTaken) = conditionalStack.Pop();
@@ -2288,7 +2307,7 @@ public partial struct HWIntrinsicInfo
             {
                 if (conditionalStack.Count is 0)
                 {
-                    throw new InvalidDataException($"Unexpected preprocessor #else: '{line}'.");
+                    ThrowInvalidDataException($"Unexpected preprocessor #else: '{line}'.");
                 }
 
                 var (parentIncluded, branchTaken) = conditionalStack.Pop();
@@ -2299,7 +2318,7 @@ public partial struct HWIntrinsicInfo
             {
                 if (conditionalStack.Count is 0)
                 {
-                    throw new InvalidDataException($"Unexpected preprocessor #endif: '{line}'.");
+                    ThrowInvalidDataException($"Unexpected preprocessor #endif: '{line}'.");
                 }
 
                 isIncluded = conditionalStack.Pop().ParentIncluded;
@@ -2308,12 +2327,12 @@ public partial struct HWIntrinsicInfo
             {
                 if (isIncluded)
                 {
-                    throw new InvalidDataException($"Active #error in intrinsic lookup table: '{line}'.");
+                    ThrowInvalidDataException($"Active #error in intrinsic lookup table: '{line}'.");
                 }
             }
             else if (trimmedLine.Length > 0 && trimmedLine[0] is '#')
             {
-                throw new InvalidDataException($"Unsupported preprocessor directive in intrinsic lookup table: '{line}'.");
+                ThrowInvalidDataException($"Unsupported preprocessor directive in intrinsic lookup table: '{line}'.");
             }
             else if (isIncluded)
             {
@@ -2323,7 +2342,7 @@ public partial struct HWIntrinsicInfo
 
         if (conditionalStack.Count is not 0)
         {
-            throw new InvalidDataException("Unterminated conditional region in intrinsic lookup table.");
+            ThrowInvalidDataException("Unterminated conditional region in intrinsic lookup table.");
         }
 
         return builder.ToString();
@@ -2347,7 +2366,7 @@ public partial struct HWIntrinsicInfo
 
                 if (symbol.Length is 0 || !Regex.IsMatch(symbol, @"^[A-Za-z0-9_]+$", RegexOptions.CultureInvariant))
                 {
-                    throw new InvalidDataException($"Unsupported preprocessor condition in intrinsic lookup table: '{condition}'.");
+                    ThrowInvalidDataException($"Unsupported preprocessor condition in intrinsic lookup table: '{condition}'.");
                 }
 
                 var isDefined = definedSymbols.Contains(symbol);
@@ -2359,7 +2378,7 @@ public partial struct HWIntrinsicInfo
                     not "TARGET_RISCV64" and not "TARGET_WASM" and not "TARGET_WASM32" and
                     not "TARGET_X86" and not "TARGET_XARCH")
                 {
-                    throw new InvalidDataException($"Unknown preprocessor symbol in intrinsic lookup table: '{symbol}'.");
+                    ThrowInvalidDataException($"Unknown preprocessor symbol in intrinsic lookup table: '{symbol}'.");
                 }
 
                 isConjunctionTrue &= isNegated ? !isDefined : isDefined;
@@ -2378,7 +2397,7 @@ public partial struct HWIntrinsicInfo
     {
         if (!instructionSetValues.TryGetValue(instructionSet, out var instructionSetValue))
         {
-            throw new InvalidDataException($"The generated instruction-set enum does not define '{instructionSet}'.");
+            ThrowInvalidDataException($"The generated instruction-set enum does not define '{instructionSet}'.");
         }
 
         var boundsIndex = instructionSetValue * 2;
@@ -2405,7 +2424,7 @@ public partial struct HWIntrinsicInfo
             }
             if (tokens.Count != 6)
             {
-                throw new InvalidDataException($"Malformed ternary-logic entry: {line}");
+                ThrowInvalidDataException($"Malformed ternary-logic entry: {line}");
             }
 
             uint packed = 0;
@@ -2415,7 +2434,7 @@ public partial struct HWIntrinsicInfo
                 var use = Array.IndexOf(uses, tokens[(2 * index) + 1].Groups[1].Value);
                 if ((kind < 0) || (use < 0))
                 {
-                    throw new InvalidDataException($"Unknown ternary-logic operation: {line}");
+                    ThrowInvalidDataException($"Unknown ternary-logic operation: {line}");
                 }
 
                 var entry = (uint)kind | ((uint)use << 4);
@@ -2428,7 +2447,7 @@ public partial struct HWIntrinsicInfo
 
         if (count != 256)
         {
-            throw new InvalidDataException($"Expected 256 native ternary-logic entries; found {count}.");
+            ThrowInvalidDataException($"Expected 256 native ternary-logic entries; found {count}.");
         }
 
         _ = Directory.CreateDirectory(@"Outputs\jit\hwintrinsic");
@@ -2453,7 +2472,7 @@ public readonly partial struct TernaryLogicInfo
         var builder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -2483,7 +2502,7 @@ public enum InlineObservation
         var descriptionsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -2499,7 +2518,7 @@ public enum InlineObservation
         var targetsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -2511,7 +2530,7 @@ public enum InlineObservation
         var impactsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -2572,7 +2591,7 @@ public static partial class InlineObservationExtensions
             var rows = jumpRows[targetName];
             if (rows.Count == 0 || rows[0].JumpKind != "jmp")
             {
-                throw new InvalidDataException($"The {targetName} jump-kind table must begin with jmp.");
+                ThrowInvalidDataException($"The {targetName} jump-kind table must begin with jmp.");
             }
 
             for (var index = 1; index < rows.Count; index++)
@@ -2754,14 +2773,14 @@ public partial class Emitter
                 var targetConditionEnd = trimmedLine[targetStart..].IndexOf(')');
                 if (targetConditionEnd is -1)
                 {
-                    throw new InvalidDataException($"Invalid emitjmps.h target condition: '{line}'");
+                    ThrowInvalidDataException($"Invalid emitjmps.h target condition: '{line}'");
                 }
 
                 var targetEnd = targetStart + targetConditionEnd;
                 activeTarget = trimmedLine[targetStart..targetEnd].ToString();
                 if (!result.ContainsKey(activeTarget))
                 {
-                    throw new InvalidDataException($"Unsupported emitjmps.h target '{activeTarget}'.");
+                    ThrowInvalidDataException($"Unsupported emitjmps.h target '{activeTarget}'.");
                 }
                 continue;
             }
@@ -2793,13 +2812,13 @@ public partial class Emitter
             var closingParen = trimmedLine.LastIndexOf(')');
             if (closingParen < macroPrefix.Length)
             {
-                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+                ThrowInvalidDataException($"Invalid jump mapping format: '{line}'");
             }
 
             var parts = trimmedLine[macroPrefix.Length..closingParen].ToString().Split(',');
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+                ThrowInvalidDataException($"Invalid jump mapping format: '{line}'");
             }
 
             result[activeTarget].Add((
@@ -2923,7 +2942,7 @@ public enum instruction
             if (!name.StartsWith('"', StringComparison.Ordinal)
                 || !name.EndsWith('"', StringComparison.Ordinal))
             {
-                throw new InvalidDataException($"Unexpected instruction name: '{line}'");
+                ThrowInvalidDataException($"Unexpected instruction name: '{line}'");
             }
 
             var id = parts[0].Trim();
@@ -3114,7 +3133,7 @@ public sealed partial class CodeGen
                     maskSize = int.Parse(flag.AsSpan("KMask_Base".Length), CultureInfo.InvariantCulture);
                     if (maskSize is not 1 and not 2 and not 4 and not 8 and not 16)
                     {
-                        throw new InvalidDataException($"Unexpected mask size: '{line}'");
+                        ThrowInvalidDataException($"Unexpected mask size: '{line}'");
                     }
                 }
             }
@@ -3169,14 +3188,40 @@ public sealed partial class CodeGen
 
             if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
             {
-                var armFlags = parts[3].Trim() switch
+                string armFlags;
+                switch (parts[3].Trim())
                 {
-                    "LD" => "ARM_LD",
-                    "ST" => "ARM_ST",
-                    "0" => "0",
-                    "CMP" => "ARM_CMP",
-                    _ => throw new InvalidDataException($"Unexpected ARM instruction flags: '{line}'."),
-                };
+                    case "LD":
+                    {
+                        armFlags = "ARM_LD";
+                        break;
+                    }
+
+                    case "ST":
+                    {
+                        armFlags = "ARM_ST";
+                        break;
+                    }
+
+                    case "0":
+                    {
+                        armFlags = "0";
+                        break;
+                    }
+
+                    case "CMP":
+                    {
+                        armFlags = "ARM_CMP";
+                        break;
+                    }
+
+                    default:
+                    {
+                        ThrowInvalidDataException($"Unexpected ARM instruction flags: '{line}'.");
+                        return;
+                    }
+                }
+
                 flags = $"({armFlags}) | (INST_FP * ({flags}))";
             }
 
@@ -3451,7 +3496,7 @@ public sealed partial class CodeGen
         var lastFormat = Array.FindLastIndex(lines, line => line.TrimStart().StartsWith("IF_DEF(", StringComparison.Ordinal));
         if (firstFormat < 0)
         {
-            throw new InvalidDataException($"No instruction formats in '{formatInput}'.");
+            ThrowInvalidDataException($"No instruction formats in '{formatInput}'.");
         }
 
         // The native header also contains DEFINE_ID_OPS/DEFINE_IS_OPS include modes.
@@ -3496,7 +3541,7 @@ public sealed partial class CodeGen
                 {
                     if (parts.Length != 3)
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
 
                     var name = parts[0].Trim();
@@ -3505,7 +3550,7 @@ public sealed partial class CodeGen
                     {
                         if (!existingOperandKind.Equals(operandKind, StringComparison.Ordinal))
                         {
-                            throw new InvalidDataException(
+                            ThrowInvalidDataException(
                                 $"Instruction format '{name}' has different operand kinds in '{inputFile}'.");
                         }
 
@@ -3656,13 +3701,35 @@ public sealed partial class CodeGen
         {
             if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
             {
-                var flags = parts[3].Trim() switch
+                int flags;
+                switch (parts[3].Trim())
                 {
-                    "LD" => 2,
-                    "ST" => 4,
-                    "0" or "CMP" => 0,
-                    _ => throw new InvalidDataException($"Unexpected ARM load/store flags: '{line}'."),
-                };
+                    case "LD":
+                    {
+                        flags = 2;
+                        break;
+                    }
+
+                    case "ST":
+                    {
+                        flags = 4;
+                        break;
+                    }
+
+                    case "0":
+                    case "CMP":
+                    {
+                        flags = 0;
+                        break;
+                    }
+
+                    default:
+                    {
+                        ThrowInvalidDataException($"Unexpected ARM load/store flags: '{line}'.");
+                        return;
+                    }
+                }
+
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // {parts[0].Trim()}");
             }
         });
@@ -3956,7 +4023,8 @@ public partial class Emitter
         if (!s_instructionFormatIdentifiers.TryGetValue(target, out var identifiers)
             || !identifiers.TryGetValue(formatName, out var identifier))
         {
-            throw new InvalidDataException($"Instruction format '{name}' is not defined for target '{target}'.");
+            ThrowInvalidDataException($"Instruction format '{name}' is not defined for target '{target}'.");
+            return default!;
         }
 
         return identifier;
@@ -3975,7 +4043,7 @@ public partial class Emitter
             var lines = ReadInstructionFormatLines(input);
             if (lines.Any(line => line.TrimStart().StartsWith('#', StringComparison.Ordinal)))
             {
-                throw new InvalidDataException($"Conditional ARM64 format ordinals in '{input}' require explicit alias handling.");
+                ThrowInvalidDataException($"Conditional ARM64 format ordinals in '{input}' require explicit alias handling.");
             }
 
             _ = ProcessMacroBasedFile(input, lines, ["IF_DEF("], (builder, inputFile, line, prefix, parts) =>
@@ -3991,7 +4059,7 @@ public partial class Emitter
 
         if (remaining.Count != 0)
         {
-            throw new InvalidDataException($"Missing ARM64 frame formats: {string.Join(", ", remaining)}.");
+            ThrowInvalidDataException($"Missing ARM64 frame formats: {string.Join(", ", remaining)}.");
         }
 
         File.WriteAllText(@"Outputs\jit\emit\Emitter.Arm64FrameFormats.generated.cs", $$"""
@@ -4053,7 +4121,7 @@ public partial class Emitter
                 var arguments = SplitOpcodeArguments(line);
                 if ((arity < 0) || (arity > 5) || (arguments.Length != Math.Max(1, arity) + 7))
                 {
-                    throw new InvalidDataException($"Invalid opcode table entry: '{line}'");
+                    ThrowInvalidDataException($"Invalid opcode table entry: '{line}'");
                 }
 
                 // Native tables are prefixes of instruction order, not padded arrays:
@@ -4134,7 +4202,7 @@ public static partial class Globals
             var arguments = SplitOpcodeArguments(line);
             if (arguments.Length != 4)
             {
-                throw new InvalidDataException($"Invalid RISC-V opcode table entry: '{line}'");
+                ThrowInvalidDataException($"Invalid RISC-V opcode table entry: '{line}'");
             }
 
             var opcode = arguments[3].Trim();
@@ -4173,7 +4241,7 @@ public partial class Emitter
             var arguments = SplitOpcodeArguments(line);
             if (arguments.Length != 6)
             {
-                throw new InvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
+                ThrowInvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
             }
 
             var code = arguments[3].Trim();
@@ -4190,7 +4258,7 @@ public partial class Emitter
             var arguments = SplitOpcodeArguments(line);
             if (arguments.Length != 6)
             {
-                throw new InvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
+                ThrowInvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
             }
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture,
@@ -4201,7 +4269,7 @@ public partial class Emitter
             var arguments = SplitOpcodeArguments(line);
             if (arguments.Length != 6)
             {
-                throw new InvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
+                ThrowInvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
             }
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture,
@@ -4244,7 +4312,7 @@ public partial class Emitter
                 var expectedArity = isPrefixed ? 6 : 5;
                 if (parts.Length != expectedArity)
                 {
-                    throw new InvalidDataException($"Invalid Wasm opcode table entry: '{line}'");
+                    ThrowInvalidDataException($"Invalid Wasm opcode table entry: '{line}'");
                 }
 
                 var name = $"INS_{parts[0].Trim()}";
@@ -4315,14 +4383,14 @@ public partial class Emitter
                 var arguments = SplitOpcodeArguments(line);
                 if (arguments.Length != arity + 4)
                 {
-                    throw new InvalidDataException($"Invalid ARM64 opcode table entry: '{line}'");
+                    ThrowInvalidDataException($"Invalid ARM64 opcode table entry: '{line}'");
                 }
 
                 // Filtering must leave an instruction-order prefix, since the native
                 // selector indexes every encoding array directly by instruction.
                 if (arity > previousArity)
                 {
-                    throw new InvalidDataException($"ARM64 opcode arity is not descending: '{line}'");
+                    ThrowInvalidDataException($"ARM64 opcode arity is not descending: '{line}'");
                 }
                 previousArity = arity;
 
@@ -4379,14 +4447,14 @@ public partial class Emitter
                 var arguments = SplitOpcodeArguments(line);
                 if (arguments.Length != arity + 5)
                 {
-                    throw new InvalidDataException($"Invalid ARM opcode table entry: '{line}'");
+                    ThrowInvalidDataException($"Invalid ARM opcode table entry: '{line}'");
                 }
 
                 // Filtering must leave an instruction-order prefix, since the native
                 // selector indexes every encoding array directly by instruction.
                 if (arity > previousArity)
                 {
-                    throw new InvalidDataException($"ARM opcode arity is not descending: '{line}'");
+                    ThrowInvalidDataException($"ARM opcode arity is not descending: '{line}'");
                 }
                 previousArity = arity;
 
@@ -4444,14 +4512,14 @@ public partial class Emitter
                 var arguments = SplitOpcodeArguments(line);
                 if (arguments.Length != arity + 4)
                 {
-                    throw new InvalidDataException($"Invalid SVE opcode table entry: '{line}'");
+                    ThrowInvalidDataException($"Invalid SVE opcode table entry: '{line}'");
                 }
 
                 // Each native encoding array is an instruction-order prefix. Increasing
                 // arity would break indexing by ins - INS_sve_invalid after filtering.
                 if (arity > previousArity)
                 {
-                    throw new InvalidDataException($"SVE opcode arity is not descending: '{line}'");
+                    ThrowInvalidDataException($"SVE opcode arity is not descending: '{line}'");
                 }
                 previousArity = arity;
 
@@ -4524,7 +4592,8 @@ public partial class Emitter
             }
         }
 
-        throw new InvalidDataException($"Unterminated opcode macro: '{invocation}'");
+        ThrowInvalidDataException($"Unterminated opcode macro: '{invocation}'");
+        return [];
     }
 
     private static string ExpandOpcode(string expression,
@@ -4541,15 +4610,22 @@ public partial class Emitter
         }
 
         var opening = expression.IndexOf('(', StringComparison.Ordinal);
-        if ((opening < 0) || !macros.TryGetValue(expression[..opening], out var macro))
+        if (opening < 0)
         {
-            throw new InvalidDataException($"Unknown opcode expression: '{expression}'");
+            ThrowInvalidDataException($"Unknown opcode expression: '{expression}'");
+            return default!;
+        }
+
+        if (!macros.TryGetValue(expression[..opening], out var macro))
+        {
+            ThrowInvalidDataException($"Unknown opcode expression: '{expression}'");
+            return default!;
         }
 
         var arguments = SplitOpcodeArguments(expression);
         if (arguments.Length != macro.Parameters.Length)
         {
-            throw new InvalidDataException($"Invalid opcode macro arguments: '{expression}'");
+            ThrowInvalidDataException($"Invalid opcode macro arguments: '{expression}'");
         }
 
         var body = macro.Body;
@@ -4568,7 +4644,7 @@ public partial class Emitter
         var match = Regex.Match(input, $@"enum\s+{Regex.Escape(enumName)}\s*\{{(?<body>.*?)\}};", RegexOptions.Singleline);
         if (!match.Success)
         {
-            throw new InvalidDataException($"Could not find enum '{enumName}' in '{inputFile}'.");
+            ThrowInvalidDataException($"Could not find enum '{enumName}' in '{inputFile}'.");
         }
 
         var builder = new StringBuilder();
@@ -4624,13 +4700,15 @@ namespace RyuJitSharp;
 
         var lastFlags = FLAG_NONE;
         var inputLines = File.ReadAllLines(@"Inputs\jitconfigvalues.h");
+        var debugFieldBuilder = new StringBuilder();
+        var lastDebugFieldFlags = FLAG_NONE;
 
         var fieldBuilder = ProcessConfigValues((builder, inputFile, line, prefix, parts) => {
             var expectedPartCount = prefix.EndsWith("CONFIG_INTEGER(", StringComparison.Ordinal) ? 3 : 2;
 
             if (parts.Length != expectedPartCount)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -4642,23 +4720,46 @@ namespace RyuJitSharp;
             }
             var type = GetTypeForFlags(flags);
 
-            EmitIfdefWhereRequired(builder, flags, lastFlags);
-
             var fieldName = GetFieldName(name);
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private {type} _{fieldName};");
-
-            lastFlags = flags;
+            if (isDebugConfig)
+            {
+                EmitIfdefWhereRequired(debugFieldBuilder, flags, lastDebugFieldFlags);
+                var debugFieldType = type == "MethodSet" ? "JitConfigValues.MethodSet" : type;
+                _ = debugFieldBuilder.AppendLine(
+                    CultureInfo.InvariantCulture,
+                    $"            internal {debugFieldType} _{fieldName};");
+                lastDebugFieldFlags = flags;
+            }
+            else
+            {
+                EmitIfdefWhereRequired(builder, flags, lastFlags);
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private {type} _{fieldName};");
+                lastFlags = flags;
+            }
         });
 
         EmitIfdefWhereRequired(fieldBuilder, FLAG_NONE, lastFlags);
         lastFlags = FLAG_NONE;
+        EmitIfdefWhereRequired(debugFieldBuilder, FLAG_NONE, lastDebugFieldFlags);
+        lastDebugFieldFlags = FLAG_NONE;
+
+        var sidecarFieldGroups = GetJitConfigSidecarFieldGroups(fieldBuilder);
+        var sidecarGroups = sidecarFieldGroups.Values
+            .SelectMany(static groups => groups)
+            .Distinct()
+            .OrderBy(static group => group.ConfigurationProperty, StringComparer.Ordinal)
+            .ToArray();
+        var sidecarFieldBuilders = sidecarGroups.ToDictionary(
+            static group => group,
+            static _ => new StringBuilder());
+        fieldBuilder = MoveJitConfigSidecarFields(fieldBuilder, sidecarFieldGroups, sidecarFieldBuilders);
 
         var propertyBuilder = ProcessConfigValues((builder, inputFile, line, prefix, parts) => {
             var expectedPartCount = prefix.EndsWith("CONFIG_INTEGER(", StringComparison.Ordinal) ? 3 : 2;
 
             if (parts.Length != expectedPartCount)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -4673,7 +4774,6 @@ namespace RyuJitSharp;
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
             var fieldName = GetFieldName(name);
-
             if (isDebugConfig)
             {
                 var propertyName = name.ToString();
@@ -4681,19 +4781,22 @@ namespace RyuJitSharp;
                 _ = builder.AppendLine("    {");
                 _ = builder.AppendLine("        get");
                 _ = builder.AppendLine("        {");
-                _ = builder.AppendLine("            if (!Configuration.DEBUG)");
+                _ = builder.AppendLine("            if (Configuration.DEBUG)");
                 _ = builder.AppendLine("            {");
+                _ = builder.AppendLine("                var debugData = _configurationData?._debugData;");
                 _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                    $"                JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? \"{propertyName}\" : default);");
-                _ = builder.AppendLine("                return default!;");
+                    $"                return debugData is null ? default! : debugData._{fieldName};");
                 _ = builder.AppendLine("            }");
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            return _{fieldName};");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"            JitExceptionHelpers.ThrowInvalidOperationException(FatalJitErrorCode.JitConfigValueIsOnlyAvailableInDebugBuilds, Configuration.DETAILED_FATAL_ERROR_MESSAGES ? \"{propertyName}\" : default);");
+                _ = builder.AppendLine("            return default!;");
                 _ = builder.AppendLine("        }");
                 _ = builder.AppendLine("    }");
             }
             else
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {type} {name} => _{fieldName};");
+                var field = GetJitConfigFieldAccess(fieldName, sidecarFieldGroups);
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {type} {name} => {field};");
             }
 
             lastFlags = flags;
@@ -4707,7 +4810,7 @@ namespace RyuJitSharp;
 
             if (parts.Length != expectedPartCount)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var flags = GetFlagsForPrefix(prefix);
@@ -4723,6 +4826,7 @@ namespace RyuJitSharp;
 
             var name = GetFieldName(configName);
             var needsDebugCleanup = isDebugConfig && (kind != FLAG_INTEGER);
+            var field = GetJitConfigFieldStorageAccess(name, isDebugConfig, sidecarFieldGroups);
             if (needsDebugCleanup)
             {
                 _ = builder.AppendLine("        if (Configuration.DEBUG)");
@@ -4731,18 +4835,18 @@ namespace RyuJitSharp;
 
             if (kind == FLAG_INTEGER)
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        // _{name} = unchecked((int)(0xCDCDCDCD));");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        // {field} = unchecked((int)(0xCDCDCDCD));");
             }
             else if (kind == FLAG_STRING)
             {
                 var indent = needsDebugCleanup ? "            " : "        ";
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}jitHost->freeStringConfigValue(_{name});");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}jitHost->freeStringConfigValue({field});");
             }
             else
             {
                 Debug.Assert(kind == FLAG_METHODSET);
                 var indent = needsDebugCleanup ? "            " : "        ";
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name}.destroy(jitHost);");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{field}.destroy(jitHost);");
             }
 
             if (needsDebugCleanup)
@@ -4761,7 +4865,7 @@ namespace RyuJitSharp;
 
             if (parts.Length != expectedPartCount)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var configName = parts[0].AsSpan().Trim();
@@ -4776,6 +4880,7 @@ namespace RyuJitSharp;
             EmitIfdefWhereRequired(builder, flags, lastFlags);
 
             var name = GetFieldName(configName);
+            var field = GetJitConfigFieldStorageAccess(name, isDebugConfig, sidecarFieldGroups);
             var key = parts[1].AsSpan().Trim();
             var indent = isDebugConfig ? "            " : "        ";
             var nestedIndent = indent + "    ";
@@ -4795,31 +4900,31 @@ namespace RyuJitSharp;
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}if (Configuration.FEATURE_LOOP_ALIGN)");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{{");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                        $"{nestedIndent}_{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
+                        $"{nestedIndent}{field} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}}}");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}else");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{{");
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{nestedIndent}_{name} = 0;");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{nestedIndent}{field} = 0;");
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}}}");
                 }
                 else if (value.Equals("0xffffffff", StringComparison.OrdinalIgnoreCase))
                 {
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), unchecked((int)({value})));");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{field} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), unchecked((int)({value})));");
                 }
                 else
                 {
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{field} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
                 }
             }
             else if (kind == FLAG_STRING)
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{field} = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
             }
             else
             {
                 Debug.Assert(kind == FLAG_METHODSET);
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}var {name}Value = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))));");
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}_{name} = new MethodSet({name}Value, jitHost);");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"{indent}{field} = new MethodSet({name}Value, jitHost);");
             }
 
             if (isDebugConfig)
@@ -4835,12 +4940,67 @@ namespace RyuJitSharp;
 
         fieldBuilder = RewriteJitConfigConditionalCompilation(fieldBuilder, includeAllTargetBranches: true,
             declarationKind: JitConfigDeclarationKind.Field);
+        debugFieldBuilder = RewriteJitConfigConditionalCompilation(debugFieldBuilder, includeAllTargetBranches: true,
+            declarationKind: JitConfigDeclarationKind.Field);
         propertyBuilder = RewriteJitConfigConditionalCompilation(propertyBuilder, includeAllTargetBranches: true,
             declarationKind: JitConfigDeclarationKind.Property);
         destroyBuilder = RewriteJitConfigConditionalCompilation(destroyBuilder, includeAllTargetBranches: false);
         initializeBuilder = RewriteJitConfigConditionalCompilation(initializeBuilder, includeAllTargetBranches: false);
         destroyBuilder = MergeAdjacentDebugGuardBlocks(destroyBuilder);
         initializeBuilder = MergeAdjacentDebugGuardBlocks(initializeBuilder);
+
+        var sidecarTypeBuilder = new StringBuilder();
+        var configurationDataFieldBuilder = new StringBuilder();
+        _ = configurationDataFieldBuilder.AppendLine(
+            "        internal Compiler.DebugData.JitConfigValuesData? _debugData;");
+        foreach (var group in sidecarGroups)
+        {
+            _ = sidecarTypeBuilder.AppendLine(CultureInfo.InvariantCulture, $"    internal sealed class {group.TypeName}");
+            _ = sidecarTypeBuilder.AppendLine("    {");
+            _ = sidecarTypeBuilder.Append(sidecarFieldBuilders[group]);
+            _ = sidecarTypeBuilder.AppendLine("    }");
+            _ = sidecarTypeBuilder.AppendLine();
+            _ = configurationDataFieldBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"        internal {group.TypeName}? {group.DataFieldName};");
+        }
+
+        var configurationDataInitializationBuilder = new StringBuilder();
+        var configurationDataConditions = sidecarGroups
+            .Select(static group => group.ConfigurationProperty)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static condition => condition, StringComparer.Ordinal)
+            .ToArray();
+        if (configurationDataConditions.Length != 0)
+        {
+            _ = configurationDataInitializationBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"        if (Configuration.DEBUG || {string.Join(" || ", configurationDataConditions)})");
+            _ = configurationDataInitializationBuilder.AppendLine("        {");
+            _ = configurationDataInitializationBuilder.AppendLine("            _configurationData = new ConfigurationData();");
+            _ = configurationDataInitializationBuilder.AppendLine("            if (Configuration.DEBUG)");
+            _ = configurationDataInitializationBuilder.AppendLine("            {");
+            _ = configurationDataInitializationBuilder.AppendLine(
+                "                _configurationData._debugData = new Compiler.DebugData.JitConfigValuesData();");
+            _ = configurationDataInitializationBuilder.AppendLine("            }");
+            foreach (var group in sidecarGroups)
+            {
+                _ = configurationDataInitializationBuilder.AppendLine(CultureInfo.InvariantCulture,
+                    $"            if ({group.ConfigurationProperty})");
+                _ = configurationDataInitializationBuilder.AppendLine("            {");
+                _ = configurationDataInitializationBuilder.AppendLine(CultureInfo.InvariantCulture,
+                    $"                _configurationData.{group.DataFieldName} = new {group.TypeName}();");
+                _ = configurationDataInitializationBuilder.AppendLine("            }");
+            }
+            _ = configurationDataInitializationBuilder.AppendLine("        }");
+        }
+        else
+        {
+            _ = configurationDataInitializationBuilder.AppendLine("        if (Configuration.DEBUG)");
+            _ = configurationDataInitializationBuilder.AppendLine("        {");
+            _ = configurationDataInitializationBuilder.AppendLine("            _configurationData = new ConfigurationData();");
+            _ = configurationDataInitializationBuilder.AppendLine(
+                "            _configurationData._debugData = new Compiler.DebugData.JitConfigValuesData();");
+            _ = configurationDataInitializationBuilder.AppendLine("        }");
+        }
 
         _ = Directory.CreateDirectory(@"Outputs\jit\jitconfig");
 
@@ -4850,15 +5010,53 @@ namespace RyuJitSharp;
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#nullable enable annotations
+
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
+public partial class Compiler
+{
+    internal sealed partial class DebugData
+    {
+        internal sealed class JitConfigValuesData
+        {
+{{debugFieldBuilder}}            internal JitConfigValuesData Clone() => (JitConfigValuesData)MemberwiseClone();
+        }
+    }
+}
+
 public partial struct JitConfigValues
 {
+    private ConfigurationData? _configurationData;
+
 {{fieldBuilder}}
+{{sidecarTypeBuilder}}
+    private sealed class ConfigurationData
+    {
+{{configurationDataFieldBuilder}}        internal ConfigurationData Clone() => (ConfigurationData)MemberwiseClone();
+    }
+
 {{propertyBuilder}}
+    internal Compiler.DebugData.JitConfigValuesData getDebugDataForWrite()
+    {
+        var configurationData = _configurationData?.Clone() ?? new ConfigurationData();
+        var debugData = configurationData._debugData;
+        if (debugData is null)
+        {
+            debugData = new Compiler.DebugData.JitConfigValuesData();
+        }
+        else
+        {
+            debugData = debugData.Clone();
+        }
+        configurationData._debugData = debugData;
+        _configurationData = configurationData;
+        return debugData;
+    }
+
     public unsafe void destroy(ICorJitHost* jitHost)
     {
         if (!_isInitialized)
@@ -4873,6 +5071,7 @@ public partial struct JitConfigValues
     {
         assert(!_isInitialized);
 
+{{configurationDataInitializationBuilder}}
 {{initializeBuilder}}        _isInitialized = true;
     }
 }
@@ -4942,7 +5141,7 @@ public partial struct JitConfigValues
             }
             else
             {
-                throw new InvalidOperationException($"Unexpected prefix: '{prefix}'");
+                ThrowInvalidOperationException($"Unexpected prefix: '{prefix}'");
             }
 
             if (prefix.StartsWith("CONFIG_", StringComparison.Ordinal))
@@ -4959,7 +5158,7 @@ public partial struct JitConfigValues
             }
             else
             {
-                throw new InvalidOperationException($"Unexpected prefix: '{prefix}'");
+                ThrowInvalidOperationException($"Unexpected prefix: '{prefix}'");
             }
 
             return kind;
@@ -4969,10 +5168,23 @@ public partial struct JitConfigValues
         {
             var kind = flags & FLAG_KIND_MASK;
 
-            return (kind == FLAG_INTEGER) ? "int"
-                 : (kind == FLAG_STRING) ? "unsafe byte*"
-                 : (kind == FLAG_METHODSET) ? "MethodSet"
-                 : throw new InvalidOperationException($"Unexpected kind: '{kind}'");
+            if (kind == FLAG_INTEGER)
+            {
+                return "int";
+            }
+
+            if (kind == FLAG_STRING)
+            {
+                return "unsafe byte*";
+            }
+
+            if (kind == FLAG_METHODSET)
+            {
+                return "MethodSet";
+            }
+
+            ThrowInvalidOperationException($"Unexpected kind: '{kind}'");
+            return default!;
         }
     }
 
@@ -5063,7 +5275,8 @@ public partial struct JitConfigValues
             if ((openLine >= lines.Count) ||
                 !string.Equals(lines[openLine].Trim(), "{", StringComparison.Ordinal))
             {
-                throw new InvalidDataException("A generated JitConfigValues Debug guard must have a block body.");
+                ThrowInvalidDataException("A generated JitConfigValues Debug guard must have a block body.");
+                return false;
             }
 
             var depth = 0;
@@ -5088,7 +5301,8 @@ public partial struct JitConfigValues
                 }
             }
 
-            throw new InvalidDataException("Unclosed generated JitConfigValues Debug guard.");
+            ThrowInvalidDataException("Unclosed generated JitConfigValues Debug guard.");
+            return false;
         }
     }
 
@@ -5110,6 +5324,281 @@ public partial struct JitConfigValues
         JitConfigConditionalKind Kind,
         int GroupId,
         int BranchIndex);
+
+    private readonly record struct JitConfigSidecarGroup(
+        string ConfigurationProperty,
+        string TypeName,
+        string DataFieldName);
+
+    private static Dictionary<string, JitConfigSidecarGroup[]> GetJitConfigSidecarFieldGroups(
+        StringBuilder input)
+    {
+        var fieldsByGroup = new Dictionary<string, HashSet<JitConfigSidecarGroup>>(StringComparer.Ordinal);
+        var commonFields = new HashSet<string>(StringComparer.Ordinal);
+        var conditions = new Stack<string?>();
+
+        using var reader = new StringReader(input.ToString());
+        while (reader.ReadLine() is { } line)
+        {
+            var trimmedLine = line.AsSpan().Trim();
+            if (!trimmedLine.StartsWith('#'))
+            {
+                if (!TryGetJitConfigDeclarationName(line, JitConfigDeclarationKind.Field, out var name))
+                {
+                    continue;
+                }
+
+                var fieldName = name[1..];
+                var groups = conditions
+                    .Where(static condition => condition is not null)
+                    .SelectMany(static condition => GetJitConfigSidecarGroups(condition!))
+                    .Distinct()
+                    .ToArray();
+                if (groups.Length == 0)
+                {
+                    _ = commonFields.Add(fieldName);
+                    continue;
+                }
+
+                if (!fieldsByGroup.TryGetValue(fieldName, out var fieldGroups))
+                {
+                    fieldGroups = [];
+                    fieldsByGroup.Add(fieldName, fieldGroups);
+                }
+
+                fieldGroups.UnionWith(groups);
+                continue;
+            }
+
+            var directive = trimmedLine[1..].TrimStart();
+            if (directive.StartsWith("if ", StringComparison.Ordinal))
+            {
+                conditions.Push(directive[3..].Trim().ToString());
+            }
+            else if (directive.StartsWith("ifdef ", StringComparison.Ordinal))
+            {
+                conditions.Push(directive[6..].Trim().ToString());
+            }
+            else if (directive.StartsWith("ifndef ", StringComparison.Ordinal))
+            {
+                conditions.Push($"!{directive[7..].Trim()}");
+            }
+            else if (directive.StartsWith("elif ", StringComparison.Ordinal))
+            {
+                if (conditions.Count == 0)
+                {
+                    ThrowInvalidDataException($"Unmatched JitConfigValues #elif directive: '{line}'");
+                }
+
+                _ = conditions.Pop();
+                conditions.Push(directive[5..].Trim().ToString());
+            }
+            else if (directive.StartsWith("else", StringComparison.Ordinal))
+            {
+                if (conditions.Count == 0)
+                {
+                    ThrowInvalidDataException($"Unmatched JitConfigValues #else directive: '{line}'");
+                }
+
+                _ = conditions.Pop();
+                conditions.Push(null);
+            }
+            else if (directive.StartsWith("endif", StringComparison.Ordinal))
+            {
+                if (conditions.Count == 0)
+                {
+                    ThrowInvalidDataException($"Unmatched JitConfigValues #endif directive: '{line}'");
+                }
+
+                _ = conditions.Pop();
+            }
+        }
+
+        if (conditions.Count != 0)
+        {
+            ThrowInvalidDataException("Unclosed JitConfigValues conditional directive.");
+        }
+
+        foreach (var commonField in commonFields)
+        {
+            _ = fieldsByGroup.Remove(commonField);
+        }
+
+        return fieldsByGroup.ToDictionary(
+            static pair => pair.Key,
+            static pair => pair.Value.ToArray(),
+            StringComparer.Ordinal);
+    }
+
+    private static IEnumerable<JitConfigSidecarGroup> GetJitConfigSidecarGroups(string condition)
+    {
+        foreach (Match match in Regex.Matches(condition, @"\b(?:TARGET|FEATURE)_[A-Za-z0-9_]+\b"))
+        {
+            var flag = match.Value;
+            if (Regex.IsMatch(condition, $@"!\s*(?:defined\s*\(\s*)?{Regex.Escape(flag)}\b"))
+            {
+                continue;
+            }
+
+            var group = flag switch
+            {
+                "TARGET_AMD64" or "TARGET_X86" => new JitConfigSidecarGroup(
+                    "Configuration.TARGET_XARCH",
+                    "TargetXarchData",
+                    "_targetXarchData"),
+                _ when flag.StartsWith("TARGET_", StringComparison.Ordinal) => CreateJitConfigSidecarGroup(
+                    flag,
+                    "Target",
+                    "_target"),
+                _ => CreateJitConfigSidecarGroup(
+                    flag,
+                    "Feature",
+                    "_feature"),
+            };
+
+            yield return group;
+        }
+    }
+
+    private static JitConfigSidecarGroup CreateJitConfigSidecarGroup(
+        string flag,
+        string typePrefix,
+        string dataFieldPrefix)
+    {
+        var flagName = flag[(flag.IndexOf('_', StringComparison.Ordinal) + 1)..];
+        var suffix = flagName switch
+        {
+            "ARM64" => "Arm64",
+            "ARMARCH" => "ArmArch",
+            "RISCV64" => "RiscV64",
+            "LOONGARCH64" => "LoongArch64",
+            "WASM" => "Wasm",
+            "SIMD" => "Simd",
+            _ => string.Concat(flagName.Split('_', StringSplitOptions.RemoveEmptyEntries)
+                .Select(static part => char.ToUpperInvariant(part[0]) + part[1..])),
+        };
+
+        var propertyName = flag.Equals("TARGET_AMD64", StringComparison.Ordinal) ||
+                           flag.Equals("TARGET_X86", StringComparison.Ordinal)
+            ? "Configuration.TARGET_XARCH"
+            : $"Configuration.{flag}";
+        var typeName = $"{typePrefix}{suffix}Data";
+        var dataFieldName = $"{dataFieldPrefix}{suffix}Data";
+
+        return new JitConfigSidecarGroup(propertyName, typeName, dataFieldName);
+    }
+
+    private static StringBuilder MoveJitConfigSidecarFields(
+        StringBuilder input,
+        IReadOnlyDictionary<string, JitConfigSidecarGroup[]> sidecarFieldGroups,
+        Dictionary<JitConfigSidecarGroup, StringBuilder> sidecarFieldBuilders)
+    {
+        var output = new StringBuilder();
+        var movedFields = new HashSet<string>(StringComparer.Ordinal);
+        var movedFieldsByGroup = new Dictionary<JitConfigSidecarGroup, HashSet<string>>();
+
+        using var reader = new StringReader(input.ToString());
+        while (reader.ReadLine() is { } line)
+        {
+            if (!TryGetJitConfigDeclarationName(line, JitConfigDeclarationKind.Field, out var name))
+            {
+                _ = output.AppendLine(line);
+                continue;
+            }
+
+            var fieldName = name[1..];
+            if (!sidecarFieldGroups.TryGetValue(fieldName, out var groups))
+            {
+                _ = output.AppendLine(line);
+                continue;
+            }
+
+            var declaration = Regex.Match(
+                line,
+                @"^\s*private\s+(?<type>.+?)\s+(?<name>_[A-Za-z0-9_]+);$",
+                RegexOptions.CultureInvariant);
+            if (!declaration.Success)
+            {
+                ThrowInvalidDataException($"Invalid JitConfigValues field declaration: '{line}'");
+            }
+
+            foreach (var group in groups)
+            {
+                if (!movedFieldsByGroup.TryGetValue(group, out var groupFields))
+                {
+                    groupFields = [];
+                    movedFieldsByGroup.Add(group, groupFields);
+                }
+
+                if (!groupFields.Add(fieldName))
+                {
+                    continue;
+                }
+
+                var fieldBuilder = sidecarFieldBuilders[group];
+                _ = fieldBuilder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        internal {declaration.Groups["type"].Value} {name};");
+            }
+
+            _ = movedFields.Add(fieldName);
+        }
+
+        var missingFields = sidecarFieldGroups.Keys.Except(movedFields, StringComparer.Ordinal).ToArray();
+        if (missingFields.Length != 0)
+        {
+            ThrowInvalidDataException(
+                $"JitConfigValues sidecar fields were not generated: {string.Join(", ", missingFields)}");
+        }
+
+        return output;
+    }
+
+    private static string GetJitConfigFieldAccess(
+        string fieldName,
+        IReadOnlyDictionary<string, JitConfigSidecarGroup[]> sidecarFieldGroups)
+    {
+        if (!sidecarFieldGroups.TryGetValue(fieldName, out var groups))
+        {
+            return $"_{fieldName}";
+        }
+
+        static string GetAccess(string name, JitConfigSidecarGroup group, int index)
+        {
+            return $"{group.ConfigurationProperty} && configurationData.{group.DataFieldName} is {{ }} sidecarData{index} ? sidecarData{index}._{name} : ";
+        }
+
+        var access = "default";
+        for (var index = groups.Length - 1; index >= 0; index--)
+        {
+            access = $"{GetAccess(fieldName, groups[index], index)}{access}";
+        }
+
+        return $"_configurationData is {{ }} configurationData ? {access} : default";
+    }
+
+    private static string GetJitConfigFieldStorageAccess(
+        string fieldName,
+        bool isDebugConfig,
+        IReadOnlyDictionary<string, JitConfigSidecarGroup[]> sidecarFieldGroups)
+    {
+        if (isDebugConfig)
+        {
+            return $"_configurationData!._debugData!._{fieldName}";
+        }
+
+        if (!sidecarFieldGroups.TryGetValue(fieldName, out var groups))
+        {
+            return $"_{fieldName}";
+        }
+
+        if (groups.Length != 1)
+        {
+            ThrowInvalidDataException(
+                $"JitConfigValues field '{fieldName}' belongs to multiple sidecar groups and cannot be initialized unambiguously.");
+        }
+
+        return $"_configurationData!.{groups[0].DataFieldName}!._{fieldName}";
+    }
 
     private static StringBuilder RewriteJitConfigConditionalCompilation(
         StringBuilder input,
@@ -5173,7 +5662,7 @@ public partial struct JitConfigValues
             {
                 if (conditionalScopes.Count == 0)
                 {
-                    throw new InvalidDataException($"Unmatched JitConfigValues #elif directive: '{line}'");
+                    ThrowInvalidDataException($"Unmatched JitConfigValues #elif directive: '{line}'");
                 }
 
                 var scope = conditionalScopes.Peek();
@@ -5204,7 +5693,7 @@ public partial struct JitConfigValues
             {
                 if (conditionalScopes.Count == 0)
                 {
-                    throw new InvalidDataException($"Unmatched JitConfigValues #else directive: '{line}'");
+                    ThrowInvalidDataException($"Unmatched JitConfigValues #else directive: '{line}'");
                 }
 
                 var scope = conditionalScopes.Peek();
@@ -5234,7 +5723,7 @@ public partial struct JitConfigValues
             {
                 if (conditionalScopes.Count == 0)
                 {
-                    throw new InvalidDataException($"Unmatched JitConfigValues #endif directive: '{line}'");
+                    ThrowInvalidDataException($"Unmatched JitConfigValues #endif directive: '{line}'");
                 }
 
                 var scope = conditionalScopes.Pop();
@@ -5265,7 +5754,7 @@ public partial struct JitConfigValues
 
         if (conditionalScopes.Count != 0)
         {
-            throw new InvalidDataException("Unclosed JitConfigValues conditional directive.");
+            ThrowInvalidDataException("Unclosed JitConfigValues conditional directive.");
         }
 
         return output;
@@ -5294,7 +5783,7 @@ public partial struct JitConfigValues
                 {
                     if (!existingDeclaration.Equals(declaration, StringComparison.Ordinal))
                     {
-                        throw new InvalidDataException(
+                        ThrowInvalidDataException(
                             $"Conflicting JitConfigValues {declarationKind} declarations for '{name}'.");
                     }
                     return;
@@ -5316,20 +5805,30 @@ public partial struct JitConfigValues
             var indent = new string(' ', 8 + (4 * runtimeDepth));
             if (branch is "if")
             {
+                if (condition is null)
+                {
+                    ThrowInvalidDataException("A JitConfigValues runtime if requires a condition.");
+                    return;
+                }
+
                 _ = output.Append(indent);
                 _ = output.Append("if (");
-                _ = output.Append(TranslateJitConfigCondition(condition
-                    ?? throw new InvalidDataException("A JitConfigValues runtime if requires a condition.")));
+                _ = output.Append(TranslateJitConfigCondition(condition));
                 _ = output.AppendLine(")");
             }
             else if (branch is "else if")
             {
+                if (condition is null)
+                {
+                    ThrowInvalidDataException("A JitConfigValues runtime else-if requires a condition.");
+                    return;
+                }
+
                 _ = output.Append(indent);
                 _ = output.AppendLine("}");
                 _ = output.Append(indent);
                 _ = output.Append("else if (");
-                _ = output.Append(TranslateJitConfigCondition(condition
-                    ?? throw new InvalidDataException("A JitConfigValues runtime else-if requires a condition.")));
+                _ = output.Append(TranslateJitConfigCondition(condition));
                 _ = output.AppendLine(")");
             }
             else
@@ -5380,7 +5879,7 @@ public partial struct JitConfigValues
         if (!IsJitConfigTargetCondition(condition) &&
             !Regex.IsMatch(condition, @"\b(?:DEBUG|_DEBUG|OPT_CONFIG)\b"))
         {
-            throw new InvalidDataException(
+            ThrowInvalidDataException(
                 $"JitConfigValues runtime branch lacks a target, feature, or build configuration condition: '{condition}'");
         }
 
@@ -5394,12 +5893,29 @@ public partial struct JitConfigValues
         JitConfigDeclarationKind declarationKind,
         out string name)
     {
-        var declarationPattern = declarationKind switch
+        name = string.Empty;
+        string declarationPattern;
+        switch (declarationKind)
         {
-            JitConfigDeclarationKind.Field => @"^\s*private\s+.+\s(?<name>_[A-Za-z0-9_]+);$",
-            JitConfigDeclarationKind.Property => @"^\s*public\s+.+\s(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*=>",
-            _ => throw new ArgumentOutOfRangeException(nameof(declarationKind)),
-        };
+            case JitConfigDeclarationKind.Field:
+            {
+                declarationPattern = @"^\s*(?:private|internal)\s+.+\s(?<name>_[A-Za-z0-9_]+);$";
+                break;
+            }
+
+            case JitConfigDeclarationKind.Property:
+            {
+                declarationPattern = @"^\s*public\s+.+\s(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*=>";
+                break;
+            }
+
+            default:
+            {
+                ThrowArgumentOutOfRangeException(nameof(declarationKind));
+                return false;
+            }
+        }
+
         var match = Regex.Match(line, declarationPattern, RegexOptions.CultureInvariant);
         name = match.Success ? match.Groups["name"].Value : "";
         return match.Success;
@@ -5420,7 +5936,7 @@ public partial struct JitConfigValues
 
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5459,7 +5975,7 @@ public static partial class JitMetadata
 
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5480,7 +5996,7 @@ public static partial class JitMetadata
 
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5497,7 +6013,7 @@ public static partial class JitMetadata
 
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5517,7 +6033,7 @@ public static partial class JitMetadata
 
             if (parts.Length != 3)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5569,7 +6085,7 @@ public partial struct JitMetrics
         var builder = ProcessMacroBasedFile(@"Inputs\loglf.h", "DEFINE_LOG_FACILITY(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 2)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5601,7 +6117,7 @@ public partial class Globals
         var builder = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) => {
             if (parts.Length is not 16 and not 18)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var isa = parts[0].AsSpan().Trim();
@@ -5615,7 +6131,7 @@ public partial class Globals
 
         if (declarations.Count != 1)
         {
-            throw new InvalidDataException("Expected one NamedIntrinsic enum in namedintrinsiclist.h.");
+            ThrowInvalidDataException("Expected one NamedIntrinsic enum in namedintrinsiclist.h.");
         }
 
         var body = declarations[0].Groups["body"].Value;
@@ -5625,7 +6141,7 @@ public partial class Globals
 
         if (hardwareDeclaration.Count(body) != 1)
         {
-            throw new InvalidDataException("Expected one hardware intrinsic expansion in namedintrinsiclist.h.");
+            ThrowInvalidDataException("Expected one hardware intrinsic expansion in namedintrinsiclist.h.");
         }
 
         body = hardwareDeclaration.Replace(body, _ => builder.ToString().TrimEnd());
@@ -5659,7 +6175,7 @@ public enum NamedIntrinsic : ushort
         var builder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5690,7 +6206,7 @@ public enum OPCODE
         var flowKindsBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5702,7 +6218,7 @@ public enum OPCODE
         var sizesBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5714,7 +6230,7 @@ public enum OPCODE
         var namesBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5726,7 +6242,7 @@ public enum OPCODE
         var argKindsBuilder = ProcessMacroBasedFileUnion(@"Inputs\opcode.def", "OPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 10)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -5798,7 +6314,7 @@ public static partial class OPCODEExtensions
         var builder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var enumName = parts[0].AsSpan().Trim();
@@ -5829,7 +6345,7 @@ public enum Phases
         var namesBuilder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var enumName = parts[0].AsSpan().Trim();
@@ -5844,7 +6360,7 @@ public enum Phases
         var hasChildrenBuilder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var enumName = parts[0].AsSpan().Trim();
@@ -5856,7 +6372,7 @@ public enum Phases
         var parentsBuilder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var enumName = parts[0].AsSpan().Trim();
@@ -5875,7 +6391,7 @@ public enum Phases
         var reportsIRSizeBuilder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var enumName = parts[0].AsSpan().Trim();
@@ -5979,7 +6495,7 @@ public static partial class Globals
                 {
                     if (parts.Length != 2)
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
 
                     var name = parts[0].AsSpan().Trim();
@@ -5997,7 +6513,7 @@ public static partial class Globals
                 {
                     if (parts.Length is not 4 and not 5)
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
 
                     var name = parts[0].AsSpan().Trim();
@@ -6032,7 +6548,7 @@ public static partial class Globals
             _ = ProcessMacroBasedFileUnion(inputFile, prefixes, (_, _, line, _, parts) => {
                 if (parts.Length is not 2 and not 4 and not 5)
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var name = parts[0].AsSpan().Trim().ToString();
@@ -6087,7 +6603,7 @@ public static partial class Globals
         {
             if (!ulong.TryParse(mask.AsSpan(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var value))
             {
-                throw new InvalidDataException($"Invalid register mask '{mask}' in '{inputFile}'.");
+                ThrowInvalidDataException($"Invalid register mask '{mask}' in '{inputFile}'.");
             }
 
             return unchecked((long)value);
@@ -6104,26 +6620,65 @@ public static partial class Globals
             !int.TryParse(mask.AsSpan(openParenthesis + 1, closeParenthesis - openParenthesis - 1).Trim(),
                 NumberStyles.Integer, CultureInfo.InvariantCulture, out var offset))
         {
-            throw new InvalidDataException($"Invalid register mask '{mask}' in '{inputFile}'.");
+            ThrowInvalidDataException($"Invalid register mask '{mask}' in '{inputFile}'.");
+            return 0;
         }
 
-        var baseName = mask[..openParenthesis] switch {
-            "GPRMASK" or "RMASK" or "PMASK" => null,
-            "XMMMASK" => "XMMBASE",
-            "KMASK" when target is "X86" => "KBASE",
-            "KMASK" => null,
-            "VFPMASK" => "FPBASE",
-            "VMASK" => "VBASE",
-            "FMASK" => "FBASE",
-            _ => throw new InvalidDataException($"Unsupported register mask '{mask}' in '{inputFile}'."),
-        };
+        string? baseName;
+        switch (mask[..openParenthesis])
+        {
+            case "GPRMASK":
+            case "RMASK":
+            case "PMASK":
+            case "KMASK" when target is not "X86":
+            {
+                baseName = null;
+                break;
+            }
+
+            case "XMMMASK":
+            {
+                baseName = "XMMBASE";
+                break;
+            }
+
+            case "KMASK":
+            {
+                baseName = "KBASE";
+                break;
+            }
+
+            case "VFPMASK":
+            {
+                baseName = "FPBASE";
+                break;
+            }
+
+            case "VMASK":
+            {
+                baseName = "VBASE";
+                break;
+            }
+
+            case "FMASK":
+            {
+                baseName = "FBASE";
+                break;
+            }
+
+            default:
+            {
+                ThrowInvalidDataException($"Unsupported register mask '{mask}' in '{inputFile}'.");
+                return 0;
+            }
+        }
 
         var bit = offset;
         if (baseName is not null)
         {
             if (!registerBases.TryGetValue(baseName, out var registerBase))
             {
-                throw new InvalidDataException($"Missing register mask base '{baseName}' in '{inputFile}'.");
+                ThrowInvalidDataException($"Missing register mask base '{baseName}' in '{inputFile}'.");
             }
 
             bit = checked(bit + registerBase);
@@ -6131,7 +6686,7 @@ public static partial class Globals
 
         if ((uint)bit >= 64)
         {
-            throw new InvalidDataException($"Register mask bit '{bit}' is outside the 64-bit mask in '{inputFile}'.");
+            ThrowInvalidDataException($"Register mask bit '{bit}' is outside the 64-bit mask in '{inputFile}'.");
         }
 
         return 1L << bit;
@@ -6206,7 +6761,7 @@ public static partial class Globals
             var targetBuilder = ProcessMacroBasedFileUnion(inputFile, prefixes, (output, _, line, _, parts) => {
                 if (parts.Length is not 2 and not 4 and not 5)
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var name = parts[0].AsSpan().Trim().ToString();
@@ -6234,7 +6789,7 @@ public static partial class Globals
 
             if (stackRegister < 0)
             {
-                throw new InvalidDataException($"Register header '{inputFile}' does not define REG_STK.");
+                ThrowInvalidDataException($"Register header '{inputFile}' does not define REG_STK.");
             }
 
             _ = builder.Append(targetBuilder);
@@ -6286,7 +6841,8 @@ public static partial class Globals
             return checked(offset + baseValue);
         }
 
-        throw new InvalidDataException($"Invalid register ordinal '{ordinal}' in '{inputFile}'.");
+        ThrowInvalidDataException($"Invalid register ordinal '{ordinal}' in '{inputFile}'.");
+        return 0;
     }
 
     private static void GenerateRegNumberExtensions()
@@ -6303,7 +6859,7 @@ public static partial class Globals
             var targetBuilder = ProcessMacroBasedFileUnion(inputFile, "REGDEF(", (output, _, line, _, parts) => {
                 if (parts.Length is not 4 and not 5)
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var name = parts[0].AsSpan().Trim();
@@ -6369,14 +6925,14 @@ public static partial class regNumberExtensions
             _ = ProcessMacroBasedFileUnion(inputFile, "REGDEF(", (_, _, line, _, parts) => {
                 if (parts.Length is not 4 and not 5)
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var name = parts[0].AsSpan().Trim().ToString();
                 var registerNumber = ParseRegisterOrdinal(parts[1].AsSpan().Trim(), registerBases, inputFile);
                 if (!registerMasks.TryAdd(registerNumber, name))
                 {
-                    throw new InvalidDataException(
+                    ThrowInvalidDataException(
                         $"Duplicate register ordinal '{registerNumber}' in '{inputFile}'.");
                 }
 
@@ -6388,7 +6944,7 @@ public static partial class regNumberExtensions
 
             if ((stackRegister < 0) || (registerMasks.Keys.Max() != stackRegister))
             {
-                throw new InvalidDataException($"Register header '{inputFile}' does not end with REG_STK.");
+                ThrowInvalidDataException($"Register header '{inputFile}' does not end with REG_STK.");
             }
 
             _ = builder.AppendLine(
@@ -6442,7 +6998,7 @@ public static partial class regNumberExtensions
         var builder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 2)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6473,7 +7029,7 @@ public enum SM_OPCODE
         var namesBuilder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 2)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6485,7 +7041,7 @@ public enum SM_OPCODE
         var codeSeqsBuilder = ProcessMacroBasedFile(@"Inputs\smopcode.def", "SMOPDEF(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 2)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6685,18 +7241,18 @@ public static partial class Globals
                 {
                     if (parts.Length != 2)
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
                 }
                 else if (parts.Length is not 4 and not 5)
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var name = parts[0].AsSpan().Trim().ToString();
                 if (!targetRegisterNameSet.Add(name))
                 {
-                    throw new InvalidDataException($"Duplicate register mask '{name}' in '{inputFile}'.");
+                    ThrowInvalidDataException($"Duplicate register mask '{name}' in '{inputFile}'.");
                 }
 
                 if (!targetRegisterNames.TryGetValue(name, out var targets))
@@ -6759,7 +7315,7 @@ public static partial class Globals
         var builder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6790,7 +7346,7 @@ public enum var_types : byte
         var varTypeNameCasesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6805,7 +7361,7 @@ public enum var_types : byte
         var genActualTypesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6828,7 +7384,7 @@ public enum var_types : byte
         var varTypeRegisterBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6949,7 +7505,7 @@ public static partial class var_typesExtensions
         return ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6985,7 +7541,7 @@ public static partial class var_typesExtensions
         var builder1 = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -6998,7 +7554,7 @@ public static partial class var_typesExtensions
                 var hwiBuilder = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) => {
                     if (parts.Length is not 16 and not 18)
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
 
                     var isa = parts[0].AsSpan().Trim();
@@ -7013,7 +7569,7 @@ public static partial class var_typesExtensions
 
             if (parts.Length != 4)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -7046,7 +7602,7 @@ public enum VNFunc
         var builder1 = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -7073,7 +7629,7 @@ public enum VNFunc
                 var hwiBuilder = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) => {
                     if (parts.Length is not 16 and not 18)
                     {
-                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                        ThrowInvalidDataException($"Invalid line format: '{line}'");
                     }
 
                     var isa = parts[0].AsSpan().Trim();
@@ -7096,7 +7652,7 @@ public enum VNFunc
 
             if (parts.Length != 4)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -7133,7 +7689,7 @@ public enum VNFunc
 
             if (parts.Length != 4)
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                ThrowInvalidDataException($"Invalid line format: '{line}'");
             }
 
             var name = parts[0].AsSpan().Trim();
@@ -7216,12 +7772,12 @@ public static partial class VNFuncExtensions
             {
                 if (parts.Length != 6 || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[2]))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 if (!definedArchitectures.Add(parts[1].Trim()))
                 {
-                    throw new InvalidDataException($"Architecture defined more than once: '{line}'");
+                    ThrowInvalidDataException($"Architecture defined more than once: '{line}'");
                 }
 
                 continue;
@@ -7231,7 +7787,7 @@ public static partial class VNFuncExtensions
             {
                 if (parts.Length != 3 || !definedArchitectures.Contains(parts[1].Trim()) || !definedArchitectures.Contains(parts[2].Trim()))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 continue;
@@ -7241,21 +7797,21 @@ public static partial class VNFuncExtensions
             {
                 if (parts.Length != 4 || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[3]))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var architectures = parts[2].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 if (architectures.Length is 0)
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 foreach (var architecture in architectures)
                 {
                     if (!definedArchitectures.Contains(architecture))
                     {
-                        throw new InvalidDataException($"Undefined architecture in instruction-set group: '{line}'");
+                        ThrowInvalidDataException($"Undefined architecture in instruction-set group: '{line}'");
                     }
                 }
 
@@ -7266,7 +7822,7 @@ public static partial class VNFuncExtensions
             {
                 if (parts.Length != 3 || !definedArchitectures.Contains(parts[1].Trim()) || string.IsNullOrWhiteSpace(parts[2]))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 vectorInstructionSets.Add((NormalizeTargetArch(parts[1].Trim()), parts[2].Trim()));
@@ -7277,7 +7833,7 @@ public static partial class VNFuncExtensions
             {
                 if (parts.Length != 7 || !definedArchitectures.Contains(parts[1].Trim()) || string.IsNullOrWhiteSpace(parts[5]))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var targetArch = NormalizeTargetArch(parts[1].Trim());
@@ -7334,7 +7890,7 @@ public static partial class VNFuncExtensions
             {
                 if (parts.Length != 3 || !definedArchitectures.Contains(parts[1].Trim()) || string.IsNullOrWhiteSpace(parts[2]))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var targetArchSuffix = parts[1].Trim();
@@ -7391,7 +7947,7 @@ public static partial class VNFuncExtensions
                 if (parts.Length != 4 || !definedArchitectures.Contains(parts[1].Trim()) ||
                     string.IsNullOrWhiteSpace(parts[2]) || string.IsNullOrWhiteSpace(parts[3]))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
 
                 var targetArch = NormalizeTargetArch(parts[1].Trim());
@@ -7413,14 +7969,14 @@ public static partial class VNFuncExtensions
                 continue;
             }
 
-            throw new InvalidDataException($"Unsupported instruction-set descriptor '{kind}': '{line}'");
+            ThrowInvalidDataException($"Unsupported instruction-set descriptor '{kind}': '{line}'");
         }
 
         foreach (var (architecture, name) in vectorInstructionSets)
         {
             if (!instructionSetsByArchitecture.TryGetValue(architecture, out var instructionSets) || !instructionSets.Contains(name))
             {
-                throw new InvalidDataException($"Vector instruction set '{name}' is not defined for '{architecture}'");
+                ThrowInvalidDataException($"Vector instruction set '{name}' is not defined for '{architecture}'");
             }
         }
 
@@ -7690,7 +8246,7 @@ public partial class Globals
 
             if (managedInstructionSetOrdinals.Count >= 125)
             {
-                throw new InvalidDataException("The managed instruction-set union exceeds the available CORINFO_InstructionSet values.");
+                ThrowInvalidDataException("The managed instruction-set union exceeds the available CORINFO_InstructionSet values.");
             }
 
             var ordinal = managedInstructionSetOrdinals.Count + 1;
@@ -7714,7 +8270,7 @@ public partial class Globals
 
             if (nativeOrdinals.Count >= 125)
             {
-                throw new InvalidDataException($"Native instruction-set ordinals exceed the available CORINFO_InstructionSet values for '{targetArch}'.");
+                ThrowInvalidDataException($"Native instruction-set ordinals exceed the available CORINFO_InstructionSet values for '{targetArch}'.");
             }
 
             var ordinal = nativeOrdinals.Count + 1;
@@ -7855,15 +8411,39 @@ public partial class Globals
 
         static string GetConfigurationTarget(string targetArch)
         {
-            return targetArch switch
+            switch (targetArch)
             {
-                "AMD64" => "Configuration.TARGET_XARCH && Configuration.TARGET_64BIT",
-                "XARCH" => "Configuration.TARGET_XARCH",
-                "ARM64" => "Configuration.TARGET_ARM64",
-                "RISCV64" => "Configuration.TARGET_RISCV64",
-                "WASM32" => "Configuration.TARGET_WASM",
-                _ => throw new InvalidDataException($"Unsupported instruction-set target '{targetArch}'."),
-            };
+                case "AMD64":
+                {
+                    return "Configuration.TARGET_XARCH && Configuration.TARGET_64BIT";
+                }
+
+                case "XARCH":
+                {
+                    return "Configuration.TARGET_XARCH";
+                }
+
+                case "ARM64":
+                {
+                    return "Configuration.TARGET_ARM64";
+                }
+
+                case "RISCV64":
+                {
+                    return "Configuration.TARGET_RISCV64";
+                }
+
+                case "WASM32":
+                {
+                    return "Configuration.TARGET_WASM";
+                }
+
+                default:
+                {
+                    ThrowInvalidDataException($"Unsupported instruction-set target '{targetArch}'.");
+                    return default!;
+                }
+            }
         }
 
         static void AppendIndentedLines(StringBuilder builder, string lines, string indent)
@@ -8070,7 +8650,7 @@ public partial class Globals
             previousCommutative != duplicateCommutative)
         {
             var identity = GetHardwareIntrinsicIdentity(previous);
-            throw new InvalidDataException($"Hardware intrinsic VN attributes differ between target rows for '{identity}'.");
+            ThrowInvalidDataException($"Hardware intrinsic VN attributes differ between target rows for '{identity}'.");
         }
     }
 
@@ -8174,7 +8754,7 @@ public partial class Globals
 
                 if (string.IsNullOrEmpty(directive))
                 {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                 }
                 trimmedLine = trimmedLine[bytesConsumed..].Trim();
 
@@ -8304,7 +8884,7 @@ public partial class Globals
 
                                         if (regionEnd != -1)
                                         {
-                                            throw new InvalidDataException($"Invalid line format: '{line}'");
+                                            ThrowInvalidDataException($"Invalid line format: '{line}'");
                                         }
                                     }
                                 }
@@ -8315,7 +8895,7 @@ public partial class Globals
 
                                 if (regionEnd != -1)
                                 {
-                                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                                    ThrowInvalidDataException($"Invalid line format: '{line}'");
                                 }
                             }
                             nextLineIndex++;
@@ -8606,7 +9186,7 @@ public partial class Globals
 
         if (macroEnd == -1)
         {
-            throw new InvalidDataException($"Invalid line format: '{line}'");
+            ThrowInvalidDataException($"Invalid line format: '{line}'");
         }
 
         if (additionalLinesConsumed is not 0)
@@ -8651,4 +9231,20 @@ public partial class Globals
         parts = partsBuilder.ToArray();
         return true;
     }
+
+    // Generator failures are build-time diagnostics; retain their input detail outside the trimmed JIT image.
+    [DoesNotReturn]
+    [StackTraceHidden]
+    private static void ThrowInvalidDataException(string message)
+        => throw new InvalidDataException(message);
+
+    [DoesNotReturn]
+    [StackTraceHidden]
+    private static void ThrowInvalidOperationException(string message)
+        => throw new InvalidOperationException(message);
+
+    [DoesNotReturn]
+    [StackTraceHidden]
+    private static void ThrowArgumentOutOfRangeException(string parameterName)
+        => throw new ArgumentOutOfRangeException(parameterName);
 }
